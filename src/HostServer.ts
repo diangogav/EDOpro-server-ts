@@ -1,4 +1,6 @@
 import net, { Socket } from 'net'
+import { Room } from './Room'
+import RoomList from './RoomList'
 
 export class HostServer {
   private readonly server
@@ -73,6 +75,42 @@ export class HostServer {
         console.log("name", name)
         console.log("password", password)
         console.log("notes", notes)
+
+        const room = new Room({
+          roomid: 1,
+          roomname: name,
+          roomnotes: notes,
+          roommode: mode,
+          needpass: password.length > 0,
+          team1: t0Count,
+          team2: t1Count,
+          best_of: bestOf,
+          duel_flag: 4295820800,
+          forbidden_types: forbidden,
+          extra_rules: extraRules,
+          start_lp: lp,
+          start_hand: startingHandCount,
+          draw_count: drawCount,
+          time_limit: timeLimit,
+          rule: allowed,
+          no_check: Boolean(dontCheckDeckContent),
+          no_shuffle: Boolean(dontShuffleDeck),
+          banlist_hash: banList,
+          istart: 'waiting',
+          main_min: mainDeckMin,
+          main_max: mainDeckMax,
+          extra_min: extraDeckMin,
+          extra_max: extraDeckMax,
+          side_min: sideDeckMin,
+          side_max: sideDeckMax,
+          users: [{
+            pos: 0,
+            name: playerName
+          }]
+        })
+
+        RoomList.addRoom(room)
+        
       })
 
       socket.on('close', () => {
