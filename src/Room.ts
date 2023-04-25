@@ -1,3 +1,6 @@
+import net from 'net'
+import { Client } from './Client';
+
 export type RoomAttr = {
 	roomid: number,
 	roomname: string,
@@ -28,8 +31,6 @@ export type RoomAttr = {
 	users: { pos: number; name: string}[]
 }
 
-
-
 export class Room {
 	public readonly roomid: number;
 	public readonly roomname: string;
@@ -58,6 +59,7 @@ export class Room {
 	public readonly side_min: number;
 	public readonly side_max: number;
 	public readonly users: { pos: number; name: string}[]
+	public readonly clients: Client[] = []
 
 	constructor(attr: RoomAttr) {
 		this.roomid = attr?.roomid
@@ -87,5 +89,17 @@ export class Room {
 		this.side_min = attr?.side_min
 		this.side_max = attr?.side_max
 		this.users = attr?.users
+	}
+
+	addClient(client: Client) {
+		this.clients.push(client)
+	}
+
+	removeClient(client: Client) {
+
+	}
+
+	start() {
+		console.log('Room Start')
 	}
 }

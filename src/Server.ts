@@ -58,6 +58,6 @@ export class Server {
 
   async initialize() {
     await createDirectoryIfNotExists('./config')
-    this.app.listen(7922, () => console.log('Server listen in port 7922'))
+    this.app.listen(7722, () => console.log('Server listen in port 7722'))
   }
 }
