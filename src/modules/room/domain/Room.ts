@@ -97,7 +97,7 @@ export class Room {
 			name: message.name,
 			notes: message.notes,
 			mode: message.mode,
-			needPass: message.password.length > 0,
+			needPass: Buffer.from(message.password).some((element) => element !== 0x00),
 			team1: message.t0Count,
 			team2: message.t1Count,
 			bestOf: message.bestOf,
