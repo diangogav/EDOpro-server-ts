@@ -1,6 +1,6 @@
-import { HostServer } from "./HostServer";
+import { Server } from "./http-server/Server";
 import { Winston } from "./modules/shared/logger/infrastructure/Winston";
-import { Server } from "./Server";
+import { HostServer } from "./socket-server/HostServer";
 
 void start();
 
