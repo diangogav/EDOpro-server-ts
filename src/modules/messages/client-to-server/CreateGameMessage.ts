@@ -1,7 +1,7 @@
 import { Message } from "../Message";
 
 export class CreateGameMessage implements Message {
-	public readonly header: Buffer;
+	public static readonly MAX_BYTES_LENGTH: number = 349;
 	public readonly banList: number;
 	public readonly allowed: number;
 	public readonly mode: number;
@@ -33,35 +33,34 @@ export class CreateGameMessage implements Message {
 	public readonly notes: string;
 
 	constructor(buffer: Buffer) {
-		this.header = buffer.subarray(0, 3);
-		this.banList = buffer.subarray(3, 7).readUint32LE();
-		this.allowed = buffer.subarray(7, 8).readUInt8();
-		this.mode = buffer.subarray(8, 9).readUInt8();
-		this.duelRule = buffer.subarray(9, 10).readUInt8();
-		this.dontCheckDeckContent = buffer.subarray(10, 11).readUInt8();
-		this.dontShuffleDeck = buffer.subarray(11, 12).readUInt8();
-		this.offset = buffer.subarray(12, 15).readUInt8();
-		this.lp = buffer.subarray(15, 19).readUInt16LE();
-		this.startingHandCount = buffer.subarray(17, 18).readInt8(0);
-		this.drawCount = buffer.subarray(20, 21).readInt8(0);
-		this.timeLimit = buffer.subarray(21, 23).readUInt16LE(0);
-		this.duelFlagsHight = buffer.subarray(23, 27).readUInt32LE();
-		this.handshake = buffer.subarray(27, 31).readUInt32LE();
-		this.clientVersion = buffer.subarray(31, 35).readUInt32LE();
-		this.t0Count = buffer.subarray(35, 39).readInt32LE();
-		this.t1Count = buffer.subarray(39, 43).readInt32LE();
-		this.bestOf = buffer.subarray(43, 47).readInt32LE();
-		this.duelFlagsLow = buffer.subarray(47, 51).readUInt32LE();
-		this.forbidden = buffer.subarray(51, 55).readUInt32LE();
-		this.extraRules = buffer.subarray(55, 57).readUInt16LE();
-		this.mainDeckMin = buffer.subarray(57, 59).readUInt16LE();
-		this.mainDeckMax = buffer.subarray(59, 61).readUInt16LE();
-		this.extraDeckMin = buffer.subarray(61, 63).readUInt16LE();
-		this.extraDeckMax = buffer.subarray(63, 65).readUInt16LE();
-		this.sideDeckMin = buffer.subarray(65, 67).readUInt16LE();
-		this.sideDeckMax = buffer.subarray(67, 69).readUInt16LE();
-		this.name = buffer.subarray(69, 109).toString();
-		this.password = buffer.subarray(109, 149).toString();
-		this.notes = buffer.subarray(149, 349).toString();
+		this.banList = buffer.subarray(0, 4).readUint32LE();
+		this.allowed = buffer.subarray(4, 5).readUInt8();
+		this.mode = buffer.subarray(5, 6).readUInt8();
+		this.duelRule = buffer.subarray(6, 7).readUInt8();
+		this.dontCheckDeckContent = buffer.subarray(7, 8).readUInt8();
+		this.dontShuffleDeck = buffer.subarray(8, 9).readUInt8();
+		this.offset = buffer.subarray(9, 12).readUInt8();
+		this.lp = buffer.subarray(12, 16).readUInt16LE();
+		this.startingHandCount = buffer.subarray(16, 17).readInt8(0);
+		this.drawCount = buffer.subarray(17, 18).readInt8(0);
+		this.timeLimit = buffer.subarray(18, 20).readUInt16LE(0);
+		this.duelFlagsHight = buffer.subarray(20, 24).readUInt32LE();
+		this.handshake = buffer.subarray(24, 28).readUInt32LE();
+		this.clientVersion = buffer.subarray(28, 32).readUInt32LE();
+		this.t0Count = buffer.subarray(32, 36).readInt32LE();
+		this.t1Count = buffer.subarray(36, 40).readInt32LE();
+		this.bestOf = buffer.subarray(40, 44).readInt32LE();
+		this.duelFlagsLow = buffer.subarray(44, 48).readUInt32LE();
+		this.forbidden = buffer.subarray(48, 52).readUInt32LE();
+		this.extraRules = buffer.subarray(52, 54).readUInt16LE();
+		this.mainDeckMin = buffer.subarray(54, 56).readUInt16LE();
+		this.mainDeckMax = buffer.subarray(56, 58).readUInt16LE();
+		this.extraDeckMin = buffer.subarray(58, 60).readUInt16LE();
+		this.extraDeckMax = buffer.subarray(60, 62).readUInt16LE();
+		this.sideDeckMin = buffer.subarray(62, 64).readUInt16LE();
+		this.sideDeckMax = buffer.subarray(64, 66).readUInt16LE();
+		this.name = buffer.subarray(66, 106).toString();
+		this.password = buffer.subarray(106, 146).toString();
+		this.notes = buffer.subarray(146, 346).toString();
 	}
 }

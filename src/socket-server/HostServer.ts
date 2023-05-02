@@ -1,9 +1,6 @@
-/* eslint-disable no-console */
 import net, { Socket } from "net";
 
-import { PlayerInfoMessage } from "../modules/messages/client-to-server/PlayerInfoMessage";
-import { ClientToServerMessageFactory } from "../modules/messages/domain/ClientToServerMessageFactory";
-import { GameCreator } from "../modules/room/application/GameCreator";
+import { MessageHandler } from "../modules/messages/application/MessageHandler";
 import { Logger } from "../modules/shared/logger/domain/Logger";
 
 export class HostServer {
@@ -21,14 +18,9 @@ export class HostServer {
 		});
 		this.server.on("connection", (socket: Socket) => {
 			socket.on("data", (data) => {
-				const factory = new ClientToServerMessageFactory();
-				const message = factory.get(data);
-				if (!(message instanceof PlayerInfoMessage)) {
-					return;
-				}
-
-				const gameCreator = new GameCreator(socket);
-				gameCreator.run(data, message.name);
+				console.log(JSON.stringify(data.toString("hex")));
+				const messageHandler = new MessageHandler(data, socket);
+				messageHandler.read();
 			});
 
 			socket.on("close", () => {
