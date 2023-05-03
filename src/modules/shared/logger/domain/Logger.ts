@@ -1,5 +1,5 @@
 export interface Logger {
 	debug(message: unknown): void;
 	error(error: string | Error): void;
-	info(message: string): void;
+	info(message: unknown): void;
 }

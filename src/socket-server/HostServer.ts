@@ -18,6 +18,7 @@ export class HostServer {
 		});
 		this.server.on("connection", (socket: Socket) => {
 			socket.on("data", (data) => {
+				this.logger.info(data.toString("hex"));
 				const messageHandler = new MessageHandler(data, socket);
 				messageHandler.read();
 			});

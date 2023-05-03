@@ -26,7 +26,7 @@ export class Winston implements Logger {
 		this.logger.error(error);
 	}
 
-	info(message: string): void {
+	info(message: unknown): void {
 		this.logger.info(message);
 	}
 }
