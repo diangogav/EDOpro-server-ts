@@ -1,4 +1,5 @@
 import { Client } from "../../client/domain/Client";
+import { RoomMessageHandler } from "../../messages/application/RoomMessageHandler";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 
 interface RoomAttr {
@@ -142,6 +143,10 @@ export class Room {
 
 	addClient(client: Client): void {
 		this.clients.push(client);
+		client.socket.on("data", (data) => {
+			const messageHandler = new RoomMessageHandler(data, client, this.clients);
+			messageHandler.read();
+		});
 	}
 
 	toPresentation(): { [key: string]: unknown } {
