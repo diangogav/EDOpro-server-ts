@@ -22,15 +22,19 @@ export class JoinToGame {
 		this.socket.write(JoinGameClientMessage.createFromRoom(message, room));
 		room.clients.forEach((client) => {
 			client.socket.write(PlayerEnterClientMessage.create(playerName, position));
-			client.socket.write(PlayerChangeClientMessage.create());
 		});
-		this.socket.write(TypeChangeClientMessage.create());
+
+		room.clients.forEach((client) => {
+			client.socket.write(PlayerChangeClientMessage.create({ status: 0x1a }));
+		});
+
+		this.socket.write(TypeChangeClientMessage.create({ type: 0x01 }));
 
 		const host = room.clients.find((client) => client.host);
 		if (!host) {
 			return;
 		}
 		this.socket.write(PlayerEnterClientMessage.create(host.name, host.position));
-		this.socket.write(PlayerChangeClientMessage.create());
+		this.socket.write(PlayerChangeClientMessage.create({ status: 0xa }));
 	}
 }

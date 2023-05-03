@@ -21,7 +21,7 @@ export class GameCreator {
 		this.socket.write(CreateGameClientMessage.create(room));
 		this.socket.write(JoinGameClientMessage.createFromCreateGameMessage(message));
 		this.socket.write(PlayerEnterClientMessage.create(playerName, 0));
-		this.socket.write(PlayerChangeClientMessage.create());
-		this.socket.write(TypeChangeClientMessage.create());
+		this.socket.write(PlayerChangeClientMessage.create({}));
+		this.socket.write(TypeChangeClientMessage.create({}));
 	}
 }
