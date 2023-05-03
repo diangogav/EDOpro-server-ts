@@ -4,6 +4,7 @@ import { Logger } from "../domain/Logger";
 
 export class Winston implements Logger {
 	private readonly logger: WinstonLogger;
+	private readonly debugLogger: WinstonLogger;
 
 	constructor() {
 		this.logger = winston.createLogger({
@@ -16,10 +17,15 @@ export class Winston implements Logger {
 			),
 			transports: [new winston.transports.Console()],
 		});
+
+		this.debugLogger = winston.createLogger({
+			format: winston.format.combine(winston.format.json()),
+			transports: [new winston.transports.Console({ level: "debug" })],
+		});
 	}
 
 	debug(message: unknown): void {
-		this.logger.debug(message);
+		this.debugLogger.debug(message);
 	}
 
 	error(error: string | Error): void {
