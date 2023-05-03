@@ -28,6 +28,9 @@ interface RoomAttr {
 	extraMax: number;
 	sideMin: number;
 	sideMax: number;
+	duelRule: number;
+	handshake: number;
+	password: string;
 	users: Array<{ pos: number; name: string }>;
 }
 
@@ -58,6 +61,9 @@ export class Room {
 	public readonly extraMax: number;
 	public readonly sideMin: number;
 	public readonly sideMax: number;
+	public readonly duelRule: number;
+	public readonly handshake: number;
+	public readonly password: string;
 	public readonly users: Array<{ pos: number; name: string }>;
 	public readonly clients: Client[] = [];
 
@@ -89,6 +95,9 @@ export class Room {
 		this.sideMin = attr.sideMin;
 		this.sideMax = attr.sideMax;
 		this.users = attr.users;
+		this.duelRule = attr.duelRule;
+		this.handshake = attr.handshake;
+		this.password = attr.password;
 	}
 
 	static createFromCreateGameMessage(message: CreateGameMessage, playerName: string): Room {
@@ -119,6 +128,9 @@ export class Room {
 			extraMax: message.extraDeckMax,
 			sideMin: message.sideDeckMin,
 			sideMax: message.sideDeckMax,
+			duelRule: message.duelRule,
+			handshake: message.handshake,
+			password: message.password,
 			users: [
 				{
 					pos: 0,

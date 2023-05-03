@@ -1,11 +1,10 @@
 import { Message } from "../Message";
 
 export class PlayerInfoMessage implements Message {
-	public readonly header: Buffer;
+	public static readonly MAX_BYTES_LENGTH: number = 40;
 	public readonly name: string;
 
 	constructor(buffer: Buffer) {
-		this.header = buffer.subarray(0, 3);
-		this.name = buffer.subarray(3, 43).toString();
+		this.name = buffer.subarray(0, 40).toString();
 	}
 }

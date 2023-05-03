@@ -5,14 +5,14 @@ export class Listener {}
 export class Client {
 	public readonly socket: net.Socket;
 	public readonly listener: Listener;
-	// public readonly owner: any //?????
-	// public readonly properties: { name: string }
+	public readonly host: boolean;
+	public readonly name: string;
+	public readonly position: number;
 
-	constructor(socket: net.Socket) {
+	constructor(socket: net.Socket, host: boolean, name: string, position: number) {
 		this.socket = socket;
-	}
-
-	start(): void {
-		// console.log("Client Start");
+		this.host = host;
+		this.name = name;
+		this.position = position;
 	}
 }

@@ -1,5 +1,7 @@
 import { decimalToBytesBuffer } from "../../../utils/decimalToBytesBuffer";
+import { Room } from "../../room/domain/Room";
 import { CreateGameMessage } from "../client-to-server/CreateGameMessage";
+import { JoinGameMessage } from "../client-to-server/JoinGameMessage";
 
 export class JoinGameClientMessage {
 	static createFromCreateGameMessage(message: CreateGameMessage): Buffer {
@@ -30,12 +32,69 @@ export class JoinGameClientMessage {
 		const extraDeckMax = decimalToBytesBuffer(message.extraDeckMax, 2);
 		const sideDeckMin = decimalToBytesBuffer(message.sideDeckMin, 2);
 		const sideDeckMax = decimalToBytesBuffer(message.sideDeckMax, 2);
-		const unknown = Buffer.from([
-			0x67, 0x53, 0x2b, 0x00, 0x20, 0x54, 0x00, 0x65, 0x00, 0x72, 0x00, 0x6d, 0x00, 0x6f, 0x00,
-			0x2d, 0x00, 0x44, 0x00, 0x41, 0x00, 0x4b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x02, 0x00, 0x21, 0x0a, 0x02, 0x00, 0x13, 0x10,
+		const unknown = Buffer.from([0x67, 0x53]);
+
+		return Buffer.concat([
+			header,
+			banList,
+			allowed,
+			mode,
+			duelRule,
+			dontCheckDeck,
+			dontShuffleDeck,
+			padding,
+			lp,
+			startingHandCount,
+			drawCount,
+			timeLimit,
+			duelFlagsHight,
+			handshake,
+			version,
+			t0Count,
+			t1Count,
+			bestOf,
+			duelFlagsLow,
+			forbidden,
+			extraRules,
+			mainDeckMin,
+			mainDeckMax,
+			extraDeckMin,
+			extraDeckMax,
+			sideDeckMin,
+			sideDeckMax,
+			unknown,
 		]);
+	}
+
+	static createFromRoom(joinGameMessage: JoinGameMessage, room: Room): Buffer {
+		const header = Buffer.from([0x45, 0x00, 0x12]);
+		const banList = decimalToBytesBuffer(room.banlistHash, 4);
+		const allowed = decimalToBytesBuffer(room.rule, 1);
+		const mode = decimalToBytesBuffer(room.mode, 1);
+		const duelRule = decimalToBytesBuffer(room.duelRule, 1);
+		const dontCheckDeck = decimalToBytesBuffer(Number(room.noCheck), 1);
+		const dontShuffleDeck = decimalToBytesBuffer(Number(room.noShuffle), 1);
+		const padding = Buffer.from([0x1e, 0x3c, 0xb2]);
+		const lp = decimalToBytesBuffer(room.startLp, 4);
+		const startingHandCount = decimalToBytesBuffer(room.startHand, 1);
+		const drawCount = decimalToBytesBuffer(room.drawCount, 1);
+		const timeLimit = decimalToBytesBuffer(room.timeLimit, 2);
+		const duelFlagsHight = decimalToBytesBuffer(1, 4);
+		const handshake = decimalToBytesBuffer(room.handshake, 4);
+		const version = decimalToBytesBuffer(joinGameMessage.clientVersion, 4);
+		const t0Count = decimalToBytesBuffer(room.team1, 4);
+		const t1Count = decimalToBytesBuffer(room.team2, 4);
+		const bestOf = decimalToBytesBuffer(room.bestOf, 4);
+		const duelFlagsLow = decimalToBytesBuffer(853504, 4);
+		const forbidden = decimalToBytesBuffer(room.forbiddenTypes, 4);
+		const extraRules = decimalToBytesBuffer(room.extraRules, 2);
+		const mainDeckMin = decimalToBytesBuffer(room.mainMin, 2);
+		const mainDeckMax = decimalToBytesBuffer(room.mainMax, 2);
+		const extraDeckMin = decimalToBytesBuffer(room.extraMin, 2);
+		const extraDeckMax = decimalToBytesBuffer(room.extraMax, 2);
+		const sideDeckMin = decimalToBytesBuffer(room.sideMin, 2);
+		const sideDeckMax = decimalToBytesBuffer(room.sideMax, 2);
+		const unknown = Buffer.from([0x55, 0x54]);
 
 		return Buffer.concat([
 			header,
