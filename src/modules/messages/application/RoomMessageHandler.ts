@@ -1,7 +1,9 @@
 import { Client } from "../../client/domain/Client";
 import { Commands } from "../domain/Commands";
 import { Message } from "../Message";
+import { DuelStartClientMessage } from "../server-to-client/DuelStartClientMessage";
 import { PlayerChangeClientMessage } from "../server-to-client/PlayerChangeClientMessage";
+import { RPSChooseClientMessage } from "../server-to-client/RPSChooseClientMessage";
 import { UpdateDeckMessageSizeCalculator } from "./UpdateDeckMessageSizeCalculator";
 
 export class RoomMessageHandler {
@@ -46,6 +48,18 @@ export class RoomMessageHandler {
 				client.socket.write(message);
 			});
 			this.read();
+		}
+
+		if (command === Commands.TRY_START) {
+			const duelStartMessage = DuelStartClientMessage.create();
+			this.clients.forEach((client) => {
+				client.socket.write(duelStartMessage);
+			});
+
+			const rpsChooseMessage = RPSChooseClientMessage.create();
+			this.clients.forEach((client) => {
+				client.socket.write(rpsChooseMessage);
+			});
 		}
 	}
 
