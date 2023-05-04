@@ -38,6 +38,15 @@ export class RoomMessageHandler {
 			});
 			this.read();
 		}
+
+		if (command === Commands.NOT_READY) {
+			const status = this.client.position === 0 ? 0x0a : 0x1a;
+			const message = PlayerChangeClientMessage.create({ status });
+			this.clients.forEach((client) => {
+				client.socket.write(message);
+			});
+			this.read();
+		}
 	}
 
 	private readHeader(): Buffer {
