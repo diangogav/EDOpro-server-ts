@@ -9,7 +9,7 @@ import { Commands } from "../domain/Commands";
 import { Message } from "../Message";
 
 export class MessageHandler {
-	public readonly HEADER_BYTES_LENGTH = 3;
+	private readonly HEADER_BYTES_LENGTH = 3;
 	private data: Buffer;
 	private previousMessage: Message;
 	private readonly socket: net.Socket;
@@ -30,7 +30,6 @@ export class MessageHandler {
 			const body = this.readBody(PlayerInfoMessage.MAX_BYTES_LENGTH);
 			const playerInfoMessage = new PlayerInfoMessage(body);
 			this.previousMessage = playerInfoMessage;
-
 			this.read();
 		}
 
@@ -42,7 +41,7 @@ export class MessageHandler {
 			this.read();
 		}
 
-		if (command === 18) {
+		if (command === Commands.JOIN_GAME) {
 			const body = this.readBody(JoinGameMessage.MAX_BYTES_LENGTH);
 			const joinGameMessage = new JoinGameMessage(body);
 			const joinToGame = new JoinToGame(this.socket);
