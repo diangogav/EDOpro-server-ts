@@ -11,6 +11,7 @@ import { Room } from "../domain/Room";
 import RoomList from "../infrastructure/RoomList";
 
 export class GameCreator {
+	private readonly HOST_CLIENT = 0x10;
 	constructor(private readonly socket: net.Socket) {}
 	run(message: CreateGameMessage, playerName: string): void {
 		const room = Room.createFromCreateGameMessage(message, playerName);
@@ -22,6 +23,6 @@ export class GameCreator {
 		this.socket.write(JoinGameClientMessage.createFromCreateGameMessage(message));
 		this.socket.write(PlayerEnterClientMessage.create(playerName, 0));
 		this.socket.write(PlayerChangeClientMessage.create({}));
-		this.socket.write(TypeChangeClientMessage.create({}));
+		this.socket.write(TypeChangeClientMessage.create({ type: this.HOST_CLIENT }));
 	}
 }
