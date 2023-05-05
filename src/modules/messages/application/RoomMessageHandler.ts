@@ -1,9 +1,12 @@
 import { Client } from "../../client/domain/Client";
+import { Choose, RockPaperScissor } from "../../rock-paper-scissor/RockPaperScissor";
 import { Commands } from "../domain/Commands";
 import { Message } from "../Message";
+import { ChooseOrderClientMessage } from "../server-to-client/ChooseOrderClientMessage";
 import { DuelStartClientMessage } from "../server-to-client/DuelStartClientMessage";
 import { PlayerChangeClientMessage } from "../server-to-client/PlayerChangeClientMessage";
 import { RPSChooseClientMessage } from "../server-to-client/RPSChooseClientMessage";
+import { RPSResultClientMessage } from "../server-to-client/RPSResultClientMessage";
 import { UpdateDeckMessageSizeCalculator } from "./UpdateDeckMessageSizeCalculator";
 
 export class RoomMessageHandler {
@@ -60,6 +63,60 @@ export class RoomMessageHandler {
 			this.clients.forEach((client) => {
 				client.socket.write(rpsChooseMessage);
 			});
+			this.read();
+		}
+
+		if (command === Commands.RPS_CHOICE) {
+			const NumberToChoose = {
+				1: "SCISSOR",
+				2: "ROCK",
+				3: "PAPER",
+			};
+
+			const ChooseToNumber = {
+				SCISSOR: 1,
+				ROCK: 2,
+				PAPER: 3,
+			};
+
+			const body = this.readBody(1).readInt8() as keyof typeof NumberToChoose;
+			const choise = NumberToChoose[body] as Choose;
+			const player = this.clients.find((client) => this.client === client);
+			if (!player) {
+				return;
+			}
+			player.setRpsChosen(choise);
+
+			const players = this.clients.filter((client) => client.position >= 0 && client.position <= 1);
+			const playerOne = players[0];
+			const playerTwo = players[1];
+
+			if (playerOne.rpsChoise === null || playerTwo.rpsChoise === null) {
+				return;
+			}
+
+			const result = new RockPaperScissor().play(playerOne.rpsChoise, playerTwo.rpsChoise);
+			players.forEach((player) => {
+				const resultMessage = RPSResultClientMessage.create({
+					choise1: ChooseToNumber[playerOne.rpsChoise as keyof typeof ChooseToNumber],
+					choise2: ChooseToNumber[playerTwo.rpsChoise as keyof typeof ChooseToNumber],
+				});
+				player.socket.write(resultMessage);
+				player.clearRpsChoise();
+			});
+
+			if (result === "TIE") {
+				const rpsChooseMessage = RPSChooseClientMessage.create();
+				players.forEach((player) => {
+					player.socket.write(rpsChooseMessage);
+				});
+
+				return;
+			}
+
+			const winner = result === "PLAYER_ONE_WINNER" ? players[0] : players[1];
+
+			winner.socket.write(ChooseOrderClientMessage.create());
 		}
 	}
 
