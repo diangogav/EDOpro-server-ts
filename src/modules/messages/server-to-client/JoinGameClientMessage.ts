@@ -32,7 +32,7 @@ export class JoinGameClientMessage {
 		const extraDeckMax = decimalToBytesBuffer(message.extraDeckMax, 2);
 		const sideDeckMin = decimalToBytesBuffer(message.sideDeckMin, 2);
 		const sideDeckMax = decimalToBytesBuffer(message.sideDeckMax, 2);
-		const unknown = Buffer.from([0x67, 0x53]);
+		const unknown = Buffer.from([0x09, 0x71]);
 
 		return Buffer.concat([
 			header,
