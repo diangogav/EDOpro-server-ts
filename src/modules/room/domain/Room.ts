@@ -1,5 +1,5 @@
 import { Client } from "../../client/domain/Client";
-import { RoomMessageHandler } from "../../messages/application/RoomMessageHandler";
+import { RoomMessageHandler } from "../../messages/application/RoomMessageHandler/RoomMessageHandler";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 
 interface RoomAttr {
