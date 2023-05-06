@@ -1,6 +1,6 @@
 import net, { Socket } from "net";
 
-import { MessageHandler } from "../modules/messages/application/MessageHandler";
+import { MessageHandler } from "../modules/messages/application/MessageHandler/MessageHandler";
 import { Logger } from "../modules/shared/logger/domain/Logger";
 
 export class HostServer {
