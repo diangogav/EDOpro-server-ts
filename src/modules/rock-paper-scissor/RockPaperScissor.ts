@@ -16,7 +16,7 @@ export class RockPaperScissor {
 
 		["SCISSORvsPAPER", "PLAYER_ONE_WINNER"],
 		["SCISSORvsROCK", "PLAYER_TWO_WINNER"],
-		["SCISSORvsSCISSOR", "TIE"]
+		["SCISSORvsSCISSOR", "TIE"],
 	]);
 
 	play(playerOneChoose: Choose, playerTwoChoose: Choose): Result {
