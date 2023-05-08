@@ -3,17 +3,19 @@ import { BufferReader } from "../../domain/BufferReader";
 import { RoomMessageHandlerCommandStrategy } from "./RoomMessageHandlerCommandStrategy";
 
 export class RoomMessageHandlerContext {
-	readonly data: Buffer;
 	readonly client: Client;
 	readonly clients: Client[];
 	private strategy?: RoomMessageHandlerCommandStrategy;
 	private readonly bufferReader: BufferReader;
 
 	constructor(data: Buffer, client: Client, clients: Client[]) {
-		this.data = data;
 		this.client = client;
 		this.clients = clients;
 		this.bufferReader = new BufferReader(data);
+	}
+
+	get data(): Buffer {
+		return this.bufferReader.data;
 	}
 
 	setStrategy(strategy: RoomMessageHandlerCommandStrategy): void {
