@@ -1,26 +1,29 @@
 export class BufferReader {
 	private readonly HEADER_BYTES_LENGTH = 3;
-
-	private data: Buffer;
+	private _data: Buffer;
 
 	constructor(data: Buffer) {
-		this.data = data;
+		this._data = data;
+	}
+
+	get data(): Buffer {
+		return this._data;
 	}
 
 	IsDataEmpty(): boolean {
-		return this.data.length === 0;
+		return this._data.length === 0;
 	}
 
 	readHeader(): Buffer {
-		const header = this.data.subarray(0, this.HEADER_BYTES_LENGTH);
-		this.data = this.data.subarray(this.HEADER_BYTES_LENGTH, this.data.length);
+		const header = this._data.subarray(0, this.HEADER_BYTES_LENGTH);
+		this._data = this._data.subarray(this.HEADER_BYTES_LENGTH, this._data.length);
 
 		return header;
 	}
 
 	readBody(maxBytesLength: number): Buffer {
-		const body = this.data.subarray(0, maxBytesLength);
-		this.data = this.data.subarray(maxBytesLength, this.data.length);
+		const body = this._data.subarray(0, maxBytesLength);
+		this._data = this._data.subarray(maxBytesLength, this._data.length);
 
 		return body;
 	}
