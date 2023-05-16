@@ -144,7 +144,7 @@ export class Room {
 	addClient(client: Client): void {
 		this.clients.push(client);
 		client.socket.on("data", (data) => {
-			const messageHandler = new RoomMessageHandler(data, client, this.clients);
+			const messageHandler = new RoomMessageHandler(data, client, this.clients, this);
 			messageHandler.read();
 		});
 	}
