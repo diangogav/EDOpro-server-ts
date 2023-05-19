@@ -51,6 +51,10 @@ export class RoomMessageHandler {
 				this.context.room.drawCount.toString(),
 				this.context.room.duelFlag.toString(),
 				this.context.room.extraRules.toString(),
+				JSON.stringify(this.context.room.users[0].deck?.main ?? []),
+				JSON.stringify(this.context.room.users[0].deck?.side ?? []),
+				JSON.stringify(this.context.room.users[1].deck?.main ?? []),
+				JSON.stringify(this.context.room.users[1].deck?.side ?? []),
 			]);
 
 			core.stdout.on("data", (data: string) => {

@@ -1,6 +1,7 @@
 import { Client } from "../../../client/domain/Client";
 import { Room } from "../../../room/domain/Room";
 import { BufferReader } from "../../domain/BufferReader";
+import { Message } from "../../Message";
 import { RoomMessageHandlerCommandStrategy } from "./RoomMessageHandlerCommandStrategy";
 
 export class RoomMessageHandlerContext {
@@ -9,6 +10,7 @@ export class RoomMessageHandlerContext {
 	readonly room: Room;
 	private strategy?: RoomMessageHandlerCommandStrategy;
 	private readonly bufferReader: BufferReader;
+	private previousMessage: Message;
 
 	constructor(data: Buffer, client: Client, clients: Client[], room: Room) {
 		this.client = client;
@@ -19,6 +21,14 @@ export class RoomMessageHandlerContext {
 
 	get data(): Buffer {
 		return this.bufferReader.data;
+	}
+
+	getPreviousMessages(): Message {
+		return this.previousMessage;
+	}
+
+	updatePreviousMessage(message: Message): void {
+		this.previousMessage = message;
 	}
 
 	setStrategy(strategy: RoomMessageHandlerCommandStrategy): void {
