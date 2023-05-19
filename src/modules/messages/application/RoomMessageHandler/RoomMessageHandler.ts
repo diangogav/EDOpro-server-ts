@@ -51,10 +51,23 @@ export class RoomMessageHandler {
 				this.context.room.drawCount.toString(),
 				this.context.room.duelFlag.toString(),
 				this.context.room.extraRules.toString(),
+				JSON.stringify(this.context.room.users[0].deck?.main ?? []),
+				JSON.stringify(this.context.room.users[0].deck?.side ?? []),
+				JSON.stringify(this.context.room.users[1].deck?.main ?? []),
+				JSON.stringify(this.context.room.users[1].deck?.side ?? []),
 			]);
 
 			core.stdout.on("data", (data: string) => {
-				console.log("data", data.toString());
+				console.log("Incoming data", data.toString())
+				const message = data.toString().trim();
+				const regex = /CMD:[A-Z]+(\|[a-zA-Z0-9]+)*\b/g;
+				const commands = message.match(regex);
+				console.log("commands",commands)
+				if (!commands) {
+					return;
+				}
+
+				console.log(commands);
 			});
 		}
 

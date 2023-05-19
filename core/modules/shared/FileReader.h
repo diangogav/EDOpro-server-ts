@@ -4,9 +4,10 @@
 #include <fstream>
 #include <vector>
 
-class FileReader {
+class FileReader
+{
 public:
-  static std::vector<char> read(const char* filename);
+  static std::vector<char> read(const char *filename);
 };
 
 #endif

@@ -1,4 +1,5 @@
 import { Client } from "../../client/domain/Client";
+import { Deck } from "../../deck/domain/Deck";
 import { RoomMessageHandler } from "../../messages/application/RoomMessageHandler/RoomMessageHandler";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 
@@ -32,7 +33,7 @@ interface RoomAttr {
 	duelRule: number;
 	handshake: number;
 	password: string;
-	users: Array<{ pos: number; name: string }>;
+	users: Array<{ pos: number; name: string; deck?: Deck }>;
 }
 
 export class Room {
@@ -65,7 +66,7 @@ export class Room {
 	public readonly duelRule: number;
 	public readonly handshake: number;
 	public readonly password: string;
-	public readonly users: Array<{ pos: number; name: string }>;
+	public readonly users: Array<{ pos: number; name: string; deck?: Deck }>;
 	public readonly clients: Client[] = [];
 
 	private constructor(attr: RoomAttr) {
@@ -147,6 +148,14 @@ export class Room {
 			const messageHandler = new RoomMessageHandler(data, client, this.clients, this);
 			messageHandler.read();
 		});
+	}
+
+	setDecksToPlayer(position: number, deck: Deck): void {
+		const user = this.users.find((user) => user.pos === position);
+		if (!user) {
+			return;
+		}
+		user.deck = deck;
 	}
 
 	toPresentation(): { [key: string]: unknown } {
