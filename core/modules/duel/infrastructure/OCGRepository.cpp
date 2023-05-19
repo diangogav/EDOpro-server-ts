@@ -41,6 +41,12 @@ void OCGRepository::loadFunctions()
   {
     throw std::runtime_error("Failed to load OCG_StartDuel function");
   }
+
+  OCG_DuelQueryCount = reinterpret_cast<OCG_DuelQueryCount_t>(dlsym(libhandle, "OCG_DuelQueryCount"));
+  if (!OCG_DuelQueryCount)
+  {
+    throw std::runtime_error("Failed to load OCG_DuelQueryCount function");
+  }
 };
 
 OCGRepository::OCGRepository()
@@ -71,4 +77,9 @@ void OCGRepository::addCard(OCG_Duel duel, OCG_NewCardInfo card)
 void OCGRepository::startDuel(OCG_Duel duel)
 {
   OCG_StartDuel(duel);
+}
+
+uint32_t OCGRepository::duelQueryCount(OCG_Duel duel, uint8_t team, uint32_t location)
+{
+  return OCG_DuelQueryCount(duel, team, location);
 }

@@ -4,7 +4,8 @@
 #include <sstream>
 #include <vector>
 
-class CommandLineArrayParser {
+class CommandLineArrayParser
+{
 private:
   std::string stringArrayOfNumbers;
 

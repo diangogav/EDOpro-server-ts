@@ -58,7 +58,16 @@ export class RoomMessageHandler {
 			]);
 
 			core.stdout.on("data", (data: string) => {
-				console.log("data", data.toString());
+				console.log("Incoming data", data.toString())
+				const message = data.toString().trim();
+				const regex = /CMD:[A-Z]+(\|[a-zA-Z0-9]+)*\b/g;
+				const commands = message.match(regex);
+				console.log("commands",commands)
+				if (!commands) {
+					return;
+				}
+
+				console.log(commands);
 			});
 		}
 
