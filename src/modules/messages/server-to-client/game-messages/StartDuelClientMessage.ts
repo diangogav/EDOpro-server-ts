@@ -3,14 +3,14 @@ import { decimalToBytesBuffer } from "../../../../utils";
 export class StartDuelClientMessage {
 	static create({
 		lp,
-    team,
+		team,
 		playerMainDeckSize,
 		playerExtraDeckSize,
 		opponentMainDeckSize,
 		opponentExtraDeckSize,
 	}: {
 		lp: number;
-    team: number;
+		team: number;
 		playerExtraDeckSize: number;
 		playerMainDeckSize: number;
 		opponentMainDeckSize: number;

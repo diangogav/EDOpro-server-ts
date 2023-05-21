@@ -111,4 +111,6 @@ OCG_Duel DuelCreator::run(uint64_t flags, uint32_t startingLP, uint32_t starting
     message += std::to_string(opponentDeckSize) + "|";
     message += std::to_string(opponentExtraDeckSize) + "|";
     std::cout << message << std::endl;
+
+    return duel;
 };
