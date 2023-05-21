@@ -1,6 +1,7 @@
 #include "OCGRepository.h"
 #include <iostream>
 #include <dlfcn.h>
+#include <cstring>
 
 void OCGRepository::loadFunctions()
 {
@@ -47,6 +48,24 @@ void OCGRepository::loadFunctions()
   {
     throw std::runtime_error("Failed to load OCG_DuelQueryCount function");
   }
+
+  OCG_DuelQueryLocation = reinterpret_cast<OCG_DuelQueryLocation_t>(dlsym(libhandle, "OCG_DuelQueryLocation"));
+  if (!OCG_DuelQueryLocation)
+  {
+    throw std::runtime_error("Failed to load OCG_DuelQueryLocation function");
+  }
+
+  OCG_DuelProcess = reinterpret_cast<OCG_DuelProcess_t>(dlsym(libhandle, "OCG_DuelProcess"));
+  if (!OCG_DuelProcess)
+  {
+    throw std::runtime_error("Failed to load OCG_DuelProcess function");
+  }
+
+  OCG_DuelGetMessage = reinterpret_cast<OCG_DuelGetMessage_t>(dlsym(libhandle, "OCG_DuelGetMessage"));
+  if (!OCG_DuelGetMessage)
+  {
+    throw std::runtime_error("Failed to load OCG_DuelGetMessage function");
+  }
 };
 
 OCGRepository::OCGRepository()
@@ -82,4 +101,56 @@ void OCGRepository::startDuel(OCG_Duel duel)
 uint32_t OCGRepository::duelQueryCount(OCG_Duel duel, uint8_t team, uint32_t location)
 {
   return OCG_DuelQueryCount(duel, team, location);
+}
+
+std::vector<uint8_t> OCGRepository::duelQueryLocation(OCG_Duel duel, uint8_t team)
+{
+  OCG_QueryInfo queryInfo = {
+      0x381FFF,
+      team,
+      0x40,
+      0U,
+      0U};
+  uint32_t length = 0U;
+  auto *pointer = OCG_DuelQueryLocation(duel, &length, queryInfo);
+  std::vector<uint8_t> buffer(static_cast<std::vector<uint8_t>::size_type>(length));
+  std::memcpy(buffer.data(), pointer, static_cast<std::size_t>(length));
+  return buffer;
+}
+
+int OCGRepository::process(OCG_Duel duel)
+{
+  return OCG_DuelProcess(duel);
+}
+
+std::vector<std::vector<uint8_t>> OCGRepository::getMessages(OCG_Duel duel)
+{
+  uint32_t length = 0U;
+  auto *pointer = OCG_DuelGetMessage(duel, &length);
+  std::vector<uint8_t> buffer(static_cast<std::vector<uint8_t>::size_type>(length));
+  std::memcpy(buffer.data(), pointer, static_cast<std::size_t>(length));
+  return parseMessages(buffer);
+}
+
+std::vector<std::vector<uint8_t>> OCGRepository::parseMessages(const std::vector<uint8_t> &buffer)
+{
+  using length_t = uint32_t;
+  static constexpr std::size_t sizeOfLength = sizeof(length_t);
+  std::vector<std::vector<uint8_t>> msgs;
+  if (buffer.empty())
+    return msgs;
+  const std::size_t bufSize = buffer.size();
+  const uint8_t *const bufData = buffer.data();
+  for (std::size_t pos = 0U; pos != bufSize;)
+  {
+    // Retrieve length of this message
+    length_t l = 0U;
+    std::memcpy(&l, bufData + pos, sizeOfLength);
+    pos += sizeOfLength;
+    // Copy message data to a new message
+    auto &msg = msgs.emplace_back(l);
+    std::memcpy(msg.data(), bufData + pos, l);
+    pos += l;
+  }
+  return msgs;
 }

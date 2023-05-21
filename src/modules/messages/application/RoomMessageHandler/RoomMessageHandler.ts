@@ -3,6 +3,8 @@ import { spawn } from "child_process";
 import { Client } from "../../../client/domain/Client";
 import { Room } from "../../../room/domain/Room";
 import { Commands } from "../../domain/Commands";
+import { StartDuelClientMessage } from "../../server-to-client/game-messages/StartDuelClientMessage";
+import { UpdateDataClientMessage } from "../../server-to-client/game-messages/UpdateDataClientMessage";
 import { RoomMessageHandlerContext } from "./RoomMessageHandlerContext";
 import { NotReadyCommandStrategy } from "./Strategies/NotReadyCommandStrategy";
 import { ReadyCommandStrategy } from "./Strategies/ReadyCommandStrategy";
@@ -58,16 +60,61 @@ export class RoomMessageHandler {
 			]);
 
 			core.stdout.on("data", (data: string) => {
-				console.log("Incoming data", data.toString())
 				const message = data.toString().trim();
 				const regex = /CMD:[A-Z]+(\|[a-zA-Z0-9]+)*\b/g;
 				const commands = message.match(regex);
-				console.log("commands",commands)
+
 				if (!commands) {
 					return;
 				}
 
-				console.log(commands);
+				commands.forEach((command) => {
+					const commandParts = command.split("|");
+					const cmd = commandParts[0];
+					const params = commandParts.slice(1);
+
+					if (cmd === "CMD:START") {
+						const playerGameMessage = StartDuelClientMessage.create({
+							lp: this.context.room.startLp,
+							team: 0,
+							playerMainDeckSize: Number(params[0]),
+							playerExtraDeckSize: Number(params[1]),
+							opponentMainDeckSize: Number(params[2]),
+							opponentExtraDeckSize: Number(params[3]),
+						});
+
+						const opponentGameMessage = StartDuelClientMessage.create({
+							lp: this.context.room.startLp,
+							team: 0,
+							playerMainDeckSize: Number(params[0]),
+							playerExtraDeckSize: Number(params[1]),
+							opponentMainDeckSize: Number(params[2]),
+							opponentExtraDeckSize: Number(params[3]),
+						});
+
+						this.context.clients[0].socket.write(playerGameMessage);
+						this.context.clients[1].socket.write(opponentGameMessage);
+						core.stdin.write("CMD:RECORD_DECKS\n");
+					}
+
+					if (cmd === "CMD:BUFFER") {
+						const location = Number(params[0]);
+						const team = Number(params[1]);
+						const bufferData = params.slice(2).map(Number);
+						const buffer = Buffer.from(bufferData);
+
+						this.context.clients[team].socket.write(
+							UpdateDataClientMessage.create({ deckLocation: location, team, buffer })
+						);
+					}
+
+					if (cmd === "CMD:DUEL") {
+						core.stdin.write("CMD:PROCESS\n");
+					}
+
+					if (cmd === "CMD:MESSAGE") {
+					}
+				});
 			});
 		}
 
