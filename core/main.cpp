@@ -2,6 +2,7 @@
 #include "./modules/duel/application/DuelCreator.h"
 #include "./modules/shared/CommandLineArrayParser.h"
 #include "./modules/duel/application/DuelProcessor.h"
+#include "./modules/duel/messages/domain/DuelMessageHandler.h"
 
 #include <iostream>
 #include <string>
@@ -43,10 +44,10 @@ int main(int argc, char *argv[])
   OCGRepository repository{};
   DuelCreator duelCreator{repository};
   OCG_Duel duel = duelCreator.run(
+      flags,
       startingLP,
       startingDrawCount,
       drawCountPerTurn,
-      flags,
       extraRules,
       playerMainDeckParser.parse(),
       opponentMainDeckParser.parse());
@@ -99,17 +100,27 @@ int main(int argc, char *argv[])
         int status = processor.run(duel);
         std::vector<std::vector<uint8_t>> messages = repository.getMessages(duel);
 
-        // Imprimir los elementos del vector 2D
-        for (const auto &row : messages)
+        DuelMessageHandler duelMessageHandler;
+        for (const auto &message : messages)
         {
-          std::string payload = "CMD:MESSAGE|";
-          for (const auto &element : row)
+          std::vector<uint8_t> team0Message = duelMessageHandler.handle(0, message);
+          std::vector<uint8_t> team1Message = duelMessageHandler.handle(1, message);
+
+          std::string team1Payload = "CMD:MESSAGE|";
+          team1Payload += std::to_string(0) + "|";
+          for (const auto &element : team1Message)
           {
-            std::ostringstream stream;
-            stream << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(element);
-            payload += stream.str() + "|";
+              team1Payload += std::to_string(static_cast<int>(element)) + "|";
           }
-          std::cout << payload << std::endl;
+          std::cout << team1Payload << std::endl;
+
+          std::string team0Payload = "CMD:MESSAGE|";
+          team0Payload += std::to_string(1) + "|";
+          for (const auto &element : team0Message)
+          {
+              team0Payload += std::to_string(static_cast<int>(element)) + "|";
+          }
+          std::cout << team0Payload << std::endl;
         }
       }
     }

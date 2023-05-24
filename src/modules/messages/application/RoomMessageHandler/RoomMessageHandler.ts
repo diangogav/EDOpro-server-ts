@@ -3,6 +3,7 @@ import { spawn } from "child_process";
 import { Client } from "../../../client/domain/Client";
 import { Room } from "../../../room/domain/Room";
 import { Commands } from "../../domain/Commands";
+import { DrawClientMessage } from "../../server-to-client/game-messages/DrawClientMessage";
 import { StartDuelClientMessage } from "../../server-to-client/game-messages/StartDuelClientMessage";
 import { UpdateDataClientMessage } from "../../server-to-client/game-messages/UpdateDataClientMessage";
 import { RoomMessageHandlerContext } from "./RoomMessageHandlerContext";
@@ -85,7 +86,7 @@ export class RoomMessageHandler {
 
 						const opponentGameMessage = StartDuelClientMessage.create({
 							lp: this.context.room.startLp,
-							team: 0,
+							team: 1,
 							playerMainDeckSize: Number(params[0]),
 							playerExtraDeckSize: Number(params[1]),
 							opponentMainDeckSize: Number(params[2]),
@@ -102,10 +103,13 @@ export class RoomMessageHandler {
 						const team = Number(params[1]);
 						const bufferData = params.slice(2).map(Number);
 						const buffer = Buffer.from(bufferData);
+						const message = UpdateDataClientMessage.create({
+							deckLocation: location,
+							team,
+							buffer,
+						});
 
-						this.context.clients[team].socket.write(
-							UpdateDataClientMessage.create({ deckLocation: location, team, buffer })
-						);
+						this.context.clients[team].socket.write(message);
 					}
 
 					if (cmd === "CMD:DUEL") {
@@ -113,6 +117,12 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:MESSAGE") {
+						const team = Number(params[0]);
+						console.log("params", params);
+						const buffer = Buffer.from(params.slice(1).map(Number));
+						const message = DrawClientMessage.create({ buffer });
+						console.log("message", message);
+						this.context.clients[team].socket.write(message);
 					}
 				});
 			});
