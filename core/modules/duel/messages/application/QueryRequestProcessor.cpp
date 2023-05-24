@@ -2,6 +2,7 @@
 
 QueryRequestProcessor::QueryRequestProcessor(OCGRepository repository) : repository(repository) {
   LocationQueryDeserializer deserializer;
+  LocationQuerySerializer serializer;
 }
 
 void QueryRequestProcessor::run(const std::vector<QueryRequest>& queryRequests, OCG_Duel duel) {
@@ -21,7 +22,8 @@ void QueryRequestProcessor::run(const std::vector<QueryRequest>& queryRequests, 
       uint8_t team = 0;
       const auto buffer = repository.duelQueryLocation(duel, team);
       const auto queries = deserializer.deserialize(buffer);
-
+      const auto playerBuffer = serializer.serialize(queries, false);
+      const auto strippedBuffer = serializer.serialize(queries, true);
     }
   }
 }

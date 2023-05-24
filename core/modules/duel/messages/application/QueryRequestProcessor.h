@@ -6,11 +6,13 @@
 #include "../../../../ocgapi_types.h"
 #include "../../infrastructure/OCGRepository.h"
 #include "../domain/LocationQueryDeserializer.h"
+#include "../domain/LocationQuerySerializer.h"
 
 class QueryRequestProcessor {
 private:
   OCGRepository repository;
   LocationQueryDeserializer deserializer;
+  LocationQuerySerializer serializer;
 
 public:
   QueryRequestProcessor(OCGRepository repository);
