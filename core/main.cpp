@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
           std::vector<uint8_t> team1Message = duelMessageHandler.handle(1, message);
 
           std::string team1Payload = "CMD:MESSAGE|";
-          team1Payload += std::to_string(0) + "|";
+          team1Payload += std::to_string(1) + "|";
           for (const auto &element : team1Message)
           {
               team1Payload += std::to_string(static_cast<int>(element)) + "|";
@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
           std::cout << team1Payload << std::endl;
 
           std::string team0Payload = "CMD:MESSAGE|";
-          team0Payload += std::to_string(1) + "|";
+          team0Payload += std::to_string(0) + "|";
           for (const auto &element : team0Message)
           {
               team0Payload += std::to_string(static_cast<int>(element)) + "|";

@@ -118,10 +118,8 @@ export class RoomMessageHandler {
 
 					if (cmd === "CMD:MESSAGE") {
 						const team = Number(params[0]);
-						console.log("params", params);
-						const buffer = Buffer.from(params.slice(1).map(Number));
-						const message = DrawClientMessage.create({ buffer });
-						console.log("message", message);
+						const data = Buffer.from(params.slice(1).map(Number));
+						const message = DrawClientMessage.create({ buffer: data });
 						this.context.clients[team].socket.write(message);
 					}
 				});
