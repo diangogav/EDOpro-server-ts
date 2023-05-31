@@ -29,10 +29,11 @@ int main(int argc, char *argv[])
   uint32_t drawCountPerTurn = atoi(argv[3]);
   uint64_t flags = atoi(argv[4]);
   uint16_t extraRules = atoi(argv[5]);
-  std::string playerMainDeckString = argv[6];
-  std::string playerSideDeckString = argv[7];
-  std::string opponentMainDeckString = argv[8];
-  std::string opponentSideDeckString = argv[9];
+  uint16_t isTeam1GoingFirst = atoi(argv[6]);
+  std::string playerMainDeckString = argv[7];
+  std::string playerSideDeckString = argv[8];
+  std::string opponentMainDeckString = argv[9];
+  std::string opponentSideDeckString = argv[10];
 
   CommandLineArrayParser playerMainDeckParser(playerMainDeckString);
   CommandLineArrayParser playerSideDeckParser(playerSideDeckString);
@@ -100,27 +101,11 @@ int main(int argc, char *argv[])
         int status = processor.run(duel);
         std::vector<std::vector<uint8_t>> messages = repository.getMessages(duel);
 
-        DuelMessageHandler duelMessageHandler;
+        DuelMessageHandler duelMessageHandler(isTeam1GoingFirst);
+
         for (const auto &message : messages)
         {
-          std::vector<uint8_t> team0Message = duelMessageHandler.handle(0, message);
-          std::vector<uint8_t> team1Message = duelMessageHandler.handle(1, message);
-
-          std::string team1Payload = "CMD:MESSAGE|";
-          team1Payload += std::to_string(1) + "|";
-          for (const auto &element : team1Message)
-          {
-              team1Payload += std::to_string(static_cast<int>(element)) + "|";
-          }
-          std::cout << team1Payload << std::endl;
-
-          std::string team0Payload = "CMD:MESSAGE|";
-          team0Payload += std::to_string(0) + "|";
-          for (const auto &element : team0Message)
-          {
-              team0Payload += std::to_string(static_cast<int>(element)) + "|";
-          }
-          std::cout << team0Payload << std::endl;
+          duelMessageHandler.handle(message);
         }
       }
     }

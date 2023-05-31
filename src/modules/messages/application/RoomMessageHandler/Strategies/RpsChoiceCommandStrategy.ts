@@ -12,13 +12,13 @@ export class RpsChoiceCommandStrategy implements RoomMessageHandlerCommandStrate
 		const NumberToChoose = {
 			1: "SCISSOR",
 			2: "ROCK",
-			3: "PAPER"
+			3: "PAPER",
 		};
 
 		const ChooseToNumber = {
 			SCISSOR: 1,
 			ROCK: 2,
-			PAPER: 3
+			PAPER: 3,
 		};
 
 		const body = this.context.readBody(1).readInt8() as keyof typeof NumberToChoose;
@@ -43,7 +43,7 @@ export class RpsChoiceCommandStrategy implements RoomMessageHandlerCommandStrate
 		players.forEach((player) => {
 			const resultMessage = RPSResultClientMessage.create({
 				choise1: ChooseToNumber[playerOne.rpsChoise as keyof typeof ChooseToNumber],
-				choise2: ChooseToNumber[playerTwo.rpsChoise as keyof typeof ChooseToNumber]
+				choise2: ChooseToNumber[playerTwo.rpsChoise as keyof typeof ChooseToNumber],
 			});
 			player.socket.write(resultMessage);
 			player.clearRpsChoise();

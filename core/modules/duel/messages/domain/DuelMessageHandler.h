@@ -3,16 +3,14 @@
 
 #include <iostream>
 #include <vector>
-
-#include "../../../shared/Read.h"
-#include "../../../shared/Write.h"
-#include "../../../shared/DuelPositions.h"
-
+#include "assert.h"
 class DuelMessageHandler {
 public:
-  std::vector<uint8_t> handle(uint8_t team, std::vector<uint8_t> message);
+  DuelMessageHandler(uint16_t isTeam1GoingFirst);
+  void handle(std::vector<uint8_t> message);
 private:
-  void clearNonFaceUpPositions(uint32_t count, uint8_t*& ptr);
+  uint8_t isTeam1GoingFirst;
+  uint8_t calculateTeam(uint8_t team);
 };
 
 #endif

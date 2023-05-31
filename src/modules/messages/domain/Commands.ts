@@ -1,6 +1,7 @@
 export enum Commands {
 	UPDATE_DECK = 2,
 	RPS_CHOICE = 3,
+	TURN_CHOICE = 4,
 	PLAYER_INFO = 16,
 	CREATE_GAME = 17,
 	JOIN_GAME = 18,

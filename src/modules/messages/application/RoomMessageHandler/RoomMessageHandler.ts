@@ -47,13 +47,21 @@ export class RoomMessageHandler {
 			this.context.setStrategy(new RpsChoiceCommandStrategy(this.context));
 		}
 
-		if (command === 4) {
+		if (command === Commands.TURN_CHOICE) {
+			const turn = this.context.readBody(1).readInt8();
+			const position = this.context.room.clients.find(
+				(client) => client === this.context.client
+			)?.position;
+
+			const isTeam1GoingFirst = (position === 0 && turn === 0) || (position === 1 && turn === 1);
+
 			const core = spawn("/home/diango/code/edo-pro-server-ts/out", [
 				this.context.room.startLp.toString(),
 				this.context.room.startHand.toString(),
 				this.context.room.drawCount.toString(),
 				this.context.room.duelFlag.toString(),
 				this.context.room.extraRules.toString(),
+				Number(isTeam1GoingFirst).toString(),
 				JSON.stringify(this.context.room.users[0].deck?.main ?? []),
 				JSON.stringify(this.context.room.users[0].deck?.side ?? []),
 				JSON.stringify(this.context.room.users[1].deck?.main ?? []),
