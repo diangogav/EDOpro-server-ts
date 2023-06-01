@@ -1,6 +1,6 @@
 #include "QueryCreator.h"
 
-std::vector<QueryRequest> QueryCreator::run(std::vector<uint8_t> &message)
+std::vector<QueryRequest> QueryCreator::run(const std::vector<uint8_t> &message)
 {
   auto *ptr = message.data();
   ptr++;

@@ -37,7 +37,7 @@ public:
   void addCard(OCG_Duel duel, OCG_NewCardInfo card);
   void startDuel(OCG_Duel duel);
   uint32_t duelQueryCount(OCG_Duel duel, uint8_t team, uint32_t location);
-  std::vector<uint8_t> duelQueryLocation(OCG_Duel duel, uint8_t team);
+  std::vector<uint8_t> duelQueryLocation(OCG_Duel duel, OCG_QueryInfo query);
   int process(OCG_Duel duel);
   std::vector<std::vector<uint8_t>> getMessages(OCG_Duel duel);
 };

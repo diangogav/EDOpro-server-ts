@@ -69,6 +69,7 @@ export class RoomMessageHandler {
 			]);
 
 			core.stdout.on("data", (data: string) => {
+				console.log("data:", data.toString())
 				const message = data.toString().trim();
 				const regex = /CMD:[A-Z]+(\|[a-zA-Z0-9]+)*\b/g;
 				const commands = message.match(regex);
@@ -101,22 +102,26 @@ export class RoomMessageHandler {
 							opponentExtraDeckSize: Number(params[3]),
 						});
 
+						console.log("playerGameMessage", playerGameMessage);
+						console.log("opponentGameMessage", opponentGameMessage);
+
 						this.context.clients[0].socket.write(playerGameMessage);
 						this.context.clients[1].socket.write(opponentGameMessage);
 						core.stdin.write("CMD:RECORD_DECKS\n");
 					}
 
 					if (cmd === "CMD:BUFFER") {
-						const location = Number(params[0]);
-						const team = Number(params[1]);
-						const bufferData = params.slice(2).map(Number);
+						const team = Number(params[0]);
+						const location = Number(params[1]);
+						const con = Number(params[2]);
+						const bufferData = params.slice(3).map(Number);
 						const buffer = Buffer.from(bufferData);
 						const message = UpdateDataClientMessage.create({
 							deckLocation: location,
-							team,
+							con,
 							buffer,
 						});
-
+						console.log("message", message);
 						this.context.clients[team].socket.write(message);
 					}
 
@@ -128,6 +133,7 @@ export class RoomMessageHandler {
 						const team = Number(params[0]);
 						const data = Buffer.from(params.slice(1).map(Number));
 						const message = DrawClientMessage.create({ buffer: data });
+						console.log("message", message);
 						this.context.clients[team].socket.write(message);
 					}
 				});

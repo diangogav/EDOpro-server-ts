@@ -3,22 +3,23 @@ import { decimalToBytesBuffer } from "../../../../utils";
 export class UpdateDataClientMessage {
 	static create({
 		deckLocation,
-		team,
+		con,
 		buffer,
 	}: {
 		deckLocation: number;
-		team: number;
+		con: number;
 		buffer: Buffer;
 	}): Buffer {
-		const header = Buffer.from([0x08, 0x00, 0x01]);
+		const header = Buffer.from([0x01]);
 		const type = Buffer.from([0x06]);
-
-		return Buffer.concat([
-			header,
+		const data = Buffer.concat([
 			type,
-			decimalToBytesBuffer(team, 1),
+			decimalToBytesBuffer(con, 1),
 			decimalToBytesBuffer(deckLocation, 1),
 			buffer,
 		]);
+		const size = decimalToBytesBuffer(1 + data.length, 2);
+
+		return Buffer.concat([size, header, data]);
 	}
 }

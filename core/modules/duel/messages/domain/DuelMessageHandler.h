@@ -4,6 +4,8 @@
 #include <iostream>
 #include <vector>
 #include "assert.h"
+#include "../../../shared/DuelStages.h"
+
 class DuelMessageHandler {
 public:
   DuelMessageHandler(uint16_t isTeam1GoingFirst);

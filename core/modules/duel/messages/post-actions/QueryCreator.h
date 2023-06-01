@@ -9,7 +9,7 @@
 
 class QueryCreator {
 public:
-  std::vector<QueryRequest> run(std::vector<uint8_t>& message);
+  std::vector<QueryRequest> run(const std::vector<uint8_t>& message);
 };
 
 #endif

@@ -103,16 +103,10 @@ uint32_t OCGRepository::duelQueryCount(OCG_Duel duel, uint8_t team, uint32_t loc
   return OCG_DuelQueryCount(duel, team, location);
 }
 
-std::vector<uint8_t> OCGRepository::duelQueryLocation(OCG_Duel duel, uint8_t team)
+std::vector<uint8_t> OCGRepository::duelQueryLocation(OCG_Duel duel, OCG_QueryInfo query)
 {
-  OCG_QueryInfo queryInfo = {
-      0x381FFF,
-      team,
-      0x40,
-      0U,
-      0U};
   uint32_t length = 0U;
-  auto *pointer = OCG_DuelQueryLocation(duel, &length, queryInfo);
+  auto *pointer = OCG_DuelQueryLocation(duel, &length, query);
   std::vector<uint8_t> buffer(static_cast<std::vector<uint8_t>::size_type>(length));
   std::memcpy(buffer.data(), pointer, static_cast<std::size_t>(length));
   return buffer;

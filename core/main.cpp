@@ -3,6 +3,9 @@
 #include "./modules/shared/CommandLineArrayParser.h"
 #include "./modules/duel/application/DuelProcessor.h"
 #include "./modules/duel/messages/domain/DuelMessageHandler.h"
+#include "./modules/duel/messages/application/BufferMessageSender.h"
+#include "./modules/duel/messages/application/QueryRequestProcessor.h"
+#include "./modules/duel/messages/post-actions/QueryCreator.h"
 
 #include <iostream>
 #include <string>
@@ -68,29 +71,18 @@ int main(int argc, char *argv[])
       // Realizar el procesamiento necesario con la instrucción recibida
       if (instruction == "CMD:RECORD_DECKS")
       {
-        std::vector<uint8_t> buffer = repository.duelQueryLocation(duel, 0);
+        OCG_QueryInfo query = {
+            0x381FFF,
+            0,
+            0x40,
+            0U,
+            0U};
+        std::vector<uint8_t> buffer = repository.duelQueryLocation(duel, query);
 
-        std::string payload = "CMD:BUFFER|";
-        payload += std::to_string(64) + "|";
-        payload += std::to_string(0) + "|";
+        BufferMessageSender sender;
 
-        for (const auto &element : buffer)
-        {
-          payload += std::to_string(static_cast<int>(element)) + "|";
-        }
-
-        std::cout << payload << std::endl;
-
-        std::string opponentPayload = "CMD:BUFFER|";
-        opponentPayload += std::to_string(64) + "|";
-        opponentPayload += std::to_string(1) + "|";
-
-        for (const auto &element : buffer)
-        {
-          opponentPayload += std::to_string(static_cast<int>(element)) + "|";
-        }
-
-        std::cout << opponentPayload << std::endl;
+        sender.send(0, 64, 0, buffer);
+        sender.send(1, 64, 1, buffer);
 
         std::cout << "CMD:DUEL" << std::endl;
       }
@@ -98,14 +90,20 @@ int main(int argc, char *argv[])
       if (instruction == "CMD:PROCESS")
       {
         DuelProcessor processor(repository);
-        int status = processor.run(duel);
-        std::vector<std::vector<uint8_t>> messages = repository.getMessages(duel);
-
         DuelMessageHandler duelMessageHandler(isTeam1GoingFirst);
+        QueryRequestProcessor queryProcessor(repository, isTeam1GoingFirst);
+        QueryCreator queryCreator;
 
-        for (const auto &message : messages)
+        for (;;)
         {
-          duelMessageHandler.handle(message);
+          int status = processor.run(duel);
+          std::vector<std::vector<uint8_t>> messages = repository.getMessages(duel);
+
+          for (const auto &message : messages)
+          {
+            duelMessageHandler.handle(message);
+            queryProcessor.run(queryCreator.run(message), duel);
+          }
         }
       }
     }
