@@ -7,6 +7,7 @@
 #include "../../../shared/Read.h"
 #include "../../../shared/QueryRequest.h"
 #include "../../../shared/DuelStages.h"
+#include "../../../shared/ZonesRefresher.h"
 
 class QueryCreator {
 public:

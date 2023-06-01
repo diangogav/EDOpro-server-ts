@@ -7,18 +7,29 @@ DuelMessageHandler::DuelMessageHandler(uint16_t isTeam1GoingFirst) : isTeam1Goin
 void DuelMessageHandler::handle(std::vector<uint8_t> message)
 {
   uint8_t messageType = message[0U];
+    DuelMessageSender messageSender;
   if (messageType == MSG_DRAW)
   {
-    DuelMessageSender sender;
     DrawCardHandler handler;
     uint8_t teamA = this->calculateTeam(0U);
     uint8_t teamB = this->calculateTeam(1U);
-    sender.send(teamA, handler.handle(teamA, message));
-    sender.send(teamB, handler.handle(teamB, message));
+    messageSender.send(teamA, handler.handle(teamA, message));
+    messageSender.send(teamB, handler.handle(teamB, message));
   }
-  if(messageType == MSG_NEW_TURN) {
+  if (messageType == MSG_NEW_TURN)
+  {
     BroadcastMessageSender sender;
     sender.send(message);
+  }
+  if (messageType == MSG_NEW_PHASE)
+  {
+    BroadcastMessageSender sender;
+    sender.send(message);
+  }
+  if(messageType == MSG_HINT)
+  {
+    uint8_t team = message[2U];
+    messageSender.send(team, message);
   }
 }
 

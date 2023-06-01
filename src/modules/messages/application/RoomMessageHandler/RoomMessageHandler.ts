@@ -3,6 +3,7 @@ import { spawn } from "child_process";
 import { Client } from "../../../client/domain/Client";
 import { Room } from "../../../room/domain/Room";
 import { Commands } from "../../domain/Commands";
+import { BroadcastClientMessage } from "../../server-to-client/game-messages/BroadcastClientMessage";
 import { DrawClientMessage } from "../../server-to-client/game-messages/DrawClientMessage";
 import { StartDuelClientMessage } from "../../server-to-client/game-messages/StartDuelClientMessage";
 import { UpdateDataClientMessage } from "../../server-to-client/game-messages/UpdateDataClientMessage";
@@ -12,7 +13,6 @@ import { ReadyCommandStrategy } from "./Strategies/ReadyCommandStrategy";
 import { RpsChoiceCommandStrategy } from "./Strategies/RpsChoiceCommandStrategy";
 import { TryStartCommandStrategy } from "./Strategies/TryStartCommandStrategy";
 import { UpdateDeckCommandStrategy } from "./Strategies/UpdateDeckCommandStrategy";
-import { BroadcastClientMessage } from "../../server-to-client/game-messages/BroadcastClientMessage";
 
 export class RoomMessageHandler {
 	private readonly context: RoomMessageHandlerContext;
@@ -70,7 +70,6 @@ export class RoomMessageHandler {
 			]);
 
 			core.stdout.on("data", (data: string) => {
-				console.log("data", data.toString());
 				const message = data.toString().trim();
 				const regex = /CMD:[A-Z]+(\|[a-zA-Z0-9]+)*\b/g;
 				const commands = message.match(regex);
@@ -134,7 +133,7 @@ export class RoomMessageHandler {
 						const team = Number(params[0]);
 						const data = Buffer.from(params.slice(1).map(Number));
 						const message = DrawClientMessage.create({ buffer: data });
-						console.log("message", message);
+						console.log("message!", message);
 						this.context.clients[team].socket.write(message);
 					}
 

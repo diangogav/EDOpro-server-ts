@@ -6,6 +6,7 @@
 #include "../../../shared/QueryRequest.h"
 #include "../../../shared/DuelStages.h"
 #include "../../../shared/DuelLocations.h"
+#include "../../../shared/ZonesRefresher.h"
 
 class PreActionQueryCreator {
 public:

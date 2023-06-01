@@ -13,5 +13,12 @@ std::vector<QueryRequest> QueryCreator::run(const std::vector<uint8_t> &message)
     queryRequests.emplace_back(QueryLocationRequest{player, 0x02, 0x3781FFF});
   }
 
+  if(messageType == MSG_NEW_PHASE)
+  {
+    ZonesRefresher::refreshAllMZones(queryRequests);
+    ZonesRefresher::refreshAllSZones(queryRequests);
+    ZonesRefresher::refreshAllHands(queryRequests);
+  }
+
   return queryRequests;
 }

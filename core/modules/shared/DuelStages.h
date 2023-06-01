@@ -1,7 +1,7 @@
 #ifndef DUEL_STAGES
 #define DUEL_STAGES
 // #define MSG_RETRY 1
-// #define MSG_HINT 2
+#define MSG_HINT 2
 // #define MSG_WAITING 3
 // #define MSG_START 4
 // #define MSG_WIN 5
@@ -35,7 +35,7 @@
 // #define MSG_DECK_TOP 38
 // #define MSG_SHUFFLE_EXTRA 39
 #define MSG_NEW_TURN 40
-// #define MSG_NEW_PHASE 41
+#define MSG_NEW_PHASE 41
 // #define MSG_CONFIRM_EXTRATOP 42
 // #define MSG_MOVE 50
 // #define MSG_POS_CHANGE 53
