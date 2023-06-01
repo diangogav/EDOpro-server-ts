@@ -1,6 +1,7 @@
 #include "DuelMessageHandler.h"
 #include "../application/DrawCardHandler.h"
 #include "../application/DuelMessageSender.h"
+#include "../application/BroadcastMessageSender.h"
 
 DuelMessageHandler::DuelMessageHandler(uint16_t isTeam1GoingFirst) : isTeam1GoingFirst(isTeam1GoingFirst) {}
 void DuelMessageHandler::handle(std::vector<uint8_t> message)
@@ -16,7 +17,8 @@ void DuelMessageHandler::handle(std::vector<uint8_t> message)
     sender.send(teamB, handler.handle(teamB, message));
   }
   if(messageType == MSG_NEW_TURN) {
-    
+    BroadcastMessageSender sender;
+    sender.send(message);
   }
 }
 

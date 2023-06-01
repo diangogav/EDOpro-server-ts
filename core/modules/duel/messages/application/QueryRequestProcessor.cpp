@@ -22,6 +22,16 @@ void QueryRequestProcessor::run(const std::vector<QueryRequest>& queryRequests, 
 
       uint8_t team = this->calculateTeam(queryLocationRequest.con);
       const auto buffer = repository.duelQueryLocation(duel, query);
+
+      if(queryLocationRequest.loc == LOCATION_DECK) {
+        continue;
+      }
+
+      if(queryLocationRequest.loc == LOCATION_EXTRA) {
+        bufferMessageSender.send(team, queryLocationRequest.loc, queryLocationRequest.con, buffer);
+        continue;
+      }
+
       const auto queries = deserializer.deserialize(buffer);
       const auto playerBuffer = serializer.serialize(queries, false);
       const auto strippedBuffer = serializer.serialize(queries, true);

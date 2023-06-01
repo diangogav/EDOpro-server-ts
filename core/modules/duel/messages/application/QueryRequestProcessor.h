@@ -4,6 +4,7 @@
 #include "vector"
 #include "assert.h"
 #include "../../../shared/QueryRequest.h"
+#include "../../../shared/DuelLocations.h"
 #include "../../../../ocgapi_types.h"
 #include "../../infrastructure/OCGRepository.h"
 #include "../domain/LocationQueryDeserializer.h"

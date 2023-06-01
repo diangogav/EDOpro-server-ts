@@ -12,6 +12,7 @@ import { ReadyCommandStrategy } from "./Strategies/ReadyCommandStrategy";
 import { RpsChoiceCommandStrategy } from "./Strategies/RpsChoiceCommandStrategy";
 import { TryStartCommandStrategy } from "./Strategies/TryStartCommandStrategy";
 import { UpdateDeckCommandStrategy } from "./Strategies/UpdateDeckCommandStrategy";
+import { BroadcastClientMessage } from "../../server-to-client/game-messages/BroadcastClientMessage";
 
 export class RoomMessageHandler {
 	private readonly context: RoomMessageHandlerContext;
@@ -69,7 +70,7 @@ export class RoomMessageHandler {
 			]);
 
 			core.stdout.on("data", (data: string) => {
-				console.log("data:", data.toString())
+				console.log("data", data.toString());
 				const message = data.toString().trim();
 				const regex = /CMD:[A-Z]+(\|[a-zA-Z0-9]+)*\b/g;
 				const commands = message.match(regex);
@@ -135,6 +136,15 @@ export class RoomMessageHandler {
 						const message = DrawClientMessage.create({ buffer: data });
 						console.log("message", message);
 						this.context.clients[team].socket.write(message);
+					}
+
+					if (cmd === "CMD:BROADCAST") {
+						const data = Buffer.from(params.slice(0).map(Number));
+						const message = BroadcastClientMessage.create({ buffer: data });
+						this.context.clients.forEach((client) => {
+							console.log("broadcast:", message);
+							client.socket.write(message);
+						});
 					}
 				});
 			});

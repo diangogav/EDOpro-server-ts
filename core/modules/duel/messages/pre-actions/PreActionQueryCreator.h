@@ -1,14 +1,13 @@
-#ifndef QUERY_CREATOR
-#define QUERY_CREATOR
+#ifndef PRE_ACTION_QUERY_CREATOR
+#define PRE_ACTION_QUERY_CREATOR
 
-#include "vector"
+#include <vector>
 #include "iostream"
-#include <variant>
-#include "../../../shared/Read.h"
 #include "../../../shared/QueryRequest.h"
 #include "../../../shared/DuelStages.h"
+#include "../../../shared/DuelLocations.h"
 
-class QueryCreator {
+class PreActionQueryCreator {
 public:
   std::vector<QueryRequest> run(const std::vector<uint8_t>& message);
 };

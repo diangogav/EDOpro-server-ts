@@ -6,6 +6,7 @@
 #include "./modules/duel/messages/application/BufferMessageSender.h"
 #include "./modules/duel/messages/application/QueryRequestProcessor.h"
 #include "./modules/duel/messages/post-actions/QueryCreator.h"
+#include "./modules/duel/messages/pre-actions/PreActionQueryCreator.h"
 
 #include <iostream>
 #include <string>
@@ -92,6 +93,7 @@ int main(int argc, char *argv[])
         DuelProcessor processor(repository);
         DuelMessageHandler duelMessageHandler(isTeam1GoingFirst);
         QueryRequestProcessor queryProcessor(repository, isTeam1GoingFirst);
+        PreActionQueryCreator preActionQueryCreator;
         QueryCreator queryCreator;
 
         for (;;)
@@ -101,6 +103,11 @@ int main(int argc, char *argv[])
 
           for (const auto &message : messages)
           {
+            uint8_t messageType = message[0U];
+            // printf("===============================message============================\n");
+            // printf("%x", messageType);
+            // printf("\n");
+            queryProcessor.run(preActionQueryCreator.run(message), duel);
             duelMessageHandler.handle(message);
             queryProcessor.run(queryCreator.run(message), duel);
           }
