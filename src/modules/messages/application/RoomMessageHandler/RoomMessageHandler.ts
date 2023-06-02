@@ -4,7 +4,7 @@ import { Client } from "../../../client/domain/Client";
 import { Room } from "../../../room/domain/Room";
 import { Commands } from "../../domain/Commands";
 import { BroadcastClientMessage } from "../../server-to-client/game-messages/BroadcastClientMessage";
-import { DrawClientMessage } from "../../server-to-client/game-messages/DrawClientMessage";
+import { RawClientMessage } from "../../server-to-client/game-messages/RawClientMessage";
 import { StartDuelClientMessage } from "../../server-to-client/game-messages/StartDuelClientMessage";
 import { UpdateDataClientMessage } from "../../server-to-client/game-messages/UpdateDataClientMessage";
 import { RoomMessageHandlerContext } from "./RoomMessageHandlerContext";
@@ -13,6 +13,7 @@ import { ReadyCommandStrategy } from "./Strategies/ReadyCommandStrategy";
 import { RpsChoiceCommandStrategy } from "./Strategies/RpsChoiceCommandStrategy";
 import { TryStartCommandStrategy } from "./Strategies/TryStartCommandStrategy";
 import { UpdateDeckCommandStrategy } from "./Strategies/UpdateDeckCommandStrategy";
+import { WaitingClientMessage } from "../../server-to-client/game-messages/WaitingClientMessage";
 
 export class RoomMessageHandler {
 	private readonly context: RoomMessageHandlerContext;
@@ -69,6 +70,7 @@ export class RoomMessageHandler {
 				JSON.stringify(this.context.room.users[1].deck?.side ?? []),
 			]);
 
+			let count = 0;
 			core.stdout.on("data", (data: string) => {
 				const message = data.toString().trim();
 				const regex = /CMD:[A-Z]+(\|[a-zA-Z0-9]+)*\b/g;
@@ -79,6 +81,7 @@ export class RoomMessageHandler {
 				}
 
 				commands.forEach((command) => {
+					count++;
 					const commandParts = command.split("|");
 					const cmd = commandParts[0];
 					const params = commandParts.slice(1);
@@ -102,8 +105,8 @@ export class RoomMessageHandler {
 							opponentExtraDeckSize: Number(params[3]),
 						});
 
-						console.log("playerGameMessage", playerGameMessage);
-						console.log("opponentGameMessage", opponentGameMessage);
+						console.log(`playerGameMessage ${count}`, playerGameMessage);
+						console.log(`opponentGameMessage ${count}`, opponentGameMessage);
 
 						this.context.clients[0].socket.write(playerGameMessage);
 						this.context.clients[1].socket.write(opponentGameMessage);
@@ -121,7 +124,7 @@ export class RoomMessageHandler {
 							con,
 							buffer,
 						});
-						console.log("message", message);
+						console.log(`message ${count}`, message);
 						this.context.clients[team].socket.write(message);
 					}
 
@@ -132,8 +135,8 @@ export class RoomMessageHandler {
 					if (cmd === "CMD:MESSAGE") {
 						const team = Number(params[0]);
 						const data = Buffer.from(params.slice(1).map(Number));
-						const message = DrawClientMessage.create({ buffer: data });
-						console.log("message!", message);
+						const message = RawClientMessage.create({ buffer: data });
+						console.log(`message! ${count}`, message);
 						this.context.clients[team].socket.write(message);
 					}
 
@@ -141,8 +144,19 @@ export class RoomMessageHandler {
 						const data = Buffer.from(params.slice(0).map(Number));
 						const message = BroadcastClientMessage.create({ buffer: data });
 						this.context.clients.forEach((client) => {
-							console.log("broadcast:", message);
+							console.log(`broadcast: ${count}`, message);
 							client.socket.write(message);
+						});
+					}
+
+					if (cmd === "CMD:WAITING") {
+						const nonWaitingPlayer = Number(params[0]);
+						const message = WaitingClientMessage.create();
+						this.context.clients.forEach((client) => {
+							if (client.position !== nonWaitingPlayer) {
+								console.log(`waiting: ${count}`, message);
+								client.socket.write(message);
+							}
 						});
 					}
 				});

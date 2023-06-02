@@ -2,12 +2,13 @@
 #include "../application/DrawCardHandler.h"
 #include "../application/DuelMessageSender.h"
 #include "../application/BroadcastMessageSender.h"
+#include "../application/WaitingMessageSender.h"
 
 DuelMessageHandler::DuelMessageHandler(uint16_t isTeam1GoingFirst) : isTeam1GoingFirst(isTeam1GoingFirst) {}
 void DuelMessageHandler::handle(std::vector<uint8_t> message)
 {
   uint8_t messageType = message[0U];
-    DuelMessageSender messageSender;
+  DuelMessageSender messageSender;
   if (messageType == MSG_DRAW)
   {
     DrawCardHandler handler;
@@ -26,10 +27,17 @@ void DuelMessageHandler::handle(std::vector<uint8_t> message)
     BroadcastMessageSender sender;
     sender.send(message);
   }
-  if(messageType == MSG_HINT)
+  if (messageType == MSG_HINT)
   {
     uint8_t team = message[2U];
+    messageSender.send(calculateTeam(team), message);
+  }
+  if (messageType == MSG_SELECT_CHAIN)
+  {
+    WaitingMessageSender sender;
+    uint8_t team = calculateTeam(message[1U]);
     messageSender.send(team, message);
+    sender.send(team);
   }
 }
 
