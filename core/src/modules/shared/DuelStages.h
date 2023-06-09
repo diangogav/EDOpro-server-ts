@@ -9,7 +9,7 @@
 // #define MSG_UPDATE_CARD 7
 // #define MSG_REQUEST_DECK         8
 // #define MSG_SELECT_BATTLECMD 10
-// #define MSG_SELECT_IDLECMD 11
+#define MSG_SELECT_IDLECMD 11
 // #define MSG_SELECT_EFFECTYN 12
 // #define MSG_SELECT_YESNO 13
 // #define MSG_SELECT_OPTION 14

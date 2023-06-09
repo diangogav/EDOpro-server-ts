@@ -14,6 +14,7 @@ import { ReadyCommandStrategy } from "./Strategies/ReadyCommandStrategy";
 import { RpsChoiceCommandStrategy } from "./Strategies/RpsChoiceCommandStrategy";
 import { TryStartCommandStrategy } from "./Strategies/TryStartCommandStrategy";
 import { UpdateDeckCommandStrategy } from "./Strategies/UpdateDeckCommandStrategy";
+import { TimeLimitClientMessage } from "../../server-to-client/game-messages/TimeLimitClientMessage";
 
 export class RoomMessageHandler {
 	private readonly context: RoomMessageHandlerContext;
@@ -163,6 +164,16 @@ export class RoomMessageHandler {
 								console.log(`waiting: ${count}`, message);
 								client.socket.write(message);
 							}
+						});
+					}
+
+					if (cmd === "CMD:TIME") {
+						const team = Number(params[0]);
+						const timeLimit = Number(params[1]);
+						const message = TimeLimitClientMessage.create({ team, timeLimit });
+						this.context.clients.forEach((client) => {
+							console.log(`time: ${count}`, message);
+							client.socket.write(message);
 						});
 					}
 

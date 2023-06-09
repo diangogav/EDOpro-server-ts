@@ -7,6 +7,8 @@
 #include "./modules/duel/messages/application/QueryRequestProcessor.h"
 #include "./modules/duel/messages/post-actions/QueryCreator.h"
 #include "./modules/duel/messages/pre-actions/PreActionQueryCreator.h"
+#include "./modules/shared/DuelTurnTimer.h"
+#include "./modules/duel/application/PostActions.h"
 
 #include <iostream>
 #include <string>
@@ -74,11 +76,15 @@ int main(int argc, char *argv[])
       playerMainDeckParser.parse(),
       opponentMainDeckParser.parse());
 
+  DuelTurnTimer &timer = DuelTurnTimer::getInstance();
+  timer.resetTimers(timeLimit);
+
   DuelProcessor processor(repository);
   DuelMessageHandler duelMessageHandler(isTeam1GoingFirst);
   QueryRequestProcessor queryProcessor(repository, isTeam1GoingFirst);
   PreActionQueryCreator preActionQueryCreator;
   QueryCreator queryCreator;
+  PostActions postActions(timeLimit, isTeam1GoingFirst);
 
   std::string message;
   while (true)
@@ -166,6 +172,7 @@ int main(int argc, char *argv[])
             queryProcessor.run(preActionQueryCreator.run(message), duel);
             duelMessageHandler.handle(message);
             queryProcessor.run(queryCreator.run(message), duel);
+            postActions.run(message);
           }
           if (status != 2)
           {
