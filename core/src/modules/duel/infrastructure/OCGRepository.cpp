@@ -66,6 +66,12 @@ void OCGRepository::loadFunctions()
   {
     throw std::runtime_error("Failed to load OCG_DuelGetMessage function");
   }
+
+  OCG_DuelSetResponse = reinterpret_cast<OCG_DuelSetResponse_t>(dlsym(libhandle, "OCG_DuelSetResponse"));
+  if (!OCG_DuelSetResponse)
+  {
+    throw std::runtime_error("Failed to load OCG_DuelSetResponse function");
+  }
 };
 
 OCGRepository::OCGRepository()
@@ -147,4 +153,9 @@ std::vector<std::vector<uint8_t>> OCGRepository::parseMessages(const std::vector
     pos += l;
   }
   return msgs;
+}
+
+void OCGRepository::setResponse(OCG_Duel duel, std::vector<uint8_t> buffer)
+{
+  OCG_DuelSetResponse(duel, buffer.data(), buffer.size());
 }

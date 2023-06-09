@@ -14,6 +14,21 @@
 #include <iomanip>
 #include <regex>
 
+std::vector<uint8_t> convertToUInt8(const std::vector<std::string> &vectorStrings)
+{
+  std::vector<uint8_t> vectorBytes;
+  vectorBytes.reserve(vectorStrings.size());
+
+  for (const std::string &hexString : vectorStrings)
+  {
+    int intValue = std::stoi(hexString, nullptr, 16);
+    uint8_t byteValue = static_cast<uint8_t>(intValue);
+    vectorBytes.push_back(byteValue);
+  }
+
+  return vectorBytes;
+}
+
 // Función para separar una cadena en substrings dado un delimitador
 std::vector<std::string> split(const std::string &str, char delimiter)
 {
@@ -58,6 +73,12 @@ int main(int argc, char *argv[])
       playerMainDeckParser.parse(),
       opponentMainDeckParser.parse());
 
+  DuelProcessor processor(repository);
+  DuelMessageHandler duelMessageHandler(isTeam1GoingFirst);
+  QueryRequestProcessor queryProcessor(repository, isTeam1GoingFirst);
+  PreActionQueryCreator preActionQueryCreator;
+  QueryCreator queryCreator;
+
   std::string message;
   while (true)
   {
@@ -93,6 +114,16 @@ int main(int argc, char *argv[])
       std::cout << "Instrucción recibida!!!!: " << cmd << std::endl;
 
       // Realizar el procesamiento necesario con la instrucción recibida
+
+      if (cmd == "RESPONSE")
+      {
+        uint8_t team = std::atoi(params[0].c_str());
+        std::vector<std::string> data(params.begin() + 1, params.end());
+        std::vector<uint8_t> vectorBytes = convertToUInt8(data);
+        repository.setResponse(duel, vectorBytes);
+        std::cout << "CMD:DUEL" << std::endl;
+      }
+
       if (cmd == "DECKS")
       {
         OCG_QueryInfo query = {
@@ -113,12 +144,6 @@ int main(int argc, char *argv[])
 
       if (cmd == "PROCESS")
       {
-        DuelProcessor processor(repository);
-        DuelMessageHandler duelMessageHandler(isTeam1GoingFirst);
-        QueryRequestProcessor queryProcessor(repository, isTeam1GoingFirst);
-        PreActionQueryCreator preActionQueryCreator;
-        QueryCreator queryCreator;
-
         for (;;)
         {
           int status = processor.run(duel);
@@ -127,12 +152,23 @@ int main(int argc, char *argv[])
           for (const auto &message : messages)
           {
             uint8_t messageType = message[0U];
+
+            if (messageType != 1)
+            {
+              std::string payload = "CMD:LOG|";
+              payload += std::to_string(messageType) + "|";
+              std::cout << payload << std::endl;
+            }
             // printf("===============================message============================\n");
             // printf("%x", messageType);
             // printf("\n");
             queryProcessor.run(preActionQueryCreator.run(message), duel);
             duelMessageHandler.handle(message);
             queryProcessor.run(queryCreator.run(message), duel);
+          }
+          if (status != 2)
+          {
+            break;
           }
         }
       }

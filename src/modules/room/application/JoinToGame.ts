@@ -18,7 +18,7 @@ export class JoinToGame {
 		}
 		const position = room.users.length;
 		room.users.push({ pos: position, name: playerName });
-		room.addClient(new Client(this.socket, false, playerName, position));
+		room.addClient(new Client(this.socket, false, playerName, position, room.id));
 		this.socket.write(JoinGameClientMessage.createFromRoom(message, room));
 		room.clients.forEach((client) => {
 			client.socket.write(PlayerEnterClientMessage.create(playerName, position));

@@ -16,7 +16,7 @@ export class GameCreator {
 	run(message: CreateGameMessage, playerName: string): void {
 		const room = Room.createFromCreateGameMessage(message, playerName);
 
-		room.addClient(new Client(this.socket, true, playerName, 0));
+		room.addClient(new Client(this.socket, true, playerName, 0, room.id));
 		RoomList.addRoom(room);
 
 		this.socket.write(CreateGameClientMessage.create(room));

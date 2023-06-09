@@ -1,16 +1,15 @@
-import net from "net";
-
+import { YGOClientSocket } from "../../../../socket-server/HostServer";
 import { BufferReader } from "../../domain/BufferReader";
 import { Message } from "../../Message";
 import { MessageHandlerCommandStrategy } from "./MessageHandlerCommandStrategy";
 
 export class MessageHandlerContext {
-	readonly socket: net.Socket;
+	readonly socket: YGOClientSocket;
 	private previousMessage: Message;
 	private strategy?: MessageHandlerCommandStrategy;
 	private readonly bufferReader: BufferReader;
 
-	constructor(data: Buffer, socket: net.Socket) {
+	constructor(data: Buffer, socket: YGOClientSocket) {
 		this.socket = socket;
 		this.bufferReader = new BufferReader(data);
 	}
@@ -37,6 +36,10 @@ export class MessageHandlerContext {
 
 	isDataEmpty(): boolean {
 		return this.bufferReader.IsDataEmpty();
+	}
+
+	messageLength(): number {
+		return this.bufferReader.length;
 	}
 
 	execute(): void {

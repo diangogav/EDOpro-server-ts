@@ -1,4 +1,5 @@
 export enum Commands {
+	RESPONSE = 1,
 	UPDATE_DECK = 2,
 	RPS_CHOICE = 3,
 	TURN_CHOICE = 4,

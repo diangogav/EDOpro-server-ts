@@ -70,6 +70,8 @@ export class RoomMessageHandler {
 				JSON.stringify(this.context.room.users[1].deck?.side ?? []),
 			]);
 
+			this.context.room.setDuel(core);
+
 			let count = 0;
 			core.stdout.on("data", (data: string) => {
 				const message = data.toString().trim();
@@ -158,6 +160,10 @@ export class RoomMessageHandler {
 								client.socket.write(message);
 							}
 						});
+					}
+
+					if (cmd === "CMD:LOG") {
+						console.log("command", params);
 					}
 				});
 			});

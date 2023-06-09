@@ -1,3 +1,5 @@
+import { ChildProcessWithoutNullStreams } from "child_process";
+
 import { Client } from "../../client/domain/Client";
 import { Deck } from "../../deck/domain/Deck";
 import { RoomMessageHandler } from "../../messages/application/RoomMessageHandler/RoomMessageHandler";
@@ -34,6 +36,7 @@ interface RoomAttr {
 	handshake: number;
 	password: string;
 	users: Array<{ pos: number; name: string; deck?: Deck }>;
+	duel?: ChildProcessWithoutNullStreams;
 }
 
 export class Room {
@@ -68,6 +71,7 @@ export class Room {
 	public readonly password: string;
 	public readonly users: Array<{ pos: number; name: string; deck?: Deck }>;
 	public readonly clients: Client[] = [];
+	private _duel?: ChildProcessWithoutNullStreams;
 
 	private constructor(attr: RoomAttr) {
 		this.id = attr.id;
@@ -100,6 +104,7 @@ export class Room {
 		this.duelRule = attr.duelRule;
 		this.handshake = attr.handshake;
 		this.password = attr.password;
+		this._duel = attr.duel;
 	}
 
 	static createFromCreateGameMessage(message: CreateGameMessage, playerName: string): Room {
@@ -156,6 +161,18 @@ export class Room {
 			return;
 		}
 		user.deck = deck;
+	}
+
+	setDuel(duel: ChildProcessWithoutNullStreams): void {
+		this._duel = duel;
+	}
+
+	get duel(): ChildProcessWithoutNullStreams | null {
+		if (!this._duel) {
+			return null;
+		}
+
+		return this._duel;
 	}
 
 	toPresentation(): { [key: string]: unknown } {

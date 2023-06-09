@@ -1,15 +1,15 @@
-import net from "net";
-
+import { YGOClientSocket } from "../../../../socket-server/HostServer";
 import { Commands } from "../../domain/Commands";
 import { MessageHandlerContext } from "./MessageHandlerContext";
 import { CreateGameCommandStrategy } from "./Strategies/CreateGameCommandStrategy";
 import { JoinGameCommandStrategy } from "./Strategies/JoinGameCommandStrategy";
 import { PlayerInfoCommandStrategy } from "./Strategies/PlayerInfoCommandStrategy";
+import { ResponseCommandStrategy } from './Strategies/ResponseCommandStrategy';
 
 export class MessageHandler {
 	private readonly context: MessageHandlerContext;
 
-	constructor(data: Buffer, socket: net.Socket) {
+	constructor(data: Buffer, socket: YGOClientSocket) {
 		this.context = new MessageHandlerContext(data, socket);
 	}
 
@@ -30,6 +30,10 @@ export class MessageHandler {
 
 		if (command === Commands.JOIN_GAME) {
 			this.context.setStrategy(new JoinGameCommandStrategy(this.context));
+		}
+
+		if (command === Commands.RESPONSE) {
+			this.context.setStrategy(new ResponseCommandStrategy(this.context));
 		}
 
 		this.context.execute();
