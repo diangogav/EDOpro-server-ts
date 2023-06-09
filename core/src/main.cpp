@@ -10,6 +10,7 @@
 #include "./modules/shared/DuelTurnTimer.h"
 #include "./modules/duel/application/PostActions.h"
 #include "./modules/duel/application/PreActions.h"
+#include "./modules/duel/messages/application/ResponseHandler.h"
 
 #include <iostream>
 #include <string>
@@ -87,6 +88,7 @@ int main(int argc, char *argv[])
   QueryCreator queryCreator;
   PostActions postActions(timeLimit, isTeam1GoingFirst);
   PreActions preActions(timeLimit, isTeam1GoingFirst);
+  ResponseHandler responseHandler(duel, repository, timeLimit);
 
   std::string message;
   while (true)
@@ -129,7 +131,7 @@ int main(int argc, char *argv[])
         uint8_t team = std::atoi(params[0].c_str());
         std::vector<std::string> data(params.begin() + 1, params.end());
         std::vector<uint8_t> vectorBytes = convertToUInt8(data);
-        repository.setResponse(duel, vectorBytes);
+        responseHandler.handle(team, vectorBytes);
         std::cout << "CMD:DUEL" << std::endl;
       }
 
