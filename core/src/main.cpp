@@ -49,11 +49,12 @@ int main(int argc, char *argv[])
   uint32_t drawCountPerTurn = atoi(argv[3]);
   uint64_t flags = atoi(argv[4]);
   uint16_t extraRules = atoi(argv[5]);
-  uint16_t isTeam1GoingFirst = atoi(argv[6]);
-  std::string playerMainDeckString = argv[7];
-  std::string playerSideDeckString = argv[8];
-  std::string opponentMainDeckString = argv[9];
-  std::string opponentSideDeckString = argv[10];
+  uint8_t isTeam1GoingFirst = atoi(argv[6]);
+  uint16_t timeLimit = atoi(argv[7]);
+  std::string playerMainDeckString = argv[8];
+  std::string playerSideDeckString = argv[9];
+  std::string opponentMainDeckString = argv[10];
+  std::string opponentSideDeckString = argv[11];
 
   CommandLineArrayParser playerMainDeckParser(playerMainDeckString);
   CommandLineArrayParser playerSideDeckParser(playerSideDeckString);

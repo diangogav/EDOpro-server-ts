@@ -64,6 +64,7 @@ export class RoomMessageHandler {
 				this.context.room.duelFlag.toString(),
 				this.context.room.extraRules.toString(),
 				Number(isTeam1GoingFirst).toString(),
+				this.context.room.timeLimit.toString(),
 				JSON.stringify(this.context.room.users[0].deck?.main ?? []),
 				JSON.stringify(this.context.room.users[0].deck?.side ?? []),
 				JSON.stringify(this.context.room.users[1].deck?.main ?? []),
