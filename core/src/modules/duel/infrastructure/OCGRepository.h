@@ -1,6 +1,6 @@
 #ifndef OCG_REPOSITORY
 #define OCG_REPOSITORY
-#include "../../../ocgapi_types.h"
+#include "../../shared/ocgapi_types.h"
 #include <vector>
 
 class OCGRepository
