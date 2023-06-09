@@ -7,13 +7,13 @@ import { BroadcastClientMessage } from "../../server-to-client/game-messages/Bro
 import { RawClientMessage } from "../../server-to-client/game-messages/RawClientMessage";
 import { StartDuelClientMessage } from "../../server-to-client/game-messages/StartDuelClientMessage";
 import { UpdateDataClientMessage } from "../../server-to-client/game-messages/UpdateDataClientMessage";
+import { WaitingClientMessage } from "../../server-to-client/game-messages/WaitingClientMessage";
 import { RoomMessageHandlerContext } from "./RoomMessageHandlerContext";
 import { NotReadyCommandStrategy } from "./Strategies/NotReadyCommandStrategy";
 import { ReadyCommandStrategy } from "./Strategies/ReadyCommandStrategy";
 import { RpsChoiceCommandStrategy } from "./Strategies/RpsChoiceCommandStrategy";
 import { TryStartCommandStrategy } from "./Strategies/TryStartCommandStrategy";
 import { UpdateDeckCommandStrategy } from "./Strategies/UpdateDeckCommandStrategy";
-import { WaitingClientMessage } from "../../server-to-client/game-messages/WaitingClientMessage";
 
 export class RoomMessageHandler {
 	private readonly context: RoomMessageHandlerContext;
@@ -57,19 +57,22 @@ export class RoomMessageHandler {
 
 			const isTeam1GoingFirst = (position === 0 && turn === 0) || (position === 1 && turn === 1);
 
-			const core = spawn("/home/diango/code/edo-pro-server-ts/out", [
-				this.context.room.startLp.toString(),
-				this.context.room.startHand.toString(),
-				this.context.room.drawCount.toString(),
-				this.context.room.duelFlag.toString(),
-				this.context.room.extraRules.toString(),
-				Number(isTeam1GoingFirst).toString(),
-				this.context.room.timeLimit.toString(),
-				JSON.stringify(this.context.room.users[0].deck?.main ?? []),
-				JSON.stringify(this.context.room.users[0].deck?.side ?? []),
-				JSON.stringify(this.context.room.users[1].deck?.main ?? []),
-				JSON.stringify(this.context.room.users[1].deck?.side ?? []),
-			]);
+			const core = spawn(
+				"/home/diango/code/edo-pro-server-ts/core/build/Debug/bin/CoreIntegrator",
+				[
+					this.context.room.startLp.toString(),
+					this.context.room.startHand.toString(),
+					this.context.room.drawCount.toString(),
+					this.context.room.duelFlag.toString(),
+					this.context.room.extraRules.toString(),
+					Number(isTeam1GoingFirst).toString(),
+					this.context.room.timeLimit.toString(),
+					JSON.stringify(this.context.room.users[0].deck?.main ?? []),
+					JSON.stringify(this.context.room.users[0].deck?.side ?? []),
+					JSON.stringify(this.context.room.users[1].deck?.main ?? []),
+					JSON.stringify(this.context.room.users[1].deck?.side ?? []),
+				]
+			);
 
 			this.context.room.setDuel(core);
 
