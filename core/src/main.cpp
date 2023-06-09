@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 #include <iomanip>
+#include <regex>
 
 // Función para separar una cadena en substrings dado un delimitador
 std::vector<std::string> split(const std::string &str, char delimiter)
@@ -61,16 +62,38 @@ int main(int argc, char *argv[])
   while (true)
   {
     std::getline(std::cin, message);
-    std::vector<std::string> instructions = split(message, '|');
     std::cout << "Instrucción recibida: " << message << std::endl;
+    std::regex regex("CMD:[A-Z]+(\\|[a-zA-Z0-9]+)*");
+    std::smatch matches;
 
-    // Procesar cada instrucción individualmente
-    for (const std::string &instruction : instructions)
+    std::vector<std::string> commands;
+    std::string::const_iterator searchStart(message.cbegin());
+
+    while (std::regex_search(searchStart, message.cend(), matches, regex))
     {
-      std::cout << "Instrucción recibida: " << instruction << std::endl;
+      std::string command = matches.str();
+      commands.push_back(command);
+      searchStart = matches.suffix().first;
+    }
+    // Procesar cada instrucción individualmente
+    for (const std::string &instruction : commands)
+    {
+      std::regex paramRegex("\\|([a-zA-Z0-9]+)");
+      std::sregex_iterator paramIter(instruction.begin(), instruction.end(), paramRegex);
+      std::sregex_iterator end;
+
+      std::vector<std::string> params;
+      for (; paramIter != end; ++paramIter)
+      {
+        params.push_back((*paramIter)[1]);
+      }
+
+      std::string cmd = instruction.substr(4, instruction.find_first_of("|") - 4);
+
+      std::cout << "Instrucción recibida!!!!: " << cmd << std::endl;
 
       // Realizar el procesamiento necesario con la instrucción recibida
-      if (instruction == "CMD:RECORD_DECKS")
+      if (cmd == "DECKS")
       {
         OCG_QueryInfo query = {
             0x381FFF,
@@ -88,7 +111,7 @@ int main(int argc, char *argv[])
         std::cout << "CMD:DUEL" << std::endl;
       }
 
-      if (instruction == "CMD:PROCESS")
+      if (cmd == "PROCESS")
       {
         DuelProcessor processor(repository);
         DuelMessageHandler duelMessageHandler(isTeam1GoingFirst);

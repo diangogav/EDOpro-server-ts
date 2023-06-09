@@ -110,7 +110,7 @@ export class RoomMessageHandler {
 
 						this.context.clients[0].socket.write(playerGameMessage);
 						this.context.clients[1].socket.write(opponentGameMessage);
-						core.stdin.write("CMD:RECORD_DECKS\n");
+						core.stdin.write("CMD:DECKS\n");
 					}
 
 					if (cmd === "CMD:BUFFER") {
