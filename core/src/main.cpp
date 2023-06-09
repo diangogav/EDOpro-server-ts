@@ -9,6 +9,7 @@
 #include "./modules/duel/messages/pre-actions/PreActionQueryCreator.h"
 #include "./modules/shared/DuelTurnTimer.h"
 #include "./modules/duel/application/PostActions.h"
+#include "./modules/duel/application/PreActions.h"
 
 #include <iostream>
 #include <string>
@@ -80,11 +81,12 @@ int main(int argc, char *argv[])
   timer.resetTimers(timeLimit);
 
   DuelProcessor processor(repository);
-  DuelMessageHandler duelMessageHandler(isTeam1GoingFirst);
+  DuelMessageHandler duelMessageHandler(isTeam1GoingFirst, timeLimit);
   QueryRequestProcessor queryProcessor(repository, isTeam1GoingFirst);
   PreActionQueryCreator preActionQueryCreator;
   QueryCreator queryCreator;
   PostActions postActions(timeLimit, isTeam1GoingFirst);
+  PreActions preActions(timeLimit, isTeam1GoingFirst);
 
   std::string message;
   while (true)
@@ -169,6 +171,7 @@ int main(int argc, char *argv[])
             // printf("===============================message============================\n");
             // printf("%x", messageType);
             // printf("\n");
+            preActions.run(message);
             queryProcessor.run(preActionQueryCreator.run(message), duel);
             duelMessageHandler.handle(message);
             queryProcessor.run(queryCreator.run(message), duel);

@@ -8,10 +8,11 @@
 
 class DuelMessageHandler {
 public:
-  DuelMessageHandler(uint16_t isTeam1GoingFirst);
+  DuelMessageHandler(uint8_t isTeam1GoingFirst, uint16_t timeLimitsInSeconds);
   void handle(std::vector<uint8_t> message);
 private:
   uint8_t isTeam1GoingFirst;
+  uint16_t timeLimitsInSeconds;
   uint8_t calculateTeam(uint8_t team);
 };
 

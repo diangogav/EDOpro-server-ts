@@ -3,8 +3,10 @@
 #include "../application/DuelMessageSender.h"
 #include "../application/BroadcastMessageSender.h"
 #include "../application/WaitingMessageSender.h"
+#include "../../../shared/DuelTurnTimer.h"
 
-DuelMessageHandler::DuelMessageHandler(uint16_t isTeam1GoingFirst) : isTeam1GoingFirst(isTeam1GoingFirst) {}
+DuelMessageHandler::DuelMessageHandler(uint8_t isTeam1GoingFirst, uint16_t timeLimitsInSeconds) : isTeam1GoingFirst(isTeam1GoingFirst), timeLimitsInSeconds(timeLimitsInSeconds) {}
+
 void DuelMessageHandler::handle(std::vector<uint8_t> message)
 {
   uint8_t messageType = message[0U];
@@ -19,6 +21,8 @@ void DuelMessageHandler::handle(std::vector<uint8_t> message)
   }
   if (messageType == MSG_NEW_TURN)
   {
+    DuelTurnTimer &timer = DuelTurnTimer::getInstance();
+    timer.resetTimers(timeLimitsInSeconds);
     BroadcastMessageSender sender;
     sender.send(message);
   }
