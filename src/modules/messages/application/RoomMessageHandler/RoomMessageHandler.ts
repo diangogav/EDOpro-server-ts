@@ -79,6 +79,7 @@ export class RoomMessageHandler {
 
 			let count = 0;
 			core.stdout.on("data", (data: string) => {
+				console.log("data", data.toString());
 				const message = data.toString().trim();
 				const regex = /CMD:[A-Z]+(\|[a-zA-Z0-9]+)*\b/g;
 				const commands = message.match(regex);
@@ -143,7 +144,7 @@ export class RoomMessageHandler {
 						const team = Number(params[0]);
 						const data = Buffer.from(params.slice(1).map(Number));
 						const message = RawClientMessage.create({ buffer: data });
-						console.log(`message! ${count}`, message);
+						console.log(`message! ${count}`, message.toString("hex"));
 						this.context.clients[team].socket.write(message);
 					}
 
@@ -173,7 +174,7 @@ export class RoomMessageHandler {
 						const message = TimeLimitClientMessage.create({ team, timeLimit });
 						this.context.clients.forEach((client) => {
 							console.log(`time: ${count}`, message);
-							client.socket.write(message);
+							// client.socket.write(message);
 						});
 					}
 
@@ -181,6 +182,10 @@ export class RoomMessageHandler {
 						console.log("command", params);
 					}
 				});
+			});
+
+			core.stderr.on("data", (data: string) => {
+				console.log("error:", data);
 			});
 		}
 

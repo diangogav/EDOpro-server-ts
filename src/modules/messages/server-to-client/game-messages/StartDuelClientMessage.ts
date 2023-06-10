@@ -16,11 +16,9 @@ export class StartDuelClientMessage {
 		opponentMainDeckSize: number;
 		opponentExtraDeckSize: number;
 	}): Buffer {
-		const header = Buffer.from([0x13, 0x00, 0x01]);
+		const header = Buffer.from([0x01]);
 		const type = Buffer.from([0x04]);
-
-		return Buffer.concat([
-			header,
+		const data = Buffer.concat([
 			type,
 			decimalToBytesBuffer(team, 1),
 			decimalToBytesBuffer(lp, 4),
@@ -30,5 +28,8 @@ export class StartDuelClientMessage {
 			decimalToBytesBuffer(opponentMainDeckSize, 2),
 			decimalToBytesBuffer(opponentExtraDeckSize, 2),
 		]);
+		const size = decimalToBytesBuffer(data.length + 1, 2);
+
+		return Buffer.concat([size, header, data]);
 	}
 }

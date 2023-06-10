@@ -12,10 +12,15 @@ int ScriptReader::handle(void *payload, void *duel, const char *name)
 
 int ScriptReader::read(void *duel, const char *name)
 {
+  printf("script name\n");
+  printf(name);
+  printf("\n");
   FileReader reader;
   std::string filePath = "/home/diango/code/edo-pro-server-ts/core/scripts/";
   filePath += name;
   std::vector<char> buffer = reader.read(filePath.c_str());
-  int result = repository.loadScript(duel, buffer.data(), buffer.size(), name);
-  return 0;
+  int loaded = repository.loadScript(duel, buffer.data(), buffer.size(), name);
+  printf("%d", loaded);
+  printf("\n");
+  return loaded;
 }

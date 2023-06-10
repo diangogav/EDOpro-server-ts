@@ -4,6 +4,7 @@
 #include "../../shared/DuelStages.h"
 #include "./DuelTimeRemainingCalculator.h"
 #include "../messages/application/TimeLimitMessageSender.h"
+#include "../../shared/Replier.h"
 
 #include <vector>
 #include <iostream>

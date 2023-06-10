@@ -43,6 +43,14 @@ void DuelMessageHandler::handle(std::vector<uint8_t> message)
     messageSender.send(team, message);
     sender.send(team);
   }
+  if (messageType == MSG_SELECT_IDLECMD)
+  {
+    uint8_t team = calculateTeam(message[1U]);
+    printf("Message Size\n");
+    printf("%d", message.size());
+    printf("\n");
+    messageSender.send(team, message);
+  }
 }
 
 uint8_t DuelMessageHandler::calculateTeam(uint8_t team)

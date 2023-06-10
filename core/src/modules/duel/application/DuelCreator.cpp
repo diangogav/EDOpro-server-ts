@@ -65,7 +65,7 @@ OCG_Duel DuelCreator::run(uint64_t flags, uint32_t startingLP, uint32_t starting
 
     FileReader reader;
     std::vector<char> constantsBuffer = reader.read("/home/diango/code/edo-pro-server-ts/core/scripts/constant.lua");
-    int constantsScriptLoadResult = repository.loadScript(duel, constantsBuffer.data(), constantsBuffer.size(), "constants.lua");
+    int constantsScriptLoadResult = repository.loadScript(duel, constantsBuffer.data(), constantsBuffer.size(), "constant.lua");
 
     std::vector<char> utilityBuffer = reader.read("/home/diango/code/edo-pro-server-ts/core/scripts/utility.lua");
     int utilityScriptLoadResult = repository.loadScript(duel, utilityBuffer.data(), utilityBuffer.size(), "utility.lua");

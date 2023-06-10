@@ -1,4 +1,5 @@
 #include "PostActions.h"
+#include "../messages/application/WaitingMessageSender.h"
 
 PostActions::PostActions(uint16_t timeLimitsInSeconds, uint8_t isTeam1GoingFirst) : timeLimitsInSeconds(timeLimitsInSeconds), isTeam1GoingFirst(isTeam1GoingFirst) {}
 
@@ -8,6 +9,9 @@ void PostActions::run(std::vector<uint8_t> message)
 
   if (DoesMessageRequireAnswer(messageType))
   {
+    WaitingMessageSender waitingMessageSender;
+    waitingMessageSender.send(Replier::getInstance().id);
+
     if (timeLimitsInSeconds != 0U)
     {
       uint8_t team = calculateTeam(message[1U]);
@@ -33,7 +37,7 @@ bool PostActions::DoesMessageRequireAnswer(uint8_t messageType)
   // case MSG_SELECT_TRIBUTE:
   // case MSG_SELECT_UNSELECT_CARD:
   // case MSG_SELECT_BATTLECMD:
-  // case MSG_SELECT_IDLECMD:
+  case MSG_SELECT_IDLECMD:
   // case MSG_SELECT_EFFECTYN:
   // case MSG_SELECT_YESNO:
   // case MSG_SELECT_OPTION:
