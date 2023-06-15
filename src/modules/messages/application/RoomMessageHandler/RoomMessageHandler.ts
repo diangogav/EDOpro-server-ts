@@ -113,8 +113,8 @@ export class RoomMessageHandler {
 							opponentExtraDeckSize: Number(params[3]),
 						});
 
-						console.log(`playerGameMessage ${count}`, playerGameMessage);
-						console.log(`opponentGameMessage ${count}`, opponentGameMessage);
+						console.log(`sending to client: ${count}`, playerGameMessage);
+						console.log(`sending to client:  ${count}`, opponentGameMessage);
 
 						this.context.clients[0].socket.write(playerGameMessage);
 						this.context.clients[1].socket.write(opponentGameMessage);
@@ -132,7 +132,7 @@ export class RoomMessageHandler {
 							con,
 							buffer,
 						});
-						console.log(`message ${count}`, message);
+						console.log(`sending to client: ${count}`, message);
 						this.context.clients[team].socket.write(message);
 					}
 
@@ -142,9 +142,11 @@ export class RoomMessageHandler {
 
 					if (cmd === "CMD:MESSAGE") {
 						const team = Number(params[0]);
-						const data = Buffer.from(params.slice(1).map(Number));
+						const type = Number(params[1]);
+						const data = Buffer.from(params.slice(1, type === 16 ? 17 : params.length).map(Number));
+
 						const message = RawClientMessage.create({ buffer: data });
-						console.log(`message! ${count}`, message.toString("hex"));
+						console.log(`sending to client: ${count}`, message);
 						this.context.clients[team].socket.write(message);
 					}
 
@@ -152,7 +154,7 @@ export class RoomMessageHandler {
 						const data = Buffer.from(params.slice(0).map(Number));
 						const message = BroadcastClientMessage.create({ buffer: data });
 						this.context.clients.forEach((client) => {
-							console.log(`broadcast: ${count}`, message);
+							console.log(`sending to client: ${count}`, message);
 							client.socket.write(message);
 						});
 					}
@@ -162,7 +164,7 @@ export class RoomMessageHandler {
 						const message = WaitingClientMessage.create();
 						this.context.clients.forEach((client) => {
 							if (client.position !== nonWaitingPlayer) {
-								console.log(`waiting: ${count}`, message);
+								console.log(`sending to client: ${count}`, message);
 								client.socket.write(message);
 							}
 						});
@@ -173,8 +175,8 @@ export class RoomMessageHandler {
 						const timeLimit = Number(params[1]);
 						const message = TimeLimitClientMessage.create({ team, timeLimit });
 						this.context.clients.forEach((client) => {
-							console.log(`time: ${count}`, message);
-							// client.socket.write(message);
+							console.log(`sending to client: ${count}`, message);
+							client.socket.write(message);
 						});
 					}
 
