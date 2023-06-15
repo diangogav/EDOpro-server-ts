@@ -117,7 +117,7 @@ export class Room {
 			team1: message.t0Count,
 			team2: message.t1Count,
 			bestOf: message.bestOf,
-			duelFlag: 4295820800,
+			duelFlag: 853504,
 			forbiddenTypes: message.forbidden,
 			extraRules: message.extraRules,
 			startLp: message.lp,
