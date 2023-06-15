@@ -7,13 +7,14 @@ import { BroadcastClientMessage } from "../../server-to-client/game-messages/Bro
 import { RawClientMessage } from "../../server-to-client/game-messages/RawClientMessage";
 import { StartDuelClientMessage } from "../../server-to-client/game-messages/StartDuelClientMessage";
 import { UpdateDataClientMessage } from "../../server-to-client/game-messages/UpdateDataClientMessage";
+import { WaitingClientMessage } from "../../server-to-client/game-messages/WaitingClientMessage";
 import { RoomMessageHandlerContext } from "./RoomMessageHandlerContext";
 import { NotReadyCommandStrategy } from "./Strategies/NotReadyCommandStrategy";
 import { ReadyCommandStrategy } from "./Strategies/ReadyCommandStrategy";
 import { RpsChoiceCommandStrategy } from "./Strategies/RpsChoiceCommandStrategy";
 import { TryStartCommandStrategy } from "./Strategies/TryStartCommandStrategy";
 import { UpdateDeckCommandStrategy } from "./Strategies/UpdateDeckCommandStrategy";
-import { WaitingClientMessage } from "../../server-to-client/game-messages/WaitingClientMessage";
+import { TimeLimitClientMessage } from "../../server-to-client/game-messages/TimeLimitClientMessage";
 
 export class RoomMessageHandler {
 	private readonly context: RoomMessageHandlerContext;
@@ -57,21 +58,28 @@ export class RoomMessageHandler {
 
 			const isTeam1GoingFirst = (position === 0 && turn === 0) || (position === 1 && turn === 1);
 
-			const core = spawn("/home/diango/code/edo-pro-server-ts/out", [
-				this.context.room.startLp.toString(),
-				this.context.room.startHand.toString(),
-				this.context.room.drawCount.toString(),
-				this.context.room.duelFlag.toString(),
-				this.context.room.extraRules.toString(),
-				Number(isTeam1GoingFirst).toString(),
-				JSON.stringify(this.context.room.users[0].deck?.main ?? []),
-				JSON.stringify(this.context.room.users[0].deck?.side ?? []),
-				JSON.stringify(this.context.room.users[1].deck?.main ?? []),
-				JSON.stringify(this.context.room.users[1].deck?.side ?? []),
-			]);
+			const core = spawn(
+				"/home/diango/code/edo-pro-server-ts/core/build/Debug/bin/CoreIntegrator",
+				[
+					this.context.room.startLp.toString(),
+					this.context.room.startHand.toString(),
+					this.context.room.drawCount.toString(),
+					this.context.room.duelFlag.toString(),
+					this.context.room.extraRules.toString(),
+					Number(isTeam1GoingFirst).toString(),
+					this.context.room.timeLimit.toString(),
+					JSON.stringify(this.context.room.users[0].deck?.main ?? []),
+					JSON.stringify(this.context.room.users[0].deck?.side ?? []),
+					JSON.stringify(this.context.room.users[1].deck?.main ?? []),
+					JSON.stringify(this.context.room.users[1].deck?.side ?? []),
+				]
+			);
+
+			this.context.room.setDuel(core);
 
 			let count = 0;
 			core.stdout.on("data", (data: string) => {
+				console.log("data", data.toString());
 				const message = data.toString().trim();
 				const regex = /CMD:[A-Z]+(\|[a-zA-Z0-9]+)*\b/g;
 				const commands = message.match(regex);
@@ -105,12 +113,12 @@ export class RoomMessageHandler {
 							opponentExtraDeckSize: Number(params[3]),
 						});
 
-						console.log(`playerGameMessage ${count}`, playerGameMessage);
-						console.log(`opponentGameMessage ${count}`, opponentGameMessage);
+						console.log(`sending to client: ${count}`, playerGameMessage);
+						console.log(`sending to client:  ${count}`, opponentGameMessage);
 
 						this.context.clients[0].socket.write(playerGameMessage);
 						this.context.clients[1].socket.write(opponentGameMessage);
-						core.stdin.write("CMD:RECORD_DECKS\n");
+						core.stdin.write("CMD:DECKS\n");
 					}
 
 					if (cmd === "CMD:BUFFER") {
@@ -124,7 +132,7 @@ export class RoomMessageHandler {
 							con,
 							buffer,
 						});
-						console.log(`message ${count}`, message);
+						console.log(`sending to client: ${count}`, message);
 						this.context.clients[team].socket.write(message);
 					}
 
@@ -134,9 +142,11 @@ export class RoomMessageHandler {
 
 					if (cmd === "CMD:MESSAGE") {
 						const team = Number(params[0]);
-						const data = Buffer.from(params.slice(1).map(Number));
+						const type = Number(params[1]);
+						const data = Buffer.from(params.slice(1, type === 16 ? 17 : params.length).map(Number));
+
 						const message = RawClientMessage.create({ buffer: data });
-						console.log(`message! ${count}`, message);
+						console.log(`sending to client: ${count}`, message);
 						this.context.clients[team].socket.write(message);
 					}
 
@@ -144,7 +154,7 @@ export class RoomMessageHandler {
 						const data = Buffer.from(params.slice(0).map(Number));
 						const message = BroadcastClientMessage.create({ buffer: data });
 						this.context.clients.forEach((client) => {
-							console.log(`broadcast: ${count}`, message);
+							console.log(`sending to client: ${count}`, message);
 							client.socket.write(message);
 						});
 					}
@@ -154,12 +164,30 @@ export class RoomMessageHandler {
 						const message = WaitingClientMessage.create();
 						this.context.clients.forEach((client) => {
 							if (client.position !== nonWaitingPlayer) {
-								console.log(`waiting: ${count}`, message);
+								console.log(`sending to client: ${count}`, message);
 								client.socket.write(message);
 							}
 						});
 					}
+
+					if (cmd === "CMD:TIME") {
+						const team = Number(params[0]);
+						const timeLimit = Number(params[1]);
+						const message = TimeLimitClientMessage.create({ team, timeLimit });
+						this.context.clients.forEach((client) => {
+							console.log(`sending to client: ${count}`, message);
+							client.socket.write(message);
+						});
+					}
+
+					if (cmd === "CMD:LOG") {
+						console.log("command", params);
+					}
 				});
+			});
+
+			core.stderr.on("data", (data: string) => {
+				console.log("error:", data);
 			});
 		}
 

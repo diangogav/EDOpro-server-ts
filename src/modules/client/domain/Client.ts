@@ -1,22 +1,29 @@
-import type net from "net";
-
+import { YGOClientSocket } from "../../../socket-server/HostServer";
 import { Choose } from "../../rock-paper-scissor/RockPaperScissor";
 
 export class Listener {}
 
 export class Client {
-	public readonly socket: net.Socket;
+	public readonly socket: YGOClientSocket;
 	public readonly listener: Listener;
 	public readonly host: boolean;
 	public readonly name: string;
 	public readonly position: number;
+	public readonly roomId: number;
 	private _rpsChosen: Choose | null = null;
 
-	constructor(socket: net.Socket, host: boolean, name: string, position: number) {
+	constructor(
+		socket: YGOClientSocket,
+		host: boolean,
+		name: string,
+		position: number,
+		roomId: number
+	) {
 		this.socket = socket;
 		this.host = host;
 		this.name = name;
 		this.position = position;
+		this.roomId = roomId;
 	}
 
 	setRpsChosen(choise: Choose): void {
