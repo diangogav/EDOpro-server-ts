@@ -8,8 +8,8 @@ void PreActions::run(std::vector<uint8_t> message)
 
   if (messageType == MSG_NEW_TURN)
   {
-    DuelTurnTimer &timer = DuelTurnTimer::getInstance();
-    timer.resetTimers(timeLimitsInSeconds);
+    // DuelTurnTimer &timer = DuelTurnTimer::getInstance();
+    // timer.resetTimers(timeLimitsInSeconds);
   }
 
   if (messageType == MSG_HINT && message[1U] == 3U)
