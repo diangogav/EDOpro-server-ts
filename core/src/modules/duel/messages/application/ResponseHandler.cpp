@@ -18,7 +18,6 @@ void ResponseHandler::handle(uint8_t team, std::vector<uint8_t> message)
     auto delta = timer.expiry(team) - std::chrono::system_clock::now();
     timer.timeRemaining[team] = duration_cast<milliseconds>(ceil<seconds>(delta));
     timer.cancel(team);
-
-    repository.setResponse(duel, message);
   }
+  repository.setResponse(duel, message);
 }

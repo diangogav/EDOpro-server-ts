@@ -20,6 +20,7 @@ private:
   uint16_t timeLimitsInSeconds;
   uint8_t calculateTeam(uint8_t team);
   uint8_t isTeam1GoingFirst;
+  uint8_t getTeamMessageReceptor(const std::vector<uint8_t>& msg) noexcept;
 };
 
 #endif

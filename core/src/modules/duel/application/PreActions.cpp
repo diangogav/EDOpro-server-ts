@@ -6,6 +6,17 @@ void PreActions::run(std::vector<uint8_t> message)
 {
   uint8_t messageType = message[0U];
 
+  if (messageType == MSG_NEW_TURN)
+  {
+    DuelTurnTimer &timer = DuelTurnTimer::getInstance();
+    timer.resetTimers(timeLimitsInSeconds);
+  }
+
+  if (messageType == MSG_HINT && message[1U] == 3U)
+  {
+    //set Last hint
+  }
+
   if (DoesMessageRequireAnswer(messageType))
   {
     uint8_t team = this->calculateTeam(this->getMessageReceivingTeam(message));

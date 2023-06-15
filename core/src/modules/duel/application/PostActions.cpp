@@ -14,7 +14,7 @@ void PostActions::run(std::vector<uint8_t> message)
 
     if (timeLimitsInSeconds != 0U)
     {
-      uint8_t team = calculateTeam(message[1U]);
+      uint8_t team = calculateTeam(this->getTeamMessageReceptor(message));
       DuelTimeRemainingCalculator duelTimeRemainingCalculator;
       uint16_t ticks = duelTimeRemainingCalculator.calculate(team);
       TimeLimitMessageSender sender;
@@ -27,6 +27,21 @@ uint8_t PostActions::calculateTeam(uint8_t team)
 {
   assert(team <= 1U);
   return isTeam1GoingFirst ^ team;
+}
+
+uint8_t PostActions::getTeamMessageReceptor(const std::vector<uint8_t>& msg) noexcept
+{
+	switch(msg[0U])
+	{
+	case MSG_HINT:
+	{
+		return msg[2U];
+	}
+	default:
+	{
+		return msg[1U];
+	}
+	}
 }
 
 bool PostActions::DoesMessageRequireAnswer(uint8_t messageType)
