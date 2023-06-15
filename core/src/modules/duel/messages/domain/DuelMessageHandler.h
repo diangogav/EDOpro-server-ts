@@ -5,6 +5,7 @@
 #include <vector>
 #include "assert.h"
 #include "../../../shared/DuelStages.h"
+#include "../../../shared/MessageTargets.h"
 
 class DuelMessageHandler {
 public:
@@ -14,6 +15,8 @@ private:
   uint8_t isTeam1GoingFirst;
   uint16_t timeLimitsInSeconds;
   uint8_t calculateTeam(uint8_t team);
+  MessageTargets getMessageTarget(const std::vector<uint8_t>& msg) noexcept;
+  uint8_t getTeamMessageReceptor(const std::vector<uint8_t>& msg) noexcept;
 };
 
 #endif
