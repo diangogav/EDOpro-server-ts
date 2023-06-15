@@ -1,5 +1,11 @@
-#include "./modules/duel/infrastructure/OCGRepository.h"
 #include "./modules/duel/application/DuelCreator.h"
+#include "./modules/duel/application/DuelScriptsLoader.h"
+#include "./modules/duel/application/DuelDecksLoader.h"
+#include "./modules/duel/application/DuelStarter.h"
+#include "./modules/duel/application/DecksSetter.h"
+#include "./modules/card/infrastructure/CardSqliteRepository.h"
+
+#include "./modules/duel/infrastructure/OCGRepository.h"
 #include "./modules/shared/CommandLineArrayParser.h"
 #include "./modules/duel/application/DuelProcessor.h"
 #include "./modules/duel/messages/domain/DuelMessageHandler.h"
@@ -17,6 +23,17 @@
 #include <vector>
 #include <iomanip>
 #include <regex>
+#include <filesystem>
+namespace fs = std::filesystem;
+
+void printVectorAsHex(const std::vector<uint8_t> &vec)
+{
+  for (const auto &element : vec)
+  {
+    std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(element) << " ";
+  }
+  std::cout << std::dec << std::endl;
+}
 
 std::vector<uint8_t> convertToUInt8(const std::vector<std::string> &vectorStrings)
 {
@@ -33,7 +50,6 @@ std::vector<uint8_t> convertToUInt8(const std::vector<std::string> &vectorString
   return vectorBytes;
 }
 
-// Función para separar una cadena en substrings dado un delimitador
 std::vector<std::string> split(const std::string &str, char delimiter)
 {
   std::vector<std::string> tokens;
@@ -65,29 +81,52 @@ int main(int argc, char *argv[])
   CommandLineArrayParser opponentMainDeckParser(opponentMainDeckString);
   CommandLineArrayParser opponentSideDeckParser(opponentSideDeckString);
 
-  printf("extraRules: %u\n", extraRules);
+  CardSqliteRepository cardRepository{};
+  fs::path path = fs::current_path().string() + "/core/databases";
+  cardRepository.merge(path.string() + "/cards-rush.cdb");
+  cardRepository.merge(path.string() + "/cards-skills-unofficial.cdb");
+  cardRepository.merge(path.string() + "/cards-skills.cdb");
+  cardRepository.merge(path.string() + "/cards-unofficial-new.cdb");
+  cardRepository.merge(path.string() + "/cards-unofficial.cdb");
+  cardRepository.merge(path.string() + "/cards.cdb");
+  cardRepository.merge(path.string() + "/goat-entries.cdb");
+  cardRepository.merge(path.string() + "/prerelease-ac03-unofficial.cdb");
+  cardRepository.merge(path.string() + "/prerelease-ac03.cdb");
+  cardRepository.merge(path.string() + "/prerelease-agov.cdb");
+  cardRepository.merge(path.string() + "/prerelease-cards-rush.cdb");
+  cardRepository.merge(path.string() + "/prerelease-sd46.cdb");
+  cardRepository.merge(path.string() + "/prerelease-vjump-promos.cdb");
+  cardRepository.merge(path.string() + "/release-dp28.cdb");
+  cardRepository.merge(path.string() + "/release-dune.cdb");
 
   OCGRepository repository{};
   DuelCreator duelCreator{repository};
   OCG_Duel duel = duelCreator.run(
+      cardRepository,
       flags,
       startingLP,
       startingDrawCount,
       drawCountPerTurn,
-      extraRules,
-      playerMainDeckParser.parse(),
-      opponentMainDeckParser.parse());
+      extraRules);
 
-  DuelTurnTimer &timer = DuelTurnTimer::getInstance();
-  timer.resetTimers(timeLimit);
+  DuelScriptsLoader duelScriptsLoader{repository, duel};
+  duelScriptsLoader.load();
+
+  DuelDecksLoader duelDecksLoader{repository, duel};
+  duelDecksLoader.load(playerMainDeckParser.parse(), opponentMainDeckParser.parse());
+
+  DuelStarter duelStarter{repository, duel};
+  duelStarter.start();
+  // DuelTurnTimer &timer = DuelTurnTimer::getInstance();
+  // timer.resetTimers(timeLimit);
 
   DuelProcessor processor(repository);
   DuelMessageHandler duelMessageHandler(isTeam1GoingFirst, timeLimit);
-  QueryRequestProcessor queryProcessor(repository, isTeam1GoingFirst);
-  PreActionQueryCreator preActionQueryCreator;
-  QueryCreator queryCreator;
-  PostActions postActions(timeLimit, isTeam1GoingFirst);
   PreActions preActions(timeLimit, isTeam1GoingFirst);
+  // QueryRequestProcessor queryProcessor(repository, isTeam1GoingFirst);
+  // PreActionQueryCreator preActionQueryCreator;
+  // QueryCreator queryCreator;
+  // PostActions postActions(timeLimit, isTeam1GoingFirst);
   ResponseHandler responseHandler(duel, repository, timeLimit);
 
   std::string message;
@@ -124,8 +163,6 @@ int main(int argc, char *argv[])
 
       std::cout << "Instrucción recibida!!!!: " << cmd << std::endl;
 
-      // Realizar el procesamiento necesario con la instrucción recibida
-
       if (cmd == "RESPONSE")
       {
         uint8_t team = std::atoi(params[0].c_str());
@@ -137,20 +174,8 @@ int main(int argc, char *argv[])
 
       if (cmd == "DECKS")
       {
-        OCG_QueryInfo query = {
-            0x381FFF,
-            0,
-            0x40,
-            0U,
-            0U};
-        std::vector<uint8_t> buffer = repository.duelQueryLocation(duel, query);
-
-        BufferMessageSender sender;
-
-        sender.send(0, 64, 0, buffer);
-        sender.send(1, 64, 1, buffer);
-
-        std::cout << "CMD:DUEL" << std::endl;
+        DecksSetter decksSetter{repository, duel};
+        decksSetter.run();
       }
 
       if (cmd == "PROCESS")
@@ -164,20 +189,18 @@ int main(int argc, char *argv[])
           {
             uint8_t messageType = message[0U];
 
-            if (messageType != 1)
-            {
-              std::string payload = "CMD:LOG|";
-              payload += std::to_string(messageType) + "|";
-              std::cout << payload << std::endl;
-            }
-            // printf("===============================message============================\n");
-            // printf("%x", messageType);
-            // printf("\n");
+            std::string payload = "CMD:LOG|";
+            payload += std::to_string(messageType) + "|";
+            std::cout << payload << std::endl;
+            printf("====== message from core ====== \n");
+            printVectorAsHex(message);
+            printf("\n");
+
             preActions.run(message);
-            queryProcessor.run(preActionQueryCreator.run(message), duel);
+            // queryProcessor.run(preActionQueryCreator.run(message), duel);
             duelMessageHandler.handle(message);
-            queryProcessor.run(queryCreator.run(message), duel);
-            postActions.run(message);
+            // queryProcessor.run(queryCreator.run(message), duel);
+            // postActions.run(message);
           }
           if (status != 2)
           {
