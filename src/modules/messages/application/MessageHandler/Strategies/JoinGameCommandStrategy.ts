@@ -8,7 +8,7 @@ export class JoinGameCommandStrategy implements MessageHandlerCommandStrategy {
 	constructor(private readonly context: MessageHandlerContext) {}
 
 	execute(): void {
-		const body = this.context.readBody(JoinGameMessage.MAX_BYTES_LENGTH);
+		const body = this.context.readBody(this.context.messageLength());
 		const joinGameMessage = new JoinGameMessage(body);
 		const joinToGame = new JoinToGame(this.context.socket);
 		const playerInfoMessage = this.context.getPreviousMessages() as PlayerInfoMessage;

@@ -35,8 +35,5 @@ export class ResponseCommandStrategy implements MessageHandlerCommandStrategy {
 		}
 
 		room.duel.stdin.write(`CMD:RESPONSE|${client.position}|${data}\n`);
-
-		// const body = this.context.readBody(PlayerInfoMessage.MAX_BYTES_LENGTH);
-		// this.context.updatePreviousMessage(new PlayerInfoMessage(body));
 	}
 }

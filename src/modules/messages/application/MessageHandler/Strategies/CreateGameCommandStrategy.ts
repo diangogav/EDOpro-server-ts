@@ -11,7 +11,7 @@ export class CreateGameCommandStrategy implements MessageHandlerCommandStrategy 
 	) {}
 
 	execute(): void {
-		const body = this.context.readBody(CreateGameMessage.MAX_BYTES_LENGTH);
+		const body = this.context.readBody(this.context.messageLength());
 		const createGameMessage = new CreateGameMessage(body);
 		const gameCreator = new GameCreator(this.context.socket);
 		const playerInfoMessage = this.context.getPreviousMessages() as PlayerInfoMessage;

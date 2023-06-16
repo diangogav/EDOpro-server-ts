@@ -4,7 +4,7 @@ import { MessageHandlerContext } from "./MessageHandlerContext";
 import { CreateGameCommandStrategy } from "./Strategies/CreateGameCommandStrategy";
 import { JoinGameCommandStrategy } from "./Strategies/JoinGameCommandStrategy";
 import { PlayerInfoCommandStrategy } from "./Strategies/PlayerInfoCommandStrategy";
-import { ResponseCommandStrategy } from './Strategies/ResponseCommandStrategy';
+import { ResponseCommandStrategy } from "./Strategies/ResponseCommandStrategy";
 
 export class MessageHandler {
 	private readonly context: MessageHandlerContext;

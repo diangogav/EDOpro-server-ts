@@ -9,8 +9,9 @@ export class PlayerInfoCommandStrategy implements MessageHandlerCommandStrategy 
 	) {}
 
 	execute(): void {
-		const body = this.context.readBody(PlayerInfoMessage.MAX_BYTES_LENGTH);
-		this.context.updatePreviousMessage(new PlayerInfoMessage(body));
+		const length = this.context.messageLength();
+		const body = this.context.readBody(length);
+		this.context.updatePreviousMessage(new PlayerInfoMessage(body, length));
 		this.afterExecuteCallback();
 	}
 }
