@@ -29,19 +29,19 @@ uint8_t PostActions::calculateTeam(uint8_t team)
   return isTeam1GoingFirst ^ team;
 }
 
-uint8_t PostActions::getTeamMessageReceptor(const std::vector<uint8_t>& msg) noexcept
+uint8_t PostActions::getTeamMessageReceptor(const std::vector<uint8_t> &msg) noexcept
 {
-	switch(msg[0U])
-	{
-	case MSG_HINT:
-	{
-		return msg[2U];
-	}
-	default:
-	{
-		return msg[1U];
-	}
-	}
+  switch (msg[0U])
+  {
+  case MSG_HINT:
+  {
+    return msg[2U];
+  }
+  default:
+  {
+    return msg[1U];
+  }
+  }
 }
 
 bool PostActions::DoesMessageRequireAnswer(uint8_t messageType)
@@ -51,13 +51,13 @@ bool PostActions::DoesMessageRequireAnswer(uint8_t messageType)
   // case MSG_SELECT_CARD:
   // case MSG_SELECT_TRIBUTE:
   // case MSG_SELECT_UNSELECT_CARD:
-  // case MSG_SELECT_BATTLECMD:
+  case MSG_SELECT_BATTLECMD:
   case MSG_SELECT_IDLECMD:
   // case MSG_SELECT_EFFECTYN:
   // case MSG_SELECT_YESNO:
   // case MSG_SELECT_OPTION:
   case MSG_SELECT_CHAIN:
-    // case MSG_SELECT_PLACE:
+  case MSG_SELECT_PLACE:
     // case MSG_SELECT_DISFIELD:
     // case MSG_SELECT_POSITION:
     // case MSG_SORT_CARD:

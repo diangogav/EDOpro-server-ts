@@ -8,14 +8,14 @@
 // #define MSG_UPDATE_DATA 6
 // #define MSG_UPDATE_CARD 7
 // #define MSG_REQUEST_DECK         8
-// #define MSG_SELECT_BATTLECMD 10
+#define MSG_SELECT_BATTLECMD 10
 #define MSG_SELECT_IDLECMD 11
 // #define MSG_SELECT_EFFECTYN 12
 // #define MSG_SELECT_YESNO 13
 // #define MSG_SELECT_OPTION 14
 // #define MSG_SELECT_CARD 15
 #define MSG_SELECT_CHAIN 16
-// #define MSG_SELECT_PLACE 18
+#define MSG_SELECT_PLACE 18
 // #define MSG_SELECT_POSITION 19
 // #define MSG_SELECT_TRIBUTE 20
 // #define MSG_SORT_CHAIN 21
@@ -37,13 +37,13 @@
 #define MSG_NEW_TURN 40
 #define MSG_NEW_PHASE 41
 // #define MSG_CONFIRM_EXTRATOP 42
-// #define MSG_MOVE 50
+#define MSG_MOVE 50
 // #define MSG_POS_CHANGE 53
-// #define MSG_SET 54
+#define MSG_SET 54
 // #define MSG_SWAP 55
 // #define MSG_FIELD_DISABLED 56
-// #define MSG_SUMMONING 60
-// #define MSG_SUMMONED 61
+#define MSG_SUMMONING 60
+#define MSG_SUMMONED 61
 // #define MSG_SPSUMMONING 62
 // #define MSG_SPSUMMONED 63
 // #define MSG_FLIPSUMMONING 64

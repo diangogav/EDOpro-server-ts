@@ -45,13 +45,13 @@ MessageTargets DuelMessageHandler::getMessageTarget(const std::vector<uint8_t> &
   // {
   // 	return MessageTargets::MSG_DIST_TYPE_SPECIFIC_TEAM_DUELIST_STRIPPED;
   // }
-  // case MSG_SELECT_BATTLECMD:
+  case MSG_SELECT_BATTLECMD:
   case MSG_SELECT_IDLECMD:
   // case MSG_SELECT_EFFECTYN:
   // case MSG_SELECT_YESNO:
   // case MSG_SELECT_OPTION:
   case MSG_SELECT_CHAIN:
-    // case MSG_SELECT_PLACE:
+  case MSG_SELECT_PLACE:
     // case MSG_SELECT_DISFIELD:
     // case MSG_SELECT_POSITION:
     // case MSG_SORT_CARD:
@@ -113,8 +113,8 @@ MessageTargets DuelMessageHandler::getMessageTarget(const std::vector<uint8_t> &
   // }
   // case MSG_SHUFFLE_HAND:
   // case MSG_SHUFFLE_EXTRA:
-  // case MSG_SET:
-  // case MSG_MOVE:
+  case MSG_SET:
+  case MSG_MOVE:
   case MSG_DRAW:
     // case MSG_TAG_SWAP:
     {

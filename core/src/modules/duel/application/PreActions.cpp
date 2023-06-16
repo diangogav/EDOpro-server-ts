@@ -14,7 +14,7 @@ void PreActions::run(std::vector<uint8_t> message)
 
   if (messageType == MSG_HINT && message[1U] == 3U)
   {
-    //set Last hint
+    // set Last hint
   }
 
   if (DoesMessageRequireAnswer(messageType))
@@ -47,13 +47,13 @@ bool PreActions::DoesMessageRequireAnswer(uint8_t messageType)
   // case MSG_SELECT_CARD:
   // case MSG_SELECT_TRIBUTE:
   // case MSG_SELECT_UNSELECT_CARD:
-  // case MSG_SELECT_BATTLECMD:
+  case MSG_SELECT_BATTLECMD:
   // case MSG_SELECT_IDLECMD:
   // case MSG_SELECT_EFFECTYN:
   // case MSG_SELECT_YESNO:
   // case MSG_SELECT_OPTION:
   case MSG_SELECT_CHAIN:
-    // case MSG_SELECT_PLACE:
+  case MSG_SELECT_PLACE:
     // case MSG_SELECT_DISFIELD:
     // case MSG_SELECT_POSITION:
     // case MSG_SORT_CARD:

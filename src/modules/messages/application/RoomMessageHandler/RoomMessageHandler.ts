@@ -142,8 +142,7 @@ export class RoomMessageHandler {
 
 					if (cmd === "CMD:MESSAGE") {
 						const team = Number(params[0]);
-						const type = Number(params[1]);
-						const data = Buffer.from(params.slice(1, type === 16 ? 17 : params.length).map(Number));
+						const data = Buffer.from(params.slice(1, params.length).map(Number));
 
 						const message = RawClientMessage.create({ buffer: data });
 						console.log(`sending to client: ${count}`, message);

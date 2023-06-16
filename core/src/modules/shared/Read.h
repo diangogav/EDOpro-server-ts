@@ -2,6 +2,7 @@
 #define READ
 
 #include <cstring>
+#include "iostream"
 
 template<typename T>
 constexpr T Read(const uint8_t*& ptr) noexcept
