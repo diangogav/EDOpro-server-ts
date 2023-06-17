@@ -141,7 +141,7 @@ export class Room {
 			users: [
 				{
 					pos: 0,
-					name: playerName,
+					name: playerName.replace(/\0/g, "").trim(),
 				},
 			],
 		});
