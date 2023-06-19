@@ -3,9 +3,11 @@ import { Room } from "../../room/domain/Room";
 
 export class CreateGameClientMessage {
 	static create(room: Room): Buffer {
-		const header = Buffer.from([0x05, 0x00, 0x11]);
+		const type = Buffer.from([0x11]);
 		const stoId = decimalToBytesBuffer(room.id, 4);
+		const data = Buffer.concat([type, stoId]);
+		const size = decimalToBytesBuffer(data.length, 2);
 
-		return Buffer.concat([header, stoId]);
+		return Buffer.concat([size, data]);
 	}
 }
