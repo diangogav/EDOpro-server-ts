@@ -123,9 +123,9 @@ int main(int argc, char *argv[])
   DuelProcessor processor(repository);
   DuelMessageHandler duelMessageHandler(isTeam1GoingFirst, timeLimit);
   PreActions preActions(timeLimit, isTeam1GoingFirst);
-  // QueryRequestProcessor queryProcessor(repository, isTeam1GoingFirst);
-  // PreActionQueryCreator preActionQueryCreator;
-  // QueryCreator queryCreator;
+  QueryRequestProcessor queryProcessor(repository, isTeam1GoingFirst);
+  PreActionQueryCreator preActionQueryCreator;
+  QueryCreator queryCreator;
   // PostActions postActions(timeLimit, isTeam1GoingFirst);
   ResponseHandler responseHandler(duel, repository, timeLimit);
 
@@ -197,9 +197,9 @@ int main(int argc, char *argv[])
             printf("\n");
 
             preActions.run(message);
-            // queryProcessor.run(preActionQueryCreator.run(message), duel);
+            queryProcessor.run(preActionQueryCreator.run(message), duel);
             duelMessageHandler.handle(message);
-            // queryProcessor.run(queryCreator.run(message), duel);
+            queryProcessor.run(queryCreator.run(message), duel);
             // postActions.run(message);
           }
           if (status != 2)
