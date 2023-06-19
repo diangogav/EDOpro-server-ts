@@ -58,7 +58,7 @@ export class RoomMessageHandler {
 
 			const isTeam1GoingFirst = (position === 0 && turn === 0) || (position === 1 && turn === 1);
 
-			const core = spawn(`${__dirname}/../../../../../CoreIntegrator`, [
+			const core = spawn(`${__dirname}/../../../../../core/build/Debug/bin/CoreIntegrator`, [
 				this.context.room.startLp.toString(),
 				this.context.room.startHand.toString(),
 				this.context.room.drawCount.toString(),
