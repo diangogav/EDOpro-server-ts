@@ -58,22 +58,19 @@ export class RoomMessageHandler {
 
 			const isTeam1GoingFirst = (position === 0 && turn === 0) || (position === 1 && turn === 1);
 
-			const core = spawn(
-				"/home/diango/code/edo-pro-server-ts/core/build/Debug/bin/CoreIntegrator",
-				[
-					this.context.room.startLp.toString(),
-					this.context.room.startHand.toString(),
-					this.context.room.drawCount.toString(),
-					this.context.room.duelFlag.toString(),
-					this.context.room.extraRules.toString(),
-					Number(isTeam1GoingFirst).toString(),
-					this.context.room.timeLimit.toString(),
-					JSON.stringify(this.context.room.users[0].deck?.main ?? []),
-					JSON.stringify(this.context.room.users[0].deck?.side ?? []),
-					JSON.stringify(this.context.room.users[1].deck?.main ?? []),
-					JSON.stringify(this.context.room.users[1].deck?.side ?? []),
-				]
-			);
+			const core = spawn(`${__dirname}/../../../../../CoreIntegrator`, [
+				this.context.room.startLp.toString(),
+				this.context.room.startHand.toString(),
+				this.context.room.drawCount.toString(),
+				this.context.room.duelFlag.toString(),
+				this.context.room.extraRules.toString(),
+				Number(isTeam1GoingFirst).toString(),
+				this.context.room.timeLimit.toString(),
+				JSON.stringify(this.context.room.users[0].deck?.main ?? []),
+				JSON.stringify(this.context.room.users[0].deck?.side ?? []),
+				JSON.stringify(this.context.room.users[1].deck?.main ?? []),
+				JSON.stringify(this.context.room.users[1].deck?.side ?? []),
+			]);
 
 			this.context.room.setDuel(core);
 
