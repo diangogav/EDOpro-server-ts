@@ -17,6 +17,7 @@ export class ReadyCommandStrategy implements RoomMessageHandlerCommandStrategy {
 		this.context.clients.forEach((client) => {
 			client.socket.write(message);
 		});
+		this.context.client.ready();
 		this.afterExecuteCallback();
 	}
 }

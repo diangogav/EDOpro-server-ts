@@ -15,6 +15,7 @@ export class NotReadyCommandStrategy implements RoomMessageHandlerCommandStrateg
 			client.socket.write(message);
 		});
 
+		this.context.client.notReady();
 		this.afterExecuteCallback();
 	}
 }
