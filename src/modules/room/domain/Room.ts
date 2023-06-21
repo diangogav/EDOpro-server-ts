@@ -4,6 +4,7 @@ import { Client } from "../../client/domain/Client";
 import { Deck } from "../../deck/domain/Deck";
 import { RoomMessageHandler } from "../../messages/application/RoomMessageHandler/RoomMessageHandler";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
+import { Match } from "./Match";
 
 interface RoomAttr {
 	id: number;
@@ -72,6 +73,7 @@ export class Room {
 	public readonly users: Array<{ pos: number; name: string; deck?: Deck }>;
 	public readonly clients: Client[] = [];
 	private _duel?: ChildProcessWithoutNullStreams;
+	private _match: Match | null;
 
 	private constructor(attr: RoomAttr) {
 		this.id = attr.id;
@@ -145,6 +147,25 @@ export class Room {
 				},
 			],
 		});
+	}
+
+	duelWinner(winner: number): void {
+		if (!this._match) {
+			return;
+		}
+		this._match.duelWinner(winner);
+	}
+
+	isMatchFinished(): boolean {
+		if (!this._match) {
+			return true;
+		}
+
+		return this._match.isFinished();
+	}
+
+	createMatch(): void {
+		this._match = new Match({ bestOf: this.bestOf });
 	}
 
 	addClient(client: Client): void {

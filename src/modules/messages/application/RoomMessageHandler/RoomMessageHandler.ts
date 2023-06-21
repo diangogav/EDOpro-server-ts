@@ -10,6 +10,7 @@ import { TimeLimitClientMessage } from "../../server-to-client/game-messages/Tim
 import { UpdateCardClientMessage } from "../../server-to-client/game-messages/UpdateCardClientMessage";
 import { UpdateDataClientMessage } from "../../server-to-client/game-messages/UpdateDataClientMessage";
 import { WaitingClientMessage } from "../../server-to-client/game-messages/WaitingClientMessage";
+import { FinishDuelHandler } from "../FinishDuelHandler";
 import { RoomMessageHandlerContext } from "./RoomMessageHandlerContext";
 import { NotReadyCommandStrategy } from "./Strategies/NotReadyCommandStrategy";
 import { ReadyCommandStrategy } from "./Strategies/ReadyCommandStrategy";
@@ -205,6 +206,13 @@ export class RoomMessageHandler {
 							console.log(`sending to client: ${count}`, message);
 							client.socket.write(message);
 						});
+					}
+
+					if (cmd === "CMD:FINISH") {
+						const reason = Number(params[0]);
+						const winner = Number(params[1]);
+						const duelFinisher = new FinishDuelHandler({ reason, winner, room: this.context.room });
+						duelFinisher.run();
 					}
 
 					if (cmd === "CMD:LOG") {

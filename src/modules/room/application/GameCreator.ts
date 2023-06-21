@@ -18,6 +18,7 @@ export class GameCreator {
 
 		room.addClient(new Client(this.socket, true, playerName, 0, room.id));
 		RoomList.addRoom(room);
+		room.createMatch();
 
 		this.socket.write(CreateGameClientMessage.create(room));
 		this.socket.write(JoinGameClientMessage.createFromCreateGameMessage(message));

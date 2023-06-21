@@ -17,6 +17,7 @@
 #include "./modules/shared/DuelTurnTimer.h"
 #include "./modules/duel/application/PostActions.h"
 #include "./modules/duel/application/PreActions.h"
+#include "./modules/duel/application/DuelFinishHandler.h"
 #include "./modules/duel/messages/application/ResponseHandler.h"
 
 #include <iostream>
@@ -130,6 +131,7 @@ int main(int argc, char *argv[])
   LogMessageSender logger;
   PostActions postActions(timeLimit, isTeam1GoingFirst);
   ResponseHandler responseHandler(duel, repository, timeLimit);
+  DuelFinishHandler duelFinishHandler(isTeam1GoingFirst);
 
   std::string message;
   while (true)
@@ -182,6 +184,7 @@ int main(int argc, char *argv[])
 
       if (cmd == "PROCESS")
       {
+        bool finish = false;
         for (;;)
         {
           int status = processor.run(duel);
@@ -194,9 +197,10 @@ int main(int argc, char *argv[])
             queryProcessor.run(preActionQueryCreator.run(message), duel);
             duelMessageHandler.handle(message);
             queryProcessor.run(queryCreator.run(message), duel);
+            finish = duelFinishHandler.handle(message);
             // postActions.run(message);
           }
-          if (status != 2)
+          if (status != 2 || finish == true)
           {
             break;
           }
