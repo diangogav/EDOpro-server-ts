@@ -4,6 +4,7 @@
 #include "./modules/duel/application/DuelStarter.h"
 #include "./modules/duel/application/DecksSetter.h"
 #include "./modules/card/infrastructure/CardSqliteRepository.h"
+#include "./modules/duel/messages/application/LogMessageSender.h"
 
 #include "./modules/duel/infrastructure/OCGRepository.h"
 #include "./modules/shared/CommandLineArrayParser.h"
@@ -126,7 +127,8 @@ int main(int argc, char *argv[])
   QueryRequestProcessor queryProcessor(repository, isTeam1GoingFirst);
   PreActionQueryCreator preActionQueryCreator;
   QueryCreator queryCreator;
-  // PostActions postActions(timeLimit, isTeam1GoingFirst);
+  LogMessageSender logger;
+  PostActions postActions(timeLimit, isTeam1GoingFirst);
   ResponseHandler responseHandler(duel, repository, timeLimit);
 
   std::string message;
@@ -187,15 +189,7 @@ int main(int argc, char *argv[])
 
           for (const auto &message : messages)
           {
-            uint8_t messageType = message[0U];
-
-            std::string payload = "CMD:LOG|";
-            payload += std::to_string(messageType) + "|";
-            std::cout << payload << std::endl;
-            printf("====== message from core ====== \n");
-            printVectorAsHex(message);
-            printf("\n");
-
+            logger.send(message);
             preActions.run(message);
             queryProcessor.run(preActionQueryCreator.run(message), duel);
             duelMessageHandler.handle(message);
