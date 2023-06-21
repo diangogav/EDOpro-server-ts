@@ -26,7 +26,7 @@ export class HostServer {
 
 			socket.on("data", (data) => {
 				this.logger.debug(data.toString("hex"));
-				const messageHandler = new MessageHandler(data, socket);
+				const messageHandler = new MessageHandler(data, socket, this.logger);
 				messageHandler.read();
 			});
 
