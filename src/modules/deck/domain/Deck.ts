@@ -6,4 +6,8 @@ export class Deck {
 		this.main = main;
 		this.side = side;
 	}
+
+	isSideDeckValid(mainDeck: number[]): boolean {
+		return mainDeck.length === this.main.length;
+	}
 }

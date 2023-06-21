@@ -40,6 +40,12 @@ interface RoomAttr {
 	duel?: ChildProcessWithoutNullStreams;
 }
 
+export enum DuelState {
+	WAITING = "waiting",
+	DUELING = "dueling",
+	SIDE_DECKING = "sideDecking",
+}
+
 export class Room {
 	public readonly id: number;
 	public readonly name: string;
@@ -74,6 +80,7 @@ export class Room {
 	public readonly clients: Client[] = [];
 	private _duel?: ChildProcessWithoutNullStreams;
 	private _match: Match | null;
+	private _state: DuelState;
 
 	private constructor(attr: RoomAttr) {
 		this.id = attr.id;
@@ -107,6 +114,7 @@ export class Room {
 		this.handshake = attr.handshake;
 		this.password = attr.password;
 		this._duel = attr.duel;
+		this._state = DuelState.WAITING;
 	}
 
 	static createFromCreateGameMessage(message: CreateGameMessage, playerName: string): Room {
@@ -194,6 +202,14 @@ export class Room {
 		}
 
 		return this._duel;
+	}
+
+	sideDecking(): void {
+		this._state = DuelState.SIDE_DECKING;
+	}
+
+	get duelState(): DuelState {
+		return this._state;
 	}
 
 	toPresentation(): { [key: string]: unknown } {

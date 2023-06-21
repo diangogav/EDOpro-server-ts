@@ -21,6 +21,8 @@ export class FinishDuelHandler {
 
 		const message = SideDeckClientMessage.create();
 
+		this.room.sideDecking();
+
 		this.room.clients.forEach((client) => {
 			console.log("sending to client:", message);
 			client.socket.write(message);
