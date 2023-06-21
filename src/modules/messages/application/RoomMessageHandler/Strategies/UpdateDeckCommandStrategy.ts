@@ -1,5 +1,7 @@
 import { Deck } from "../../../../deck/domain/Deck";
 import { DuelState } from "../../../../room/domain/Room";
+import { DuelStartClientMessage } from "../../../server-to-client/DuelStartClientMessage";
+import { ErrorClientMessage } from "../../../server-to-client/ErrorClientMessage";
 import { UpdateDeckMessageSizeCalculator } from "../../UpdateDeckMessageSizeCalculator";
 import { RoomMessageHandlerCommandStrategy } from "../RoomMessageHandlerCommandStrategy";
 import { RoomMessageHandlerContext } from "../RoomMessageHandlerContext";
@@ -42,12 +44,17 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 
 		const position = this.context.client.position;
 		const player = this.context.room.users[position];
-		if (player.deck?.isSideDeckValid(mainDeck)) {
-			// Send Side Deck Error Message
+		if (!player.deck?.isSideDeckValid(mainDeck)) {
+			const message = ErrorClientMessage.create();
+			console.log("sending to client:", message);
+			this.context.client.socket.write(message);
+
 			return;
 		}
 		const deck = new Deck({ main: mainDeck, side: sideDeck });
 		this.context.room.setDecksToPlayer(position, deck);
-		//Send Make Duel Start Message
+		const message = DuelStartClientMessage.create();
+		console.log("sending to client:", message);
+		this.context.client.socket.write(message);
 	}
 }
