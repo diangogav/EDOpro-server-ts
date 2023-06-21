@@ -7,6 +7,7 @@
 class BroadcastMessageSender {
 public:
   void send(std::vector<uint8_t> message);
+  void sendExceptTo(uint8_t team, std::vector<uint8_t> message);
 };
 
 #endif
