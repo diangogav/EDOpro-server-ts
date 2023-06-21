@@ -1,6 +1,6 @@
-#include "LocationQuerySerializer.h"
+#include "QuerySerializer.h"
 
-std::vector<uint8_t> SerializeSingleQuery(const std::optional<Query> &optionalQuery, bool isPublic) noexcept
+std::vector<uint8_t> QuerySerializer::serialize(const std::optional<Query> &optionalQuery, bool isPublic)
 {
   std::vector<uint8_t> queries;
   if (!optionalQuery.has_value()) // Nothing to serialize.
@@ -209,13 +209,13 @@ std::vector<uint8_t> SerializeSingleQuery(const std::optional<Query> &optionalQu
   return queries;
 }
 
-std::vector<uint8_t> LocationQuerySerializer::serialize(const std::vector<std::optional<Query>> &queries, bool isPublic)
+std::vector<uint8_t> QuerySerializer::serializeLocationQuery(const std::vector<std::optional<Query>> &queries, bool isPublic)
 {
   uint32_t totalSize = 0U;
   std::vector<uint8_t> serializedQueries(sizeof(decltype(totalSize)));
   for (const auto &query : queries)
   {
-    const auto serializedQuery = SerializeSingleQuery(query, isPublic);
+    const auto serializedQuery = serialize(query, isPublic);
     totalSize += static_cast<uint32_t>(serializedQuery.size());
     serializedQueries.insert(serializedQueries.end(), serializedQuery.begin(), serializedQuery.end());
   }

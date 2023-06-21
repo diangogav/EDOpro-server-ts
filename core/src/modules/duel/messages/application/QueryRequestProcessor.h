@@ -7,19 +7,21 @@
 #include "../../../shared/DuelLocations.h"
 #include "../../../shared/ocgapi_types.h"
 #include "../../infrastructure/OCGRepository.h"
-#include "../domain/LocationQueryDeserializer.h"
-#include "../domain/LocationQuerySerializer.h"
+#include "../domain/QueryDeserializer.h"
+#include "../domain/QuerySerializer.h"
 #include "BufferMessageSender.h"
+#include "UpdateCardMessageSender.h"
 
 
 class QueryRequestProcessor {
 private:
   uint8_t isTeam1GoingFirst;
   OCGRepository repository;
-  LocationQueryDeserializer deserializer;
-  LocationQuerySerializer serializer;
+  QueryDeserializer deserializer;
+  QuerySerializer serializer;
   BufferMessageSender bufferMessageSender;
   uint8_t calculateTeam(uint8_t team);
+  UpdateCardMessageSender updateCardMessageSender;
 
 public:
   QueryRequestProcessor(OCGRepository repository, uint8_t isTeam1GoingFirst);

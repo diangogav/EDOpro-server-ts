@@ -1,4 +1,4 @@
-#include "LocationQueryDeserializer.h"
+#include "QueryDeserializer.h"
 
 inline std::optional<Query> DeserializeOneQuery(const uint8_t *&pointer) noexcept
 {
@@ -72,7 +72,7 @@ inline std::optional<Query> DeserializeOneQuery(const uint8_t *&pointer) noexcep
   }
 }
 
-std::vector<std::optional<Query>> LocationQueryDeserializer::deserialize(const std::vector<uint8_t> &queries)
+std::vector<std::optional<Query>> QueryDeserializer::deserializeLocationQuery(const std::vector<uint8_t> &queries)
 {
   const auto *pointer = queries.data();
   const auto *const pointerMax = pointer + Read<uint32_t>(pointer);
@@ -80,4 +80,10 @@ std::vector<std::optional<Query>> LocationQueryDeserializer::deserialize(const s
   while (pointer < pointerMax)
     deserializedQueries.emplace_back(DeserializeOneQuery(pointer));
   return deserializedQueries;
+}
+
+std::optional<Query> QueryDeserializer::deserialize(const std::vector<uint8_t>& queries)
+{
+  const auto* pointer = queries.data();
+  return DeserializeOneQuery(pointer);
 }
