@@ -1,20 +1,39 @@
 #include "DuelMessageHandler.h"
-#include "../application/DrawCardHandler.h"
 #include "../application/DuelMessageSender.h"
-#include "../application/BroadcastMessageSender.h"
 #include "../application/WaitingMessageSender.h"
 #include "../../../shared/DuelTurnTimer.h"
+#include "../../../shared/DuelLocations.h"
+#include "../../../shared/QueryRequest.h"
 
-DuelMessageHandler::DuelMessageHandler(uint8_t isTeam1GoingFirst, uint16_t timeLimitsInSeconds) : isTeam1GoingFirst(isTeam1GoingFirst), timeLimitsInSeconds(timeLimitsInSeconds) {}
+template <>
+constexpr LocInfo Read(const uint8_t *&ptr) noexcept
+{
+  return LocInfo{
+      Read<uint8_t>(ptr),
+      Read<uint8_t>(ptr),
+      Read<uint32_t>(ptr),
+      Read<uint32_t>(ptr)};
+}
+
+DuelMessageHandler::DuelMessageHandler(uint8_t isTeam1GoingFirst, uint16_t timeLimitsInSeconds) : isTeam1GoingFirst(isTeam1GoingFirst), timeLimitsInSeconds(timeLimitsInSeconds)
+{
+  BroadcastMessageSender sender;
+  DrawCardHandler handler;
+}
 
 void DuelMessageHandler::handle(std::vector<uint8_t> message)
 {
   DuelMessageSender messageSender;
   switch (this->getMessageTarget(message))
   {
+  case MessageTargets::MSG_DIST_TYPE_SPECIFIC_TEAM_DUELIST_STRIPPED:
+  {
+    uint8_t team = this->getTeamMessageReceptor(message);
+    messageSender.send(team, handler.handle(team, message));
+    break;
+  }
   case MessageTargets::MSG_DIST_TYPE_EVERYONE_STRIPPED:
   {
-    DrawCardHandler handler;
     uint8_t teamA = this->calculateTeam(0U);
     uint8_t teamB = this->calculateTeam(1U);
     messageSender.send(teamA, handler.handle(teamA, message));
@@ -23,7 +42,6 @@ void DuelMessageHandler::handle(std::vector<uint8_t> message)
   }
   case MessageTargets::MSG_DIST_TYPE_EVERYONE:
   {
-    BroadcastMessageSender sender;
     sender.send(message);
     break;
   }
@@ -31,6 +49,7 @@ void DuelMessageHandler::handle(std::vector<uint8_t> message)
   {
     uint8_t team = this->getTeamMessageReceptor(message);
     messageSender.send(calculateTeam(team), message);
+    break;
   }
   }
 }
@@ -39,35 +58,35 @@ MessageTargets DuelMessageHandler::getMessageTarget(const std::vector<uint8_t> &
 {
   switch (msg[0U])
   {
-  // case MSG_SELECT_CARD:
-  // case MSG_SELECT_TRIBUTE:
-  // case MSG_SELECT_UNSELECT_CARD:
-  // {
-  // 	return MessageTargets::MSG_DIST_TYPE_SPECIFIC_TEAM_DUELIST_STRIPPED;
-  // }
+  case MSG_SELECT_CARD:
+  case MSG_SELECT_TRIBUTE:
+  case MSG_SELECT_UNSELECT_CARD:
+  {
+    return MessageTargets::MSG_DIST_TYPE_SPECIFIC_TEAM_DUELIST_STRIPPED;
+  }
   case MSG_SELECT_BATTLECMD:
   case MSG_SELECT_IDLECMD:
-  // case MSG_SELECT_EFFECTYN:
-  // case MSG_SELECT_YESNO:
-  // case MSG_SELECT_OPTION:
+  case MSG_SELECT_EFFECTYN:
+  case MSG_SELECT_YESNO:
+  case MSG_SELECT_OPTION:
   case MSG_SELECT_CHAIN:
   case MSG_SELECT_PLACE:
-    // case MSG_SELECT_DISFIELD:
-    // case MSG_SELECT_POSITION:
-    // case MSG_SORT_CARD:
-    // case MSG_SORT_CHAIN:
-    // case MSG_SELECT_COUNTER:
-    // case MSG_SELECT_SUM:
-    // case MSG_ROCK_PAPER_SCISSORS:
-    // case MSG_ANNOUNCE_RACE:
-    // case MSG_ANNOUNCE_ATTRIB:
-    // case MSG_ANNOUNCE_CARD:
-    // case MSG_ANNOUNCE_NUMBER:
-    // case MSG_ANNOUNCE_CARD_FILTER:
-    // case MSG_MISSED_EFFECT:
-    {
-      return MessageTargets::MSG_DIST_TYPE_SPECIFIC_TEAM_DUELIST;
-    }
+  case MSG_SELECT_DISFIELD:
+  case MSG_SELECT_POSITION:
+  case MSG_SORT_CARD:
+  case MSG_SORT_CHAIN:
+  case MSG_SELECT_COUNTER:
+  case MSG_SELECT_SUM:
+  case MSG_ROCK_PAPER_SCISSORS:
+  case MSG_ANNOUNCE_RACE:
+  case MSG_ANNOUNCE_ATTRIB:
+  case MSG_ANNOUNCE_CARD:
+  case MSG_ANNOUNCE_NUMBER:
+  case MSG_ANNOUNCE_CARD_FILTER:
+  case MSG_MISSED_EFFECT:
+  {
+    return MessageTargets::MSG_DIST_TYPE_SPECIFIC_TEAM_DUELIST;
+  }
   case MSG_HINT:
   {
     switch (msg[1U])
@@ -98,28 +117,28 @@ MessageTargets DuelMessageHandler::getMessageTarget(const std::vector<uint8_t> &
     }
     }
   }
-  // case MSG_CONFIRM_CARDS:
-  // {
-  // 	const auto* ptr = msg.data() + 2U;
-  // 	// if count(uint32_t) is not 0 and location(uint8_t) is LOCATION_DECK
-  // 	// then send to specific team duelist.
-  // 	if(Read<uint32_t>(ptr) != 0U)
-  // 	{
-  // 		ptr += 4U + 1U;
-  // 		if(Read<uint8_t>(ptr) == LOCATION_DECK)>
-  // 			return MessageTargets::MSG_DIST_TYPE_SPECIFIC_TEAM_DUELIST;
-  // 	}
-  // 	return MessageTargets::MSG_DIST_TYPE_EVERYONE;
-  // }
-  // case MSG_SHUFFLE_HAND:
-  // case MSG_SHUFFLE_EXTRA:
+  case MSG_CONFIRM_CARDS:
+  {
+    const auto *ptr = msg.data() + 2U;
+    // if count(uint32_t) is not 0 and location(uint8_t) is LOCATION_DECK
+    // then send to specific team duelist.
+    if (Read<uint32_t>(ptr) != 0U)
+    {
+      ptr += 4U + 1U;
+      if (Read<uint8_t>(ptr) == LOCATION_DECK)
+        return MessageTargets::MSG_DIST_TYPE_SPECIFIC_TEAM_DUELIST;
+    }
+    return MessageTargets::MSG_DIST_TYPE_EVERYONE;
+  }
+  case MSG_SHUFFLE_HAND:
+  case MSG_SHUFFLE_EXTRA:
   case MSG_SET:
   case MSG_MOVE:
   case MSG_DRAW:
-    // case MSG_TAG_SWAP:
-    {
-      return MessageTargets::MSG_DIST_TYPE_EVERYONE_STRIPPED;
-    }
+  case MSG_TAG_SWAP:
+  {
+    return MessageTargets::MSG_DIST_TYPE_EVERYONE_STRIPPED;
+  }
   default:
   {
     return MessageTargets::MSG_DIST_TYPE_EVERYONE;
