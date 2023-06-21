@@ -1,5 +1,6 @@
 import { Deck } from "../../../../deck/domain/Deck";
 import { DuelState } from "../../../../room/domain/Room";
+import { ChooseOrderClientMessage } from "../../../server-to-client/ChooseOrderClientMessage";
 import { DuelStartClientMessage } from "../../../server-to-client/DuelStartClientMessage";
 import { ErrorClientMessage } from "../../../server-to-client/ErrorClientMessage";
 import { UpdateDeckMessageSizeCalculator } from "../../UpdateDeckMessageSizeCalculator";
@@ -56,5 +57,18 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 		const message = DuelStartClientMessage.create();
 		console.log("sending to client:", message);
 		this.context.client.socket.write(message);
+		this.context.client.ready();
+		this.startDuel();
+	}
+
+	private startDuel(): void {
+		const allClientsNotReady = this.context.clients.some((client) => !client.isReady);
+		if (allClientsNotReady) {
+			return;
+		}
+
+		const message = ChooseOrderClientMessage.create();
+		console.log("sending to client:", message);
+		this.context.room.clientWhoChoosesTurn.socket.write(message);
 	}
 }

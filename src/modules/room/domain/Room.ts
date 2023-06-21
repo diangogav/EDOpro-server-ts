@@ -81,6 +81,7 @@ export class Room {
 	private _duel?: ChildProcessWithoutNullStreams;
 	private _match: Match | null;
 	private _state: DuelState;
+	private _clientWhoChoosesTurn: Client;
 
 	private constructor(attr: RoomAttr) {
 		this.id = attr.id;
@@ -210,6 +211,14 @@ export class Room {
 
 	get duelState(): DuelState {
 		return this._state;
+	}
+
+	setClientWhoChoosesTurn(client: Client): void {
+		this._clientWhoChoosesTurn = client;
+	}
+
+	get clientWhoChoosesTurn(): Client {
+		return this._clientWhoChoosesTurn;
 	}
 
 	toPresentation(): { [key: string]: unknown } {

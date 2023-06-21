@@ -10,7 +10,7 @@ export class Client {
 	public readonly name: string;
 	public readonly position: number;
 	public readonly roomId: number;
-	private isReady: boolean;
+	private _isReady: boolean;
 	private _rpsChosen: Choose | null = null;
 
 	constructor(
@@ -26,7 +26,7 @@ export class Client {
 		this.name = name;
 		this.position = position;
 		this.roomId = roomId;
-		this.isReady = isReady;
+		this._isReady = isReady;
 	}
 
 	setRpsChosen(choise: Choose): void {
@@ -42,14 +42,14 @@ export class Client {
 	}
 
 	ready(): void {
-		this.isReady = true;
+		this._isReady = true;
 	}
 
 	notReady(): void {
-		this.isReady = false;
+		this._isReady = false;
 	}
 
-	get status(): boolean {
-		return this.isReady;
+	get isReady(): boolean {
+		return this._isReady;
 	}
 }

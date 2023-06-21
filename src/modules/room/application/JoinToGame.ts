@@ -34,7 +34,7 @@ export class JoinToGame {
 			return;
 		}
 
-		const status = room.clients[position - 1].status ? 0x09 : 0x0a;
+		const status = room.clients[position - 1].isReady ? 0x09 : 0x0a;
 		this.socket.write(PlayerEnterClientMessage.create(host.name, host.position));
 		this.socket.write(PlayerChangeClientMessage.create({ status }));
 	}

@@ -13,6 +13,7 @@ export class FinishDuelHandler {
 	}
 
 	run(): void {
+		this.room.duel?.kill();
 		this.room.duelWinner(this.winner);
 
 		if (this.room.isMatchFinished()) {
@@ -23,9 +24,13 @@ export class FinishDuelHandler {
 
 		this.room.sideDecking();
 
+		const looser = this.room.clients[Number(!this.winner)];
+
+		this.room.setClientWhoChoosesTurn(looser);
 		this.room.clients.forEach((client) => {
 			console.log("sending to client:", message);
 			client.socket.write(message);
+			client.notReady();
 		});
 	}
 }
