@@ -13,7 +13,7 @@ std::vector<QueryRequest> PreActionQueryCreator::run(const std::vector<uint8_t> 
     ZonesRefresher::refreshAllSZones(queryRequests);
   }
 
-  if (messageType == MSG_SELECT_IDLECMD)
+  if (messageType == MSG_SELECT_IDLECMD || messageType == MSG_SELECT_BATTLECMD)
   {
     ZonesRefresher::refreshAllHands(queryRequests);
     ZonesRefresher::refreshAllMZones(queryRequests);
