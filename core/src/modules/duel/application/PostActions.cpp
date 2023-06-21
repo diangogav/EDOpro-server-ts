@@ -48,7 +48,7 @@ bool PostActions::DoesMessageRequireAnswer(uint8_t messageType)
 {
   switch (messageType)
   {
-  // case MSG_SELECT_CARD:
+  case MSG_SELECT_CARD:
   // case MSG_SELECT_TRIBUTE:
   // case MSG_SELECT_UNSELECT_CARD:
   case MSG_SELECT_BATTLECMD:
@@ -59,7 +59,7 @@ bool PostActions::DoesMessageRequireAnswer(uint8_t messageType)
   case MSG_SELECT_CHAIN:
   case MSG_SELECT_PLACE:
     // case MSG_SELECT_DISFIELD:
-    // case MSG_SELECT_POSITION:
+  case MSG_SELECT_POSITION:
     // case MSG_SORT_CARD:
     // case MSG_SORT_CHAIN:
     // case MSG_SELECT_COUNTER:
