@@ -7,6 +7,7 @@ import { BroadcastClientMessage } from "../../server-to-client/game-messages/Bro
 import { RawClientMessage } from "../../server-to-client/game-messages/RawClientMessage";
 import { StartDuelClientMessage } from "../../server-to-client/game-messages/StartDuelClientMessage";
 import { TimeLimitClientMessage } from "../../server-to-client/game-messages/TimeLimitClientMessage";
+import { UpdateCardClientMessage } from "../../server-to-client/game-messages/UpdateCardClientMessage";
 import { UpdateDataClientMessage } from "../../server-to-client/game-messages/UpdateDataClientMessage";
 import { WaitingClientMessage } from "../../server-to-client/game-messages/WaitingClientMessage";
 import { RoomMessageHandlerContext } from "./RoomMessageHandlerContext";
@@ -76,9 +77,9 @@ export class RoomMessageHandler {
 
 			let count = 0;
 			core.stdout.on("data", (data: string) => {
-				console.log("data", data.toString());
 				const message = data.toString().trim();
-				const regex = /CMD:[A-Z]+(\|[a-zA-Z0-9]+)*\b/g;
+				// const regex = /CMD:[A-Z]+(\|[a-zA-Z0-9]+)*\b/g;
+				const regex = /CMD:[A-Z]+(\|[\w]+)*\b/g;
 				const commands = message.match(regex);
 
 				if (!commands) {
@@ -87,6 +88,7 @@ export class RoomMessageHandler {
 
 				commands.forEach((command) => {
 					count++;
+					console.log("command", command);
 					const commandParts = command.split("|");
 					const cmd = commandParts[0];
 					const params = commandParts.slice(1);
@@ -133,6 +135,23 @@ export class RoomMessageHandler {
 						this.context.clients[team].socket.write(message);
 					}
 
+					if (cmd === "CMD:CARD") {
+						const team = Number(params[0]);
+						const location = Number(params[1]);
+						const con = Number(params[2]);
+						const sequence = Number(params[3]);
+						const bufferData = params.slice(4).map(Number);
+						const buffer = Buffer.from(bufferData);
+						const message = UpdateCardClientMessage.create({
+							deckLocation: location,
+							con,
+							sequence,
+							buffer,
+						});
+						console.log(`sending card to client: ${count}`, message);
+						this.context.clients[team].socket.write(message);
+					}
+
 					if (cmd === "CMD:DUEL") {
 						core.stdin.write("CMD:PROCESS\n");
 					}
@@ -152,6 +171,18 @@ export class RoomMessageHandler {
 						this.context.clients.forEach((client) => {
 							console.log(`sending to client: ${count}`, message);
 							client.socket.write(message);
+						});
+					}
+
+					if (cmd === "CMD:EXCEPT") {
+						const team = Number(params[0]);
+						const data = Buffer.from(params.slice(1).map(Number));
+						const message = BroadcastClientMessage.create({ buffer: data });
+						this.context.clients.forEach((client) => {
+							if (client.position !== team) {
+								console.log(`sending to client: ${count}`, message);
+								client.socket.write(message);
+							}
 						});
 					}
 
@@ -177,7 +208,7 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:LOG") {
-						console.log("command", params);
+						imprimirArrayHex(params);
 					}
 				});
 			});
@@ -189,4 +220,18 @@ export class RoomMessageHandler {
 
 		this.context.execute();
 	}
+}
+
+function imprimirArrayHex(array: string[]): void {
+	console.log("=========================Core Message =========================");
+	const hexArray: string[] = array.map((numStr) => {
+		const num = parseInt(numStr, 10);
+		const hex = num.toString(16).toUpperCase();
+
+		return hex.length === 1 ? `0${hex}` : hex;
+	});
+
+	const hexString = hexArray.join(" ");
+
+	console.log(hexString);
 }
