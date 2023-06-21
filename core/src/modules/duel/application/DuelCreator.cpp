@@ -3,6 +3,7 @@
 #include "../../card/infrastructure/CardSqliteRepository.h"
 // #include "../../shared/HttpClient.h"
 #include <iostream>
+#include <random>
 
 DuelCreator::DuelCreator(OCGRepository repository) : repository{repository} {}
 
@@ -37,8 +38,15 @@ OCG_Duel DuelCreator::run(CardSqliteRepository &db, uint64_t flags, uint32_t sta
 
   uint8_t enableUnsafeLibraries = 0;
 
+  std::random_device rd;
+  std::mt19937_64 rng(rd());
+  std::uniform_int_distribution<uint64_t> dist(0, std::numeric_limits<uint64_t>::max());
+
   OCG_DuelOptions options = {
-      {0, 0, 0, 0},
+      {dist(rng),
+       dist(rng),
+       dist(rng),
+       dist(rng)},
       0xd0600,
       player,
       opponent,
