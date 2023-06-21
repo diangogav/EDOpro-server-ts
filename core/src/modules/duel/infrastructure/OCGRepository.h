@@ -19,6 +19,8 @@ private:
   typedef int (*OCG_DuelProcess_t)(OCG_Duel);
   typedef void *(*OCG_DuelGetMessage_t)(OCG_Duel, uint32_t *);
   typedef void (*OCG_DuelSetResponse_t)(OCG_Duel, const void*, uint32_t);
+  typedef void *(*OCG_DuelQuery_t)(OCG_Duel, uint32_t *, OCG_QueryInfo);
+
 
   OCG_GetVersion_t OCG_GetVersion;
   OCG_CreateDuel_t OCG_CreateDuel;
@@ -30,6 +32,7 @@ private:
   OCG_DuelProcess_t OCG_DuelProcess;
   OCG_DuelGetMessage_t OCG_DuelGetMessage;
   OCG_DuelSetResponse_t OCG_DuelSetResponse;
+  OCG_DuelQuery_t OCG_DuelQuery;
 
 public:
   OCGRepository();
@@ -43,5 +46,6 @@ public:
   int process(OCG_Duel duel);
   std::vector<std::vector<uint8_t>> getMessages(OCG_Duel duel);
   void setResponse(OCG_Duel duel, std::vector<uint8_t> buffer);
+  std::vector<uint8_t> duelQuery(OCG_Duel duel, OCG_QueryInfo query);
 };
 #endif
