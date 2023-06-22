@@ -89,7 +89,6 @@ export class RoomMessageHandler {
 
 			this.context.room.setDuel(core);
 
-			let count = 0;
 			core.stdout.on("data", (data: string) => {
 				const message = data.toString().trim();
 				// const regex = /CMD:[A-Z]+(\|[a-zA-Z0-9]+)*\b/g;
@@ -101,8 +100,6 @@ export class RoomMessageHandler {
 				}
 
 				commands.forEach((command) => {
-					count++;
-					console.log("command", command);
 					const commandParts = command.split("|");
 					const cmd = commandParts[0];
 					const params = commandParts.slice(1);
@@ -126,8 +123,8 @@ export class RoomMessageHandler {
 							opponentExtraDeckSize: Number(params[3]),
 						});
 
-						console.log(`sending to client: ${count}`, playerGameMessage);
-						console.log(`sending to client:  ${count}`, opponentGameMessage);
+						this.logger.debug(`sending to team 0: ${playerGameMessage.toString("hex")}`);
+						this.logger.debug(`sending to team 1:  ${opponentGameMessage.toString("hex")}`);
 
 						this.context.clients[0].socket.write(playerGameMessage);
 						this.context.clients[1].socket.write(opponentGameMessage);
@@ -148,7 +145,7 @@ export class RoomMessageHandler {
 
 						this.context.clients.forEach((client) => {
 							if (client.team === team) {
-								console.log(`sending to client:  ${team}`, message);
+								this.logger.debug(`sending to team ${team}: ${message.toString("hex")}`);
 								client.socket.write(message);
 							}
 						});
@@ -170,7 +167,7 @@ export class RoomMessageHandler {
 
 						this.context.clients.forEach((client) => {
 							if (client.team === team) {
-								console.log(`sending to client:  ${team}`, message);
+								this.logger.debug(`sending to team ${team}: ${message.toString("hex")}`);
 								client.socket.write(message);
 							}
 						});
@@ -188,7 +185,7 @@ export class RoomMessageHandler {
 
 						this.context.clients.forEach((client) => {
 							if (client.team === team) {
-								console.log(`sending to client:  ${team}`, message);
+								this.logger.debug(`sending to team ${team}: ${message.toString("hex")}`);
 								client.socket.write(message);
 							}
 						});
@@ -198,7 +195,7 @@ export class RoomMessageHandler {
 						const data = Buffer.from(params.slice(0).map(Number));
 						const message = BroadcastClientMessage.create({ buffer: data });
 						this.context.clients.forEach((client) => {
-							console.log(`sending to client: ALL`, message);
+							this.logger.debug(`sending to all: ${message.toString("hex")}`);
 							client.socket.write(message);
 						});
 					}
@@ -209,7 +206,7 @@ export class RoomMessageHandler {
 						const message = BroadcastClientMessage.create({ buffer: data });
 						this.context.clients.forEach((client) => {
 							if (client.team !== team) {
-								console.log(`sending to client: ${team}`, message);
+								this.logger.debug(`sending to team ${team}: ${message.toString("hex")}`);
 								client.socket.write(message);
 							}
 						});
@@ -230,7 +227,7 @@ export class RoomMessageHandler {
 						const timeLimit = Number(params[1]);
 						const message = TimeLimitClientMessage.create({ team, timeLimit });
 						this.context.clients.forEach((client) => {
-							console.log(`sending to client: ${team}`, message);
+							this.logger.debug(`sending to team ${team}: ${message.toString("hex")}`);
 							client.socket.write(message);
 						});
 					}
@@ -243,30 +240,17 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:LOG") {
-						imprimirArrayHex(params);
+						this.logger.debug("Message from core");
+						this.logger.debug(
+							params
+								.map((numStr) => parseInt(numStr, 10).toString(16).toUpperCase().padStart(2, "0"))
+								.join(" ")
+						);
 					}
 				});
-			});
-
-			core.stderr.on("data", (data: string) => {
-				console.log("error:", data);
 			});
 		}
 
 		this.context.execute();
 	}
-}
-
-function imprimirArrayHex(array: string[]): void {
-	console.log("=========================Core Message =========================");
-	const hexArray: string[] = array.map((numStr) => {
-		const num = parseInt(numStr, 10);
-		const hex = num.toString(16).toUpperCase();
-
-		return hex.length === 1 ? `0${hex}` : hex;
-	});
-
-	const hexString = hexArray.join(" ");
-
-	console.log(hexString);
 }
