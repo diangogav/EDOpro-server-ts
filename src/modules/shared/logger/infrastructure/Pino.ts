@@ -4,13 +4,17 @@ import { Logger } from "../domain/Logger";
 
 export class Pino implements Logger {
 	private readonly logger = pino({
+		level: "debug",
 		transport: {
 			target: "pino-pretty",
+			options: {
+				colorize: true,
+			},
 		},
 	});
 
-	debug(message: unknown): void {
-		this.logger.debug(message);
+	debug(_message: unknown): void {
+		// this.logger.debug(message);
 	}
 
 	error(error: string | Error): void {
