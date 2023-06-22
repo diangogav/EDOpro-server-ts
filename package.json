@@ -29,6 +29,8 @@
   "dependencies": {
     "express": "^4.18.2",
     "load-json-file": "^7.0.1",
+    "pino": "^8.14.1",
+    "pino-pretty": "^10.0.0",
     "winston": "^3.8.2"
   }
 }

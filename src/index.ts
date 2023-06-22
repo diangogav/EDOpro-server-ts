@@ -1,12 +1,12 @@
 import { Server } from "./http-server/Server";
-import { Winston } from "./modules/shared/logger/infrastructure/Winston";
+import { Pino } from "./modules/shared/logger/infrastructure/Pino";
 import { HostServer } from "./socket-server/HostServer";
 
 void start();
 
 async function start(): Promise<void> {
-	const server = new Server(new Winston());
-	const hostServer = new HostServer(new Winston());
+	const server = new Server(new Pino());
+	const hostServer = new HostServer(new Pino());
 	await server.initialize();
 	hostServer.initialize();
 }

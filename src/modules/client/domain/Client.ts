@@ -10,23 +10,34 @@ export class Client {
 	public readonly name: string;
 	public readonly position: number;
 	public readonly roomId: number;
+	public readonly team: number;
 	private _isReady: boolean;
 	private _rpsChosen: Choose | null = null;
 
-	constructor(
-		socket: YGOClientSocket,
-		host: boolean,
-		name: string,
-		position: number,
-		roomId: number,
-		isReady = false
-	) {
+	constructor({
+		socket,
+		host,
+		name,
+		position,
+		roomId,
+		isReady = false,
+		team,
+	}: {
+		socket: YGOClientSocket;
+		host: boolean;
+		name: string;
+		position: number;
+		roomId: number;
+		isReady?: boolean;
+		team: number;
+	}) {
 		this.socket = socket;
 		this.host = host;
 		this.name = name;
 		this.position = position;
 		this.roomId = roomId;
 		this._isReady = isReady;
+		this.team = team;
 	}
 
 	setRpsChosen(choise: Choose): void {

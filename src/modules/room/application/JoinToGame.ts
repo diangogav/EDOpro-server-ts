@@ -16,16 +16,23 @@ export class JoinToGame {
 		if (!room) {
 			return;
 		}
-		const position = room.users.length;
-		room.users.push({ pos: position, name: playerName });
-		room.addClient(new Client(this.socket, false, playerName, position, room.id));
+		const client = new Client({
+			socket: this.socket,
+			host: false,
+			name: playerName,
+			position: 1,
+			roomId: room.id,
+			team: 1,
+		});
+		room.users.push({ pos: client.position, name: playerName });
+		room.addClient(client);
 		this.socket.write(JoinGameClientMessage.createFromRoom(message, room));
-		room.clients.forEach((client) => {
-			client.socket.write(PlayerEnterClientMessage.create(playerName, position));
+		room.clients.forEach((_client) => {
+			_client.socket.write(PlayerEnterClientMessage.create(playerName, client.position));
 		});
 
-		room.clients.forEach((client) => {
-			client.socket.write(PlayerChangeClientMessage.create({ status: 0x1a }));
+		room.clients.forEach((_client) => {
+			_client.socket.write(PlayerChangeClientMessage.create({ status: 0x1a }));
 		});
 		this.socket.write(TypeChangeClientMessage.create({ type: 0x01 }));
 
@@ -34,7 +41,7 @@ export class JoinToGame {
 			return;
 		}
 
-		const status = room.clients[position - 1].isReady ? 0x09 : 0x0a;
+		const status = room.clients[client.position - 1].isReady ? 0x09 : 0x0a;
 		this.socket.write(PlayerEnterClientMessage.create(host.name, host.position));
 		this.socket.write(PlayerChangeClientMessage.create({ status }));
 	}

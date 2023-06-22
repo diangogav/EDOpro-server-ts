@@ -1,4 +1,5 @@
 import { YGOClientSocket } from "../../../../socket-server/HostServer";
+import { Logger } from "../../../shared/logger/domain/Logger";
 import { Commands } from "../../domain/Commands";
 import { MessageHandlerContext } from "./MessageHandlerContext";
 import { CreateGameCommandStrategy } from "./Strategies/CreateGameCommandStrategy";
@@ -8,9 +9,11 @@ import { ResponseCommandStrategy } from "./Strategies/ResponseCommandStrategy";
 
 export class MessageHandler {
 	private readonly context: MessageHandlerContext;
+	private readonly logger: Logger;
 
-	constructor(data: Buffer, socket: YGOClientSocket) {
+	constructor(data: Buffer, socket: YGOClientSocket, logger: Logger) {
 		this.context = new MessageHandlerContext(data, socket);
+		this.logger = logger;
 	}
 
 	read(): void {
@@ -21,18 +24,22 @@ export class MessageHandler {
 		const command = header.subarray(2, 3).readInt8();
 
 		if (command === Commands.PLAYER_INFO) {
+			this.logger.info("PLAYER_INFO");
 			this.context.setStrategy(new PlayerInfoCommandStrategy(this.context, () => this.read()));
 		}
 
 		if (command === Commands.CREATE_GAME) {
+			this.logger.info("CREATE_GAME");
 			this.context.setStrategy(new CreateGameCommandStrategy(this.context, () => this.read()));
 		}
 
 		if (command === Commands.JOIN_GAME) {
+			this.logger.info("JOIN_GAME");
 			this.context.setStrategy(new JoinGameCommandStrategy(this.context));
 		}
 
 		if (command === Commands.RESPONSE) {
+			this.logger.info("RESPONSE");
 			this.context.setStrategy(new ResponseCommandStrategy(this.context));
 		}
 
