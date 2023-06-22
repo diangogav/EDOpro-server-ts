@@ -76,8 +76,8 @@ export class Room {
 	public readonly duelRule: number;
 	public readonly handshake: number;
 	public readonly password: string;
-	public readonly users: Array<{ pos: number; name: string; deck?: Deck }>;
-	public readonly clients: Client[] = [];
+	private _users: Array<{ pos: number; name: string; deck?: Deck }>;
+	private _clients: Client[] = [];
 	private _duel?: ChildProcessWithoutNullStreams;
 	private _match: Match | null;
 	private _state: DuelState;
@@ -110,7 +110,7 @@ export class Room {
 		this.extraMax = attr.extraMax;
 		this.sideMin = attr.sideMin;
 		this.sideMax = attr.sideMax;
-		this.users = attr.users;
+		this._users = attr.users;
 		this.duelRule = attr.duelRule;
 		this.handshake = attr.handshake;
 		this.password = attr.password;
@@ -189,15 +189,15 @@ export class Room {
 	}
 
 	addClient(client: Client): void {
-		this.clients.push(client);
+		this._clients.push(client);
 		client.socket.on("data", (data) => {
-			const messageHandler = new RoomMessageHandler(data, client, this.clients, this);
+			const messageHandler = new RoomMessageHandler(data, client, this._clients, this);
 			messageHandler.read();
 		});
 	}
 
 	setDecksToPlayer(position: number, deck: Deck): void {
-		const user = this.users.find((user) => user.pos === position);
+		const user = this._users.find((user) => user.pos === position);
 		if (!user) {
 			return;
 		}
@@ -232,6 +232,24 @@ export class Room {
 		return this._clientWhoChoosesTurn;
 	}
 
+	removePlayer(socketId: string): void {
+		const client = this._clients.find((client) => client.socket.id === socketId);
+		this._clients = this._clients.filter((item) => item.socket.id !== socketId);
+		if (!client) {
+			return;
+		}
+
+		this._users = this._users.filter((user) => client.name !== user.name);
+	}
+
+	get clients(): Client[] {
+		return this._clients;
+	}
+
+	get users(): Array<{ pos: number; name: string; deck?: Deck }> {
+		return this._users;
+	}
+
 	toPresentation(): { [key: string]: unknown } {
 		return {
 			roomid: this.id,
@@ -260,7 +278,7 @@ export class Room {
 			extra_max: this.extraMax,
 			side_min: this.sideMin,
 			side_max: this.sideMax,
-			users: this.users,
+			users: this._users,
 		};
 	}
 }

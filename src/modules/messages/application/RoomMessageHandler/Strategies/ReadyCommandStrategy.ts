@@ -4,13 +4,15 @@ import { RoomMessageHandlerCommandStrategy } from "../RoomMessageHandlerCommandS
 import { RoomMessageHandlerContext } from "../RoomMessageHandlerContext";
 
 export class ReadyCommandStrategy implements RoomMessageHandlerCommandStrategy {
+	private readonly STATUS = 0x09;
+
 	constructor(
 		private readonly context: RoomMessageHandlerContext,
 		private readonly afterExecuteCallback: () => void
 	) {}
 
 	execute(): void {
-		const status = this.context.client.position === 0 ? 9 : 25;
+		const status = (this.context.client.position << 4) | this.STATUS;
 		const message = PlayerChangeClientMessage.create({ status });
 		const deck = this.context.getPreviousMessages() as Deck;
 		this.context.room.setDecksToPlayer(this.context.client.position, deck);

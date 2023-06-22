@@ -3,13 +3,14 @@ import { RoomMessageHandlerCommandStrategy } from "../RoomMessageHandlerCommandS
 import { RoomMessageHandlerContext } from "../RoomMessageHandlerContext";
 
 export class NotReadyCommandStrategy implements RoomMessageHandlerCommandStrategy {
+	private readonly STATUS = 0x10;
 	constructor(
 		private readonly context: RoomMessageHandlerContext,
 		private readonly afterExecuteCallback: () => void
 	) {}
 
 	execute(): void {
-		const status = this.context.client.position === 0 ? 10 : 26;
+		const status = (this.context.client.position << 4) | this.STATUS;
 		const message = PlayerChangeClientMessage.create({ status });
 		this.context.clients.forEach((client) => {
 			client.socket.write(message);
