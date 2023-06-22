@@ -24,6 +24,13 @@ export class Match {
 	}
 
 	isFinished(): boolean {
-		return this.playerScore + this.opponentScore >= this.needWins;
+		return this.opponentScore >= this.needWins || this.playerScore >= this.needWins;
+	}
+
+	get score(): { team0: number; team1: number } {
+		return {
+			team0: this.playerScore,
+			team1: this.opponentScore,
+		};
 	}
 }

@@ -177,6 +177,17 @@ export class Room {
 		this._match = new Match({ bestOf: this.bestOf });
 	}
 
+	matchScore(): { team0: number; team1: number } {
+		if (!this._match) {
+			return {
+				team0: 0,
+				team1: 0,
+			};
+		}
+
+		return this._match.score;
+	}
+
 	addClient(client: Client): void {
 		this.clients.push(client);
 		client.socket.on("data", (data) => {
