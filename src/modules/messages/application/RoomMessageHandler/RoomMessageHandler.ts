@@ -2,6 +2,8 @@ import { spawn } from "child_process";
 
 import { Client } from "../../../client/domain/Client";
 import { Room } from "../../../room/domain/Room";
+import { Logger } from "../../../shared/logger/domain/Logger";
+import { Pino } from "../../../shared/logger/infrastructure/Pino";
 import { Commands } from "../../domain/Commands";
 import { BroadcastClientMessage } from "../../server-to-client/game-messages/BroadcastClientMessage";
 import { RawClientMessage } from "../../server-to-client/game-messages/RawClientMessage";
@@ -20,6 +22,7 @@ import { UpdateDeckCommandStrategy } from "./Strategies/UpdateDeckCommandStrateg
 
 export class RoomMessageHandler {
 	private readonly context: RoomMessageHandlerContext;
+	private readonly logger: Logger = new Pino();
 
 	constructor(data: Buffer, client: Client, clients: Client[], room: Room) {
 		this.context = new RoomMessageHandlerContext(data, client, clients, room);
@@ -33,30 +36,40 @@ export class RoomMessageHandler {
 		const command = header.subarray(2, 3).readInt8();
 
 		if (command === Commands.UPDATE_DECK) {
+			this.logger.info("UPDATE_DECK");
 			this.context.setStrategy(new UpdateDeckCommandStrategy(this.context, () => this.read()));
 		}
 
 		if (command === Commands.READY) {
+			this.logger.info("READY");
 			this.context.setStrategy(new ReadyCommandStrategy(this.context, () => this.read()));
 		}
 
 		if (command === Commands.NOT_READY) {
+			this.logger.info("NOT_READY");
 			this.context.setStrategy(new NotReadyCommandStrategy(this.context, () => this.read()));
 		}
 
 		if (command === Commands.TRY_START) {
+			this.logger.info("TRY_START");
 			this.context.setStrategy(new TryStartCommandStrategy(this.context, () => this.read()));
 		}
 
 		if (command === Commands.RPS_CHOICE) {
+			this.logger.info("RPS_CHOICE");
 			this.context.setStrategy(new RpsChoiceCommandStrategy(this.context));
 		}
 
 		if (command === Commands.TURN_CHOICE) {
+			this.logger.info("TURN_CHOICE");
 			const turn = this.context.readBody(1).readInt8();
+			this.logger.info(`TURN_CHOICE: ${turn}`);
 			const position = this.context.room.clients.find(
 				(client) => client === this.context.client
 			)?.position;
+
+			const playFirst = turn === 1 ? this.context.client.team : Number(!this.context.client.team);
+			this.logger.info(`PLAY_FIRST: ${playFirst}`);
 
 			const isTeam1GoingFirst = (position === 0 && turn === 0) || (position === 1 && turn === 1);
 
@@ -97,7 +110,7 @@ export class RoomMessageHandler {
 					if (cmd === "CMD:START") {
 						const playerGameMessage = StartDuelClientMessage.create({
 							lp: this.context.room.startLp,
-							team: 0,
+							team: Number(isTeam1GoingFirst) ^ 0,
 							playerMainDeckSize: Number(params[0]),
 							playerExtraDeckSize: Number(params[1]),
 							opponentMainDeckSize: Number(params[2]),
@@ -106,7 +119,7 @@ export class RoomMessageHandler {
 
 						const opponentGameMessage = StartDuelClientMessage.create({
 							lp: this.context.room.startLp,
-							team: 1,
+							team: Number(isTeam1GoingFirst) ^ 1,
 							playerMainDeckSize: Number(params[0]),
 							playerExtraDeckSize: Number(params[1]),
 							opponentMainDeckSize: Number(params[2]),
@@ -132,8 +145,13 @@ export class RoomMessageHandler {
 							con,
 							buffer,
 						});
-						console.log(`sending to client: ${count}`, message);
-						this.context.clients[team].socket.write(message);
+
+						this.context.clients.forEach((client) => {
+							if (client.team === team) {
+								console.log(`sending to client:  ${team}`, message);
+								client.socket.write(message);
+							}
+						});
 					}
 
 					if (cmd === "CMD:CARD") {
@@ -149,8 +167,13 @@ export class RoomMessageHandler {
 							sequence,
 							buffer,
 						});
-						console.log(`sending card to client: ${count}`, message);
-						this.context.clients[team].socket.write(message);
+
+						this.context.clients.forEach((client) => {
+							if (client.team === team) {
+								console.log(`sending to client:  ${team}`, message);
+								client.socket.write(message);
+							}
+						});
 					}
 
 					if (cmd === "CMD:DUEL") {
@@ -162,15 +185,20 @@ export class RoomMessageHandler {
 						const data = Buffer.from(params.slice(1, params.length).map(Number));
 
 						const message = RawClientMessage.create({ buffer: data });
-						console.log(`sending to client: ${count}`, message);
-						this.context.clients[team].socket.write(message);
+
+						this.context.clients.forEach((client) => {
+							if (client.team === team) {
+								console.log(`sending to client:  ${team}`, message);
+								client.socket.write(message);
+							}
+						});
 					}
 
 					if (cmd === "CMD:BROADCAST") {
 						const data = Buffer.from(params.slice(0).map(Number));
 						const message = BroadcastClientMessage.create({ buffer: data });
 						this.context.clients.forEach((client) => {
-							console.log(`sending to client: ${count}`, message);
+							console.log(`sending to client: ALL`, message);
 							client.socket.write(message);
 						});
 					}
@@ -180,8 +208,8 @@ export class RoomMessageHandler {
 						const data = Buffer.from(params.slice(1).map(Number));
 						const message = BroadcastClientMessage.create({ buffer: data });
 						this.context.clients.forEach((client) => {
-							if (client.position !== team) {
-								console.log(`sending to client: ${count}`, message);
+							if (client.team !== team) {
+								console.log(`sending to client: ${team}`, message);
 								client.socket.write(message);
 							}
 						});
@@ -191,8 +219,7 @@ export class RoomMessageHandler {
 						const nonWaitingPlayer = Number(params[0]);
 						const message = WaitingClientMessage.create();
 						this.context.clients.forEach((client) => {
-							if (client.position !== nonWaitingPlayer) {
-								console.log(`sending to client: ${count}`, message);
+							if (client.team !== nonWaitingPlayer) {
 								client.socket.write(message);
 							}
 						});
@@ -203,7 +230,7 @@ export class RoomMessageHandler {
 						const timeLimit = Number(params[1]);
 						const message = TimeLimitClientMessage.create({ team, timeLimit });
 						this.context.clients.forEach((client) => {
-							console.log(`sending to client: ${count}`, message);
+							console.log(`sending to client: ${team}`, message);
 							client.socket.write(message);
 						});
 					}

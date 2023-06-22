@@ -29,15 +29,15 @@ void DuelMessageHandler::handle(std::vector<uint8_t> message)
   case MessageTargets::MSG_DIST_TYPE_SPECIFIC_TEAM_DUELIST_STRIPPED:
   {
     uint8_t team = this->getTeamMessageReceptor(message);
-    messageSender.send(team, handler.handle(team, message));
+    messageSender.send(this->calculateTeam(team), handler.handle(team, message));
     break;
   }
   case MessageTargets::MSG_DIST_TYPE_EVERYONE_STRIPPED:
   {
     uint8_t teamA = this->calculateTeam(0U);
     uint8_t teamB = this->calculateTeam(1U);
-    messageSender.send(teamA, handler.handle(teamA, message));
-    messageSender.send(teamB, handler.handle(teamB, message));
+    messageSender.send(teamA, handler.handle(0U, message));
+    messageSender.send(teamB, handler.handle(1U, message));
     break;
   }
   case MessageTargets::MSG_DIST_TYPE_EVERYONE:

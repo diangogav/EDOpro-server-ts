@@ -25,7 +25,7 @@ export class HostServer {
 			ygoClientSocket.id = Math.random().toString();
 
 			socket.on("data", (data) => {
-				this.logger.debug(data.toString("hex"));
+				this.logger.info(data.toString("hex"));
 				const messageHandler = new MessageHandler(data, socket, this.logger);
 				messageHandler.read();
 			});

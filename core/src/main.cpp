@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
   DuelScriptsLoader duelScriptsLoader{repository, duel};
   duelScriptsLoader.load();
 
-  DuelDecksLoader duelDecksLoader{repository, duel};
+  DuelDecksLoader duelDecksLoader{repository, duel, isTeam1GoingFirst};
   duelDecksLoader.load(playerMainDeckParser.parse(), opponentMainDeckParser.parse());
 
   DuelStarter duelStarter{repository, duel};

@@ -15,14 +15,21 @@ export class GameCreator {
 	constructor(private readonly socket: net.Socket) {}
 	run(message: CreateGameMessage, playerName: string): void {
 		const room = Room.createFromCreateGameMessage(message, playerName);
-
-		room.addClient(new Client(this.socket, true, playerName, 0, room.id));
+		const client = new Client({
+			socket: this.socket,
+			host: true,
+			name: playerName,
+			position: 0,
+			roomId: room.id,
+			team: 0,
+		});
+		room.addClient(client);
 		RoomList.addRoom(room);
 		room.createMatch();
 
 		this.socket.write(CreateGameClientMessage.create(room));
 		this.socket.write(JoinGameClientMessage.createFromCreateGameMessage(message));
-		this.socket.write(PlayerEnterClientMessage.create(playerName, 0));
+		this.socket.write(PlayerEnterClientMessage.create(playerName, client.position));
 		this.socket.write(PlayerChangeClientMessage.create({}));
 		this.socket.write(TypeChangeClientMessage.create({ type: this.HOST_CLIENT }));
 	}
