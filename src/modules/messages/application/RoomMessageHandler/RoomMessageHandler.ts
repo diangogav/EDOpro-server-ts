@@ -88,6 +88,7 @@ export class RoomMessageHandler {
 			]);
 
 			this.context.room.setDuel(core);
+			this.context.room.dueling();
 
 			core.stdout.on("data", (data: string) => {
 				const message = data.toString().trim();

@@ -78,6 +78,7 @@ export class Room {
 	public readonly password: string;
 	private _users: Array<{ pos: number; name: string; deck?: Deck }>;
 	private _clients: Client[] = [];
+	private readonly _spectators: Client[] = [];
 	private _duel?: ChildProcessWithoutNullStreams;
 	private _match: Match | null;
 	private _state: DuelState;
@@ -200,6 +201,10 @@ export class Room {
 		});
 	}
 
+	addSpectator(client: Client): void {
+		this._spectators.push(client);
+	}
+
 	setDecksToPlayer(position: number, deck: Deck): void {
 		const user = this._users.find((user) => user.pos === position);
 		if (!user) {
@@ -218,6 +223,10 @@ export class Room {
 		}
 
 		return this._duel;
+	}
+
+	dueling(): void {
+		this._state = DuelState.DUELING;
 	}
 
 	sideDecking(): void {
