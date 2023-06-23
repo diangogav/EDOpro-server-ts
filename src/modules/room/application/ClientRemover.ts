@@ -28,6 +28,12 @@ export class ClientRemover {
 			return;
 		}
 
+		if (client.host) {
+			RoomList.deleteRoom(room);
+
+			return;
+		}
+
 		const status = (client.position << 4) | this.STATUS;
 		const message = PlayerChangeClientMessage.create({ status });
 

@@ -12,7 +12,7 @@ export class JoinToGame {
 	constructor(private readonly socket: net.Socket) {}
 
 	run(message: JoinGameMessage, playerName: string): void {
-		const room = RoomList.getRooms().find((room) => room.id === 1);
+		const room = RoomList.getRooms().find((room) => room.id === message.id);
 		if (!room) {
 			return;
 		}

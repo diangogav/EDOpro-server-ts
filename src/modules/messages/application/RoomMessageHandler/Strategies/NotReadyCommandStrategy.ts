@@ -3,7 +3,7 @@ import { RoomMessageHandlerCommandStrategy } from "../RoomMessageHandlerCommandS
 import { RoomMessageHandlerContext } from "../RoomMessageHandlerContext";
 
 export class NotReadyCommandStrategy implements RoomMessageHandlerCommandStrategy {
-	private readonly STATUS = 0x10;
+	private readonly STATUS = 0xa;
 	constructor(
 		private readonly context: RoomMessageHandlerContext,
 		private readonly afterExecuteCallback: () => void

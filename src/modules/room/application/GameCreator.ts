@@ -14,7 +14,11 @@ export class GameCreator {
 	private readonly HOST_CLIENT = 0x10;
 	constructor(private readonly socket: net.Socket) {}
 	run(message: CreateGameMessage, playerName: string): void {
-		const room = Room.createFromCreateGameMessage(message, playerName);
+		const room = Room.createFromCreateGameMessage(
+			message,
+			playerName,
+			RoomList.getRooms().length + 1
+		);
 		const client = new Client({
 			socket: this.socket,
 			host: true,

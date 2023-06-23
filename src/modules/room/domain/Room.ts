@@ -118,9 +118,13 @@ export class Room {
 		this._state = DuelState.WAITING;
 	}
 
-	static createFromCreateGameMessage(message: CreateGameMessage, playerName: string): Room {
+	static createFromCreateGameMessage(
+		message: CreateGameMessage,
+		playerName: string,
+		id: number
+	): Room {
 		return new Room({
-			id: 1,
+			id,
 			name: message.name,
 			notes: message.notes,
 			mode: message.mode,
