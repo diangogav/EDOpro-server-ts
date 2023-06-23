@@ -29,8 +29,9 @@ void QueryRequestProcessor::run(const std::vector<QueryRequest> &queryRequests, 
 
       uint8_t team = this->calculateTeam(querySingleRequest.con);
 
-      updateCardMessageSender.send(team, querySingleRequest.loc, querySingleRequest.con, querySingleRequest.seq, playerBuffer);
-      updateCardMessageSender.send(1U - team, querySingleRequest.loc, querySingleRequest.con, querySingleRequest.seq, strippedBuffer);
+      updateCardMessageSender.send(0, team, querySingleRequest.loc, querySingleRequest.con, querySingleRequest.seq, playerBuffer);
+      updateCardMessageSender.send(0, 1U - team, querySingleRequest.loc, querySingleRequest.con, querySingleRequest.seq, strippedBuffer);
+      updateCardMessageSender.send(1, 3, querySingleRequest.loc, querySingleRequest.con, querySingleRequest.seq, strippedBuffer);
     }
     else
     {
@@ -52,7 +53,7 @@ void QueryRequestProcessor::run(const std::vector<QueryRequest> &queryRequests, 
 
       if (queryLocationRequest.loc == LOCATION_EXTRA)
       {
-        bufferMessageSender.send(team, queryLocationRequest.loc, queryLocationRequest.con, buffer);
+        bufferMessageSender.send(0, team, queryLocationRequest.loc, queryLocationRequest.con, buffer);
         continue;
       }
 
@@ -60,8 +61,9 @@ void QueryRequestProcessor::run(const std::vector<QueryRequest> &queryRequests, 
       const auto playerBuffer = serializer.serializeLocationQuery(queries, false);
       const auto strippedBuffer = serializer.serializeLocationQuery(queries, true);
 
-      bufferMessageSender.send(team, queryLocationRequest.loc, queryLocationRequest.con, playerBuffer);
-      bufferMessageSender.send(1U - team, queryLocationRequest.loc, queryLocationRequest.con, strippedBuffer);
+      bufferMessageSender.send(0, team, queryLocationRequest.loc, queryLocationRequest.con, playerBuffer);
+      bufferMessageSender.send(0, 1U - team, queryLocationRequest.loc, queryLocationRequest.con, strippedBuffer);
+      bufferMessageSender.send(1, 3, queryLocationRequest.loc, queryLocationRequest.con, strippedBuffer);
     }
   }
 }

@@ -44,6 +44,10 @@ export class JoinToGameAsExpectator {
 
 		this.socket.write(CatchUpClientMessage.create({ catchingUp: true }));
 
+		room.spectatorCache.forEach((item) => {
+			this.socket.write(item);
+		});
+
 		this.socket.write(CatchUpClientMessage.create({ catchingUp: false }));
 	}
 }

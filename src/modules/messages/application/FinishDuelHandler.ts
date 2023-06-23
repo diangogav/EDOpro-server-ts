@@ -1,5 +1,6 @@
 import { Room } from "../../room/domain/Room";
 import { SideDeckClientMessage } from "../server-to-client/game-messages/SideDeckClientMessage";
+import { SideDeckWaitClientMessage } from "../server-to-client/game-messages/SideDeckWaitClientMessage";
 
 export class FinishDuelHandler {
 	private readonly reason: number;
@@ -17,6 +18,22 @@ export class FinishDuelHandler {
 		this.room.duelWinner(this.winner);
 
 		if (this.room.isMatchFinished()) {
+			console.log(
+				"Ganador: ",
+				this.room.clients
+					.filter((client) => client.team === this.winner)
+					.map((client) => client.name.replace(/\0/g, "").trim())
+			);
+
+			console.log(
+				"Perdedor: ",
+				this.room.clients
+					.filter((client) => client.team !== this.winner)
+					.map((client) => client.name)
+			);
+
+			console.log("Score", this.room.matchScore());
+
 			return;
 		}
 
@@ -31,6 +48,10 @@ export class FinishDuelHandler {
 			console.log("sending to client:", message);
 			client.socket.write(message);
 			client.notReady();
+		});
+
+		this.room.spectators.forEach((spectator) => {
+			spectator.socket.write(SideDeckWaitClientMessage.create());
 		});
 	}
 }

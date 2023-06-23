@@ -1,8 +1,9 @@
 #include "DuelMessageSender.h"
 
-void DuelMessageSender::send(uint8_t team, std::vector<uint8_t> message)
+void DuelMessageSender::send(int cache, uint8_t team, std::vector<uint8_t> message)
 {
   std::string payload = "CMD:MESSAGE|";
+  payload += std::to_string(cache) + "|";
   payload += std::to_string(team) + "|";
   for (const auto &element : message)
   {

@@ -1,8 +1,9 @@
 #include "UpdateCardMessageSender.h"
 
-void UpdateCardMessageSender::send(uint8_t team, uint32_t location, uint8_t con, uint8_t sequence, std::vector<uint8_t> message)
+void UpdateCardMessageSender::send(int cache, uint8_t team, uint32_t location, uint8_t con, uint8_t sequence, std::vector<uint8_t> message)
 {
   std::string payload = "CMD:CARD|";
+  payload += std::to_string(cache) + "|";
   payload += std::to_string(team) + "|";
   payload += std::to_string(location) + "|";
   payload += std::to_string(con) + "|";

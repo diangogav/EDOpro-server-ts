@@ -28,8 +28,8 @@ void DecksSetter::run()
 
   BufferMessageSender sender;
 
-  sender.send(0, 0x40, 0, playerBuffer);
-  sender.send(1, 0x40, 1, opponentBuffer);
+  sender.send(0, 0, 0x40, 0, playerBuffer);
+  sender.send(0, 1, 0x40, 1, opponentBuffer);
 
   std::cout << "CMD:DUEL" << std::endl;
 }

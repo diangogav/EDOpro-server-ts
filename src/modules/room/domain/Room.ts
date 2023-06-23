@@ -76,6 +76,7 @@ export class Room {
 	public readonly duelRule: number;
 	public readonly handshake: number;
 	public readonly password: string;
+	private _spectatorDuelCache: Buffer[] = [];
 	private _users: Array<{ pos: number; name: string; deck?: Deck }>;
 	private _clients: Client[] = [];
 	private readonly _spectators: Client[] = [];
@@ -205,6 +206,10 @@ export class Room {
 		this._spectators.push(client);
 	}
 
+	get spectators(): Client[] {
+		return this._spectators;
+	}
+
 	setDecksToPlayer(position: number, deck: Deck): void {
 		const user = this._users.find((user) => user.pos === position);
 		if (!user) {
@@ -261,6 +266,18 @@ export class Room {
 
 	get users(): Array<{ pos: number; name: string; deck?: Deck }> {
 		return this._users;
+	}
+
+	cacheMessageForSpectator(message: Buffer): void {
+		this._spectatorDuelCache.push(message);
+	}
+
+	get spectatorCache(): Buffer[] {
+		return this._spectatorDuelCache;
+	}
+
+	clearSpectatorCache(): void {
+		this._spectatorDuelCache = [];
 	}
 
 	toPresentation(): { [key: string]: unknown } {

@@ -129,20 +129,31 @@ export class RoomMessageHandler {
 
 						this.context.clients[0].socket.write(playerGameMessage);
 						this.context.clients[1].socket.write(opponentGameMessage);
+
+						this.context.room.clearSpectatorCache();
+						this.context.room.cacheMessageForSpectator(opponentGameMessage);
+						this.context.room.spectators.forEach((spectator) => {
+							spectator.socket.write(opponentGameMessage);
+						});
 						core.stdin.write("CMD:DECKS\n");
 					}
 
 					if (cmd === "CMD:BUFFER") {
-						const team = Number(params[0]);
-						const location = Number(params[1]);
-						const con = Number(params[2]);
-						const bufferData = params.slice(3).map(Number);
+						const cache = Number(params[0]);
+						const team = Number(params[1]);
+						const location = Number(params[2]);
+						const con = Number(params[3]);
+						const bufferData = params.slice(4).map(Number);
 						const buffer = Buffer.from(bufferData);
 						const message = UpdateDataClientMessage.create({
 							deckLocation: location,
 							con,
 							buffer,
 						});
+
+						if (cache) {
+							this.context.room.cacheMessageForSpectator(message);
+						}
 
 						this.context.clients.forEach((client) => {
 							if (client.team === team) {
@@ -153,11 +164,12 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:CARD") {
-						const team = Number(params[0]);
-						const location = Number(params[1]);
-						const con = Number(params[2]);
-						const sequence = Number(params[3]);
-						const bufferData = params.slice(4).map(Number);
+						const cache = Number(params[0]);
+						const team = Number(params[1]);
+						const location = Number(params[2]);
+						const con = Number(params[3]);
+						const sequence = Number(params[4]);
+						const bufferData = params.slice(5).map(Number);
 						const buffer = Buffer.from(bufferData);
 						const message = UpdateCardClientMessage.create({
 							deckLocation: location,
@@ -166,10 +178,21 @@ export class RoomMessageHandler {
 							buffer,
 						});
 
+						if (cache) {
+							this.context.room.cacheMessageForSpectator(message);
+						}
+
 						this.context.clients.forEach((client) => {
 							if (client.team === team) {
 								this.logger.debug(`sending to team ${team}: ${message.toString("hex")}`);
 								client.socket.write(message);
+							}
+						});
+
+						this.context.room.spectators.forEach((spectator) => {
+							if (spectator.team === team) {
+								this.logger.debug(`sending to spectator ${team}: ${message.toString("hex")}`);
+								spectator.socket.write(message);
 							}
 						});
 					}
@@ -179,10 +202,15 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:MESSAGE") {
-						const team = Number(params[0]);
-						const data = Buffer.from(params.slice(1, params.length).map(Number));
+						const cache = Number(params[0]);
+						const team = Number(params[1]);
+						const data = Buffer.from(params.slice(2, params.length).map(Number));
 
 						const message = RawClientMessage.create({ buffer: data });
+
+						if (cache) {
+							this.context.room.cacheMessageForSpectator(message);
+						}
 
 						this.context.clients.forEach((client) => {
 							if (client.team === team) {
@@ -190,14 +218,27 @@ export class RoomMessageHandler {
 								client.socket.write(message);
 							}
 						});
+
+						this.context.room.spectators.forEach((spectator) => {
+							if (spectator.team === team) {
+								this.logger.debug(`sending to spectator ${team}: ${message.toString("hex")}`);
+								spectator.socket.write(message);
+							}
+						});
 					}
 
 					if (cmd === "CMD:BROADCAST") {
 						const data = Buffer.from(params.slice(0).map(Number));
 						const message = BroadcastClientMessage.create({ buffer: data });
+						this.context.room.cacheMessageForSpectator(message);
 						this.context.clients.forEach((client) => {
 							this.logger.debug(`sending to all: ${message.toString("hex")}`);
 							client.socket.write(message);
+						});
+
+						this.context.room.spectators.forEach((spectator) => {
+							this.logger.debug(`sending to spectators: ${message.toString("hex")}`);
+							spectator.socket.write(message);
 						});
 					}
 
