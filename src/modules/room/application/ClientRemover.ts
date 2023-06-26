@@ -1,4 +1,3 @@
-import { YGOClientSocket } from "../../../socket-server/HostServer";
 import { PlayerChangeClientMessage } from "../../messages/server-to-client/PlayerChangeClientMessage";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { Room } from "../domain/Room";
@@ -9,17 +8,7 @@ export class ClientRemover {
 
 	constructor(private readonly logger: Logger) {}
 
-	run(socket: YGOClientSocket): void {
-		const socketId = socket.id;
-		if (!socketId) {
-			return;
-		}
-
-		const room = this.findClient(socketId);
-		if (!room) {
-			return;
-		}
-
+	run(room: Room, socketId: string): void {
 		const client = room.clients.find((client) => client.socket.id === socketId);
 
 		room.removePlayer(socketId);
@@ -41,19 +30,5 @@ export class ClientRemover {
 			this.logger.debug(`sending to position ${client.position}: ${message.toString("hex")}`);
 			client.socket.write(message);
 		});
-	}
-
-	private findClient(socketId: string): Room | null {
-		const rooms = RoomList.getRooms();
-		let room: Room | null = null;
-		for (const item of rooms) {
-			const found = item.clients.find((client) => client.socket.id === socketId);
-			if (found) {
-				room = item;
-				break;
-			}
-		}
-
-		return room;
 	}
 }

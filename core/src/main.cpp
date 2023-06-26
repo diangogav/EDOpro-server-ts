@@ -5,12 +5,17 @@
 #include "./modules/duel/application/DecksSetter.h"
 #include "./modules/card/infrastructure/CardSqliteRepository.h"
 #include "./modules/duel/messages/application/LogMessageSender.h"
+#include "./modules/shared/ZonesRefresher.h"
+#include "./modules/duel/messages/domain/QueryDeserializer.h"
+#include "./modules/duel/messages/domain/QuerySerializer.h"
 
 #include "./modules/duel/infrastructure/OCGRepository.h"
 #include "./modules/shared/CommandLineArrayParser.h"
 #include "./modules/duel/application/DuelProcessor.h"
 #include "./modules/duel/messages/domain/DuelMessageHandler.h"
 #include "./modules/duel/messages/application/BufferMessageSender.h"
+#include "./modules/duel/messages/application/RefreshMessageSender.h"
+#include "./modules/duel/messages/application/FieldMessageSender.h"
 #include "./modules/duel/messages/application/QueryRequestProcessor.h"
 #include "./modules/duel/messages/post-actions/QueryCreator.h"
 #include "./modules/duel/messages/pre-actions/PreActionQueryCreator.h"
@@ -27,6 +32,12 @@
 #include <regex>
 #include <filesystem>
 namespace fs = std::filesystem;
+
+uint8_t calculateTeam(uint8_t team, uint8_t isTeam1GoingFirst)
+{
+  assert(team <= 1U);
+  return isTeam1GoingFirst ^ team;
+}
 
 void printVectorAsHex(const std::vector<uint8_t> &vec)
 {
@@ -132,6 +143,10 @@ int main(int argc, char *argv[])
   PostActions postActions(timeLimit, isTeam1GoingFirst);
   ResponseHandler responseHandler(duel, repository, timeLimit);
   DuelFinishHandler duelFinishHandler(isTeam1GoingFirst);
+  ZonesRefresher zonesRefresher;
+  RefreshMessageSender refreshMessageSender;
+  QueryDeserializer deserializer;
+  QuerySerializer serializer;
 
   std::string message;
   while (true)
@@ -180,6 +195,45 @@ int main(int argc, char *argv[])
       {
         DecksSetter decksSetter{repository, duel};
         decksSetter.run();
+      }
+
+      if (cmd == "FIELD")
+      {
+        int team = std::atoi(params[0].c_str());
+        const auto buffer = repository.duelQueryField(duel);
+        FieldMessageSender fieldMessageSender;
+        fieldMessageSender.send(team, buffer);
+      }
+
+      if (cmd == "REFRESH")
+      {
+        int reconnectingTeam = std::atoi(params[0].c_str());
+        std::vector<QueryRequest> queryRequests;
+        zonesRefresher.refreshAll(queryRequests);
+
+        for (const auto &queryRequest : queryRequests)
+        {
+          const auto &queryLocationRequest = std::get<QueryLocationRequest>(queryRequest);
+          OCG_QueryInfo query = {
+              queryLocationRequest.flags,
+              queryLocationRequest.con,
+              queryLocationRequest.loc,
+              0U,
+              0U};
+
+          uint8_t team = calculateTeam(queryLocationRequest.con, isTeam1GoingFirst);
+          const auto buffer = repository.duelQueryLocation(duel, query);
+          const auto queries = deserializer.deserializeLocationQuery(buffer);
+          const auto playerBuffer = serializer.serializeLocationQuery(queries, false);
+          const auto strippedBuffer = serializer.serializeLocationQuery(queries, true);
+
+          refreshMessageSender.send(reconnectingTeam, team, queryLocationRequest.loc, queryLocationRequest.con, playerBuffer);
+          refreshMessageSender.send(reconnectingTeam, 1U - team, queryLocationRequest.loc, queryLocationRequest.con, strippedBuffer);
+        }
+
+        std::string payload = "CMD:RECONNECT|";
+        payload += std::to_string(reconnectingTeam) + "|";
+        std::cout << payload << std::endl;
       }
 
       if (cmd == "PROCESS")

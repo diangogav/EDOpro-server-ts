@@ -76,7 +76,7 @@ export class Room {
 	public readonly duelRule: number;
 	public readonly handshake: number;
 	public readonly password: string;
-	private _spectatorDuelCache: Buffer[] = [];
+	private readonly duelCache: Buffer[][] = [];
 	private _users: Array<{ pos: number; name: string; deck?: Deck }>;
 	private _clients: Client[] = [];
 	private readonly _spectators: Client[] = [];
@@ -84,6 +84,13 @@ export class Room {
 	private _match: Match | null;
 	private _state: DuelState;
 	private _clientWhoChoosesTurn: Client;
+	private readonly _lastMessageToTeam: { team: number; message: Buffer }[] = [];
+	private _playerMainDeckSize: number;
+	private _playerExtraDeckSize: number;
+	private _opponentMainDeckSize: number;
+	private _opponentExtraDeckSize: number;
+	private _turn = 0;
+	private _firstToPlay: number;
 
 	private constructor(attr: RoomAttr) {
 		this.id = attr.id;
@@ -118,6 +125,10 @@ export class Room {
 		this.password = attr.password;
 		this._duel = attr.duel;
 		this._state = DuelState.WAITING;
+		this.duelCache[0] = [];
+		this.duelCache[1] = [];
+		this.duelCache[2] = [];
+		this.duelCache[3] = [];
 	}
 
 	static createFromCreateGameMessage(
@@ -268,16 +279,75 @@ export class Room {
 		return this._users;
 	}
 
-	cacheMessageForSpectator(message: Buffer): void {
-		this._spectatorDuelCache.push(message);
+	cacheMessage(team: number, message: Buffer): void {
+		this.duelCache[team].push(message);
 	}
 
 	get spectatorCache(): Buffer[] {
-		return this._spectatorDuelCache;
+		return this.duelCache[3];
+	}
+
+	getplayerCache(team: number): Buffer[] {
+		return this.duelCache[team];
 	}
 
 	clearSpectatorCache(): void {
-		this._spectatorDuelCache = [];
+		this.duelCache[3] = [];
+	}
+
+	clearPlayersCache(): void {
+		this.duelCache[0] = [];
+		this.duelCache[1] = [];
+	}
+
+	setLastMessageToTeam(team: number, message: Buffer): void {
+		this._lastMessageToTeam.push({ team, message });
+	}
+
+	get lastMessageToTeam(): { team: number; message: Buffer } {
+		return this._lastMessageToTeam[this._lastMessageToTeam.length];
+	}
+
+	setPlayerDecksSize(mainSize: number, extraSize: number): void {
+		this._playerExtraDeckSize = extraSize;
+		this._playerMainDeckSize = mainSize;
+	}
+
+	setOpponentDecksSize(mainSize: number, extraSize: number): void {
+		this._opponentExtraDeckSize = extraSize;
+		this._opponentMainDeckSize = mainSize;
+	}
+
+	get playerMainDeckSize(): number {
+		return this._playerMainDeckSize;
+	}
+
+	get playerExtraDeckSize(): number {
+		return this._playerExtraDeckSize;
+	}
+
+	get opponentMainDeckSize(): number {
+		return this._opponentMainDeckSize;
+	}
+
+	get opponentExtraDeckSize(): number {
+		return this._opponentExtraDeckSize;
+	}
+
+	increaseTurn(): void {
+		this._turn++;
+	}
+
+	get turn(): number {
+		return this._turn;
+	}
+
+	setFirstToPlay(team: number): void {
+		this._firstToPlay = team;
+	}
+
+	get firstToPlay(): number {
+		return this._firstToPlay;
 	}
 
 	toPresentation(): { [key: string]: unknown } {

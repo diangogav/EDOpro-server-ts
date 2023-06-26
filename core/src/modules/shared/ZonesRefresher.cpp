@@ -23,3 +23,10 @@ void ZonesRefresher::refreshAllDecks(std::vector<QueryRequest> &queryRequests)
 	queryRequests.emplace_back(QueryLocationRequest{0U, LOCATION_DECK, 0x1181FFF});
 	queryRequests.emplace_back(QueryLocationRequest{1U, LOCATION_DECK, 0x1181FFF});
 }
+
+void ZonesRefresher::refreshAll(std::vector<QueryRequest> &queryRequests)
+{
+  refreshAllMZones(queryRequests);
+  refreshAllSZones(queryRequests);
+  refreshAllHands(queryRequests);
+}
