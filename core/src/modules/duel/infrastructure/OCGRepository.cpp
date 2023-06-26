@@ -78,6 +78,12 @@ void OCGRepository::loadFunctions()
   {
     throw std::runtime_error("Failed to load OCG_DuelQuery function");
   }
+
+  OCG_DuelQueryField = reinterpret_cast<OCG_DuelQueryField_t>(dlsym(libhandle, "OCG_DuelQueryField"));
+  if (!OCG_DuelQueryField)
+  {
+    throw std::runtime_error("Failed to load OCG_DuelQueryField function");
+  }
 };
 
 OCGRepository::OCGRepository()
@@ -174,3 +180,15 @@ std::vector<uint8_t> OCGRepository::duelQuery(OCG_Duel duel, OCG_QueryInfo query
   std::memcpy(buffer.data(), pointer, static_cast<std::size_t>(length));
   return buffer;
 }
+
+std::vector<uint8_t> OCGRepository::duelQueryField(OCG_Duel duel)
+{
+  uint32_t length = 0U;
+  auto *pointer = OCG_DuelQueryField(duel, &length);
+  
+  std::vector<uint8_t> buffer(static_cast<std::vector<uint8_t>::size_type>(length));
+  std::memcpy(buffer.data(), pointer, static_cast<std::size_t>(length));
+
+  return buffer;
+}
+
