@@ -280,7 +280,15 @@ export class Room {
 	}
 
 	cacheMessage(team: number, message: Buffer): void {
-		this.duelCache[team].push(message);
+		if (team !== 1 && team !== 2) {
+			this.duelCache[team].push(message);
+
+			return;
+		}
+
+		if (message[2] === 0x01) {
+			this.duelCache[team].push(message);
+		}
 	}
 
 	get spectatorCache(): Buffer[] {

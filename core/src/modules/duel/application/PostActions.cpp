@@ -12,14 +12,14 @@ void PostActions::run(std::vector<uint8_t> message)
     WaitingMessageSender waitingMessageSender;
     waitingMessageSender.send(Replier::getInstance().id);
 
-    if (timeLimitsInSeconds != 0U)
-    {
-      uint8_t team = calculateTeam(this->getTeamMessageReceptor(message));
-      DuelTimeRemainingCalculator duelTimeRemainingCalculator;
-      uint16_t ticks = duelTimeRemainingCalculator.calculate(team);
-      TimeLimitMessageSender sender;
-      sender.send(team, ticks);
-    }
+    // if (timeLimitsInSeconds != 0U)
+    // {
+    //   uint8_t team = calculateTeam(this->getTeamMessageReceptor(message));
+    //   DuelTimeRemainingCalculator duelTimeRemainingCalculator;
+    //   uint16_t ticks = duelTimeRemainingCalculator.calculate(team);
+    //   TimeLimitMessageSender sender;
+    //   sender.send(team, ticks);
+    // }
   }
 }
 

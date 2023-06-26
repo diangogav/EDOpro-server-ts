@@ -141,8 +141,6 @@ export class RoomMessageHandler {
 						this.context.clients[1].socket.write(opponentGameMessage);
 
 						this.context.room.clearSpectatorCache();
-						// this.context.room.cacheMessage(0, playerGameMessage);
-						// this.context.room.cacheMessage(1, opponentGameMessage);
 						this.context.room.cacheMessage(3, opponentGameMessage);
 						this.context.room.spectators.forEach((spectator) => {
 							spectator.socket.write(opponentGameMessage);
@@ -164,7 +162,7 @@ export class RoomMessageHandler {
 						});
 
 						if (cache) {
-							this.context.room.cacheMessage(3, message);
+							this.context.room.cacheMessage(team, message);
 						}
 
 						this.context.clients.forEach((client) => {
@@ -191,7 +189,7 @@ export class RoomMessageHandler {
 						});
 
 						if (cache) {
-							this.context.room.cacheMessage(3, message);
+							this.context.room.cacheMessage(team, message);
 						}
 
 						this.context.clients.forEach((client) => {
