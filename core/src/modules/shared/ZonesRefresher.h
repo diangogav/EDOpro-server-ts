@@ -11,6 +11,7 @@ public:
   static void refreshAllSZones(std::vector<QueryRequest>& queryRequests);
   static void refreshAllHands(std::vector<QueryRequest>& queryRequests);
   static void refreshAllDecks(std::vector<QueryRequest>& queryRequests);
+  static void refreshAll(std::vector<QueryRequest>& queryRequests);
 };
 
 #endif
