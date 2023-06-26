@@ -1,6 +1,8 @@
 #include "PreActions.h"
 
-PreActions::PreActions(uint16_t timeLimitsInSeconds, uint8_t isTeam1GoingFirst) : timeLimitsInSeconds(timeLimitsInSeconds), isTeam1GoingFirst(isTeam1GoingFirst) {}
+PreActions::PreActions(uint16_t timeLimitsInSeconds, uint8_t isTeam1GoingFirst) : timeLimitsInSeconds(timeLimitsInSeconds), isTeam1GoingFirst(isTeam1GoingFirst) {
+  NewTurnMessageSender turnMessageSender;
+}
 
 void PreActions::run(std::vector<uint8_t> message)
 {
@@ -8,6 +10,7 @@ void PreActions::run(std::vector<uint8_t> message)
 
   if (messageType == MSG_NEW_TURN)
   {
+    turnMessageSender.send();
     // DuelTurnTimer &timer = DuelTurnTimer::getInstance();
     // timer.resetTimers(timeLimitsInSeconds);
   }

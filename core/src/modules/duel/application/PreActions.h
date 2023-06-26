@@ -5,6 +5,8 @@
 #include "../../shared/Replier.h"
 #include "./DuelTimeRemainingCalculator.h"
 #include "../messages/application/TimeLimitMessageSender.h"
+#include "../messages/application/NewTurnMessageSender.h"
+
 
 #include <vector>
 #include <iostream>
@@ -16,6 +18,7 @@ public:
   PreActions(uint16_t timeLimitsInSeconds, uint8_t isTeam1GoingFirst);
   void run(std::vector<uint8_t> message);
 private:
+  NewTurnMessageSender turnMessageSender;
   bool DoesMessageRequireAnswer(uint8_t messageType);
   uint16_t timeLimitsInSeconds;
   uint8_t calculateTeam(uint8_t team);
