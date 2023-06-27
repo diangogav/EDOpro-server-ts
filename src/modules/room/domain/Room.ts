@@ -145,7 +145,7 @@ export class Room {
 			team1: message.t0Count,
 			team2: message.t1Count,
 			bestOf: message.bestOf,
-			duelFlag: 853504,
+			duelFlag: message.duelFlagsLow | (message.duelFlagsHight << 32),
 			forbiddenTypes: message.forbidden,
 			extraRules: message.extraRules,
 			startLp: message.lp,

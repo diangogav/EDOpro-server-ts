@@ -47,7 +47,7 @@ OCG_Duel DuelCreator::run(CardSqliteRepository &db, uint64_t flags, uint32_t sta
        dist(rng),
        dist(rng),
        dist(rng)},
-      0xd0600,
+      flags,
       player,
       opponent,
       &CardSqliteRepository::handle,
