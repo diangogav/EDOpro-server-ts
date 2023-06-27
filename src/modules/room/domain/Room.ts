@@ -12,10 +12,12 @@ interface RoomAttr {
 	notes: string;
 	mode: number;
 	needPass: boolean;
+	team0: number;
 	team1: number;
-	team2: number;
 	bestOf: number;
 	duelFlag: number;
+	duelFlagsHight: number;
+	duelFlagsLow: number;
 	forbiddenTypes: number;
 	extraRules: number;
 	startLp: number;
@@ -52,10 +54,12 @@ export class Room {
 	public readonly notes: string;
 	public readonly mode: number;
 	public readonly needPass: boolean;
+	public readonly team0: number;
 	public readonly team1: number;
-	public readonly team2: number;
 	public readonly bestOf: number;
 	public readonly duelFlag: number;
+	public readonly duelFlagsLow: number;
+	public readonly duelFlagsHight: number;
 	public readonly forbiddenTypes: number;
 	public readonly extraRules: number;
 	public readonly startLp: number;
@@ -98,8 +102,8 @@ export class Room {
 		this.notes = attr.notes;
 		this.mode = attr.mode;
 		this.needPass = attr.needPass;
+		this.team0 = attr.team0;
 		this.team1 = attr.team1;
-		this.team2 = attr.team2;
 		this.bestOf = attr.bestOf;
 		this.duelFlag = attr.duelFlag;
 		this.forbiddenTypes = attr.forbiddenTypes;
@@ -129,6 +133,8 @@ export class Room {
 		this.duelCache[1] = [];
 		this.duelCache[2] = [];
 		this.duelCache[3] = [];
+		this.duelFlagsLow = attr.duelFlagsLow;
+		this.duelFlagsHight = attr.duelFlagsHight;
 	}
 
 	static createFromCreateGameMessage(
@@ -142,8 +148,8 @@ export class Room {
 			notes: message.notes,
 			mode: message.mode,
 			needPass: Buffer.from(message.password).some((element) => element !== 0x00),
-			team1: message.t0Count,
-			team2: message.t1Count,
+			team0: message.t0Count,
+			team1: message.t1Count,
 			bestOf: message.bestOf,
 			duelFlag: message.duelFlagsLow | (message.duelFlagsHight << 32),
 			forbiddenTypes: message.forbidden,
@@ -166,6 +172,8 @@ export class Room {
 			duelRule: message.duelRule,
 			handshake: message.handshake,
 			password: message.password,
+			duelFlagsHight: message.duelFlagsHight,
+			duelFlagsLow: message.duelFlagsLow,
 			users: [
 				{
 					pos: 0,
@@ -365,8 +373,8 @@ export class Room {
 			roomnotes: this.notes,
 			roommode: this.mode,
 			needpass: this.needPass,
-			team1: this.team1,
-			team2: this.team2,
+			team1: this.team0,
+			team2: this.team1,
 			best_of: this.bestOf,
 			duel_flag: this.duelFlag,
 			forbidden_types: this.forbiddenTypes,

@@ -79,13 +79,13 @@ export class JoinGameClientMessage {
 		const startingHandCount = decimalToBytesBuffer(room.startHand, 1);
 		const drawCount = decimalToBytesBuffer(room.drawCount, 1);
 		const timeLimit = decimalToBytesBuffer(room.timeLimit, 2);
-		const duelFlagsHight = decimalToBytesBuffer(1, 4);
+		const duelFlagsHight = decimalToBytesBuffer(room.duelFlagsHight, 4);
 		const handshake = decimalToBytesBuffer(room.handshake, 4);
 		const version = decimalToBytesBuffer(joinGameMessage.clientVersion, 4);
-		const t0Count = decimalToBytesBuffer(room.team1, 4);
-		const t1Count = decimalToBytesBuffer(room.team2, 4);
+		const t0Count = decimalToBytesBuffer(room.team0, 4);
+		const t1Count = decimalToBytesBuffer(room.team1, 4);
 		const bestOf = decimalToBytesBuffer(room.bestOf, 4);
-		const duelFlagsLow = decimalToBytesBuffer(853504, 4);
+		const duelFlagsLow = decimalToBytesBuffer(room.duelFlagsLow, 4);
 		const forbidden = decimalToBytesBuffer(room.forbiddenTypes, 4);
 		const extraRules = decimalToBytesBuffer(room.extraRules, 2);
 		const mainDeckMin = decimalToBytesBuffer(room.mainMin, 2);
