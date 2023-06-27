@@ -359,8 +359,9 @@ export class RoomMessageHandler {
 						if (cache.length === 0) {
 							return;
 						}
-
+						this.logger.debug(`Cache message: ${cache[cache.length - 1].toString("hex")}`);
 						this.context.clients[team].socket.write(cache[cache.length - 1]);
+						this.context.clients[team].clearReconnecting();
 					}
 				});
 			});

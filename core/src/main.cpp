@@ -223,6 +223,18 @@ int main(int argc, char *argv[])
 
           uint8_t team = calculateTeam(queryLocationRequest.con, isTeam1GoingFirst);
           const auto buffer = repository.duelQueryLocation(duel, query);
+
+          if (queryLocationRequest.loc == LOCATION_DECK)
+          {
+            continue;
+          }
+
+          if (queryLocationRequest.loc == LOCATION_EXTRA)
+          {
+            refreshMessageSender.send(reconnectingTeam, team, queryLocationRequest.loc, queryLocationRequest.con, buffer);
+            continue;
+          }
+
           const auto queries = deserializer.deserializeLocationQuery(buffer);
           const auto playerBuffer = serializer.serializeLocationQuery(queries, false);
           const auto strippedBuffer = serializer.serializeLocationQuery(queries, true);
@@ -252,7 +264,7 @@ int main(int argc, char *argv[])
             duelMessageHandler.handle(message);
             queryProcessor.run(queryCreator.run(message), duel);
             finish = duelFinishHandler.handle(message);
-            postActions.run(message);
+            // postActions.run(message);
           }
           if (status != 2 || finish == true)
           {
