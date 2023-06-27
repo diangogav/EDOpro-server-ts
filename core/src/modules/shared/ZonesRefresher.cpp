@@ -24,9 +24,31 @@ void ZonesRefresher::refreshAllDecks(std::vector<QueryRequest> &queryRequests)
 	queryRequests.emplace_back(QueryLocationRequest{1U, LOCATION_DECK, 0x1181FFF});
 }
 
+void ZonesRefresher::refreshAllGraves(std::vector<QueryRequest> &queryRequests)
+{
+	queryRequests.emplace_back(QueryLocationRequest{0U, LOCATION_GRAVE, 0x3981FFF});
+	queryRequests.emplace_back(QueryLocationRequest{1U, LOCATION_GRAVE, 0x3981FFF});
+}
+
+void ZonesRefresher::refreshAllExtras(std::vector<QueryRequest> &queryRequests)
+{
+	queryRequests.emplace_back(QueryLocationRequest{0U, LOCATION_EXTRA, 0x3A81FFF});
+	queryRequests.emplace_back(QueryLocationRequest{1U, LOCATION_EXTRA, 0x3A81FFF});
+}
+
+void ZonesRefresher::refreshAllRemoved(std::vector<QueryRequest> &queryRequests)
+{
+	queryRequests.emplace_back(QueryLocationRequest{0U, LOCATION_EXTRA, 0x3B81FFF});
+	queryRequests.emplace_back(QueryLocationRequest{1U, LOCATION_EXTRA, 0x3B81FFF});
+}
+
+
 void ZonesRefresher::refreshAll(std::vector<QueryRequest> &queryRequests)
 {
   refreshAllMZones(queryRequests);
   refreshAllSZones(queryRequests);
   refreshAllHands(queryRequests);
+  refreshAllGraves(queryRequests);
+  refreshAllExtras(queryRequests);
+  refreshAllRemoved(queryRequests);
 }
