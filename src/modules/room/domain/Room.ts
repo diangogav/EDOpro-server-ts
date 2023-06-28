@@ -95,6 +95,8 @@ export class Room {
 	private _opponentExtraDeckSize: number;
 	private _turn = 0;
 	private _firstToPlay: number;
+	private readonly t0Positions: number[] = [];
+	private readonly t1Positions: number[] = [];
 
 	private constructor(attr: RoomAttr) {
 		this.id = attr.id;
@@ -135,6 +137,8 @@ export class Room {
 		this.duelCache[3] = [];
 		this.duelFlagsLow = attr.duelFlagsLow;
 		this.duelFlagsHight = attr.duelFlagsHight;
+		this.t0Positions = Array.from({ length: this.team0 }, (_, index) => index);
+		this.t1Positions = Array.from({ length: this.team1 }, (_, index) => this.team0 + index);
 	}
 
 	static createFromCreateGameMessage(
@@ -230,11 +234,11 @@ export class Room {
 	}
 
 	setDecksToPlayer(position: number, deck: Deck): void {
-		const user = this._users.find((user) => user.pos === position);
-		if (!user) {
+		const client = this._clients.find((client) => client.position === position);
+		if (!client) {
 			return;
 		}
-		user.deck = deck;
+		client.setDeck(deck);
 	}
 
 	setDuel(duel: ChildProcessWithoutNullStreams): void {
@@ -366,6 +370,36 @@ export class Room {
 		return this._firstToPlay;
 	}
 
+	calculaPlace(): { position: number; team: number } | null {
+		const team0 = this.clients
+			.filter((client) => client.team === 0)
+			.map((client) => client.position);
+
+		const availableTeam0Positions = this.getDifference(this.t0Positions, team0);
+
+		if (availableTeam0Positions.length > 0) {
+			return {
+				position: availableTeam0Positions[0],
+				team: 0,
+			};
+		}
+
+		const team1 = this.clients
+			.filter((client) => client.team === 1)
+			.map((client) => client.position);
+
+		const availableTeam1Positions = this.getDifference(this.t1Positions, team1);
+
+		if (availableTeam1Positions.length > 0) {
+			return {
+				position: availableTeam1Positions[0],
+				team: 1,
+			};
+		}
+
+		return null;
+	}
+
 	toPresentation(): { [key: string]: unknown } {
 		return {
 			roomid: this.id,
@@ -396,5 +430,9 @@ export class Room {
 			side_max: this.sideMax,
 			users: this._users,
 		};
+	}
+
+	private getDifference(a: number[], b: number[]) {
+		return a.filter((item) => !b.includes(item));
 	}
 }

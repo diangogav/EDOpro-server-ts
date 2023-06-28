@@ -15,10 +15,12 @@ export class TryStartCommandStrategy implements RoomMessageHandlerCommandStrateg
 			client.socket.write(duelStartMessage);
 		});
 
+		const t0Client = this.context.clients.filter((_client) => _client.team === 0)[0];
+		const t1Client = this.context.clients.filter((_client) => _client.team === 1)[0];
+
 		const rpsChooseMessage = RPSChooseClientMessage.create();
-		this.context.clients.forEach((client) => {
-			client.socket.write(rpsChooseMessage);
-		});
+		t0Client.socket.write(rpsChooseMessage);
+		t1Client.socket.write(rpsChooseMessage);
 
 		this.afterExecuteCallback();
 	}

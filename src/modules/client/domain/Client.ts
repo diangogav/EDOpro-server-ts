@@ -1,4 +1,5 @@
 import { YGOClientSocket } from "../../../socket-server/HostServer";
+import { Deck } from "../../deck/domain/Deck";
 import { RoomMessageHandler } from "../../messages/application/RoomMessageHandler/RoomMessageHandler";
 import { Choose } from "../../rock-paper-scissor/RockPaperScissor";
 import { Room } from "../../room/domain/Room";
@@ -17,6 +18,7 @@ export class Client {
 	private _rpsChosen: Choose | null = null;
 	private readonly _cache: Buffer[] = [];
 	private _reconnecting = false;
+	private _deck: Deck;
 
 	constructor({
 		socket,
@@ -99,5 +101,13 @@ export class Client {
 
 	get isReconnecting(): boolean {
 		return this._reconnecting;
+	}
+
+	setDeck(deck: Deck): void {
+		this._deck = deck;
+	}
+
+	get deck(): Deck {
+		return this._deck;
 	}
 }

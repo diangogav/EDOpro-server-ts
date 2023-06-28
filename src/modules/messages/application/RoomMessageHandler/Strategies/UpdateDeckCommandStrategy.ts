@@ -44,10 +44,9 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 		}
 
 		const position = this.context.client.position;
-		const player = this.context.room.users[position];
-		if (!player.deck?.isSideDeckValid(mainDeck)) {
+		const player = this.context.client;
+		if (!player.deck.isSideDeckValid(mainDeck)) {
 			const message = ErrorClientMessage.create();
-			console.log("sending to client:", message);
 			this.context.client.socket.write(message);
 
 			return;
@@ -55,7 +54,6 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 		const deck = new Deck({ main: mainDeck, side: sideDeck });
 		this.context.room.setDecksToPlayer(position, deck);
 		const message = DuelStartClientMessage.create();
-		console.log("sending to client:", message);
 		this.context.client.socket.write(message);
 		this.context.client.ready();
 		this.startDuel();
@@ -68,7 +66,6 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 		}
 
 		const message = ChooseOrderClientMessage.create();
-		console.log("sending to client:", message);
 		this.context.room.clientWhoChoosesTurn.socket.write(message);
 	}
 }

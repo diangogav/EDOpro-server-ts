@@ -6,6 +6,7 @@ import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameC
 import { PlayerChangeClientMessage } from "../../messages/server-to-client/PlayerChangeClientMessage";
 import { PlayerEnterClientMessage } from "../../messages/server-to-client/PlayerEnterClientMessage";
 import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
+import { PlayerRoomState } from "../domain/PlayerRoomState";
 import { DuelState } from "../domain/Room";
 import RoomList from "../infrastructure/RoomList";
 
@@ -17,33 +18,50 @@ export class JoinToGame {
 		if (!room || room.duelState === DuelState.DUELING) {
 			return;
 		}
+
+		const place = room.calculaPlace();
+		if (!place) {
+			return;
+		}
+
 		const client = new Client({
 			socket: this.socket,
 			host: false,
 			name: playerName,
-			position: 1,
+			position: place.position,
 			roomId: room.id,
-			team: 1,
+			team: place.team,
 		});
-		room.users.push({ pos: client.position, name: playerName });
+
 		room.addClient(client);
+
 		this.socket.write(JoinGameClientMessage.createFromRoom(message, room));
 		room.clients.forEach((_client) => {
 			_client.socket.write(PlayerEnterClientMessage.create(playerName, client.position));
 		});
 
+		const notReady = (client.position << 4) | PlayerRoomState.NOT_READY;
 		room.clients.forEach((_client) => {
-			_client.socket.write(PlayerChangeClientMessage.create({ status: 0x1a }));
+			_client.socket.write(PlayerChangeClientMessage.create({ status: notReady }));
 		});
-		this.socket.write(TypeChangeClientMessage.create({ type: 0x01 }));
+
+		const type = (Number(client.host) << 4) | client.position;
+		this.socket.write(TypeChangeClientMessage.create({ type }));
 
 		const host = room.clients.find((client) => client.host);
 		if (!host) {
 			return;
 		}
 
-		const status = room.clients[client.position - 1].isReady ? 0x09 : 0x0a;
-		this.socket.write(PlayerEnterClientMessage.create(host.name, host.position));
-		this.socket.write(PlayerChangeClientMessage.create({ status }));
+		room.clients.forEach((_client) => {
+			if (_client.socket.id !== client.socket.id) {
+				const status = room.clients[_client.position].isReady
+					? (_client.position << 4) | PlayerRoomState.READY
+					: (_client.position << 4) | PlayerRoomState.NOT_READY;
+
+				this.socket.write(PlayerEnterClientMessage.create(_client.name, _client.position));
+				this.socket.write(PlayerChangeClientMessage.create({ status }));
+			}
+		});
 	}
 }
