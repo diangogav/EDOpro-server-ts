@@ -7,10 +7,20 @@ std::vector<QueryRequest> QueryCreator::run(const std::vector<uint8_t> &message)
   ptr++;
   std::vector<QueryRequest> queryRequests;
 
-  if (messageType == MSG_DRAW)
+  if (messageType == MSG_DRAW || messageType == MSG_SHUFFLE_HAND)
   {
     auto player = Read<uint8_t>(ptr);
     queryRequests.emplace_back(QueryLocationRequest{player, 0x02, 0x3781FFF});
+  }
+
+  if (messageType == MSG_SWAP)
+  {
+    ptr += 4U; // Previous card code
+    const auto p = Read<LocInfo>(ptr);
+    ptr += 4U; // Current card code
+    const auto c = Read<LocInfo>(ptr);
+    queryRequests.emplace_back(QuerySingleRequest{p.con, p.loc, p.seq, 0x3F81FFF});
+    queryRequests.emplace_back(QuerySingleRequest{c.con, c.loc, c.seq, 0x3F81FFF});
   }
 
   if (messageType == MSG_NEW_PHASE || messageType == MSG_CHAINED)
@@ -53,6 +63,25 @@ std::vector<QueryRequest> QueryCreator::run(const std::vector<uint8_t> &message)
           current.seq,
           0x3F81FFF});
     }
+  }
+
+  if (messageType == MSG_TAG_SWAP)
+  {
+    auto player = Read<uint8_t>(ptr);
+    queryRequests.reserve(7U);
+    queryRequests.emplace_back(QueryLocationRequest{player, LOCATION_DECK, 0x1181FFF});
+    queryRequests.emplace_back(QueryLocationRequest{player, LOCATION_EXTRA, 0x381FFF});
+    queryRequests.emplace_back(QueryLocationRequest{player, LOCATION_HAND, 0x3781FFF});
+    queryRequests.emplace_back(QueryLocationRequest{0U, LOCATION_MZONE, 0x3081FFF});
+    queryRequests.emplace_back(QueryLocationRequest{1U, LOCATION_MZONE, 0x3081FFF});
+    queryRequests.emplace_back(QueryLocationRequest{0U, LOCATION_SZONE, 0x30681FFF});
+    queryRequests.emplace_back(QueryLocationRequest{1U, LOCATION_SZONE, 0x30681FFF});
+  }
+
+  if (messageType == MSG_RELOAD_FIELD)
+  {
+    queryRequests.emplace_back(QueryLocationRequest{0U, LOCATION_EXTRA, 0x381FFF});
+    queryRequests.emplace_back(QueryLocationRequest{1U, LOCATION_EXTRA, 0x381FFF});
   }
 
   return queryRequests;

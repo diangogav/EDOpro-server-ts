@@ -31,7 +31,17 @@
 #include <iomanip>
 #include <regex>
 #include <filesystem>
+#include <json/json.h>
+#include <json/value.h>
+
 namespace fs = std::filesystem;
+
+class Player
+{
+public:
+  std::string team;
+  std::string deck;
+};
 
 uint8_t calculateTeam(uint8_t team, uint8_t isTeam1GoingFirst)
 {
@@ -84,15 +94,13 @@ int main(int argc, char *argv[])
   uint16_t extraRules = atoi(argv[5]);
   uint8_t isTeam1GoingFirst = atoi(argv[6]);
   uint16_t timeLimit = atoi(argv[7]);
-  std::string playerMainDeckString = argv[8];
-  std::string playerSideDeckString = argv[9];
-  std::string opponentMainDeckString = argv[10];
-  std::string opponentSideDeckString = argv[11];
+  std::string playersData = argv[8];
 
-  CommandLineArrayParser playerMainDeckParser(playerMainDeckString);
-  CommandLineArrayParser playerSideDeckParser(playerSideDeckString);
-  CommandLineArrayParser opponentMainDeckParser(opponentMainDeckString);
-  CommandLineArrayParser opponentSideDeckParser(opponentSideDeckString);
+  Json::Value players;
+  Json::Reader reader;
+
+  reader.parse(playersData, players);
+
 
   CardSqliteRepository cardRepository{};
   fs::path path = fs::current_path().string() + "/core/databases";
@@ -126,7 +134,7 @@ int main(int argc, char *argv[])
   duelScriptsLoader.load();
 
   DuelDecksLoader duelDecksLoader{repository, duel, isTeam1GoingFirst};
-  duelDecksLoader.load(playerMainDeckParser.parse(), opponentMainDeckParser.parse());
+  duelDecksLoader.load(players);
 
   DuelStarter duelStarter{repository, duel};
   duelStarter.start();

@@ -1,35 +1,29 @@
 #include "DuelDecksLoader.h"
 
-DuelDecksLoader::DuelDecksLoader(OCGRepository repository, OCG_Duel duel, uint8_t isTeam1GoingFirst) : repository{repository}, duel{duel}, isTeam1GoingFirst{isTeam1GoingFirst}  {}
+DuelDecksLoader::DuelDecksLoader(OCGRepository repository, OCG_Duel duel, uint8_t isTeam1GoingFirst) : repository{repository}, duel{duel}, isTeam1GoingFirst{isTeam1GoingFirst} {}
 
-void DuelDecksLoader::load(std::vector<int> playerMainDeck, std::vector<int> opponentMainDeck)
+void DuelDecksLoader::load(Json::Value players)
 {
-  OCG_NewCardInfo cardInfo{};
 
-  cardInfo.team = this->calculateTeam(0U);
-  cardInfo.duelist = 0;
-  cardInfo.con = this->calculateTeam(0U);
-  cardInfo.loc = 1;
-  cardInfo.seq = 0;
-  cardInfo.pos = 8;
-
-  for (auto code : playerMainDeck)
+  for (const auto &item : players)
   {
-    cardInfo.code = code;
-    repository.addCard(duel, cardInfo);
-  }
+    OCG_NewCardInfo cardInfo{};
+    uint8_t team = item["team"].asInt();
+    uint8_t turn = item["turn"].asInt();
+    Json::Value deck = item["mainDeck"];
 
-  cardInfo.team = this->calculateTeam(1U);
-  cardInfo.duelist = 0;
-  cardInfo.con = this->calculateTeam(1U);
-  cardInfo.loc = 1;
-  cardInfo.seq = 0;
-  cardInfo.pos = 8;
+    cardInfo.team = this->calculateTeam(team);
+    cardInfo.duelist = turn;
+    cardInfo.con = this->calculateTeam(team);
+    cardInfo.loc = 1;
+    cardInfo.seq = 0;
+    cardInfo.pos = 8;
 
-  for (auto code : opponentMainDeck)
-  {
-    cardInfo.code = code;
-    repository.addCard(duel, cardInfo);
+    for (const auto &card : deck)
+    {
+      cardInfo.code = card.asInt();
+      repository.addCard(duel, cardInfo);
+    }
   }
 }
 

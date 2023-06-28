@@ -1,12 +1,21 @@
 #include "PreActions.h"
 
-PreActions::PreActions(uint16_t timeLimitsInSeconds, uint8_t isTeam1GoingFirst) : timeLimitsInSeconds(timeLimitsInSeconds), isTeam1GoingFirst(isTeam1GoingFirst) {
+PreActions::PreActions(uint16_t timeLimitsInSeconds, uint8_t isTeam1GoingFirst) : timeLimitsInSeconds(timeLimitsInSeconds), isTeam1GoingFirst(isTeam1GoingFirst)
+{
   NewTurnMessageSender turnMessageSender;
 }
 
 void PreActions::run(std::vector<uint8_t> message)
 {
   uint8_t messageType = message[0U];
+
+  if (messageType == MSG_TAG_SWAP)
+  {
+    uint8_t team = this->calculateTeam(message[1U]);
+    std::string payload = "CMD:SWAP|";
+    payload += std::to_string(team) + "|";
+    std::cout << payload << std::endl;
+  }
 
   if (messageType == MSG_NEW_TURN)
   {
@@ -23,6 +32,7 @@ void PreActions::run(std::vector<uint8_t> message)
   if (DoesMessageRequireAnswer(messageType))
   {
     uint8_t team = this->calculateTeam(this->getMessageReceivingTeam(message));
+
     Replier::getInstance().set(team);
   }
 }

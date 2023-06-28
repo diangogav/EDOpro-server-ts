@@ -29,7 +29,7 @@ void DuelMessageHandler::handle(std::vector<uint8_t> message)
   case MessageTargets::MSG_DIST_TYPE_SPECIFIC_TEAM_DUELIST_STRIPPED:
   {
     uint8_t team = this->getTeamMessageReceptor(message);
-    messageSender.send(1, this->calculateTeam(team), handler.handle(team, message));
+    messageSender.send(0, 1, this->calculateTeam(team), handler.handle(team, message));
     break;
   }
   case MessageTargets::MSG_DIST_TYPE_EVERYONE_STRIPPED:
@@ -40,11 +40,11 @@ void DuelMessageHandler::handle(std::vector<uint8_t> message)
     std::vector<uint8_t> messageA = handler.handle(0U, message);
     std::vector<uint8_t> messageB = handler.handle(1U, message);
 
-    messageSender.send(1, teamA, messageA);
-    messageSender.send(1, teamB, messageB);
+    messageSender.send(1, 1, teamA, messageA);
+    messageSender.send(1, 1, teamB, messageB);
 
     std::vector<uint8_t> strippedMessage = handler.handle(1U, messageA);
-    messageSender.send(1, 3, strippedMessage);
+    messageSender.send(1, 1, 3, strippedMessage);
 
     break;
   }
@@ -56,8 +56,13 @@ void DuelMessageHandler::handle(std::vector<uint8_t> message)
   case MessageTargets::MSG_DIST_TYPE_SPECIFIC_TEAM_DUELIST:
   {
     uint8_t team = this->getTeamMessageReceptor(message);
-    messageSender.send(1, calculateTeam(team), message);
+    messageSender.send(0, 1, calculateTeam(team), message);
     break;
+  }
+  case MessageTargets::MSG_DIST_TYPE_SPECIFIC_TEAM:
+  {
+    uint8_t team = this->getTeamMessageReceptor(message);
+    messageSender.send(1, 0, calculateTeam(team), message);
   }
   }
 }

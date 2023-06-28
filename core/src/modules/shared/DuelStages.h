@@ -40,7 +40,7 @@
 #define MSG_MOVE 50
 // #define MSG_POS_CHANGE 53
 #define MSG_SET 54
-// #define MSG_SWAP 55
+#define MSG_SWAP 55
 // #define MSG_FIELD_DISABLED 56
 #define MSG_SUMMONING 60
 #define MSG_SUMMONED 61
@@ -89,7 +89,7 @@
 #define MSG_ANNOUNCE_CARD_FILTER 144
 // #define MSG_CARD_HINT 160
 #define MSG_TAG_SWAP 161
-// #define MSG_RELOAD_FIELD 162
+#define MSG_RELOAD_FIELD 162
 // #define MSG_AI_NAME              163
 // #define MSG_SHOW_HINT            164
 // #define MSG_PLAYER_HINT 165

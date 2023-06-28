@@ -6,7 +6,7 @@
 
 class DuelMessageSender {
 public:
-  void send(int cache, uint8_t team, std::vector<uint8_t> message);
+  void send(int all, int cache, uint8_t team, std::vector<uint8_t> message);
 };
 
 #endif

@@ -116,6 +116,22 @@ std::vector<uint8_t> DrawCardHandler::handle(uint8_t team, std::vector<uint8_t> 
     auto count2 = Read<uint32_t>(ptr);
     ClearLocInfoArray(count2, team, ptr);
   }
+
+  if (message[0U] == MSG_TAG_SWAP)
+  {
+    if (Read<uint8_t>(ptr) == team)
+    {
+      return message;
+    }
+
+    ptr += 4U;                        // Main deck count
+    auto count = Read<uint32_t>(ptr); // Extra deck count
+    ptr += 4U;                        // Face-up pendulum count
+    count += Read<uint32_t>(ptr);     // Hand count
+    ptr += 4U;                        // Top-deck card code
+    this->clearNonFaceUpPositions(count, ptr);
+  }
+
   return message;
 }
 

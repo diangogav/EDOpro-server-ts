@@ -80,6 +80,14 @@ export class RoomMessageHandler {
 				this.context.room.setFirstToPlay(0);
 			}
 
+			this.context.room.prepareTurnOrder();
+			const players = this.context.clients.map((item) => ({
+				team: item.team,
+				mainDeck: item.deck.main,
+				sideDeck: item.deck.side,
+				turn: item.duelPosition,
+			}));
+
 			const core = spawn(`${__dirname}/../../../../../core/build/Debug/bin/CoreIntegrator`, [
 				this.context.room.startLp.toString(),
 				this.context.room.startHand.toString(),
@@ -88,10 +96,7 @@ export class RoomMessageHandler {
 				this.context.room.extraRules.toString(),
 				Number(isTeam1GoingFirst).toString(),
 				this.context.room.timeLimit.toString(),
-				JSON.stringify(this.context.room.clients[0].deck.main),
-				JSON.stringify(this.context.room.clients[0].deck.side),
-				JSON.stringify(this.context.room.clients[1].deck.main),
-				JSON.stringify(this.context.room.clients[1].deck.side),
+				JSON.stringify(players),
 			]);
 
 			this.context.room.setDuel(core);
@@ -137,8 +142,19 @@ export class RoomMessageHandler {
 						this.logger.debug(`sending to team 0: ${playerGameMessage.toString("hex")}`);
 						this.logger.debug(`sending to team 1:  ${opponentGameMessage.toString("hex")}`);
 
-						this.context.clients[0].socket.write(playerGameMessage);
-						this.context.clients[1].socket.write(opponentGameMessage);
+						this.context.clients.forEach((client) => {
+							if (client.team === 0) {
+								this.logger.debug(`sending to team ${0}: ${playerGameMessage.toString("hex")}`);
+								client.socket.write(playerGameMessage);
+							}
+						});
+
+						this.context.clients.forEach((client) => {
+							if (client.team === 1) {
+								this.logger.debug(`sending to team ${1}: ${opponentGameMessage.toString("hex")}`);
+								client.socket.write(opponentGameMessage);
+							}
+						});
 
 						this.context.room.clearSpectatorCache();
 						this.context.room.cacheMessage(3, opponentGameMessage);
@@ -212,14 +228,25 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:MESSAGE") {
-						const cache = Number(params[0]);
-						const team = Number(params[1]);
-						const data = Buffer.from(params.slice(2, params.length).map(Number));
+						const forAllTeam = Boolean(Number(params[0]));
+						const cache = Number(params[1]);
+						const team = Number(params[2]);
+						const data = Buffer.from(params.slice(3, params.length).map(Number));
 
 						const message = RawClientMessage.create({ buffer: data });
 
 						if (cache) {
 							this.context.room.cacheMessage(team, message);
+						}
+
+						if (!forAllTeam) {
+							const player = this.context.clients.find(
+								(player) => player.inTurn && player.team === team
+							);
+							this.logger.debug(`sending to team ${team}: ${message.toString("hex")}`);
+							player?.socket.write(message);
+
+							return;
 						}
 
 						this.context.clients.forEach((client) => {
@@ -362,6 +389,20 @@ export class RoomMessageHandler {
 						this.logger.debug(`Cache message: ${cache[cache.length - 1].toString("hex")}`);
 						this.context.clients[team].socket.write(cache[cache.length - 1]);
 						this.context.clients[team].clearReconnecting();
+					}
+
+					if (cmd === "CMD:SWAP") {
+						const team = Number(params[0]);
+						this.context.room.nextTurn(team);
+						console.log(
+							this.context.clients
+								.filter((player) => player.inTurn)
+								.map((item) => ({
+									name: item.name,
+									position: item.duelPosition,
+									team: item.team,
+								}))
+						);
 					}
 				});
 			});

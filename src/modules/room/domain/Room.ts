@@ -400,6 +400,43 @@ export class Room {
 		return null;
 	}
 
+	prepareTurnOrder(): void {
+		const team0Players = this.clients.filter((player) => player.team === 0);
+
+		team0Players.forEach((item) => {
+			item.setDuelPosition(item.position % this.team0);
+		});
+
+		const team1Players = this.clients.filter((player) => player.team === 1);
+
+		team1Players.forEach((item) => {
+			item.setDuelPosition(item.position % this.team1);
+		});
+
+		const team0Player = team0Players.find((player) => player.duelPosition === 0);
+		team0Player?.turn();
+
+		const team1Player = team1Players.find((player) => player.duelPosition === 0);
+		team1Player?.turn();
+	}
+
+	nextTurn(team: number): void {
+		const player = this.clients.find((player) => player.inTurn && player.team === team);
+		if (!player) {
+			return;
+		}
+		const teamCount = team === 0 ? this.team0 : this.team1;
+		const duelPLayerPositionTurn = (player.duelPosition + 1) % teamCount;
+		const nextPlayer = this.clients.find(
+			(player) => player.duelPosition === duelPLayerPositionTurn && player.team === team
+		);
+		if (!nextPlayer) {
+			return;
+		}
+		player.clearTurn();
+		nextPlayer.turn();
+	}
+
 	toPresentation(): { [key: string]: unknown } {
 		return {
 			roomid: this.id,

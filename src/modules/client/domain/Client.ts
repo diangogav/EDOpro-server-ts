@@ -19,6 +19,8 @@ export class Client {
 	private readonly _cache: Buffer[] = [];
 	private _reconnecting = false;
 	private _deck: Deck;
+	private _duelPosition: number;
+	private _turn: boolean;
 
 	constructor({
 		socket,
@@ -109,5 +111,25 @@ export class Client {
 
 	get deck(): Deck {
 		return this._deck;
+	}
+
+	setDuelPosition(position: number): void {
+		this._duelPosition = position;
+	}
+
+	get duelPosition(): number {
+		return this._duelPosition;
+	}
+
+	turn(): void {
+		this._turn = true;
+	}
+
+	clearTurn(): void {
+		this._turn = false;
+	}
+
+	get inTurn(): boolean {
+		return this._turn;
 	}
 }
