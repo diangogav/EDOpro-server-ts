@@ -266,7 +266,10 @@ export class Room {
 
 	removePlayer(player: Client): void {
 		this._clients = this._clients.filter((item) => item.socket.id !== player.socket.id);
-		this._spectators = this._spectators.filter((item) => item.socket.id !== player.socket.id);
+	}
+
+	removeSpectator(spectator: Client): void {
+		this._spectators = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
 	}
 
 	get clients(): Client[] {

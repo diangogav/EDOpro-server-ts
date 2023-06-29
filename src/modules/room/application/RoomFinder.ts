@@ -6,7 +6,8 @@ export class RoomFinder {
 		const rooms = RoomList.getRooms();
 		let room: Room | null = null;
 		for (const item of rooms) {
-			const found = item.clients.find((client) => client.socket.id === socketId);
+			const allClients = [...item.clients, ...item.spectators];
+			const found = allClients.find((client) => client.socket.id === socketId);
 			if (found) {
 				room = item;
 				break;

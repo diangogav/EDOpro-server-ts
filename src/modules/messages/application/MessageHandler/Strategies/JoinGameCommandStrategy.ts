@@ -1,6 +1,4 @@
 import { JoinToGame } from "../../../../room/application/JoinToGame";
-import { JoinToGameAsSpectator } from "../../../../room/application/JoinToGameAsSpectator";
-import { JoinToRoomAsSpectator } from "../../../../room/application/JoinToRoomAsSpectator";
 import { ReconnectToGame } from "../../../../room/application/ReconnectToGame";
 import { RoomFinder } from "../../../../room/application/RoomFinder";
 import RoomList from "../../../../room/infrastructure/RoomList";
@@ -30,8 +28,6 @@ export class JoinGameCommandStrategy implements MessageHandlerCommandStrategy {
 		}
 
 		const joinToGame = new JoinToGame(this.context.socket);
-		const joinToRoomAsSpectator = new JoinToRoomAsSpectator(this.context.socket);
-		const jointToGameAsSpectator = new JoinToGameAsSpectator(this.context.socket);
 		const playerInfoMessage = this.context.getPreviousMessages() as PlayerInfoMessage;
 
 		const reconnectingClient = ReconnectingPlayers.get().find(
@@ -46,7 +42,5 @@ export class JoinGameCommandStrategy implements MessageHandlerCommandStrategy {
 		}
 
 		joinToGame.run(joinGameMessage, playerInfoMessage.name, room);
-		// joinToRoomAsSpectator.run(joinGameMessage, playerInfoMessage.name, room);
-		jointToGameAsSpectator.run(joinGameMessage, playerInfoMessage.name, room);
 	}
 }

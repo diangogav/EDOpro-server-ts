@@ -16,6 +16,10 @@ export default {
 			client.socket.destroy();
 		});
 
+		room.spectators.forEach((spectator) => {
+			spectator.socket.destroy();
+		});
+
 		const index = rooms.findIndex((item) => item.id === room.id);
 		if (index !== -1) {
 			rooms.splice(index, 1);

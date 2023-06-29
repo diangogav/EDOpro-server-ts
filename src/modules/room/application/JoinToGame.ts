@@ -6,19 +6,47 @@ import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameC
 import { PlayerChangeClientMessage } from "../../messages/server-to-client/PlayerChangeClientMessage";
 import { PlayerEnterClientMessage } from "../../messages/server-to-client/PlayerEnterClientMessage";
 import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
+import { container } from "../../shared/dependency-injection";
+import { EventBus } from "../../shared/event-bus/EventBus";
+import { ClientEnteredDuringDuelDomainEvent } from "../domain/domain-events/ClientEnteredDuringDuelDomainEvent";
+import { RoomFullOfPlayersDomainEvent } from "../domain/domain-events/RoomFullOfPlayers";
 import { PlayerRoomState } from "../domain/PlayerRoomState";
 import { DuelState, Room } from "../domain/Room";
 
 export class JoinToGame {
-	constructor(private readonly socket: net.Socket) {}
+	private readonly eventBus: EventBus;
+
+	constructor(private readonly socket: net.Socket) {
+		this.eventBus = container.get(EventBus);
+	}
 
 	run(message: JoinGameMessage, playerName: string, room: Room): void {
 		if (room.duelState === DuelState.DUELING) {
+			this.eventBus.publish(
+				ClientEnteredDuringDuelDomainEvent.DOMAIN_EVENT,
+				new ClientEnteredDuringDuelDomainEvent({
+					playerName,
+					socket: this.socket,
+					room,
+					message,
+				})
+			);
+
 			return;
 		}
 
 		const place = room.calculaPlace();
 		if (!place) {
+			this.eventBus.publish(
+				RoomFullOfPlayersDomainEvent.DOMAIN_EVENT,
+				new RoomFullOfPlayersDomainEvent({
+					playerName,
+					socket: this.socket,
+					room,
+					message,
+				})
+			);
+
 			return;
 		}
 

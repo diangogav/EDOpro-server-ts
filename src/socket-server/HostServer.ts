@@ -3,9 +3,14 @@ import { v4 as uuidv4 } from "uuid";
 
 import { MessageHandler } from "../modules/messages/application/MessageHandler/MessageHandler";
 import { PlayerChangeClientMessage } from "../modules/messages/server-to-client/PlayerChangeClientMessage";
+import { WatchChangeClientMessage } from "../modules/messages/server-to-client/WatchChangeClientMessage";
+import { JoinToGameAsSpectator } from "../modules/room/application/JoinToGameAsSpectator";
+import { JoinToRoomAsSpectator } from "../modules/room/application/JoinToRoomAsSpectator";
 import { RoomFinder } from "../modules/room/application/RoomFinder";
 import { DuelState } from "../modules/room/domain/Room";
 import RoomList from "../modules/room/infrastructure/RoomList";
+import { container } from "../modules/shared/dependency-injection";
+import { EventBus } from "../modules/shared/event-bus/EventBus";
 import { Logger } from "../modules/shared/logger/domain/Logger";
 import ReconnectingPlayers from "../modules/shared/ReconnectingPlayers";
 
@@ -23,6 +28,7 @@ export class HostServer {
 		this.logger = logger;
 		this.server = net.createServer();
 		this.roomFinder = new RoomFinder();
+		this.registerSubscribers();
 	}
 
 	initialize(): void {
@@ -54,7 +60,26 @@ export class HostServer {
 				const player = room.clients.find((client) => client.socket.id === ygoClientSocket.id);
 
 				if (!player) {
-					// remove spectator
+					const spectator = room.spectators.find(
+						(client) => client.socket.id === ygoClientSocket.id
+					);
+
+					if (!spectator) {
+						return;
+					}
+
+					room.removeSpectator(spectator);
+
+					const watchMessage = WatchChangeClientMessage.create({ count: room.spectators.length });
+
+					room.clients.forEach((_client) => {
+						_client.socket.write(watchMessage);
+					});
+
+					room.spectators.forEach((_client) => {
+						_client.socket.write(watchMessage);
+					});
+
 					return;
 				}
 
@@ -90,5 +115,11 @@ export class HostServer {
 				this.logger.error(error);
 			});
 		});
+	}
+
+	private registerSubscribers(): void {
+		const eventBus = container.get(EventBus);
+		eventBus.subscribe(JoinToGameAsSpectator.ListenTo, new JoinToGameAsSpectator());
+		eventBus.subscribe(JoinToRoomAsSpectator.ListenTo, new JoinToRoomAsSpectator());
 	}
 }

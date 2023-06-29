@@ -1,5 +1,4 @@
-import net from "net";
-
+import { YGOClientSocket } from "../../../socket-server/HostServer";
 import { Client } from "../../client/domain/Client";
 import { JoinGameMessage } from "../../messages/client-to-server/JoinGameMessage";
 import { CatchUpClientMessage } from "../../messages/server-to-client/CatchUpClientMessage";
@@ -9,18 +8,26 @@ import { PlayerChangeClientMessage } from "../../messages/server-to-client/Playe
 import { PlayerEnterClientMessage } from "../../messages/server-to-client/PlayerEnterClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
+import { DomainEventSubscriber } from "../../shared/event-bus/EventBus";
+import { ClientEnteredDuringDuelDomainEvent } from "../domain/domain-events/ClientEnteredDuringDuelDomainEvent";
 import { DuelState, Room } from "../domain/Room";
 
-export class JoinToGameAsSpectator {
-	constructor(private readonly socket: net.Socket) {}
+export class JoinToGameAsSpectator
+	implements DomainEventSubscriber<ClientEnteredDuringDuelDomainEvent>
+{
+	static readonly ListenTo = ClientEnteredDuringDuelDomainEvent.DOMAIN_EVENT;
 
-	run(message: JoinGameMessage, playerName: string, room: Room): void {
+	handle(event: ClientEnteredDuringDuelDomainEvent): void {
+		this.run(event.data.message, event.data.playerName, event.data.room, event.data.socket);
+	}
+
+	run(message: JoinGameMessage, playerName: string, room: Room, socket: YGOClientSocket): void {
 		if (room.duelState !== DuelState.DUELING) {
 			return;
 		}
 
 		const client = new Client({
-			socket: this.socket,
+			socket,
 			host: false,
 			name: playerName,
 			position: 7,
@@ -30,8 +37,8 @@ export class JoinToGameAsSpectator {
 
 		room.addSpectator(client);
 
-		this.socket.write(JoinGameClientMessage.createFromRoom(message, room));
-		this.socket.write(TypeChangeClientMessage.create({ type: 0x07 }));
+		socket.write(JoinGameClientMessage.createFromRoom(message, room));
+		socket.write(TypeChangeClientMessage.create({ type: 0x07 }));
 
 		room.clients.forEach((item) => {
 			const status = (item.position << 4) | 0x09;
@@ -39,15 +46,15 @@ export class JoinToGameAsSpectator {
 			item.socket.write(PlayerChangeClientMessage.create({ status }));
 		});
 
-		this.socket.write(DuelStartClientMessage.create());
+		socket.write(DuelStartClientMessage.create());
 
-		this.socket.write(CatchUpClientMessage.create({ catchingUp: true }));
+		socket.write(CatchUpClientMessage.create({ catchingUp: true }));
 
 		room.spectatorCache.forEach((item) => {
-			this.socket.write(item);
+			socket.write(item);
 		});
 
-		this.socket.write(CatchUpClientMessage.create({ catchingUp: false }));
+		socket.write(CatchUpClientMessage.create({ catchingUp: false }));
 
 		const team0 = room.clients
 			.filter((player) => player.team === 0)
@@ -57,10 +64,10 @@ export class JoinToGameAsSpectator {
 			.filter((player) => player.team === 1)
 			.map((item) => item.name.replace(/\0/g, "").trim());
 
-		this.socket.write(
+		socket.write(
 			ServerMessageClientMessage.create(`Bienvenido ${client.name.replace(/\0/g, "").trim()}`)
 		);
-		this.socket.write(
+		socket.write(
 			ServerMessageClientMessage.create(
 				`Score: ${team0.join(",")}: ${room.matchScore().team0} vs ${team1.join(",")}: ${
 					room.matchScore().team1
