@@ -6,19 +6,15 @@ import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameC
 import { PlayerChangeClientMessage } from "../../messages/server-to-client/PlayerChangeClientMessage";
 import { PlayerEnterClientMessage } from "../../messages/server-to-client/PlayerEnterClientMessage";
 import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
+import { WatchChangeClientMessage } from "../../messages/server-to-client/WatchChangeClientMessage";
 import { PlayerRoomState } from "../domain/PlayerRoomState";
 import { DuelState, Room } from "../domain/Room";
 
-export class JoinToGame {
+export class JoinToRoomAsSpectator {
 	constructor(private readonly socket: net.Socket) {}
 
 	run(message: JoinGameMessage, playerName: string, room: Room): void {
-		if (room.duelState === DuelState.DUELING) {
-			return;
-		}
-
-		const place = room.calculaPlace();
-		if (!place) {
+		if (room.duelState !== DuelState.WAITING) {
 			return;
 		}
 
@@ -26,30 +22,20 @@ export class JoinToGame {
 			socket: this.socket,
 			host: false,
 			name: playerName,
-			position: place.position,
+			position: 7,
 			roomId: room.id,
-			team: place.team,
+			team: 3,
 		});
 
-		room.addClient(client);
+		room.addSpectator(client);
 
 		this.socket.write(JoinGameClientMessage.createFromRoom(message, room));
-		room.clients.forEach((_client) => {
-			_client.socket.write(PlayerEnterClientMessage.create(playerName, client.position));
-		});
-
-		const notReady = (client.position << 4) | PlayerRoomState.NOT_READY;
-		room.clients.forEach((_client) => {
-			_client.socket.write(PlayerChangeClientMessage.create({ status: notReady }));
-		});
-
 		const type = (Number(client.host) << 4) | client.position;
 		this.socket.write(TypeChangeClientMessage.create({ type }));
 
-		const host = room.clients.find((client) => client.host);
-		if (!host) {
-			return;
-		}
+		const spectatorsCount = room.spectators.length;
+
+		console.log(room.spectators);
 
 		room.clients.forEach((_client) => {
 			if (_client.socket.id !== client.socket.id) {
@@ -61,5 +47,8 @@ export class JoinToGame {
 				this.socket.write(PlayerChangeClientMessage.create({ status }));
 			}
 		});
+
+		const watchMessage = WatchChangeClientMessage.create({ count: spectatorsCount });
+		this.socket.write(watchMessage);
 	}
 }

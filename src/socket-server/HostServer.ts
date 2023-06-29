@@ -2,8 +2,10 @@ import net, { Socket } from "net";
 import { v4 as uuidv4 } from "uuid";
 
 import { MessageHandler } from "../modules/messages/application/MessageHandler/MessageHandler";
-import { ClientRemover } from "../modules/room/application/ClientRemover";
+import { PlayerChangeClientMessage } from "../modules/messages/server-to-client/PlayerChangeClientMessage";
 import { RoomFinder } from "../modules/room/application/RoomFinder";
+import { DuelState } from "../modules/room/domain/Room";
+import RoomList from "../modules/room/infrastructure/RoomList";
 import { Logger } from "../modules/shared/logger/domain/Logger";
 import ReconnectingPlayers from "../modules/shared/ReconnectingPlayers";
 
@@ -14,14 +16,12 @@ export class YGOClientSocket extends Socket {
 export class HostServer {
 	private readonly server: net.Server;
 	private readonly logger: Logger;
-	private readonly clientRemover: ClientRemover;
 	private readonly roomFinder: RoomFinder;
 	private address?: string;
 
 	constructor(logger: Logger) {
 		this.logger = logger;
 		this.server = net.createServer();
-		this.clientRemover = new ClientRemover(this.logger);
 		this.roomFinder = new RoomFinder();
 	}
 
@@ -55,6 +55,23 @@ export class HostServer {
 
 				if (!player) {
 					// remove spectator
+					return;
+				}
+
+				if (player.host && room.duelState === DuelState.WAITING) {
+					RoomList.deleteRoom(room);
+
+					return;
+				}
+
+				if (room.duelState === DuelState.WAITING) {
+					room.removePlayer(player);
+					const status = (player.position << 4) | 0xb;
+					const message = PlayerChangeClientMessage.create({ status });
+					room.clients.forEach((client) => {
+						client.socket.write(message);
+					});
+
 					return;
 				}
 

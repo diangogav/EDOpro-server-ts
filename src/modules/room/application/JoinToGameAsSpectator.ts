@@ -9,15 +9,13 @@ import { PlayerChangeClientMessage } from "../../messages/server-to-client/Playe
 import { PlayerEnterClientMessage } from "../../messages/server-to-client/PlayerEnterClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
-import { DuelState } from "../domain/Room";
-import RoomList from "../infrastructure/RoomList";
+import { DuelState, Room } from "../domain/Room";
 
-export class JoinToGameAsExpectator {
+export class JoinToGameAsSpectator {
 	constructor(private readonly socket: net.Socket) {}
 
-	run(message: JoinGameMessage, playerName: string): void {
-		const room = RoomList.getRooms().find((room) => room.id === message.id);
-		if (!room || room.duelState !== DuelState.DUELING) {
+	run(message: JoinGameMessage, playerName: string, room: Room): void {
+		if (room.duelState !== DuelState.DUELING) {
 			return;
 		}
 
@@ -25,7 +23,7 @@ export class JoinToGameAsExpectator {
 			socket: this.socket,
 			host: false,
 			name: playerName,
-			position: 3,
+			position: 7,
 			roomId: room.id,
 			team: 3,
 		});

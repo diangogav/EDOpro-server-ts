@@ -38,7 +38,6 @@ interface RoomAttr {
 	duelRule: number;
 	handshake: number;
 	password: string;
-	users: Array<{ pos: number; name: string; deck?: Deck }>;
 	duel?: ChildProcessWithoutNullStreams;
 }
 
@@ -81,9 +80,8 @@ export class Room {
 	public readonly handshake: number;
 	public readonly password: string;
 	private readonly duelCache: Buffer[][] = [];
-	private _users: Array<{ pos: number; name: string; deck?: Deck }>;
 	private _clients: Client[] = [];
-	private readonly _spectators: Client[] = [];
+	private _spectators: Client[] = [];
 	private _duel?: ChildProcessWithoutNullStreams;
 	private _match: Match | null;
 	private _state: DuelState;
@@ -125,7 +123,6 @@ export class Room {
 		this.extraMax = attr.extraMax;
 		this.sideMin = attr.sideMin;
 		this.sideMax = attr.sideMax;
-		this._users = attr.users;
 		this.duelRule = attr.duelRule;
 		this.handshake = attr.handshake;
 		this.password = attr.password;
@@ -178,12 +175,6 @@ export class Room {
 			password: message.password,
 			duelFlagsHight: message.duelFlagsHight,
 			duelFlagsLow: message.duelFlagsLow,
-			users: [
-				{
-					pos: 0,
-					name: playerName.replace(/\0/g, "").trim(),
-				},
-			],
 		});
 	}
 
@@ -273,22 +264,13 @@ export class Room {
 		return this._clientWhoChoosesTurn;
 	}
 
-	removePlayer(socketId: string): void {
-		const client = this._clients.find((client) => client.socket.id === socketId);
-		this._clients = this._clients.filter((item) => item.socket.id !== socketId);
-		if (!client) {
-			return;
-		}
-
-		this._users = this._users.filter((user) => client.name !== user.name);
+	removePlayer(player: Client): void {
+		this._clients = this._clients.filter((item) => item.socket.id !== player.socket.id);
+		this._spectators = this._spectators.filter((item) => item.socket.id !== player.socket.id);
 	}
 
 	get clients(): Client[] {
 		return this._clients;
-	}
-
-	get users(): Array<{ pos: number; name: string; deck?: Deck }> {
-		return this._users;
 	}
 
 	cacheTeamMessage(team: number, message: Buffer): void {
@@ -469,7 +451,10 @@ export class Room {
 			extra_max: this.extraMax,
 			side_min: this.sideMin,
 			side_max: this.sideMax,
-			users: this._users,
+			users: this.clients.map((player) => ({
+				name: player.name.replace(/\0/g, "").trim(),
+				pos: player.position,
+			})),
 		};
 	}
 
