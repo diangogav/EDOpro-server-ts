@@ -166,7 +166,7 @@ export class RoomMessageHandler {
 						});
 
 						this.context.room.clearSpectatorCache();
-						this.context.room.cacheMessage(3, opponentGameMessage);
+						this.context.room.cacheTeamMessage(3, opponentGameMessage);
 						this.context.room.spectators.forEach((spectator) => {
 							spectator.socket.write(opponentGameMessage);
 						});
@@ -187,7 +187,7 @@ export class RoomMessageHandler {
 						});
 
 						if (cache) {
-							this.context.room.cacheMessage(team, message);
+							this.context.room.cacheTeamMessage(team, message);
 						}
 
 						this.context.clients.forEach((client) => {
@@ -214,7 +214,7 @@ export class RoomMessageHandler {
 						});
 
 						if (cache) {
-							this.context.room.cacheMessage(team, message);
+							this.context.room.cacheTeamMessage(team, message);
 						}
 
 						this.context.clients.forEach((client) => {
@@ -244,18 +244,23 @@ export class RoomMessageHandler {
 
 						const message = RawClientMessage.create({ buffer: data });
 
-						if (cache) {
-							this.context.room.cacheMessage(team, message);
-						}
-
 						if (!forAllTeam) {
 							const player = this.context.clients.find(
 								(player) => player.inTurn && player.team === team
 							);
+
+							if (cache) {
+								player?.cache.push(message);
+							}
+
 							this.logger.debug(`sending to team ${team}: ${message.toString("hex")}`);
 							player?.socket.write(message);
 
 							return;
+						}
+
+						if (cache) {
+							this.context.room.cacheTeamMessage(team, message);
 						}
 
 						this.context.clients.forEach((client) => {
@@ -278,7 +283,7 @@ export class RoomMessageHandler {
 						const message = BroadcastClientMessage.create({ buffer: data });
 						// this.context.room.cacheMessage(0, message);
 						// this.context.room.cacheMessage(1, message);
-						this.context.room.cacheMessage(3, message);
+						this.context.room.cacheTeamMessage(3, message);
 						this.context.clients.forEach((client) => {
 							this.logger.debug(`sending to all: ${message.toString("hex")}`);
 							client.socket.write(message);
@@ -318,7 +323,7 @@ export class RoomMessageHandler {
 						const message = TimeLimitClientMessage.create({ team, timeLimit });
 						this.context.clients.forEach((client) => {
 							if (Number(client.team) !== Number(team)) {
-								this.context.room.cacheMessage(client.team, message);
+								this.context.room.cacheTeamMessage(client.team, message);
 								this.logger.debug(`sending to team ${team}: ${message.toString("hex")}`);
 								client.socket.write(message);
 							}
@@ -349,7 +354,7 @@ export class RoomMessageHandler {
 						if (params.length === 1) {
 							return;
 						}
-						const team = Number(params[0]);
+						const position = Number(params[0]);
 						const buffer = Buffer.from(params.slice(1).map(Number));
 						const header = Buffer.from([0x01]);
 						const type = Buffer.from([0xa2]);
@@ -357,8 +362,12 @@ export class RoomMessageHandler {
 						const size = decimalToBytesBuffer(1 + data.length, 2);
 						const message = Buffer.concat([size, header, data]);
 						this.logger.debug(message.toString("hex"));
-						this.context.clients[team].socket.write(message);
-						core.stdin.write(`CMD:REFRESH|${team}\n`);
+						const player = this.context.clients.find((player) => player.position === position);
+						if (!player) {
+							return;
+						}
+						player.socket.write(message);
+						core.stdin.write(`CMD:REFRESH|${player.team}|${position}\n`);
 					}
 
 					if (cmd === "CMD:REFRESH") {
@@ -391,13 +400,21 @@ export class RoomMessageHandler {
 
 					if (cmd === "CMD:RECONNECT") {
 						const team = Number(params[0]);
-						const cache = this.context.room.getplayerCache(team);
-						if (cache.length === 0) {
+						const position = Number(params[1]);
+
+						const player = this.context.clients.find((player) => player.position === position);
+
+						if (!player) {
 							return;
 						}
-						this.logger.debug(`Cache message: ${cache[cache.length - 1].toString("hex")}`);
-						this.context.clients[team].socket.write(cache[cache.length - 1]);
-						this.context.clients[team].clearReconnecting();
+						if (player.cache.length === 0) {
+							return;
+						}
+						this.logger.debug(
+							`Cache message: ${player.cache[player.cache.length - 1].toString("hex")}`
+						);
+						player.socket.write(player.cache[player.cache.length - 1]);
+						player.clearReconnecting();
 					}
 
 					if (cmd === "CMD:SWAP") {

@@ -291,7 +291,7 @@ export class Room {
 		return this._users;
 	}
 
-	cacheMessage(team: number, message: Buffer): void {
+	cacheTeamMessage(team: number, message: Buffer): void {
 		if (team !== 1 && team !== 2) {
 			this.duelCache[team].push(message);
 
@@ -300,6 +300,10 @@ export class Room {
 
 		if (message[2] === 0x01) {
 			this.duelCache[team].push(message);
+			const players = this.clients.filter((client) => client.team === team);
+			players.forEach((player) => {
+				player.cache.push(message);
+			});
 		}
 	}
 

@@ -7,3 +7,5 @@ core/Makefile
 core/src/Makefile
 core/premake5
 core/databases
+databases
+*.db

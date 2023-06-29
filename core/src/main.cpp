@@ -191,15 +191,16 @@ int main(int argc, char *argv[])
 
       if (cmd == "FIELD")
       {
-        int team = std::atoi(params[0].c_str());
+        int position = std::atoi(params[0].c_str());
         const auto buffer = repository.duelQueryField(duel);
         FieldMessageSender fieldMessageSender;
-        fieldMessageSender.send(team, buffer);
+        fieldMessageSender.send(position, buffer);
       }
 
       if (cmd == "REFRESH")
       {
         int reconnectingTeam = std::atoi(params[0].c_str());
+        int position = std::atoi(params[1].c_str());
         std::vector<QueryRequest> queryRequests;
         zonesRefresher.refreshAll(queryRequests);
 
@@ -237,6 +238,7 @@ int main(int argc, char *argv[])
 
         std::string payload = "CMD:RECONNECT|";
         payload += std::to_string(reconnectingTeam) + "|";
+        payload += std::to_string(position) + "|";
         std::cout << payload << std::endl;
       }
 

@@ -27,7 +27,7 @@ export class ReadyCommandStrategy implements RoomMessageHandlerCommandStrategy {
 				})
 			);
 
-			this.context.room.duel?.stdin.write(`CMD:FIELD|${this.context.client.team}\n`);
+			this.context.room.duel?.stdin.write(`CMD:FIELD|${this.context.client.position}\n`);
 
 			return;
 		}
