@@ -79,7 +79,7 @@ export class Room {
 	public readonly duelRule: number;
 	public readonly handshake: number;
 	public readonly password: string;
-	private readonly duelCache: Buffer[][] = [];
+	private _spectatorCache: Buffer[] = [];
 	private _clients: Client[] = [];
 	private _spectators: Client[] = [];
 	private _duel?: ChildProcessWithoutNullStreams;
@@ -128,10 +128,6 @@ export class Room {
 		this.password = attr.password;
 		this._duel = attr.duel;
 		this._state = DuelState.WAITING;
-		this.duelCache[0] = [];
-		this.duelCache[1] = [];
-		this.duelCache[2] = [];
-		this.duelCache[3] = [];
 		this.duelFlagsLow = attr.duelFlagsLow;
 		this.duelFlagsHight = attr.duelFlagsHight;
 		this.t0Positions = Array.from({ length: this.team0 }, (_, index) => index);
@@ -277,14 +273,13 @@ export class Room {
 	}
 
 	cacheTeamMessage(team: number, message: Buffer): void {
-		if (team !== 1 && team !== 2) {
-			this.duelCache[team].push(message);
+		if (team === 3) {
+			this._spectatorCache.push(message);
 
 			return;
 		}
 
 		if (message[2] === 0x01) {
-			this.duelCache[team].push(message);
 			const players = this.clients.filter((client) => client.team === team);
 			players.forEach((player) => {
 				player.cache.push(message);
@@ -293,28 +288,11 @@ export class Room {
 	}
 
 	get spectatorCache(): Buffer[] {
-		return this.duelCache[3];
-	}
-
-	getplayerCache(team: number): Buffer[] {
-		return this.duelCache[team];
+		return this._spectatorCache;
 	}
 
 	clearSpectatorCache(): void {
-		this.duelCache[3] = [];
-	}
-
-	clearPlayersCache(): void {
-		this.duelCache[0] = [];
-		this.duelCache[1] = [];
-	}
-
-	setLastMessageToTeam(team: number, message: Buffer): void {
-		this._lastMessageToTeam.push({ team, message });
-	}
-
-	get lastMessageToTeam(): { team: number; message: Buffer } {
-		return this._lastMessageToTeam[this._lastMessageToTeam.length];
+		this._spectatorCache = [];
 	}
 
 	setPlayerDecksSize(mainSize: number, extraSize: number): void {
