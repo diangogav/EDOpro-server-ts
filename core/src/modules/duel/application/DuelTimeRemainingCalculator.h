@@ -10,6 +10,7 @@ class DuelTimeRemainingCalculator
 {
 public:
   uint16_t calculate(uint8_t team);
+  void reduce(uint8_t team);
 
 };
 

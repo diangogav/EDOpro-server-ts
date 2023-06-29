@@ -47,6 +47,10 @@ export class MessageHandler {
 			this.logger.debug("CHAT");
 		}
 
+		if (command === Commands.TIME_CONFIRM) {
+			this.logger.debug("TIME_CONFIRM");
+		}
+
 		this.context.execute();
 	}
 }

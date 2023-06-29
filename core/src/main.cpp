@@ -120,8 +120,8 @@ int main(int argc, char *argv[])
 
   DuelStarter duelStarter{repository, duel};
   duelStarter.start();
-  // DuelTurnTimer &timer = DuelTurnTimer::getInstance();
-  // timer.resetTimers(timeLimit);
+  DuelTurnTimer &timer = DuelTurnTimer::getInstance();
+  timer.resetTimers(timeLimit);
 
   DuelProcessor processor(repository);
   DuelMessageHandler duelMessageHandler(isTeam1GoingFirst, timeLimit);

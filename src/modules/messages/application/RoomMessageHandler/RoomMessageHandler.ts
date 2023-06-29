@@ -311,7 +311,7 @@ export class RoomMessageHandler {
 						const nonWaitingPlayerTeam = Number(params[0]);
 						const message = WaitingClientMessage.create();
 						this.context.clients.forEach((client) => {
-							if (client.team !== nonWaitingPlayerTeam && !client.inTurn) {
+							if (client.team !== nonWaitingPlayerTeam) {
 								client.socket.write(message);
 							}
 						});
@@ -322,11 +322,14 @@ export class RoomMessageHandler {
 						const timeLimit = Number(params[1]);
 						const message = TimeLimitClientMessage.create({ team, timeLimit });
 						this.context.clients.forEach((client) => {
-							if (Number(client.team) !== Number(team)) {
-								this.context.room.cacheTeamMessage(client.team, message);
-								this.logger.debug(`sending to team ${team}: ${message.toString("hex")}`);
-								client.socket.write(message);
-							}
+							this.context.room.cacheTeamMessage(client.team, message);
+							this.logger.debug(`sending to team ${team}: ${message.toString("hex")}`);
+							client.socket.write(message);
+						});
+
+						this.context.room.spectators.forEach((client) => {
+							this.logger.debug(`sending to spectators ${team}: ${message.toString("hex")}`);
+							client.socket.write(message);
 						});
 					}
 

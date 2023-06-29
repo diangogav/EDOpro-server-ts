@@ -8,6 +8,7 @@
 #include "../../infrastructure/OCGRepository.h"
 #include "../../../shared/Replier.h"
 #include "../../../shared/DuelTurnTimer.h"
+#include "../../application/DuelTimeRemainingCalculator.h"
 
 class ResponseHandler
 {
@@ -19,6 +20,7 @@ private:
   uint16_t timeLimit;
   OCGRepository repository;
   OCG_Duel duel;
+  DuelTimeRemainingCalculator timeCalculator;
 };
 
 #endif
