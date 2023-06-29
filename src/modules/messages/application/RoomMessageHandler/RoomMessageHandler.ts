@@ -308,10 +308,10 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:WAITING") {
-						const nonWaitingPlayer = Number(params[0]);
+						const nonWaitingPlayerTeam = Number(params[0]);
 						const message = WaitingClientMessage.create();
 						this.context.clients.forEach((client) => {
-							if (client.team !== nonWaitingPlayer) {
+							if (client.team !== nonWaitingPlayerTeam && !client.inTurn) {
 								client.socket.write(message);
 							}
 						});
