@@ -2,6 +2,7 @@ import { YGOClientSocket } from "../../../../socket-server/HostServer";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { Commands } from "../../domain/Commands";
 import { MessageHandlerContext } from "./MessageHandlerContext";
+import { ChatCommandStrategy } from "./Strategies/ChatCommandStrategy";
 import { CreateGameCommandStrategy } from "./Strategies/CreateGameCommandStrategy";
 import { JoinGameCommandStrategy } from "./Strategies/JoinGameCommandStrategy";
 import { PlayerInfoCommandStrategy } from "./Strategies/PlayerInfoCommandStrategy";
@@ -45,6 +46,7 @@ export class MessageHandler {
 
 		if (command === Commands.CHAT) {
 			this.logger.debug("CHAT");
+			this.context.setStrategy(new ChatCommandStrategy(this.context));
 		}
 
 		if (command === Commands.TIME_CONFIRM) {

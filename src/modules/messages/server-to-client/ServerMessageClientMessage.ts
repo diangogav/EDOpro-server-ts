@@ -9,7 +9,7 @@ export class ServerMessageClientMessage {
 			Buffer.from([0x02]),
 			decimalToBytesBuffer(0, 1),
 			Buffer.alloc(40),
-			UTF8ToUTF16(message),
+			UTF8ToUTF16(message, 512),
 		]);
 
 		const size = decimalToBytesBuffer(data.length, 2);

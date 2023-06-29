@@ -1,15 +1,15 @@
 import { decimalToBytesBuffer } from "../../../utils";
 import { UTF8ToUTF16 } from "../../../utils/UTF8ToUTF16";
 
-export class ServerErrorClientMessage {
-	static create(message: string): Buffer {
+export class SpectatorMessageClientMessage {
+	static create(senderName: string, message: Buffer): Buffer {
 		const type = Buffer.from([0xf3]);
 		const data = Buffer.concat([
 			type,
-			Buffer.from([0x04]),
+			Buffer.from([0x01]),
 			decimalToBytesBuffer(0, 1),
-			Buffer.alloc(40),
-			UTF8ToUTF16(message, 512),
+			UTF8ToUTF16(senderName, 40),
+			message,
 		]);
 
 		const size = decimalToBytesBuffer(data.length, 2);

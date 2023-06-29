@@ -131,4 +131,8 @@ export class Client {
 	get inTurn(): boolean {
 		return this._turn;
 	}
+
+	get isSpectator(): boolean {
+		return this.team === 3;
+	}
 }
