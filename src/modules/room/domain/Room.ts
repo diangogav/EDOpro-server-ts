@@ -282,7 +282,7 @@ export class Room {
 		if (message[2] === 0x01) {
 			const players = this.clients.filter((client) => client.team === team);
 			players.forEach((player) => {
-				player.cache.push(message);
+				player.setLastMessage(message);
 			});
 		}
 	}

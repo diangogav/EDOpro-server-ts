@@ -250,7 +250,7 @@ export class RoomMessageHandler {
 							);
 
 							if (cache) {
-								player?.cache.push(message);
+								player?.setLastMessage(message);
 							}
 
 							this.logger.debug(`sending to team ${team}: ${message.toString("hex")}`);
@@ -399,7 +399,7 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:RECONNECT") {
-						const team = Number(params[0]);
+						const _team = Number(params[0]);
 						const position = Number(params[1]);
 
 						const player = this.context.clients.find((player) => player.position === position);
@@ -407,13 +407,11 @@ export class RoomMessageHandler {
 						if (!player) {
 							return;
 						}
-						if (player.cache.length === 0) {
+						if (!player.cache) {
 							return;
 						}
-						this.logger.debug(
-							`Cache message: ${player.cache[player.cache.length - 1].toString("hex")}`
-						);
-						player.socket.write(player.cache[player.cache.length - 1]);
+						this.logger.debug(`Cache message: ${player.cache.toString("hex")}`);
+						player.socket.write(player.cache);
 						player.clearReconnecting();
 					}
 

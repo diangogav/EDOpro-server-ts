@@ -16,7 +16,7 @@ export class Client {
 	private _socket: YGOClientSocket;
 	private _isReady: boolean;
 	private _rpsChosen: Choose | null = null;
-	private readonly _cache: Buffer[] = [];
+	private _lastMessage: Buffer | null = null;
 	private _reconnecting = false;
 	private _deck: Deck;
 	private _duelPosition: number;
@@ -84,13 +84,12 @@ export class Client {
 		return this._isReady;
 	}
 
-	sendMessage(message: Buffer): void {
-		this._socket.write(message);
-		this._cache.push(message);
+	get cache(): Buffer | null {
+		return this._lastMessage;
 	}
 
-	get cache(): Buffer[] {
-		return this._cache;
+	setLastMessage(message: Buffer): void {
+		this._lastMessage = message;
 	}
 
 	reconnecting(): void {
