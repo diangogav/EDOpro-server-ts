@@ -1,46 +1,6 @@
 #include "CardSqliteRepository.h"
 #include "../../card/domain/CardTypes.h"
 
-static constexpr const char *DB_SCHEMAS =
-    R"(
-CREATE TABLE "datas" (
-	"id"        INTEGER,
-	"ot"        INTEGER,
-	"alias"     INTEGER,
-	"setcode"   INTEGER,
-	"type"      INTEGER,
-	"atk"       INTEGER,
-	"def"       INTEGER,
-	"level"     INTEGER,
-	"race"      INTEGER,
-	"attribute" INTEGER,
-	"category"  INTEGER,
-	PRIMARY KEY("id")
-);
-CREATE TABLE "texts" (
-	"id"    INTEGER,
-	"name"  TEXT,
-	"desc"  TEXT,
-	"str1"  TEXT,
-	"str2"  TEXT,
-	"str3"  TEXT,
-	"str4"  TEXT,
-	"str5"  TEXT,
-	"str6"  TEXT,
-	"str7"  TEXT,
-	"str8"  TEXT,
-	"str9"  TEXT,
-	"str10" TEXT,
-	"str11" TEXT,
-	"str12" TEXT,
-	"str13" TEXT,
-	"str14" TEXT,
-	"str15" TEXT,
-	"str16" TEXT,
-	PRIMARY KEY("id")
-);
-)";
-
 static constexpr const char *ATTACH_STMT =
     R"(
 ATTACH ? AS toMerge;
@@ -52,35 +12,13 @@ SELECT id,alias,setcode,type,atk,def,level,race,attribute
 FROM datas WHERE datas.id = ?;
 )";
 
-static constexpr const char *MERGE_DATAS_STMT =
-    R"(
-INSERT OR REPLACE INTO datas SELECT * FROM toMerge.datas;
-)";
-
-static constexpr const char *MERGE_TEXTS_STMT =
-    R"(
-INSERT OR REPLACE INTO texts SELECT * FROM toMerge.texts;
-)";
-
-static constexpr const char *DETACH_STMT =
-    R"(
-DETACH toMerge;
-)";
-
 CardSqliteRepository::CardSqliteRepository()
 {
-  if (sqlite3_open(":memory:", &db) != SQLITE_OK)
+  if (sqlite3_open("jtp_evolution_cards.db", &db) != SQLITE_OK)
     throw std::runtime_error(sqlite3_errmsg(db));
 
   char *err = nullptr;
 
-  if (sqlite3_exec(db, DB_SCHEMAS, nullptr, nullptr, &err) == SQLITE_ABORT)
-  {
-    std::string errStr(err);
-    sqlite3_free(err);
-    sqlite3_close(db);
-    throw std::runtime_error(errStr);
-  }
 
   if (sqlite3_prepare_v2(db, ATTACH_STMT, -1, &attachQuery, nullptr) != SQLITE_OK)
   {
@@ -96,20 +34,6 @@ CardSqliteRepository::CardSqliteRepository()
     sqlite3_close(db);
     throw std::runtime_error(errStr);
   }
-}
-
-bool CardSqliteRepository::merge(std::string_view path)
-{
-  sqlite3_reset(attachQuery);
-  sqlite3_bind_text(attachQuery, 1, path.data(), -1, SQLITE_TRANSIENT);
-  if (sqlite3_step(attachQuery) != SQLITE_DONE)
-  {
-    return false;
-  }
-  sqlite3_exec(db, MERGE_DATAS_STMT, nullptr, nullptr, nullptr);
-  sqlite3_exec(db, MERGE_TEXTS_STMT, nullptr, nullptr, nullptr);
-  sqlite3_exec(db, DETACH_STMT, nullptr, nullptr, nullptr);
-  return true;
 }
 
 const OCG_CardData &CardSqliteRepository::find(uint32_t code) const noexcept

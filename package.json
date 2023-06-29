@@ -32,6 +32,9 @@
     "load-json-file": "^7.0.1",
     "pino": "^8.14.1",
     "pino-pretty": "^10.0.0",
+    "reflect-metadata": "^0.1.13",
+    "sqlite3": "^5.1.6",
+    "typeorm": "^0.3.17",
     "uuid": "^9.0.0",
     "winston": "^3.8.2"
   }

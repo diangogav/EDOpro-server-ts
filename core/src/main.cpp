@@ -103,22 +103,6 @@ int main(int argc, char *argv[])
 
 
   CardSqliteRepository cardRepository{};
-  fs::path path = fs::current_path().string() + "/core/databases";
-  cardRepository.merge(path.string() + "/cards-rush.cdb");
-  cardRepository.merge(path.string() + "/cards-skills-unofficial.cdb");
-  cardRepository.merge(path.string() + "/cards-skills.cdb");
-  cardRepository.merge(path.string() + "/cards-unofficial-new.cdb");
-  cardRepository.merge(path.string() + "/cards-unofficial.cdb");
-  cardRepository.merge(path.string() + "/cards.cdb");
-  cardRepository.merge(path.string() + "/goat-entries.cdb");
-  cardRepository.merge(path.string() + "/prerelease-ac03-unofficial.cdb");
-  cardRepository.merge(path.string() + "/prerelease-ac03.cdb");
-  cardRepository.merge(path.string() + "/prerelease-agov.cdb");
-  cardRepository.merge(path.string() + "/prerelease-cards-rush.cdb");
-  cardRepository.merge(path.string() + "/prerelease-sd46.cdb");
-  cardRepository.merge(path.string() + "/prerelease-vjump-promos.cdb");
-  cardRepository.merge(path.string() + "/release-dp28.cdb");
-  cardRepository.merge(path.string() + "/release-dune.cdb");
 
   OCGRepository repository{};
   DuelCreator duelCreator{repository};

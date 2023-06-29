@@ -1,7 +1,9 @@
 import { spawn } from "child_process";
 
 import { decimalToBytesBuffer } from "../../../../utils";
+import { CardSQLiteTYpeORMRepository } from "../../../card/infrastructure/postgres/CardSQLiteTYpeORMRepository";
 import { Client } from "../../../client/domain/Client";
+import { DeckCreator } from "../../../deck/application/DeckCreator";
 import { Room } from "../../../room/domain/Room";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { Pino } from "../../../shared/logger/infrastructure/Pino";
@@ -37,40 +39,46 @@ export class RoomMessageHandler {
 		const command = header.subarray(2, 3).readInt8();
 
 		if (command === Commands.UPDATE_DECK) {
-			this.logger.info("UPDATE_DECK");
-			this.context.setStrategy(new UpdateDeckCommandStrategy(this.context, () => this.read()));
+			this.logger.debug("UPDATE_DECK");
+			this.context.setStrategy(
+				new UpdateDeckCommandStrategy(
+					this.context,
+					() => this.read(),
+					new DeckCreator(new CardSQLiteTYpeORMRepository())
+				)
+			);
 		}
 
 		if (command === Commands.READY) {
-			this.logger.info("READY");
+			this.logger.debug("READY");
 			this.context.setStrategy(new ReadyCommandStrategy(this.context, () => this.read()));
 		}
 
 		if (command === Commands.NOT_READY) {
-			this.logger.info("NOT_READY");
+			this.logger.debug("NOT_READY");
 			this.context.setStrategy(new NotReadyCommandStrategy(this.context, () => this.read()));
 		}
 
 		if (command === Commands.TRY_START) {
-			this.logger.info("TRY_START");
+			this.logger.debug("TRY_START");
 			this.context.setStrategy(new TryStartCommandStrategy(this.context, () => this.read()));
 		}
 
 		if (command === Commands.RPS_CHOICE) {
-			this.logger.info("RPS_CHOICE");
+			this.logger.debug("RPS_CHOICE");
 			this.context.setStrategy(new RpsChoiceCommandStrategy(this.context));
 		}
 
 		if (command === Commands.TURN_CHOICE) {
-			this.logger.info("TURN_CHOICE");
+			this.logger.debug("TURN_CHOICE");
 			const turn = this.context.readBody(1).readInt8();
-			this.logger.info(`TURN_CHOICE: ${turn}`);
+			this.logger.debug(`TURN_CHOICE: ${turn}`);
 			const position = this.context.room.clients.find(
 				(client) => client === this.context.client
 			)?.position;
 
 			const playFirst = turn === 1 ? this.context.client.team : Number(!this.context.client.team);
-			this.logger.info(`PLAY_FIRST: ${playFirst}`);
+			this.logger.debug(`PLAY_FIRST: ${playFirst}`);
 
 			const isTeam1GoingFirst = (position === 0 && turn === 0) || (position === 1 && turn === 1);
 
@@ -85,6 +93,7 @@ export class RoomMessageHandler {
 				team: item.team,
 				mainDeck: item.deck.main,
 				sideDeck: item.deck.side,
+				extraDeck: item.deck.extra,
 				turn: item.duelPosition,
 			}));
 
@@ -394,15 +403,6 @@ export class RoomMessageHandler {
 					if (cmd === "CMD:SWAP") {
 						const team = Number(params[0]);
 						this.context.room.nextTurn(team);
-						console.log(
-							this.context.clients
-								.filter((player) => player.inTurn)
-								.map((item) => ({
-									name: item.name,
-									position: item.duelPosition,
-									team: item.team,
-								}))
-						);
 					}
 				});
 			});

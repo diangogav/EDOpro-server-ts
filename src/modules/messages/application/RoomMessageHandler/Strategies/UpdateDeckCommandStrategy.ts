@@ -1,4 +1,4 @@
-import { Deck } from "../../../../deck/domain/Deck";
+import { DeckCreator } from "../../../../deck/application/DeckCreator";
 import { DuelState } from "../../../../room/domain/Room";
 import { ChooseOrderClientMessage } from "../../../server-to-client/ChooseOrderClientMessage";
 import { DuelStartClientMessage } from "../../../server-to-client/DuelStartClientMessage";
@@ -10,10 +10,11 @@ import { RoomMessageHandlerContext } from "../RoomMessageHandlerContext";
 export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrategy {
 	constructor(
 		private readonly context: RoomMessageHandlerContext,
-		private readonly afterExecuteCallback: () => void
+		private readonly afterExecuteCallback: () => void,
+		private readonly deckCreator: DeckCreator
 	) {}
 
-	execute(): void {
+	async execute(): Promise<void> {
 		const messageSize = new UpdateDeckMessageSizeCalculator(this.context.data).calculate();
 		const body = this.context.readBody(messageSize);
 		const mainAndExtraDeckSize = body.readUInt32LE(0);
@@ -36,7 +37,7 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 		}
 
 		if (this.context.room.duelState !== DuelState.SIDE_DECKING) {
-			const deck = new Deck({ main: mainDeck, side: sideDeck });
+			const deck = await this.deckCreator.build({ main: mainDeck, side: sideDeck });
 			this.context.updatePreviousMessage(deck);
 			this.afterExecuteCallback();
 
@@ -51,7 +52,7 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 
 			return;
 		}
-		const deck = new Deck({ main: mainDeck, side: sideDeck });
+		const deck = await this.deckCreator.build({ main: mainDeck, side: sideDeck });
 		this.context.room.setDecksToPlayer(position, deck);
 		const message = DuelStartClientMessage.create();
 		this.context.client.socket.write(message);

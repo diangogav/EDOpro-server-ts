@@ -11,6 +11,7 @@ void DuelDecksLoader::load(Json::Value players)
     uint8_t team = item["team"].asInt();
     uint8_t turn = item["turn"].asInt();
     Json::Value deck = item["mainDeck"];
+    Json::Value extraDeck = item["extraDeck"];
 
     cardInfo.team = this->calculateTeam(team);
     cardInfo.duelist = turn;
@@ -20,6 +21,14 @@ void DuelDecksLoader::load(Json::Value players)
     cardInfo.pos = 8;
 
     for (const auto &card : deck)
+    {
+      cardInfo.code = card.asInt();
+      repository.addCard(duel, cardInfo);
+    }
+
+    cardInfo.loc = 0x40;
+
+    for (const auto &card : extraDeck)
     {
       cardInfo.code = card.asInt();
       repository.addCard(duel, cardInfo);

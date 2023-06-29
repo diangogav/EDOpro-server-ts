@@ -24,22 +24,22 @@ export class MessageHandler {
 		const command = header.subarray(2, 3).readInt8();
 
 		if (command === Commands.PLAYER_INFO) {
-			this.logger.info("PLAYER_INFO");
+			this.logger.debug("PLAYER_INFO");
 			this.context.setStrategy(new PlayerInfoCommandStrategy(this.context, () => this.read()));
 		}
 
 		if (command === Commands.CREATE_GAME) {
-			this.logger.info("CREATE_GAME");
+			this.logger.debug("CREATE_GAME");
 			this.context.setStrategy(new CreateGameCommandStrategy(this.context, () => this.read()));
 		}
 
 		if (command === Commands.JOIN_GAME) {
-			this.logger.info("JOIN_GAME");
+			this.logger.debug("JOIN_GAME");
 			this.context.setStrategy(new JoinGameCommandStrategy(this.context));
 		}
 
 		if (command === Commands.RESPONSE) {
-			this.logger.info("RESPONSE");
+			this.logger.debug("RESPONSE");
 			this.context.setStrategy(new ResponseCommandStrategy(this.context));
 		}
 
