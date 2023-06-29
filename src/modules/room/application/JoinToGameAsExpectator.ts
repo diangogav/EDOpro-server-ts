@@ -7,6 +7,7 @@ import { DuelStartClientMessage } from "../../messages/server-to-client/DuelStar
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
 import { PlayerChangeClientMessage } from "../../messages/server-to-client/PlayerChangeClientMessage";
 import { PlayerEnterClientMessage } from "../../messages/server-to-client/PlayerEnterClientMessage";
+import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
 import { DuelState } from "../domain/Room";
 import RoomList from "../infrastructure/RoomList";
@@ -49,5 +50,24 @@ export class JoinToGameAsExpectator {
 		});
 
 		this.socket.write(CatchUpClientMessage.create({ catchingUp: false }));
+
+		const team0 = room.clients
+			.filter((player) => player.team === 0)
+			.map((item) => item.name.replace(/\0/g, "").trim());
+
+		const team1 = room.clients
+			.filter((player) => player.team === 1)
+			.map((item) => item.name.replace(/\0/g, "").trim());
+
+		this.socket.write(
+			ServerMessageClientMessage.create(`Bienvenido ${client.name.replace(/\0/g, "").trim()}`)
+		);
+		this.socket.write(
+			ServerMessageClientMessage.create(
+				`Score: ${team0.join(",")}: ${room.matchScore().team0} vs ${team1.join(",")}: ${
+					room.matchScore().team1
+				}`
+			)
+		);
 	}
 }

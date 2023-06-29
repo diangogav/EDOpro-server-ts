@@ -25,6 +25,8 @@ export class FinishDuelHandler {
 		});
 
 		if (this.room.isMatchFinished()) {
+			this.room.duel?.kill("SIGTERM");
+
 			return;
 		}
 

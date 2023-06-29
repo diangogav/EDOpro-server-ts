@@ -43,6 +43,10 @@ export class MessageHandler {
 			this.context.setStrategy(new ResponseCommandStrategy(this.context));
 		}
 
+		if (command === Commands.CHAT) {
+			this.logger.debug("CHAT");
+		}
+
 		this.context.execute();
 	}
 }
