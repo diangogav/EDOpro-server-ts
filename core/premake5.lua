@@ -10,7 +10,7 @@ workspace "CoreIntegrator"
     language "C++"
     cppdialect "C++20"
 
-    targetdir "build/%{cfg.buildcfg}/bin"
+    targetdir "."
     objdir "build/%{cfg.buildcfg}/obj"
 
     location "./src"

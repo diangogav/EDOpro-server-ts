@@ -15,8 +15,12 @@ int ScriptReader::handle(void *payload, void *duel, const char *name)
 int ScriptReader::read(void *duel, const char *name)
 {
   FileReader reader;
-  fs::path path = fs::current_path().string() + "/core/scripts/";
-  std::vector<char> buffer = reader.read((path.string() += name).c_str());
+  std::filesystem::path currentPath = std::filesystem::current_path();
+  std::filesystem::path scriptsPath = currentPath / "core/scripts";
+  const char* path = scriptsPath.c_str();
+
+  std::vector<char> buffer = reader.read(path, name);
   int loaded = repository.loadScript(duel, buffer.data(), buffer.size(), name);
+
   return loaded;
 }

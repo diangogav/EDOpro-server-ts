@@ -7,11 +7,14 @@ DuelScriptsLoader::DuelScriptsLoader(OCGRepository repository, OCG_Duel duel) : 
 
 void DuelScriptsLoader::load()
 {
-  fs::path path = fs::current_path().string() + "/core/scripts/";
   FileReader reader;
-  std::vector<char> constantsBuffer = reader.read((path.string() + "constant.lua").c_str());
+  std::filesystem::path currentPath = std::filesystem::current_path();
+  std::filesystem::path scriptsPath = currentPath / "core/scripts";
+  const char* path = scriptsPath.c_str();
+
+  std::vector<char> constantsBuffer = reader.read(path, "constant.lua");
   int constantsScriptLoadResult = repository.loadScript(duel, constantsBuffer.data(), constantsBuffer.size(), "constant.lua");
 
-  std::vector<char> utilityBuffer = reader.read((path.string() + "utility.lua").c_str());
+  std::vector<char> utilityBuffer = reader.read(path, "utility.lua");
   int utilityScriptLoadResult = repository.loadScript(duel, utilityBuffer.data(), utilityBuffer.size(), "utility.lua");
 }

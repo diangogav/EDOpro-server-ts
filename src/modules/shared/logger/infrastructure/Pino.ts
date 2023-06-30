@@ -14,6 +14,7 @@ export class Pino implements Logger {
 	});
 
 	debug(message: unknown): void {
+		return;
 		this.logger.debug(message);
 	}
 

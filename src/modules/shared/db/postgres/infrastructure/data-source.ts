@@ -5,7 +5,7 @@ import { CardTextEntity } from "../../../../card/infrastructure/postgres/CardTex
 
 const options: DataSourceOptions = {
 	type: "sqlite",
-	database: "./jtp_evolution_cards.db",
+	database: "jtp_evolution_cards.db",
 	synchronize: true,
 	logging: false,
 	entities: [CardEntity, CardTextEntity],

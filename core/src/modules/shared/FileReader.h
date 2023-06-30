@@ -3,11 +3,15 @@
 
 #include <fstream>
 #include <vector>
+#include <filesystem>
+#include <string>
+
+namespace fs = std::filesystem;
 
 class FileReader
 {
 public:
-  static std::vector<char> read(const char *filename);
+  static std::vector<char> read(const std::string& directory, const std::string& filename);
 };
 
 #endif

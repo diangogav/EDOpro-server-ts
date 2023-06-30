@@ -1,11 +1,12 @@
 node_modules
 dist
-core/scripts
-core/dependencies
-core/build
+*scripts
+*dependencies
+*build
 core/Makefile
 core/src/Makefile
 core/premake5
-core/databases
-databases
+*databases
 *.db
+*.vscode
+*.env

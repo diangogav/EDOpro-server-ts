@@ -1,5 +1,7 @@
 #include "CardSqliteRepository.h"
 #include "../../card/domain/CardTypes.h"
+#include <filesystem>
+namespace fs = std::filesystem;
 
 static constexpr const char *ATTACH_STMT =
     R"(
@@ -14,11 +16,14 @@ FROM datas WHERE datas.id = ?;
 
 CardSqliteRepository::CardSqliteRepository()
 {
-  if (sqlite3_open("jtp_evolution_cards.db", &db) != SQLITE_OK)
+  std::filesystem::path currentPath = std::filesystem::current_path();
+  std::filesystem::path dbPath = currentPath / "jtp_evolution_cards.db";
+  const char *path = dbPath.c_str();
+
+  if (sqlite3_open(path, &db) != SQLITE_OK)
     throw std::runtime_error(sqlite3_errmsg(db));
 
   char *err = nullptr;
-
 
   if (sqlite3_prepare_v2(db, ATTACH_STMT, -1, &attachQuery, nullptr) != SQLITE_OK)
   {

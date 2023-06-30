@@ -1,0 +1,11 @@
+node_modules
+dist
+core/scripts
+core/dependencies
+core/build
+core/Makefile
+core/src/Makefile
+core/premake5
+core/databases
+databases
+.env

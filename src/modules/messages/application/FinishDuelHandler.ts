@@ -1,5 +1,6 @@
 import { DuelFinishReason } from "../../room/domain/DuelFinishReason";
 import { Room } from "../../room/domain/Room";
+import RoomList from "../../room/infrastructure/RoomList";
 import { SideDeckClientMessage } from "../server-to-client/game-messages/SideDeckClientMessage";
 import { SideDeckWaitClientMessage } from "../server-to-client/game-messages/SideDeckWaitClientMessage";
 import { ReplayPromptMessage } from "../server-to-client/ReplayPromptMessage";
@@ -26,7 +27,17 @@ export class FinishDuelHandler {
 		});
 
 		if (this.room.isMatchFinished()) {
+			this.room.clients.forEach((player) => {
+				player.socket.destroy();
+			});
+
+			this.room.spectators.forEach((spectator) => {
+				spectator.socket.destroy();
+			});
+
 			this.room.duel?.kill("SIGTERM");
+
+			RoomList.deleteRoom(this.room);
 
 			return;
 		}

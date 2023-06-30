@@ -2,11 +2,16 @@
 #include <iostream>
 #include <dlfcn.h>
 #include <cstring>
+#include <filesystem>
+namespace fs = std::filesystem;
 
 void OCGRepository::loadFunctions()
 {
-  const char *librarypath = "/home/diango/code/edo-pro-server-ts/core/libocgcore.so";
-  libhandle = dlopen(librarypath, RTLD_NOW | RTLD_LOCAL);
+  std::filesystem::path currentPath = std::filesystem::current_path();
+  std::filesystem::path libPath = currentPath / "core/libocgcore.so";
+  const char* path = libPath.c_str();
+
+  libhandle = dlopen(path, RTLD_NOW | RTLD_LOCAL);
 
   if (libhandle == nullptr)
   {

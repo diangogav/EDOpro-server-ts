@@ -98,16 +98,22 @@ export class RoomMessageHandler {
 				turn: item.duelPosition,
 			}));
 
-			const core = spawn(`${__dirname}/../../../../../core/build/Debug/bin/CoreIntegrator`, [
-				this.context.room.startLp.toString(),
-				this.context.room.startHand.toString(),
-				this.context.room.drawCount.toString(),
-				this.context.room.duelFlag.toString(),
-				this.context.room.extraRules.toString(),
-				Number(isTeam1GoingFirst).toString(),
-				this.context.room.timeLimit.toString(),
-				JSON.stringify(players),
-			]);
+			const core = spawn(
+				`${__dirname}/../../../../../core/CoreIntegrator`,
+				[
+					this.context.room.startLp.toString(),
+					this.context.room.startHand.toString(),
+					this.context.room.drawCount.toString(),
+					this.context.room.duelFlag.toString(),
+					this.context.room.extraRules.toString(),
+					Number(isTeam1GoingFirst).toString(),
+					this.context.room.timeLimit.toString(),
+					JSON.stringify(players),
+				],
+				{
+					cwd: process.cwd(),
+				}
+			);
 
 			this.context.room.setDuel(core);
 			this.context.room.dueling();

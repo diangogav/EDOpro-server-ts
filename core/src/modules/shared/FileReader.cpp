@@ -1,22 +1,26 @@
 #include "FileReader.h"
 
-std::vector<char> FileReader::read(const char *filename)
+std::vector<char> FileReader::read(const std::string &directory, const std::string &filename)
 {
-  std::ifstream file(filename, std::ios::ate);
-  std::streamsize length = file.tellg();
-
-  if (length == -1)
+  for (const auto &entry : fs::recursive_directory_iterator(directory))
   {
-    return std::vector<char>();
+    if (entry.is_regular_file() && entry.path().filename() == filename)
+    {
+      std::ifstream file(entry.path(), std::ios::binary);
+      if (file)
+      {
+        file.seekg(0, std::ios::end);
+        std::streamsize fileSize = file.tellg();
+        file.seekg(0, std::ios::beg);
+
+        std::vector<char> buffer(fileSize);
+        if (file.read(buffer.data(), fileSize))
+        {
+          return buffer;
+        }
+      }
+    }
   }
 
-  file.seekg(0, std::ios::beg);
-
-  std::vector<char> buffer(length);
-
-  file.read(buffer.data(), length);
-
-  file.close();
-
-  return buffer;
+  return {};
 }
