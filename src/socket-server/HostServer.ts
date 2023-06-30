@@ -32,8 +32,8 @@ export class HostServer {
 	}
 
 	initialize(): void {
-		this.server.listen(7711, () => {
-			this.logger.info("Server listen in port 7711");
+		this.server.listen(7911, () => {
+			this.logger.info("Server listen in port 7911");
 		});
 		this.server.on("connection", (socket: Socket) => {
 			this.address = socket.remoteAddress;

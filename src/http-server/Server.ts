@@ -16,8 +16,8 @@ export class Server {
 
 	async initialize(): Promise<void> {
 		await createDirectoryIfNotExists("./config");
-		this.app.listen(7722, () => {
-			this.logger.info("Server listen in port 7722");
+		this.app.listen(7922, () => {
+			this.logger.info("Server listen in port 7922");
 		});
 	}
 }
