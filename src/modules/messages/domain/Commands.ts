@@ -6,6 +6,7 @@ export enum Commands {
 	PLAYER_INFO = 16,
 	CREATE_GAME = 17,
 	JOIN_GAME = 18,
+	SURRENDER = 20,
 	TIME_CONFIRM = 21,
 	CHAT = 22,
 	READY = 34,

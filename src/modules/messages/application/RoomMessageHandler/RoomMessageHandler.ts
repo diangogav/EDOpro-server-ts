@@ -4,6 +4,7 @@ import { decimalToBytesBuffer } from "../../../../utils";
 import { CardSQLiteTYpeORMRepository } from "../../../card/infrastructure/postgres/CardSQLiteTYpeORMRepository";
 import { Client } from "../../../client/domain/Client";
 import { DeckCreator } from "../../../deck/application/DeckCreator";
+import { DuelFinishReason } from "../../../room/domain/DuelFinishReason";
 import { Room } from "../../../room/domain/Room";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { Pino } from "../../../shared/logger/infrastructure/Pino";
@@ -334,7 +335,7 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:FINISH") {
-						const reason = Number(params[0]);
+						const reason = Number(params[0]) as DuelFinishReason;
 						const winner = Number(params[1]);
 						const duelFinisher = new FinishDuelHandler({ reason, winner, room: this.context.room });
 						duelFinisher.run();

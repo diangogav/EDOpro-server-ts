@@ -39,8 +39,8 @@ AsioTimer::time_point DuelTurnTimer::expiry(uint8_t team) const
 
 void DuelTurnTimer::cancel(uint8_t team)
 {
-	assert(team <= 1U);
-	timers[team].cancel();
+  assert(team <= 1U);
+  timers[team].cancel();
 }
 
 DuelTurnTimer::DuelTurnTimer() : ioContext(), strand(ioContext), timers({AsioTimer(strand.context()), AsioTimer(strand.context())})

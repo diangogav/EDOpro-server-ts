@@ -7,6 +7,7 @@ import { CreateGameCommandStrategy } from "./Strategies/CreateGameCommandStrateg
 import { JoinGameCommandStrategy } from "./Strategies/JoinGameCommandStrategy";
 import { PlayerInfoCommandStrategy } from "./Strategies/PlayerInfoCommandStrategy";
 import { ResponseCommandStrategy } from "./Strategies/ResponseCommandStrategy";
+import { SurrenderCommandStrategy } from "./Strategies/SurrenderCommandStrategy";
 
 export class MessageHandler {
 	private readonly context: MessageHandlerContext;
@@ -47,6 +48,11 @@ export class MessageHandler {
 		if (command === Commands.CHAT) {
 			this.logger.debug("CHAT");
 			this.context.setStrategy(new ChatCommandStrategy(this.context));
+		}
+
+		if (command === Commands.SURRENDER) {
+			this.logger.debug("SURRENDER");
+			this.context.setStrategy(new SurrenderCommandStrategy(this.context));
 		}
 
 		if (command === Commands.TIME_CONFIRM) {

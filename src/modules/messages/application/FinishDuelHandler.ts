@@ -1,14 +1,15 @@
+import { DuelFinishReason } from "../../room/domain/DuelFinishReason";
 import { Room } from "../../room/domain/Room";
 import { SideDeckClientMessage } from "../server-to-client/game-messages/SideDeckClientMessage";
 import { SideDeckWaitClientMessage } from "../server-to-client/game-messages/SideDeckWaitClientMessage";
 import { ReplayPromptMessage } from "../server-to-client/ReplayPromptMessage";
 
 export class FinishDuelHandler {
-	private readonly reason: number;
+	private readonly reason: DuelFinishReason;
 	private readonly winner: number;
 	private readonly room: Room;
 
-	constructor({ reason, winner, room }: { reason: number; winner: number; room: Room }) {
+	constructor({ reason, winner, room }: { reason: DuelFinishReason; winner: number; room: Room }) {
 		this.reason = reason;
 		this.winner = winner;
 		this.room = room;
