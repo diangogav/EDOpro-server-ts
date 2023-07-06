@@ -1,4 +1,14 @@
 #include "PreActionQueryCreator.h"
+#include "../../../shared/Read.h"
+template <>
+constexpr LocInfo Read(const uint8_t *&ptr) noexcept
+{
+  return LocInfo{
+      Read<uint8_t>(ptr),
+      Read<uint8_t>(ptr),
+      Read<uint32_t>(ptr),
+      Read<uint32_t>(ptr)};
+}
 
 std::vector<QueryRequest> PreActionQueryCreator::run(const std::vector<uint8_t> &message)
 {
@@ -18,6 +28,15 @@ std::vector<QueryRequest> PreActionQueryCreator::run(const std::vector<uint8_t> 
     ZonesRefresher::refreshAllHands(queryRequests);
     ZonesRefresher::refreshAllMZones(queryRequests);
     ZonesRefresher::refreshAllSZones(queryRequests);
+  }
+
+  if (messageType == MSG_FLIPSUMMONING)
+  {
+    const auto *ptr = message.data();
+    ptr++;     // type ignored
+    ptr += 4U; // Card code
+    const auto i = Read<LocInfo>(ptr);
+    queryRequests.emplace_back(QuerySingleRequest{i.con, i.loc, i.seq, 0x3F81FFF});
   }
 
   return queryRequests;

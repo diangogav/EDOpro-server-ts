@@ -84,5 +84,41 @@ std::vector<QueryRequest> QueryCreator::run(const std::vector<uint8_t> &message)
     queryRequests.emplace_back(QueryLocationRequest{1U, LOCATION_EXTRA, 0x381FFF});
   }
 
+  if (messageType == MSG_SHUFFLE_EXTRA)
+  {
+    auto player = Read<uint8_t>(ptr);
+    queryRequests.emplace_back(QueryLocationRequest{player, LOCATION_EXTRA, 0x381FFF});
+  }
+
+  if (messageType == MSG_SWAP_GRAVE_DECK)
+  {
+    auto player = Read<uint8_t>(ptr);
+    queryRequests.emplace_back(QueryLocationRequest{player, LOCATION_GRAVE, 0x381FFF});
+  }
+
+  if (messageType == MSG_REVERSE_DECK)
+  {
+    ZonesRefresher::refreshAllDecks(queryRequests);
+  }
+
+  if (messageType == MSG_SHUFFLE_SET_CARD)
+  {
+    auto loc = Read<uint8_t>(ptr);
+    queryRequests.emplace_back(QueryLocationRequest{0U, loc, 0x3181FFF});
+    queryRequests.emplace_back(QueryLocationRequest{1U, loc, 0x3181FFF});
+  }
+
+  if (messageType == MSG_POS_CHANGE)
+  {
+    ptr += 4U;                    // Card code
+    auto cc = Read<uint8_t>(ptr); // Current controller
+    auto cl = Read<uint8_t>(ptr); // Current location
+    auto cs = Read<uint8_t>(ptr); // Current sequence
+    auto pp = Read<uint8_t>(ptr); // Previous position
+    auto cp = Read<uint8_t>(ptr); // Current position
+    if ((pp & POS_FACEDOWN) && (cp & POS_FACEUP))
+      queryRequests.emplace_back(QuerySingleRequest{cc, cl, cs, 0x3F81FFF});
+  }
+
   return queryRequests;
 }
