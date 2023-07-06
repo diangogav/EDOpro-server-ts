@@ -43,13 +43,35 @@ export class RpsChoiceCommandStrategy implements RoomMessageHandlerCommandStrate
 		}
 
 		const result = new RockPaperScissor().play(playerOne.rpsChoise, playerTwo.rpsChoise);
-		players.forEach((player) => {
-			const resultMessage = RPSResultClientMessage.create({
-				choise1: ChooseToNumber[playerOne.rpsChoise as keyof typeof ChooseToNumber],
-				choise2: ChooseToNumber[playerTwo.rpsChoise as keyof typeof ChooseToNumber],
-			});
-			player.socket.write(resultMessage);
-			player.clearRpsChoise();
+
+		const team0Response = RPSResultClientMessage.create({
+			choise1: ChooseToNumber[playerOne.rpsChoise as keyof typeof ChooseToNumber],
+			choise2: ChooseToNumber[playerTwo.rpsChoise as keyof typeof ChooseToNumber],
+		});
+
+		const team1Response = RPSResultClientMessage.create({
+			choise1: ChooseToNumber[playerTwo.rpsChoise as keyof typeof ChooseToNumber],
+			choise2: ChooseToNumber[playerOne.rpsChoise as keyof typeof ChooseToNumber],
+		});
+
+		this.context.room.clients.forEach((player) => {
+			if (player.team === 0) {
+				player.socket.write(team0Response);
+			}
+		});
+
+		this.context.room.clients.forEach((player) => {
+			if (player.team === 1) {
+				player.socket.write(team0Response);
+			}
+		});
+
+		this.context.room.spectators.forEach((spectator) => {
+			spectator.socket.write(team0Response);
+		});
+
+		this.context.clients.forEach((client) => {
+			client.clearRpsChoise();
 		});
 
 		if (result === "TIE") {
