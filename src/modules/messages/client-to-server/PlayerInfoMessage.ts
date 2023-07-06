@@ -1,3 +1,4 @@
+import { BufferToUTF16 } from "../../../utils/BufferToUTF16";
 import { Message } from "../Message";
 
 export class PlayerInfoMessage implements Message {
@@ -5,6 +6,6 @@ export class PlayerInfoMessage implements Message {
 	public readonly name: string;
 
 	constructor(buffer: Buffer, length: number) {
-		this.name = buffer.subarray(0, length).toString();
+		this.name = BufferToUTF16(buffer, length);
 	}
 }
