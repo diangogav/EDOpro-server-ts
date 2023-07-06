@@ -2,7 +2,6 @@ import { JoinToGame } from "../../../../room/application/JoinToGame";
 import { ReconnectToGame } from "../../../../room/application/ReconnectToGame";
 import { RoomFinder } from "../../../../room/application/RoomFinder";
 import RoomList from "../../../../room/infrastructure/RoomList";
-import ReconnectingPlayers from "../../../../shared/ReconnectingPlayers";
 import { JoinGameMessage } from "../../../client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../../client-to-server/PlayerInfoMessage";
 import { ServerErrorClientMessage } from "../../../server-to-client/ServerErrorMessageClientMessage";
@@ -30,8 +29,10 @@ export class JoinGameCommandStrategy implements MessageHandlerCommandStrategy {
 		const joinToGame = new JoinToGame(this.context.socket);
 		const playerInfoMessage = this.context.getPreviousMessages() as PlayerInfoMessage;
 
-		const reconnectingClient = ReconnectingPlayers.get().find(
-			(item) => this.context.socket.remoteAddress === item.address
+		const reconnectingClient = room.clients.find(
+			(client) =>
+				client.socket.remoteAddress === this.context.socket.remoteAddress &&
+				playerInfoMessage.name === client.name
 		);
 
 		if (reconnectingClient) {

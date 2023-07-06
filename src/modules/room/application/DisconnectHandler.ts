@@ -2,7 +2,6 @@ import { YGOClientSocket } from "../../../socket-server/HostServer";
 import { PlayerChangeClientMessage } from "../../messages/server-to-client/PlayerChangeClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { WatchChangeClientMessage } from "../../messages/server-to-client/WatchChangeClientMessage";
-import ReconnectingPlayers from "../../shared/ReconnectingPlayers";
 import { DuelState, Room } from "../domain/Room";
 import RoomList from "../infrastructure/RoomList";
 import { RoomFinder } from "./RoomFinder";
@@ -46,12 +45,6 @@ export class DisconnectHandler {
 		}
 
 		if (address) {
-			ReconnectingPlayers.add({
-				address,
-				socketId: this.socket.id,
-				position: player.position,
-			});
-
 			room.clients.forEach((client) => {
 				client.socket.write(
 					ServerMessageClientMessage.create(
