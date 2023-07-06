@@ -34,6 +34,6 @@ export class ResponseCommandStrategy implements MessageHandlerCommandStrategy {
 			return;
 		}
 
-		room.duel.stdin.write(`CMD:RESPONSE|${client.position}|${data}\n`);
+		room.duel.stdin.write(`CMD:RESPONSE|${client.team}|${data}\n`);
 	}
 }
