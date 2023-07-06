@@ -98,6 +98,7 @@ export class RoomMessageHandler {
 			const core = spawn(
 				`${__dirname}/../../../../../core/CoreIntegrator`,
 				[
+					Number(!this.context.room.noShuffle).toString(),
 					this.context.room.startLp.toString(),
 					this.context.room.startHand.toString(),
 					this.context.room.drawCount.toString(),
