@@ -252,7 +252,10 @@ int main(int argc, char *argv[])
           for (const auto &message : messages)
           {
             logger.send(message);
-            preActions.run(message);
+            if(!preActions.run(message)) {
+              messages = repository.getMessages(duel);
+              continue;
+            }
             queryProcessor.run(preActionQueryCreator.run(message), duel);
             duelMessageHandler.handle(message);
             queryProcessor.run(queryCreator.run(message), duel);

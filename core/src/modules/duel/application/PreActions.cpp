@@ -3,11 +3,21 @@
 PreActions::PreActions(uint16_t timeLimitsInSeconds, uint8_t isTeam1GoingFirst) : timeLimitsInSeconds(timeLimitsInSeconds), isTeam1GoingFirst(isTeam1GoingFirst)
 {
   NewTurnMessageSender turnMessageSender;
+  DuelMessageSender duelMessageSender;
 }
 
-void PreActions::run(std::vector<uint8_t> message)
+bool PreActions::run(std::vector<uint8_t> message)
 {
   uint8_t messageType = message[0U];
+
+  if (messageType == MSG_RETRY)
+  {
+    if(!this->lastHint.empty())
+      duelMessageSender.send(0, 0, Replier::getInstance().id, this->lastHint);
+    
+    duelMessageSender.send(0, 0, Replier::getInstance().id, this->lastRequest);
+    return false;
+  }
 
   if (messageType == MSG_TAG_SWAP)
   {
@@ -26,15 +36,17 @@ void PreActions::run(std::vector<uint8_t> message)
 
   if (messageType == MSG_HINT && message[1U] == 3U)
   {
-    // set Last hint
+    this->lastHint = message;
   }
 
   if (DoesMessageRequireAnswer(messageType))
   {
     uint8_t team = this->calculateTeam(this->getMessageReceivingTeam(message));
-
     Replier::getInstance().set(team);
+    this->lastRequest = message;
   }
+
+  return true;
 }
 
 uint8_t PreActions::calculateTeam(uint8_t team)

@@ -1,6 +1,6 @@
 #ifndef DUEL_STAGES
 #define DUEL_STAGES
-// #define MSG_RETRY 1
+#define MSG_RETRY 1
 #define MSG_HINT 2
 // #define MSG_WAITING 3
 // #define MSG_START 4
