@@ -456,6 +456,13 @@ export class Room {
 		this.timers[team].reset(time * 1000);
 	}
 
+	playerNames(team: number): string {
+		return this.clients
+			.filter((player) => player.team === team)
+			.map((item) => item.name)
+			.join(",");
+	}
+
 	toPresentation(): { [key: string]: unknown } {
 		return {
 			roomid: this.id,

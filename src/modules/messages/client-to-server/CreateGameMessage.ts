@@ -1,3 +1,4 @@
+import { TextVO } from "../../shared/value-objects/TextVO";
 import { Message } from "../Message";
 
 export class CreateGameMessage implements Message {
@@ -59,8 +60,8 @@ export class CreateGameMessage implements Message {
 		this.extraDeckMax = buffer.subarray(60, 62).readUInt16LE();
 		this.sideDeckMin = buffer.subarray(62, 64).readUInt16LE();
 		this.sideDeckMax = buffer.subarray(64, 66).readUInt16LE();
-		this.name = buffer.subarray(66, 106).toString();
-		this.password = buffer.subarray(106, 146).toString();
-		this.notes = buffer.subarray(146, 346).toString();
+		this.name = new TextVO(buffer.subarray(66, 106)).value;
+		this.password = new TextVO(buffer.subarray(106, 146)).value;
+		this.notes = new TextVO(buffer.subarray(146, 546)).value;
 	}
 }
