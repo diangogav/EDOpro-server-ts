@@ -34,6 +34,11 @@ export class RoomMessageHandler {
 			return;
 		}
 		const header = this.context.readHeader();
+
+		if (header.length < 3) {
+			return;
+		}
+
 		const command = header.subarray(2, 3).readInt8();
 
 		if (command === Commands.UPDATE_DECK) {
