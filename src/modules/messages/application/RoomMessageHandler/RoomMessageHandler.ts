@@ -330,7 +330,10 @@ export class RoomMessageHandler {
 					if (cmd === "CMD:TIME") {
 						const team = Number(params[0]);
 						const timeLimit = Number(params[1]);
-						const message = TimeLimitClientMessage.create({ team, timeLimit });
+						const message = TimeLimitClientMessage.create({
+							team: this.context.room.calculateTimeReceiver(team),
+							timeLimit,
+						});
 						this.context.clients.forEach((client) => {
 							this.context.room.cacheTeamMessage(client.team, message);
 							console.log(`sending to team ${team}: ${message.toString("hex")}`);

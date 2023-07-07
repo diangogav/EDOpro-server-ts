@@ -404,6 +404,14 @@ export class Room {
 		nextPlayer.turn();
 	}
 
+	calculateTimeReceiver(team: number): number {
+		if (this.firstToPlay === 0) {
+			return team;
+		}
+
+		return Number(!team);
+	}
+
 	toPresentation(): { [key: string]: unknown } {
 		return {
 			roomid: this.id,
