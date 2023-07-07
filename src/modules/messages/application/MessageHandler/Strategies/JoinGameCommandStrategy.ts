@@ -1,10 +1,12 @@
 import { JoinToGame } from "../../../../room/application/JoinToGame";
 import { ReconnectToGame } from "../../../../room/application/ReconnectToGame";
 import { RoomFinder } from "../../../../room/application/RoomFinder";
+import { DuelState } from "../../../../room/domain/Room";
 import RoomList from "../../../../room/infrastructure/RoomList";
-import ReconnectingPlayers from "../../../../shared/ReconnectingPlayers";
 import { JoinGameMessage } from "../../../client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../../client-to-server/PlayerInfoMessage";
+import { ErrorMessages } from "../../../server-to-client/error-messages/ErrorMessages";
+import { ErrorClientMessage } from "../../../server-to-client/ErrorClientMessage";
 import { ServerErrorClientMessage } from "../../../server-to-client/ServerErrorMessageClientMessage";
 import { MessageHandlerCommandStrategy } from "../MessageHandlerCommandStrategy";
 import { MessageHandlerContext } from "../MessageHandlerContext";
@@ -22,21 +24,43 @@ export class JoinGameCommandStrategy implements MessageHandlerCommandStrategy {
 				ServerErrorClientMessage.create("Sala no encontrada. Intenta recargando la lista")
 			);
 
+			this.context.socket.write(ErrorClientMessage.create(ErrorMessages.JOINERROR));
+
 			this.context.socket.destroy();
 
 			return;
+		}
+		if (room.password !== joinGameMessage.password) {
+			this.context.socket.write(ServerErrorClientMessage.create("Clave incorrecta"));
+			this.context.socket.write(ErrorClientMessage.create(ErrorMessages.JOINERROR));
+			this.context.socket.destroy();
 		}
 
 		const joinToGame = new JoinToGame(this.context.socket);
 		const playerInfoMessage = this.context.getPreviousMessages() as PlayerInfoMessage;
 
-		const reconnectingClient = ReconnectingPlayers.get().find(
-			(item) => this.context.socket.remoteAddress === item.address
-		);
+		const playerEntering = room.clients.find((client) => {
+			return (
+				client.socket.remoteAddress === this.context.socket.remoteAddress &&
+				playerInfoMessage.name === client.name
+			);
+		});
 
-		if (reconnectingClient) {
+		if (room.duelState === DuelState.WAITING && playerEntering) {
+			this.context.socket.write(
+				ServerErrorClientMessage.create(
+					`Ya existe un jugador con el nombre :${playerEntering.name}`
+				)
+			);
+			this.context.socket.write(ErrorClientMessage.create(ErrorMessages.JOINERROR));
+			this.context.socket.destroy();
+
+			return;
+		}
+
+		if (room.duelState === DuelState.DUELING && playerEntering) {
 			const reconnectToGame = new ReconnectToGame(this.context.socket, new RoomFinder());
-			reconnectToGame.run(joinGameMessage, playerInfoMessage.name, reconnectingClient);
+			reconnectToGame.run(joinGameMessage, playerInfoMessage.name, playerEntering);
 
 			return;
 		}

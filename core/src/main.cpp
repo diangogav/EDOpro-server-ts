@@ -85,14 +85,15 @@ std::vector<std::string> split(const std::string &str, char delimiter)
 
 int main(int argc, char *argv[])
 {
-  uint32_t startingLP = atoi(argv[1]);
-  uint32_t startingDrawCount = atoi(argv[2]);
-  uint32_t drawCountPerTurn = atoi(argv[3]);
-  uint64_t flags = atoi(argv[4]);
-  uint16_t extraRules = atoi(argv[5]);
-  uint8_t isTeam1GoingFirst = atoi(argv[6]);
-  uint16_t timeLimit = atoi(argv[7]);
-  std::string playersData = argv[8];
+  uint8_t shuffle = atoi(argv[1]);
+  uint32_t startingLP = atoi(argv[2]);
+  uint32_t startingDrawCount = atoi(argv[3]);
+  uint32_t drawCountPerTurn = atoi(argv[4]);
+  uint64_t flags = atoi(argv[5]);
+  uint16_t extraRules = atoi(argv[6]);
+  uint8_t isTeam1GoingFirst = atoi(argv[7]);
+  uint16_t timeLimit = atoi(argv[8]);
+  std::string playersData = argv[9];
 
   Json::Value players;
   Json::Reader reader;
@@ -115,7 +116,7 @@ int main(int argc, char *argv[])
   DuelScriptsLoader duelScriptsLoader{repository, duel};
   duelScriptsLoader.load();
 
-  DuelDecksLoader duelDecksLoader{repository, duel, isTeam1GoingFirst};
+  DuelDecksLoader duelDecksLoader{repository, duel, isTeam1GoingFirst, shuffle};
   duelDecksLoader.load(players);
 
   DuelStarter duelStarter{repository, duel};
@@ -251,7 +252,10 @@ int main(int argc, char *argv[])
           for (const auto &message : messages)
           {
             logger.send(message);
-            preActions.run(message);
+            if(!preActions.run(message)) {
+              messages = repository.getMessages(duel);
+              continue;
+            }
             queryProcessor.run(preActionQueryCreator.run(message), duel);
             duelMessageHandler.handle(message);
             queryProcessor.run(queryCreator.run(message), duel);

@@ -1,6 +1,6 @@
 #ifndef DUEL_STAGES
 #define DUEL_STAGES
-// #define MSG_RETRY 1
+#define MSG_RETRY 1
 #define MSG_HINT 2
 // #define MSG_WAITING 3
 // #define MSG_START 4
@@ -29,16 +29,16 @@
 #define MSG_SHUFFLE_DECK 32
 #define MSG_SHUFFLE_HAND 33
 // #define MSG_REFRESH_DECK         34
-// #define MSG_SWAP_GRAVE_DECK 35
-// #define MSG_SHUFFLE_SET_CARD 36
-// #define MSG_REVERSE_DECK 37
+#define MSG_SWAP_GRAVE_DECK 35
+#define MSG_SHUFFLE_SET_CARD 36
+#define MSG_REVERSE_DECK 37
 // #define MSG_DECK_TOP 38
 #define MSG_SHUFFLE_EXTRA 39
 #define MSG_NEW_TURN 40
 #define MSG_NEW_PHASE 41
 // #define MSG_CONFIRM_EXTRATOP 42
 #define MSG_MOVE 50
-// #define MSG_POS_CHANGE 53
+#define MSG_POS_CHANGE 53
 #define MSG_SET 54
 #define MSG_SWAP 55
 // #define MSG_FIELD_DISABLED 56

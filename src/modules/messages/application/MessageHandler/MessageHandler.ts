@@ -23,6 +23,9 @@ export class MessageHandler {
 			return;
 		}
 		const header = this.context.readHeader();
+		if (header.length < 3) {
+			return;
+		}
 		const command = header.subarray(2, 3).readInt8();
 
 		if (command === Commands.PLAYER_INFO) {

@@ -2,9 +2,12 @@ import { ChildProcessWithoutNullStreams } from "child_process";
 
 import { Client } from "../../client/domain/Client";
 import { Deck } from "../../deck/domain/Deck";
+import { FinishDuelHandler } from "../../messages/application/FinishDuelHandler";
 import { RoomMessageHandler } from "../../messages/application/RoomMessageHandler/RoomMessageHandler";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
+import { DuelFinishReason } from "./DuelFinishReason";
 import { Match } from "./Match";
+import { Timer } from "./Timer";
 
 interface RoomAttr {
 	id: number;
@@ -95,6 +98,7 @@ export class Room {
 	private _firstToPlay: number;
 	private readonly t0Positions: number[] = [];
 	private readonly t1Positions: number[] = [];
+	private readonly timers: Timer[];
 
 	private constructor(attr: RoomAttr) {
 		this.id = attr.id;
@@ -132,6 +136,34 @@ export class Room {
 		this.duelFlagsHight = attr.duelFlagsHight;
 		this.t0Positions = Array.from({ length: this.team0 }, (_, index) => index);
 		this.t1Positions = Array.from({ length: this.team1 }, (_, index) => this.team0 + index);
+		this.timers = [
+			new Timer(
+				this.timeLimit * 1000,
+				() => {
+					const finishDuelHandler = new FinishDuelHandler({
+						reason: DuelFinishReason.SURRENDERED,
+						winner: 1,
+						room: this,
+					});
+
+					finishDuelHandler.run();
+				},
+				0
+			),
+			new Timer(
+				this.timeLimit * 1000,
+				() => {
+					const finishDuelHandler = new FinishDuelHandler({
+						reason: DuelFinishReason.SURRENDERED,
+						winner: 0,
+						room: this,
+					});
+
+					finishDuelHandler.run();
+				},
+				1
+			),
+		];
 	}
 
 	static createFromCreateGameMessage(
@@ -402,6 +434,33 @@ export class Room {
 		}
 		player.clearTurn();
 		nextPlayer.turn();
+	}
+
+	calculateTimeReceiver(team: number): number {
+		if (this.firstToPlay === 0) {
+			return team;
+		}
+
+		return Number(!team);
+	}
+
+	stopTimer(team: number): void {
+		this.timers[team].stop();
+	}
+
+	startTimer(team: number): void {
+		this.timers[team].start();
+	}
+
+	resetTimer(team: number, time: number): void {
+		this.timers[team].reset(time * 1000);
+	}
+
+	playerNames(team: number): string {
+		return this.clients
+			.filter((player) => player.team === team)
+			.map((item) => item.name)
+			.join(",");
 	}
 
 	toPresentation(): { [key: string]: unknown } {
