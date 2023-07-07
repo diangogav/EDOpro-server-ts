@@ -2,6 +2,7 @@ import { DeckCreator } from "../../../../deck/application/DeckCreator";
 import { DuelState } from "../../../../room/domain/Room";
 import { ChooseOrderClientMessage } from "../../../server-to-client/ChooseOrderClientMessage";
 import { DuelStartClientMessage } from "../../../server-to-client/DuelStartClientMessage";
+import { ErrorMessages } from "../../../server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../../server-to-client/ErrorClientMessage";
 import { UpdateDeckMessageSizeCalculator } from "../../UpdateDeckMessageSizeCalculator";
 import { RoomMessageHandlerCommandStrategy } from "../RoomMessageHandlerCommandStrategy";
@@ -47,7 +48,7 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 		const position = this.context.client.position;
 		const player = this.context.client;
 		if (!player.deck.isSideDeckValid(mainDeck)) {
-			const message = ErrorClientMessage.create();
+			const message = ErrorClientMessage.create(ErrorMessages.SIDEERROR);
 			this.context.client.socket.write(message);
 
 			return;
