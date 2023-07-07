@@ -334,6 +334,9 @@ export class RoomMessageHandler {
 							team: this.context.room.calculateTimeReceiver(team),
 							timeLimit,
 						});
+
+						this.context.room.resetTimer(team, timeLimit);
+
 						this.context.clients.forEach((client) => {
 							this.context.room.cacheTeamMessage(client.team, message);
 							console.log(`sending to team ${team}: ${message.toString("hex")}`);
@@ -364,6 +367,8 @@ export class RoomMessageHandler {
 
 					if (cmd === "CMD:TURN") {
 						this.context.room.increaseTurn();
+						this.context.room.resetTimer(0, this.context.room.timeLimit * 1000);
+						this.context.room.resetTimer(1, this.context.room.timeLimit * 1000);
 					}
 
 					if (cmd === "CMD:FIELD") {
