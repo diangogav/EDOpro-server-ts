@@ -14,6 +14,7 @@ import { TimeLimitClientMessage } from "../../server-to-client/game-messages/Tim
 import { UpdateCardClientMessage } from "../../server-to-client/game-messages/UpdateCardClientMessage";
 import { UpdateDataClientMessage } from "../../server-to-client/game-messages/UpdateDataClientMessage";
 import { WaitingClientMessage } from "../../server-to-client/game-messages/WaitingClientMessage";
+import { ServerMessageClientMessage } from "../../server-to-client/ServerMessageClientMessage";
 import { FinishDuelHandler } from "../FinishDuelHandler";
 import { RoomMessageHandlerContext } from "./RoomMessageHandlerContext";
 import { NotReadyCommandStrategy } from "./Strategies/NotReadyCommandStrategy";
@@ -434,6 +435,18 @@ export class RoomMessageHandler {
 						console.log(`Cache message: ${player.cache.toString("hex")}`);
 						player.socket.write(player.cache);
 						player.clearReconnecting();
+
+						this.context.room.clients.forEach((client) => {
+							client.socket.write(
+								ServerMessageClientMessage.create(`${player.name} ha ingresado al duelo`)
+							);
+						});
+
+						this.context.room.spectators.forEach((spectator) => {
+							spectator.socket.write(
+								ServerMessageClientMessage.create(`${player.name} ha ingresado al duelo`)
+							);
+						});
 					}
 
 					if (cmd === "CMD:SWAP") {
