@@ -1,41 +1,50 @@
-# Proyecto EDO Pro Server
+# TSPRO 🎮
 
-## Requisitos de instalación 📋
+Welcome to TSPRO, another server for creating Yu-Gi-Oh! matches using the EDOPro core! But this time, we focus on the scalability of the code, allowing for easy implementation of new features related to the data generated during the duels.
+
+## Features ✨
+
+- 🏰 Room creation through the EDOPro lobby.
+- 🔌 Reconnection to the match in case of closure or disconnection.
+- 📊 Collection of duel data for generating statistics.
+- 🚀 Core isolation for each match.
+
+## Installation Requirements 📋
 
 - Conan (2.0.6): [conan](https://conan.io/)
-- Node.js (18.16.0): Asegúrate de tener Node.js instalado en tu sistema. Puedes descargar la última versión estable desde [https://nodejs.org](https://nodejs.org). 📥🚀
+- Node.js (18.16.0): Make sure you have Node.js installed on your system. You can download the latest stable version from [https://nodejs.org](https://nodejs.org). 📥🚀
 
-## Guía de instalación de Conan 🚀
+## Conan Installation Guide 🚀
 
-1. Instala `Python` y `pip`
+1. Install `Python` and `pip`
 
 ```bash
 apt install python3 python3-pip -y
 ```
 
-2. Instala conan a través de `pip`
+2. Install Conan through pip
 
 ```bash
 pip install conan
 ```
 
-3. Configura el perfil de `conan`
+3. Configure the `conan` profile
 
 ```bash
 conan profile detect
 ```
 
-## Guía de compilación para C++
+## C++ Compilation Guide 🛠️
 
-1. Clona este repositorio en tu máquina local utilizando el siguiente comando:
+1. Clone this repository to your local machine using the following command:
 
 ```bash
 git clone https://github.com/tuusuario/edo-pro-server.git
 ```
 
-2. Ubicate en la carpeta core, la cual contiene todo el código C++ del proyecto.
+2. Navigate to the core folder, which contains all the C++ code of the project.
 
-3. Descarga `premake` y copialo en la ruta del paso 2 (Este paso solo hay que realizarlo 1 vez)
+3. Download `premake` and copy it to the path from step 2 (This step only needs to be done once)
 
 ```bash
 wget https://github.com/premake/premake-core/releases/download/v5.0.0-beta2/premake-5.0.0-beta2-linux.tar.gz
@@ -45,36 +54,58 @@ wget https://github.com/premake/premake-core/releases/download/v5.0.0-beta2/prem
  tar -zxvf premake-5.0.0-beta2-linux.tar.gz
 ```
 
-4.  Instala las dependencias a través de `Conan`
+4.  Install the dependencies using `Conan`
 
 ```bash
 conan install . --build missing --output-folder=./dependencies
 ```
 
-5.  Genera el archivo `make` usando `premake5` descargado en el paso 3
+5.  Generate the `make` file using `premake5` downloaded in step 3
 
 ```bash
 ./premake5 gmake
 ```
 
-6.  Genera el binario:
+6.  Build the binary:
 
 ```bash
 make
 ```
 
-## Iniciar el servidor
+## Starting the Server
 
-1. Ubícate en la raíz del proyecto.
+1. Navigate to the root of the project.
 
-2. Instala las dependencias a través de `npm`:
+2. Install the dependencies using `npm`:
 
 ```bash
 npm install
 ```
 
-3. Inicia el proyecto:
+3. Compile the project:
+
+```bash
+npm run build
+```
+
+4. Start the project:
 
 ```bash
 npm start
+```
+
+## Running with Docker 🐳
+
+If you prefer to use Docker to run the project, you can follow these steps:
+
+1. Make sure you have Docker installed on your system. You can download and install Docker from [https://www.docker.com](https://www.docker.com).
+
+2. Build the Docker image with the following command:
+```
+docker build -t <image-name> <path-to-dockerfile>
+```
+
+3. Run the Docker container:
+```
+docker run -p 7911:7911 -p 7922:7922 <image-name>
 ```
