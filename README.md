@@ -109,3 +109,8 @@ docker build -t <image-name> <path-to-dockerfile>
 ```
 docker run -p 7911:7911 -p 7922:7922 <image-name>
 ```
+
+## Notes and thanks
+
+- This repository is based on https://github.com/DyXel/Multirole
+- Special thanks to @Dyxel
