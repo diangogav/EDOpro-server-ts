@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <iostream>
+#include <cstdint>
 
 class TimeLimitMessageSender {
 public:

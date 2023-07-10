@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <iostream>
+#include <cstdint>
 
 #include "../../../shared/Read.h"
 #include "../../../shared/Write.h"
