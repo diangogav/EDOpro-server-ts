@@ -1,8 +1,9 @@
 #ifndef QUERY_REQUEST
 #define QUERY_REQUEST
 
-#include "variant"
-#include "iostream"
+#include <variant>
+#include <iostream>
+#include <cstdint>
 
 #define QUERY_CODE         0x1
 #define QUERY_POSITION     0x2

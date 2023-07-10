@@ -6,7 +6,8 @@
 
 #include <vector>
 #include <iostream>
-#include "assert.h"
+#include <cstdint>
+#include <cassert>
 
 class DuelFinishHandler
 {
