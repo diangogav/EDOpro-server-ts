@@ -2,17 +2,21 @@ import "reflect-metadata";
 
 import { Server } from "./http-server/Server";
 import { SQLiteTypeORM } from "./modules/shared/db/postgres/infrastructure/SQLiteTypeORM";
+import { Redis } from "./modules/shared/db/redis/infrastructure/Redis";
 import { Pino } from "./modules/shared/logger/infrastructure/Pino";
 import { HostServer } from "./socket-server/HostServer";
 
 void start();
 
 async function start(): Promise<void> {
-	const server = new Server(new Pino());
-	const hostServer = new HostServer(new Pino());
+	const logger = new Pino();
+	const server = new Server(logger);
+	const hostServer = new HostServer(logger);
 	const database = new SQLiteTypeORM();
+	const redis = new Redis(logger);
 	await database.connect();
 	await database.initialize();
+	await redis.connect();
 	await server.initialize();
 	hostServer.initialize();
 }
