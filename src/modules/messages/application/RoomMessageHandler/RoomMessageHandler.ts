@@ -159,19 +159,14 @@ export class RoomMessageHandler {
 						this.context.room.setPlayerDecksSize(Number(params[0]), Number(params[1]));
 						this.context.room.setPlayerDecksSize(Number(params[2]), Number(params[3]));
 
-						console.log(`sending to team 0: ${playerGameMessage.toString("hex")}`);
-						console.log(`sending to team 1:  ${opponentGameMessage.toString("hex")}`);
-
 						this.context.clients.forEach((client) => {
 							if (client.team === 0) {
-								console.log(`sending to team ${0}: ${playerGameMessage.toString("hex")}`);
 								client.socket.write(playerGameMessage);
 							}
 						});
 
 						this.context.clients.forEach((client) => {
 							if (client.team === 1) {
-								console.log(`sending to team ${1}: ${opponentGameMessage.toString("hex")}`);
 								client.socket.write(opponentGameMessage);
 							}
 						});
@@ -203,7 +198,6 @@ export class RoomMessageHandler {
 
 						this.context.clients.forEach((client) => {
 							if (client.team === team) {
-								console.log(`sending to team ${team}: ${message.toString("hex")}`);
 								client.socket.write(message);
 							}
 						});
@@ -230,14 +224,12 @@ export class RoomMessageHandler {
 
 						this.context.clients.forEach((client) => {
 							if (client.team === team) {
-								console.log(`sending to team ${team}: ${message.toString("hex")}`);
 								client.socket.write(message);
 							}
 						});
 
 						this.context.room.spectators.forEach((spectator) => {
 							if (spectator.team === team) {
-								console.log(`sending to spectator ${team}: ${message.toString("hex")}`);
 								spectator.socket.write(message);
 							}
 						});
@@ -264,7 +256,6 @@ export class RoomMessageHandler {
 								player?.setLastMessage(message);
 							}
 
-							console.log(`sending to team ${team}: ${message.toString("hex")}`);
 							player?.socket.write(message);
 
 							return;
@@ -276,14 +267,12 @@ export class RoomMessageHandler {
 
 						this.context.clients.forEach((client) => {
 							if (client.team === team) {
-								console.log(`sending to team ${team}: ${message.toString("hex")}`);
 								client.socket.write(message);
 							}
 						});
 
 						this.context.room.spectators.forEach((spectator) => {
 							if (spectator.team === team) {
-								console.log(`sending to spectator ${team}: ${message.toString("hex")}`);
 								spectator.socket.write(message);
 							}
 						});
@@ -296,12 +285,10 @@ export class RoomMessageHandler {
 						// this.context.room.cacheMessage(1, message);
 						this.context.room.cacheTeamMessage(3, message);
 						this.context.clients.forEach((client) => {
-							console.log(`sending to all: ${message.toString("hex")}`);
 							client.socket.write(message);
 						});
 
 						this.context.room.spectators.forEach((spectator) => {
-							console.log(`sending to spectators: ${message.toString("hex")}`);
 							spectator.socket.write(message);
 						});
 					}
@@ -312,7 +299,6 @@ export class RoomMessageHandler {
 						const message = BroadcastClientMessage.create({ buffer: data });
 						this.context.clients.forEach((client) => {
 							if (client.team !== team) {
-								console.log(`sending to team ${team}: ${message.toString("hex")}`);
 								client.socket.write(message);
 							}
 						});
@@ -340,12 +326,10 @@ export class RoomMessageHandler {
 
 						this.context.clients.forEach((client) => {
 							this.context.room.cacheTeamMessage(client.team, message);
-							console.log(`sending to team ${team}: ${message.toString("hex")}`);
 							client.socket.write(message);
 						});
 
 						this.context.room.spectators.forEach((client) => {
-							console.log(`sending to spectators ${team}: ${message.toString("hex")}`);
 							client.socket.write(message);
 						});
 					}
@@ -358,12 +342,12 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:LOG") {
-						console.log("Message from core");
-						console.log(
-							params
-								.map((numStr) => parseInt(numStr, 10).toString(16).toUpperCase().padStart(2, "0"))
-								.join(" ")
-						);
+						// console.log("Message from core");
+						// console.log(
+						// 	params
+						// 		.map((numStr) => parseInt(numStr, 10).toString(16).toUpperCase().padStart(2, "0"))
+						// 		.join(" ")
+						// );
 					}
 
 					if (cmd === "CMD:TURN") {
@@ -383,7 +367,6 @@ export class RoomMessageHandler {
 						const data = Buffer.concat([type, buffer]);
 						const size = decimalToBytesBuffer(1 + data.length, 2);
 						const message = Buffer.concat([size, header, data]);
-						console.log(message.toString("hex"));
 						const player = this.context.clients.find((player) => player.position === position);
 						if (!player) {
 							return;
@@ -414,7 +397,6 @@ export class RoomMessageHandler {
 
 						this.context.clients.forEach((client) => {
 							if (client.team === team) {
-								console.log(`sending to team ${team}: ${message.toString("hex")}`);
 								client.socket.write(message);
 							}
 						});
@@ -432,7 +414,6 @@ export class RoomMessageHandler {
 						if (!player.cache) {
 							return;
 						}
-						console.log(`Cache message: ${player.cache.toString("hex")}`);
 						player.socket.write(player.cache);
 						player.clearReconnecting();
 
