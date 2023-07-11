@@ -1,6 +1,9 @@
+import { GameOverDomainEvent } from "../../room/domain/domain-events/GameOverDomainEvent";
 import { DuelFinishReason } from "../../room/domain/DuelFinishReason";
 import { Room } from "../../room/domain/Room";
 import RoomList from "../../room/infrastructure/RoomList";
+import { container } from "../../shared/dependency-injection";
+import { EventBus } from "../../shared/event-bus/EventBus";
 import { SideDeckClientMessage } from "../server-to-client/game-messages/SideDeckClientMessage";
 import { SideDeckWaitClientMessage } from "../server-to-client/game-messages/SideDeckWaitClientMessage";
 import { ReplayPromptMessage } from "../server-to-client/ReplayPromptMessage";
@@ -10,11 +13,13 @@ export class FinishDuelHandler {
 	private readonly reason: DuelFinishReason;
 	private readonly winner: number;
 	private readonly room: Room;
+	private readonly eventBus: EventBus;
 
 	constructor({ reason, winner, room }: { reason: DuelFinishReason; winner: number; room: Room }) {
 		this.reason = reason;
 		this.winner = winner;
 		this.room = room;
+		this.eventBus = container.get(EventBus);
 	}
 
 	run(): void {
@@ -59,6 +64,16 @@ export class FinishDuelHandler {
 			this.room.duel?.kill("SIGTERM");
 
 			RoomList.deleteRoom(this.room);
+
+			this.eventBus.publish(
+				GameOverDomainEvent.DOMAIN_EVENT,
+				new GameOverDomainEvent({
+					bestOf: this.room.bestOf,
+					turn: this.room.turn,
+					players: this.room.matchPlayersHistory,
+					date: new Date(),
+				})
+			);
 
 			return;
 		}

@@ -5,8 +5,8 @@ import { Deck } from "../../deck/domain/Deck";
 import { FinishDuelHandler } from "../../messages/application/FinishDuelHandler";
 import { RoomMessageHandler } from "../../messages/application/RoomMessageHandler/RoomMessageHandler";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
+import { Match, MatchHistory, Player } from "../match/domain/Match";
 import { DuelFinishReason } from "./DuelFinishReason";
-import { Match } from "./Match";
 import { Timer } from "./Timer";
 
 interface RoomAttr {
@@ -225,6 +225,15 @@ export class Room {
 		this._match = new Match({ bestOf: this.bestOf });
 	}
 
+	initializeHistoricalData(): void {
+		const players = this.clients.map((client) => ({
+			team: client.team,
+			name: client.name,
+			deck: client.deck,
+		}));
+		this._match?.initializeHistoricalData(players);
+	}
+
 	matchScore(): { team0: number; team1: number } {
 		if (!this._match) {
 			return {
@@ -234,6 +243,10 @@ export class Room {
 		}
 
 		return this._match.score;
+	}
+
+	get matchPlayersHistory(): (Player & MatchHistory)[] {
+		return this._match?.playersHistory ?? [];
 	}
 
 	addClient(client: Client): void {
