@@ -26,6 +26,7 @@ export class TryStartCommandStrategy implements RoomMessageHandlerCommandStrateg
 		t0Client.socket.write(rpsChooseMessage);
 		t1Client.socket.write(rpsChooseMessage);
 
+		this.context.room.initializeHistoricalData();
 		this.afterExecuteCallback();
 	}
 }

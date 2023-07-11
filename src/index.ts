@@ -13,7 +13,7 @@ async function start(): Promise<void> {
 	const server = new Server(logger);
 	const hostServer = new HostServer(logger);
 	const database = new SQLiteTypeORM();
-	const redis = new Redis(logger);
+	const redis = Redis.getInstance();
 	await database.connect();
 	await database.initialize();
 	await redis.connect();

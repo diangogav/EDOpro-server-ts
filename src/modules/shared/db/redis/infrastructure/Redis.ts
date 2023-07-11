@@ -1,18 +1,25 @@
 import { createClient, RedisClientType } from "redis";
 
 import { config } from "../../../../../config";
-import { Logger } from "../../../logger/domain/Logger";
 import { Database } from "../../domain/Database";
 
 export class Redis implements Database {
-	private readonly client: RedisClientType;
-	private readonly logger: Logger;
+	// eslint-disable-next-line no-use-before-define
+	private static instance?: Redis;
+	public readonly client: RedisClientType;
 
-	constructor(logger: Logger) {
-		this.logger = logger;
+	private constructor() {
 		this.client = createClient({
 			url: config.redis.uri,
 		});
+	}
+
+	static getInstance(): Redis {
+		if (Redis.instance === undefined) {
+			Redis.instance = new Redis();
+		}
+
+		return Redis.instance;
 	}
 
 	async connect(): Promise<void> {
@@ -21,6 +28,6 @@ export class Redis implements Database {
 		}
 
 		await this.client.connect();
-		this.logger.info("Redis connected.");
+		console.log("Redis connected!");
 	}
 }
