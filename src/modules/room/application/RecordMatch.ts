@@ -18,6 +18,12 @@ export class RecordMatch implements DomainEventSubscriber<GameOverDomainEvent> {
 			const earnedPoints = this.calculateEarnedPoints(wins);
 			await this.roomRepository.saveMatch(player.name, event.data);
 			await this.roomRepository.updatePlayerPoints(player.name, earnedPoints);
+
+			if (player.winner) {
+				await this.roomRepository.increaseWins(player.name);
+			} else {
+				await this.roomRepository.increaseLoses(player.name);
+			}
 		}
 	}
 

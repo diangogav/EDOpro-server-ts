@@ -13,7 +13,21 @@ export class RedisRoomRepository implements RoomRepository {
 	async updatePlayerPoints(id: string, points: number): Promise<void> {
 		const redis = Redis.getInstance();
 		await redis.connect();
-		await redis.client.zIncrBy("leaderboard", points, id);
+		await redis.client.zIncrBy("leaderboard:points", points, id);
+		await redis.client.quit();
+	}
+
+	async increaseWins(id: string): Promise<void> {
+		const redis = Redis.getInstance();
+		await redis.connect();
+		await redis.client.zIncrBy("leaderboard:wins", 1, id);
+		await redis.client.quit();
+	}
+
+	async increaseLoses(id: string): Promise<void> {
+		const redis = Redis.getInstance();
+		await redis.connect();
+		await redis.client.zIncrBy("leaderboard:losses", 1, id);
 		await redis.client.quit();
 	}
 }
