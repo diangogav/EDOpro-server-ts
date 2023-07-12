@@ -69,5 +69,6 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 
 		const message = ChooseOrderClientMessage.create();
 		this.context.room.clientWhoChoosesTurn.socket.write(message);
+		this.context.room.choosingOrder();
 	}
 }

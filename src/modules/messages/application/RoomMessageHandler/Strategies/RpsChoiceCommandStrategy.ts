@@ -86,5 +86,7 @@ export class RpsChoiceCommandStrategy implements RoomMessageHandlerCommandStrate
 		const winner = result === "PLAYER_ONE_WINNER" ? players[0] : players[1];
 
 		winner.socket.write(ChooseOrderClientMessage.create());
+		this.context.room.setClientWhoChoosesTurn(winner);
+		this.context.room.choosingOrder();
 	}
 }

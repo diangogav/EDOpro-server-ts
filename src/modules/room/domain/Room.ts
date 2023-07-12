@@ -48,6 +48,7 @@ export enum DuelState {
 	WAITING = "waiting",
 	DUELING = "dueling",
 	RPS = "rps",
+	CHOOSING_ORDER = "choosingOrder",
 	SIDE_DECKING = "sideDecking",
 }
 
@@ -296,6 +297,10 @@ export class Room {
 
 	rps(): void {
 		this._state = DuelState.RPS;
+	}
+
+	choosingOrder(): void {
+		this._state = DuelState.CHOOSING_ORDER;
 	}
 
 	get duelState(): DuelState {

@@ -1,5 +1,6 @@
 import { Deck } from "../../../../deck/domain/Deck";
 import { DuelState } from "../../../../room/domain/Room";
+import { ChooseOrderClientMessage } from "../../../server-to-client/ChooseOrderClientMessage";
 import { DuelStartClientMessage } from "../../../server-to-client/DuelStartClientMessage";
 import { StartDuelClientMessage } from "../../../server-to-client/game-messages/StartDuelClientMessage";
 import { PlayerChangeClientMessage } from "../../../server-to-client/PlayerChangeClientMessage";
@@ -40,6 +41,20 @@ export class ReadyCommandStrategy implements RoomMessageHandlerCommandStrategy {
 			if (!this.context.client.rpsChoise) {
 				const rpsChooseMessage = RPSChooseClientMessage.create();
 				this.context.client.socket.write(rpsChooseMessage);
+			}
+
+			return;
+		}
+
+		if (
+			this.context.client.isReconnecting &&
+			this.context.room.duelState === DuelState.CHOOSING_ORDER
+		) {
+			this.context.client.socket.write(DuelStartClientMessage.create());
+
+			if (this.context.room.clientWhoChoosesTurn.position === this.context.client.position) {
+				const message = ChooseOrderClientMessage.create();
+				this.context.room.clientWhoChoosesTurn.socket.write(message);
 			}
 
 			return;
