@@ -58,7 +58,10 @@ export class JoinGameCommandStrategy implements MessageHandlerCommandStrategy {
 			return;
 		}
 
-		if (room.duelState === DuelState.DUELING && playerEntering) {
+		if (
+			(room.duelState === DuelState.DUELING || room.duelState === DuelState.RPS) &&
+			playerEntering
+		) {
 			const reconnectToGame = new ReconnectToGame(this.context.socket, new RoomFinder());
 			reconnectToGame.run(joinGameMessage, playerInfoMessage.name, playerEntering);
 

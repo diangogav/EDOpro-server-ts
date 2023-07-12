@@ -47,6 +47,7 @@ interface RoomAttr {
 export enum DuelState {
 	WAITING = "waiting",
 	DUELING = "dueling",
+	RPS = "rps",
 	SIDE_DECKING = "sideDecking",
 }
 
@@ -291,6 +292,10 @@ export class Room {
 
 	sideDecking(): void {
 		this._state = DuelState.SIDE_DECKING;
+	}
+
+	rps(): void {
+		this._state = DuelState.RPS;
 	}
 
 	get duelState(): DuelState {

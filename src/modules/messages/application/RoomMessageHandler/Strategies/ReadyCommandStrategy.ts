@@ -1,7 +1,9 @@
 import { Deck } from "../../../../deck/domain/Deck";
+import { DuelState } from "../../../../room/domain/Room";
 import { DuelStartClientMessage } from "../../../server-to-client/DuelStartClientMessage";
 import { StartDuelClientMessage } from "../../../server-to-client/game-messages/StartDuelClientMessage";
 import { PlayerChangeClientMessage } from "../../../server-to-client/PlayerChangeClientMessage";
+import { RPSChooseClientMessage } from "../../../server-to-client/RPSChooseClientMessage";
 import { RoomMessageHandlerCommandStrategy } from "../RoomMessageHandlerCommandStrategy";
 import { RoomMessageHandlerContext } from "../RoomMessageHandlerContext";
 
@@ -14,7 +16,7 @@ export class ReadyCommandStrategy implements RoomMessageHandlerCommandStrategy {
 	) {}
 
 	execute(): void {
-		if (this.context.client.isReconnecting) {
+		if (this.context.client.isReconnecting && this.context.room.duelState === DuelState.DUELING) {
 			this.context.client.socket.write(DuelStartClientMessage.create());
 			this.context.client.socket.write(
 				StartDuelClientMessage.create({
@@ -31,6 +33,18 @@ export class ReadyCommandStrategy implements RoomMessageHandlerCommandStrategy {
 
 			return;
 		}
+
+		if (this.context.client.isReconnecting && this.context.room.duelState === DuelState.RPS) {
+			this.context.client.socket.write(DuelStartClientMessage.create());
+
+			if (!this.context.client.rpsChoise) {
+				const rpsChooseMessage = RPSChooseClientMessage.create();
+				this.context.client.socket.write(rpsChooseMessage);
+			}
+
+			return;
+		}
+
 		const status = (this.context.client.position << 4) | this.STATUS;
 		const message = PlayerChangeClientMessage.create({ status });
 		const deck = this.context.getPreviousMessages() as Deck;
