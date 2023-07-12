@@ -17,6 +17,7 @@ import { WaitingClientMessage } from "../../server-to-client/game-messages/Waiti
 import { ServerMessageClientMessage } from "../../server-to-client/ServerMessageClientMessage";
 import { FinishDuelHandler } from "../FinishDuelHandler";
 import { RoomMessageHandlerContext } from "./RoomMessageHandlerContext";
+import { ChangeToObserver } from "./Strategies/ChangeToObserver";
 import { NotReadyCommandStrategy } from "./Strategies/NotReadyCommandStrategy";
 import { ReadyCommandStrategy } from "./Strategies/ReadyCommandStrategy";
 import { RpsChoiceCommandStrategy } from "./Strategies/RpsChoiceCommandStrategy";
@@ -66,6 +67,11 @@ export class RoomMessageHandler {
 		if (command === Commands.TRY_START) {
 			console.log("TRY_START");
 			this.context.setStrategy(new TryStartCommandStrategy(this.context, () => this.read()));
+		}
+
+		if (command === Commands.OBSERVER) {
+			console.log("OBSERVER");
+			this.context.setStrategy(new ChangeToObserver(this.context, () => this.read()));
 		}
 
 		if (command === Commands.RPS_CHOICE) {
