@@ -82,13 +82,23 @@ make
 npm install
 ```
 
-3. Compile the project:
+3. Clone card databases in the root folder:
+```
+git clone https://github.com/ProjectIgnis/BabelCDB.git databases
+```
+
+4. Clone card scripts inside the core folder:
+```
+git clone https://github.com/ProjectIgnis/CardScripts.git scripts
+```
+
+5. Compile the project:
 
 ```bash
 npm run build
 ```
 
-4. Start the project:
+6. Start the project:
 
 ```bash
 npm start
