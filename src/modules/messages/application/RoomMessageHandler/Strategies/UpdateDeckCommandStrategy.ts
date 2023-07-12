@@ -4,6 +4,7 @@ import { ChooseOrderClientMessage } from "../../../server-to-client/ChooseOrderC
 import { DuelStartClientMessage } from "../../../server-to-client/DuelStartClientMessage";
 import { ErrorMessages } from "../../../server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../../server-to-client/ErrorClientMessage";
+import { SideDeckClientMessage } from "../../../server-to-client/game-messages/SideDeckClientMessage";
 import { UpdateDeckMessageSizeCalculator } from "../../UpdateDeckMessageSizeCalculator";
 import { RoomMessageHandlerCommandStrategy } from "../RoomMessageHandlerCommandStrategy";
 import { RoomMessageHandlerContext } from "../RoomMessageHandlerContext";
@@ -58,6 +59,17 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 		const message = DuelStartClientMessage.create();
 		this.context.client.socket.write(message);
 		this.context.client.ready();
+
+		if (this.context.client.isReconnecting) {
+			this.context.client.socket.write(DuelStartClientMessage.create());
+			this.context.client.notReady();
+			const message = SideDeckClientMessage.create();
+			this.context.client.socket.write(message);
+			this.context.client.clearReconnecting();
+
+			return;
+		}
+
 		this.startDuel();
 	}
 

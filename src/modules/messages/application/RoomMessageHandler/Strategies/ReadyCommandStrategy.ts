@@ -43,6 +43,8 @@ export class ReadyCommandStrategy implements RoomMessageHandlerCommandStrategy {
 				this.context.client.socket.write(rpsChooseMessage);
 			}
 
+			this.context.client.clearReconnecting();
+
 			return;
 		}
 
@@ -56,6 +58,8 @@ export class ReadyCommandStrategy implements RoomMessageHandlerCommandStrategy {
 				const message = ChooseOrderClientMessage.create();
 				this.context.room.clientWhoChoosesTurn.socket.write(message);
 			}
+
+			this.context.client.clearReconnecting();
 
 			return;
 		}
