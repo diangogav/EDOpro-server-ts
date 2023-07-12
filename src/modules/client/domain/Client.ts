@@ -10,9 +10,9 @@ export class Client {
 	public readonly listener: Listener;
 	public readonly host: boolean;
 	public readonly name: string;
-	private _position: number;
 	public readonly roomId: number;
 	public readonly team: number;
+	private _position: number;
 	private _socket: YGOClientSocket;
 	private _isReady: boolean;
 	private _rpsChosen: Choose | null = null;
@@ -136,9 +136,10 @@ export class Client {
 		return this.team === 3;
 	}
 
-	spectorPosition(): void {
+	spectatorPosition(): void {
 		this._position = 7;
 	}
+
 	get position(): number {
 		return this._position;
 	}

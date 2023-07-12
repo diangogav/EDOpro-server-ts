@@ -17,12 +17,12 @@ import { WaitingClientMessage } from "../../server-to-client/game-messages/Waiti
 import { ServerMessageClientMessage } from "../../server-to-client/ServerMessageClientMessage";
 import { FinishDuelHandler } from "../FinishDuelHandler";
 import { RoomMessageHandlerContext } from "./RoomMessageHandlerContext";
+import { ChangeToObserver } from "./Strategies/ChangeToObserver";
 import { NotReadyCommandStrategy } from "./Strategies/NotReadyCommandStrategy";
 import { ReadyCommandStrategy } from "./Strategies/ReadyCommandStrategy";
 import { RpsChoiceCommandStrategy } from "./Strategies/RpsChoiceCommandStrategy";
 import { TryStartCommandStrategy } from "./Strategies/TryStartCommandStrategy";
 import { UpdateDeckCommandStrategy } from "./Strategies/UpdateDeckCommandStrategy";
-import { ChangeToObserver } from "./Strategies/changetoobserver";
 
 export class RoomMessageHandler {
 	private readonly context: RoomMessageHandlerContext;
@@ -69,8 +69,8 @@ export class RoomMessageHandler {
 			this.context.setStrategy(new TryStartCommandStrategy(this.context, () => this.read()));
 		}
 
-		if (command === Commands.ODSERVER) {
-			console.log("ODSERVER");
+		if (command === Commands.OBSERVER) {
+			console.log("OBSERVER");
 			this.context.setStrategy(new ChangeToObserver(this.context, () => this.read()));
 		}
 
