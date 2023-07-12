@@ -28,6 +28,5 @@ export class Redis implements Database {
 		}
 
 		await this.client.connect();
-		console.log("Redis connected!");
 	}
 }

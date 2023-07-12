@@ -9,7 +9,7 @@ export type Player = {
 export type MatchHistory = {
 	games: {
 		result: "winner" | "loser" | "deuce";
-		score: number;
+		// score: number;
 	}[];
 };
 
@@ -37,12 +37,12 @@ export class Match {
 			if (player.team === winner) {
 				player.games.push({
 					result: "winner",
-					score: 1,
+					// score: 1,
 				});
 			} else {
 				player.games.push({
 					result: "loser",
-					score: 0,
+					// score: 0,
 				});
 			}
 		});
@@ -71,7 +71,18 @@ export class Match {
 		};
 	}
 
-	get playersHistory(): (Player & MatchHistory)[] {
-		return this._players;
+	get playersHistory(): (Player & MatchHistory & { winner: boolean })[] {
+		return this._players.map((player) => ({
+			...player,
+			winner: this.winner() === player.team,
+		}));
+	}
+
+	private winner(): number {
+		if (this.score.team0 > this.score.team1) {
+			return 0;
+		}
+
+		return 1;
 	}
 }

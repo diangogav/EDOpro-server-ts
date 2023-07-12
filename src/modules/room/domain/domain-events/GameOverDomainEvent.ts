@@ -5,7 +5,7 @@ export type GameOverData = {
 	// needWins: number;
 	turn: number;
 	date: Date;
-	players: (Player & MatchHistory)[];
+	players: (Player & MatchHistory & { winner: boolean })[];
 };
 
 export class GameOverDomainEvent {

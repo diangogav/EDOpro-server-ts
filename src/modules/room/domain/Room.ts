@@ -245,7 +245,7 @@ export class Room {
 		return this._match.score;
 	}
 
-	get matchPlayersHistory(): (Player & MatchHistory)[] {
+	get matchPlayersHistory(): (Player & MatchHistory & { winner: boolean })[] {
 		return this._match?.playersHistory ?? [];
 	}
 
