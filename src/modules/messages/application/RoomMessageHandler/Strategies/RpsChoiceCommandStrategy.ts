@@ -62,7 +62,7 @@ export class RpsChoiceCommandStrategy implements RoomMessageHandlerCommandStrate
 
 		this.context.room.clients.forEach((player) => {
 			if (player.team === 1) {
-				player.socket.write(team0Response);
+				player.socket.write(team1Response);
 			}
 		});
 
