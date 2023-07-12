@@ -12,4 +12,6 @@ export enum Commands {
 	READY = 34,
 	NOT_READY = 35,
 	TRY_START = 37,
+	ODSERVER = 33,
+	KICK = 36,
 }

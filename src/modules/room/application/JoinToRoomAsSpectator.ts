@@ -45,6 +45,7 @@ export class JoinToRoomAsSpectator implements DomainEventSubscriber<RoomFullOfPl
 				const status = room.clients[_client.position].isReady
 					? (_client.position << 4) | PlayerRoomState.READY
 					: (_client.position << 4) | PlayerRoomState.NOT_READY;
+					 
 
 				socket.write(PlayerEnterClientMessage.create(_client.name, _client.position));
 				socket.write(PlayerChangeClientMessage.create({ status }));

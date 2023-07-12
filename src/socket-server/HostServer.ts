@@ -5,9 +5,7 @@ import { MessageHandler } from "../modules/messages/application/MessageHandler/M
 import { DisconnectHandler } from "../modules/room/application/DisconnectHandler";
 import { JoinToGameAsSpectator } from "../modules/room/application/JoinToGameAsSpectator";
 import { JoinToRoomAsSpectator } from "../modules/room/application/JoinToRoomAsSpectator";
-import { RecordMatch } from "../modules/room/application/RecordMatch";
 import { RoomFinder } from "../modules/room/application/RoomFinder";
-import { RedisRoomRepository } from "../modules/room/match/infrastructure/RedisRoomRepository";
 import { container } from "../modules/shared/dependency-injection";
 import { EventBus } from "../modules/shared/event-bus/EventBus";
 import { Logger } from "../modules/shared/logger/domain/Logger";
@@ -60,6 +58,6 @@ export class HostServer {
 		const eventBus = container.get(EventBus);
 		eventBus.subscribe(JoinToGameAsSpectator.ListenTo, new JoinToGameAsSpectator());
 		eventBus.subscribe(JoinToRoomAsSpectator.ListenTo, new JoinToRoomAsSpectator());
-		eventBus.subscribe(RecordMatch.ListenTo, new RecordMatch(new RedisRoomRepository()));
+	
 	}
 }

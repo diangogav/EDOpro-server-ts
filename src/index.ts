@@ -8,9 +8,8 @@ import { HostServer } from "./socket-server/HostServer";
 void start();
 
 async function start(): Promise<void> {
-	const logger = new Pino();
-	const server = new Server(logger);
-	const hostServer = new HostServer(logger);
+	const server = new Server(new Pino());
+	const hostServer = new HostServer(new Pino());
 	const database = new SQLiteTypeORM();
 	await database.connect();
 	await database.initialize();

@@ -1,6 +1,7 @@
 import { YGOClientSocket } from "../../../../socket-server/HostServer";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { Commands } from "../../domain/Commands";
+import { ChangeToOdserver } from "../RoomMessageHandler/Strategies/ChangeToOdserver";
 import { MessageHandlerContext } from "./MessageHandlerContext";
 import { ChatCommandStrategy } from "./Strategies/ChatCommandStrategy";
 import { CreateGameCommandStrategy } from "./Strategies/CreateGameCommandStrategy";
@@ -61,6 +62,12 @@ export class MessageHandler {
 		if (command === Commands.TIME_CONFIRM) {
 			this.logger.debug("TIME_CONFIRM");
 		}
+		
+		if (command === Commands.ODSERVER) {
+			this.logger.debug("ODSERVER");
+			
+		}
+
 
 		this.context.execute();
 	}
