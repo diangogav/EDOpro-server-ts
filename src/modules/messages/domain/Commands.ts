@@ -10,6 +10,8 @@ export enum Commands {
 	TIME_CONFIRM = 21,
 	CHAT = 22,
 	READY = 34,
+	ODSERVER = 33,
 	NOT_READY = 35,
+	KICK = 36,
 	TRY_START = 37,
 }

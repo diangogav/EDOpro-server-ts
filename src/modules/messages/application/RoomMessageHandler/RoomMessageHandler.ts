@@ -22,6 +22,7 @@ import { ReadyCommandStrategy } from "./Strategies/ReadyCommandStrategy";
 import { RpsChoiceCommandStrategy } from "./Strategies/RpsChoiceCommandStrategy";
 import { TryStartCommandStrategy } from "./Strategies/TryStartCommandStrategy";
 import { UpdateDeckCommandStrategy } from "./Strategies/UpdateDeckCommandStrategy";
+import { ChangeToObserver } from "./Strategies/changetoobserver";
 
 export class RoomMessageHandler {
 	private readonly context: RoomMessageHandlerContext;
@@ -66,6 +67,11 @@ export class RoomMessageHandler {
 		if (command === Commands.TRY_START) {
 			console.log("TRY_START");
 			this.context.setStrategy(new TryStartCommandStrategy(this.context, () => this.read()));
+		}
+
+		if (command === Commands.ODSERVER) {
+			console.log("ODSERVER");
+			this.context.setStrategy(new ChangeToObserver(this.context, () => this.read()));
 		}
 
 		if (command === Commands.RPS_CHOICE) {
