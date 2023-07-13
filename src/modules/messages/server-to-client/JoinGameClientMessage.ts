@@ -91,12 +91,12 @@ export class JoinGameClientMessage {
 		const duelFlagsLow = decimalToBytesBuffer(room.duelFlagsLow, 4);
 		const forbidden = decimalToBytesBuffer(room.forbiddenTypes, 4);
 		const extraRules = decimalToBytesBuffer(room.extraRules, 2);
-		const mainDeckMin = decimalToBytesBuffer(room.mainMin, 2);
-		const mainDeckMax = decimalToBytesBuffer(room.mainMax, 2);
-		const extraDeckMin = decimalToBytesBuffer(room.extraMin, 2);
-		const extraDeckMax = decimalToBytesBuffer(room.extraMax, 2);
-		const sideDeckMin = decimalToBytesBuffer(room.sideMin, 2);
-		const sideDeckMax = decimalToBytesBuffer(room.sideMax, 2);
+		const mainDeckMin = decimalToBytesBuffer(room.deckRules.mainMin, 2);
+		const mainDeckMax = decimalToBytesBuffer(room.deckRules.mainMax, 2);
+		const extraDeckMin = decimalToBytesBuffer(room.deckRules.extraMin, 2);
+		const extraDeckMax = decimalToBytesBuffer(room.deckRules.extraMax, 2);
+		const sideDeckMin = decimalToBytesBuffer(room.deckRules.sideMin, 2);
+		const sideDeckMax = decimalToBytesBuffer(room.deckRules.sideMax, 2);
 		const unknown = Buffer.from([0x55, 0x54]);
 
 		return Buffer.concat([

@@ -9,6 +9,37 @@ import { Match, MatchHistory, Player } from "../match/domain/Match";
 import { DuelFinishReason } from "./DuelFinishReason";
 import { Timer } from "./Timer";
 
+export class DeckRules {
+	public readonly mainMin: number;
+	public readonly mainMax: number;
+	public readonly extraMin: number;
+	public readonly extraMax: number;
+	public readonly sideMin: number;
+	public readonly sideMax: number;
+
+	constructor({
+		mainMin,
+		mainMax,
+		extraMin,
+		extraMax,
+		sideMin,
+		sideMax,
+	}: {
+		mainMin: number;
+		mainMax: number;
+		extraMin: number;
+		extraMax: number;
+		sideMin: number;
+		sideMax: number;
+	}) {
+		this.mainMin = mainMin;
+		this.mainMax = mainMax;
+		this.extraMin = extraMin;
+		this.extraMax = extraMax;
+		this.sideMin = sideMin;
+		this.sideMax = sideMax;
+	}
+}
 interface RoomAttr {
 	id: number;
 	name: string;
@@ -75,12 +106,7 @@ export class Room {
 	public readonly noShuffle: boolean;
 	public readonly banlistHash: number;
 	public readonly isStart: string;
-	public readonly mainMin: number;
-	public readonly mainMax: number;
-	public readonly extraMin: number;
-	public readonly extraMax: number;
-	public readonly sideMin: number;
-	public readonly sideMax: number;
+	public readonly deckRules: DeckRules;
 	public readonly duelRule: number;
 	public readonly handshake: number;
 	public readonly password: string;
@@ -123,12 +149,14 @@ export class Room {
 		this.noShuffle = attr.noShuffle;
 		this.banlistHash = attr.banlistHash;
 		this.isStart = attr.isStart;
-		this.mainMin = attr.mainMin;
-		this.mainMax = attr.mainMax;
-		this.extraMin = attr.extraMin;
-		this.extraMax = attr.extraMax;
-		this.sideMin = attr.sideMin;
-		this.sideMax = attr.sideMax;
+		this.deckRules = new DeckRules({
+			mainMin: attr.mainMin,
+			mainMax: attr.mainMax,
+			sideMin: attr.sideMin,
+			sideMax: attr.sideMax,
+			extraMin: attr.extraMin,
+			extraMax: attr.extraMax,
+		});
 		this.duelRule = attr.duelRule;
 		this.handshake = attr.handshake;
 		this.password = attr.password;
@@ -508,12 +536,12 @@ export class Room {
 			no_shuffle: this.noShuffle,
 			banlist_hash: this.banlistHash,
 			istart: this.isStart,
-			main_min: this.mainMin,
-			main_max: this.mainMax,
-			extra_min: this.extraMin,
-			extra_max: this.extraMax,
-			side_min: this.sideMin,
-			side_max: this.sideMax,
+			main_min: this.deckRules.mainMin,
+			main_max: this.deckRules.mainMax,
+			extra_min: this.deckRules.extraMin,
+			extra_max: this.deckRules.extraMax,
+			side_min: this.deckRules.sideMin,
+			side_max: this.deckRules.sideMax,
 			users: this.clients.map((player) => ({
 				name: player.name.replace(/\0/g, "").trim(),
 				pos: player.position,

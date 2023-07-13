@@ -1,12 +1,9 @@
 import { BanList } from "../../ban-list/domain/BanList";
+import { DeckError } from "./errors/DeckError";
+import { ForbiddenCardValidationHandler } from "./validators/ForbbidenCardValidationHandler";
+import { LimitedCardValidationHandler } from "./validators/LimitedCardValidationHandler";
+import { SemiLimitedCardValidationHandler } from "./validators/SemiLimitedCardValidationHandler";
 
-enum DECK_ERROR {
-	CARD_BANLISTED = 0x01,
-}
-interface DeckError {
-	cardId: number;
-	type: DECK_ERROR;
-}
 export class Deck {
 	readonly main: number[];
 	readonly side: number[];
@@ -35,54 +32,17 @@ export class Deck {
 		return mainDeck.length === this.main.length + this.extra.length;
 	}
 
+	get allCards(): number[] {
+		return [...this.main, ...this.side, ...this.extra];
+	}
+
 	public validate(): DeckError | null {
-		const cardCountMap: Map<number, number> = new Map();
-		const allCards = [...this.main, ...this.side, ...this.extra];
+		const handleValidations = new ForbiddenCardValidationHandler(this.banList);
 
-		for (const cardId of allCards) {
-			if (!this.banList.all.includes(cardId)) {
-				return {
-					type: DECK_ERROR.CARD_BANLISTED,
-					cardId,
-				};
-			}
-		}
+		handleValidations
+			.setNextHandler(new SemiLimitedCardValidationHandler(this.banList))
+			.setNextHandler(new LimitedCardValidationHandler(this.banList));
 
-		for (const cardId of allCards) {
-			const count = cardCountMap.get(cardId) ?? 0;
-			cardCountMap.set(cardId, count + 1);
-		}
-
-		for (const forbiddenCard of this.banList.forbidden) {
-			const count = cardCountMap.get(forbiddenCard) ?? 0;
-			if (count > 0) {
-				return {
-					type: DECK_ERROR.CARD_BANLISTED,
-					cardId: forbiddenCard,
-				};
-			}
-		}
-
-		for (const limitedCard of this.banList.limited) {
-			const count = cardCountMap.get(limitedCard) ?? 0;
-			if (count > 1) {
-				return {
-					type: DECK_ERROR.CARD_BANLISTED,
-					cardId: limitedCard,
-				};
-			}
-		}
-
-		for (const semilimitedCard of this.banList.semiLimited) {
-			const count = cardCountMap.get(semilimitedCard) ?? 0;
-			if (count > 2) {
-				return {
-					type: DECK_ERROR.CARD_BANLISTED,
-					cardId: semilimitedCard,
-				};
-			}
-		}
-
-		return null;
+		return handleValidations.validate(this);
 	}
 }

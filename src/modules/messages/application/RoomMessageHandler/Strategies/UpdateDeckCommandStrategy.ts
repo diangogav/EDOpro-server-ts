@@ -48,12 +48,7 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 			const hasError = deck.validate();
 
 			if (hasError) {
-				this.context.client.socket.write(
-					ErrorClientMessage.createDeckError({
-						type: hasError.type,
-						code: hasError.cardId,
-					})
-				);
+				this.context.client.socket.write(hasError.buffer());
 
 				new NotReadyCommandStrategy(this.context, () => {
 					/* */
