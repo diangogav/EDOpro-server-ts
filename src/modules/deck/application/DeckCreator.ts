@@ -1,3 +1,4 @@
+import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
 import { CardRepository } from "../../card/domain/CardRepository";
 import { Deck } from "../domain/Deck";
 
@@ -8,7 +9,15 @@ export class DeckCreator {
 		this.cardRepository = cardRepositoy;
 	}
 
-	async build({ main, side }: { main: number[]; side: number[] }): Promise<Deck> {
+	async build({
+		main,
+		side,
+		banListHash,
+	}: {
+		main: number[];
+		side: number[];
+		banListHash: number;
+	}): Promise<Deck> {
 		const mainDeck: number[] = [];
 		const extraDeck: number[] = [];
 
@@ -18,6 +27,12 @@ export class DeckCreator {
 			card?.isExtraCard() ? extraDeck.push(Number(card.code)) : mainDeck.push(Number(code));
 		}
 
-		return new Deck({ main: mainDeck, extra: extraDeck, side });
+		const banList = BanListMemoryRepository.findByHash(banListHash);
+
+		if (!banList) {
+			throw new Error("BanList not found");
+		}
+
+		return new Deck({ main: mainDeck, extra: extraDeck, side, banList });
 	}
 }

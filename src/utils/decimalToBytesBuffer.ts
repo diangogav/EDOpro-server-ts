@@ -10,3 +10,14 @@ export function decimalToBytesBuffer(decimal: number, numBytes: number): Buffer 
 			.map((item) => Number(item))
 	);
 }
+
+export function decimalToBytesBufferSigned(decimal: number, numBytes: number): Buffer {
+	const buffer = Buffer.alloc(numBytes);
+	if (decimal >= 0) {
+		buffer.writeUInt32BE(decimal, 0);
+	} else {
+		buffer.writeInt32BE(decimal, 0);
+	}
+
+	return buffer;
+}

@@ -34,7 +34,7 @@ export class CreateGameMessage implements Message {
 	public readonly notes: string;
 
 	constructor(buffer: Buffer) {
-		this.banList = buffer.subarray(0, 4).readUint32LE();
+		this.banList = buffer.subarray(0, 4).readInt32LE();
 		this.allowed = buffer.subarray(4, 5).readUInt8();
 		this.mode = buffer.subarray(5, 6).readUInt8();
 		this.duelRule = buffer.subarray(6, 7).readUInt8();

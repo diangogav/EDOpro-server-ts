@@ -10,3 +10,4 @@ core/premake5
 *.db
 *.vscode
 *.env
+*banlists

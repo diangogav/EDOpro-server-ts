@@ -1,4 +1,7 @@
-import { decimalToBytesBuffer } from "../../../utils/decimalToBytesBuffer";
+import {
+	decimalToBytesBuffer,
+	decimalToBytesBufferSigned,
+} from "../../../utils/decimalToBytesBuffer";
 import { Room } from "../../room/domain/Room";
 import { CreateGameMessage } from "../client-to-server/CreateGameMessage";
 import { JoinGameMessage } from "../client-to-server/JoinGameMessage";
@@ -6,7 +9,7 @@ import { JoinGameMessage } from "../client-to-server/JoinGameMessage";
 export class JoinGameClientMessage {
 	static createFromCreateGameMessage(message: CreateGameMessage): Buffer {
 		const header = Buffer.from([0x45, 0x00, 0x12]);
-		const banList = decimalToBytesBuffer(message.banList, 4);
+		const banList = decimalToBytesBufferSigned(message.banList, 4);
 		const allowed = decimalToBytesBuffer(message.allowed, 1);
 		const mode = decimalToBytesBuffer(message.mode, 1);
 		const duelRule = decimalToBytesBuffer(message.duelRule, 1);

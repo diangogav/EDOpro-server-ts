@@ -8,6 +8,7 @@ import { SideDeckClientMessage } from "../../../server-to-client/game-messages/S
 import { UpdateDeckMessageSizeCalculator } from "../../UpdateDeckMessageSizeCalculator";
 import { RoomMessageHandlerCommandStrategy } from "../RoomMessageHandlerCommandStrategy";
 import { RoomMessageHandlerContext } from "../RoomMessageHandlerContext";
+import { NotReadyCommandStrategy } from "./NotReadyCommandStrategy";
 
 export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrategy {
 	constructor(
@@ -39,7 +40,27 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 		}
 
 		if (this.context.room.duelState !== DuelState.SIDE_DECKING) {
-			const deck = await this.deckCreator.build({ main: mainDeck, side: sideDeck });
+			const deck = await this.deckCreator.build({
+				main: mainDeck,
+				side: sideDeck,
+				banListHash: this.context.room.banlistHash,
+			});
+			const hasError = deck.validate();
+
+			if (hasError) {
+				this.context.client.socket.write(
+					ErrorClientMessage.createDeckError({
+						type: hasError.type,
+						code: hasError.cardId,
+					})
+				);
+
+				new NotReadyCommandStrategy(this.context, () => {
+					/* */
+				}).execute();
+
+				return;
+			}
 			this.context.updatePreviousMessage(deck);
 			this.afterExecuteCallback();
 
@@ -54,7 +75,11 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 
 			return;
 		}
-		const deck = await this.deckCreator.build({ main: mainDeck, side: sideDeck });
+		const deck = await this.deckCreator.build({
+			main: mainDeck,
+			side: sideDeck,
+			banListHash: this.context.room.banlistHash,
+		});
 		this.context.room.setDecksToPlayer(position, deck);
 		const message = DuelStartClientMessage.create();
 		this.context.client.socket.write(message);
