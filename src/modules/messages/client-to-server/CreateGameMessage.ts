@@ -61,7 +61,7 @@ export class CreateGameMessage implements Message {
 		this.sideDeckMin = buffer.subarray(62, 64).readUInt16LE();
 		this.sideDeckMax = buffer.subarray(64, 66).readUInt16LE();
 		this.name = new TextVO(buffer.subarray(66, 106)).value;
-		this.password = new TextVO(buffer.subarray(106, 146)).value;
-		this.notes = new TextVO(buffer.subarray(146, 546)).value;
+		this.password = new TextVO(buffer.subarray(108, 148)).value;
+		this.notes = new TextVO(buffer.subarray(148, 548)).value;
 	}
 }
