@@ -1,6 +1,7 @@
 import { YGOClientSocket } from "../../../../socket-server/HostServer";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { Commands } from "../../domain/Commands";
+import { ServerMessageClientMessage } from "../../server-to-client/ServerMessageClientMessage";
 import { MessageHandlerContext } from "./MessageHandlerContext";
 import { ChatCommandStrategy } from "./Strategies/ChatCommandStrategy";
 import { CreateGameCommandStrategy } from "./Strategies/CreateGameCommandStrategy";
@@ -45,6 +46,7 @@ export class MessageHandler {
 
 		if (command === Commands.RESPONSE) {
 			this.logger.debug("RESPONSE");
+			this.context.socket.write(ServerMessageClientMessage.create("RESPONSE"));
 			this.context.setStrategy(new ResponseCommandStrategy(this.context));
 		}
 

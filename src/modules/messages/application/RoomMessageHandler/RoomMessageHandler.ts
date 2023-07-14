@@ -44,6 +44,7 @@ export class RoomMessageHandler {
 		const command = header.subarray(2, 3).readInt8();
 
 		if (command === Commands.UPDATE_DECK) {
+			this.context.client.socket.write(ServerMessageClientMessage.create("UPDATE_DECK"));
 			this.context.setStrategy(
 				new UpdateDeckCommandStrategy(
 					this.context,
@@ -54,26 +55,32 @@ export class RoomMessageHandler {
 		}
 
 		if (command === Commands.READY) {
+			this.context.client.socket.write(ServerMessageClientMessage.create("READY"));
 			this.context.setStrategy(new ReadyCommandStrategy(this.context, () => this.read()));
 		}
 
 		if (command === Commands.NOT_READY) {
+			this.context.client.socket.write(ServerMessageClientMessage.create("NOT_READY"));
 			this.context.setStrategy(new NotReadyCommandStrategy(this.context, () => this.read()));
 		}
 
 		if (command === Commands.TRY_START) {
+			this.context.client.socket.write(ServerMessageClientMessage.create("TRY_START"));
 			this.context.setStrategy(new TryStartCommandStrategy(this.context, () => this.read()));
 		}
 
 		if (command === Commands.OBSERVER) {
+			this.context.client.socket.write(ServerMessageClientMessage.create("OBSERVER"));
 			this.context.setStrategy(new ChangeToObserver(this.context, () => this.read()));
 		}
 
 		if (command === Commands.RPS_CHOICE) {
+			this.context.client.socket.write(ServerMessageClientMessage.create("RPS_CHOICE"));
 			this.context.setStrategy(new RpsChoiceCommandStrategy(this.context));
 		}
 
 		if (command === Commands.TURN_CHOICE) {
+			this.context.client.socket.write(ServerMessageClientMessage.create("TURN_CHOICE"));
 			const turn = this.context.readBody(1).readInt8();
 			const position = this.context.room.clients.find(
 				(client) => client === this.context.client
@@ -175,6 +182,7 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:BUFFER") {
+						this.context.client.socket.write(ServerMessageClientMessage.create("BUFFER"));
 						const cache = Number(params[0]);
 						const team = Number(params[1]);
 						const location = Number(params[2]);
@@ -199,6 +207,7 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:CARD") {
+						this.context.client.socket.write(ServerMessageClientMessage.create("CARD"));
 						const cache = Number(params[0]);
 						const team = Number(params[1]);
 						const location = Number(params[2]);
@@ -231,10 +240,12 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:DUEL") {
+						this.context.client.socket.write(ServerMessageClientMessage.create("DUEL"));
 						core.stdin.write("CMD:PROCESS\n");
 					}
 
 					if (cmd === "CMD:MESSAGE") {
+						this.context.client.socket.write(ServerMessageClientMessage.create("MESSAGE"));
 						const forAllTeam = Boolean(Number(params[0]));
 						const cache = Number(params[1]);
 						const team = Number(params[2]);
@@ -274,6 +285,7 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:BROADCAST") {
+						this.context.client.socket.write(ServerMessageClientMessage.create("BROADCAST"));
 						const data = Buffer.from(params.slice(0).map(Number));
 						const message = BroadcastClientMessage.create({ buffer: data });
 						// this.context.room.cacheMessage(0, message);
@@ -289,6 +301,7 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:EXCEPT") {
+						this.context.client.socket.write(ServerMessageClientMessage.create("EXCEPT"));
 						const team = Number(params[0]);
 						const data = Buffer.from(params.slice(1).map(Number));
 						const message = BroadcastClientMessage.create({ buffer: data });
@@ -300,6 +313,7 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:WAITING") {
+						this.context.client.socket.write(ServerMessageClientMessage.create("WAITING"));
 						const nonWaitingPlayerTeam = Number(params[0]);
 						const message = WaitingClientMessage.create();
 						this.context.clients.forEach((client) => {
@@ -310,6 +324,7 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:TIME") {
+						this.context.client.socket.write(ServerMessageClientMessage.create("TIME"));
 						const team = Number(params[0]);
 						const timeLimit = Number(params[1]);
 						const message = TimeLimitClientMessage.create({
@@ -330,6 +345,7 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:FINISH") {
+						this.context.client.socket.write(ServerMessageClientMessage.create("FINISH"));
 						const reason = Number(params[0]) as DuelFinishReason;
 						const winner = Number(params[1]);
 						const duelFinisher = new FinishDuelHandler({ reason, winner, room: this.context.room });
@@ -352,6 +368,7 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:FIELD") {
+						this.context.client.socket.write(ServerMessageClientMessage.create("FIELD"));
 						if (params.length === 1) {
 							return;
 						}
@@ -371,6 +388,7 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:REFRESH") {
+						this.context.client.socket.write(ServerMessageClientMessage.create("REFRESH"));
 						if (params.length === 0) {
 							return;
 						}
@@ -398,6 +416,7 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:RECONNECT") {
+						this.context.client.socket.write(ServerMessageClientMessage.create("RECONNECT"));
 						const _team = Number(params[0]);
 						const position = Number(params[1]);
 
@@ -426,6 +445,7 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:SWAP") {
+						this.context.client.socket.write(ServerMessageClientMessage.create("SWAP"));
 						const team = Number(params[0]);
 						this.context.room.nextTurn(team);
 					}
