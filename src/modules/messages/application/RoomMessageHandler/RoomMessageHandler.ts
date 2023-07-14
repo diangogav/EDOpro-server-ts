@@ -49,7 +49,7 @@ export class RoomMessageHandler {
 				new UpdateDeckCommandStrategy(
 					this.context,
 					() => this.read(),
-					new DeckCreator(new CardSQLiteTYpeORMRepository())
+					new DeckCreator(new CardSQLiteTYpeORMRepository(), this.context.room.deckRules)
 				)
 			);
 		}

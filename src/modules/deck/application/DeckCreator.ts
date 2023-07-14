@@ -1,12 +1,15 @@
 import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
 import { CardRepository } from "../../card/domain/CardRepository";
+import { DeckRules } from "../../room/domain/Room";
 import { Deck } from "../domain/Deck";
 
 export class DeckCreator {
 	private readonly cardRepository: CardRepository;
+	private readonly deckRules: DeckRules;
 
-	constructor(cardRepositoy: CardRepository) {
+	constructor(cardRepositoy: CardRepository, deckRules: DeckRules) {
 		this.cardRepository = cardRepositoy;
+		this.deckRules = deckRules;
 	}
 
 	async build({
@@ -33,6 +36,6 @@ export class DeckCreator {
 			throw new Error("BanList not found");
 		}
 
-		return new Deck({ main: mainDeck, extra: extraDeck, side, banList });
+		return new Deck({ main: mainDeck, extra: extraDeck, side, banList, deckRules: this.deckRules });
 	}
 }

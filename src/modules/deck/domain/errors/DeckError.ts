@@ -8,13 +8,13 @@ export abstract class DeckError {
 	protected readonly max: number;
 	constructor({
 		type,
-		code,
+		code = 0,
 		got = 0,
 		min = 0,
 		max = 0,
 	}: {
 		type: number;
-		code: number;
+		code?: number;
 		got?: number;
 		min?: number;
 		max?: number;
