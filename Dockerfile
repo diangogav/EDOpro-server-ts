@@ -7,7 +7,8 @@ RUN apt-get update -y && \
 WORKDIR /repositories
 
 RUN git clone https://github.com/ProjectIgnis/CardScripts.git scripts && \
-    git clone https://github.com/ProjectIgnis/BabelCDB.git databases
+    git clone https://github.com/ProjectIgnis/BabelCDB.git databases && \
+    git clone https://github.com/ygopromdc/lflist.git banlists
 
 RUN conan profile detect
 
@@ -46,5 +47,6 @@ COPY --from=core-integrator-builder /app/libocgcore.so ./core/libocgcore.so
 COPY --from=core-integrator-builder /app/CoreIntegrator ./core/CoreIntegrator
 COPY --from=core-integrator-builder /repositories/scripts ./core/scripts/
 COPY --from=core-integrator-builder /repositories/databases ./databases/
+COPY --from=core-integrator-builder /repositories/banlists ./banlists/
 
 CMD ["npm", "start"]

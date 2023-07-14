@@ -1,0 +1,14 @@
+version: '3'
+services:
+  node-app:
+    build: .
+    ports:
+      - 7911:7911
+      - 7922:7922
+    environment:
+      - REDIS_URI=${REDIS_URI}
+
+  redis:
+    image: redis
+    ports:
+      - 6379:6379
