@@ -21,9 +21,9 @@ export class SemiLimitedCardValidationHandler implements DeckValidationHandler {
 	validate(deck: Deck): DeckError | null {
 		const cards: Map<number, number> = new Map();
 
-		for (const cardId of deck.allCards) {
-			const count = cards.get(cardId) ?? 0;
-			cards.set(cardId, count + 1);
+		for (const card of deck.allCards) {
+			const count = cards.get(Number(card.code)) ?? 0;
+			cards.set(Number(card.code), count + 1);
 		}
 
 		for (const semilimitedCard of this.banList.semiLimited) {

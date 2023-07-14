@@ -6,6 +6,8 @@ import { DeckLimitsValidationHandler } from "./validators/DeckLimitsValidationHa
 import { DeckRuleValidationHandler } from "./validators/DeckRuleValidationHandler";
 import { ForbiddenCardValidationHandler } from "./validators/ForbbidenCardValidationHandler";
 import { LimitedCardValidationHandler } from "./validators/LimitedCardValidationHandler";
+import { OfficialCardValidationHandler } from "./validators/OfficialCardsValidationHandler";
+import { PrereleaseValidationHandler } from "./validators/PrereleaseValidationHandler";
 import { SemiLimitedCardValidationHandler } from "./validators/SemiLimitedCardValidationHandler";
 
 export class Deck {
@@ -51,7 +53,9 @@ export class Deck {
 			.setNextHandler(new ForbiddenCardValidationHandler(this.banList))
 			.setNextHandler(new SemiLimitedCardValidationHandler(this.banList))
 			.setNextHandler(new LimitedCardValidationHandler(this.banList))
-			.setNextHandler(new DeckRuleValidationHandler(this.deckRules));
+			.setNextHandler(new DeckRuleValidationHandler(this.deckRules))
+			.setNextHandler(new OfficialCardValidationHandler(this.deckRules))
+			.setNextHandler(new PrereleaseValidationHandler(this.deckRules));
 
 		return handleValidations.validate(this);
 	}

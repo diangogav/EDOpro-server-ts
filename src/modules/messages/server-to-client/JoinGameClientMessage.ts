@@ -72,7 +72,7 @@ export class JoinGameClientMessage {
 	static createFromRoom(joinGameMessage: JoinGameMessage, room: Room): Buffer {
 		const header = Buffer.from([0x45, 0x00, 0x12]);
 		const banList = decimalToBytesBuffer(room.banlistHash, 4);
-		const allowed = decimalToBytesBuffer(room.rule, 1);
+		const allowed = decimalToBytesBuffer(room.deckRules.rule, 1);
 		const mode = decimalToBytesBuffer(room.mode, 1);
 		const duelRule = decimalToBytesBuffer(room.duelRule, 1);
 		const dontCheckDeck = decimalToBytesBuffer(Number(room.noCheck), 1);

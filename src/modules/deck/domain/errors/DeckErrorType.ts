@@ -8,7 +8,7 @@ export enum DeckErrorType {
 	DECK_BAD_EXTRA_COUNT = 0x7,
 	DECK_BAD_SIDE_COUNT = 0x8,
 	CARD_FORBIDDEN_TYPE = 0x9, //TODO: Peding to implements
-	CARD_UNOFFICIAL = 0xa, //TODO: Peding to implements
+	CARD_UNOFFICIAL = 0xa,
 	DECK_INVALID_SIZE = 0xb,
 	DECK_TOO_MANY_LEGENDS = 0xc, //TODO: Peding to implements
 	DECK_TOO_MANY_SKILLS = 0xd, //TODO: Peding to implements
