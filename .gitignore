@@ -6,6 +6,7 @@ dist
 core/Makefile
 core/src/Makefile
 core/premake5
+core/CoreIntegrator
 *databases
 *.db
 *.vscode
