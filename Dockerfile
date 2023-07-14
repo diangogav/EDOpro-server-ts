@@ -30,6 +30,8 @@ WORKDIR /server
 
 COPY package.json package-lock.json ./
 
+COPY .env ./
+
 RUN npm ci
 
 COPY . .
@@ -43,6 +45,7 @@ WORKDIR /app
 COPY --from=server-builder /server/dist ./src/
 COPY --from=server-builder /server/package.json ./package.json
 COPY --from=server-builder /server/node_modules ./node_modules
+COPY --from=server-builder /server/.env ./.env
 COPY --from=core-integrator-builder /app/libocgcore.so ./core/libocgcore.so
 COPY --from=core-integrator-builder /app/CoreIntegrator ./core/CoreIntegrator
 COPY --from=core-integrator-builder /repositories/scripts ./core/scripts/
