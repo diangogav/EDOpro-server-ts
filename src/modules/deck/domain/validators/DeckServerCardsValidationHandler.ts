@@ -19,9 +19,9 @@ export class DeckServerCardsValidationHandler implements DeckValidationHandler {
 	}
 
 	validate(deck: Deck): DeckError | null {
-		for (const cardId of deck.allCards) {
-			if (!this.banList.all.includes(cardId)) {
-				return new BanListDeckError(cardId);
+		for (const card of deck.allCards) {
+			if (!this.banList.all.includes(Number(card.code))) {
+				return new BanListDeckError(Number(card.code));
 			}
 		}
 

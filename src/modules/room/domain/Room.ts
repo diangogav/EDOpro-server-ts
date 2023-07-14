@@ -9,6 +9,14 @@ import { Match, MatchHistory, Player } from "../match/domain/Match";
 import { DuelFinishReason } from "./DuelFinishReason";
 import { Timer } from "./Timer";
 
+export enum Rule {
+	ONLY_OCG,
+	ONLY_TCG,
+	OCG_TCG,
+	PRE_RELEASE,
+	ALL,
+}
+
 export class DeckRules {
 	public readonly mainMin: number;
 	public readonly mainMax: number;
@@ -16,6 +24,7 @@ export class DeckRules {
 	public readonly extraMax: number;
 	public readonly sideMin: number;
 	public readonly sideMax: number;
+	public readonly rule: Rule;
 
 	constructor({
 		mainMin,
@@ -24,6 +33,7 @@ export class DeckRules {
 		extraMax,
 		sideMin,
 		sideMax,
+		rule,
 	}: {
 		mainMin: number;
 		mainMax: number;
@@ -31,6 +41,7 @@ export class DeckRules {
 		extraMax: number;
 		sideMin: number;
 		sideMax: number;
+		rule: number;
 	}) {
 		this.mainMin = mainMin;
 		this.mainMax = mainMax;
@@ -38,6 +49,7 @@ export class DeckRules {
 		this.extraMax = extraMax;
 		this.sideMin = sideMin;
 		this.sideMax = sideMax;
+		this.rule = rule;
 	}
 }
 interface RoomAttr {
@@ -101,7 +113,6 @@ export class Room {
 	public readonly startHand: number;
 	public readonly drawCount: number;
 	public readonly timeLimit: number;
-	public readonly rule: number;
 	public readonly noCheck: boolean;
 	public readonly noShuffle: boolean;
 	public readonly banlistHash: number;
@@ -144,7 +155,6 @@ export class Room {
 		this.startHand = attr.startHand;
 		this.drawCount = attr.drawCount;
 		this.timeLimit = attr.timeLimit;
-		this.rule = attr.rule;
 		this.noCheck = attr.noCheck;
 		this.noShuffle = attr.noShuffle;
 		this.banlistHash = attr.banlistHash;
@@ -156,6 +166,7 @@ export class Room {
 			sideMax: attr.sideMax,
 			extraMin: attr.extraMin,
 			extraMax: attr.extraMax,
+			rule: attr.rule,
 		});
 		this.duelRule = attr.duelRule;
 		this.handshake = attr.handshake;
@@ -531,7 +542,7 @@ export class Room {
 			start_hand: this.startHand,
 			draw_count: this.drawCount,
 			time_limit: this.timeLimit,
-			rule: this.rule,
+			rule: this.deckRules.rule,
 			no_check: this.noCheck,
 			no_shuffle: this.noShuffle,
 			banlist_hash: this.banlistHash,

@@ -1,7 +1,7 @@
 export enum DeckErrorType {
 	CARD_BANLISTED = 0x01,
-	CARD_OCG_ONLY = 0x2, //TODO: Peding to implements
-	CARD_TCG_ONLY = 0x3, //TODO: Peding to implements
+	CARD_OCG_ONLY = 0x2,
+	CARD_TCG_ONLY = 0x3,
 	CARD_UNKNOWN = 0x4, //TODO: Peding to implements
 	CARD_MORE_THAN_3 = 0x5, //TODO: Peding to implements
 	DECK_BAD_MAIN_COUNT = 0x6,

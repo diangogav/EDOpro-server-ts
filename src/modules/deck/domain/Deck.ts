@@ -1,15 +1,17 @@
 import { BanList } from "../../ban-list/domain/BanList";
+import { Card } from "../../card/domain/Card";
 import { DeckRules } from "../../room/domain/Room";
 import { DeckError } from "./errors/DeckError";
 import { DeckLimitsValidationHandler } from "./validators/DeckLimitsValidationHandler";
+import { DeckRuleValidationHandler } from "./validators/DeckRuleValidationHandler";
 import { ForbiddenCardValidationHandler } from "./validators/ForbbidenCardValidationHandler";
 import { LimitedCardValidationHandler } from "./validators/LimitedCardValidationHandler";
 import { SemiLimitedCardValidationHandler } from "./validators/SemiLimitedCardValidationHandler";
 
 export class Deck {
-	readonly main: number[];
-	readonly side: number[];
-	readonly extra: number[];
+	readonly main: Card[];
+	readonly side: Card[];
+	readonly extra: Card[];
 	private readonly banList: BanList;
 	private readonly deckRules: DeckRules;
 
@@ -20,9 +22,9 @@ export class Deck {
 		banList,
 		deckRules,
 	}: {
-		main?: number[];
-		side?: number[];
-		extra?: number[];
+		main?: Card[];
+		side?: Card[];
+		extra?: Card[];
 		banList: BanList;
 		deckRules: DeckRules;
 	}) {
@@ -38,7 +40,7 @@ export class Deck {
 		return mainDeck.length === this.main.length + this.extra.length;
 	}
 
-	get allCards(): number[] {
+	get allCards(): Card[] {
 		return [...this.main, ...this.side, ...this.extra];
 	}
 
@@ -48,7 +50,8 @@ export class Deck {
 		handleValidations
 			.setNextHandler(new ForbiddenCardValidationHandler(this.banList))
 			.setNextHandler(new SemiLimitedCardValidationHandler(this.banList))
-			.setNextHandler(new LimitedCardValidationHandler(this.banList));
+			.setNextHandler(new LimitedCardValidationHandler(this.banList))
+			.setNextHandler(new DeckRuleValidationHandler(this.deckRules));
 
 		return handleValidations.validate(this);
 	}

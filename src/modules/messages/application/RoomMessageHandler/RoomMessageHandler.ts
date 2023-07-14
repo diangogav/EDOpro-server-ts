@@ -44,7 +44,6 @@ export class RoomMessageHandler {
 		const command = header.subarray(2, 3).readInt8();
 
 		if (command === Commands.UPDATE_DECK) {
-			console.log("UPDATE_DECK");
 			this.context.setStrategy(
 				new UpdateDeckCommandStrategy(
 					this.context,
@@ -55,40 +54,30 @@ export class RoomMessageHandler {
 		}
 
 		if (command === Commands.READY) {
-			console.log("READY");
 			this.context.setStrategy(new ReadyCommandStrategy(this.context, () => this.read()));
 		}
 
 		if (command === Commands.NOT_READY) {
-			console.log("NOT_READY");
 			this.context.setStrategy(new NotReadyCommandStrategy(this.context, () => this.read()));
 		}
 
 		if (command === Commands.TRY_START) {
-			console.log("TRY_START");
 			this.context.setStrategy(new TryStartCommandStrategy(this.context, () => this.read()));
 		}
 
 		if (command === Commands.OBSERVER) {
-			console.log("OBSERVER");
 			this.context.setStrategy(new ChangeToObserver(this.context, () => this.read()));
 		}
 
 		if (command === Commands.RPS_CHOICE) {
-			console.log("RPS_CHOICE");
 			this.context.setStrategy(new RpsChoiceCommandStrategy(this.context));
 		}
 
 		if (command === Commands.TURN_CHOICE) {
-			console.log("TURN_CHOICE");
 			const turn = this.context.readBody(1).readInt8();
-			console.log(`TURN_CHOICE: ${turn}`);
 			const position = this.context.room.clients.find(
 				(client) => client === this.context.client
 			)?.position;
-
-			const playFirst = turn === 1 ? this.context.client.team : Number(!this.context.client.team);
-			console.log(`PLAY_FIRST: ${playFirst}`);
 
 			const isTeam1GoingFirst = (position === 0 && turn === 0) || (position === 1 && turn === 1);
 
@@ -101,9 +90,9 @@ export class RoomMessageHandler {
 			this.context.room.prepareTurnOrder();
 			const players = this.context.clients.map((item) => ({
 				team: item.team,
-				mainDeck: item.deck.main,
-				sideDeck: item.deck.side,
-				extraDeck: item.deck.extra,
+				mainDeck: item.deck.main.map((card) => Number(card.code)),
+				sideDeck: item.deck.side.map((card) => Number(card.code)),
+				extraDeck: item.deck.extra.map((card) => Number(card.code)),
 				turn: item.duelPosition,
 			}));
 

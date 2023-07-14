@@ -1,4 +1,5 @@
 import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
+import { Card } from "../../card/domain/Card";
 import { CardRepository } from "../../card/domain/CardRepository";
 import { DeckRules } from "../../room/domain/Room";
 import { Deck } from "../domain/Deck";
@@ -21,13 +22,26 @@ export class DeckCreator {
 		side: number[];
 		banListHash: number;
 	}): Promise<Deck> {
-		const mainDeck: number[] = [];
-		const extraDeck: number[] = [];
+		const mainDeck: Card[] = [];
+		const extraDeck: Card[] = [];
+		const sideDeck: Card[] = [];
 
 		for (const code of main) {
 			// eslint-disable-next-line no-await-in-loop
 			const card = await this.cardRepository.findByCode(code.toString());
-			card?.isExtraCard() ? extraDeck.push(Number(card.code)) : mainDeck.push(Number(code));
+			if (!card) {
+				continue;
+			}
+			card.isExtraCard() ? extraDeck.push(card) : mainDeck.push(card);
+		}
+
+		for (const code of side) {
+			// eslint-disable-next-line no-await-in-loop
+			const card = await this.cardRepository.findByCode(code.toString());
+			if (!card) {
+				continue;
+			}
+			sideDeck.push(card);
 		}
 
 		const banList = BanListMemoryRepository.findByHash(banListHash);
@@ -36,6 +50,12 @@ export class DeckCreator {
 			throw new Error("BanList not found");
 		}
 
-		return new Deck({ main: mainDeck, extra: extraDeck, side, banList, deckRules: this.deckRules });
+		return new Deck({
+			main: mainDeck,
+			extra: extraDeck,
+			side: sideDeck,
+			banList,
+			deckRules: this.deckRules,
+		});
 	}
 }

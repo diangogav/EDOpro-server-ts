@@ -11,6 +11,6 @@ export class CardSQLiteTYpeORMRepository implements CardRepository {
 			return null;
 		}
 
-		return new Card({ code: card.id, type: card.type });
+		return new Card({ code: card.id, type: card.type, category: card.category, variant: card.ot });
 	}
 }
