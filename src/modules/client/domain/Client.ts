@@ -143,4 +143,14 @@ export class Client {
 	get position(): number {
 		return this._position;
 	}
+
+	sendMessage(message: Buffer): void {
+		this._socket.write(message, (error: unknown) => {
+			if (error) {
+				setTimeout(() => {
+					this.sendMessage(message);
+				}, 1000);
+			}
+		});
+	}
 }
