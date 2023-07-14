@@ -44,7 +44,6 @@ export class RoomMessageHandler {
 		const command = header.subarray(2, 3).readInt8();
 
 		if (command === Commands.UPDATE_DECK) {
-			this.context.client.sendMessage(ServerMessageClientMessage.create("UPDATE_DECK"));
 			this.context.setStrategy(
 				new UpdateDeckCommandStrategy(
 					this.context,
@@ -55,32 +54,26 @@ export class RoomMessageHandler {
 		}
 
 		if (command === Commands.READY) {
-			this.context.client.sendMessage(ServerMessageClientMessage.create("READY"));
 			this.context.setStrategy(new ReadyCommandStrategy(this.context, () => this.read()));
 		}
 
 		if (command === Commands.NOT_READY) {
-			this.context.client.sendMessage(ServerMessageClientMessage.create("NOT_READY"));
 			this.context.setStrategy(new NotReadyCommandStrategy(this.context, () => this.read()));
 		}
 
 		if (command === Commands.TRY_START) {
-			this.context.client.sendMessage(ServerMessageClientMessage.create("TRY_START"));
 			this.context.setStrategy(new TryStartCommandStrategy(this.context, () => this.read()));
 		}
 
 		if (command === Commands.OBSERVER) {
-			this.context.client.sendMessage(ServerMessageClientMessage.create("OBSERVER"));
 			this.context.setStrategy(new ChangeToObserver(this.context, () => this.read()));
 		}
 
 		if (command === Commands.RPS_CHOICE) {
-			this.context.client.sendMessage(ServerMessageClientMessage.create("RPS_CHOICE"));
 			this.context.setStrategy(new RpsChoiceCommandStrategy(this.context));
 		}
 
 		if (command === Commands.TURN_CHOICE) {
-			this.context.client.sendMessage(ServerMessageClientMessage.create("TURN_CHOICE"));
 			const turn = this.context.readBody(1).readInt8();
 			const position = this.context.room.clients.find(
 				(client) => client === this.context.client
@@ -140,6 +133,7 @@ export class RoomMessageHandler {
 					const params = commandParts.slice(1);
 
 					if (cmd === "CMD:START") {
+						this.context.room.startRoomTimer();
 						const playerGameMessage = StartDuelClientMessage.create({
 							lp: this.context.room.startLp,
 							team: Number(isTeam1GoingFirst) ^ 0,
@@ -212,7 +206,6 @@ export class RoomMessageHandler {
 						this.context.room.clients.forEach((client) => {
 							client.sendMessage(ServerMessageClientMessage.create("CARD"));
 						});
-						this.context.client.sendMessage(ServerMessageClientMessage.create("CARD"));
 						const cache = Number(params[0]);
 						const team = Number(params[1]);
 						const location = Number(params[2]);
@@ -245,7 +238,6 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:DUEL") {
-						this.context.client.sendMessage(ServerMessageClientMessage.create("DUEL"));
 						core.stdin.write("CMD:PROCESS\n");
 					}
 
@@ -253,7 +245,6 @@ export class RoomMessageHandler {
 						this.context.room.clients.forEach((client) => {
 							client.sendMessage(ServerMessageClientMessage.create("MESSAGE"));
 						});
-						this.context.client.sendMessage(ServerMessageClientMessage.create("MESSAGE"));
 						const forAllTeam = Boolean(Number(params[0]));
 						const cache = Number(params[1]);
 						const team = Number(params[2]);
@@ -296,7 +287,6 @@ export class RoomMessageHandler {
 						this.context.room.clients.forEach((client) => {
 							client.sendMessage(ServerMessageClientMessage.create("BROADCAST"));
 						});
-						this.context.client.sendMessage(ServerMessageClientMessage.create("BROADCAST"));
 						const data = Buffer.from(params.slice(0).map(Number));
 						const message = BroadcastClientMessage.create({ buffer: data });
 						// this.context.room.cacheMessage(0, message);
@@ -312,7 +302,6 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:EXCEPT") {
-						this.context.client.sendMessage(ServerMessageClientMessage.create("EXCEPT"));
 						const team = Number(params[0]);
 						const data = Buffer.from(params.slice(1).map(Number));
 						const message = BroadcastClientMessage.create({ buffer: data });
@@ -327,7 +316,6 @@ export class RoomMessageHandler {
 						this.context.room.clients.forEach((client) => {
 							client.sendMessage(ServerMessageClientMessage.create("WAITING"));
 						});
-						this.context.client.sendMessage(ServerMessageClientMessage.create("WAITING"));
 						const nonWaitingPlayerTeam = Number(params[0]);
 						const message = WaitingClientMessage.create();
 						this.context.clients.forEach((client) => {
@@ -341,7 +329,6 @@ export class RoomMessageHandler {
 						this.context.room.clients.forEach((client) => {
 							client.sendMessage(ServerMessageClientMessage.create("TIME"));
 						});
-						this.context.client.sendMessage(ServerMessageClientMessage.create("TIME"));
 						const team = Number(params[0]);
 						const timeLimit = Number(params[1]);
 						const message = TimeLimitClientMessage.create({
@@ -362,7 +349,6 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:FINISH") {
-						this.context.client.sendMessage(ServerMessageClientMessage.create("FINISH"));
 						const reason = Number(params[0]) as DuelFinishReason;
 						const winner = Number(params[1]);
 						const duelFinisher = new FinishDuelHandler({ reason, winner, room: this.context.room });
@@ -385,10 +371,10 @@ export class RoomMessageHandler {
 						this.context.room.increaseTurn();
 						this.context.room.resetTimer(0, this.context.room.timeLimit * 1000);
 						this.context.room.resetTimer(1, this.context.room.timeLimit * 1000);
+						this.context.room.resetRoomTimer();
 					}
 
 					if (cmd === "CMD:FIELD") {
-						this.context.client.sendMessage(ServerMessageClientMessage.create("FIELD"));
 						if (params.length === 1) {
 							return;
 						}
@@ -408,7 +394,6 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:REFRESH") {
-						this.context.client.sendMessage(ServerMessageClientMessage.create("REFRESH"));
 						if (params.length === 0) {
 							return;
 						}
@@ -436,7 +421,6 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:RECONNECT") {
-						this.context.client.sendMessage(ServerMessageClientMessage.create("RECONNECT"));
 						const _team = Number(params[0]);
 						const position = Number(params[1]);
 
@@ -468,7 +452,6 @@ export class RoomMessageHandler {
 						this.context.room.clients.forEach((client) => {
 							client.sendMessage(ServerMessageClientMessage.create("SWAP"));
 						});
-						this.context.client.sendMessage(ServerMessageClientMessage.create("SWAP"));
 						const team = Number(params[0]);
 						this.context.room.nextTurn(team);
 					}

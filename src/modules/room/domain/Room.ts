@@ -5,6 +5,7 @@ import { Deck } from "../../deck/domain/Deck";
 import { FinishDuelHandler } from "../../messages/application/FinishDuelHandler";
 import { RoomMessageHandler } from "../../messages/application/RoomMessageHandler/RoomMessageHandler";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
+import RoomList from "../infrastructure/RoomList";
 import { Match, MatchHistory, Player } from "../match/domain/Match";
 import { DuelFinishReason } from "./DuelFinishReason";
 import { Timer } from "./Timer";
@@ -138,6 +139,7 @@ export class Room {
 	private readonly t0Positions: number[] = [];
 	private readonly t1Positions: number[] = [];
 	private readonly timers: Timer[];
+	private readonly roomTimer: Timer;
 
 	private constructor(attr: RoomAttr) {
 		this.id = attr.id;
@@ -178,33 +180,29 @@ export class Room {
 		this.t0Positions = Array.from({ length: this.team0 }, (_, index) => index);
 		this.t1Positions = Array.from({ length: this.team1 }, (_, index) => this.team0 + index);
 		this.timers = [
-			new Timer(
-				this.timeLimit * 1000,
-				() => {
-					const finishDuelHandler = new FinishDuelHandler({
-						reason: DuelFinishReason.SURRENDERED,
-						winner: 1,
-						room: this,
-					});
+			new Timer(this.timeLimit * 1000, () => {
+				const finishDuelHandler = new FinishDuelHandler({
+					reason: DuelFinishReason.SURRENDERED,
+					winner: 1,
+					room: this,
+				});
 
-					finishDuelHandler.run();
-				},
-				0
-			),
-			new Timer(
-				this.timeLimit * 1000,
-				() => {
-					const finishDuelHandler = new FinishDuelHandler({
-						reason: DuelFinishReason.SURRENDERED,
-						winner: 0,
-						room: this,
-					});
+				finishDuelHandler.run();
+			}),
+			new Timer(this.timeLimit * 1000, () => {
+				const finishDuelHandler = new FinishDuelHandler({
+					reason: DuelFinishReason.SURRENDERED,
+					winner: 0,
+					room: this,
+				});
 
-					finishDuelHandler.run();
-				},
-				1
-			),
+				finishDuelHandler.run();
+			}),
 		];
+
+		this.roomTimer = new Timer(this.timeLimit * 2 * 1000, () => {
+			RoomList.deleteRoom(this);
+		});
 	}
 
 	static createFromCreateGameMessage(
@@ -516,6 +514,14 @@ export class Room {
 
 	resetTimer(team: number, time: number): void {
 		this.timers[team].reset(time * 1000);
+	}
+
+	startRoomTimer(): void {
+		this.roomTimer.start();
+	}
+
+	resetRoomTimer(): void {
+		this.roomTimer.reset();
 	}
 
 	playerNames(team: number): string {

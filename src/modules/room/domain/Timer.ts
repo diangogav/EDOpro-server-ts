@@ -2,19 +2,17 @@ export class Timer {
 	private startTime: number;
 	private endTime: number;
 	private readonly duration: number;
-	private readonly team: number;
 	private remainingTime: number;
 	private timerId: NodeJS.Timeout | null;
 	private readonly callback: () => void;
 
-	constructor(duration: number, callback: () => void, team: number) {
+	constructor(duration: number, callback: () => void) {
 		this.startTime = 0;
 		this.endTime = 0;
 		this.duration = duration;
 		this.remainingTime = duration;
 		this.timerId = null;
 		this.callback = callback;
-		this.team = team;
 	}
 
 	start(): void {
@@ -53,6 +51,6 @@ export class Timer {
 
 	// private displayRemainingTime() {
 	// 	const seconds = Math.ceil(this.remainingTime / 1000);
-	// 	// console.log(`Timer: ${this.team} Tiempo restante: ${seconds} segundos`);
+	// 	console.log(`Tiempo restante: ${seconds} segundos`);
 	// }
 }
