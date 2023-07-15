@@ -1,3 +1,4 @@
+import { BanList } from "../../ban-list/domain/BanList";
 import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
 import { Card } from "../../card/domain/Card";
 import { CardRepository } from "../../card/domain/CardRepository";
@@ -46,15 +47,11 @@ export class DeckCreator {
 
 		const banList = BanListMemoryRepository.findByHash(banListHash);
 
-		if (!banList) {
-			throw new Error("BanList not found");
-		}
-
 		return new Deck({
 			main: mainDeck,
 			extra: extraDeck,
 			side: sideDeck,
-			banList,
+			banList: banList ?? new BanList(),
 			deckRules: this.deckRules,
 		});
 	}

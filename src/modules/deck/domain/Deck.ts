@@ -2,6 +2,7 @@ import { BanList } from "../../ban-list/domain/BanList";
 import { Card } from "../../card/domain/Card";
 import { DeckRules } from "../../room/domain/Room";
 import { DeckError } from "./errors/DeckError";
+import { AvailableCardValidationHandler } from "./validators/AvailableCardValidationHandler";
 import { DeckLimitsValidationHandler } from "./validators/DeckLimitsValidationHandler";
 import { DeckRuleValidationHandler } from "./validators/DeckRuleValidationHandler";
 import { ForbiddenCardValidationHandler } from "./validators/ForbbidenCardValidationHandler";
@@ -55,7 +56,8 @@ export class Deck {
 			.setNextHandler(new LimitedCardValidationHandler(this.banList))
 			.setNextHandler(new DeckRuleValidationHandler(this.deckRules))
 			.setNextHandler(new OfficialCardValidationHandler(this.deckRules))
-			.setNextHandler(new PrereleaseValidationHandler(this.deckRules));
+			.setNextHandler(new PrereleaseValidationHandler(this.deckRules))
+			.setNextHandler(new AvailableCardValidationHandler(this.banList));
 
 		return handleValidations.validate(this);
 	}
