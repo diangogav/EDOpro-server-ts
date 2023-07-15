@@ -6,7 +6,7 @@
   "scripts": {
     "test": "jest",
     "dev": "ts-node-dev --respawn src/index.ts",
-    "build": "tsc -p .",
+    "build": "tsc",
     "start": "node src/index.js",
     "lint": "eslint --ignore-path .gitignore . --ext .ts",
     "lint:fix": "npm run lint -- --fix"

@@ -1,7 +1,7 @@
 import {
 	Choose,
 	Result,
-	RockPaperScissor
+	RockPaperScissor,
 } from "../../../src/modules/rock-paper-scissor/RockPaperScissor";
 import { RuleNotFoundError } from "../../../src/modules/rock-paper-scissor/RuleNotFoundError";
 
