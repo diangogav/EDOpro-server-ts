@@ -7,9 +7,11 @@ import { UserFinder } from "../../../../user/application/UserFinder";
 import { User } from "../../../../user/domain/User";
 import { JoinGameMessage } from "../../../client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../../client-to-server/PlayerInfoMessage";
+import { ServerInfoMessage } from "../../../domain/ServerInfoMessage";
 import { ErrorMessages } from "../../../server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../../server-to-client/ErrorClientMessage";
 import { ServerErrorClientMessage } from "../../../server-to-client/ServerErrorMessageClientMessage";
+import { ServerMessageClientMessage } from "../../../server-to-client/ServerMessageClientMessage";
 import { MessageHandlerCommandStrategy } from "../MessageHandlerCommandStrategy";
 import { MessageHandlerContext } from "../MessageHandlerContext";
 
@@ -47,6 +49,13 @@ export class JoinGameCommandStrategy implements MessageHandlerCommandStrategy {
 			// eslint-disable-next-line @typescript-eslint/no-floating-promises
 			this.userFinder.run(playerInfoMessage).then((user) => {
 				if (!(user instanceof User)) {
+					this.context.socket.write(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
+					this.context.socket.write(
+						ServerMessageClientMessage.create(ServerInfoMessage.THIS_IS_A_RANKED_ROOM)
+					);
+					this.context.socket.write(
+						ServerMessageClientMessage.create(ServerInfoMessage.MUST_BE_LOGGED)
+					);
 					this.context.socket.write(user as Buffer);
 					this.context.socket.write(ErrorClientMessage.create(ErrorMessages.JOINERROR));
 
@@ -58,6 +67,12 @@ export class JoinGameCommandStrategy implements MessageHandlerCommandStrategy {
 
 			return;
 		}
+
+		this.context.socket.write(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
+		this.context.socket.write(
+			ServerMessageClientMessage.create(ServerInfoMessage.THIS_IS_A_UNRANKED_ROOM)
+		);
+		this.context.socket.write(ServerMessageClientMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));
 
 		this.join(room, joinGameMessage, playerInfoMessage);
 
