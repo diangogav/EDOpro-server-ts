@@ -13,6 +13,9 @@ export class RecordMatch implements DomainEventSubscriber<GameOverDomainEvent> {
 	}
 
 	async handle(event: GameOverDomainEvent): Promise<void> {
+		if (!event.data.ranked) {
+			return;
+		}
 		for (const player of event.data.players) {
 			const wins = player.games.filter((round) => round.result === "winner").length;
 			const earnedPoints = this.calculateEarnedPoints(wins);

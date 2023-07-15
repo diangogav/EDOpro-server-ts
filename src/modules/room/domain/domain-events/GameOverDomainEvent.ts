@@ -6,6 +6,7 @@ export type GameOverData = {
 	turn: number;
 	date: Date;
 	players: (Player & MatchHistory & { winner: boolean })[];
+	ranked: boolean;
 };
 
 export class GameOverDomainEvent {

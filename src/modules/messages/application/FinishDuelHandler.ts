@@ -72,6 +72,7 @@ export class FinishDuelHandler {
 					turn: this.room.turn,
 					players: this.room.matchPlayersHistory,
 					date: new Date(),
+					ranked: this.room.ranked,
 				})
 			);
 

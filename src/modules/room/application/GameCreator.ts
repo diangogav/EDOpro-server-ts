@@ -2,6 +2,7 @@ import net from "net";
 
 import { Client } from "../../client/domain/Client";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
+import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
 import { CreateGameClientMessage } from "../../messages/server-to-client/CreateGameClientMessage";
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
 import { PlayerChangeClientMessage } from "../../messages/server-to-client/PlayerChangeClientMessage";
@@ -13,16 +14,16 @@ import RoomList from "../infrastructure/RoomList";
 export class GameCreator {
 	private readonly HOST_CLIENT = 0x10;
 	constructor(private readonly socket: net.Socket) {}
-	run(message: CreateGameMessage, playerName: string): void {
+	run(message: CreateGameMessage, playerInfo: PlayerInfoMessage): void {
 		const room = Room.createFromCreateGameMessage(
 			message,
-			playerName,
+			playerInfo,
 			RoomList.getRooms().length + 1
 		);
 		const client = new Client({
 			socket: this.socket,
 			host: true,
-			name: playerName,
+			name: playerInfo.name,
 			position: 0,
 			roomId: room.id,
 			team: 0,
@@ -33,7 +34,7 @@ export class GameCreator {
 
 		this.socket.write(CreateGameClientMessage.create(room));
 		this.socket.write(JoinGameClientMessage.createFromCreateGameMessage(message));
-		this.socket.write(PlayerEnterClientMessage.create(playerName, client.position));
+		this.socket.write(PlayerEnterClientMessage.create(playerInfo.name, client.position));
 		this.socket.write(PlayerChangeClientMessage.create({}));
 		this.socket.write(TypeChangeClientMessage.create({ type: this.HOST_CLIENT }));
 	}

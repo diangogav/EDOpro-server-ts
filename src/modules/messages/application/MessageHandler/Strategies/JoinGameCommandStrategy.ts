@@ -1,8 +1,10 @@
 import { JoinToGame } from "../../../../room/application/JoinToGame";
 import { ReconnectToGame } from "../../../../room/application/ReconnectToGame";
 import { RoomFinder } from "../../../../room/application/RoomFinder";
-import { DuelState } from "../../../../room/domain/Room";
+import { DuelState, Room } from "../../../../room/domain/Room";
 import RoomList from "../../../../room/infrastructure/RoomList";
+import { UserFinder } from "../../../../user/application/UserFinder";
+import { User } from "../../../../user/domain/User";
 import { JoinGameMessage } from "../../../client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../../client-to-server/PlayerInfoMessage";
 import { ErrorMessages } from "../../../server-to-client/error-messages/ErrorMessages";
@@ -12,7 +14,10 @@ import { MessageHandlerCommandStrategy } from "../MessageHandlerCommandStrategy"
 import { MessageHandlerContext } from "../MessageHandlerContext";
 
 export class JoinGameCommandStrategy implements MessageHandlerCommandStrategy {
-	constructor(private readonly context: MessageHandlerContext) {}
+	constructor(
+		private readonly context: MessageHandlerContext,
+		private readonly userFinder: UserFinder
+	) {}
 
 	execute(): void {
 		const body = this.context.readBody(this.context.messageLength());
@@ -36,13 +41,36 @@ export class JoinGameCommandStrategy implements MessageHandlerCommandStrategy {
 			this.context.socket.destroy();
 		}
 
-		const joinToGame = new JoinToGame(this.context.socket);
 		const playerInfoMessage = this.context.getPreviousMessages() as PlayerInfoMessage;
+
+		if (room.ranked) {
+			// eslint-disable-next-line @typescript-eslint/no-floating-promises
+			this.userFinder.run(playerInfoMessage).then((user) => {
+				if (!(user instanceof User)) {
+					this.context.socket.write(user as Buffer);
+					this.context.socket.write(ErrorClientMessage.create(ErrorMessages.JOINERROR));
+
+					return;
+				}
+
+				this.join(room, joinGameMessage, playerInfoMessage);
+			});
+
+			return;
+		}
+
+		this.join(room, joinGameMessage, playerInfoMessage);
+
+		return;
+	}
+
+	private join(room: Room, joinGameMessage: JoinGameMessage, playerInfo: PlayerInfoMessage): void {
+		const joinToGame = new JoinToGame(this.context.socket);
 
 		const playerEntering = room.clients.find((client) => {
 			return (
 				client.socket.remoteAddress === this.context.socket.remoteAddress &&
-				playerInfoMessage.name === client.name
+				playerInfo.name === client.name
 			);
 		});
 
@@ -66,11 +94,11 @@ export class JoinGameCommandStrategy implements MessageHandlerCommandStrategy {
 			playerEntering
 		) {
 			const reconnectToGame = new ReconnectToGame(this.context.socket, new RoomFinder());
-			reconnectToGame.run(joinGameMessage, playerInfoMessage.name, playerEntering);
+			reconnectToGame.run(joinGameMessage, playerInfo.name, playerEntering);
 
 			return;
 		}
 
-		joinToGame.run(joinGameMessage, playerInfoMessage.name, room);
+		joinToGame.run(joinGameMessage, playerInfo, room);
 	}
 }

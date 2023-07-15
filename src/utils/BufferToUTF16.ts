@@ -4,10 +4,9 @@ export function BufferToUTF16(data: ArrayBuffer, maxByteCount: number): string {
 		return str.join("");
 	}
 	const view = new Uint8Array(data);
-	const tg = maxByteCount / 2;
-	for (let i = 0; i <= tg; i += 2) {
+	for (let i = 0; i < maxByteCount; i += 2) {
 		const toAppend = view[i] | (view[i + 1] << 8);
-		if (!toAppend || toAppend === 0x000a || toAppend === 0x000d) {
+		if (isNaN(toAppend) || toAppend === 0x0000) {
 			break;
 		}
 		str.push(String.fromCharCode(toAppend));

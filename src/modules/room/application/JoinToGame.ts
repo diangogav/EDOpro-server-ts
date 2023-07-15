@@ -2,6 +2,7 @@ import net from "net";
 
 import { Client } from "../../client/domain/Client";
 import { JoinGameMessage } from "../../messages/client-to-server/JoinGameMessage";
+import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
 import { PlayerChangeClientMessage } from "../../messages/server-to-client/PlayerChangeClientMessage";
 import { PlayerEnterClientMessage } from "../../messages/server-to-client/PlayerEnterClientMessage";
@@ -20,12 +21,12 @@ export class JoinToGame {
 		this.eventBus = container.get(EventBus);
 	}
 
-	run(message: JoinGameMessage, playerName: string, room: Room): void {
+	run(message: JoinGameMessage, playerInfo: PlayerInfoMessage, room: Room): void {
 		if (room.duelState === DuelState.DUELING) {
 			this.eventBus.publish(
 				ClientEnteredDuringDuelDomainEvent.DOMAIN_EVENT,
 				new ClientEnteredDuringDuelDomainEvent({
-					playerName,
+					playerName: playerInfo.name,
 					socket: this.socket,
 					room,
 					message,
@@ -40,7 +41,7 @@ export class JoinToGame {
 			this.eventBus.publish(
 				RoomFullOfPlayersDomainEvent.DOMAIN_EVENT,
 				new RoomFullOfPlayersDomainEvent({
-					playerName,
+					playerName: playerInfo.name,
 					socket: this.socket,
 					room,
 					message,
@@ -53,7 +54,7 @@ export class JoinToGame {
 		const client = new Client({
 			socket: this.socket,
 			host: false,
-			name: playerName,
+			name: playerInfo.name,
 			position: place.position,
 			roomId: room.id,
 			team: place.team,
@@ -63,7 +64,7 @@ export class JoinToGame {
 
 		this.socket.write(JoinGameClientMessage.createFromRoom(message, room));
 		room.clients.forEach((_client) => {
-			_client.socket.write(PlayerEnterClientMessage.create(playerName, client.position));
+			_client.socket.write(PlayerEnterClientMessage.create(playerInfo.name, client.position));
 		});
 
 		const notReady = (client.position << 4) | PlayerRoomState.NOT_READY;

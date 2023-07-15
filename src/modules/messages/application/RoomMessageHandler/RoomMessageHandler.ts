@@ -176,9 +176,6 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:BUFFER") {
-						this.context.room.clients.forEach((client) => {
-							client.sendMessage(ServerMessageClientMessage.create("BUFFER"));
-						});
 						const cache = Number(params[0]);
 						const team = Number(params[1]);
 						const location = Number(params[2]);
@@ -203,9 +200,6 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:CARD") {
-						this.context.room.clients.forEach((client) => {
-							client.sendMessage(ServerMessageClientMessage.create("CARD"));
-						});
 						const cache = Number(params[0]);
 						const team = Number(params[1]);
 						const location = Number(params[2]);
@@ -242,9 +236,6 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:MESSAGE") {
-						this.context.room.clients.forEach((client) => {
-							client.sendMessage(ServerMessageClientMessage.create("MESSAGE"));
-						});
 						const forAllTeam = Boolean(Number(params[0]));
 						const cache = Number(params[1]);
 						const team = Number(params[2]);
@@ -284,9 +275,6 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:BROADCAST") {
-						this.context.room.clients.forEach((client) => {
-							client.sendMessage(ServerMessageClientMessage.create("BROADCAST"));
-						});
 						const data = Buffer.from(params.slice(0).map(Number));
 						const message = BroadcastClientMessage.create({ buffer: data });
 						// this.context.room.cacheMessage(0, message);
@@ -313,9 +301,6 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:WAITING") {
-						this.context.room.clients.forEach((client) => {
-							client.sendMessage(ServerMessageClientMessage.create("WAITING"));
-						});
 						const nonWaitingPlayerTeam = Number(params[0]);
 						const message = WaitingClientMessage.create();
 						this.context.clients.forEach((client) => {
@@ -326,9 +311,6 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:TIME") {
-						this.context.room.clients.forEach((client) => {
-							client.sendMessage(ServerMessageClientMessage.create("TIME"));
-						});
 						const team = Number(params[0]);
 						const timeLimit = Number(params[1]);
 						const message = TimeLimitClientMessage.create({
@@ -365,9 +347,6 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:TURN") {
-						this.context.room.clients.forEach((client) => {
-							client.sendMessage(ServerMessageClientMessage.create("TURN"));
-						});
 						this.context.room.increaseTurn();
 						this.context.room.resetTimer(0, this.context.room.timeLimit * 1000);
 						this.context.room.resetTimer(1, this.context.room.timeLimit * 1000);

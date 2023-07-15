@@ -5,6 +5,7 @@ import { Deck } from "../../deck/domain/Deck";
 import { FinishDuelHandler } from "../../messages/application/FinishDuelHandler";
 import { RoomMessageHandler } from "../../messages/application/RoomMessageHandler/RoomMessageHandler";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
+import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
 import RoomList from "../infrastructure/RoomList";
 import { Match, MatchHistory, Player } from "../match/domain/Match";
 import { DuelFinishReason } from "./DuelFinishReason";
@@ -86,6 +87,7 @@ interface RoomAttr {
 	handshake: number;
 	password: string;
 	duel?: ChildProcessWithoutNullStreams;
+	ranked: boolean;
 }
 
 export enum DuelState {
@@ -122,6 +124,7 @@ export class Room {
 	public readonly duelRule: number;
 	public readonly handshake: number;
 	public readonly password: string;
+	public readonly ranked: boolean;
 	private _spectatorCache: Buffer[] = [];
 	private _clients: Client[] = [];
 	private _spectators: Client[] = [];
@@ -203,11 +206,12 @@ export class Room {
 		this.roomTimer = new Timer(this.timeLimit * 2 * 1000, () => {
 			RoomList.deleteRoom(this);
 		});
+		this.ranked = attr.ranked;
 	}
 
 	static createFromCreateGameMessage(
 		message: CreateGameMessage,
-		playerName: string,
+		playerInfo: PlayerInfoMessage,
 		id: number
 	): Room {
 		return new Room({
@@ -242,6 +246,7 @@ export class Room {
 			password: message.password,
 			duelFlagsHight: message.duelFlagsHight,
 			duelFlagsLow: message.duelFlagsLow,
+			ranked: Boolean(playerInfo.password),
 		});
 	}
 

@@ -1,7 +1,8 @@
 import { YGOClientSocket } from "../../../../socket-server/HostServer";
 import { Logger } from "../../../shared/logger/domain/Logger";
+import { UserFinder } from "../../../user/application/UserFinder";
+import { UserRedisRepository } from "../../../user/infrastructure/UserRedisRepository";
 import { Commands } from "../../domain/Commands";
-import { ServerMessageClientMessage } from "../../server-to-client/ServerMessageClientMessage";
 import { MessageHandlerContext } from "./MessageHandlerContext";
 import { ChatCommandStrategy } from "./Strategies/ChatCommandStrategy";
 import { CreateGameCommandStrategy } from "./Strategies/CreateGameCommandStrategy";
@@ -36,17 +37,24 @@ export class MessageHandler {
 
 		if (command === Commands.CREATE_GAME) {
 			this.logger.debug("CREATE_GAME");
-			this.context.setStrategy(new CreateGameCommandStrategy(this.context, () => this.read()));
+			this.context.setStrategy(
+				new CreateGameCommandStrategy(
+					this.context,
+					() => this.read(),
+					new UserFinder(new UserRedisRepository())
+				)
+			);
 		}
 
 		if (command === Commands.JOIN_GAME) {
 			this.logger.debug("JOIN_GAME");
-			this.context.setStrategy(new JoinGameCommandStrategy(this.context));
+			this.context.setStrategy(
+				new JoinGameCommandStrategy(this.context, new UserFinder(new UserRedisRepository()))
+			);
 		}
 
 		if (command === Commands.RESPONSE) {
 			this.logger.debug("RESPONSE");
-			this.context.socket.write(ServerMessageClientMessage.create("RESPONSE"));
 			this.context.setStrategy(new ResponseCommandStrategy(this.context));
 		}
 
