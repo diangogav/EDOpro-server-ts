@@ -42,7 +42,7 @@ FROM node:18.16.1
 
 WORKDIR /app
 
-COPY --from=server-builder /server/dist ./src/
+COPY --from=server-builder /server/dist ./
 COPY --from=server-builder /server/package.json ./package.json
 COPY --from=server-builder /server/node_modules ./node_modules
 COPY --from=server-builder /server/.env ./.env
