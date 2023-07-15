@@ -14,5 +14,5 @@ export enum Commands {
 	NOT_READY = 35,
 	KICK = 36,
 	TRY_START = 37,
-	TODUEL = 32
+	TODUEL = 32,
 }

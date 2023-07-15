@@ -144,7 +144,7 @@ export class Client {
 		return this._position;
 	}
 
-	playerPosition(position: number,team: number): void {
+	playerPosition(position: number, team: number): void {
 		this._position = position;
 		this._team = team;
 	}
