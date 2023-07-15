@@ -17,6 +17,7 @@ import { WaitingClientMessage } from "../../server-to-client/game-messages/Waiti
 import { ServerMessageClientMessage } from "../../server-to-client/ServerMessageClientMessage";
 import { FinishDuelHandler } from "../FinishDuelHandler";
 import { RoomMessageHandlerContext } from "./RoomMessageHandlerContext";
+import { ChangeToDuel } from "./Strategies/ChangeToDuel";
 import { ChangeToObserver } from "./Strategies/ChangeToObserver";
 import { NotReadyCommandStrategy } from "./Strategies/NotReadyCommandStrategy";
 import { ReadyCommandStrategy } from "./Strategies/ReadyCommandStrategy";
@@ -67,6 +68,9 @@ export class RoomMessageHandler {
 
 		if (command === Commands.OBSERVER) {
 			this.context.setStrategy(new ChangeToObserver(this.context, () => this.read()));
+		}
+		if (command === Commands.TODUEL) {
+			this.context.setStrategy(new ChangeToDuel(this.context, () => this.read()));
 		}
 
 		if (command === Commands.RPS_CHOICE) {
