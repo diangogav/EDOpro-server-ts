@@ -1,4 +1,5 @@
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
+import { ServerErrorMessage } from "../../messages/domain/ServerErrorMessage";
 import { ServerErrorClientMessage } from "../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { User } from "../domain/User";
 import { UserRepository } from "../domain/UserRepository";
@@ -10,13 +11,11 @@ export class UserFinder {
 		const user = await this.userRepository.findBy(playerInfo.name);
 
 		if (!user) {
-			return ServerErrorClientMessage.create(
-				"Usuario no encontrado, si quieres jugar en formato ranked debes registrarte en https://evolutionygo.com/"
-			);
+			return ServerErrorClientMessage.create(ServerErrorMessage.USER_NOT_FOUND);
 		}
 
 		if (!playerInfo.password || !user.isValidPassword(playerInfo.password)) {
-			return ServerErrorClientMessage.create("Contraseña incorrecta");
+			return ServerErrorClientMessage.create(ServerErrorMessage.INVALID_PASSWORD);
 		}
 
 		return user;
