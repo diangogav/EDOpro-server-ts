@@ -11,7 +11,7 @@ export class Client {
 	public readonly host: boolean;
 	public readonly name: string;
 	public readonly roomId: number;
-	public readonly team: number;
+	private _team: number;
 	private _position: number;
 	private _socket: YGOClientSocket;
 	private _isReady: boolean;
@@ -45,7 +45,7 @@ export class Client {
 		this._position = position;
 		this.roomId = roomId;
 		this._isReady = isReady;
-		this.team = team;
+		this._team = team;
 	}
 
 	get socket(): YGOClientSocket {
@@ -133,7 +133,7 @@ export class Client {
 	}
 
 	get isSpectator(): boolean {
-		return this.team === 3;
+		return this._team === 3;
 	}
 
 	spectatorPosition(): void {
@@ -142,6 +142,15 @@ export class Client {
 
 	get position(): number {
 		return this._position;
+	}
+
+	playerPosition(position: number,team: number): void {
+		this._position = position;
+		this._team = team;
+	}
+
+	get team(): number {
+		return this._team;
 	}
 
 	sendMessage(message: Buffer): void {

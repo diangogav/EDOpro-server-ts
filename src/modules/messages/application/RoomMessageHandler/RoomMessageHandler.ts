@@ -23,6 +23,7 @@ import { ReadyCommandStrategy } from "./Strategies/ReadyCommandStrategy";
 import { RpsChoiceCommandStrategy } from "./Strategies/RpsChoiceCommandStrategy";
 import { TryStartCommandStrategy } from "./Strategies/TryStartCommandStrategy";
 import { UpdateDeckCommandStrategy } from "./Strategies/UpdateDeckCommandStrategy";
+import { ChangeToDuel } from "./Strategies/ChangeToDuel";
 
 export class RoomMessageHandler {
 	private readonly context: RoomMessageHandlerContext;
@@ -67,6 +68,9 @@ export class RoomMessageHandler {
 
 		if (command === Commands.OBSERVER) {
 			this.context.setStrategy(new ChangeToObserver(this.context, () => this.read()));
+		}
+		if (command === Commands.TODUEL) {
+			this.context.setStrategy(new ChangeToDuel(this.context, () => this.read()));
 		}
 
 		if (command === Commands.RPS_CHOICE) {
