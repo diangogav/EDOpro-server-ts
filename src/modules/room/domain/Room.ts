@@ -129,7 +129,6 @@ export class Room {
 	private _clients: Client[] = [];
 	private _spectators: Client[] = [];
 	private readonly _kick: Client[] = [];
-	private _kickCache: Buffer[] = [];
 	private _duel?: ChildProcessWithoutNullStreams;
 	private _match: Match | null;
 	private _state: DuelState;
@@ -400,14 +399,6 @@ export class Room {
 
 	clearSpectatorCache(): void {
 		this._spectatorCache = [];
-	}
-
-	get kickCache(): Buffer[] {
-		return this._kickCache;
-	}
-
-	clearKickCache(): void {
-		this._kickCache = [];
 	}
 
 	setPlayerDecksSize(mainSize: number, extraSize: number): void {
