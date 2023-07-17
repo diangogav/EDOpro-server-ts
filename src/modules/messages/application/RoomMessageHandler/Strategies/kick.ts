@@ -6,7 +6,7 @@ import { WatchChangeClientMessage } from "../../../server-to-client/WatchChangeC
 import { RoomMessageHandlerCommandStrategy } from "../RoomMessageHandlerCommandStrategy";
 import { RoomMessageHandlerContext } from "../RoomMessageHandlerContext";
 
-export class kick implements RoomMessageHandlerCommandStrategy {
+export class Kick implements RoomMessageHandlerCommandStrategy {
 	private readonly STATUS = 0x24;
 	constructor(
 		private readonly context: RoomMessageHandlerContext,
