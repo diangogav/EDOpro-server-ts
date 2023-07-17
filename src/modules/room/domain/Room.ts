@@ -128,6 +128,8 @@ export class Room {
 	private _spectatorCache: Buffer[] = [];
 	private _clients: Client[] = [];
 	private _spectators: Client[] = [];
+	private readonly _kick: Client[] = [];
+	private _kickCache: Buffer[] = [];
 	private _duel?: ChildProcessWithoutNullStreams;
 	private _match: Match | null;
 	private _state: DuelState;
@@ -309,6 +311,14 @@ export class Room {
 		return this._spectators;
 	}
 
+	addKick(client: Client): void {
+		this._kick.push(client);
+	}
+
+	get kick(): Client[] {
+		return this._kick;
+	}
+
 	setDecksToPlayer(position: number, deck: Deck): void {
 		const client = this._clients.find((client) => client.position === position);
 		if (!client) {
@@ -390,6 +400,14 @@ export class Room {
 
 	clearSpectatorCache(): void {
 		this._spectatorCache = [];
+	}
+
+	get kickCache(): Buffer[] {
+		return this._kickCache;
+	}
+
+	clearKickCache(): void {
+		this._kickCache = [];
 	}
 
 	setPlayerDecksSize(mainSize: number, extraSize: number): void {
