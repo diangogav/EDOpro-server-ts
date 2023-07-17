@@ -6,6 +6,7 @@ import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMes
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
 import { PlayerChangeClientMessage } from "../../messages/server-to-client/PlayerChangeClientMessage";
 import { PlayerEnterClientMessage } from "../../messages/server-to-client/PlayerEnterClientMessage";
+import { ServerErrorClientMessage } from "../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
 import { container } from "../../shared/dependency-injection";
 import { EventBus } from "../../shared/event-bus/EventBus";
@@ -13,6 +14,7 @@ import { ClientEnteredDuringDuelDomainEvent } from "../domain/domain-events/Clie
 import { RoomFullOfPlayersDomainEvent } from "../domain/domain-events/RoomFullOfPlayers";
 import { PlayerRoomState } from "../domain/PlayerRoomState";
 import { DuelState, Room } from "../domain/Room";
+import { JoinToRoomAsSpectator } from "./JoinToRoomAsSpectator";
 
 export class JoinToGame {
 	private readonly eventBus: EventBus;
@@ -31,6 +33,20 @@ export class JoinToGame {
 					room,
 					message,
 				})
+			);
+
+			return;
+		}
+
+		const ips = this.socket.remoteAddress;
+
+		if (room.kick.find((kick) => kick.socket.remoteAddress === ips)) {
+			new JoinToRoomAsSpectator().run(message, playerInfo.name, room, this.socket);
+
+			this.socket.write(
+				ServerErrorClientMessage.create(
+					`${playerInfo.name} has sido Baneado de esta Sala, solo seras espectador!!`
+				)
 			);
 
 			return;

@@ -128,6 +128,7 @@ export class Room {
 	private _spectatorCache: Buffer[] = [];
 	private _clients: Client[] = [];
 	private _spectators: Client[] = [];
+	private readonly _kick: Client[] = [];
 	private _duel?: ChildProcessWithoutNullStreams;
 	private _match: Match | null;
 	private _state: DuelState;
@@ -307,6 +308,14 @@ export class Room {
 
 	get spectators(): Client[] {
 		return this._spectators;
+	}
+
+	addKick(client: Client): void {
+		this._kick.push(client);
+	}
+
+	get kick(): Client[] {
+		return this._kick;
 	}
 
 	setDecksToPlayer(position: number, deck: Deck): void {

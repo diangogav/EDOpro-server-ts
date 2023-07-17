@@ -19,6 +19,7 @@ import { FinishDuelHandler } from "../FinishDuelHandler";
 import { RoomMessageHandlerContext } from "./RoomMessageHandlerContext";
 import { ChangeToDuel } from "./Strategies/ChangeToDuel";
 import { ChangeToObserver } from "./Strategies/ChangeToObserver";
+import { Kick } from "./Strategies/kick";
 import { NotReadyCommandStrategy } from "./Strategies/NotReadyCommandStrategy";
 import { ReadyCommandStrategy } from "./Strategies/ReadyCommandStrategy";
 import { RpsChoiceCommandStrategy } from "./Strategies/RpsChoiceCommandStrategy";
@@ -71,6 +72,10 @@ export class RoomMessageHandler {
 		}
 		if (command === Commands.TODUEL) {
 			this.context.setStrategy(new ChangeToDuel(this.context, () => this.read()));
+		}
+
+		if (command === Commands.KICK) {
+			this.context.setStrategy(new Kick(this.context, () => this.read()));
 		}
 
 		if (command === Commands.RPS_CHOICE) {
