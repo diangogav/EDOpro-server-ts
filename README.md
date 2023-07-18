@@ -1,5 +1,8 @@
 # TSPRO 🎮
 
+
+![Logo](https://raw.githubusercontent.com/diangogav/EDOpro-server-ts/main/assets/1.svg)
+
 Welcome to TSPRO, another server for creating Yu-Gi-Oh! matches using the EDOPro core! But this time, we focus on the scalability of the code, allowing for easy implementation of new features related to the data generated during the duels.
 
 ## Features ✨
