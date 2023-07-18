@@ -1,4 +1,5 @@
 import { YGOClientSocket } from "../../../socket-server/HostServer";
+import { MyWritable } from "../../../utils/MyWritable";
 import { Deck } from "../../deck/domain/Deck";
 import { RoomMessageHandler } from "../../messages/application/RoomMessageHandler/RoomMessageHandler";
 import { Choose } from "../../rock-paper-scissor/RockPaperScissor";
@@ -154,13 +155,7 @@ export class Client {
 	}
 
 	sendMessage(message: Buffer): void {
-		this._socket.write(message, (error: unknown) => {
-			console.log("error mandando el mensaje?", error);
-			if (error) {
-				setTimeout(() => {
-					this.sendMessage(message);
-				}, 1000);
-			}
-		});
+		const writable = new MyWritable(this.socket);
+		writable.write(message);
 	}
 }
