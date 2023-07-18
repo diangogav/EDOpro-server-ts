@@ -1,17 +1,16 @@
-import { JoinToGame } from "../../../../room/application/JoinToGame";
-import { ReconnectToGame } from "../../../../room/application/ReconnectToGame";
+import { Auth } from "../../../../room/application/join/Auth";
+import { JoinToGameAsSpectator } from "../../../../room/application/join/JoinToGameAsSpectator";
+import { JoinToLobbyAsPlayer } from "../../../../room/application/join/JoinToLobbyAsPlayer";
+import { JoinToRoomAsSpectator } from "../../../../room/application/join/JoinToRoomAsSpectator";
+import { ReconnectToGame } from "../../../../room/application/join/ReconnectToGame";
 import { RoomFinder } from "../../../../room/application/RoomFinder";
-import { DuelState, Room } from "../../../../room/domain/Room";
 import RoomList from "../../../../room/infrastructure/RoomList";
 import { UserFinder } from "../../../../user/application/UserFinder";
-import { User } from "../../../../user/domain/User";
 import { JoinGameMessage } from "../../../client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../../client-to-server/PlayerInfoMessage";
-import { ServerInfoMessage } from "../../../domain/ServerInfoMessage";
 import { ErrorMessages } from "../../../server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../../server-to-client/ErrorClientMessage";
 import { ServerErrorClientMessage } from "../../../server-to-client/ServerErrorMessageClientMessage";
-import { ServerMessageClientMessage } from "../../../server-to-client/ServerMessageClientMessage";
 import { MessageHandlerCommandStrategy } from "../MessageHandlerCommandStrategy";
 import { MessageHandlerContext } from "../MessageHandlerContext";
 
@@ -21,7 +20,7 @@ export class JoinGameCommandStrategy implements MessageHandlerCommandStrategy {
 		private readonly userFinder: UserFinder
 	) {}
 
-	execute(): void {
+	async execute(): Promise<void> {
 		const body = this.context.readBody(this.context.messageLength());
 		const joinGameMessage = new JoinGameMessage(body);
 		const room = RoomList.getRooms().find((room) => room.id === joinGameMessage.id);
@@ -41,79 +40,41 @@ export class JoinGameCommandStrategy implements MessageHandlerCommandStrategy {
 			this.context.socket.write(ServerErrorClientMessage.create("Clave incorrecta"));
 			this.context.socket.write(ErrorClientMessage.create(ErrorMessages.JOINERROR));
 			this.context.socket.destroy();
+
+			return;
 		}
 
 		const playerInfoMessage = this.context.getPreviousMessages() as PlayerInfoMessage;
 
-		if (room.ranked) {
-			// eslint-disable-next-line @typescript-eslint/no-floating-promises
-			this.userFinder.run(playerInfoMessage).then((user) => {
-				if (!(user instanceof User)) {
-					this.context.socket.write(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
-					this.context.socket.write(
-						ServerMessageClientMessage.create(ServerInfoMessage.THIS_IS_A_RANKED_ROOM)
-					);
-					this.context.socket.write(
-						ServerMessageClientMessage.create(ServerInfoMessage.MUST_BE_LOGGED)
-					);
-					this.context.socket.write(user as Buffer);
-					this.context.socket.write(ErrorClientMessage.create(ErrorMessages.JOINERROR));
-
-					return;
-				}
-
-				this.join(room, joinGameMessage, playerInfoMessage);
-			});
-
-			return;
-		}
-
-		this.context.socket.write(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
-		this.context.socket.write(
-			ServerMessageClientMessage.create(ServerInfoMessage.THIS_IS_A_UNRANKED_ROOM)
+		const handleJoin = new JoinToRoomAsSpectator(
+			room,
+			this.context.socket,
+			playerInfoMessage,
+			joinGameMessage
 		);
-		this.context.socket.write(ServerMessageClientMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));
 
-		this.join(room, joinGameMessage, playerInfoMessage);
-
-		return;
-	}
-
-	private join(room: Room, joinGameMessage: JoinGameMessage, playerInfo: PlayerInfoMessage): void {
-		const joinToGame = new JoinToGame(this.context.socket);
-
-		const playerEntering = room.clients.find((client) => {
-			return (
-				client.socket.remoteAddress === this.context.socket.remoteAddress &&
-				playerInfo.name === client.name
-			);
-		});
-
-		if (room.duelState === DuelState.WAITING && playerEntering) {
-			this.context.socket.write(
-				ServerErrorClientMessage.create(
-					`Ya existe un jugador con el nombre :${playerEntering.name}`
+		handleJoin
+			.setNextHandler(
+				new JoinToGameAsSpectator(room, this.context.socket, playerInfoMessage, joinGameMessage)
+			)
+			.setNextHandler(new Auth(room, this.userFinder, playerInfoMessage, this.context.socket))
+			.setNextHandler(
+				new ReconnectToGame(
+					room,
+					this.context.socket,
+					playerInfoMessage,
+					joinGameMessage,
+					new RoomFinder()
 				)
+			)
+			.setNextHandler(
+				new JoinToLobbyAsPlayer(room, this.context.socket, playerInfoMessage, joinGameMessage)
 			);
-			this.context.socket.write(ErrorClientMessage.create(ErrorMessages.JOINERROR));
-			this.context.socket.destroy();
 
-			return;
+		const response = await handleJoin.tryToJoin();
+
+		if (response instanceof Buffer) {
+			this.context.socket.write(response);
 		}
-
-		if (
-			(room.duelState === DuelState.DUELING ||
-				room.duelState === DuelState.RPS ||
-				room.duelState === DuelState.CHOOSING_ORDER ||
-				room.duelState === DuelState.SIDE_DECKING) &&
-			playerEntering
-		) {
-			const reconnectToGame = new ReconnectToGame(this.context.socket, new RoomFinder());
-			reconnectToGame.run(joinGameMessage, playerInfo.name, playerEntering);
-
-			return;
-		}
-
-		joinToGame.run(joinGameMessage, playerInfo, room);
 	}
 }

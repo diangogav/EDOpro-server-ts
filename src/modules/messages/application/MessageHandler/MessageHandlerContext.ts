@@ -42,10 +42,10 @@ export class MessageHandlerContext {
 		return this.bufferReader.length;
 	}
 
-	execute(): void {
+	async execute(): Promise<void> {
 		if (!this.strategy) {
 			return;
 		}
-		this.strategy.execute();
+		await this.strategy.execute();
 	}
 }

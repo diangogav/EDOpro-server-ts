@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 import { YGOClientSocket } from "../../../../socket-server/HostServer";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { UserFinder } from "../../../user/application/UserFinder";
@@ -20,7 +21,7 @@ export class MessageHandler {
 		this.logger = logger;
 	}
 
-	read(): void {
+	async read(): Promise<void> {
 		if (this.context.isDataEmpty()) {
 			return;
 		}
@@ -32,7 +33,9 @@ export class MessageHandler {
 
 		if (command === Commands.PLAYER_INFO) {
 			this.logger.debug("PLAYER_INFO");
-			this.context.setStrategy(new PlayerInfoCommandStrategy(this.context, () => this.read()));
+			this.context.setStrategy(
+				new PlayerInfoCommandStrategy(this.context, async () => await this.read())
+			);
 		}
 
 		if (command === Commands.CREATE_GAME) {
@@ -40,7 +43,7 @@ export class MessageHandler {
 			this.context.setStrategy(
 				new CreateGameCommandStrategy(
 					this.context,
-					() => this.read(),
+					async () => await this.read(),
 					new UserFinder(new UserRedisRepository())
 				)
 			);
@@ -72,6 +75,6 @@ export class MessageHandler {
 			this.logger.debug("TIME_CONFIRM");
 		}
 
-		this.context.execute();
+		await this.context.execute();
 	}
 }

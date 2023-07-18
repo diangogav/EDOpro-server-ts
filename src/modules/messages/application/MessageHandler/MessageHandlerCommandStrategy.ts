@@ -1,3 +1,3 @@
 export interface MessageHandlerCommandStrategy {
-	execute(): void;
+	execute(): void | Promise<void>;
 }
