@@ -188,6 +188,7 @@ export class RoomMessageHandler {
 						console.log("BUFFER");
 						const cache = Number(params[0]);
 						const team = Number(params[1]);
+						console.log("team", team);
 						const location = Number(params[2]);
 						const con = Number(params[3]);
 						const bufferData = params.slice(4).map(Number);
@@ -204,6 +205,7 @@ export class RoomMessageHandler {
 
 						this.context.clients.forEach((client) => {
 							if (client.team === team) {
+								console.log(message);
 								client.sendMessage(message);
 							}
 						});
@@ -231,6 +233,8 @@ export class RoomMessageHandler {
 
 						this.context.clients.forEach((client) => {
 							if (client.team === team) {
+								console.log("team", team);
+								console.log("message", message);
 								client.sendMessage(message);
 							}
 						});
@@ -254,16 +258,19 @@ export class RoomMessageHandler {
 						const data = Buffer.from(params.slice(3, params.length).map(Number));
 
 						const message = RawClientMessage.create({ buffer: data });
+						console.log("message", message);
 
 						if (!forAllTeam) {
 							const player = this.context.clients.find(
 								(player) => player.inTurn && player.team === team
 							);
 
+							console.log("player.team", player?.team);
+
 							if (cache) {
 								player?.setLastMessage(message);
 							}
-
+							console.log("message", message);
 							player?.sendMessage(message);
 
 							return;
@@ -275,6 +282,8 @@ export class RoomMessageHandler {
 
 						this.context.clients.forEach((client) => {
 							if (client.team === team) {
+								console.log("team", team);
+								console.log("message", message);
 								client.sendMessage(message);
 							}
 						});
@@ -295,6 +304,7 @@ export class RoomMessageHandler {
 						// this.context.room.cacheMessage(1, message);
 						this.context.room.cacheTeamMessage(3, message);
 						this.context.clients.forEach((client) => {
+							console.log("message", message);
 							client.sendMessage(message);
 						});
 
@@ -317,9 +327,12 @@ export class RoomMessageHandler {
 					if (cmd === "CMD:WAITING") {
 						console.log("WAITING");
 						const nonWaitingPlayerTeam = Number(params[0]);
+						console.log("nonWaitingPlayerTeam", nonWaitingPlayerTeam);
 						const message = WaitingClientMessage.create();
 						this.context.clients.forEach((client) => {
 							if (client.team !== nonWaitingPlayerTeam) {
+								console.log("clien.team", client.team);
+								console.log("message", message);
 								client.sendMessage(message);
 							}
 						});
@@ -328,6 +341,7 @@ export class RoomMessageHandler {
 					if (cmd === "CMD:TIME") {
 						console.log("TIME");
 						const team = Number(params[0]);
+						console.log("team", team);
 						const timeLimit = Number(params[1]);
 						const message = TimeLimitClientMessage.create({
 							team: this.context.room.calculateTimeReceiver(team),
@@ -338,6 +352,7 @@ export class RoomMessageHandler {
 
 						this.context.clients.forEach((client) => {
 							this.context.room.cacheTeamMessage(client.team, message);
+							console.log("message", message);
 							client.sendMessage(message);
 						});
 
