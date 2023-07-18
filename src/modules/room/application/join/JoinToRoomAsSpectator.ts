@@ -44,7 +44,7 @@ export class JoinToRoomAsSpectator implements JoinHandler {
 			socket: this.socket,
 			host: false,
 			name: this.playerInfo.name,
-			position: 7,
+			position: this.room.spectators.length + 7,
 			roomId: this.room.id,
 			team: 3,
 		});
