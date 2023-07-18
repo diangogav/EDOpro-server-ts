@@ -69,7 +69,7 @@ void DuelMessageHandler::handle(std::vector<uint8_t> message)
   {
     uint8_t team = this->getTeamMessageReceptor(message);
     sender.sendExceptTo(this->calculateTeam(team), message);
-    break
+    break;
   }
   }
 }
