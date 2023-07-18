@@ -63,6 +63,13 @@ void DuelMessageHandler::handle(std::vector<uint8_t> message)
   {
     uint8_t team = this->getTeamMessageReceptor(message);
     messageSender.send(1, 0, calculateTeam(team), message);
+    break;
+  }
+  case MessageTargets::MSG_DIST_TYPE_EVERYONE_EXCEPT_TEAM_DUELIST:
+  {
+    uint8_t team = this->getTeamMessageReceptor(message);
+    sender.sendExceptTo(this->calculateTeam(team), message);
+    break
   }
   }
 }

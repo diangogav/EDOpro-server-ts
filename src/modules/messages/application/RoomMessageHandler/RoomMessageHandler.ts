@@ -322,6 +322,7 @@ export class RoomMessageHandler {
 								client.sendMessage(message);
 							}
 						});
+						this.context.room.cacheTeamMessage(3, message);
 					}
 
 					if (cmd === "CMD:WAITING") {
@@ -369,12 +370,12 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:LOG") {
-						// console.log("Message from core");
-						// console.log(
-						// 	params
-						// 		.map((numStr) => parseInt(numStr, 10).toString(16).toUpperCase().padStart(2, "0"))
-						// 		.join(" ")
-						// );
+						console.log("Message from core");
+						console.log(
+							params
+								.map((numStr) => parseInt(numStr, 10).toString(16).toUpperCase().padStart(2, "0"))
+								.join(" ")
+						);
 					}
 
 					if (cmd === "CMD:TURN") {
