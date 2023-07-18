@@ -95,6 +95,12 @@ export class JoinToGameAsSpectator implements JoinHandler {
 			)
 		);
 
+		[...this.room.clients, ...this.room.spectators].forEach((_client) => {
+			_client.socket.write(
+				ServerMessageClientMessage.create(`${client.name} ha ingresado como espectador`)
+			);
+		});
+
 		return null;
 	}
 }
