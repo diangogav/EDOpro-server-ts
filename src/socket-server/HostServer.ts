@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
 import net, { Socket } from "net";
 import { v4 as uuidv4 } from "uuid";
 
