@@ -203,7 +203,7 @@ export class RoomMessageHandler {
 							this.context.room.cacheTeamMessage(team, message);
 						}
 
-						this.context.clients.forEach((client) => {
+						[...this.context.clients, ...this.context.room.spectators].forEach((client) => {
 							if (client.team === team) {
 								console.log(message);
 								client.sendMessage(message);
@@ -231,7 +231,7 @@ export class RoomMessageHandler {
 							this.context.room.cacheTeamMessage(team, message);
 						}
 
-						this.context.clients.forEach((client) => {
+						[...this.context.clients, ...this.context.room.spectators].forEach((client) => {
 							if (client.team === team) {
 								console.log("team", team);
 								console.log("message", message);
