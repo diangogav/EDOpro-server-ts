@@ -21,7 +21,8 @@ export class JoinGameCommandStrategy implements MessageHandlerCommandStrategy {
 	) {}
 
 	async execute(): Promise<void> {
-		const body = this.context.readBody(this.context.messageLength());
+		// const body = this.context.readBody(this.context.messageLength());
+		const body = this.context.readBody();
 		const joinGameMessage = new JoinGameMessage(body);
 		const room = RoomList.getRooms().find((room) => room.id === joinGameMessage.id);
 
@@ -44,7 +45,10 @@ export class JoinGameCommandStrategy implements MessageHandlerCommandStrategy {
 			return;
 		}
 
-		const playerInfoMessage = this.context.getPreviousMessages() as PlayerInfoMessage;
+		const playerInfoMessage = new PlayerInfoMessage(
+			this.context.getPreviousMessages(),
+			body.length
+		);
 
 		const handleJoin = new JoinToRoomAsSpectator(
 			room,

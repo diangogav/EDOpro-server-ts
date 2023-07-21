@@ -12,19 +12,22 @@ import { MessageHandlerContext } from "../MessageHandlerContext";
 export class CreateGameCommandStrategy implements MessageHandlerCommandStrategy {
 	constructor(
 		private readonly context: MessageHandlerContext,
-		private readonly afterExecuteCallback: () => void,
 		private readonly userFinder: UserFinder
 	) {}
 
 	execute(): void {
-		const body = this.context.readBody(this.context.messageLength());
+		// const body = this.context.readBody(this.context.messageLength());
+		const body = this.context.readBody();
 		const createGameMessage = new CreateGameMessage(body);
 		const gameCreator = new GameCreator(this.context.socket);
-		const playerInfoMessage = this.context.getPreviousMessages() as PlayerInfoMessage;
+		// const playerInfoMessage = this.context.getPreviousMessages() as PlayerInfoMessage;
+		const playerInfoMessage = new PlayerInfoMessage(
+			this.context.getPreviousMessages(),
+			body.length
+		);
 
 		if (!playerInfoMessage.password) {
 			gameCreator.run(createGameMessage, playerInfoMessage);
-			this.afterExecuteCallback();
 
 			return;
 		}
@@ -37,7 +40,6 @@ export class CreateGameCommandStrategy implements MessageHandlerCommandStrategy 
 				return;
 			}
 			gameCreator.run(createGameMessage, playerInfoMessage);
-			this.afterExecuteCallback();
 		});
 	}
 }

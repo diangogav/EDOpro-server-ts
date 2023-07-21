@@ -3,6 +3,7 @@ import net, { Socket } from "net";
 import { v4 as uuidv4 } from "uuid";
 
 import { MessageHandler } from "../modules/messages/application/MessageHandler/MessageHandler";
+import { MessageProcessor } from "../modules/messages/application/MessageHandler/MessageProcessor";
 import { DisconnectHandler } from "../modules/room/application/DisconnectHandler";
 import { RecordMatch } from "../modules/room/application/RecordMatch";
 import { RoomFinder } from "../modules/room/application/RoomFinder";
@@ -36,11 +37,11 @@ export class HostServer {
 			this.address = socket.remoteAddress;
 			const ygoClientSocket = socket as YGOClientSocket;
 			ygoClientSocket.id = uuidv4();
+			const messageProcessor = new MessageProcessor();
 
-			socket.on("data", (data) => {
-				this.logger.debug(data.toString("hex"));
-				const messageHandler = new MessageHandler(data, socket, this.logger);
-				messageHandler.read();
+			socket.on("data", (data: Buffer) => {
+				messageProcessor.read(data);
+				this.handleMessage(messageProcessor, data, socket);
 			});
 
 			socket.on("close", () => {
@@ -53,6 +54,15 @@ export class HostServer {
 				disconnectHandler.run(this.address);
 			});
 		});
+	}
+
+	private handleMessage(messageProcessor: MessageProcessor, data: Buffer, socket: net.Socket) {
+		if (!messageProcessor.isMessageReady()) {
+			return;
+		}
+		messageProcessor.process();
+		new MessageHandler(messageProcessor.payload, socket, this.logger).read();
+		this.handleMessage(messageProcessor, data, socket);
 	}
 
 	private registerSubscribers(): void {

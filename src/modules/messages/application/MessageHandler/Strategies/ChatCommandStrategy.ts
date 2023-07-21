@@ -25,7 +25,8 @@ export class ChatCommandStrategy implements MessageHandlerCommandStrategy {
 			return;
 		}
 
-		const message = this.context.readBody(this.context.messageLength());
+		// const message = this.context.readBody(this.context.messageLength());
+		const message = this.context.readBody();
 		if (client.isSpectator) {
 			const chatMessage = SpectatorMessageClientMessage.create(
 				client.name.replace(/\0/g, "").trim(),

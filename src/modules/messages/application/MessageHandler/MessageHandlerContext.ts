@@ -2,45 +2,49 @@ import { YGOClientSocket } from "../../../../socket-server/HostServer";
 import { BufferReader } from "../../domain/BufferReader";
 import { Message } from "../../Message";
 import { MessageHandlerCommandStrategy } from "./MessageHandlerCommandStrategy";
+import { ClientMessage } from "./MessageProcessor";
 
 export class MessageHandlerContext {
 	readonly socket: YGOClientSocket;
-	private previousMessage: Message;
+	private readonly previousMessage: Message;
 	private strategy?: MessageHandlerCommandStrategy;
 	private readonly bufferReader: BufferReader;
+	private readonly message: ClientMessage;
 
-	constructor(data: Buffer, socket: YGOClientSocket) {
+	constructor(message: ClientMessage, socket: YGOClientSocket) {
 		this.socket = socket;
-		this.bufferReader = new BufferReader(data);
+		this.message = message;
+		// this.bufferReader = new BufferReader(data);
 	}
 
 	setStrategy(strategy: MessageHandlerCommandStrategy): void {
 		this.strategy = strategy;
 	}
 
-	getPreviousMessages(): Message {
-		return this.previousMessage;
+	getPreviousMessages(): Buffer {
+		return this.message.previousMessage;
 	}
 
-	updatePreviousMessage(message: Message): void {
-		this.previousMessage = message;
+	// updatePreviousMessage(message: Message): void {
+	// 	this.previousMessage = message;
+	// }
+
+	// readHeader(): Buffer {
+	// 	return this.bufferReader.readHeader();
+	// }
+
+	readBody(): Buffer {
+		// return this.bufferReader.readBody(maxBytesLength);
+		return this.message.data;
 	}
 
-	readHeader(): Buffer {
-		return this.bufferReader.readHeader();
-	}
+	// isDataEmpty(): boolean {
+	// 	return this.bufferReader.IsDataEmpty();
+	// }
 
-	readBody(maxBytesLength: number): Buffer {
-		return this.bufferReader.readBody(maxBytesLength);
-	}
-
-	isDataEmpty(): boolean {
-		return this.bufferReader.IsDataEmpty();
-	}
-
-	messageLength(): number {
-		return this.bufferReader.length;
-	}
+	// messageLength(): number {
+	// 	return this.bufferReader.length;
+	// }
 
 	async execute(): Promise<void> {
 		if (!this.strategy) {
