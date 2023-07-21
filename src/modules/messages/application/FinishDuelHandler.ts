@@ -26,6 +26,10 @@ export class FinishDuelHandler {
 		this.room.duel?.kill();
 		this.room.duelWinner(this.winner);
 
+		this.room.stopRoomTimer();
+		this.room.stopTimer(0);
+		this.room.stopTimer(1);
+
 		const scoreTitleMessage = ServerMessageClientMessage.create(
 			`Score: ${this.room.playerNames(0)}: ${this.room.matchScore().team0} - ${
 				this.room.matchScore().team1

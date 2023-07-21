@@ -541,6 +541,10 @@ export class Room {
 		this.roomTimer.reset();
 	}
 
+	stopRoomTimer(): void {
+		this.roomTimer.stop();
+	}
+
 	playerNames(team: number): string {
 		return this.clients
 			.filter((player) => player.team === team)
