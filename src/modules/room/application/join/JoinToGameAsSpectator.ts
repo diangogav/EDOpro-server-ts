@@ -62,8 +62,8 @@ export class JoinToGameAsSpectator implements JoinHandler {
 
 		this.room.clients.forEach((item) => {
 			const status = (item.position << 4) | 0x09;
-			item.socket.write(PlayerEnterClientMessage.create(item.name, item.position));
-			item.socket.write(PlayerChangeClientMessage.create({ status }));
+			this.socket.write(PlayerEnterClientMessage.create(item.name, item.position));
+			this.socket.write(PlayerChangeClientMessage.create({ status }));
 		});
 
 		this.socket.write(DuelStartClientMessage.create());

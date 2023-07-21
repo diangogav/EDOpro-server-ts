@@ -5,8 +5,7 @@ import { RoomMessageHandlerContext } from "../RoomMessageHandlerContext";
 export class NotReadyCommandStrategy implements RoomMessageHandlerCommandStrategy {
 	private readonly STATUS = 0xa;
 	constructor(
-		private readonly context: RoomMessageHandlerContext,
-		private readonly afterExecuteCallback: () => void
+		private readonly context: RoomMessageHandlerContext // private readonly afterExecuteCallback: () => void
 	) {}
 
 	execute(): void {
@@ -17,6 +16,6 @@ export class NotReadyCommandStrategy implements RoomMessageHandlerCommandStrateg
 		});
 
 		this.context.client.notReady();
-		this.afterExecuteCallback();
+		// this.afterExecuteCallback();
 	}
 }

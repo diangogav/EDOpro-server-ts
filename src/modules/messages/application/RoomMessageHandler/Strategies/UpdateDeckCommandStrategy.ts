@@ -13,13 +13,13 @@ import { NotReadyCommandStrategy } from "./NotReadyCommandStrategy";
 export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrategy {
 	constructor(
 		private readonly context: RoomMessageHandlerContext,
-		private readonly afterExecuteCallback: () => void,
 		private readonly deckCreator: DeckCreator
 	) {}
 
 	async execute(): Promise<void> {
-		const messageSize = new UpdateDeckMessageSizeCalculator(this.context.data).calculate();
-		const body = this.context.readBody(messageSize);
+		const messageSize = new UpdateDeckMessageSizeCalculator(this.context.readBody()).calculate();
+		const data = this.context.readBody();
+		const body = data.subarray(0, messageSize);
 		const mainAndExtraDeckSize = body.readUInt32LE(0);
 		const sizeDeckSize = body.readUint32LE(4);
 
@@ -50,14 +50,13 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 			if (hasError) {
 				this.context.client.socket.write(hasError.buffer());
 
-				new NotReadyCommandStrategy(this.context, () => {
-					/* */
-				}).execute();
+				new NotReadyCommandStrategy(this.context).execute();
 
 				return;
 			}
-			this.context.updatePreviousMessage(deck);
-			this.afterExecuteCallback();
+			// this.context.updatePreviousMessage(deck);
+			this.context.client.setDeck(deck);
+			// this.afterExecuteCallback();
 
 			return;
 		}

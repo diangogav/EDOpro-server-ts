@@ -21,7 +21,7 @@ export class RpsChoiceCommandStrategy implements RoomMessageHandlerCommandStrate
 			PAPER: 3,
 		};
 
-		const body = this.context.readBody(1).readInt8() as keyof typeof NumberToChoose;
+		const body = this.context.readBody().readInt8() as keyof typeof NumberToChoose;
 		const choise = NumberToChoose[body] as Choose;
 		const player = this.context.clients.find((client) => this.context.client === client);
 		if (!player) {
