@@ -16,6 +16,7 @@ import { UpdateDataClientMessage } from "../../server-to-client/game-messages/Up
 import { WaitingClientMessage } from "../../server-to-client/game-messages/WaitingClientMessage";
 import { ServerMessageClientMessage } from "../../server-to-client/ServerMessageClientMessage";
 import { FinishDuelHandler } from "../FinishDuelHandler";
+import { ClientMessage } from "../MessageHandler/MessageProcessor";
 import { RoomMessageHandlerContext } from "./RoomMessageHandlerContext";
 import { ChangeToDuel } from "./Strategies/ChangeToDuel";
 import { ChangeToObserver } from "./Strategies/ChangeToObserver";
@@ -28,62 +29,52 @@ import { UpdateDeckCommandStrategy } from "./Strategies/UpdateDeckCommandStrateg
 
 export class RoomMessageHandler {
 	private readonly context: RoomMessageHandlerContext;
+	private readonly message: ClientMessage;
 
-	constructor(data: Buffer, client: Client, clients: Client[], room: Room) {
+	constructor(data: ClientMessage, client: Client, clients: Client[], room: Room) {
 		this.context = new RoomMessageHandlerContext(data, client, clients, room);
+		this.message = data;
 	}
 
 	read(): void {
-		if (this.context.isDataEmpty()) {
-			return;
-		}
-		const header = this.context.readHeader();
-
-		if (header.length < 3) {
-			return;
-		}
-
-		const command = header.subarray(2, 3).readInt8();
-
-		if (command === Commands.UPDATE_DECK) {
+		if (this.message.command === Commands.UPDATE_DECK) {
 			this.context.setStrategy(
 				new UpdateDeckCommandStrategy(
 					this.context,
-					() => this.read(),
 					new DeckCreator(new CardSQLiteTYpeORMRepository(), this.context.room.deckRules)
 				)
 			);
 		}
 
-		if (command === Commands.READY) {
-			this.context.setStrategy(new ReadyCommandStrategy(this.context, () => this.read()));
+		if (this.message.command === Commands.READY) {
+			this.context.setStrategy(new ReadyCommandStrategy(this.context));
 		}
 
-		if (command === Commands.NOT_READY) {
-			this.context.setStrategy(new NotReadyCommandStrategy(this.context, () => this.read()));
+		if (this.message.command === Commands.NOT_READY) {
+			this.context.setStrategy(new NotReadyCommandStrategy(this.context));
 		}
 
-		if (command === Commands.TRY_START) {
-			this.context.setStrategy(new TryStartCommandStrategy(this.context, () => this.read()));
+		if (this.message.command === Commands.TRY_START) {
+			this.context.setStrategy(new TryStartCommandStrategy(this.context));
 		}
 
-		if (command === Commands.OBSERVER) {
-			this.context.setStrategy(new ChangeToObserver(this.context, () => this.read()));
+		if (this.message.command === Commands.OBSERVER) {
+			this.context.setStrategy(new ChangeToObserver(this.context));
 		}
-		if (command === Commands.TODUEL) {
-			this.context.setStrategy(new ChangeToDuel(this.context, () => this.read()));
-		}
-
-		if (command === Commands.KICK) {
-			this.context.setStrategy(new Kick(this.context, () => this.read()));
+		if (this.message.command === Commands.TODUEL) {
+			this.context.setStrategy(new ChangeToDuel(this.context));
 		}
 
-		if (command === Commands.RPS_CHOICE) {
+		if (this.message.command === Commands.KICK) {
+			this.context.setStrategy(new Kick(this.context));
+		}
+
+		if (this.message.command === Commands.RPS_CHOICE) {
 			this.context.setStrategy(new RpsChoiceCommandStrategy(this.context));
 		}
 
-		if (command === Commands.TURN_CHOICE) {
-			const turn = this.context.readBody(1).readInt8();
+		if (this.message.command === Commands.TURN_CHOICE) {
+			const turn = this.context.readBody().readInt8();
 			const position = this.context.room.clients.find(
 				(client) => client === this.context.client
 			)?.position;
@@ -201,7 +192,7 @@ export class RoomMessageHandler {
 							this.context.room.cacheTeamMessage(team, message);
 						}
 
-						this.context.clients.forEach((client) => {
+						[...this.context.clients, ...this.context.room.spectators].forEach((client) => {
 							if (client.team === team) {
 								client.sendMessage(message);
 							}
@@ -227,7 +218,7 @@ export class RoomMessageHandler {
 							this.context.room.cacheTeamMessage(team, message);
 						}
 
-						this.context.clients.forEach((client) => {
+						[...this.context.clients, ...this.context.room.spectators].forEach((client) => {
 							if (client.team === team) {
 								client.sendMessage(message);
 							}
@@ -342,7 +333,11 @@ export class RoomMessageHandler {
 					if (cmd === "CMD:FINISH") {
 						const reason = Number(params[0]) as DuelFinishReason;
 						const winner = Number(params[1]);
-						const duelFinisher = new FinishDuelHandler({ reason, winner, room: this.context.room });
+						const duelFinisher = new FinishDuelHandler({
+							reason,
+							winner,
+							room: this.context.room,
+						});
 						duelFinisher.run();
 					}
 

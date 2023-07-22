@@ -1,4 +1,3 @@
-import { Deck } from "../../../../deck/domain/Deck";
 import { DuelState } from "../../../../room/domain/Room";
 import { ChooseOrderClientMessage } from "../../../server-to-client/ChooseOrderClientMessage";
 import { DuelStartClientMessage } from "../../../server-to-client/DuelStartClientMessage";
@@ -12,8 +11,7 @@ export class ReadyCommandStrategy implements RoomMessageHandlerCommandStrategy {
 	private readonly STATUS = 0x09;
 
 	constructor(
-		private readonly context: RoomMessageHandlerContext,
-		private readonly afterExecuteCallback: () => void
+		private readonly context: RoomMessageHandlerContext // private readonly afterExecuteCallback: () => void
 	) {}
 
 	execute(): void {
@@ -66,12 +64,12 @@ export class ReadyCommandStrategy implements RoomMessageHandlerCommandStrategy {
 
 		const status = (this.context.client.position << 4) | this.STATUS;
 		const message = PlayerChangeClientMessage.create({ status });
-		const deck = this.context.getPreviousMessages() as Deck;
+		const deck = this.context.client.deck;
 		this.context.room.setDecksToPlayer(this.context.client.position, deck);
 		this.context.clients.forEach((client) => {
 			client.socket.write(message);
 		});
 		this.context.client.ready();
-		this.afterExecuteCallback();
+		// this.afterExecuteCallback();
 	}
 }

@@ -1,5 +1,6 @@
 import { YGOClientSocket } from "../../../socket-server/HostServer";
 import { Deck } from "../../deck/domain/Deck";
+import { MessageProcessor } from "../../messages/application/MessageHandler/MessageProcessor";
 import { RoomMessageHandler } from "../../messages/application/RoomMessageHandler/RoomMessageHandler";
 import { Choose } from "../../rock-paper-scissor/RockPaperScissor";
 import { Room } from "../../room/domain/Room";
@@ -54,9 +55,10 @@ export class Client {
 
 	setSocket(socket: YGOClientSocket, clients: Client[], room: Room): void {
 		this._socket = socket;
+		const messageProcessor = new MessageProcessor();
 		this._socket.on("data", (data) => {
-			const messageHandler = new RoomMessageHandler(data, this, clients, room);
-			messageHandler.read();
+			messageProcessor.read(data);
+			this.handleMessage(messageProcessor, clients, room);
 		});
 	}
 
@@ -161,5 +163,18 @@ export class Client {
 				}, 1000);
 			}
 		});
+	}
+
+	private handleMessage(messageProcessor: MessageProcessor, clients: Client[], room: Room) {
+		if (!messageProcessor.isMessageReady()) {
+			return;
+		}
+
+		messageProcessor.process();
+		const messageHandler = new RoomMessageHandler(messageProcessor.payload, this, clients, room);
+
+		messageHandler.read();
+
+		this.handleMessage(messageProcessor, clients, room);
 	}
 }

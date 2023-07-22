@@ -19,6 +19,12 @@ export class DisconnectHandler {
 			return;
 		}
 
+		if (room.clients.every((client) => client.socket.closed)) {
+			RoomList.deleteRoom(room);
+
+			return;
+		}
+
 		const player = room.clients.find((client) => client.socket.id === this.socket.id);
 
 		if (!player) {

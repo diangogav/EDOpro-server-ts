@@ -8,8 +8,7 @@ import { RoomMessageHandlerContext } from "../RoomMessageHandlerContext";
 export class ChangeToObserver implements RoomMessageHandlerCommandStrategy {
 	private readonly STATUS = 0x09;
 	constructor(
-		private readonly context: RoomMessageHandlerContext,
-		private readonly afterExecuteCallback: () => void
+		private readonly context: RoomMessageHandlerContext // private readonly afterExecuteCallback: () => void
 	) {}
 
 	execute(): void {

@@ -23,8 +23,9 @@ export class ResponseCommandStrategy implements MessageHandlerCommandStrategy {
 			return;
 		}
 
-		const messageLength = this.context.messageLength();
-		const message = this.context.readBody(messageLength);
+		// const messageLength = this.context.messageLength();
+		// const message = this.context.readBody(messageLength);
+		const message = this.context.readBody();
 		const data = message
 			.toString("hex")
 			.match(/.{1,2}/g)

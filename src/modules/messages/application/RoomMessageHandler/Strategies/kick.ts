@@ -9,13 +9,12 @@ import { RoomMessageHandlerContext } from "../RoomMessageHandlerContext";
 export class Kick implements RoomMessageHandlerCommandStrategy {
 	private readonly STATUS = 0x24;
 	constructor(
-		private readonly context: RoomMessageHandlerContext,
-		private readonly afterExecuteCallback: () => void
+		private readonly context: RoomMessageHandlerContext // private readonly afterExecuteCallback: () => void
 	) {}
 
 	execute(): void {
 		const ishost = this.context.client.host;
-		const positionkick = this.context.readBody(1).readInt8();
+		const positionkick = this.context.readBody().readInt8();
 		const playerselect = this.context.clients[positionkick];
 
 		if (ishost) {

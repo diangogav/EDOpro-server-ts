@@ -3,6 +3,7 @@ import { ChildProcessWithoutNullStreams } from "child_process";
 import { Client } from "../../client/domain/Client";
 import { Deck } from "../../deck/domain/Deck";
 import { FinishDuelHandler } from "../../messages/application/FinishDuelHandler";
+import { MessageProcessor } from "../../messages/application/MessageHandler/MessageProcessor";
 import { RoomMessageHandler } from "../../messages/application/RoomMessageHandler/RoomMessageHandler";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
@@ -296,9 +297,11 @@ export class Room {
 
 	addClient(client: Client): void {
 		this._clients.push(client);
+		const messageProcessor = new MessageProcessor();
+
 		client.socket.on("data", (data) => {
-			const messageHandler = new RoomMessageHandler(data, client, this._clients, this);
-			messageHandler.read();
+			messageProcessor.read(data);
+			this.handleMessage(messageProcessor, client);
 		});
 	}
 
@@ -538,6 +541,10 @@ export class Room {
 		this.roomTimer.reset();
 	}
 
+	stopRoomTimer(): void {
+		this.roomTimer.stop();
+	}
+
 	playerNames(team: number): string {
 		return this.clients
 			.filter((player) => player.team === team)
@@ -582,5 +589,23 @@ export class Room {
 
 	private getDifference(a: number[], b: number[]) {
 		return a.filter((item) => !b.includes(item));
+	}
+
+	private handleMessage(messageProcessor: MessageProcessor, client: Client) {
+		if (!messageProcessor.isMessageReady()) {
+			return;
+		}
+
+		messageProcessor.process();
+		const messageHandler = new RoomMessageHandler(
+			messageProcessor.payload,
+			client,
+			this._clients,
+			this
+		);
+
+		messageHandler.read();
+
+		this.handleMessage(messageProcessor, client);
 	}
 }

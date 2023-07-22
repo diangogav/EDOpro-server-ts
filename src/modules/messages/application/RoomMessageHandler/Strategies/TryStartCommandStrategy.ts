@@ -5,8 +5,7 @@ import { RoomMessageHandlerContext } from "../RoomMessageHandlerContext";
 
 export class TryStartCommandStrategy implements RoomMessageHandlerCommandStrategy {
 	constructor(
-		private readonly context: RoomMessageHandlerContext,
-		private readonly afterExecuteCallback: () => void
+		private readonly context: RoomMessageHandlerContext // private readonly afterExecuteCallback: () => void
 	) {}
 
 	execute(): void {
@@ -28,6 +27,6 @@ export class TryStartCommandStrategy implements RoomMessageHandlerCommandStrateg
 
 		this.context.room.initializeHistoricalData();
 		this.context.room.rps();
-		this.afterExecuteCallback();
+		// this.afterExecuteCallback();
 	}
 }
