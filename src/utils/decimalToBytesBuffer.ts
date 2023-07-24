@@ -15,9 +15,24 @@ export function decimalToBytesBufferSigned(decimal: number, numBytes: number): B
 	const buffer = Buffer.alloc(numBytes);
 	if (decimal >= 0) {
 		buffer.writeUInt32BE(decimal, 0);
-	} else {
-		buffer.writeInt32BE(decimal, 0);
+		const bytes = [...buffer].map((byte) => `0x${byte.toString(16).padStart(2, "0")}`).join(" ");
+
+		return Buffer.from(
+			bytes
+				.split(" ")
+				.reverse()
+				.map((item) => Number(item))
+		);
 	}
+	buffer.writeInt32BE(decimal, 0);
+	const bytes = [...buffer].map((byte) => `0x${byte.toString(16).padStart(2, "0")}`).join(" ");
+
+	return Buffer.from(
+		bytes
+			.split(" ")
+			.reverse()
+			.map((item) => Number(item))
+	);
 
 	return buffer;
 }

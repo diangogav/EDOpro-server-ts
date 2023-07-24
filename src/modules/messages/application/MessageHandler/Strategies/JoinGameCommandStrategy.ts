@@ -4,6 +4,7 @@ import { JoinToLobbyAsPlayer } from "../../../../room/application/join/JoinToLob
 import { JoinToRoomAsSpectator } from "../../../../room/application/join/JoinToRoomAsSpectator";
 import { ReconnectToGame } from "../../../../room/application/join/ReconnectToGame";
 import { RoomFinder } from "../../../../room/application/RoomFinder";
+import { DuelState } from "../../../../room/domain/Room";
 import RoomList from "../../../../room/infrastructure/RoomList";
 import { UserFinder } from "../../../../user/application/UserFinder";
 import { JoinGameMessage } from "../../../client-to-server/JoinGameMessage";
@@ -49,6 +50,25 @@ export class JoinGameCommandStrategy implements MessageHandlerCommandStrategy {
 			this.context.getPreviousMessages(),
 			body.length
 		);
+
+		const playerEntering = room.clients.find((client) => {
+			return (
+				client.socket.remoteAddress === this.context.socket.remoteAddress &&
+				playerInfoMessage.name === client.name
+			);
+		});
+
+		if (room.duelState === DuelState.WAITING && playerEntering) {
+			this.context.socket.write(
+				ServerErrorClientMessage.create(
+					`Ya existe un jugador con el nombre :${playerEntering.name}`
+				)
+			);
+			this.context.socket.write(ErrorClientMessage.create(ErrorMessages.JOINERROR));
+			this.context.socket.destroy();
+
+			return;
+		}
 
 		const handleJoin = new JoinToRoomAsSpectator(
 			room,

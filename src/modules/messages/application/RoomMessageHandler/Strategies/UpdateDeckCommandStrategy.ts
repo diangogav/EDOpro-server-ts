@@ -19,8 +19,11 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 	async execute(): Promise<void> {
 		const messageSize = new UpdateDeckMessageSizeCalculator(this.context.readBody()).calculate();
 		const data = this.context.readBody();
+
 		const body = data.subarray(0, messageSize);
+
 		const mainAndExtraDeckSize = body.readUInt32LE(0);
+
 		const sizeDeckSize = body.readUint32LE(4);
 
 		const mainDeck: number[] = [];
@@ -45,6 +48,7 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 				side: sideDeck,
 				banListHash: this.context.room.banlistHash,
 			});
+
 			const hasError = deck.validate();
 
 			if (hasError) {
@@ -54,9 +58,9 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 
 				return;
 			}
-			// this.context.updatePreviousMessage(deck);
+			//this.context.updatePreviousMessage(deck);
 			this.context.client.setDeck(deck);
-			// this.afterExecuteCallback();
+			//this.afterExecuteCallback();
 
 			return;
 		}
@@ -69,11 +73,13 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 
 			return;
 		}
+
 		const deck = await this.deckCreator.build({
 			main: mainDeck,
 			side: sideDeck,
 			banListHash: this.context.room.banlistHash,
 		});
+
 		this.context.room.setDecksToPlayer(position, deck);
 		const message = DuelStartClientMessage.create();
 		this.context.client.socket.write(message);

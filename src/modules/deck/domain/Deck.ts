@@ -51,6 +51,7 @@ export class Deck {
 		const handleValidations = new DeckLimitsValidationHandler(this.deckRules);
 
 		handleValidations
+
 			.setNextHandler(new ForbiddenCardValidationHandler(this.banList))
 			.setNextHandler(new SemiLimitedCardValidationHandler(this.banList))
 			.setNextHandler(new LimitedCardValidationHandler(this.banList))
