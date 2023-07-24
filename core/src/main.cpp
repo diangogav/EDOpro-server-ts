@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
 
       if (cmd == "DECKS")
       {
-        DecksSetter decksSetter{repository, duel};
+        DecksSetter decksSetter{repository, duel, isTeam1GoingFirst};
         decksSetter.run();
       }
 

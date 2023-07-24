@@ -32,8 +32,8 @@ void ZonesRefresher::refreshAllGraves(std::vector<QueryRequest> &queryRequests)
 
 void ZonesRefresher::refreshAllExtras(std::vector<QueryRequest> &queryRequests)
 {
-	queryRequests.emplace_back(QueryLocationRequest{0U, LOCATION_EXTRA, 0x3081FFF});
-	queryRequests.emplace_back(QueryLocationRequest{1U, LOCATION_EXTRA, 0x3081FFF});
+	queryRequests.emplace_back(QueryLocationRequest{0U, LOCATION_EXTRA, 0x381FFF});
+	queryRequests.emplace_back(QueryLocationRequest{1U, LOCATION_EXTRA, 0x381FFF});
 }
 
 void ZonesRefresher::refreshAllRemoved(std::vector<QueryRequest> &queryRequests)
