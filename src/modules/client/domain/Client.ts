@@ -156,13 +156,14 @@ export class Client {
 	}
 
 	sendMessage(message: Buffer): void {
-		this._socket.write(message, (error: unknown) => {
-			if (error) {
-				setTimeout(() => {
-					this.sendMessage(message);
-				}, 1000);
-			}
-		});
+		this._socket.write(message);
+		// this._socket.write(message, (error: unknown) => {
+		// 	if (error) {
+		// 		setTimeout(() => {
+		// 			this.sendMessage(message);
+		// 		}, 1000);
+		// 	}
+		// });
 	}
 
 	private handleMessage(messageProcessor: MessageProcessor, clients: Client[], room: Room) {
