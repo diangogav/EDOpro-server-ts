@@ -18,7 +18,8 @@ export class RecordMatch implements DomainEventSubscriber<GameOverDomainEvent> {
 		}
 		for (const player of event.data.players) {
 			const wins = player.games.filter((round) => round.result === "winner").length;
-			const earnedPoints = this.calculateEarnedPoints(wins);
+			const defeats = player.games.filter((round) => round.result === "loser").length;
+			const earnedPoints = this.calculateEarnedPoints(wins, defeats, player.winner);
 			await this.roomRepository.saveMatch(player.name, event.data);
 			await this.roomRepository.updatePlayerPoints(player.name, earnedPoints);
 
@@ -30,7 +31,11 @@ export class RecordMatch implements DomainEventSubscriber<GameOverDomainEvent> {
 		}
 	}
 
-	private calculateEarnedPoints(wins: number): number {
-		return Math.pow(2, wins) - 1;
+	private calculateEarnedPoints(wins: number, defeats: number, winner: boolean): number {
+		if (winner) {
+			return (wins - defeats) * 2;
+		}
+
+		return wins;
 	}
 }
