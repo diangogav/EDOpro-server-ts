@@ -548,7 +548,7 @@ export class Room {
 	playerNames(team: number): string {
 		return this.clients
 			.filter((player) => player.team === team)
-			.map((item) => item.name)
+			.map((item) => `${item.name} ${item.socket.remoteAddress ?? ""}`)
 			.join(",");
 	}
 
