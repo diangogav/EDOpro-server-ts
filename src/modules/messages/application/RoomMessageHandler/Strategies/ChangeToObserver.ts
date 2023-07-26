@@ -34,6 +34,7 @@ export class ChangeToObserver implements RoomMessageHandlerCommandStrategy {
 			});
 
 			this.context.client.spectatorPosition();
+			this.context.client.playerPosition(this.context.room.spectators.length + 1, 3);
 			this.context.client.notReady();
 			const type = (Number(this.context.client.host) << 4) | this.context.client.position;
 			this.context.client.sendMessage(TypeChangeClientMessage.create({ type }));
