@@ -36,17 +36,17 @@ export class FinishDuelHandler {
 			} ${this.room.playerNames(1)}`
 		);
 		this.room.clients.forEach((player) => {
-			player.socket.write(scoreTitleMessage);
+			player.sendMessage(scoreTitleMessage);
 		});
 
 		this.room.spectators.forEach((spectator) => {
-			spectator.socket.write(scoreTitleMessage);
+			spectator.sendMessage(scoreTitleMessage);
 		});
 
 		const replayPromptMessage = ReplayPromptMessage.create();
 
 		this.room.clients.forEach((item) => {
-			item.socket.write(replayPromptMessage);
+			item.sendMessage(replayPromptMessage);
 		});
 
 		if (this.room.isMatchFinished()) {
@@ -84,12 +84,12 @@ export class FinishDuelHandler {
 
 		this.room.setClientWhoChoosesTurn(looser);
 		this.room.clients.forEach((client) => {
-			client.socket.write(message);
+			client.sendMessage(message);
 			client.notReady();
 		});
 
 		this.room.spectators.forEach((spectator) => {
-			spectator.socket.write(SideDeckWaitClientMessage.create());
+			spectator.sendMessage(SideDeckWaitClientMessage.create());
 		});
 	}
 }

@@ -98,14 +98,14 @@ export class JoinToLobbyAsPlayer implements JoinHandler {
 	private sendJoinMessage(client: Client): void {
 		this.socket.write(JoinGameClientMessage.createFromRoom(this.message, this.room));
 		this.room.clients.forEach((_client) => {
-			_client.socket.write(PlayerEnterClientMessage.create(this.playerInfo.name, client.position));
+			_client.sendMessage(PlayerEnterClientMessage.create(this.playerInfo.name, client.position));
 		});
 	}
 
 	private sendNotReadyMessage(client: Client): void {
 		const notReady = (client.position << 4) | PlayerRoomState.NOT_READY;
 		this.room.clients.forEach((_client) => {
-			_client.socket.write(PlayerChangeClientMessage.create({ status: notReady }));
+			_client.sendMessage(PlayerChangeClientMessage.create({ status: notReady }));
 		});
 	}
 

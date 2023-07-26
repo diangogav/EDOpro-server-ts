@@ -52,7 +52,7 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 			const hasError = deck.validate();
 
 			if (hasError) {
-				this.context.client.socket.write(hasError.buffer());
+				this.context.client.sendMessage(hasError.buffer());
 
 				new NotReadyCommandStrategy(this.context).execute();
 
@@ -69,7 +69,7 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 		const player = this.context.client;
 		if (!player.deck.isSideDeckValid(mainDeck)) {
 			const message = ErrorClientMessage.create(ErrorMessages.SIDEERROR);
-			this.context.client.socket.write(message);
+			this.context.client.sendMessage(message);
 
 			return;
 		}
@@ -82,14 +82,14 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 
 		this.context.room.setDecksToPlayer(position, deck);
 		const message = DuelStartClientMessage.create();
-		this.context.client.socket.write(message);
+		this.context.client.sendMessage(message);
 		this.context.client.ready();
 
 		if (this.context.client.isReconnecting) {
-			this.context.client.socket.write(DuelStartClientMessage.create());
+			this.context.client.sendMessage(DuelStartClientMessage.create());
 			this.context.client.notReady();
 			const message = SideDeckClientMessage.create();
-			this.context.client.socket.write(message);
+			this.context.client.sendMessage(message);
 			this.context.client.clearReconnecting();
 
 			return;
@@ -105,7 +105,7 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 		}
 
 		const message = ChooseOrderClientMessage.create();
-		this.context.room.clientWhoChoosesTurn.socket.write(message);
+		this.context.room.clientWhoChoosesTurn.sendMessage(message);
 		this.context.room.choosingOrder();
 	}
 }

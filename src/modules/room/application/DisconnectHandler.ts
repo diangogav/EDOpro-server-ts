@@ -44,7 +44,7 @@ export class DisconnectHandler {
 			const status = (player.position << 4) | 0xb;
 			const message = PlayerChangeClientMessage.create({ status });
 			room.clients.forEach((client) => {
-				client.socket.write(message);
+				client.sendMessage(message);
 			});
 
 			return;
@@ -52,7 +52,7 @@ export class DisconnectHandler {
 
 		if (address) {
 			room.clients.forEach((client) => {
-				client.socket.write(
+				client.sendMessage(
 					ServerMessageClientMessage.create(
 						`${player.name.replace(/\0/g, "").trim()} ha salido del duelo`
 					)
@@ -60,7 +60,7 @@ export class DisconnectHandler {
 			});
 
 			room.spectators.forEach((spectator) => {
-				spectator.socket.write(
+				spectator.sendMessage(
 					ServerMessageClientMessage.create(
 						`${player.name.replace(/\0/g, "").trim()} ha salido del duelo`
 					)
@@ -81,11 +81,11 @@ export class DisconnectHandler {
 		});
 
 		room.clients.forEach((_client) => {
-			_client.socket.write(message);
+			_client.sendMessage(message);
 		});
 
 		room.spectators.forEach((_client) => {
-			_client.socket.write(message);
+			_client.sendMessage(message);
 		});
 	}
 }

@@ -33,11 +33,11 @@ export class ChatCommandStrategy implements MessageHandlerCommandStrategy {
 				message
 			);
 			room.clients.forEach((player) => {
-				player.socket.write(chatMessage);
+				player.sendMessage(chatMessage);
 			});
 
 			room.spectators.forEach((spectator) => {
-				spectator.socket.write(chatMessage);
+				spectator.sendMessage(chatMessage);
 			});
 
 			return;
@@ -56,11 +56,11 @@ export class ChatCommandStrategy implements MessageHandlerCommandStrategy {
 
 		room.clients.forEach((player) => {
 			const message = player.team === client.team ? playerMessage : opponentMessage;
-			player.socket.write(message);
+			player.sendMessage(message);
 		});
 
 		room.spectators.forEach((spectator) => {
-			spectator.socket.write(opponentMessage);
+			spectator.sendMessage(opponentMessage);
 		});
 	}
 }

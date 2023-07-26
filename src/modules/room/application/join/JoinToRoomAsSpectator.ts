@@ -71,11 +71,11 @@ export class JoinToRoomAsSpectator implements JoinHandler {
 		const watchMessage = WatchChangeClientMessage.create({ count: spectatorsCount });
 
 		this.room.clients.forEach((_client) => {
-			_client.socket.write(watchMessage);
+			_client.sendMessage(watchMessage);
 		});
 
 		this.room.spectators.forEach((_client) => {
-			_client.socket.write(watchMessage);
+			_client.sendMessage(watchMessage);
 		});
 
 		return null;

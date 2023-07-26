@@ -25,13 +25,13 @@ export class ChangeToDuel implements RoomMessageHandlerCommandStrategy {
 			this.context.room.removeSpectator(this.context.client);
 
 			this.context.room.clients.forEach((_client) => {
-				_client.socket.write(
+				_client.sendMessage(
 					PlayerEnterClientMessage.create(this.context.client.name, place.position)
 				);
 			});
 
 			this.context.room.spectators.forEach((_client) => {
-				_client.socket.write(
+				_client.sendMessage(
 					PlayerEnterClientMessage.create(this.context.client.name, place.position)
 				);
 			});
@@ -39,32 +39,32 @@ export class ChangeToDuel implements RoomMessageHandlerCommandStrategy {
 			this.context.room.clients.forEach((_client) => {
 				const status = (this.context.client.position << 4) | PlayerRoomState.NOT_READY;
 
-				_client.socket.write(PlayerChangeClientMessage.create({ status }));
+				_client.sendMessage(PlayerChangeClientMessage.create({ status }));
 			});
 
 			this.context.room.spectators.forEach((_client) => {
 				const status = (this.context.client.position << 4) | PlayerRoomState.NOT_READY;
 
-				_client.socket.write(PlayerChangeClientMessage.create({ status }));
+				_client.sendMessage(PlayerChangeClientMessage.create({ status }));
 			});
 
 			this.context.client.playerPosition(place.position, place.team);
 			this.context.client.notReady();
 			const type = (Number(this.context.client.host) << 4) | this.context.client.position;
-			this.context.client.socket.write(TypeChangeClientMessage.create({ type }));
+			this.context.client.sendMessage(TypeChangeClientMessage.create({ type }));
 
 			const spectatorsCount = this.context.room.spectators.length;
 			const watchMessage = WatchChangeClientMessage.create({ count: spectatorsCount });
 
 			this.context.room.clients.forEach((_client) => {
-				_client.socket.write(watchMessage);
+				_client.sendMessage(watchMessage);
 			});
 			this.context.room.clients.forEach((_client) => {
-				_client.socket.write(watchMessage);
+				_client.sendMessage(watchMessage);
 			});
 
 			this.context.room.spectators.forEach((_client) => {
-				_client.socket.write(watchMessage);
+				_client.sendMessage(watchMessage);
 			});
 		}
 	}

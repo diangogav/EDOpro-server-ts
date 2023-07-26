@@ -16,8 +16,8 @@ export class ReadyCommandStrategy implements RoomMessageHandlerCommandStrategy {
 
 	execute(): void {
 		if (this.context.client.isReconnecting && this.context.room.duelState === DuelState.DUELING) {
-			this.context.client.socket.write(DuelStartClientMessage.create());
-			this.context.client.socket.write(
+			this.context.client.sendMessage(DuelStartClientMessage.create());
+			this.context.client.sendMessage(
 				StartDuelClientMessage.create({
 					lp: this.context.room.startLp,
 					team: this.context.room.firstToPlay === this.context.client.team ? 0 : 1,
@@ -34,11 +34,11 @@ export class ReadyCommandStrategy implements RoomMessageHandlerCommandStrategy {
 		}
 
 		if (this.context.client.isReconnecting && this.context.room.duelState === DuelState.RPS) {
-			this.context.client.socket.write(DuelStartClientMessage.create());
+			this.context.client.sendMessage(DuelStartClientMessage.create());
 
 			if (!this.context.client.rpsChoise) {
 				const rpsChooseMessage = RPSChooseClientMessage.create();
-				this.context.client.socket.write(rpsChooseMessage);
+				this.context.client.sendMessage(rpsChooseMessage);
 			}
 
 			this.context.client.clearReconnecting();
@@ -50,11 +50,11 @@ export class ReadyCommandStrategy implements RoomMessageHandlerCommandStrategy {
 			this.context.client.isReconnecting &&
 			this.context.room.duelState === DuelState.CHOOSING_ORDER
 		) {
-			this.context.client.socket.write(DuelStartClientMessage.create());
+			this.context.client.sendMessage(DuelStartClientMessage.create());
 
 			if (this.context.room.clientWhoChoosesTurn.position === this.context.client.position) {
 				const message = ChooseOrderClientMessage.create();
-				this.context.room.clientWhoChoosesTurn.socket.write(message);
+				this.context.room.clientWhoChoosesTurn.sendMessage(message);
 			}
 
 			this.context.client.clearReconnecting();
@@ -67,7 +67,7 @@ export class ReadyCommandStrategy implements RoomMessageHandlerCommandStrategy {
 		const deck = this.context.client.deck;
 		this.context.room.setDecksToPlayer(this.context.client.position, deck);
 		this.context.clients.forEach((client) => {
-			client.socket.write(message);
+			client.sendMessage(message);
 		});
 		this.context.client.ready();
 		// this.afterExecuteCallback();

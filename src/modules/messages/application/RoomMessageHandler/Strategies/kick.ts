@@ -25,26 +25,26 @@ export class Kick implements RoomMessageHandlerCommandStrategy {
 			this.context.room.clients.forEach((_client) => {
 				const status = (playerselect.position << 4) | PlayerRoomState.SPECTATE;
 
-				_client.socket.write(PlayerChangeClientMessage.create({ status }));
+				_client.sendMessage(PlayerChangeClientMessage.create({ status }));
 			});
 
 			this.context.room.spectators.forEach((_client) => {
 				const status = (playerselect.position << 4) | PlayerRoomState.SPECTATE;
 
-				_client.socket.write(PlayerChangeClientMessage.create({ status }));
+				_client.sendMessage(PlayerChangeClientMessage.create({ status }));
 			});
 
 			playerselect.spectatorPosition();
 			playerselect.notReady();
 			const type = (Number(playerselect.host) << 4) | playerselect.position;
-			playerselect.socket.write(TypeChangeClientMessage.create({ type }));
+			playerselect.sendMessage(TypeChangeClientMessage.create({ type }));
 
 			const spectatorsCount = this.context.room.spectators.length;
 			const watchMessage = WatchChangeClientMessage.create({ count: spectatorsCount });
 
 			this.context.room.clients.forEach((_client) => {
-				_client.socket.write(watchMessage);
-				_client.socket.write(
+				_client.sendMessage(watchMessage);
+				_client.sendMessage(
 					ServerErrorClientMessage.create(
 						`1El Jugador:${playerselect.name} ha sido Baneado de esta Sala, solo podra ingresar como espectador!!`
 					)
@@ -52,8 +52,8 @@ export class Kick implements RoomMessageHandlerCommandStrategy {
 			});
 
 			this.context.room.spectators.forEach((_client) => {
-				_client.socket.write(watchMessage);
-				_client.socket.write(
+				_client.sendMessage(watchMessage);
+				_client.sendMessage(
 					ServerErrorClientMessage.create(
 						`1El Jugador:${playerselect.name} ha sido Baneado de esta Sala, solo podra ingresar como espectador!!`
 					)

@@ -56,18 +56,18 @@ export class RpsChoiceCommandStrategy implements RoomMessageHandlerCommandStrate
 
 		this.context.room.clients.forEach((player) => {
 			if (player.team === 0) {
-				player.socket.write(team0Response);
+				player.sendMessage(team0Response);
 			}
 		});
 
 		this.context.room.clients.forEach((player) => {
 			if (player.team === 1) {
-				player.socket.write(team1Response);
+				player.sendMessage(team1Response);
 			}
 		});
 
 		this.context.room.spectators.forEach((spectator) => {
-			spectator.socket.write(team0Response);
+			spectator.sendMessage(team0Response);
 		});
 
 		this.context.clients.forEach((client) => {
@@ -77,7 +77,7 @@ export class RpsChoiceCommandStrategy implements RoomMessageHandlerCommandStrate
 		if (result === "TIE") {
 			const rpsChooseMessage = RPSChooseClientMessage.create();
 			players.forEach((player) => {
-				player.socket.write(rpsChooseMessage);
+				player.sendMessage(rpsChooseMessage);
 			});
 
 			return;
@@ -85,7 +85,7 @@ export class RpsChoiceCommandStrategy implements RoomMessageHandlerCommandStrate
 
 		const winner = result === "PLAYER_ONE_WINNER" ? players[0] : players[1];
 
-		winner.socket.write(ChooseOrderClientMessage.create());
+		winner.sendMessage(ChooseOrderClientMessage.create());
 		this.context.room.setClientWhoChoosesTurn(winner);
 		this.context.room.choosingOrder();
 	}
