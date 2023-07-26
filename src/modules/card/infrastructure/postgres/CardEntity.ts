@@ -11,7 +11,7 @@ export class CardEntity {
 	ot: number;
 
 	@Column()
-	alias: number;
+	alias: string;
 
 	@Column()
 	setcode: number;

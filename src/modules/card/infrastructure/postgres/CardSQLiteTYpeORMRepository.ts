@@ -11,6 +11,12 @@ export class CardSQLiteTYpeORMRepository implements CardRepository {
 			return null;
 		}
 
-		return new Card({ code: card.id, type: card.type, category: card.category, variant: card.ot });
+		return new Card({
+			alias: card.alias,
+			code: card.id,
+			type: card.type,
+			category: card.category,
+			variant: card.ot,
+		});
 	}
 }

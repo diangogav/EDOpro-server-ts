@@ -16,22 +16,26 @@ export enum ScopeCode {
 	OFFICIAL = OCG | TCG | PRERELEASE,
 }
 export class Card {
+	public readonly alias: string;
 	public readonly code: string;
 	public readonly type: number;
 	public readonly category: number;
 	public readonly variant: number;
 
 	constructor({
+		alias,
 		code,
 		type,
 		category,
 		variant,
 	}: {
+		alias: string;
 		code: string;
 		type: number;
 		category: number;
 		variant: number;
 	}) {
+		this.alias = alias;
 		this.code = code;
 		this.type = type;
 		this.category = category;

@@ -28,7 +28,13 @@ export class AvailableCardValidationHandler implements DeckValidationHandler {
 
 		if (availableCards.length > 0) {
 			for (const card of deck.allCards) {
-				if (!availableCards.find((availableCard) => availableCard === Number(card.code))) {
+				if (
+					!availableCards.find(
+						(availableCard) =>
+							availableCard === Number(card.code) ||
+							(Number(card.alias) !== 0 && availableCard === Number(card.alias))
+					)
+				) {
 					return new UnknownCardError(Number(card.code));
 				}
 			}
