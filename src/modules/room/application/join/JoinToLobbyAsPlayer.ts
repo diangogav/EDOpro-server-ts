@@ -11,6 +11,7 @@ import { PlayerChangeClientMessage } from "../../../messages/server-to-client/Pl
 import { PlayerEnterClientMessage } from "../../../messages/server-to-client/PlayerEnterClientMessage";
 import { ServerMessageClientMessage } from "../../../messages/server-to-client/ServerMessageClientMessage";
 import { TypeChangeClientMessage } from "../../../messages/server-to-client/TypeChangeClientMessage";
+import { WatchChangeClientMessage } from "../../../messages/server-to-client/WatchChangeClientMessage";
 import { PlayerRoomState } from "../../domain/PlayerRoomState";
 import { DuelState, Room } from "../../domain/Room";
 import { JoinHandler } from "./JoinHandler";
@@ -67,6 +68,9 @@ export class JoinToLobbyAsPlayer implements JoinHandler {
 		this.sendNotReadyMessage(client);
 		this.sendTypeChangeMessage(client);
 		this.sendTypeChangeMessage(client);
+		const spectatorsCount = this.room.spectators.length;
+		const watchMessage = WatchChangeClientMessage.create({ count: spectatorsCount });
+		this.socket.write(watchMessage);
 
 		const host = this.room.clients.find((client) => client.host);
 
@@ -100,11 +104,19 @@ export class JoinToLobbyAsPlayer implements JoinHandler {
 		this.room.clients.forEach((_client) => {
 			_client.sendMessage(PlayerEnterClientMessage.create(this.playerInfo.name, client.position));
 		});
+
+		this.room.spectators.forEach((_client) => {
+			_client.sendMessage(PlayerEnterClientMessage.create(this.playerInfo.name, client.position));
+		});
 	}
 
 	private sendNotReadyMessage(client: Client): void {
 		const notReady = (client.position << 4) | PlayerRoomState.NOT_READY;
 		this.room.clients.forEach((_client) => {
+			_client.sendMessage(PlayerChangeClientMessage.create({ status: notReady }));
+		});
+
+		this.room.spectators.forEach((_client) => {
 			_client.sendMessage(PlayerChangeClientMessage.create({ status: notReady }));
 		});
 	}
