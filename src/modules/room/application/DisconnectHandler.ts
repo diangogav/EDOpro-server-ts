@@ -43,8 +43,13 @@ export class DisconnectHandler {
 			room.removePlayer(player);
 			const status = (player.position << 4) | 0xb;
 			const message = PlayerChangeClientMessage.create({ status });
+
 			room.clients.forEach((client) => {
 				client.sendMessage(message);
+			});
+
+			room.spectators.forEach((spectator) => {
+				spectator.sendMessage(message);
 			});
 
 			return;

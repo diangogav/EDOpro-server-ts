@@ -49,6 +49,10 @@ export class ReconnectToGame implements JoinHandler {
 			return this.nextHandler?.tryToJoin() ?? null;
 		}
 
+		if (!reconnectingClient.socket.closed) {
+			return this.nextHandler?.tryToJoin() ?? null;
+		}
+
 		const room = this.roomFinder.run(reconnectingClient.socket.id);
 
 		if (!room) {
