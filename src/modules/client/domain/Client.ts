@@ -140,6 +140,7 @@ export class Client {
 
 	spectatorPosition(): void {
 		this._position = 7;
+		this._team = 3;
 	}
 
 	get position(): number {
