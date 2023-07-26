@@ -17,11 +17,7 @@ export class GameCreator {
 	private readonly HOST_CLIENT = 0x10;
 	constructor(private readonly socket: net.Socket) {}
 	run(message: CreateGameMessage, playerInfo: PlayerInfoMessage): void {
-		const room = Room.createFromCreateGameMessage(
-			message,
-			playerInfo,
-			RoomList.getRooms().length + 1
-		);
+		const room = Room.createFromCreateGameMessage(message, playerInfo, this.generateUniqueId());
 		const client = new Client({
 			socket: this.socket,
 			host: true,
@@ -57,5 +53,12 @@ export class GameCreator {
 			ServerMessageClientMessage.create(ServerInfoMessage.UNRANKED_ROOM_CREATION_SUCCESS)
 		);
 		this.socket.write(ServerMessageClientMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));
+	}
+
+	private generateUniqueId(): number {
+		const min = 1000;
+		const max = 9999;
+
+		return Math.floor(Math.random() * (max - min + 1)) + min;
 	}
 }
