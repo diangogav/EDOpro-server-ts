@@ -156,7 +156,7 @@ export class Client {
 	}
 
 	sendMessage(message: Buffer): void {
-		this.sendMessage(message);
+		this._socket.write(message);
 		// if (this.isReconnecting) {
 		// 	return;
 		// }
