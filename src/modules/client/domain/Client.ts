@@ -156,17 +156,18 @@ export class Client {
 	}
 
 	sendMessage(message: Buffer): void {
-		if (this.isReconnecting) {
-			return;
-		}
+		this.sendMessage(message);
+		// if (this.isReconnecting) {
+		// 	return;
+		// }
 
-		this._socket.write(message, (error: unknown) => {
-			if (error) {
-				setTimeout(() => {
-					this.sendMessage(message);
-				}, 1000);
-			}
-		});
+		// this._socket.write(message, (error: unknown) => {
+		// 	if (error) {
+		// 		setTimeout(() => {
+		// 			this.sendMessage(message);
+		// 		}, 1000);
+		// 	}
+		// });
 	}
 
 	private handleMessage(messageProcessor: MessageProcessor, clients: Client[], room: Room) {
