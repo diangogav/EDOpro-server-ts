@@ -223,8 +223,8 @@ int main(int argc, char *argv[])
 
           if (queryLocationRequest.loc == LOCATION_EXTRA)
           {
-            refreshMessageSender.send(reconnectingTeam, team, queryLocationRequest.loc, queryLocationRequest.con, buffer);
-            continue;
+            // refreshMessageSender.send(reconnectingTeam, team, queryLocationRequest.loc, queryLocationRequest.con, buffer);
+            // continue;
           }
 
           const auto queries = deserializer.deserializeLocationQuery(buffer);
