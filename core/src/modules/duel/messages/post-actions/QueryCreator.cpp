@@ -93,7 +93,7 @@ std::vector<QueryRequest> QueryCreator::run(const std::vector<uint8_t> &message)
   if (messageType == MSG_SWAP_GRAVE_DECK)
   {
     auto player = Read<uint8_t>(ptr);
-    queryRequests.emplace_back(QueryLocationRequest{player, LOCATION_GRAVE, 0x3981FFF});
+    queryRequests.emplace_back(QueryLocationRequest{player, LOCATION_GRAVE, 0x381FFF});
   }
 
   if (messageType == MSG_REVERSE_DECK)
