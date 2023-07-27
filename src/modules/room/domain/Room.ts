@@ -552,6 +552,12 @@ export class Room {
 			.join(",");
 	}
 
+	nextSpectatorPosition(): number {
+		const sorted = [...this.spectators].sort((a, b) => b.position - a.position);
+
+		return (sorted[0]?.position ?? 7) + 1;
+	}
+
 	toPresentation(): { [key: string]: unknown } {
 		return {
 			roomid: this.id,

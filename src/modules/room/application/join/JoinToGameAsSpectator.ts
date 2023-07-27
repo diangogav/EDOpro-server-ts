@@ -31,7 +31,12 @@ export class JoinToGameAsSpectator implements JoinHandler {
 	}
 
 	async tryToJoin(): Promise<ErrorClientMessage | null> {
-		if (this.room.duelState !== DuelState.DUELING) {
+		if (
+			this.room.duelState !== DuelState.DUELING &&
+			this.room.duelState !== DuelState.CHOOSING_ORDER &&
+			this.room.duelState !== DuelState.RPS &&
+			this.room.duelState !== DuelState.SIDE_DECKING
+		) {
 			return this.nextHandler?.tryToJoin() ?? null;
 		}
 
@@ -50,7 +55,7 @@ export class JoinToGameAsSpectator implements JoinHandler {
 			socket: this.socket,
 			host: false,
 			name: this.playerInfo.name,
-			position: this.room.spectators.length + 7,
+			position: this.room.nextSpectatorPosition(),
 			roomId: this.room.id,
 			team: 3,
 		});

@@ -138,8 +138,8 @@ export class Client {
 		return this._team === 3;
 	}
 
-	spectatorPosition(): void {
-		this._position = 7;
+	spectatorPosition(position: number): void {
+		this._position = position;
 		this._team = 3;
 	}
 

@@ -34,7 +34,7 @@ export class Kick implements RoomMessageHandlerCommandStrategy {
 				_client.sendMessage(PlayerChangeClientMessage.create({ status }));
 			});
 
-			playerselect.spectatorPosition();
+			playerselect.spectatorPosition(this.context.room.nextSpectatorPosition());
 			playerselect.notReady();
 			const type = (Number(playerselect.host) << 4) | playerselect.position;
 			playerselect.sendMessage(TypeChangeClientMessage.create({ type }));
