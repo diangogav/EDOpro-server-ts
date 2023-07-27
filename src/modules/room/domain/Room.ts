@@ -446,6 +446,45 @@ export class Room {
 		return this._firstToPlay;
 	}
 
+	nextAvailablePosition(position: number): { position: number; team: number } | null {
+		const positions = [...this.t1Positions, ...this.t0Positions].sort((a, b) => a - b);
+		const ocuppiedPositions = this.clients.map((client) => client.position);
+		const difference = this.getDifference(positions, ocuppiedPositions);
+		if (difference.length === 0) {
+			return null;
+		}
+
+		const nextPositions = difference.filter((item) => item > position);
+
+		if (nextPositions.length > 0) {
+			const isTeam0 = this.t0Positions.find((pos) => pos === nextPositions[0]);
+			if (isTeam0 !== undefined) {
+				return {
+					position: nextPositions[0],
+					team: 0,
+				};
+			}
+
+			return {
+				position: nextPositions[0],
+				team: 1,
+			};
+		}
+
+		const isTeam0 = this.t0Positions.find((pos) => pos === positions[0]);
+		if (isTeam0 !== undefined) {
+			return {
+				position: difference[0],
+				team: 0,
+			};
+		}
+
+		return {
+			position: difference[0],
+			team: 1,
+		};
+	}
+
 	calculaPlace(): { position: number; team: number } | null {
 		const team0 = this.clients
 			.filter((client) => client.team === 0)

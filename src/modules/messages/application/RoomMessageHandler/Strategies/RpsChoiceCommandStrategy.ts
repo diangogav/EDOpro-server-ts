@@ -23,13 +23,13 @@ export class RpsChoiceCommandStrategy implements RoomMessageHandlerCommandStrate
 
 		const body = this.context.readBody().readInt8() as keyof typeof NumberToChoose;
 		const choise = NumberToChoose[body] as Choose;
-		const player = this.context.clients.find((client) => this.context.client === client);
+		const player = this.context.room.clients.find((client) => this.context.client === client);
 		if (!player) {
 			return;
 		}
 		player.setRpsChosen(choise);
 
-		const players = this.context.clients.filter((client) => client.rpsChoise !== null);
+		const players = this.context.room.clients.filter((client) => client.rpsChoise !== null);
 
 		if (players.length < 2) {
 			return;
@@ -70,7 +70,7 @@ export class RpsChoiceCommandStrategy implements RoomMessageHandlerCommandStrate
 			spectator.sendMessage(team0Response);
 		});
 
-		this.context.clients.forEach((client) => {
+		this.context.room.clients.forEach((client) => {
 			client.clearRpsChoise();
 		});
 

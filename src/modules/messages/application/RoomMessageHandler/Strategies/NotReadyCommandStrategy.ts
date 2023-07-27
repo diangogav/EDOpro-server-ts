@@ -11,7 +11,7 @@ export class NotReadyCommandStrategy implements RoomMessageHandlerCommandStrateg
 	execute(): void {
 		const status = (this.context.client.position << 4) | this.STATUS;
 		const message = PlayerChangeClientMessage.create({ status });
-		[...this.context.room.spectators, ...this.context.clients].forEach((client) => {
+		[...this.context.room.spectators, ...this.context.room.clients].forEach((client) => {
 			client.sendMessage(message);
 		});
 

@@ -59,7 +59,7 @@ export class JoinToRoomAsSpectator implements JoinHandler {
 
 		this.room.clients.forEach((_client) => {
 			if (_client.socket.id !== client.socket.id) {
-				const status = this.room.clients[_client.position].isReady
+				const status = this.room.clients.find((item) => item.position === _client.position)?.isReady
 					? (_client.position << 4) | PlayerRoomState.READY
 					: (_client.position << 4) | PlayerRoomState.NOT_READY;
 

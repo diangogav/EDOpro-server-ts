@@ -7,16 +7,14 @@ import { RoomMessageHandlerCommandStrategy } from "./RoomMessageHandlerCommandSt
 
 export class RoomMessageHandlerContext {
 	readonly client: Client;
-	readonly clients: Client[];
 	readonly room: Room;
 	private strategy?: RoomMessageHandlerCommandStrategy;
 	private readonly bufferReader: BufferReader;
 	private readonly previousMessage: Message;
 	private readonly message: ClientMessage;
 
-	constructor(message: ClientMessage, client: Client, clients: Client[], room: Room) {
+	constructor(message: ClientMessage, client: Client, room: Room) {
 		this.client = client;
-		this.clients = clients;
 		this.room = room;
 		this.message = message;
 		// this.bufferReader = new BufferReader(data);

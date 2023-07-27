@@ -99,7 +99,7 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 	}
 
 	private startDuel(): void {
-		const allClientsNotReady = this.context.clients.some((client) => !client.isReady);
+		const allClientsNotReady = this.context.room.clients.some((client) => !client.isReady);
 		if (allClientsNotReady) {
 			return;
 		}

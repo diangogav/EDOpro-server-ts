@@ -32,7 +32,7 @@ export class RoomMessageHandler {
 	private readonly message: ClientMessage;
 
 	constructor(data: ClientMessage, client: Client, clients: Client[], room: Room) {
-		this.context = new RoomMessageHandlerContext(data, client, clients, room);
+		this.context = new RoomMessageHandlerContext(data, client, room);
 		this.message = data;
 	}
 
@@ -88,7 +88,7 @@ export class RoomMessageHandler {
 			}
 
 			this.context.room.prepareTurnOrder();
-			const players = this.context.clients.map((item) => ({
+			const players = this.context.room.clients.map((item) => ({
 				team: item.team,
 				mainDeck: item.deck.main.map((card) => Number(card.code)),
 				sideDeck: item.deck.side.map((card) => Number(card.code)),
@@ -133,7 +133,7 @@ export class RoomMessageHandler {
 					const params = commandParts.slice(1);
 
 					if (cmd === "CMD:START") {
-						this.context.room.startRoomTimer();
+						// this.context.room.startRoomTimer();
 						const playerGameMessage = StartDuelClientMessage.create({
 							lp: this.context.room.startLp,
 							team: Number(isTeam1GoingFirst) ^ 0,
@@ -155,13 +155,13 @@ export class RoomMessageHandler {
 						this.context.room.setPlayerDecksSize(Number(params[0]), Number(params[1]));
 						this.context.room.setPlayerDecksSize(Number(params[2]), Number(params[3]));
 
-						this.context.clients.forEach((client) => {
+						this.context.room.clients.forEach((client) => {
 							if (client.team === 0) {
 								client.sendMessage(playerGameMessage);
 							}
 						});
 
-						this.context.clients.forEach((client) => {
+						this.context.room.clients.forEach((client) => {
 							if (client.team === 1) {
 								client.sendMessage(opponentGameMessage);
 							}
@@ -192,7 +192,7 @@ export class RoomMessageHandler {
 							this.context.room.cacheTeamMessage(team, message);
 						}
 
-						[...this.context.clients, ...this.context.room.spectators].forEach((client) => {
+						[...this.context.room.clients, ...this.context.room.spectators].forEach((client) => {
 							if (client.team === team) {
 								client.sendMessage(message);
 							}
@@ -218,7 +218,7 @@ export class RoomMessageHandler {
 							this.context.room.cacheTeamMessage(team, message);
 						}
 
-						[...this.context.clients, ...this.context.room.spectators].forEach((client) => {
+						[...this.context.room.clients, ...this.context.room.spectators].forEach((client) => {
 							if (client.team === team) {
 								client.sendMessage(message);
 							}
@@ -244,7 +244,7 @@ export class RoomMessageHandler {
 						const message = RawClientMessage.create({ buffer: data });
 
 						if (!forAllTeam) {
-							const player = this.context.clients.find(
+							const player = this.context.room.clients.find(
 								(player) => player.inTurn && player.team === team
 							);
 
@@ -261,7 +261,7 @@ export class RoomMessageHandler {
 							this.context.room.cacheTeamMessage(team, message);
 						}
 
-						this.context.clients.forEach((client) => {
+						this.context.room.clients.forEach((client) => {
 							if (client.team === team) {
 								client.sendMessage(message);
 							}
@@ -280,7 +280,7 @@ export class RoomMessageHandler {
 						// this.context.room.cacheMessage(0, message);
 						// this.context.room.cacheMessage(1, message);
 						this.context.room.cacheTeamMessage(3, message);
-						this.context.clients.forEach((client) => {
+						this.context.room.clients.forEach((client) => {
 							client.sendMessage(message);
 						});
 
@@ -293,7 +293,7 @@ export class RoomMessageHandler {
 						const team = Number(params[0]);
 						const data = Buffer.from(params.slice(1).map(Number));
 						const message = BroadcastClientMessage.create({ buffer: data });
-						this.context.clients.forEach((client) => {
+						this.context.room.clients.forEach((client) => {
 							if (client.team !== team) {
 								client.sendMessage(message);
 							}
@@ -303,7 +303,7 @@ export class RoomMessageHandler {
 					if (cmd === "CMD:WAITING") {
 						const nonWaitingPlayerTeam = Number(params[0]);
 						const message = WaitingClientMessage.create();
-						this.context.clients.forEach((client) => {
+						this.context.room.clients.forEach((client) => {
 							if (client.team !== nonWaitingPlayerTeam) {
 								client.sendMessage(message);
 							}
@@ -320,7 +320,7 @@ export class RoomMessageHandler {
 
 						this.context.room.resetTimer(team, timeLimit);
 
-						this.context.clients.forEach((client) => {
+						this.context.room.clients.forEach((client) => {
 							this.context.room.cacheTeamMessage(client.team, message);
 							client.sendMessage(message);
 						});
@@ -354,7 +354,7 @@ export class RoomMessageHandler {
 						this.context.room.increaseTurn();
 						this.context.room.resetTimer(0, this.context.room.timeLimit * 1000);
 						this.context.room.resetTimer(1, this.context.room.timeLimit * 1000);
-						this.context.room.resetRoomTimer();
+						// this.context.room.resetRoomTimer();
 					}
 
 					if (cmd === "CMD:FIELD") {
@@ -368,7 +368,7 @@ export class RoomMessageHandler {
 						const data = Buffer.concat([type, buffer]);
 						const size = decimalToBytesBuffer(1 + data.length, 2);
 						const message = Buffer.concat([size, header, data]);
-						const player = this.context.clients.find((player) => player.position === position);
+						const player = this.context.room.clients.find((player) => player.position === position);
 						if (!player) {
 							return;
 						}
@@ -377,6 +377,7 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:REFRESH") {
+						console.log("REFRESH", params);
 						if (params.length === 0) {
 							return;
 						}
@@ -392,11 +393,7 @@ export class RoomMessageHandler {
 							buffer,
 						});
 
-						if (team !== reconnectingTeam) {
-							return;
-						}
-
-						this.context.clients.forEach((client) => {
+						[...this.context.room.clients, ...this.context.room.spectators].forEach((client) => {
 							if (client.team === team) {
 								client.sendMessage(message);
 							}
@@ -407,7 +404,7 @@ export class RoomMessageHandler {
 						const _team = Number(params[0]);
 						const position = Number(params[1]);
 
-						const player = this.context.clients.find((player) => player.position === position);
+						const player = this.context.room.clients.find((player) => player.position === position);
 
 						if (!player) {
 							return;

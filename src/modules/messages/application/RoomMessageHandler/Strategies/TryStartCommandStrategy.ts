@@ -10,7 +10,7 @@ export class TryStartCommandStrategy implements RoomMessageHandlerCommandStrateg
 
 	execute(): void {
 		const duelStartMessage = DuelStartClientMessage.create();
-		this.context.clients.forEach((client) => {
+		this.context.room.clients.forEach((client) => {
 			client.sendMessage(duelStartMessage);
 		});
 
@@ -18,8 +18,8 @@ export class TryStartCommandStrategy implements RoomMessageHandlerCommandStrateg
 			client.sendMessage(duelStartMessage);
 		});
 
-		const t0Client = this.context.clients.filter((_client) => _client.team === 0)[0];
-		const t1Client = this.context.clients.filter((_client) => _client.team === 1)[0];
+		const t0Client = this.context.room.clients.filter((_client) => _client.team === 0)[0];
+		const t1Client = this.context.room.clients.filter((_client) => _client.team === 1)[0];
 
 		const rpsChooseMessage = RPSChooseClientMessage.create();
 		t0Client.sendMessage(rpsChooseMessage);

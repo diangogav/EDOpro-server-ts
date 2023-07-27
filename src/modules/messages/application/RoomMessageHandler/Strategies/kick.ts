@@ -15,7 +15,7 @@ export class Kick implements RoomMessageHandlerCommandStrategy {
 	execute(): void {
 		const ishost = this.context.client.host;
 		const positionkick = this.context.readBody().readInt8();
-		const playerselect = this.context.clients[positionkick];
+		const playerselect = this.context.room.clients[positionkick];
 
 		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 		if (!playerselect) {

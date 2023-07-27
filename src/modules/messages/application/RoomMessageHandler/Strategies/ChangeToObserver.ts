@@ -12,14 +12,18 @@ export class ChangeToObserver implements RoomMessageHandlerCommandStrategy {
 	) {}
 
 	execute(): void {
+		if (this.context.client.isSpectator) {
+			return;
+		}
+
 		const player = this.context.client.name;
 		const ishost = this.context.client.host;
 
 		if (!ishost) {
-			if (!this.context.room.spectators.find((spectator) => spectator.name === player)) {
-				this.context.room.addSpectator(this.context.client);
-				this.context.room.removePlayer(this.context.client);
-			}
+			const place = this.context.room.nextSpectatorPosition();
+			this.context.room.removePlayer(this.context.client);
+
+			this.context.room.addSpectator(this.context.client);
 
 			this.context.room.clients.forEach((_client) => {
 				const status = (this.context.client.position << 4) | PlayerRoomState.SPECTATE;
@@ -33,8 +37,9 @@ export class ChangeToObserver implements RoomMessageHandlerCommandStrategy {
 				_client.sendMessage(PlayerChangeClientMessage.create({ status }));
 			});
 
-			this.context.client.spectatorPosition(this.context.room.nextSpectatorPosition());
+			this.context.client.spectatorPosition(place);
 			this.context.client.notReady();
+
 			const type = (Number(this.context.client.host) << 4) | this.context.client.position;
 			this.context.client.sendMessage(TypeChangeClientMessage.create({ type }));
 
