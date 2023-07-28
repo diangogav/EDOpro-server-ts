@@ -168,9 +168,9 @@ export class RoomMessageHandler {
 						});
 
 						this.context.room.clearSpectatorCache();
-						this.context.room.cacheTeamMessage(3, opponentGameMessage);
+						this.context.room.cacheTeamMessage(3, playerGameMessage);
 						this.context.room.spectators.forEach((spectator) => {
-							spectator.sendMessage(opponentGameMessage);
+							spectator.sendMessage(playerGameMessage);
 						});
 						core.stdin.write("CMD:DECKS\n");
 					}
