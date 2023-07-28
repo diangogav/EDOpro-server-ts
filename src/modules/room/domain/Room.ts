@@ -120,12 +120,12 @@ export class Room {
 	public readonly noCheck: boolean;
 	public readonly noShuffle: boolean;
 	public readonly banlistHash: number;
-	public readonly isStart: string;
 	public readonly deckRules: DeckRules;
 	public readonly duelRule: number;
 	public readonly handshake: number;
 	public readonly password: string;
 	public readonly ranked: boolean;
+	private isStart: string;
 	private _spectatorCache: Buffer[] = [];
 	private _clients: Client[] = [];
 	private _spectators: Client[] = [];
@@ -343,6 +343,7 @@ export class Room {
 
 	dueling(): void {
 		this._state = DuelState.DUELING;
+		this.isStart = "start";
 	}
 
 	sideDecking(): void {
