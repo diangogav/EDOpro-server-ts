@@ -80,9 +80,22 @@ export class FinishDuelHandler {
 
 		this.room.sideDecking();
 
-		const looser = this.room.clients[Number(!this.winner)];
+		if (this.winner === 0) {
+			const looser = this.room.clients.find(
+				(_client) => _client.position % this.room.team1 === 0 && _client.team === 1
+			);
+			if (looser) {
+				this.room.setClientWhoChoosesTurn(looser);
+			}
+		} else {
+			const looser = this.room.clients.find(
+				(_client) => _client.position % this.room.team0 === 0 && _client.team === 0
+			);
+			if (looser) {
+				this.room.setClientWhoChoosesTurn(looser);
+			}
+		}
 
-		this.room.setClientWhoChoosesTurn(looser);
 		this.room.clients.forEach((client) => {
 			client.sendMessage(message);
 			client.notReady();

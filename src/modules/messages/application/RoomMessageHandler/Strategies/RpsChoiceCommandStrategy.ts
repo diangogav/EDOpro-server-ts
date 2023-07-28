@@ -83,7 +83,19 @@ export class RpsChoiceCommandStrategy implements RoomMessageHandlerCommandStrate
 			return;
 		}
 
-		const winner = result === "PLAYER_ONE_WINNER" ? players[0] : players[1];
+		const player0Turn = this.context.room.clients.find(
+			(_client) => _client.position % this.context.room.team0 === 0 && _client.team === 0
+		);
+
+		const player1Turn = this.context.room.clients.find(
+			(_client) => _client.position % this.context.room.team1 === 0 && _client.team === 1
+		);
+
+		if (!player0Turn || !player1Turn) {
+			return;
+		}
+
+		const winner = result === "PLAYER_ONE_WINNER" ? player0Turn : player1Turn;
 
 		winner.sendMessage(ChooseOrderClientMessage.create());
 		this.context.room.setClientWhoChoosesTurn(winner);

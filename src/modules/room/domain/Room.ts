@@ -517,16 +517,29 @@ export class Room {
 
 	prepareTurnOrder(): void {
 		const team0Players = this.clients.filter((player) => player.team === 0);
-
-		team0Players.forEach((item) => {
-			item.setDuelPosition(item.position % this.team0);
-		});
-
 		const team1Players = this.clients.filter((player) => player.team === 1);
 
-		team1Players.forEach((item) => {
-			item.setDuelPosition(item.position % this.team1);
-		});
+		if (this.firstToPlay === 0) {
+			team0Players.forEach((item) => {
+				item.setDuelPosition(item.position % this.team0);
+				item.clearTurn();
+			});
+
+			team1Players.forEach((item, index) => {
+				item.setDuelPosition((team1Players.length - index - 1) % this.team1);
+				item.clearTurn();
+			});
+		} else {
+			team0Players.forEach((item, index) => {
+				item.setDuelPosition((team0Players.length - index - 1) % this.team0);
+				item.clearTurn();
+			});
+
+			team1Players.forEach((item) => {
+				item.setDuelPosition(item.position % this.team1);
+				item.clearTurn();
+			});
+		}
 
 		const team0Player = team0Players.find((player) => player.duelPosition === 0);
 		team0Player?.turn();

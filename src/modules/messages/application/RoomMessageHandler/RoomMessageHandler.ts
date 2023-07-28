@@ -75,11 +75,9 @@ export class RoomMessageHandler {
 
 		if (this.message.command === Commands.TURN_CHOICE) {
 			const turn = this.context.readBody().readInt8();
-			const position = this.context.room.clients.find(
-				(client) => client === this.context.client
-			)?.position;
+			const team = this.context.room.clients.find((client) => client === this.context.client)?.team;
 
-			const isTeam1GoingFirst = (position === 0 && turn === 0) || (position === 1 && turn === 1);
+			const isTeam1GoingFirst = (team === 0 && turn === 0) || (team === 1 && turn === 1);
 
 			if (isTeam1GoingFirst) {
 				this.context.room.setFirstToPlay(1);
