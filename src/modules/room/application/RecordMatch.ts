@@ -33,7 +33,7 @@ export class RecordMatch implements DomainEventSubscriber<GameOverDomainEvent> {
 
 	private calculateEarnedPoints(wins: number, defeats: number, winner: boolean): number {
 		if (winner) {
-			return (wins - defeats) * 2;
+			return wins + (wins - defeats);
 		}
 
 		return wins;
