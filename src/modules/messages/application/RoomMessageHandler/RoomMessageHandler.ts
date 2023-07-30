@@ -375,7 +375,6 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:REFRESH") {
-						console.log("REFRESH", params);
 						if (params.length === 0) {
 							return;
 						}
