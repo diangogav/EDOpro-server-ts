@@ -150,6 +150,15 @@ export class RoomMessageHandler {
 							opponentExtraDeckSize: Number(params[3]),
 						});
 
+						const spectatorGameMessage = StartDuelClientMessage.create({
+							lp: this.context.room.startLp,
+							team: 0xf0 | Number(isTeam1GoingFirst),
+							playerMainDeckSize: Number(params[0]),
+							playerExtraDeckSize: Number(params[1]),
+							opponentMainDeckSize: Number(params[2]),
+							opponentExtraDeckSize: Number(params[3]),
+						});
+
 						this.context.room.setPlayerDecksSize(Number(params[0]), Number(params[1]));
 						this.context.room.setPlayerDecksSize(Number(params[2]), Number(params[3]));
 
@@ -166,9 +175,9 @@ export class RoomMessageHandler {
 						});
 
 						this.context.room.clearSpectatorCache();
-						this.context.room.cacheTeamMessage(3, playerGameMessage);
+						this.context.room.cacheTeamMessage(3, spectatorGameMessage);
 						this.context.room.spectators.forEach((spectator) => {
-							spectator.sendMessage(playerGameMessage);
+							spectator.sendMessage(spectatorGameMessage);
 						});
 						core.stdin.write("CMD:DECKS\n");
 					}
@@ -378,7 +387,7 @@ export class RoomMessageHandler {
 						if (params.length === 0) {
 							return;
 						}
-						const reconnectingTeam = Number(params[0]);
+						// const reconnectingTeam = Number(params[0]);
 						const team = Number(params[1]);
 						const location = Number(params[2]);
 						const con = Number(params[3]);

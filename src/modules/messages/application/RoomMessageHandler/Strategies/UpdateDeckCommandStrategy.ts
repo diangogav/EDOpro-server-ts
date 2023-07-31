@@ -95,6 +95,9 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 			return;
 		}
 
+		this.context.room.spectators.forEach((spectator) => {
+			spectator.sendMessage(message);
+		});
 		this.startDuel();
 	}
 

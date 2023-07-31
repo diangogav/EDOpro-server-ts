@@ -45,7 +45,7 @@ export class FinishDuelHandler {
 
 		const replayPromptMessage = ReplayPromptMessage.create();
 
-		this.room.clients.forEach((item) => {
+		[...this.room.spectators, ...this.room.clients].forEach((item) => {
 			item.sendMessage(replayPromptMessage);
 		});
 
