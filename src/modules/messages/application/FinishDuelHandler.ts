@@ -45,6 +45,10 @@ export class FinishDuelHandler {
 
 		const replayPromptMessage = ReplayPromptMessage.create();
 
+		this.room.replay.addPlayers(this.room.clients);
+		// eslint-disable-next-line @typescript-eslint/no-floating-promises
+		this.room.replay.serialize();
+
 		[...this.room.spectators, ...this.room.clients].forEach((item) => {
 			item.sendMessage(replayPromptMessage);
 		});

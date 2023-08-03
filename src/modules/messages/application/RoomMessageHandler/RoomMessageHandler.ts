@@ -158,7 +158,7 @@ export class RoomMessageHandler {
 							opponentMainDeckSize: Number(params[2]),
 							opponentExtraDeckSize: Number(params[3]),
 						});
-
+						this.context.room.replay.addMessage(playerGameMessage);
 						this.context.room.setPlayerDecksSize(Number(params[0]), Number(params[1]));
 						this.context.room.setPlayerDecksSize(Number(params[2]), Number(params[3]));
 
@@ -357,6 +357,10 @@ export class RoomMessageHandler {
 						// );
 					}
 
+					if (cmd === "CMD:CREATED") {
+						this.context.room.replay.setSeed(params);
+					}
+
 					if (cmd === "CMD:TURN") {
 						this.context.room.increaseTurn();
 						this.context.room.resetTimer(0, this.context.room.timeLimit * 1000);
@@ -440,6 +444,50 @@ export class RoomMessageHandler {
 						});
 						const team = Number(params[0]);
 						this.context.room.nextTurn(team);
+					}
+
+					if (cmd === "CMD:REPLAY") {
+						const messageType = params[0];
+
+						if (messageType === "data") {
+							const con = Number(params[1]);
+							const location = Number(params[2]);
+							const bufferData = params.slice(3).map(Number);
+							const buffer = Buffer.from(bufferData);
+							const message = UpdateDataClientMessage.create({
+								deckLocation: location,
+								con,
+								buffer,
+							});
+							// this.context.room.replay.addMessage(message);
+
+							return;
+						}
+
+						if (messageType === "card") {
+							const con = Number(params[1]);
+							const location = Number(params[2]);
+							const sequence = Number(params[3]);
+							const bufferData = params.slice(4).map(Number);
+							const buffer = Buffer.from(bufferData);
+							const message = UpdateCardClientMessage.create({
+								deckLocation: location,
+								con,
+								sequence,
+								buffer,
+							});
+							// this.context.room.replay.addMessage(message);
+
+							return;
+						}
+
+						if (messageType === "message") {
+							const data = Buffer.from(params.slice(1, params.length).map(Number));
+							const message = RawClientMessage.create({ buffer: data });
+							// this.context.room.replay.addMessage(message);
+
+							return;
+						}
 					}
 				});
 			});

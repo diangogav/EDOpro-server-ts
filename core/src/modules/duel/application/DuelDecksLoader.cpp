@@ -60,6 +60,7 @@ std::vector<uint32_t> DuelDecksLoader::shuffle_deck(std::vector<uint32_t> deck)
 {
   if (this->shuffle == 0U)
   {
+    std::reverse(deck.begin(), deck.end());
     return deck;
   }
 

@@ -6,6 +6,7 @@ QueryRequestProcessor::QueryRequestProcessor(OCGRepository repository, uint8_t i
   QuerySerializer serializer;
   BufferMessageSender bufferMessageSender;
   UpdateCardMessageSender updateCardMessageSender;
+  AddMessageToReplaySender addMessageToReplay;
 }
 
 void QueryRequestProcessor::run(const std::vector<QueryRequest> &queryRequests, OCG_Duel duel)
@@ -27,6 +28,8 @@ void QueryRequestProcessor::run(const std::vector<QueryRequest> &queryRequests, 
       const auto playerBuffer = serializer.serialize(duelQuery, false);
       const auto strippedBuffer = serializer.serialize(duelQuery, true);
 
+      addMessageToReplay.sendUpdateCard(querySingleRequest.con, querySingleRequest.loc, querySingleRequest.seq, buffer);
+
       uint8_t team = this->calculateTeam(querySingleRequest.con);
 
       updateCardMessageSender.send(1, team, querySingleRequest.loc, querySingleRequest.con, querySingleRequest.seq, playerBuffer);
@@ -45,6 +48,8 @@ void QueryRequestProcessor::run(const std::vector<QueryRequest> &queryRequests, 
 
       uint8_t team = this->calculateTeam(queryLocationRequest.con);
       const auto buffer = repository.duelQueryLocation(duel, query);
+
+      addMessageToReplay.sendUpdateData(queryLocationRequest.con, queryLocationRequest.loc, buffer);
 
       if (queryLocationRequest.loc == LOCATION_DECK)
       {

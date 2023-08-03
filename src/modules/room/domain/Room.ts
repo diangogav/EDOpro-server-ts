@@ -7,6 +7,7 @@ import { MessageProcessor } from "../../messages/application/MessageHandler/Mess
 import { RoomMessageHandler } from "../../messages/application/RoomMessageHandler/RoomMessageHandler";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
+import { Replay } from "../../replay/Replay";
 import RoomList from "../infrastructure/RoomList";
 import { Match, MatchHistory, Player } from "../match/domain/Match";
 import { DuelFinishReason } from "./DuelFinishReason";
@@ -125,6 +126,7 @@ export class Room {
 	public readonly handshake: number;
 	public readonly password: string;
 	public readonly ranked: boolean;
+	public readonly replay: Replay;
 	private isStart: string;
 	private _spectatorCache: Buffer[] = [];
 	private _clients: Client[] = [];
@@ -209,6 +211,12 @@ export class Room {
 			RoomList.deleteRoom(this);
 		});
 		this.ranked = attr.ranked;
+		this.replay = new Replay({
+			startingDrawCount: this.startHand,
+			startingLp: this.startLp,
+			flags: this.duelFlag,
+			drawCountPerTurn: this.drawCount,
+		});
 	}
 
 	static createFromCreateGameMessage(
