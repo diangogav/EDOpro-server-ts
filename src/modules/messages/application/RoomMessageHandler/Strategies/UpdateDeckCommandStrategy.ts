@@ -59,7 +59,7 @@ export class UpdateDeckCommandStrategy implements RoomMessageHandlerCommandStrat
 				return;
 			}
 			//this.context.updatePreviousMessage(deck);
-			this.context.client.setDeck(deck);
+			this.context.room.setDecksToPlayer(this.context.client.position, deck);
 			//this.afterExecuteCallback();
 
 			return;

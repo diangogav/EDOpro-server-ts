@@ -2,8 +2,14 @@
 /* eslint-disable @typescript-eslint/no-confusing-void-expression */
 /* eslint-disable no-param-reassign */
 
+import * as lzma from "lzma-native";
+import { promisify } from "util";
+
 import { UTF8ToUTF16 } from "../../utils/UTF8ToUTF16";
 import { Client } from "../client/domain/Client";
+
+// eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+const lzmaCompress = promisify(lzma.compress);
 
 enum ReplayTypes {
 	REPLAY_YRP1 = 0x31707279,
@@ -182,31 +188,23 @@ export class Replay {
 		return size;
 	}
 
-	serialize(): void {
+	// eslint-disable-next-line @typescript-eslint/require-await
+	async compressData(data: Buffer): Promise<Buffer> {
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-return
+		return lzmaCompress(data, {
+			preset: 5,
+			dictSize: 1 << 24,
+		});
+	}
+
+	// eslint-disable-next-line @typescript-eslint/require-await
+	async serialize(): Promise<Buffer> {
 		const size = this.yrppHeaderSize() + 72 + 1;
 		const replayBuffer = new ReplayBuffer({ size });
 		replayBuffer.writeUInt8(231);
-		const header = this.buildExtendedReplayHeader();
-		replayBuffer.writeUInt32(header.base.type);
-		replayBuffer.writeUInt32(header.base.version);
-		replayBuffer.writeUInt32(header.base.flags);
-		replayBuffer.writeUInt32(header.base.timestamp);
-		replayBuffer.writeUInt32(header.base.size);
-		replayBuffer.writeUInt32(header.base.hash);
-		replayBuffer.writeUInt8(header.base.props[0]);
-		replayBuffer.writeUInt8(header.base.props[1]);
-		replayBuffer.writeUInt8(header.base.props[2]);
-		replayBuffer.writeUInt8(header.base.props[3]);
-		replayBuffer.writeUInt8(header.base.props[4]);
-		replayBuffer.writeUInt8(header.base.props[5]);
-		replayBuffer.writeUInt8(header.base.props[6]);
-		replayBuffer.writeUInt8(header.base.props[7]);
-		replayBuffer.writeUInt64(header.version);
-		replayBuffer.writeUInt64(header.seed[0]);
-		replayBuffer.writeUInt64(header.seed[1]);
-		replayBuffer.writeUInt64(header.seed[2]);
-		replayBuffer.writeUInt64(header.seed[3]);
+		const header = this.buildReplayHeader();
 
+		this.writeHeader(header, replayBuffer);
 		this.writePlayers(replayBuffer);
 
 		replayBuffer.writeUInt32(this.startingLp);
@@ -220,72 +218,51 @@ export class Replay {
 
 		this.writeResponses(replayBuffer);
 
-		replayBuffer.display();
+		// replayBuffer.display();
 
-		// const buffer = Buffer.alloc(size);
+		this._messages.push(replayBuffer.data);
 
-		// const offset = 0;
-		// this.writePlayers(buffer, offset);
-		// offset += this.yrppHeaderSize();
-		// console.log("messages count", this._messages.length);
-		// for (const message of this._messages) {
-		// 	console.log("message", message);
-		// 	Replay.writeUInt8(buffer, offset, message[0]);
-		// 	offset += 1;
-		// 	const length = message.length - 1;
-		// 	Replay.writeUInt32(buffer, offset, length >>> 0);
-		// 	offset += 4;
-		// 	message.copy(buffer, offset);
-		// 	offset += message.length;
-		// }
+		const yrpxHeaderSize = this.yrpxHeaderSize();
+		const yrpxReplayBuffer = new ReplayBuffer({ size: yrpxHeaderSize });
+		this.writePlayers(yrpxReplayBuffer);
+		yrpxReplayBuffer.writeUInt64(BigInt(this.flags));
+		this.writeMessages(yrpxReplayBuffer);
 
-		// const header: ExtendedReplayHeader = {
-		// 	base: {
-		// 		type: ReplayTypes.REPLAY_YRPX,
-		// 		version: 0,
-		// 		flags:
-		// 			ReplayFlags.REPLAY_LUA64 |
-		// 			ReplayFlags.REPLAY_64BIT_DUELFLAG |
-		// 			ReplayFlags.REPLAY_NEWREPLAY |
-		// 			ReplayFlags.REPLAY_EXTENDED_HEADER,
-		// 		timestamp: Math.floor(Date.now() / 1000),
-		// 		size: buffer.length,
-		// 		hash: 0,
-		// 		props: new Uint8Array(8),
-		// 	},
-		// 	version: 1,
-		// 	seed: new Uint32Array(this._seed.map((value) => Number(value) >>> 0)),
-		// };
+		// yrpxReplayBuffer.display();
 
-		// const headerBuffer = Buffer.alloc(56);
-		// headerBuffer.writeBigUInt64LE(BigInt(header.base.type), 0);
+		const yrpxReplayHeader = this.buildExtendedReplayHeader(yrpxReplayBuffer);
+		// const compressedData = await this.compressData(yrpxReplayBuffer.data);
+		// yrpxReplayHeader.base.flags |= ReplayFlags.REPLAY_COMPRESSED;
+		const compressedBuffer = new ReplayBuffer({ size: 72 + yrpxReplayBuffer.data.length });
+		this.writeHeader(yrpxReplayHeader, compressedBuffer);
+		compressedBuffer.writeBuffer(yrpxReplayBuffer.data);
 
-		// Replay.writeUInt32(headerBuffer, 8, header.base.version);
-		// Replay.writeUInt32(headerBuffer, 12, header.base.flags);
-		// Replay.writeUInt32(headerBuffer, 16, header.base.timestamp);
-		// Replay.writeUInt32(headerBuffer, 20, header.base.size);
-		// Replay.writeUInt32(headerBuffer, 24, header.base.hash);
-
-		// header.base.props.forEach((value, index) => {
-		// 	headerBuffer.writeUInt8(value, 28 + index);
-		// });
-
-		// Replay.writeUInt32(headerBuffer, 36, header.version);
-
-		// header.seed.forEach((value, index) => {
-		// 	Replay.writeUInt32(headerBuffer, 40 + index * 4, value);
-		// });
-
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-		// lzma.compress(buffer, 5).then((response) => {
-		// 	console.log("compressed", response);
-		// });
-		// header.base.flags |= ReplayFlags.REPLAY_COMPRESSED;
-		// console.log("buffer", bufferCompressed);
-		// console.log(Buffer.concat([headerBuffer, bufferCompressed]));
+		return compressedBuffer.data;
 	}
 
-	private buildExtendedReplayHeader(): ExtendedReplayHeader {
+	private buildExtendedReplayHeader(buffer: ReplayBuffer): ExtendedReplayHeader {
+		const header: ExtendedReplayHeader = {
+			base: {
+				type: ReplayTypes.REPLAY_YRPX,
+				version: 655656,
+				flags:
+					ReplayFlags.REPLAY_LUA64 |
+					ReplayFlags.REPLAY_64BIT_DUELFLAG |
+					ReplayFlags.REPLAY_NEWREPLAY |
+					ReplayFlags.REPLAY_EXTENDED_HEADER,
+				timestamp: Math.floor(Date.now() / 1000),
+				size: buffer.data.length,
+				hash: 0,
+				props: new Uint8Array(),
+			},
+			version: BigInt(1),
+			seed: [BigInt(0), BigInt(0), BigInt(0), BigInt(0)],
+		};
+
+		return header;
+	}
+
+	private buildReplayHeader(): ExtendedReplayHeader {
 		const header: ExtendedReplayHeader = {
 			base: {
 				type: ReplayTypes.REPLAY_YRP1,
@@ -305,6 +282,37 @@ export class Replay {
 		};
 
 		return header;
+	}
+
+	private writeHeader(header: ExtendedReplayHeader, buffer: ReplayBuffer): void {
+		buffer.writeUInt32(header.base.type);
+		buffer.writeUInt32(header.base.version);
+		buffer.writeUInt32(header.base.flags);
+		buffer.writeUInt32(header.base.timestamp);
+		buffer.writeUInt32(header.base.size);
+		buffer.writeUInt32(header.base.hash);
+		buffer.writeUInt8(header.base.props[0]);
+		buffer.writeUInt8(header.base.props[1]);
+		buffer.writeUInt8(header.base.props[2]);
+		buffer.writeUInt8(header.base.props[3]);
+		buffer.writeUInt8(header.base.props[4]);
+		buffer.writeUInt8(header.base.props[5]);
+		buffer.writeUInt8(header.base.props[6]);
+		buffer.writeUInt8(header.base.props[7]);
+		buffer.writeUInt64(header.version);
+		buffer.writeUInt64(header.seed[0]);
+		buffer.writeUInt64(header.seed[1]);
+		buffer.writeUInt64(header.seed[2]);
+		buffer.writeUInt64(header.seed[3]);
+	}
+
+	private writeMessages(buffer: ReplayBuffer): void {
+		for (const message of this._messages) {
+			const messageSize = message.length - 1;
+			buffer.writeUInt8(message[0]);
+			buffer.writeUInt32(messageSize);
+			buffer.writeBuffer(message.subarray(1, message.length));
+		}
 	}
 
 	private writeResponses(buffer: ReplayBuffer): void {

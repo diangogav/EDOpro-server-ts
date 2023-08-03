@@ -6,6 +6,7 @@ import { container } from "../../shared/dependency-injection";
 import { EventBus } from "../../shared/event-bus/EventBus";
 import { SideDeckClientMessage } from "../server-to-client/game-messages/SideDeckClientMessage";
 import { SideDeckWaitClientMessage } from "../server-to-client/game-messages/SideDeckWaitClientMessage";
+import { ReplayBufferMessage } from "../server-to-client/ReplayBufferMessage";
 import { ReplayPromptMessage } from "../server-to-client/ReplayPromptMessage";
 import { ServerMessageClientMessage } from "../server-to-client/ServerMessageClientMessage";
 
@@ -22,7 +23,7 @@ export class FinishDuelHandler {
 		this.eventBus = container.get(EventBus);
 	}
 
-	run(): void {
+	async run(): Promise<void> {
 		this.room.duel?.kill();
 		this.room.duelWinner(this.winner);
 
@@ -47,7 +48,13 @@ export class FinishDuelHandler {
 
 		this.room.replay.addPlayers(this.room.clients);
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
-		this.room.replay.serialize();
+		const replayData = await this.room.replay.serialize();
+		this.room.resetReplay();
+
+		const replayMessage = ReplayBufferMessage.create(replayData);
+		[...this.room.spectators, ...this.room.clients].forEach((item) => {
+			item.sendMessage(replayMessage);
+		});
 
 		[...this.room.spectators, ...this.room.clients].forEach((item) => {
 			item.sendMessage(replayPromptMessage);

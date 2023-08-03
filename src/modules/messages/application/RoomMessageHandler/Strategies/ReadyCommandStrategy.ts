@@ -64,8 +64,9 @@ export class ReadyCommandStrategy implements RoomMessageHandlerCommandStrategy {
 
 		const status = (this.context.client.position << 4) | this.STATUS;
 		const message = PlayerChangeClientMessage.create({ status });
-		const deck = this.context.client.deck;
-		this.context.room.setDecksToPlayer(this.context.client.position, deck);
+		// const deck = this.context.client.deck;
+		// console.log("deck", deck);
+		// this.context.room.setDecksToPlayer(this.context.client.position, deck);
 		[...this.context.room.spectators, ...this.context.room.clients].forEach((client) => {
 			client.sendMessage(message);
 		});

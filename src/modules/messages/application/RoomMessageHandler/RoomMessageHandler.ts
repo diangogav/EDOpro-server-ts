@@ -345,7 +345,7 @@ export class RoomMessageHandler {
 							winner,
 							room: this.context.room,
 						});
-						duelFinisher.run();
+						void duelFinisher.run();
 					}
 
 					if (cmd === "CMD:LOG") {
@@ -459,7 +459,7 @@ export class RoomMessageHandler {
 								con,
 								buffer,
 							});
-							// this.context.room.replay.addMessage(message);
+							this.context.room.replay.addMessage(message);
 
 							return;
 						}
@@ -476,7 +476,7 @@ export class RoomMessageHandler {
 								sequence,
 								buffer,
 							});
-							// this.context.room.replay.addMessage(message);
+							this.context.room.replay.addMessage(message);
 
 							return;
 						}
@@ -484,7 +484,7 @@ export class RoomMessageHandler {
 						if (messageType === "message") {
 							const data = Buffer.from(params.slice(1, params.length).map(Number));
 							const message = RawClientMessage.create({ buffer: data });
-							// this.context.room.replay.addMessage(message);
+							this.context.room.replay.addMessage(message);
 
 							return;
 						}
