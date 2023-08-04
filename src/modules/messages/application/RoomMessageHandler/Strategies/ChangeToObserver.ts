@@ -16,7 +16,6 @@ export class ChangeToObserver implements RoomMessageHandlerCommandStrategy {
 			return;
 		}
 
-		const player = this.context.client.name;
 		const ishost = this.context.client.host;
 
 		if (!ishost) {
