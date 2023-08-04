@@ -260,9 +260,6 @@ int main(int argc, char *argv[])
             duelMessageHandler.handle(message);
             queryProcessor.run(queryCreator.run(message), duel);
             finish = duelFinishHandler.handle(message);
-            if(finish == true) {
-              break;
-            }
             postActions.run(message);
           }
           if (status != 2 || finish == true)
