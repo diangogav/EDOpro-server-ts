@@ -58,15 +58,16 @@ uint8_t DuelDecksLoader::calculateTeam(uint8_t team)
 
 std::vector<uint32_t> DuelDecksLoader::shuffle_deck(std::vector<uint32_t> deck)
 {
-  if (this->shuffle == 0U)
-  {
-    return deck;
-  }
+  // if (this->shuffle == 0U)
+  // {
+  //   std::reverse(deck.begin(), deck.end());
+  //   return deck;
+  // }
 
-  std::random_device rd;
-  std::mt19937 generator(rd());
+  // std::random_device rd;
+  // std::mt19937 generator(rd());
 
-  std::shuffle(deck.begin(), deck.end(), generator);
+  // std::shuffle(deck.begin(), deck.end(), generator);
 
   return deck;
 }

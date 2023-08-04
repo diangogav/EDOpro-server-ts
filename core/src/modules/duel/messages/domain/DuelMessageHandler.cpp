@@ -19,11 +19,13 @@ DuelMessageHandler::DuelMessageHandler(uint8_t isTeam1GoingFirst, uint16_t timeL
 {
   BroadcastMessageSender sender;
   DrawCardHandler handler;
+  AddMessageToReplaySender addMessageToReplay;
 }
 
 void DuelMessageHandler::handle(std::vector<uint8_t> message)
 {
   DuelMessageSender messageSender;
+  this->sendReplayMessage(message);
   switch (this->getMessageTarget(message))
   {
   case MessageTargets::MSG_DIST_TYPE_SPECIFIC_TEAM_DUELIST_STRIPPED:
@@ -65,6 +67,49 @@ void DuelMessageHandler::handle(std::vector<uint8_t> message)
     messageSender.send(1, 0, calculateTeam(team), message);
   }
   }
+}
+
+void DuelMessageHandler::sendReplayMessage(std::vector<uint8_t> message)
+{
+  	// Filter out some useless messages.
+	switch(message[0U])
+	{
+		case MSG_HINT:
+		{
+			switch(message[1U])
+			{
+				// Do not record player specific hints.
+				case 1U: case 2U:
+				case 3U: case 5U:
+					return;
+			}
+			break;
+		}
+		case MSG_SELECT_BATTLECMD:
+		case MSG_SELECT_IDLECMD:
+		case MSG_SELECT_EFFECTYN:
+		case MSG_SELECT_YESNO:
+		case MSG_SELECT_OPTION:
+		case MSG_SELECT_CHAIN:
+		case MSG_SELECT_PLACE:
+		case MSG_SELECT_DISFIELD:
+		case MSG_SELECT_POSITION:
+		case MSG_SELECT_COUNTER:
+		case MSG_SELECT_SUM:
+		case MSG_SORT_CARD:
+		case MSG_SORT_CHAIN:
+		case MSG_ROCK_PAPER_SCISSORS:
+		case MSG_ANNOUNCE_RACE:
+		case MSG_ANNOUNCE_ATTRIB:
+		case MSG_ANNOUNCE_CARD:
+		case MSG_ANNOUNCE_NUMBER:
+		case MSG_SELECT_CARD:
+		case MSG_SELECT_TRIBUTE:
+		case MSG_SELECT_UNSELECT_CARD:
+			return;
+	}
+
+  this->addMessageToReplay.send(message);
 }
 
 MessageTargets DuelMessageHandler::getMessageTarget(const std::vector<uint8_t> &msg) noexcept

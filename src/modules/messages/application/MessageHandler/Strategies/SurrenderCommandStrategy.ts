@@ -31,6 +31,6 @@ export class SurrenderCommandStrategy implements MessageHandlerCommandStrategy {
 			room,
 		});
 
-		finishDuelHandler.run();
+		void finishDuelHandler.run();
 	}
 }

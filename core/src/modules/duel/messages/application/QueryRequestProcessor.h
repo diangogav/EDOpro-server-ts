@@ -11,6 +11,7 @@
 #include "../domain/QuerySerializer.h"
 #include "BufferMessageSender.h"
 #include "UpdateCardMessageSender.h"
+#include "AddMessageToReplaySender.h"
 
 
 class QueryRequestProcessor {
@@ -22,6 +23,7 @@ private:
   BufferMessageSender bufferMessageSender;
   uint8_t calculateTeam(uint8_t team);
   UpdateCardMessageSender updateCardMessageSender;
+  AddMessageToReplaySender addMessageToReplay;
 
 public:
   QueryRequestProcessor(OCGRepository repository, uint8_t isTeam1GoingFirst);

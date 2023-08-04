@@ -1,4 +1,5 @@
 import { ChildProcessWithoutNullStreams } from "child_process";
+import shuffle from "shuffle-array";
 
 import { Client } from "../../client/domain/Client";
 import { Deck } from "../../deck/domain/Deck";
@@ -7,6 +8,7 @@ import { MessageProcessor } from "../../messages/application/MessageHandler/Mess
 import { RoomMessageHandler } from "../../messages/application/RoomMessageHandler/RoomMessageHandler";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
+import { Replay } from "../../replay/Replay";
 import RoomList from "../infrastructure/RoomList";
 import { Match, MatchHistory, Player } from "../match/domain/Match";
 import { DuelFinishReason } from "./DuelFinishReason";
@@ -125,6 +127,7 @@ export class Room {
 	public readonly handshake: number;
 	public readonly password: string;
 	public readonly ranked: boolean;
+	private _replay: Replay;
 	private isStart: string;
 	private _spectatorCache: Buffer[] = [];
 	private _clients: Client[] = [];
@@ -192,7 +195,7 @@ export class Room {
 					room: this,
 				});
 
-				finishDuelHandler.run();
+				void finishDuelHandler.run();
 			}),
 			new Timer(this.timeLimit * 1000, () => {
 				const finishDuelHandler = new FinishDuelHandler({
@@ -201,7 +204,7 @@ export class Room {
 					room: this,
 				});
 
-				finishDuelHandler.run();
+				void finishDuelHandler.run();
 			}),
 		];
 
@@ -209,6 +212,7 @@ export class Room {
 			RoomList.deleteRoom(this);
 		});
 		this.ranked = attr.ranked;
+		this.resetReplay();
 	}
 
 	static createFromCreateGameMessage(
@@ -249,6 +253,15 @@ export class Room {
 			duelFlagsHight: message.duelFlagsHight,
 			duelFlagsLow: message.duelFlagsLow,
 			ranked: Boolean(playerInfo.password),
+		});
+	}
+
+	resetReplay(): void {
+		this._replay = new Replay({
+			startingDrawCount: this.startHand,
+			startingLp: this.startLp,
+			flags: this.duelFlag,
+			drawCountPerTurn: this.drawCount,
 		});
 	}
 
@@ -309,6 +322,10 @@ export class Room {
 		this._spectators.push(client);
 	}
 
+	get replay(): Replay {
+		return this._replay;
+	}
+
 	get spectators(): Client[] {
 		return this._spectators;
 	}
@@ -326,6 +343,15 @@ export class Room {
 		if (!client) {
 			return;
 		}
+
+		if (this.noShuffle) {
+			deck.main.reverse();
+			client.setDeck(deck);
+
+			return;
+		}
+
+		shuffle(deck.main);
 		client.setDeck(deck);
 	}
 

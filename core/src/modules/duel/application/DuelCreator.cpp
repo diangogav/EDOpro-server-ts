@@ -40,13 +40,17 @@ OCG_Duel DuelCreator::run(CardSqliteRepository &db, uint64_t flags, uint32_t sta
 
   std::random_device rd;
   std::mt19937_64 rng(rd());
-  std::uniform_int_distribution<uint64_t> dist(0, std::numeric_limits<uint64_t>::max());
+  // std::uniform_int_distribution<uint64_t> dist(0, std::numeric_limits<uint64_t>::max());
+  uint64_t randomSeed1 = std::uniform_int_distribution<uint64_t>(0, std::numeric_limits<uint64_t>::max())(rng);
+  uint64_t randomSeed2 = std::uniform_int_distribution<uint64_t>(0, std::numeric_limits<uint64_t>::max())(rng);
+  uint64_t randomSeed3 = std::uniform_int_distribution<uint64_t>(0, std::numeric_limits<uint64_t>::max())(rng);
+  uint64_t randomSeed4 = std::uniform_int_distribution<uint64_t>(0, std::numeric_limits<uint64_t>::max())(rng);
 
   OCG_DuelOptions options = {
-      {dist(rng),
-       dist(rng),
-       dist(rng),
-       dist(rng)},
+      {randomSeed1,
+       randomSeed2,
+       randomSeed3,
+       randomSeed4},
       flags,
       player,
       opponent,
@@ -70,6 +74,13 @@ OCG_Duel DuelCreator::run(CardSqliteRepository &db, uint64_t flags, uint32_t sta
   {
     exit(1);
   }
+
+  std::string message = "CMD:CREATED|";
+  message += std::to_string(randomSeed1) + "|";
+  message += std::to_string(randomSeed2) + "|";
+  message += std::to_string(randomSeed3) + "|";
+  message += std::to_string(randomSeed4) + "|";
+  std::cout << message << std::endl;
 
   return duel;
 };
