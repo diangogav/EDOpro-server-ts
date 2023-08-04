@@ -1,8 +1,6 @@
-import { Deck } from "../../../deck/domain/Deck";
-
 export type Player = {
 	name: string;
-	deck: Deck;
+	// deck: Deck;
 	team: number;
 };
 
