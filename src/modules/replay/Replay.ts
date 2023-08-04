@@ -1,7 +1,4 @@
-/* eslint-disable @typescript-eslint/unbound-method */
-/* eslint-disable @typescript-eslint/no-confusing-void-expression */
-/* eslint-disable no-param-reassign */
-
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import * as lzma from "lzma-native";
 import { promisify } from "util";
 
@@ -71,17 +68,6 @@ class ReplayBuffer {
 	writeBuffer(value: Buffer): void {
 		this.data.set(value, this.offset);
 		this.offset += value.length;
-	}
-
-	display(): void {
-		// eslint-disable-next-line no-console
-		console.log(Array.from(this._data, this.toTwoDigitHex).join(" "));
-	}
-
-	private toTwoDigitHex(num: number): string {
-		const hex = num.toString(16);
-
-		return hex.length === 1 ? `0${hex}` : hex;
 	}
 
 	get data(): Buffer {
@@ -197,45 +183,69 @@ export class Replay {
 		});
 	}
 
-	// eslint-disable-next-line @typescript-eslint/require-await
+	async compress(buffer: Buffer): Promise<Buffer> {
+		return new Promise<Buffer>((resolve, reject) => {
+			const encoder = lzma.createStream("rawEncoder", {
+				filters: [
+					{
+						id: lzma.FILTER_LZMA1,
+						options: { preset: 5, dict_size: 1 << 24 },
+					},
+				],
+			});
+
+			const chunks: Buffer[] = [];
+
+			encoder.on("data", (chunk: Buffer) => {
+				chunks.push(chunk);
+			});
+
+			encoder.on("end", () => {
+				const result = Buffer.concat(chunks);
+				resolve(result);
+			});
+
+			encoder.on("error", (err: Error) => {
+				reject(err);
+			});
+
+			encoder.write(buffer);
+			encoder.end();
+		});
+	}
+
 	async serialize(): Promise<Buffer> {
+		/* yrp */
 		const size = this.yrppHeaderSize() + 72 + 1;
 		const replayBuffer = new ReplayBuffer({ size });
 		replayBuffer.writeUInt8(231);
 		const header = this.buildReplayHeader();
-
 		this.writeHeader(header, replayBuffer);
 		this.writePlayers(replayBuffer);
-
 		replayBuffer.writeUInt32(this.startingLp);
 		replayBuffer.writeUInt32(this.startingDrawCount);
 		replayBuffer.writeUInt32(this.drawCountPerTurn);
 		replayBuffer.writeUInt64(BigInt(this.flags));
-
 		this.writeDecks(replayBuffer);
-
-		replayBuffer.writeUInt32(0); //TODO: EXTA CARDS COUNT
-
+		replayBuffer.writeUInt32(0); //TODO: EXTRA CARDS COUNT
 		this.writeResponses(replayBuffer);
-
-		// replayBuffer.display();
 
 		this._messages.push(replayBuffer.data);
 
+		/* yrpx */
 		const yrpxHeaderSize = this.yrpxHeaderSize();
 		const yrpxReplayBuffer = new ReplayBuffer({ size: yrpxHeaderSize });
 		this.writePlayers(yrpxReplayBuffer);
 		yrpxReplayBuffer.writeUInt64(BigInt(this.flags));
 		this.writeMessages(yrpxReplayBuffer);
-
-		// yrpxReplayBuffer.display();
-
 		const yrpxReplayHeader = this.buildExtendedReplayHeader(yrpxReplayBuffer);
-		// const compressedData = await this.compressData(yrpxReplayBuffer.data);
-		// yrpxReplayHeader.base.flags |= ReplayFlags.REPLAY_COMPRESSED;
-		const compressedBuffer = new ReplayBuffer({ size: 72 + yrpxReplayBuffer.data.length });
+
+		/* lzma */
+		const compressedData = await this.compress(yrpxReplayBuffer.data);
+		yrpxReplayHeader.base.flags |= ReplayFlags.REPLAY_COMPRESSED;
+		const compressedBuffer = new ReplayBuffer({ size: 72 + compressedData.length });
 		this.writeHeader(yrpxReplayHeader, compressedBuffer);
-		compressedBuffer.writeBuffer(yrpxReplayBuffer.data);
+		compressedBuffer.writeBuffer(compressedData);
 
 		return compressedBuffer.data;
 	}
@@ -253,7 +263,7 @@ export class Replay {
 				timestamp: Math.floor(Date.now() / 1000),
 				size: buffer.data.length,
 				hash: 0,
-				props: new Uint8Array(),
+				props: new Uint8Array([93, 0, 0, 0, 1, 0, 0, 0]),
 			},
 			version: BigInt(1),
 			seed: [BigInt(0), BigInt(0), BigInt(0), BigInt(0)],
