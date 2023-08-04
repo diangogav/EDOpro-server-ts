@@ -46,7 +46,11 @@ export class FinishDuelHandler {
 		});
 
 		const replayPromptMessage = ReplayPromptMessage.create();
-		const winMessage = WinClientMessage.create({ reason: 0, winner: this.winner });
+		const winMessage = WinClientMessage.create({
+			reason: 0,
+			winner: this.room.firstToPlay ^ this.winner,
+		});
+
 		this.room.replay.addPlayers(this.room.clients);
 		this.room.replay.addMessage(winMessage);
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -56,6 +60,9 @@ export class FinishDuelHandler {
 		const replayMessage = ReplayBufferMessage.create(replayData);
 		[...this.room.spectators, ...this.room.clients].forEach((item) => {
 			item.sendMessage(winMessage);
+		});
+
+		[...this.room.spectators, ...this.room.clients].forEach((item) => {
 			item.sendMessage(replayMessage);
 		});
 
