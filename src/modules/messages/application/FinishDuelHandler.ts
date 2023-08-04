@@ -58,22 +58,39 @@ export class FinishDuelHandler {
 		this.room.resetReplay();
 
 		const replayMessage = ReplayBufferMessage.create(replayData);
+
 		if (this.reason === DuelFinishReason.SURRENDERED) {
-			[...this.room.spectators, ...this.room.clients].forEach((item) => {
+			this.room.clients.forEach((item) => {
+				item.sendMessage(winMessage);
+			});
+
+			this.room.spectators.forEach((item) => {
 				item.sendMessage(winMessage);
 			});
 		}
 
-		[...this.room.spectators, ...this.room.clients].forEach((item) => {
+		this.room.clients.forEach((item) => {
 			item.sendMessage(replayMessage);
 		});
 
-		[...this.room.spectators, ...this.room.clients].forEach((item) => {
+		this.room.spectators.forEach((item) => {
+			item.sendMessage(replayMessage);
+		});
+
+		this.room.clients.forEach((item) => {
+			item.sendMessage(replayPromptMessage);
+		});
+
+		this.room.spectators.forEach((item) => {
 			item.sendMessage(replayPromptMessage);
 		});
 
 		if (this.room.isMatchFinished()) {
-			[...this.room.spectators, ...this.room.clients].forEach((player) => {
+			this.room.clients.forEach((player) => {
+				player.sendMessage(DuelEndMessage.create());
+			});
+
+			this.room.spectators.forEach((player) => {
 				player.sendMessage(DuelEndMessage.create());
 			});
 
