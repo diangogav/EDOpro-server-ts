@@ -1,11 +1,12 @@
 import { GameOverDomainEvent } from "../../room/domain/domain-events/GameOverDomainEvent";
 import { DuelFinishReason } from "../../room/domain/DuelFinishReason";
 import { Room } from "../../room/domain/Room";
-import RoomList from "../../room/infrastructure/RoomList";
 import { container } from "../../shared/dependency-injection";
 import { EventBus } from "../../shared/event-bus/EventBus";
+import { DuelEndMessage } from "../server-to-client/game-messages/DuelEndMessage";
 import { SideDeckClientMessage } from "../server-to-client/game-messages/SideDeckClientMessage";
 import { SideDeckWaitClientMessage } from "../server-to-client/game-messages/SideDeckWaitClientMessage";
+import { WinClientMessage } from "../server-to-client/game-messages/WinClientMessage";
 import { ReplayBufferMessage } from "../server-to-client/ReplayBufferMessage";
 import { ReplayPromptMessage } from "../server-to-client/ReplayPromptMessage";
 import { ServerMessageClientMessage } from "../server-to-client/ServerMessageClientMessage";
@@ -45,14 +46,16 @@ export class FinishDuelHandler {
 		});
 
 		const replayPromptMessage = ReplayPromptMessage.create();
-
+		const winMessage = WinClientMessage.create({ reason: 0, winner: this.winner });
 		this.room.replay.addPlayers(this.room.clients);
+		this.room.replay.addMessage(winMessage);
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		const replayData = await this.room.replay.serialize();
 		this.room.resetReplay();
 
 		const replayMessage = ReplayBufferMessage.create(replayData);
 		[...this.room.spectators, ...this.room.clients].forEach((item) => {
+			item.sendMessage(winMessage);
 			item.sendMessage(replayMessage);
 		});
 
@@ -61,17 +64,13 @@ export class FinishDuelHandler {
 		});
 
 		if (this.room.isMatchFinished()) {
-			this.room.clients.forEach((player) => {
-				player.socket.destroy();
+			[...this.room.spectators, ...this.room.clients].forEach((player) => {
+				player.sendMessage(DuelEndMessage.create());
 			});
 
-			this.room.spectators.forEach((spectator) => {
-				spectator.socket.destroy();
-			});
+			// this.room.duel?.kill("SIGTERM");
 
-			this.room.duel?.kill("SIGTERM");
-
-			RoomList.deleteRoom(this.room);
+			// RoomList.deleteRoom(this.room);
 
 			this.eventBus.publish(
 				GameOverDomainEvent.DOMAIN_EVENT,
