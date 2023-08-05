@@ -58,7 +58,7 @@ class ReplayBuffer {
 	}
 
 	writeUInt32(value: number): void {
-		this._data.writeUInt32LE(value >>> 0, this.offset);
+		this._data.writeUInt32LE(value, this.offset);
 		this.offset += 4;
 	}
 
