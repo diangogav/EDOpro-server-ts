@@ -12,10 +12,10 @@ bool PreActions::run(std::vector<uint8_t> message)
 
   if (messageType == MSG_RETRY)
   {
-    // if(!this->lastHint.empty())
-    //   duelMessageSender.send(0, 0, Replier::getInstance().id, this->lastHint);
+    if(!this->lastHint.empty())
+      duelMessageSender.send(0, 0, Replier::getInstance().id, this->lastHint);
     
-    // duelMessageSender.send(0, 0, Replier::getInstance().id, this->lastRequest);
+    duelMessageSender.send(0, 0, Replier::getInstance().id, this->lastRequest);
     return false;
   }
 
