@@ -78,7 +78,7 @@ class ReplayBuffer {
 }
 
 export class Replay {
-	private _seed: bigint[];
+	private _seed: bigint[] = [BigInt(0), BigInt(0), BigInt(0), BigInt(0)];
 	private readonly _messages: Buffer[] = [];
 	private readonly _responses: Buffer[] = [];
 	private _players: Client[];

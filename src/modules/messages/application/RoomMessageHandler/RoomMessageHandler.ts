@@ -179,7 +179,7 @@ export class RoomMessageHandler {
 						this.context.room.spectators.forEach((spectator) => {
 							spectator.sendMessage(spectatorGameMessage);
 						});
-						core.stdin.write("CMD:DECKS\n");
+						this.context.room.sendMessageToCpp("CMD:DECKS\n");
 					}
 
 					if (cmd === "CMD:BUFFER") {
@@ -239,7 +239,7 @@ export class RoomMessageHandler {
 					}
 
 					if (cmd === "CMD:DUEL") {
-						core.stdin.write("CMD:PROCESS\n");
+						this.context.room.sendMessageToCpp("CMD:PROCESS\n");
 					}
 
 					if (cmd === "CMD:MESSAGE") {
@@ -384,7 +384,7 @@ export class RoomMessageHandler {
 							return;
 						}
 						player.sendMessage(message);
-						core.stdin.write(`CMD:REFRESH|${player.team}|${position}\n`);
+						this.context.room.sendMessageToCpp(`CMD:REFRESH|${player.team}|${position}\n`);
 					}
 
 					if (cmd === "CMD:REFRESH") {

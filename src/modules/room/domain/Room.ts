@@ -14,6 +14,9 @@ import { Match, MatchHistory, Player } from "../match/domain/Match";
 import { DuelFinishReason } from "./DuelFinishReason";
 import { Timer } from "./Timer";
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 100;
+
 export enum Rule {
 	ONLY_OCG,
 	ONLY_TCG,
@@ -357,6 +360,11 @@ export class Room {
 
 	setDuel(duel: ChildProcessWithoutNullStreams): void {
 		this._duel = duel;
+		this._duel.stdin.on("error", (err) => {
+			console.error("Error al escribir en el proceso secundario:", err.message);
+			// Volver a intentar la escritura después de un breve retraso
+			this.writeToCppProcess("¡Hola desde Node.js!", 3);
+		});
 	}
 
 	get duel(): ChildProcessWithoutNullStreams | null {
@@ -637,6 +645,10 @@ export class Room {
 		return (sorted[0]?.position ?? 7) + 1;
 	}
 
+	public sendMessageToCpp(message: string): void {
+		this.writeToCppProcess(message, 3);
+	}
+
 	toPresentation(): { [key: string]: unknown } {
 		return {
 			roomid: this.id,
@@ -670,6 +682,26 @@ export class Room {
 				pos: player.position,
 			})),
 		};
+	}
+
+	private writeToCppProcess(messageToCpp: string, retryCount: number): void {
+		if (retryCount <= 0) {
+			console.error(
+				"Error: No se pudo escribir en el proceso secundario después de varios intentos."
+			);
+
+			return;
+		}
+
+		const message = `${messageToCpp}\n`;
+		const success = this.duel?.stdin.write(message);
+
+		if (!success) {
+			console.error("Advertencia: La escritura no fue exitosa, reintentando...");
+			setTimeout(() => {
+				this.writeToCppProcess(messageToCpp, retryCount - 1);
+			}, 100);
+		}
 	}
 
 	private getDifference(a: number[], b: number[]) {
