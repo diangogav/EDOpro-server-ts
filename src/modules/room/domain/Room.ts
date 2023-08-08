@@ -1,21 +1,33 @@
 import { ChildProcessWithoutNullStreams } from "child_process";
 import shuffle from "shuffle-array";
+import { EventEmitter } from "stream";
 
+import { YGOClientSocket } from "../../../socket-server/HostServer";
+import { CardSQLiteTYpeORMRepository } from "../../card/infrastructure/postgres/CardSQLiteTYpeORMRepository";
 import { Client } from "../../client/domain/Client";
+import { DeckCreator } from "../../deck/application/DeckCreator";
 import { Deck } from "../../deck/domain/Deck";
-import { FinishDuelHandler } from "../../messages/application/FinishDuelHandler";
-import { MessageProcessor } from "../../messages/application/MessageHandler/MessageProcessor";
-import { RoomMessageHandler } from "../../messages/application/RoomMessageHandler/RoomMessageHandler";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
+import { MessageProcessor } from "../../messages/MessageProcessor";
 import { Replay } from "../../replay/Replay";
+import { RoomMessageEmitter } from "../../RoomMessageEmitter";
+import { Logger } from "../../shared/logger/domain/Logger";
+import { UserFinder } from "../../user/application/UserFinder";
+import { UserRedisRepository } from "../../user/infrastructure/UserRedisRepository";
+import { FinishDuelHandler } from "../application/FinishDuelHandler";
+import { JoinToDuelAsSpectator } from "../application/JoinToDuelAsSpectator";
+import { Reconnect } from "../application/Reconnect";
 import RoomList from "../infrastructure/RoomList";
 import { Match, MatchHistory, Player } from "../match/domain/Match";
 import { DuelFinishReason } from "./DuelFinishReason";
+import { RoomState } from "./RoomState";
+import { ChossingOrderState } from "./states/chossing-order/ChossingOrderState";
+import { DuelingState } from "./states/dueling/DuelingState";
+import { RockPaperScissorState } from "./states/rps/RockPaperScissorsState";
+import { SideDeckingState } from "./states/side-decking/SideDeckingState";
+import { WaitingState } from "./states/waiting/WaitingState";
 import { Timer } from "./Timer";
-
-const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 100;
 
 export enum Rule {
 	ONLY_OCG,
@@ -151,6 +163,9 @@ export class Room {
 	private readonly t1Positions: number[] = [];
 	private readonly timers: Timer[];
 	private readonly roomTimer: Timer;
+	private roomState: RoomState | null = null;
+	private emitter: EventEmitter;
+	private logger: Logger;
 
 	private constructor(attr: RoomAttr) {
 		this.id = attr.id;
@@ -221,9 +236,11 @@ export class Room {
 	static createFromCreateGameMessage(
 		message: CreateGameMessage,
 		playerInfo: PlayerInfoMessage,
-		id: number
+		id: number,
+		emitter: EventEmitter,
+		logger: Logger
 	): Room {
-		return new Room({
+		const room = new Room({
 			id,
 			name: message.name,
 			notes: message.notes,
@@ -257,6 +274,29 @@ export class Room {
 			duelFlagsLow: message.duelFlagsLow,
 			ranked: Boolean(playerInfo.password),
 		});
+
+		room.emitter = emitter;
+		room.logger = logger;
+
+		return room;
+	}
+
+	waiting(): void {
+		this.roomState?.removeAllListener();
+		this.roomState = new WaitingState(
+			this.emitter,
+			this.logger,
+			new UserFinder(new UserRedisRepository()),
+			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules)
+		);
+	}
+
+	emit(event: string, message: unknown, socket: YGOClientSocket): void {
+		this.emitter.emit(event, message, this, socket);
+	}
+
+	emitRoomEvent(event: string, message: unknown, client: Client): void {
+		this.emitter.emit(event, message, this, client);
 	}
 
 	resetReplay(): void {
@@ -313,16 +353,28 @@ export class Room {
 
 	addClient(client: Client): void {
 		this._clients.push(client);
+		client.socket.roomId = this.id;
 		const messageProcessor = new MessageProcessor();
+		const roomMessageEmitter = new RoomMessageEmitter(client, this);
 
 		client.socket.on("data", (data) => {
+			roomMessageEmitter.handleMessage(data);
 			messageProcessor.read(data);
-			this.handleMessage(messageProcessor, client);
+			// this.handleMessage(messageProcessor, client);
 		});
 	}
 
 	addSpectator(client: Client): void {
+		client.socket.roomId = this.id;
 		this._spectators.push(client);
+		const messageProcessor = new MessageProcessor();
+		const roomMessageEmitter = new RoomMessageEmitter(client, this);
+
+		client.socket.on("data", (data) => {
+			roomMessageEmitter.handleMessage(data);
+			messageProcessor.read(data);
+			// this.handleMessage(messageProcessor, client);
+		});
 	}
 
 	get replay(): Replay {
@@ -378,18 +430,48 @@ export class Room {
 	dueling(): void {
 		this._state = DuelState.DUELING;
 		this.isStart = "start";
+		this.roomState?.removeAllListener();
+		this.roomState = new DuelingState(
+			this.emitter,
+			this.logger,
+			new Reconnect(new UserFinder(new UserRedisRepository())),
+			new JoinToDuelAsSpectator(),
+			this
+		);
 	}
 
 	sideDecking(): void {
 		this._state = DuelState.SIDE_DECKING;
+		this.roomState?.removeAllListener();
+		this.roomState = new SideDeckingState(
+			this.emitter,
+			this.logger,
+			new Reconnect(new UserFinder(new UserRedisRepository())),
+			new JoinToDuelAsSpectator(),
+			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules)
+		);
 	}
 
 	rps(): void {
 		this._state = DuelState.RPS;
+		this.roomState?.removeAllListener();
+		this.roomState = new RockPaperScissorState(
+			this.emitter,
+			this.logger,
+			new Reconnect(new UserFinder(new UserRedisRepository())),
+			new JoinToDuelAsSpectator()
+		);
 	}
 
 	choosingOrder(): void {
 		this._state = DuelState.CHOOSING_ORDER;
+		this.roomState?.removeAllListener();
+		this.roomState = new ChossingOrderState(
+			this.emitter,
+			this.logger,
+			new Reconnect(new UserFinder(new UserRedisRepository())),
+			new JoinToDuelAsSpectator()
+		);
 	}
 
 	get duelState(): DuelState {
@@ -706,23 +788,5 @@ export class Room {
 
 	private getDifference(a: number[], b: number[]) {
 		return a.filter((item) => !b.includes(item));
-	}
-
-	private handleMessage(messageProcessor: MessageProcessor, client: Client) {
-		if (!messageProcessor.isMessageReady()) {
-			return;
-		}
-
-		messageProcessor.process();
-		const messageHandler = new RoomMessageHandler(
-			messageProcessor.payload,
-			client,
-			this._clients,
-			this
-		);
-
-		messageHandler.read();
-
-		this.handleMessage(messageProcessor, client);
 	}
 }

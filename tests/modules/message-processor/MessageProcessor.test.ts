@@ -1,4 +1,4 @@
-import { MessageProcessor } from "../../../src/modules/messages/application/MessageHandler/MessageProcessor";
+import { MessageProcessor } from "../../../src/modules/messages/MessageProcessor";
 import { Commands } from "../../../src/modules/messages/domain/Commands";
 
 describe("Message Processor", () => {

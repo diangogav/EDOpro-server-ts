@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
-import { Commands } from "../../domain/Commands";
+import { Commands } from "./domain/Commands";
 
 export interface ClientMessage {
 	data: Buffer;

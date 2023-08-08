@@ -1,15 +1,15 @@
-import { GameOverDomainEvent } from "../../room/domain/domain-events/GameOverDomainEvent";
-import { DuelFinishReason } from "../../room/domain/DuelFinishReason";
-import { Room } from "../../room/domain/Room";
+import { DuelEndMessage } from "../../messages/server-to-client/game-messages/DuelEndMessage";
+import { SideDeckClientMessage } from "../../messages/server-to-client/game-messages/SideDeckClientMessage";
+import { SideDeckWaitClientMessage } from "../../messages/server-to-client/game-messages/SideDeckWaitClientMessage";
+import { WinClientMessage } from "../../messages/server-to-client/game-messages/WinClientMessage";
+import { ReplayBufferMessage } from "../../messages/server-to-client/ReplayBufferMessage";
+import { ReplayPromptMessage } from "../../messages/server-to-client/ReplayPromptMessage";
+import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { container } from "../../shared/dependency-injection";
 import { EventBus } from "../../shared/event-bus/EventBus";
-import { DuelEndMessage } from "../server-to-client/game-messages/DuelEndMessage";
-import { SideDeckClientMessage } from "../server-to-client/game-messages/SideDeckClientMessage";
-import { SideDeckWaitClientMessage } from "../server-to-client/game-messages/SideDeckWaitClientMessage";
-import { WinClientMessage } from "../server-to-client/game-messages/WinClientMessage";
-import { ReplayBufferMessage } from "../server-to-client/ReplayBufferMessage";
-import { ReplayPromptMessage } from "../server-to-client/ReplayPromptMessage";
-import { ServerMessageClientMessage } from "../server-to-client/ServerMessageClientMessage";
+import { GameOverDomainEvent } from "../domain/domain-events/GameOverDomainEvent";
+import { DuelFinishReason } from "../domain/DuelFinishReason";
+import { Room } from "../domain/Room";
 
 export class FinishDuelHandler {
 	private readonly reason: DuelFinishReason;
