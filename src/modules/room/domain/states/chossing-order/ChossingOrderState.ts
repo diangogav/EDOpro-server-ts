@@ -45,6 +45,8 @@ export class ChossingOrderState extends RoomState {
 	}
 
 	private handle(message: ClientMessage, room: Room, player: Client): void {
+		this.logger.debug("CHOSSING_ORDER");
+
 		const turn = message.data.readInt8();
 		const team = room.clients.find((client) => client === player)?.team;
 
@@ -60,7 +62,7 @@ export class ChossingOrderState extends RoomState {
 	}
 
 	private handleReady(message: ClientMessage, room: Room, player: Client): void {
-		this.logger.info("CHOSSING ORDER: READY");
+		this.logger.debug("CHOSSING_ORDER: READY");
 
 		if (!player.isReconnecting) {
 			return;
@@ -81,7 +83,7 @@ export class ChossingOrderState extends RoomState {
 		room: Room,
 		socket: YGOClientSocket
 	): Promise<void> {
-		this.logger.info("JOIN IN RPS");
+		this.logger.debug("CHOSSING_ORDER: JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const joinMessage = new JoinGameMessage(message.data);
 		const reconnectingPlayer = this.playerAlreadyInRoom(playerInfoMessage, room, socket);

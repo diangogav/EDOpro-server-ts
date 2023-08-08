@@ -89,16 +89,19 @@ export class WaitingState extends RoomState {
 	}
 
 	private handleKick(message: ClientMessage, room: Room, player: Client): void {
+		this.logger.debug("WAITING: KICK");
 		const kick = new Kick();
 		kick.execute(message, room, player);
 	}
 
 	private handleToDuel(_message: ClientMessage, room: Room, player: Client): void {
+		this.logger.debug("WAITING: TO_DUEL");
 		const changeToDuel = new ChangeToDuel();
 		changeToDuel.execute(room, player);
 	}
 
 	private tryStartHandler(_message: ClientMessage, room: Room, _player: Client): void {
+		this.logger.debug("WAITING: TRY_START");
 		const duelStartMessage = DuelStartClientMessage.create();
 		room.clients.forEach((client) => {
 			client.sendMessage(duelStartMessage);
@@ -120,7 +123,7 @@ export class WaitingState extends RoomState {
 	}
 
 	private handleReady(_message: ClientMessage, room: Room, player: Client): void {
-		this.logger.info("WAITING: READY");
+		this.logger.debug("WAITING: READY");
 
 		const status = (player.position << 4) | 0x09;
 		const message = PlayerChangeClientMessage.create({ status });
@@ -133,6 +136,8 @@ export class WaitingState extends RoomState {
 	}
 
 	private handleChangeToObserver(message: ClientMessage, room: Room, player: Client): void {
+		this.logger.debug("WAITING: TO_OBSERVER");
+
 		if (player.isSpectator) {
 			return;
 		}
@@ -179,7 +184,7 @@ export class WaitingState extends RoomState {
 		room: Room,
 		player: Client
 	): Promise<void> {
-		this.logger.info("WAITING: UPDATE_DECK");
+		this.logger.debug("WAITING: UPDATE_DECK");
 		const messageSize = new UpdateDeckMessageSizeCalculator(message.data).calculate();
 		const body = message.data.subarray(0, messageSize);
 		const mainAndExtraDeckSize = body.readUInt32LE(0);
@@ -220,6 +225,8 @@ export class WaitingState extends RoomState {
 	}
 
 	private handleNotReady(_message: ClientMessage, room: Room, player: Client): void {
+		this.logger.debug("WAITING: NOT_READY");
+
 		const status = (player.position << 4) | 0x0a;
 		const playerChangeMessage = PlayerChangeClientMessage.create({ status });
 		[...room.spectators, ...room.clients].forEach((client) => {
@@ -230,7 +237,7 @@ export class WaitingState extends RoomState {
 	}
 
 	private async handle(message: ClientMessage, room: Room, socket: YGOClientSocket): Promise<void> {
-		this.logger.info("WAITING: JOIN");
+		this.logger.debug("WAITING: JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		if (this.playerAlreadyInRoom(playerInfoMessage, room, socket)) {
 			this.sendErrorMessage(playerInfoMessage, socket);

@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import "./modules/shared/error-handler/error-handler";
 
 import { Server } from "./http-server/Server";
 import { BanListLoader } from "./modules/ban-list/infrastructure/BanListLoader";

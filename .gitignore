@@ -12,3 +12,4 @@ core/CoreIntegrator
 *.vscode
 *.env
 *banlists
+app.log

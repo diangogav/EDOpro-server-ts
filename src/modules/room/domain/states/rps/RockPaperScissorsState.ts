@@ -46,12 +46,14 @@ export class RockPaperScissorState extends RoomState {
 	}
 
 	private handle(message: ClientMessage, room: Room, player: Client): void {
+		this.logger.debug("RPS: RPS");
+
 		const rpsChoice = new RpsChoiceCommandStrategy();
 		rpsChoice.execute(message, room, player);
 	}
 
 	private handleReady(message: ClientMessage, room: Room, player: Client): void {
-		this.logger.info("RPS: READY");
+		this.logger.debug("RPS: READY");
 
 		if (!player.isReconnecting) {
 			return;
@@ -72,7 +74,7 @@ export class RockPaperScissorState extends RoomState {
 		room: Room,
 		socket: YGOClientSocket
 	): Promise<void> {
-		this.logger.info("JOIN IN RPS");
+		this.logger.debug("RPS: JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const joinMessage = new JoinGameMessage(message.data);
 		const reconnectingPlayer = this.playerAlreadyInRoom(playerInfoMessage, room, socket);

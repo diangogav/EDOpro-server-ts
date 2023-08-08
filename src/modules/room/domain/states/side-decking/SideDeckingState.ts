@@ -45,7 +45,7 @@ export class SideDeckingState extends RoomState {
 	}
 
 	async handle(message: ClientMessage, room: Room, socket: YGOClientSocket): Promise<void> {
-		this.logger.info("JOIN IN RPS");
+		this.logger.debug("SIDEDECKING: JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const joinMessage = new JoinGameMessage(message.data);
 		const reconnectingPlayer = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
@@ -64,7 +64,7 @@ export class SideDeckingState extends RoomState {
 		room: Room,
 		player: Client
 	): Promise<void> {
-		this.logger.info("SIDEDECKING: UPDATE_DECK");
+		this.logger.debug("SIDEDECKING: UPDATE_DECK");
 		const messageSize = new UpdateDeckMessageSizeCalculator(message.data).calculate();
 		const body = message.data.subarray(0, messageSize);
 		const mainAndExtraDeckSize = body.readUInt32LE(0);
@@ -121,6 +121,8 @@ export class SideDeckingState extends RoomState {
 	}
 
 	private startDuel(room: Room): void {
+		this.logger.debug("SIDEDECKING: START_DUEL");
+
 		const allClientsNotReady = room.clients.some((client) => !client.isReady);
 		if (allClientsNotReady) {
 			return;

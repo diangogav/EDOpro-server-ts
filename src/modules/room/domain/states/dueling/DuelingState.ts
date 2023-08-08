@@ -522,7 +522,7 @@ export class DuelingState extends RoomState {
 	}
 
 	private handleReady(message: ClientMessage, room: Room, player: Client): void {
-		this.logger.info("DUELING: READY");
+		this.logger.debug("DUELING: READY");
 		if (!player.isReconnecting) {
 			return;
 		}
@@ -547,7 +547,7 @@ export class DuelingState extends RoomState {
 		room: Room,
 		socket: YGOClientSocket
 	): Promise<void> {
-		this.logger.info("JOIN IN DUELING");
+		this.logger.debug("DUELING: JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const joinMessage = new JoinGameMessage(message.data);
 		const reconnectingPlayer = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
@@ -562,6 +562,8 @@ export class DuelingState extends RoomState {
 	}
 
 	private handleSurrender(_message: ClientMessage, client: Client): void {
+		this.logger.debug("DUELING: SURRENDER");
+
 		const finishDuelHandler = new FinishDuelHandler({
 			reason: DuelFinishReason.SURRENDERED,
 			winner: Number(!client.team),
@@ -572,6 +574,8 @@ export class DuelingState extends RoomState {
 	}
 
 	private handleResponse(message: ClientMessage, client: Client): void {
+		this.logger.debug("DUELING: RESPONSE");
+
 		const data = message.data
 			.toString("hex")
 			.match(/.{1,2}/g)
