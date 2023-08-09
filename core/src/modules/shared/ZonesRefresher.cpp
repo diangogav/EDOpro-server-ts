@@ -26,8 +26,8 @@ void ZonesRefresher::refreshAllDecks(std::vector<QueryRequest> &queryRequests)
 
 void ZonesRefresher::refreshAllGraves(std::vector<QueryRequest> &queryRequests)
 {
-	queryRequests.emplace_back(QueryLocationRequest{0U, LOCATION_GRAVE, 0x3981FFF});
-	queryRequests.emplace_back(QueryLocationRequest{1U, LOCATION_GRAVE, 0x3981FFF});
+	queryRequests.emplace_back(QueryLocationRequest{0U, LOCATION_GRAVE, 0x381fff});
+	queryRequests.emplace_back(QueryLocationRequest{1U, LOCATION_GRAVE, 0x381fff});
 }
 
 void ZonesRefresher::refreshAllExtras(std::vector<QueryRequest> &queryRequests)
