@@ -113,8 +113,8 @@ export class Replay {
 		buffer.writeUInt8(value, offset);
 	}
 
-	setSeed(seed: string[]): void {
-		this._seed = [BigInt(seed[0]), BigInt(seed[1]), BigInt(seed[2]), BigInt(seed[3])];
+	setSeed(seed: bigint[]): void {
+		this._seed = seed;
 	}
 
 	addMessage(message: Buffer): void {

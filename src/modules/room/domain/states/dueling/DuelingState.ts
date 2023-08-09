@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { spawn } from "child_process";
+import * as crypto from "crypto";
 import EventEmitter from "events";
 
 import { YGOClientSocket } from "../../../../../socket-server/HostServer";
@@ -74,6 +75,9 @@ export class DuelingState extends RoomState {
 			turn: item.duelPosition,
 		}));
 
+		const seeds = this.generateSeeds();
+		this.room.replay.setSeed(seeds);
+
 		const core = spawn(
 			`${__dirname}/../../../../../../core/CoreIntegrator`,
 			[
@@ -85,6 +89,10 @@ export class DuelingState extends RoomState {
 				this.room.extraRules.toString(),
 				this.room.firstToPlay.toString(),
 				this.room.timeLimit.toString(),
+				seeds[0].toString(),
+				seeds[1].toString(),
+				seeds[2].toString(),
+				seeds[3].toString(),
 				JSON.stringify(players),
 			],
 			{
@@ -150,10 +158,6 @@ export class DuelingState extends RoomState {
 
 				if (cmd === "CMD:FINISH") {
 					this.handleCoreFinish(params);
-				}
-
-				if (cmd === "CMD:CREATED") {
-					this.handleCoreCreated(params);
 				}
 
 				if (cmd === "CMD:TURN") {
@@ -307,10 +311,6 @@ export class DuelingState extends RoomState {
 		this.room.increaseTurn();
 		this.room.resetTimer(0, this.room.timeLimit * 1000);
 		this.room.resetTimer(1, this.room.timeLimit * 1000);
-	}
-
-	private handleCoreCreated(params: string[]) {
-		this.room.replay.setSeed(params);
 	}
 
 	private handleCoreFinish(params: string[]) {
@@ -592,5 +592,19 @@ export class DuelingState extends RoomState {
 		this.room.replay.addResponse(data);
 		this.room.stopTimer(client.team);
 		this.room.sendMessageToCpp(`CMD:RESPONSE|${client.team}|${data}\n`);
+	}
+
+	private generateSeeds(): bigint[] {
+		const randomSeed1 = crypto.randomBytes(8).readBigUInt64LE();
+		const randomSeed2 = crypto.randomBytes(8).readBigUInt64LE();
+		const randomSeed3 = crypto.randomBytes(8).readBigUInt64LE();
+		const randomSeed4 = crypto.randomBytes(8).readBigUInt64LE();
+
+		console.log("Random Seed 1:", randomSeed1.toString());
+		console.log("Random Seed 2:", randomSeed2.toString());
+		console.log("Random Seed 3:", randomSeed3.toString());
+		console.log("Random Seed 4:", randomSeed4.toString());
+
+		return [randomSeed1, randomSeed2, randomSeed3, randomSeed4];
 	}
 }

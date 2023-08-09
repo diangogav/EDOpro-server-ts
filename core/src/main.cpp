@@ -93,7 +93,11 @@ int main(int argc, char *argv[])
   uint16_t extraRules = atoi(argv[6]);
   uint8_t isTeam1GoingFirst = atoi(argv[7]);
   uint16_t timeLimit = atoi(argv[8]);
-  std::string playersData = argv[9];
+  uint64_t randomSeed1 = atoi(argv[9]);
+  uint64_t randomSeed2 = atoi(argv[10]);
+  uint64_t randomSeed3 = atoi(argv[11]);
+  uint64_t randomSeed4 = atoi(argv[12]);
+  std::string playersData = argv[13];
 
   Json::Value players;
   Json::Reader reader;
@@ -111,7 +115,11 @@ int main(int argc, char *argv[])
       startingLP,
       startingDrawCount,
       drawCountPerTurn,
-      extraRules);
+      extraRules,
+      randomSeed1,
+      randomSeed2,
+      randomSeed3,
+      randomSeed4);
 
   DuelScriptsLoader duelScriptsLoader{repository, duel};
   duelScriptsLoader.load();

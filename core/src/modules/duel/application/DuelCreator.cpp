@@ -22,7 +22,7 @@ void myLogHandlerFunction(void *payload, const char *string, int type)
 void *myLogHandlerPayload = nullptr;     // Replace with your own payload data.
 void *myCardReaderDonePayload = nullptr; // Replace with your own payload data.
 
-OCG_Duel DuelCreator::run(CardSqliteRepository &db, uint64_t flags, uint32_t startingLP, uint32_t startingDrawCount, uint32_t drawCountPerTurn, uint16_t extraRules)
+OCG_Duel DuelCreator::run(CardSqliteRepository &db, uint64_t flags, uint32_t startingLP, uint32_t startingDrawCount, uint32_t drawCountPerTurn, uint16_t extraRules, uint64_t randomSeed1, uint64_t randomSeed2, uint64_t randomSeed3, uint64_t randomSeed4)
 {
   CardSqliteRepository cardRepository;
 
@@ -37,14 +37,6 @@ OCG_Duel DuelCreator::run(CardSqliteRepository &db, uint64_t flags, uint32_t sta
       drawCountPerTurn};
 
   uint8_t enableUnsafeLibraries = 0;
-
-  std::random_device rd;
-  std::mt19937_64 rng(rd());
-  // std::uniform_int_distribution<uint64_t> dist(0, std::numeric_limits<uint64_t>::max());
-  uint64_t randomSeed1 = std::uniform_int_distribution<uint64_t>(0, std::numeric_limits<uint64_t>::max())(rng);
-  uint64_t randomSeed2 = std::uniform_int_distribution<uint64_t>(0, std::numeric_limits<uint64_t>::max())(rng);
-  uint64_t randomSeed3 = std::uniform_int_distribution<uint64_t>(0, std::numeric_limits<uint64_t>::max())(rng);
-  uint64_t randomSeed4 = std::uniform_int_distribution<uint64_t>(0, std::numeric_limits<uint64_t>::max())(rng);
 
   OCG_DuelOptions options = {
       {randomSeed1,
@@ -74,13 +66,6 @@ OCG_Duel DuelCreator::run(CardSqliteRepository &db, uint64_t flags, uint32_t sta
   {
     exit(1);
   }
-
-  std::string message = "CMD:CREATED|";
-  message += std::to_string(randomSeed1) + "|";
-  message += std::to_string(randomSeed2) + "|";
-  message += std::to_string(randomSeed3) + "|";
-  message += std::to_string(randomSeed4) + "|";
-  std::cout << message << std::endl;
 
   return duel;
 };
