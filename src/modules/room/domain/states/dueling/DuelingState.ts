@@ -47,8 +47,8 @@ export class DuelingState extends RoomState {
 
 		this.eventEmitter.on(
 			Commands.SURRENDER as unknown as string,
-			(message: ClientMessage, room: Room, socket: YGOClientSocket) =>
-				this.handleSurrender.bind(this)(message, room, socket)
+			(message: ClientMessage, _room: Room, client: Client) =>
+				this.handleSurrender.bind(this)(message, client)
 		);
 
 		this.eventEmitter.on(
