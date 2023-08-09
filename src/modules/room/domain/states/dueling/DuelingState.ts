@@ -600,11 +600,6 @@ export class DuelingState extends RoomState {
 		const randomSeed3 = crypto.randomBytes(8).readBigUInt64LE();
 		const randomSeed4 = crypto.randomBytes(8).readBigUInt64LE();
 
-		console.log("Random Seed 1:", randomSeed1.toString());
-		console.log("Random Seed 2:", randomSeed2.toString());
-		console.log("Random Seed 3:", randomSeed3.toString());
-		console.log("Random Seed 4:", randomSeed4.toString());
-
 		return [randomSeed1, randomSeed2, randomSeed3, randomSeed4];
 	}
 }
