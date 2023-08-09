@@ -94,6 +94,10 @@ export class DuelingState extends RoomState {
 
 		this.room.setDuel(core);
 
+		core.stderr.on("data", (data: string) => {
+			console.error(data);
+			this.logger.error(data);
+		});
 		core.stdout.on("data", (data: string) => {
 			const message = data.toString().trim();
 			const regex = /CMD:[A-Z]+(\|[\w]+)*\b/g;
