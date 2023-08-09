@@ -48,20 +48,20 @@ export class FinishDuelHandler {
 		const replayPromptMessage = ReplayPromptMessage.create();
 
 		this.room.replay.addPlayers(this.room.clients);
-		// eslint-disable-next-line @typescript-eslint/no-floating-promises
+
 		const replayData = await this.room.replay.serialize();
 		this.room.resetReplay();
 
 		const replayMessage = ReplayBufferMessage.create(replayData);
 
+		const winMessage = WinClientMessage.create({
+			reason: 0,
+			winner: this.winner,
+		});
+
+		this.room.replay.addMessage(winMessage);
+
 		if (this.reason === DuelFinishReason.SURRENDERED) {
-			const winMessage = WinClientMessage.create({
-				reason: 0,
-				winner: this.winner,
-			});
-
-			this.room.replay.addMessage(winMessage);
-
 			this.room.clients.forEach((item) => {
 				item.sendMessage(winMessage);
 			});
