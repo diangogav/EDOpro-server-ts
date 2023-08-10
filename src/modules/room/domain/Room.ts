@@ -487,6 +487,7 @@ export class Room {
 	}
 
 	removePlayer(player: Client): void {
+		player.socket.removeAllListeners();
 		this._clients = this._clients.filter((item) => item.socket.id !== player.socket.id);
 	}
 
