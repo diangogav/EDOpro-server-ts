@@ -1,5 +1,17 @@
 #include "QueryCreator.h"
 
+template<>
+constexpr LocInfo Read(const uint8_t*& ptr) noexcept
+{
+	return LocInfo
+	{
+		Read<uint8_t>(ptr),
+		Read<uint8_t>(ptr),
+		Read<uint32_t>(ptr),
+		Read<uint32_t>(ptr)
+	};
+}
+
 std::vector<QueryRequest> QueryCreator::run(const std::vector<uint8_t> &message)
 {
   uint8_t messageType = message[0U];
