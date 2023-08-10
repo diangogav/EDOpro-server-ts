@@ -54,21 +54,20 @@ export class FinishDuelHandler {
 
 		const replayMessage = ReplayBufferMessage.create(replayData);
 
-		const winMessage = WinClientMessage.create({
-			reason: 0,
-			winner: this.winner,
-		});
-
-		this.room.replay.addMessage(winMessage);
-
-		if (this.reason === DuelFinishReason.SURRENDERED) {
-			this.room.clients.forEach((item) => {
-				item.sendMessage(winMessage);
+		if (this.reason !== DuelFinishReason.SURRENDERED) {
+			const winMessage = WinClientMessage.create({
+				reason: 0,
+				winner: this.winner,
 			});
 
-			this.room.spectators.forEach((item) => {
-				item.sendMessage(winMessage);
-			});
+			this.room.replay.addMessage(winMessage);
+
+			// this.room.clients.forEach((item) => {
+			// 	item.sendMessage(winMessage);
+			// });
+			// this.room.spectators.forEach((item) => {
+			// 	item.sendMessage(winMessage);
+			// });
 		}
 
 		this.room.clients.forEach((item) => {
