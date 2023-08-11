@@ -24,7 +24,7 @@ export class HostServer {
 
 	constructor(logger: Logger) {
 		this.logger = logger;
-		this.server = net.createServer();
+		this.server = net.createServer({ keepAlive: true });
 		this.roomFinder = new RoomFinder();
 		this.registerSubscribers();
 	}

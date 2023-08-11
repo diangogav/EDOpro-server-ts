@@ -30,13 +30,9 @@ export class Reconnect {
 
 				return;
 			}
-			if (!player.socket.id) {
+			if (!player.socket.id || !player.socket.closed) {
 				return;
 			}
-
-			// if (!player.socket.id || !player.socket.closed) {
-			// 	return;
-			// }
 		}
 
 		player.setSocket(socket, room.clients, room);
