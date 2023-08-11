@@ -59,6 +59,10 @@ export class MessageProcessor {
 		return this.buffer.length;
 	}
 
+	get currentBuffer(): Buffer {
+		return this.buffer;
+	}
+
 	get payload(): ClientMessage {
 		return {
 			data: this._data,

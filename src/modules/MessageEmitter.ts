@@ -38,6 +38,12 @@ export class MessageEmitter {
 
 		this.messageProcessor.process();
 
+		const payload = this.messageProcessor.payload;
+		this.logger.debug(`Incomming command: ${payload.command}`);
+		this.logger.debug(`Size: ${payload.size}`);
+		this.logger.debug(`Current Buffer: ${this.messageProcessor.currentBuffer.toString("hex")}`);
+		this.logger.debug(`Current Data: ${payload.data.toString("hex")}`);
+
 		if (this.messageProcessor.command === Commands.PLAYER_INFO) {
 			this.eventEmitter.emit(
 				this.messageProcessor.command as unknown as string,
