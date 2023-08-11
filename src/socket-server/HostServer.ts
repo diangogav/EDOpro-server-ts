@@ -50,6 +50,8 @@ export class HostServer {
 			});
 
 			socket.on("error", (_error) => {
+				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+				this.logger.info(`${socket.remoteAddress} left`);
 				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
 			});
