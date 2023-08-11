@@ -22,6 +22,7 @@ export class Client {
 	private _deck: Deck;
 	private _duelPosition: number;
 	private _turn: boolean;
+	private _canReconnect: boolean;
 
 	constructor({
 		socket,
@@ -156,6 +157,14 @@ export class Client {
 
 	get team(): number {
 		return this._team;
+	}
+
+	setCanReconnect(value: boolean): void {
+		this._canReconnect = value;
+	}
+
+	get canReconnect(): boolean {
+		return this._canReconnect;
 	}
 
 	sendMessage(message: Buffer): void {
