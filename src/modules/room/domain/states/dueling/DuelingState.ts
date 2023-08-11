@@ -187,6 +187,26 @@ export class DuelingState extends RoomState {
 			console.error(data);
 			this.logger.error(data);
 		});
+
+		core.on("exit", (code, signal) => {
+			this.logger.info(
+				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+				`Core closed for room ${this.room.id} with code: ${code} and signal: ${signal} `
+			);
+		});
+
+		core.on("close", (code, signal) => {
+			this.logger.info(
+				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+				`Core closed for room ${this.room.id} with code: ${code} and signal: ${signal} `
+			);
+		});
+
+		core.on("error", (error) => {
+			this.logger.info(`Core error in room ${this.room.id}`);
+			this.logger.error(error);
+		});
+
 		core.stdout.on("data", (data: string) => {
 			const message = data.toString().trim();
 			const regex = /CMD:[A-Z]+(\|[\w]+)*\b/g;
