@@ -7,6 +7,7 @@ export type Player = {
 export type MatchHistory = {
 	games: {
 		result: "winner" | "loser" | "deuce";
+		turns: number;
 		// score: number;
 	}[];
 };
@@ -30,16 +31,18 @@ export class Match {
 		}));
 	}
 
-	duelWinner(winner: number): void {
+	duelWinner(winner: number, turns: number): void {
 		this._players.forEach((player) => {
 			if (player.team === winner) {
 				player.games.push({
 					result: "winner",
+					turns,
 					// score: 1,
 				});
 			} else {
 				player.games.push({
 					result: "loser",
+					turns,
 					// score: 0,
 				});
 			}

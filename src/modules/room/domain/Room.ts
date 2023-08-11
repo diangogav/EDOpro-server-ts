@@ -313,7 +313,7 @@ export class Room {
 		if (!this._match) {
 			return;
 		}
-		this._match.duelWinner(winner);
+		this._match.duelWinner(winner, this.turn);
 	}
 
 	isMatchFinished(): boolean {
