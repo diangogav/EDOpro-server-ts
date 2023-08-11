@@ -40,6 +40,7 @@ export class HostServer {
 			ygoClientSocket.id = uuidv4();
 
 			socket.on("data", (data: Buffer) => {
+				this.logger.debug(`Incoming message: ${data.toString("hex")}`);
 				messageEmitter.handleMessage(data);
 			});
 

@@ -77,6 +77,7 @@ export class DuelingState extends RoomState {
 
 		const seeds = this.generateSeeds();
 		this.room.replay.setSeed(seeds);
+		this.logger.debug(`GAME: ${this.room.playerNames(0)} VS ${this.room.playerNames(1)}`);
 
 		const core = spawn(
 			`${__dirname}/../../../../../../core/CoreIntegrator`,
@@ -309,6 +310,7 @@ export class DuelingState extends RoomState {
 
 	private handleCoreTurn(_params: string[]) {
 		this.room.increaseTurn();
+		this.logger.debug(`Turn: ${this.room.turn}`);
 		this.room.resetTimer(0, this.room.timeLimit * 1000);
 		this.room.resetTimer(1, this.room.timeLimit * 1000);
 	}
