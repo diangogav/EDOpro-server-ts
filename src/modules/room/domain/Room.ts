@@ -431,6 +431,7 @@ export class Room {
 	dueling(): void {
 		this._state = DuelState.DUELING;
 		this.isStart = "start";
+		this._turn = 0;
 		this.roomState?.removeAllListener();
 		this.roomState = new DuelingState(
 			this.emitter,
