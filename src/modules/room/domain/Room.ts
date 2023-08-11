@@ -240,10 +240,11 @@ export class Room {
 		emitter: EventEmitter,
 		logger: Logger
 	): Room {
+		const ranked = true;
 		const room = new Room({
 			id,
 			name: message.name,
-			notes: message.notes,
+			notes: ranked ? `(Ranked) ${message.notes}` : message.notes,
 			mode: message.mode,
 			needPass: Buffer.from(message.password).some((element) => element !== 0x00),
 			team0: message.t0Count,
@@ -272,7 +273,7 @@ export class Room {
 			password: message.password,
 			duelFlagsHight: message.duelFlagsHight,
 			duelFlagsLow: message.duelFlagsLow,
-			ranked: Boolean(playerInfo.password),
+			ranked,
 		});
 
 		room.emitter = emitter;
