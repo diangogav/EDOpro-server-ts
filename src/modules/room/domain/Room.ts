@@ -240,7 +240,7 @@ export class Room {
 		emitter: EventEmitter,
 		logger: Logger
 	): Room {
-		const ranked = true;
+		const ranked = Boolean(playerInfo.password);
 		const room = new Room({
 			id,
 			name: message.name,
