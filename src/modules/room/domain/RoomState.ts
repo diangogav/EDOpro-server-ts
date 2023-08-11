@@ -30,11 +30,19 @@ export abstract class RoomState {
 		room: Room,
 		socket: YGOClientSocket
 	): Client | null {
+		if (!room.ranked) {
+			const player = room.clients.find((client) => {
+				return (
+					client.socket.remoteAddress === socket.remoteAddress &&
+					playerInfoMessage.name === client.name
+				);
+			});
+
+			return player ?? null;
+		}
+
 		const player = room.clients.find((client) => {
-			return (
-				client.socket.remoteAddress === socket.remoteAddress &&
-				playerInfoMessage.name === client.name
-			);
+			return playerInfoMessage.name === client.name;
 		});
 
 		return player ?? null;

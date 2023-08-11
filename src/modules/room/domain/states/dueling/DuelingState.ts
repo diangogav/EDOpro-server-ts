@@ -7,11 +7,14 @@ import EventEmitter from "events";
 import { YGOClientSocket } from "../../../../../socket-server/HostServer";
 import { decimalToBytesBuffer } from "../../../../../utils";
 import { Client } from "../../../../client/domain/Client";
+import { UpdateDeckMessageSizeCalculator } from "../../../../deck/application/UpdateDeckMessageSizeCalculator";
 import { JoinGameMessage } from "../../../../messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../../../messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../../messages/domain/Commands";
 import { ClientMessage } from "../../../../messages/MessageProcessor";
 import { DuelStartClientMessage } from "../../../../messages/server-to-client/DuelStartClientMessage";
+import { ErrorMessages } from "../../../../messages/server-to-client/error-messages/ErrorMessages";
+import { ErrorClientMessage } from "../../../../messages/server-to-client/ErrorClientMessage";
 import { BroadcastClientMessage } from "../../../../messages/server-to-client/game-messages/BroadcastClientMessage";
 import { RawClientMessage } from "../../../../messages/server-to-client/game-messages/RawClientMessage";
 import { StartDuelClientMessage } from "../../../../messages/server-to-client/game-messages/StartDuelClientMessage";
@@ -19,6 +22,8 @@ import { TimeLimitClientMessage } from "../../../../messages/server-to-client/ga
 import { UpdateCardClientMessage } from "../../../../messages/server-to-client/game-messages/UpdateCardClientMessage";
 import { UpdateDataClientMessage } from "../../../../messages/server-to-client/game-messages/UpdateDataClientMessage";
 import { WaitingClientMessage } from "../../../../messages/server-to-client/game-messages/WaitingClientMessage";
+import { PlayerChangeClientMessage } from "../../../../messages/server-to-client/PlayerChangeClientMessage";
+import { ServerErrorClientMessage } from "../../../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { ServerMessageClientMessage } from "../../../../messages/server-to-client/ServerMessageClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
 import { FinishDuelHandler } from "../../../application/FinishDuelHandler";
@@ -63,6 +68,81 @@ export class DuelingState extends RoomState {
 			(message: ClientMessage, room: Room, client: Client) =>
 				this.handleReady.bind(this)(message, room, client)
 		);
+
+		this.eventEmitter.on(
+			Commands.UPDATE_DECK as unknown as string,
+			(message: ClientMessage, room: Room, client: Client) =>
+				this.handleUpdateDeck.bind(this)(message, room, client)
+		);
+	}
+
+	private handleUpdateDeck(message: ClientMessage, room: Room, client: Client): void {
+		this.logger.debug("DUELING: UPDATE_DECK");
+
+		const messageSize = new UpdateDeckMessageSizeCalculator(message.data).calculate();
+		const body = message.data.subarray(0, messageSize);
+		const mainAndExtraDeckSize = body.readUInt32LE(0);
+		const sizeDeckSize = body.readUint32LE(4);
+		const mainDeck: number[] = [];
+		for (let i = 8; i < mainAndExtraDeckSize * 4 + 8; i += 4) {
+			const code = body.readUint32LE(i);
+			mainDeck.push(code);
+		}
+
+		const sideDeck: number[] = [];
+		for (
+			let i = mainAndExtraDeckSize * 4 + 8;
+			i < (mainAndExtraDeckSize + sizeDeckSize) * 4 + 8;
+			i += 4
+		) {
+			const code = body.readUint32LE(i);
+			sideDeck.push(code);
+		}
+
+		const completeIncomingDeck = [...mainDeck, ...sideDeck];
+		const completeCurrentDeck = [
+			...client.deck.main,
+			...client.deck.side,
+			...client.deck.extra,
+		].map((item) => Number(item.code));
+
+		if (completeCurrentDeck.length !== completeIncomingDeck.length) {
+			client.socket.write(
+				ServerErrorClientMessage.create(
+					"Por favor selecciona el mismo deck de la partida en curso para poder reconectar"
+				)
+			);
+			const message = ErrorClientMessage.create(ErrorMessages.DECKERROR);
+			client.socket.write(message);
+
+			const status = (client.position << 4) | 0x0a;
+			const playerChangeMessage = PlayerChangeClientMessage.create({ status });
+
+			client.socket.write(playerChangeMessage);
+			client.setCanReconnect(false);
+
+			return;
+		}
+
+		if (!completeIncomingDeck.every((item) => completeCurrentDeck.includes(item))) {
+			client.socket.write(
+				ServerErrorClientMessage.create(
+					"Por favor selecciona el mismo deck de la partida en curso para poder reconectar"
+				)
+			);
+
+			const message = ErrorClientMessage.create(ErrorMessages.DECKERROR);
+			client.socket.write(message);
+
+			const status = (client.position << 4) | 0x0a;
+			const playerChangeMessage = PlayerChangeClientMessage.create({ status });
+			client.socket.write(playerChangeMessage);
+			client.setCanReconnect(false);
+
+			return;
+		}
+
+		client.setCanReconnect(true);
 	}
 
 	private handle(): void {
@@ -529,7 +609,7 @@ export class DuelingState extends RoomState {
 
 	private handleReady(message: ClientMessage, room: Room, player: Client): void {
 		this.logger.debug("DUELING: READY");
-		if (!player.isReconnecting) {
+		if (!player.isReconnecting || !player.canReconnect) {
 			return;
 		}
 
