@@ -333,9 +333,6 @@ export class DuelingState extends RoomState {
 	}
 
 	private handleCoreSwap(params: string[]) {
-		this.room.clients.forEach((client) => {
-			client.sendMessage(ServerMessageClientMessage.create("SWAP"));
-		});
 		const team = Number(params[0]);
 		this.room.nextTurn(team);
 	}
@@ -450,7 +447,7 @@ export class DuelingState extends RoomState {
 		const nonWaitingPlayerTeam = Number(params[0]);
 		const message = WaitingClientMessage.create();
 		this.room.clients.forEach((client) => {
-			if (client.team !== nonWaitingPlayerTeam) {
+			if (!(client.team === nonWaitingPlayerTeam && client.inTurn)) {
 				client.sendMessage(message);
 			}
 		});
