@@ -23,7 +23,7 @@ export class Pino implements Logger {
 
 	debug(message: unknown): void {
 		// this.logger.debug(message);
-		this.fileLogger.debug(message);
+		// this.fileLogger.debug(message);
 	}
 
 	error(error: string | Error): void {
