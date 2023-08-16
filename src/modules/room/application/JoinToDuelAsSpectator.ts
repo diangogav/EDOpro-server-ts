@@ -9,6 +9,7 @@ import { PlayerChangeClientMessage } from "../../messages/server-to-client/Playe
 import { PlayerEnterClientMessage } from "../../messages/server-to-client/PlayerEnterClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
+import { Pino } from "../../shared/logger/infrastructure/Pino";
 import { Room } from "../domain/Room";
 import { Team } from "../domain/Team";
 
@@ -26,6 +27,7 @@ export class JoinToDuelAsSpectator {
 			position: room.nextSpectatorPosition(),
 			roomId: room.id,
 			team: Team.SPECTATOR,
+			logger: new Pino(),
 		});
 
 		room.addSpectator(client);

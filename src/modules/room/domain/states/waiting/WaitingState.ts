@@ -292,6 +292,7 @@ export class WaitingState extends RoomState {
 			position: room.nextSpectatorPosition(),
 			roomId: room.id,
 			team: 3,
+			logger: this.logger,
 		});
 
 		room.addSpectator(client);
@@ -341,6 +342,7 @@ export class WaitingState extends RoomState {
 			position: place.position,
 			roomId: room.id,
 			team: place.team,
+			logger: this.logger,
 		});
 
 		room.addClient(client);
