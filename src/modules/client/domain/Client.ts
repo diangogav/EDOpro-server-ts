@@ -174,7 +174,7 @@ export class Client {
 
 	sendMessage(message: Buffer): void {
 		this._socket.write(message);
-		this.logger.debug(message);
+		this.logger.debug(message.toString("hex"));
 		// if (this.isReconnecting) {
 		// 	return;
 		// }
