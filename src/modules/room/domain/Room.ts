@@ -332,7 +332,7 @@ export class Room {
 		const players = this.clients.map((client) => ({
 			team: client.team,
 			name: client.name,
-			deck: client.deck,
+			// deck: client.deck,
 		}));
 		this._match?.initializeHistoricalData(players);
 	}
