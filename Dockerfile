@@ -12,8 +12,8 @@ RUN git clone https://github.com/ProjectIgnis/CardScripts.git scripts && \
     git clone https://github.com/termitaklk/lflist banlists-evolution
 
 RUN mkdir banlists
-RUN mv banlists-project-ignis/ banlists/
-RUN mv banlists-evolution/ banlists/
+RUN mv banlists-project-ignis/* banlists/
+RUN mv banlists-evolution/* banlists/
 
 RUN conan profile detect
 
