@@ -8,7 +8,7 @@ WORKDIR /repositories
 
 RUN git clone https://github.com/ProjectIgnis/CardScripts.git scripts && \
     git clone https://github.com/ProjectIgnis/BabelCDB.git databases && \
-    git clone https://github.com/ProjectIgnis/LFLists banlists-project-ignis \
+    git clone https://github.com/ProjectIgnis/LFLists banlists-project-ignis && \
     git clone https://github.com/termitaklk/lflist banlists-evolution
 
 RUN mkdir banlists
