@@ -21,7 +21,7 @@ export class Pino implements Logger {
 		},
 	});
 
-	debug(message: unknown): void {
+	debug(_message: unknown): void {
 		// this.logger.debug(message);
 		// this.fileLogger.debug(message);
 	}
