@@ -21,18 +21,18 @@ export class Pino implements Logger {
 		},
 	});
 
-	debug(message: unknown): void {
+	debug(_message: unknown): void {
 		// this.logger.debug(message);
-		this.fileLogger.debug(message);
+		// this.fileLogger.debug(message);
 	}
 
 	error(error: string | Error): void {
 		this.logger.error(error);
-		this.fileLogger.error(error);
+		// this.fileLogger.error(error);
 	}
 
 	info(message: unknown): void {
 		this.logger.info(message);
-		this.fileLogger.info(message);
+		// this.fileLogger.info(message);
 	}
 }

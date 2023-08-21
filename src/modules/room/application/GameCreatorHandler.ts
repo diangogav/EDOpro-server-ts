@@ -85,6 +85,7 @@ export class GameCreatorHandler {
 			position: 0,
 			roomId: room.id,
 			team: Team.PLAYER,
+			logger: this.logger,
 		});
 
 		room.addClient(client);

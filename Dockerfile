@@ -8,7 +8,12 @@ WORKDIR /repositories
 
 RUN git clone https://github.com/ProjectIgnis/CardScripts.git scripts && \
     git clone https://github.com/ProjectIgnis/BabelCDB.git databases && \
-    git clone https://github.com/ygopromdc/lflist.git banlists
+    git clone https://github.com/ProjectIgnis/LFLists banlists-project-ignis && \
+    git clone https://github.com/termitaklk/lflist banlists-evolution
+
+RUN mkdir banlists
+RUN mv banlists-project-ignis/* banlists/
+RUN mv banlists-evolution/* banlists/
 
 RUN conan profile detect
 

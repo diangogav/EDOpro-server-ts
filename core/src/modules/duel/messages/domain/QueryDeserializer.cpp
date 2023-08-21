@@ -1,5 +1,17 @@
 #include "QueryDeserializer.h"
 
+template<>
+constexpr LocInfo Read(const uint8_t*& ptr) noexcept
+{
+	return LocInfo
+	{
+		Read<uint8_t>(ptr),
+		Read<uint8_t>(ptr),
+		Read<uint32_t>(ptr),
+		Read<uint32_t>(ptr)
+	};
+}
+
 inline std::optional<Query> DeserializeOneQuery(const uint8_t *&pointer) noexcept
 {
   if (Read<uint16_t>(pointer) == 0U)

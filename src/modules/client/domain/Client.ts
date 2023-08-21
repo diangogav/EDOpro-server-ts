@@ -4,6 +4,7 @@ import { MessageProcessor } from "../../messages/MessageProcessor";
 import { Choose } from "../../rock-paper-scissor/RockPaperScissor";
 import { Room } from "../../room/domain/Room";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
+import { Logger } from "../../shared/logger/domain/Logger";
 
 export class Listener {}
 
@@ -23,6 +24,7 @@ export class Client {
 	private _duelPosition: number;
 	private _turn: boolean;
 	private _canReconnect: boolean;
+	private readonly logger: Logger;
 
 	constructor({
 		socket,
@@ -32,6 +34,7 @@ export class Client {
 		roomId,
 		isReady = false,
 		team,
+		logger,
 	}: {
 		socket: YGOClientSocket;
 		host: boolean;
@@ -40,6 +43,7 @@ export class Client {
 		roomId: number;
 		isReady?: boolean;
 		team: number;
+		logger: Logger;
 	}) {
 		this._socket = socket;
 		this.host = host;
@@ -48,6 +52,7 @@ export class Client {
 		this.roomId = roomId;
 		this._isReady = isReady;
 		this._team = team;
+		this.logger = logger;
 	}
 
 	get socket(): YGOClientSocket {
@@ -169,6 +174,7 @@ export class Client {
 
 	sendMessage(message: Buffer): void {
 		this._socket.write(message);
+		this.logger.debug(message.toString("hex"));
 		// if (this.isReconnecting) {
 		// 	return;
 		// }
