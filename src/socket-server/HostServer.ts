@@ -36,6 +36,7 @@ export class HostServer {
 		this.server.on("connection", (socket: Socket) => {
 			this.address = socket.remoteAddress;
 			const ygoClientSocket = socket as YGOClientSocket;
+			ygoClientSocket.setKeepAlive(true, 1000);
 			const messageEmitter = new MessageEmitter(this.logger, ygoClientSocket);
 			ygoClientSocket.id = uuidv4();
 
