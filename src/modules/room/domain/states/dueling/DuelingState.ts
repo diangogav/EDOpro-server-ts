@@ -545,6 +545,7 @@ export class DuelingState extends RoomState {
 	private handleCoreMessageAll(message: CoreMessage) {
 		const data = Buffer.from(message.data, "hex");
 		const payload = Buffer.concat([decimalToBytesBuffer(data.length, 2), data]);
+		this.room.cacheTeamMessage(3, payload);
 		[...this.room.clients, ...this.room.spectators].forEach((client) => {
 			client.sendMessage(payload);
 		});

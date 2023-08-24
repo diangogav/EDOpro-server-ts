@@ -197,7 +197,6 @@ void Duel::send_core_replay_message(std::vector<uint8_t> core_message)
   Write<uint8_t>(data_ptr, 0x01);
   std::memcpy(data_ptr, core_message.data(), core_message.size());
 
-
   this->send_replay_message(data);
 }
 
@@ -228,8 +227,8 @@ void Duel::refresh_board(uint8_t position, uint8_t team)
     const auto player_buffer = this->serializer.serializeLocationQuery(queries, false);
     const auto stripped_buffer = this->serializer.serializeLocationQuery(queries, true);
 
-    this->send_update_data_message(team, false, query_location_request, player_buffer);
-    this->send_update_data_message(1 - team, false, query_location_request, stripped_buffer);
+    this->send_update_data_message(team, false, false, query_location_request, player_buffer);
+    this->send_update_data_message(1 - team, false, false, query_location_request, stripped_buffer);
   }
 
   json message;
@@ -656,9 +655,9 @@ void Duel::process_queries(const std::vector<QueryRequest> &query_requests)
 
       uint8_t team = this->get_swapped_team(query_single_request.con);
 
-      this->send_update_card_message(team, true, query_single_request, player_buffer);
-      this->send_update_card_message(1 - team, true, query_single_request, stripped_buffer);
-      this->send_update_card_message(3, true, query_single_request, stripped_buffer);
+      this->send_update_card_message(team, true, true, query_single_request, player_buffer);
+      this->send_update_card_message(1 - team, true, true, query_single_request, stripped_buffer);
+      this->send_update_card_message(3, true, true, query_single_request, stripped_buffer);
     }
     else
     {
@@ -682,14 +681,14 @@ void Duel::process_queries(const std::vector<QueryRequest> &query_requests)
       const auto player_buffer = this->serializer.serializeLocationQuery(queries, false);
       const auto stripped_buffer = this->serializer.serializeLocationQuery(queries, true);
 
-      this->send_update_data_message(team, true, query_location_request, player_buffer);
-      this->send_update_data_message(1 - team, true, query_location_request, stripped_buffer);
-      this->send_update_data_message(3, true, query_location_request, stripped_buffer);
+      this->send_update_data_message(team, true, true, query_location_request, player_buffer);
+      this->send_update_data_message(1 - team, true, true, query_location_request, stripped_buffer);
+      this->send_update_data_message(3, true, true, query_location_request, stripped_buffer);
     }
   }
 }
 
-void Duel::send_update_card_message(uint8_t team, bool cacheable, const QuerySingleRequest &query_single_request, const std::vector<uint8_t> buffer)
+void Duel::send_update_card_message(uint8_t team, bool cacheable, bool all, const QuerySingleRequest &query_single_request, const std::vector<uint8_t> buffer)
 {
   const auto data = this->create_update_card_message(query_single_request, buffer);
 
@@ -706,6 +705,7 @@ void Duel::send_update_card_message(uint8_t team, bool cacheable, const QuerySin
   _message["receiver"] = team;
   _message["type"] = "MESSAGE";
   _message["cacheable"] = cacheable;
+  _message["all"] = all;
 
   std::string serialized_message = _message.dump();
   this->send_message(serialized_message);
@@ -738,7 +738,7 @@ std::vector<uint8_t> Duel::create_update_data_message(QueryLocationRequest query
   return data;
 }
 
-void Duel::send_update_data_message(uint8_t team, bool cacheable, const QueryLocationRequest &query_location_request, const std::vector<uint8_t> buffer)
+void Duel::send_update_data_message(uint8_t team, bool cacheable, bool all, const QueryLocationRequest &query_location_request, const std::vector<uint8_t> buffer)
 {
   const auto data = this->create_update_data_message(query_location_request, buffer);
 
@@ -755,6 +755,7 @@ void Duel::send_update_data_message(uint8_t team, bool cacheable, const QueryLoc
   _message["receiver"] = team;
   _message["type"] = "MESSAGE";
   _message["cacheable"] = cacheable;
+  _message["all"] = all;
 
   std::string serialized_message = _message.dump();
   this->send_message(serialized_message);

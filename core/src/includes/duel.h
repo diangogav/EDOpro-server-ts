@@ -77,8 +77,8 @@ private:
   std::vector<uint8_t> create_update_card_message(QuerySingleRequest query, const std::vector<uint8_t> buffer);
   void send_replay_message(std::vector<uint8_t> data);
   void send_core_replay_message(std::vector<uint8_t> data);
-  void send_update_card_message(uint8_t team, bool cacheable, const QuerySingleRequest &query_single_request, const std::vector<uint8_t> buffer);
-  void send_update_data_message(uint8_t team, bool cacheable, const QueryLocationRequest &query_location_request, const std::vector<uint8_t> buffer);
+  void send_update_card_message(uint8_t team, bool cacheable, bool all, const QuerySingleRequest &query_single_request, const std::vector<uint8_t> buffer);
+  void send_update_data_message(uint8_t team, bool cacheable, bool all, const QueryLocationRequest &query_location_request, const std::vector<uint8_t> buffer);
   MessageTargets get_message_target(const std::vector<uint8_t> message);
   uint8_t get_team_message_receptor(const std::vector<uint8_t> message);
   bool does_message_required_answer(uint8_t message_type);
