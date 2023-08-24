@@ -1,276 +1,147 @@
-#include "./modules/duel/application/DuelCreator.h"
-#include "./modules/duel/application/DuelScriptsLoader.h"
-#include "./modules/duel/application/DuelDecksLoader.h"
-#include "./modules/duel/application/DuelStarter.h"
-#include "./modules/duel/application/DecksSetter.h"
-#include "./modules/card/infrastructure/CardSqliteRepository.h"
-#include "./modules/duel/messages/application/LogMessageSender.h"
-#include "./modules/shared/ZonesRefresher.h"
-#include "./modules/duel/messages/domain/QueryDeserializer.h"
-#include "./modules/duel/messages/domain/QuerySerializer.h"
+#include <nlohmann/json.hpp>
+#include <iostream>
+#include <vector>
+#include <string>
+#include <sstream>
+#include <regex>
 
 #include "./modules/duel/infrastructure/OCGRepository.h"
-#include "./modules/duel/application/DuelProcessor.h"
-#include "./modules/duel/messages/domain/DuelMessageHandler.h"
-#include "./modules/duel/messages/application/RefreshMessageSender.h"
-#include "./modules/duel/messages/application/FieldMessageSender.h"
-#include "./modules/duel/messages/application/QueryRequestProcessor.h"
-#include "./modules/duel/messages/post-actions/QueryCreator.h"
-#include "./modules/duel/messages/pre-actions/PreActionQueryCreator.h"
-#include "./modules/shared/DuelTurnTimer.h"
-#include "./modules/duel/application/PostActions.h"
-#include "./modules/duel/application/PreActions.h"
-#include "./modules/duel/application/DuelFinishHandler.h"
-#include "./modules/duel/messages/application/ResponseHandler.h"
 
-#include <iostream>
-#include <string>
-#include <vector>
-#include <iomanip>
-#include <regex>
-#include <filesystem>
-#include <json/json.h>
-#include <json/value.h>
+#include "./includes/duel_config.h"
+#include "./includes/player.h"
+#include "./includes/duel.h"
 
-namespace fs = std::filesystem;
+using json = nlohmann::json;
 
-class Player
+void from_json(const json &info, Config &config)
 {
-public:
-  std::string team;
-  std::string deck;
-};
-
-uint8_t calculateTeam(uint8_t team, uint8_t isTeam1GoingFirst)
-{
-  assert(team <= 1U);
-  return isTeam1GoingFirst ^ team;
+  info.at("seeds").get_to(config.seeds);
+  info.at("flags").get_to(config.flags);
+  info.at("lp").get_to(config.lp);
+  info.at("startingDrawCount").get_to(config.starting_draw_count);
+  info.at("drawCountPerTurn").get_to(config.draw_count);
+  info.at("firstToPlay").get_to(config.first_to_play);
+  info.at("timeLimit").get_to(config.time_limit);
 }
 
-void printVectorAsHex(const std::vector<uint8_t> &vec)
+void from_json(const json &playerJson, Player &player)
 {
-  for (const auto &element : vec)
-  {
-    std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(element) << " ";
-  }
-  std::cout << std::dec << std::endl;
+  playerJson.at("team").get_to(player.team);
+  playerJson.at("mainDeck").get_to(player.main_deck);
+  playerJson.at("sideDeck").get_to(player.side_deck);
+  playerJson.at("extraDeck").get_to(player.extra_deck);
+  playerJson.at("turn").get_to(player.turn);
 }
 
-std::vector<uint8_t> convertToUInt8(const std::vector<std::string> &vectorStrings)
+void global_exception_handler()
 {
-  std::vector<uint8_t> vectorBytes;
-  vectorBytes.reserve(vectorStrings.size());
-
-  for (const std::string &hexString : vectorStrings)
+  try
   {
-    int intValue = std::stoi(hexString, nullptr, 16);
-    uint8_t byteValue = static_cast<uint8_t>(intValue);
-    vectorBytes.push_back(byteValue);
+    throw;
   }
-
-  return vectorBytes;
-}
-
-std::vector<std::string> split(const std::string &str, char delimiter)
-{
-  std::vector<std::string> tokens;
-  std::string token;
-  std::istringstream tokenStream(str);
-  while (std::getline(tokenStream, token, delimiter))
+  catch (const std::exception &e)
   {
-    tokens.push_back(token);
+    std::cerr << "Excepción capturada: " << e.what() << std::endl;
   }
-  return tokens;
+  catch (...)
+  {
+    std::cerr << "Excepción desconocida capturada" << std::endl;
+  }
 }
 
 int main(int argc, char *argv[])
 {
-  uint8_t shuffle = atoi(argv[1]);
-  uint32_t startingLP = atoi(argv[2]);
-  uint32_t startingDrawCount = atoi(argv[3]);
-  uint32_t drawCountPerTurn = atoi(argv[4]);
-  uint64_t flags = atoi(argv[5]);
-  uint16_t extraRules = atoi(argv[6]);
-  uint8_t isTeam1GoingFirst = atoi(argv[7]);
-  uint16_t timeLimit = atoi(argv[8]);
-  uint64_t randomSeed1 = atoi(argv[9]);
-  uint64_t randomSeed2 = atoi(argv[10]);
-  uint64_t randomSeed3 = atoi(argv[11]);
-  uint64_t randomSeed4 = atoi(argv[12]);
-  std::string playersData = argv[13];
+  std::set_terminate(global_exception_handler);
 
-  Json::Value players;
-  Json::Reader reader;
+  std::string json_str = argv[1];
+  json data = json::parse(json_str);
 
-  reader.parse(playersData, players);
+  /* Get duel config */
+  Config config;
+  data["config"].get_to(config);
 
+  /* Get duel players */
+  std::vector<Player> player_list = data.at("players").get<std::vector<Player>>();
 
-  CardSqliteRepository cardRepository{};
+  OCGRepository api;
+  Duel duel{api, config, player_list};
 
-  OCGRepository repository{};
-  DuelCreator duelCreator{repository};
-  OCG_Duel duel = duelCreator.run(
-      cardRepository,
-      flags,
-      startingLP,
-      startingDrawCount,
-      drawCountPerTurn,
-      extraRules,
-      randomSeed1,
-      randomSeed2,
-      randomSeed3,
-      randomSeed4);
+  duel.create();
+  duel.load_scripts();
+  duel.load_decks();
+  duel.start();
 
-  DuelScriptsLoader duelScriptsLoader{repository, duel};
-  duelScriptsLoader.load();
-
-  DuelDecksLoader duelDecksLoader{repository, duel, isTeam1GoingFirst, shuffle};
-  duelDecksLoader.load(players);
-
-  DuelStarter duelStarter{repository, duel};
-  duelStarter.start();
-  DuelTurnTimer &timer = DuelTurnTimer::getInstance();
-  timer.resetTimers(timeLimit);
-
-  DuelProcessor processor(repository);
-  DuelMessageHandler duelMessageHandler(isTeam1GoingFirst, timeLimit);
-  PreActions preActions(timeLimit, isTeam1GoingFirst);
-  QueryRequestProcessor queryProcessor(repository, isTeam1GoingFirst);
-  PreActionQueryCreator preActionQueryCreator;
-  QueryCreator queryCreator;
-  LogMessageSender logger;
-  PostActions postActions(timeLimit, isTeam1GoingFirst);
-  ResponseHandler responseHandler(duel, repository, timeLimit);
-  DuelFinishHandler duelFinishHandler(isTeam1GoingFirst);
-  ZonesRefresher zonesRefresher;
-  RefreshMessageSender refreshMessageSender;
-  QueryDeserializer deserializer;
-  QuerySerializer serializer;
-
-  std::string message;
   while (true)
   {
+    std::string message;
     std::getline(std::cin, message);
-    std::cout << "Instrucción recibida: " << message << std::endl;
-    std::regex regex("CMD:[A-Z]+(\\|[a-zA-Z0-9]+)*");
-    std::smatch matches;
 
-    std::vector<std::string> commands;
-    std::string::const_iterator searchStart(message.cbegin());
-
-    while (std::regex_search(searchStart, message.cend(), matches, regex))
+    if (!message.empty())
     {
-      std::string command = matches.str();
-      commands.push_back(command);
-      searchStart = matches.suffix().first;
-    }
-    // Procesar cada instrucción individualmente
-    for (const std::string &instruction : commands)
-    {
-      std::regex paramRegex("\\|([a-zA-Z0-9]+)");
-      std::sregex_iterator paramIter(instruction.begin(), instruction.end(), paramRegex);
-      std::sregex_iterator end;
+      json json_data = json::parse(message);
 
-      std::vector<std::string> params;
-      for (; paramIter != end; ++paramIter)
+      std::string command = json_data["command"];
+
+      if (command == "REFRESH_FIELD")
       {
-        params.push_back((*paramIter)[1]);
+        uint8_t position = json_data["data"]["position"];
+        uint8_t team = json_data["data"]["team"];
+
+        duel.refresh_board(position, team);
       }
 
-      std::string cmd = instruction.substr(4, instruction.find_first_of("|") - 4);
-
-      std::cout << "Instrucción recibida!!!!: " << cmd << std::endl;
-
-      if (cmd == "RESPONSE")
+      if (command == "GET_FIELD")
       {
-        uint8_t team = std::atoi(params[0].c_str());
-        std::vector<std::string> data(params.begin() + 1, params.end());
-        std::vector<uint8_t> vectorBytes = convertToUInt8(data);
-        responseHandler.handle(team, vectorBytes);
-        std::cout << "CMD:DUEL" << std::endl;
+        uint8_t position = json_data["data"]["position"];
+        duel.get_board(position);
       }
 
-      if (cmd == "DECKS")
+      if (command == "RESPONSE")
       {
-        DecksSetter decksSetter{repository, duel, isTeam1GoingFirst};
-        decksSetter.run();
-      }
+        uint8_t replier = json_data["data"]["replier"];
+        std::string response = json_data["data"]["message"];
+        std::istringstream iss(response);
+        std::string token;
+        std::vector<uint8_t> vector;
 
-      if (cmd == "FIELD")
-      {
-        int position = std::atoi(params[0].c_str());
-        const auto buffer = repository.duelQueryField(duel);
-        FieldMessageSender fieldMessageSender;
-        fieldMessageSender.send(position, buffer);
-      }
-
-      if (cmd == "REFRESH")
-      {
-        int reconnectingTeam = std::atoi(params[0].c_str());
-        int position = std::atoi(params[1].c_str());
-        std::vector<QueryRequest> queryRequests;
-        zonesRefresher.refreshAll(queryRequests);
-
-        for (const auto &queryRequest : queryRequests)
+        while (std::getline(iss, token, '|'))
         {
-          const auto &queryLocationRequest = std::get<QueryLocationRequest>(queryRequest);
-          OCG_QueryInfo query = {
-              queryLocationRequest.flags,
-              queryLocationRequest.con,
-              queryLocationRequest.loc,
-              0U,
-              0U};
-
-          uint8_t team = calculateTeam(queryLocationRequest.con, isTeam1GoingFirst);
-          const auto buffer = repository.duelQueryLocation(duel, query);
-
-          if (queryLocationRequest.loc == LOCATION_DECK)
-          {
-            continue;
-          }
-
-          if (queryLocationRequest.loc == LOCATION_EXTRA)
-          {
-            // refreshMessageSender.send(reconnectingTeam, team, queryLocationRequest.loc, queryLocationRequest.con, buffer);
-            // continue;
-          }
-
-          const auto queries = deserializer.deserializeLocationQuery(buffer);
-          const auto playerBuffer = serializer.serializeLocationQuery(queries, false);
-          const auto strippedBuffer = serializer.serializeLocationQuery(queries, true);
-
-          refreshMessageSender.send(reconnectingTeam, team, queryLocationRequest.loc, queryLocationRequest.con, playerBuffer);
-          refreshMessageSender.send(reconnectingTeam, 1U - team, queryLocationRequest.loc, queryLocationRequest.con, strippedBuffer);
+          uint8_t byte = static_cast<uint8_t>(std::stoi(token, nullptr, 16));
+          vector.push_back(byte);
         }
-
-        std::string payload = "CMD:RECONNECT|";
-        payload += std::to_string(reconnectingTeam) + "|";
-        payload += std::to_string(position) + "|";
-        std::cout << payload << std::endl;
+        duel.set_response(replier, vector);
+        command = "PROCESS";
       }
 
-      if (cmd == "PROCESS")
+      if (command == "SET_DECKS")
       {
-        bool finish = false;
+        duel.set_decks();
+        command = "PROCESS";
+      }
+
+      if (command == "PROCESS")
+      {
+        bool finished = false;
         for (;;)
         {
-          int status = processor.run(duel);
-          std::vector<std::vector<uint8_t>> messages = repository.getMessages(duel);
-
-          for (const auto &message : messages)
+          const auto status = duel.status();
+          std::vector<std::vector<uint8_t>> core_messages = duel.messages();
+          for (const auto &core_message : core_messages)
           {
-            logger.send(message);
-            if(!preActions.run(message)) {
-              messages = repository.getMessages(duel);
+            duel.send_raw_message(core_message, status);
+            if (!duel.pre_processing(core_message))
+            {
+              core_messages = duel.messages();
               continue;
             }
-            queryProcessor.run(preActionQueryCreator.run(message), duel);
-            duelMessageHandler.handle(message);
-            queryProcessor.run(queryCreator.run(message), duel);
-            finish = duelFinishHandler.handle(message);
-            postActions.run(message);
-          }
-          if (status != 2 || finish == true)
+            duel.process_queries(duel.pre_queries(core_message));
+            duel.distribute_message(core_message);
+            duel.process_queries(duel.post_queries(core_message));
+            finished = duel.is_duel_finished(core_message);
+            duel.post_processing(core_message);
+          };
+
+          if (status != 2 || finished == true)
           {
             break;
           }

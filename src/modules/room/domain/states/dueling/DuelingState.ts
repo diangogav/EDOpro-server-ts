@@ -11,12 +11,12 @@ import { UpdateDeckMessageSizeCalculator } from "../../../../deck/application/Up
 import { JoinGameMessage } from "../../../../messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../../../messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../../messages/domain/Commands";
+import { JSONMessageProcessor } from "../../../../messages/JSONMessageProcessor";
 import { ClientMessage } from "../../../../messages/MessageProcessor";
 import { DuelStartClientMessage } from "../../../../messages/server-to-client/DuelStartClientMessage";
 import { ErrorMessages } from "../../../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../../../messages/server-to-client/ErrorClientMessage";
 import { BroadcastClientMessage } from "../../../../messages/server-to-client/game-messages/BroadcastClientMessage";
-import { RawClientMessage } from "../../../../messages/server-to-client/game-messages/RawClientMessage";
 import { StartDuelClientMessage } from "../../../../messages/server-to-client/game-messages/StartDuelClientMessage";
 import { TimeLimitClientMessage } from "../../../../messages/server-to-client/game-messages/TimeLimitClientMessage";
 import { UpdateCardClientMessage } from "../../../../messages/server-to-client/game-messages/UpdateCardClientMessage";
@@ -33,13 +33,73 @@ import { DuelFinishReason } from "../../DuelFinishReason";
 import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";
 
+interface Message {
+	type: string;
+}
+
+type CoreMessage = {
+	data: string;
+	receiver: number;
+	all: boolean;
+	except?: number;
+	cacheable: boolean;
+};
+
+type RawCoreMessage = {
+	message: number;
+	data: string;
+	cacheable: boolean;
+};
+
+type TimeMessage = {
+	team: number;
+	time: number;
+	cacheable: boolean;
+};
+
+type FieldMessage = {
+	data: string;
+	position: number;
+	cacheable: boolean;
+};
+
+type ReconnectMessage = {
+	position: number;
+	team: number;
+	cacheable: boolean;
+};
+
+type StartDuelMessage = {
+	lp: number;
+	playerDeckSize: number;
+	playerExtraDeckSize: number;
+	opponentDeckSize: number;
+	opponentExtraDeckSize: number;
+	header: number;
+	type: number;
+	cacheable: boolean;
+};
+
+type ReplayMessage = {
+	data: string;
+};
+
+type FinishMessage = {
+	reason: number;
+	winner: number;
+};
+
+type SwapMessage = {
+	team: number;
+};
 export class DuelingState extends RoomState {
 	constructor(
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
 		private readonly reconnect: Reconnect,
 		private readonly joinToDuelAsSpectator: JoinToDuelAsSpectator,
-		private readonly room: Room
+		private readonly room: Room,
+		private readonly jsonMessageProcessor: JSONMessageProcessor
 	) {
 		super(eventEmitter);
 
@@ -162,19 +222,19 @@ export class DuelingState extends RoomState {
 		const core = spawn(
 			`${__dirname}/../../../../../../core/CoreIntegrator`,
 			[
-				Number(!this.room.noShuffle).toString(),
-				this.room.startLp.toString(),
-				this.room.startHand.toString(),
-				this.room.drawCount.toString(),
-				this.room.duelFlag.toString(),
-				this.room.extraRules.toString(),
-				this.room.firstToPlay.toString(),
-				this.room.timeLimit.toString(),
-				seeds[0].toString(),
-				seeds[1].toString(),
-				seeds[2].toString(),
-				seeds[3].toString(),
-				JSON.stringify(players),
+				JSON.stringify({
+					config: {
+						startLp: this.room.startLp.toString(),
+						seeds: seeds.map((seed) => Number(seed)),
+						flags: this.room.duelFlag,
+						lp: this.room.startLp,
+						startingDrawCount: this.room.startHand,
+						drawCountPerTurn: this.room.drawCount,
+						firstToPlay: this.room.firstToPlay,
+						timeLimit: this.room.timeLimit,
+					},
+					players,
+				}),
 			],
 			{
 				cwd: process.cwd(),
@@ -184,8 +244,8 @@ export class DuelingState extends RoomState {
 		this.room.setDuel(core);
 
 		core.stderr.on("data", (data: string) => {
-			console.error(data);
-			this.logger.error(data);
+			console.error(data.toString());
+			this.logger.error(data.toString());
 		});
 
 		core.on("exit", (code, signal) => {
@@ -204,142 +264,127 @@ export class DuelingState extends RoomState {
 
 		core.on("error", (error) => {
 			this.logger.info(`Core error in room ${this.room.id}`);
-			this.logger.error(error);
+			this.logger.error(error.toString());
 		});
 
-		core.stdout.on("data", (data: string) => {
-			const message = data.toString().trim();
-			const regex = /CMD:[A-Z]+(\|[\w]+)*\b/g;
-			const commands = message.match(regex);
-
-			if (!commands) {
-				return;
-			}
-
-			commands.forEach((command) => {
-				const commandParts = command.split("|");
-				const cmd = commandParts[0];
-				const params = commandParts.slice(1);
-
-				if (cmd === "CMD:START") {
-					this.handleCoreStart(params);
-				}
-
-				if (cmd === "CMD:BUFFER") {
-					this.handleCoreBuffer(params);
-				}
-
-				if (cmd === "CMD:CARD") {
-					this.handleCoreCard(params);
-				}
-
-				if (cmd === "CMD:DUEL") {
-					this.room.sendMessageToCpp("CMD:PROCESS\n");
-				}
-
-				if (cmd === "CMD:MESSAGE") {
-					this.handleCoreMessage(params);
-				}
-
-				if (cmd === "CMD:BROADCAST") {
-					this.handleCoreBroadcast(params);
-				}
-
-				if (cmd === "CMD:EXCEPT") {
-					this.handleCoreExcept(params);
-				}
-
-				if (cmd === "CMD:WAITING") {
-					this.handleCoreWaiting(params);
-				}
-
-				if (cmd === "CMD:TIME") {
-					this.handleCoreTime(params);
-				}
-
-				if (cmd === "CMD:FINISH") {
-					this.handleCoreFinish(params);
-				}
-
-				if (cmd === "CMD:TURN") {
-					this.handleCoreTurn(params);
-				}
-
-				if (cmd === "CMD:FIELD") {
-					this.handleCoreField(params);
-				}
-
-				if (cmd === "CMD:REFRESH") {
-					this.handleCoreRefresh(params);
-				}
-
-				if (cmd === "CMD:RECONNECT") {
-					this.handleCoreReconnect(params);
-				}
-
-				if (cmd === "CMD:SWAP") {
-					this.handleCoreSwap(params);
-				}
-
-				if (cmd === "CMD:REPLAY") {
-					this.handleCoreReplay(params);
-				}
-			});
+		core.stdout.on("data", (data: Buffer) => {
+			this.jsonMessageProcessor.read(data);
+			this.processMessage();
+			// console.log(data.toString());
+			// console.log("Data", data);
+			// buffer += data.toString();
+			// console.log("buffer", buffer);
+			// const messages = buffer.split("\n");
+			// console.log("messages", messages);
 		});
 	}
 
-	private handleCoreReplay(params: string[]) {
-		const messageType = params[0];
-
-		if (messageType === "data") {
-			const con = Number(params[1]);
-			const location = Number(params[2]);
-			const bufferData = params.slice(3).map(Number);
-			const buffer = Buffer.from(bufferData);
-			const message = UpdateDataClientMessage.create({
-				deckLocation: location,
-				con,
-				buffer,
-			});
-			this.room.replay.addMessage(message);
-
+	private processMessage(): void {
+		if (!this.jsonMessageProcessor.isMessageReady()) {
 			return;
 		}
 
-		if (messageType === "card") {
-			const con = Number(params[1]);
-			const location = Number(params[2]);
-			const sequence = Number(params[3]);
-			const bufferData = params.slice(4).map(Number);
-			const buffer = Buffer.from(bufferData);
-			const message = UpdateCardClientMessage.create({
-				deckLocation: location,
-				con,
-				sequence,
-				buffer,
-			});
-			this.room.replay.addMessage(message);
+		this.jsonMessageProcessor.process();
+		const payload = this.jsonMessageProcessor.payload;
+		const message = JSON.parse(payload.data) as Message;
 
-			return;
+		if (message.type === "START") {
+			this.handleCoreStart(message as unknown as StartDuelMessage);
 		}
 
-		if (messageType === "message") {
-			const data = Buffer.from(params.slice(1, params.length).map(Number));
-			const message = RawClientMessage.create({ buffer: data });
-			this.room.replay.addMessage(message);
-
-			return;
+		if (message.type === "TIME") {
+			this.handleCoreTime(message as unknown as TimeMessage);
 		}
+
+		if (message.type === "FIELD") {
+			this.handleCoreField(message as unknown as FieldMessage);
+		}
+
+		if (message.type === "RECONNECT") {
+			this.handleCoreReconnect(message as unknown as ReconnectMessage);
+		}
+
+		if (message.type === "MESSAGE") {
+			this.handleCoreMessage(message as unknown as CoreMessage);
+		}
+
+		if (message.type === "MESSAGE_ALL") {
+			this.handleCoreMessageAll(message as unknown as CoreMessage);
+		}
+
+		if (message.type === "CORE") {
+			const _coreMessage = message as unknown as RawCoreMessage;
+		}
+
+		if (message.type === "REPLAY") {
+			this.handleCoreReplay(message as unknown as ReplayMessage);
+		}
+
+		if (message.type === "FINISH") {
+			this.handleCoreFinish(message as unknown as FinishMessage);
+		}
+
+		if (message.type === "SWAP") {
+			this.handleCoreSwap(message as unknown as SwapMessage);
+		}
+
+		this.processMessage();
 	}
 
-	private handleCoreSwap(params: string[]) {
-		const team = Number(params[0]);
-		this.room.nextTurn(team);
+	private handleCoreReplay(message: ReplayMessage) {
+		const data = Buffer.from(message.data, "hex");
+		const payload = Buffer.concat([decimalToBytesBuffer(data.length, 2), data]);
+		this.room.replay.addMessage(payload.subarray(3));
+		// const messageType = params[0];
+
+		// if (messageType === "data") {
+		// 	const con = Number(params[1]);
+		// 	const location = Number(params[2]);
+		// 	const bufferData = params.slice(3).map(Number);
+		// 	const buffer = Buffer.from(bufferData);
+		// 	const message = UpdateDataClientMessage.create({
+		// 		deckLocation: location,
+		// 		con,
+		// 		buffer,
+		// 	});
+		// 	this.room.replay.addMessage(message);
+
+		// 	return;
+		// }
+
+		// if (messageType === "card") {
+		// 	const con = Number(params[1]);
+		// 	const location = Number(params[2]);
+		// 	const sequence = Number(params[3]);
+		// 	const bufferData = params.slice(4).map(Number);
+		// 	const buffer = Buffer.from(bufferData);
+		// 	const message = UpdateCardClientMessage.create({
+		// 		deckLocation: location,
+		// 		con,
+		// 		sequence,
+		// 		buffer,
+		// 	});
+		// 	this.room.replay.addMessage(message);
+
+		// 	return;
+		// }
+
+		// if (messageType === "message") {
+		// 	const data = Buffer.from(params.slice(1, params.length).map(Number));
+		// 	const message = RawClientMessage.create({ buffer: data });
+		// 	this.room.replay.addMessage(message);
+
+		// 	return;
+		// }
 	}
 
-	private handleCoreReconnect(params: string[]) {
-		const _team = Number(params[0]);
-		const position = Number(params[1]);
+	private handleCoreSwap(message: SwapMessage) {
+		this.room.nextTurn(message.team);
+	}
+
+	private handleCoreReconnect(message: ReconnectMessage) {
+		const _team = message.team;
+		const position = message.position;
 
 		const player = this.room.clients.find((player) => player.position === position);
 
@@ -386,23 +431,43 @@ export class DuelingState extends RoomState {
 		});
 	}
 
-	private handleCoreField(params: string[]) {
-		if (params.length === 1) {
-			return;
-		}
-		const position = Number(params[0]);
-		const buffer = Buffer.from(params.slice(1).map(Number));
-		const header = Buffer.from([0x01]);
-		const type = Buffer.from([0xa2]);
-		const data = Buffer.concat([type, buffer]);
-		const size = decimalToBytesBuffer(1 + data.length, 2);
-		const message = Buffer.concat([size, header, data]);
-		const player = this.room.clients.find((player) => player.position === position);
+	private handleCoreField(message: FieldMessage) {
+		const data = Buffer.from(message.data, "hex");
+		const payload = Buffer.concat([decimalToBytesBuffer(data.length, 2), data]);
+
+		const player = this.room.clients.find((player) => player.position === message.position);
+
 		if (!player) {
 			return;
 		}
-		player.sendMessage(message);
-		this.room.sendMessageToCpp(`CMD:REFRESH|${player.team}|${position}\n`);
+
+		player.sendMessage(payload);
+		this.room.sendMessageToCpp(
+			JSON.stringify({
+				command: "REFRESH_FIELD",
+				data: {
+					position: player.position,
+					team: player.team,
+				},
+			})
+		);
+
+		// if (params.length === 1) {
+		// 	return;
+		// }
+		// const position = Number(params[0]);
+		// const buffer = Buffer.from(params.slice(1).map(Number));
+		// const header = Buffer.from([0x01]);
+		// const type = Buffer.from([0xa2]);
+		// const data = Buffer.concat([type, buffer]);
+		// const size = decimalToBytesBuffer(1 + data.length, 2);
+		// const message = Buffer.concat([size, header, data]);
+		// const player = this.room.clients.find((player) => player.position === position);
+		// if (!player) {
+		// 	return;
+		// }
+		// player.sendMessage(message);
+		// this.room.sendMessageToCpp(`CMD:REFRESH|${player.team}|${position}\n`);
 	}
 
 	private handleCoreTurn(_params: string[]) {
@@ -412,9 +477,9 @@ export class DuelingState extends RoomState {
 		this.room.resetTimer(1, this.room.timeLimit * 1000);
 	}
 
-	private handleCoreFinish(params: string[]) {
-		const reason = Number(params[0]) as DuelFinishReason;
-		const winner = Number(params[1]);
+	private handleCoreFinish(message: FinishMessage) {
+		const reason = message.reason as DuelFinishReason;
+		const winner = message.winner;
 		const duelFinisher = new FinishDuelHandler({
 			reason,
 			winner,
@@ -423,15 +488,13 @@ export class DuelingState extends RoomState {
 		void duelFinisher.run();
 	}
 
-	private handleCoreTime(params: string[]) {
-		const team = Number(params[0]);
-		const timeLimit = Number(params[1]);
+	private handleCoreTime(payload: TimeMessage) {
 		const message = TimeLimitClientMessage.create({
-			team: this.room.calculateTimeReceiver(team),
-			timeLimit,
+			team: this.room.calculateTimeReceiver(payload.team),
+			timeLimit: payload.time,
 		});
 
-		this.room.resetTimer(team, timeLimit);
+		this.room.resetTimer(payload.team, payload.time);
 
 		this.room.clients.forEach((client) => {
 			this.room.cacheTeamMessage(client.team, message);
@@ -479,41 +542,77 @@ export class DuelingState extends RoomState {
 		});
 	}
 
-	private handleCoreMessage(params: string[]) {
-		const forAllTeam = Boolean(Number(params[0]));
-		const cache = Number(params[1]);
-		const team = Number(params[2]);
-		const data = Buffer.from(params.slice(3, params.length).map(Number));
+	private handleCoreMessageAll(message: CoreMessage) {
+		const data = Buffer.from(message.data, "hex");
+		const payload = Buffer.concat([decimalToBytesBuffer(data.length, 2), data]);
+		[...this.room.clients, ...this.room.spectators].forEach((client) => {
+			client.sendMessage(payload);
+		});
+	}
 
-		const message = RawClientMessage.create({ buffer: data });
+	private handleCoreMessage(message: CoreMessage) {
+		const data = Buffer.from(message.data, "hex");
+		const payload = Buffer.concat([decimalToBytesBuffer(data.length, 2), data]);
 
-		if (!forAllTeam) {
-			const player = this.room.clients.find((player) => player.inTurn && player.team === team);
+		if (message.cacheable) {
+			this.room.cacheTeamMessage(message.receiver, payload);
+		}
 
-			if (cache) {
-				player?.setLastMessage(message);
-			}
-
-			player?.sendMessage(message);
+		if (message.except !== undefined) {
+			this.room.clients.forEach((client) => {
+				if (!(client.team === message.except && client.inTurn)) {
+					client.sendMessage(payload);
+				}
+			});
 
 			return;
 		}
 
-		if (cache) {
-			this.room.cacheTeamMessage(team, message);
+		if (message.all) {
+			const data = Buffer.from(message.data, "hex");
+			const payload = Buffer.concat([decimalToBytesBuffer(data.length, 2), data]);
+
+			[...this.room.clients, ...this.room.spectators].forEach((client) => {
+				if (client.team === message.receiver) {
+					client.sendMessage(payload);
+				}
+			});
+
+			return;
 		}
 
-		this.room.clients.forEach((client) => {
-			if (client.team === team) {
-				client.sendMessage(message);
-			}
-		});
+		const player = [...this.room.clients, ...this.room.spectators].find(
+			(player) => player.inTurn && player.team === message.receiver
+		);
 
-		this.room.spectators.forEach((spectator) => {
-			if (spectator.team === team) {
-				spectator.sendMessage(message);
-			}
-		});
+		player?.sendMessage(payload);
+
+		// const forAllTeam = Boolean(Number(params[0]));
+		// const cache = Number(params[1]);
+		// const team = Number(params[2]);
+		// const data = Buffer.from(params.slice(3, params.length).map(Number));
+		// const message = RawClientMessage.create({ buffer: data });
+		// if (!forAllTeam) {
+		// 	const player = this.room.clients.find((player) => player.inTurn && player.team === team);
+		// 	if (cache) {
+		// 		player?.setLastMessage(message);
+		// 	}
+		// 	player?.sendMessage(message);
+		// 	return;
+		// }
+		// if (cache) {
+		// 	this.room.cacheTeamMessage(team, message);
+		// }
+		// this.room.clients.forEach((client) => {
+		// 	if (client.team === team) {
+		// 		client.sendMessage(message);
+		// 	}
+		// });
+		// this.room.spectators.forEach((spectator) => {
+		// 	if (spectator.team === team) {
+		// 		spectator.sendMessage(message);
+		// 	}
+		// });
 	}
 
 	private handleCoreCard(params: string[]) {
@@ -572,37 +671,40 @@ export class DuelingState extends RoomState {
 		});
 	}
 
-	private handleCoreStart(params: string[]): void {
+	private handleCoreStart(message: StartDuelMessage): void {
 		const playerGameMessage = StartDuelClientMessage.create({
 			lp: this.room.startLp,
 			team: this.room.firstToPlay ^ 0,
-			playerMainDeckSize: Number(params[0]),
-			playerExtraDeckSize: Number(params[1]),
-			opponentMainDeckSize: Number(params[2]),
-			opponentExtraDeckSize: Number(params[3]),
+			playerMainDeckSize: message.playerDeckSize,
+			playerExtraDeckSize: message.playerExtraDeckSize,
+			opponentMainDeckSize: message.opponentDeckSize,
+			opponentExtraDeckSize: message.opponentExtraDeckSize,
 		});
 
 		const opponentGameMessage = StartDuelClientMessage.create({
 			lp: this.room.startLp,
 			team: this.room.firstToPlay ^ 1,
-			playerMainDeckSize: Number(params[0]),
-			playerExtraDeckSize: Number(params[1]),
-			opponentMainDeckSize: Number(params[2]),
-			opponentExtraDeckSize: Number(params[3]),
+			playerMainDeckSize: message.playerDeckSize,
+			playerExtraDeckSize: message.playerExtraDeckSize,
+			opponentMainDeckSize: message.opponentDeckSize,
+			opponentExtraDeckSize: message.opponentExtraDeckSize,
 		});
 
 		const spectatorGameMessage = StartDuelClientMessage.create({
 			lp: this.room.startLp,
 			team: 0xf0 | this.room.firstToPlay,
-			playerMainDeckSize: Number(params[0]),
-			playerExtraDeckSize: Number(params[1]),
-			opponentMainDeckSize: Number(params[2]),
-			opponentExtraDeckSize: Number(params[3]),
+			playerMainDeckSize: message.playerDeckSize,
+			playerExtraDeckSize: message.playerExtraDeckSize,
+			opponentMainDeckSize: message.opponentDeckSize,
+			opponentExtraDeckSize: message.opponentExtraDeckSize,
 		});
 
-		this.room.replay.addMessage(playerGameMessage);
-		this.room.setPlayerDecksSize(Number(params[0]), Number(params[1]));
-		this.room.setPlayerDecksSize(Number(params[2]), Number(params[3]));
+		this.room.replay.addMessage(playerGameMessage.subarray(3));
+		this.room.clearSpectatorCache();
+		this.room.cacheTeamMessage(3, spectatorGameMessage);
+
+		this.room.setPlayerDecksSize(message.playerDeckSize, message.playerExtraDeckSize);
+		this.room.setOpponentDecksSize(message.opponentDeckSize, message.opponentExtraDeckSize);
 
 		this.room.clients.forEach((client) => {
 			if (client.team === 0) {
@@ -616,12 +718,16 @@ export class DuelingState extends RoomState {
 			}
 		});
 
-		this.room.clearSpectatorCache();
-		this.room.cacheTeamMessage(3, spectatorGameMessage);
 		this.room.spectators.forEach((spectator) => {
 			spectator.sendMessage(spectatorGameMessage);
 		});
-		this.room.sendMessageToCpp("CMD:DECKS\n");
+
+		this.room.sendMessageToCpp(
+			JSON.stringify({
+				command: "SET_DECKS",
+				data: {},
+			})
+		);
 	}
 
 	private handleReady(message: ClientMessage, room: Room, player: Client): void {
@@ -642,7 +748,14 @@ export class DuelingState extends RoomState {
 			})
 		);
 
-		room.sendMessageToCpp(`CMD:FIELD|${player.position}\n`);
+		room.sendMessageToCpp(
+			JSON.stringify({
+				command: "GET_FIELD",
+				data: {
+					position: player.position,
+				},
+			})
+		);
 	}
 
 	private async handleJoin(
@@ -690,7 +803,16 @@ export class DuelingState extends RoomState {
 
 		this.room.replay.addResponse(data);
 		this.room.stopTimer(client.team);
-		this.room.sendMessageToCpp(`CMD:RESPONSE|${client.team}|${data}\n`);
+
+		this.room.sendMessageToCpp(
+			JSON.stringify({
+				command: "RESPONSE",
+				data: {
+					replier: client.team,
+					message: data,
+				},
+			})
+		);
 	}
 
 	private generateSeeds(): bigint[] {
