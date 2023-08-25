@@ -174,17 +174,5 @@ export class Client {
 
 	sendMessage(message: Buffer): void {
 		this._socket.write(message);
-		this.logger.debug(message.toString("hex"));
-		// if (this.isReconnecting) {
-		// 	return;
-		// }
-
-		// this._socket.write(message, (error: unknown) => {
-		// 	if (error) {
-		// 		setTimeout(() => {
-		// 			this.sendMessage(message);
-		// 		}, 1000);
-		// 	}
-		// });
 	}
 }

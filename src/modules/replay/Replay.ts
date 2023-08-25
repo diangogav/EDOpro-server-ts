@@ -118,7 +118,7 @@ export class Replay {
 	}
 
 	addMessage(message: Buffer): void {
-		this._messages.push(message.subarray(3));
+		this._messages.push(message);
 	}
 
 	addResponse(message: string): void {

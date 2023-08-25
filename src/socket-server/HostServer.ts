@@ -36,6 +36,7 @@ export class HostServer {
 		this.server.on("connection", (socket: Socket) => {
 			this.address = socket.remoteAddress;
 			const ygoClientSocket = socket as YGOClientSocket;
+			ygoClientSocket.setKeepAlive(true, 1000);
 			const messageEmitter = new MessageEmitter(this.logger, ygoClientSocket);
 			ygoClientSocket.id = uuidv4();
 
@@ -44,16 +45,23 @@ export class HostServer {
 				messageEmitter.handleMessage(data);
 			});
 
+			socket.on("end", () => {
+				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+				this.logger.info(`${socket.remoteAddress} left in end event`);
+				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
+				disconnectHandler.run(this.address);
+			});
+
 			socket.on("close", () => {
 				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-				this.logger.info(`${socket.remoteAddress} left`);
+				this.logger.info(`${socket.remoteAddress} left in close event`);
 				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
 			});
 
 			socket.on("error", (_error) => {
 				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-				this.logger.info(`${socket.remoteAddress} left`);
+				this.logger.info(`${socket.remoteAddress} left in error event`);
 				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
 			});

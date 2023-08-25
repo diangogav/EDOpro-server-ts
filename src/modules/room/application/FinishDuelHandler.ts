@@ -52,7 +52,7 @@ export class FinishDuelHandler {
 			winner: this.winner,
 		});
 
-		this.room.replay.addMessage(winMessage);
+		this.room.replay.addMessage(winMessage.subarray(3));
 
 		this.room.replay.addPlayers(this.room.clients);
 

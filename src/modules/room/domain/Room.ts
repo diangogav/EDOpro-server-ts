@@ -9,6 +9,7 @@ import { DeckCreator } from "../../deck/application/DeckCreator";
 import { Deck } from "../../deck/domain/Deck";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
+import { JSONMessageProcessor } from "../../messages/JSONMessageProcessor";
 import { MessageProcessor } from "../../messages/MessageProcessor";
 import { Replay } from "../../replay/Replay";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
@@ -438,7 +439,8 @@ export class Room {
 			this.logger,
 			new Reconnect(new UserFinder(new UserRedisRepository())),
 			new JoinToDuelAsSpectator(),
-			this
+			this,
+			new JSONMessageProcessor()
 		);
 	}
 

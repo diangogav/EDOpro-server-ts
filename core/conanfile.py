@@ -8,3 +8,4 @@ class CoreIntegrator(ConanFile):
     self.requires("boost/1.82.0")
     self.requires("sqlite3/3.42.0")
     self.requires("jsoncpp/1.9.5")
+    self.requires("nlohmann_json/3.11.2")
