@@ -227,8 +227,8 @@ void Duel::refresh_board(uint8_t position, uint8_t team)
     const auto player_buffer = this->serializer.serializeLocationQuery(queries, false);
     const auto stripped_buffer = this->serializer.serializeLocationQuery(queries, true);
 
-    this->send_update_data_message(team, false, false, query_location_request, player_buffer);
-    this->send_update_data_message(1 - team, false, false, query_location_request, stripped_buffer);
+    this->send_update_data_message(team, false, true, query_location_request, player_buffer);
+    this->send_update_data_message(1 - team, false, true, query_location_request, stripped_buffer);
   }
 
   json message;

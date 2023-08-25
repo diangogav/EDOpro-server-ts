@@ -42,7 +42,7 @@ export class Reconnect {
 		player.setSocket(socket, room.clients, room);
 		player.reconnecting();
 		player.sendMessage(JoinGameClientMessage.createFromRoom(joinMessage, room));
-		const type = player.host ? 0x00 : 0x01;
+		const type = (Number(player.host) << 4) | player.position;
 		const typeChangeMessage = TypeChangeClientMessage.create({ type });
 		player.sendMessage(typeChangeMessage);
 		room.clients.forEach((_client) => {
