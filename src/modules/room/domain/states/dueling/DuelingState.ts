@@ -16,12 +16,8 @@ import { ClientMessage } from "../../../../messages/MessageProcessor";
 import { DuelStartClientMessage } from "../../../../messages/server-to-client/DuelStartClientMessage";
 import { ErrorMessages } from "../../../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../../../messages/server-to-client/ErrorClientMessage";
-import { BroadcastClientMessage } from "../../../../messages/server-to-client/game-messages/BroadcastClientMessage";
 import { StartDuelClientMessage } from "../../../../messages/server-to-client/game-messages/StartDuelClientMessage";
 import { TimeLimitClientMessage } from "../../../../messages/server-to-client/game-messages/TimeLimitClientMessage";
-import { UpdateCardClientMessage } from "../../../../messages/server-to-client/game-messages/UpdateCardClientMessage";
-import { UpdateDataClientMessage } from "../../../../messages/server-to-client/game-messages/UpdateDataClientMessage";
-import { WaitingClientMessage } from "../../../../messages/server-to-client/game-messages/WaitingClientMessage";
 import { PlayerChangeClientMessage } from "../../../../messages/server-to-client/PlayerChangeClientMessage";
 import { ServerErrorClientMessage } from "../../../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { ServerMessageClientMessage } from "../../../../messages/server-to-client/ServerMessageClientMessage";
@@ -270,12 +266,6 @@ export class DuelingState extends RoomState {
 		core.stdout.on("data", (data: Buffer) => {
 			this.jsonMessageProcessor.read(data);
 			this.processMessage();
-			// console.log(data.toString());
-			// console.log("Data", data);
-			// buffer += data.toString();
-			// console.log("buffer", buffer);
-			// const messages = buffer.split("\n");
-			// console.log("messages", messages);
 		});
 	}
 
@@ -335,47 +325,6 @@ export class DuelingState extends RoomState {
 		const data = Buffer.from(message.data, "hex");
 		const payload = Buffer.concat([decimalToBytesBuffer(data.length, 2), data]);
 		this.room.replay.addMessage(payload.subarray(3));
-		// const messageType = params[0];
-
-		// if (messageType === "data") {
-		// 	const con = Number(params[1]);
-		// 	const location = Number(params[2]);
-		// 	const bufferData = params.slice(3).map(Number);
-		// 	const buffer = Buffer.from(bufferData);
-		// 	const message = UpdateDataClientMessage.create({
-		// 		deckLocation: location,
-		// 		con,
-		// 		buffer,
-		// 	});
-		// 	this.room.replay.addMessage(message);
-
-		// 	return;
-		// }
-
-		// if (messageType === "card") {
-		// 	const con = Number(params[1]);
-		// 	const location = Number(params[2]);
-		// 	const sequence = Number(params[3]);
-		// 	const bufferData = params.slice(4).map(Number);
-		// 	const buffer = Buffer.from(bufferData);
-		// 	const message = UpdateCardClientMessage.create({
-		// 		deckLocation: location,
-		// 		con,
-		// 		sequence,
-		// 		buffer,
-		// 	});
-		// 	this.room.replay.addMessage(message);
-
-		// 	return;
-		// }
-
-		// if (messageType === "message") {
-		// 	const data = Buffer.from(params.slice(1, params.length).map(Number));
-		// 	const message = RawClientMessage.create({ buffer: data });
-		// 	this.room.replay.addMessage(message);
-
-		// 	return;
-		// }
 	}
 
 	private handleCoreSwap(message: SwapMessage) {
@@ -405,29 +354,6 @@ export class DuelingState extends RoomState {
 			spectator.sendMessage(
 				ServerMessageClientMessage.create(`${player.name} ha ingresado al duelo`)
 			);
-		});
-	}
-
-	private handleCoreRefresh(params: string[]) {
-		if (params.length === 0) {
-			return;
-		}
-		// const reconnectingTeam = Number(params[0]);
-		const team = Number(params[1]);
-		const location = Number(params[2]);
-		const con = Number(params[3]);
-		const bufferData = params.slice(4).map(Number);
-		const buffer = Buffer.from(bufferData);
-		const message = UpdateDataClientMessage.create({
-			deckLocation: location,
-			con,
-			buffer,
-		});
-
-		[...this.room.clients, ...this.room.spectators].forEach((client) => {
-			if (client.team === team) {
-				client.sendMessage(message);
-			}
 		});
 	}
 
@@ -470,13 +396,6 @@ export class DuelingState extends RoomState {
 		// this.room.sendMessageToCpp(`CMD:REFRESH|${player.team}|${position}\n`);
 	}
 
-	private handleCoreTurn(_params: string[]) {
-		this.room.increaseTurn();
-		this.logger.debug(`Turn: ${this.room.turn}`);
-		this.room.resetTimer(0, this.room.timeLimit * 1000);
-		this.room.resetTimer(1, this.room.timeLimit * 1000);
-	}
-
 	private handleCoreFinish(message: FinishMessage) {
 		const reason = message.reason as DuelFinishReason;
 		const winner = message.winner;
@@ -503,42 +422,6 @@ export class DuelingState extends RoomState {
 
 		this.room.spectators.forEach((client) => {
 			client.sendMessage(message);
-		});
-	}
-
-	private handleCoreWaiting(params: string[]) {
-		const nonWaitingPlayerTeam = Number(params[0]);
-		const message = WaitingClientMessage.create();
-		this.room.clients.forEach((client) => {
-			if (!(client.team === nonWaitingPlayerTeam && client.inTurn)) {
-				client.sendMessage(message);
-			}
-		});
-	}
-
-	private handleCoreExcept(params: string[]) {
-		const team = Number(params[0]);
-		const data = Buffer.from(params.slice(1).map(Number));
-		const message = BroadcastClientMessage.create({ buffer: data });
-		this.room.clients.forEach((client) => {
-			if (client.team !== team) {
-				client.sendMessage(message);
-			}
-		});
-	}
-
-	private handleCoreBroadcast(params: string[]) {
-		const data = Buffer.from(params.slice(0).map(Number));
-		const message = BroadcastClientMessage.create({ buffer: data });
-		// this.room.cacheMessage(0, message);
-		// this.room.cacheMessage(1, message);
-		this.room.cacheTeamMessage(3, message);
-		this.room.clients.forEach((client) => {
-			client.sendMessage(message);
-		});
-
-		this.room.spectators.forEach((spectator) => {
-			spectator.sendMessage(message);
 		});
 	}
 
@@ -587,89 +470,6 @@ export class DuelingState extends RoomState {
 		);
 
 		player?.sendMessage(payload);
-
-		// const forAllTeam = Boolean(Number(params[0]));
-		// const cache = Number(params[1]);
-		// const team = Number(params[2]);
-		// const data = Buffer.from(params.slice(3, params.length).map(Number));
-		// const message = RawClientMessage.create({ buffer: data });
-		// if (!forAllTeam) {
-		// 	const player = this.room.clients.find((player) => player.inTurn && player.team === team);
-		// 	if (cache) {
-		// 		player?.setLastMessage(message);
-		// 	}
-		// 	player?.sendMessage(message);
-		// 	return;
-		// }
-		// if (cache) {
-		// 	this.room.cacheTeamMessage(team, message);
-		// }
-		// this.room.clients.forEach((client) => {
-		// 	if (client.team === team) {
-		// 		client.sendMessage(message);
-		// 	}
-		// });
-		// this.room.spectators.forEach((spectator) => {
-		// 	if (spectator.team === team) {
-		// 		spectator.sendMessage(message);
-		// 	}
-		// });
-	}
-
-	private handleCoreCard(params: string[]) {
-		const cache = Number(params[0]);
-		const team = Number(params[1]);
-		const location = Number(params[2]);
-		const con = Number(params[3]);
-		const sequence = Number(params[4]);
-		const bufferData = params.slice(5).map(Number);
-		const buffer = Buffer.from(bufferData);
-		const message = UpdateCardClientMessage.create({
-			deckLocation: location,
-			con,
-			sequence,
-			buffer,
-		});
-
-		if (cache) {
-			this.room.cacheTeamMessage(team, message);
-		}
-
-		[...this.room.clients, ...this.room.spectators].forEach((client) => {
-			if (client.team === team) {
-				client.sendMessage(message);
-			}
-		});
-
-		this.room.spectators.forEach((spectator) => {
-			if (spectator.team === team) {
-				spectator.sendMessage(message);
-			}
-		});
-	}
-
-	private handleCoreBuffer(params: string[]): void {
-		const cache = Number(params[0]);
-		const team = Number(params[1]);
-		const location = Number(params[2]);
-		const con = Number(params[3]);
-		const bufferData = params.slice(4).map(Number);
-		const buffer = Buffer.from(bufferData);
-		const message = UpdateDataClientMessage.create({
-			deckLocation: location,
-			con,
-			buffer,
-		});
-
-		if (cache) {
-			this.room.cacheTeamMessage(team, message);
-		}
-
-		[...this.room.clients, ...this.room.spectators].forEach((client) => {
-			if (client.team === team) {
-				client.sendMessage(message);
-			}
-		});
 	}
 
 	private handleCoreStart(message: StartDuelMessage): void {
