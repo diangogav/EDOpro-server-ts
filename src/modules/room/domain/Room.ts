@@ -736,6 +736,12 @@ export class Room {
 		this.writeToCppProcess(message, 3);
 	}
 
+	get score(): string {
+		return `Score: ${this.playerNames(0)}: ${this.matchScore().team0} - ${
+			this.matchScore().team1
+		} ${this.playerNames(1)}`;
+	}
+
 	toPresentation(): { [key: string]: unknown } {
 		return {
 			roomid: this.id,

@@ -37,11 +37,11 @@ export class OfficialCardValidationHandler implements DeckValidationHandler {
 		const rule = this.deckRules.rule;
 
 		if (rule === Rule.OCG_TCG || rule === Rule.ONLY_OCG || rule === Rule.ONLY_TCG) {
-			return card.variant < ScopeCode.OFFICIAL;
+			return !(card.variant > ScopeCode.OCG_TCG);
 		}
 
 		if (rule === Rule.PRE_RELEASE) {
-			return (card.variant & ~ScopeCode.OFFICIAL) === 0;
+			return !((card.variant & ~ScopeCode.OFFICIAL) !== 0);
 		}
 
 		return true;

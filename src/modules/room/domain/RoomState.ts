@@ -1,11 +1,13 @@
 import { EventEmitter } from "stream";
 
 import { YGOClientSocket } from "../../../socket-server/HostServer";
+import { BufferToUTF16 } from "../../../utils/BufferToUTF16";
 import { Client } from "../../client/domain/Client";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../messages/domain/Commands";
 import { ClientMessage } from "../../messages/MessageProcessor";
 import { PlayerMessageClientMessage } from "../../messages/server-to-client/PlayerMessageClientMessage";
+import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { SpectatorMessageClientMessage } from "../../messages/server-to-client/SpectatorMessageClientMessage";
 import { Room } from "./Room";
 
@@ -49,6 +51,12 @@ export abstract class RoomState {
 	}
 
 	private handleChat(message: ClientMessage, room: Room, client: Client): void {
+		const sanitized = BufferToUTF16(message.data, message.data.length);
+		if (sanitized === ":score") {
+			client.sendMessage(ServerMessageClientMessage.create(room.score));
+
+			return;
+		}
 		if (client.isSpectator) {
 			const chatMessage = SpectatorMessageClientMessage.create(
 				client.name.replace(/\0/g, "").trim(),

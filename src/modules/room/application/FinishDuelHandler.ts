@@ -32,11 +32,7 @@ export class FinishDuelHandler {
 		this.room.stopTimer(0);
 		this.room.stopTimer(1);
 
-		const scoreTitleMessage = ServerMessageClientMessage.create(
-			`Score: ${this.room.playerNames(0)}: ${this.room.matchScore().team0} - ${
-				this.room.matchScore().team1
-			} ${this.room.playerNames(1)}`
-		);
+		const scoreTitleMessage = ServerMessageClientMessage.create(this.room.score);
 		this.room.clients.forEach((player) => {
 			player.sendMessage(scoreTitleMessage);
 		});
