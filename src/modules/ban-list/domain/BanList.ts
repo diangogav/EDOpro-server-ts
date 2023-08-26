@@ -5,6 +5,7 @@ export class BanList {
 	readonly all: number[] = [];
 	private _name: string | null = null;
 	private _hash = 0x7dfcee6a;
+	private _whitelisted = false;
 
 	setName(name: string): void {
 		this._name = name;
@@ -16,6 +17,14 @@ export class BanList {
 
 	get hash(): number {
 		return this._hash;
+	}
+
+	whileListed(): void {
+		this._whitelisted = true;
+	}
+
+	get isWhiteListed(): boolean {
+		return this._whitelisted;
 	}
 
 	add(cardId: number, quantity: number): void {

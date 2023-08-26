@@ -25,6 +25,10 @@ export class BanListLoader {
 				continue;
 			}
 
+			if (line.startsWith("$whitelist")) {
+				banList.whileListed();
+			}
+
 			if (line.startsWith("#")) {
 				continue;
 			}

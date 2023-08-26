@@ -19,6 +19,10 @@ export class AvailableCardValidationHandler implements DeckValidationHandler {
 	}
 
 	validate(deck: Deck): DeckError | null {
+		if (!this.banList.isWhiteListed) {
+			return null;
+		}
+
 		const availableCards = [
 			...this.banList.limited,
 			...this.banList.semiLimited,
