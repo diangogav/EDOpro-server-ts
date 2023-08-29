@@ -264,8 +264,22 @@ export class DuelingState extends RoomState {
 		});
 
 		core.stdout.on("data", (data: Buffer) => {
-			this.jsonMessageProcessor.read(data);
-			this.processMessage();
+			try {
+				this.jsonMessageProcessor.read(data);
+				this.processMessage();
+			} catch (error) {
+				const payload = this.jsonMessageProcessor.payload;
+				this.logger.error(error as Error);
+				this.logger.info(`data: ${data.toString("hex")}`);
+				this.logger.info(`data: ${data.toString()}`);
+				this.logger.info(`payload:data ${payload.data}`);
+				this.logger.info(`payload:size ${payload.size}`);
+				this.logger.info(
+					`payload:buffer ${this.jsonMessageProcessor.currentBuffer.toString("hex")}`
+				);
+				this.logger.info(`payload:buffer ${this.jsonMessageProcessor.currentBuffer.toString()}`);
+				this.logger.info(`score: ${this.room.score}`);
+			}
 		});
 	}
 
