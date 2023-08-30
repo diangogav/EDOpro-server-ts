@@ -23,6 +23,10 @@ export class LimitedCardValidationHandler implements DeckValidationHandler {
 
 		for (const card of deck.allCards) {
 			const count = cards.get(Number(card.code)) ?? 0;
+			if (Number(card.alias)) {
+				const count = cards.get(Number(card.alias)) ?? 0;
+				cards.set(Number(card.alias), count + 1);
+			}
 			cards.set(Number(card.code), count + 1);
 		}
 
