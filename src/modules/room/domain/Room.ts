@@ -647,13 +647,13 @@ export class Room {
 				item.clearTurn();
 			});
 
-			team1Players.forEach((item, index) => {
-				item.setDuelPosition((team1Players.length - index - 1) % this.team1);
+			team1Players.forEach((item) => {
+				item.setDuelPosition((item.position + 1) % this.team1);
 				item.clearTurn();
 			});
 		} else {
-			team0Players.forEach((item, index) => {
-				item.setDuelPosition((team0Players.length - index - 1) % this.team0);
+			team0Players.forEach((item) => {
+				item.setDuelPosition((item.position + 1) % this.team0);
 				item.clearTurn();
 			});
 
