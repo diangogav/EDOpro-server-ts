@@ -13,3 +13,13 @@ core/CoreIntegrator
 *.env
 *banlists
 app.log
+
+/* MERCURY */
+mercury/libs
+mercury/Makefile
+
+mercury/MercuryIntegrator
+
+mercury/premake5
+
+mercury/src/Makefile
