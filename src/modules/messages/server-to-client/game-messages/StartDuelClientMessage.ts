@@ -8,6 +8,7 @@ export class StartDuelClientMessage {
 		playerExtraDeckSize,
 		opponentMainDeckSize,
 		opponentExtraDeckSize,
+		duelRule,
 	}: {
 		lp: number;
 		team: number;
@@ -15,12 +16,14 @@ export class StartDuelClientMessage {
 		playerMainDeckSize: number;
 		opponentMainDeckSize: number;
 		opponentExtraDeckSize: number;
+		duelRule: number;
 	}): Buffer {
 		const header = Buffer.from([0x01]);
 		const type = Buffer.from([0x04]);
 		const data = Buffer.concat([
 			type,
 			decimalToBytesBuffer(team, 1),
+			decimalToBytesBuffer(duelRule, 1),
 			decimalToBytesBuffer(lp, 4),
 			decimalToBytesBuffer(lp, 4),
 			decimalToBytesBuffer(playerMainDeckSize, 2),

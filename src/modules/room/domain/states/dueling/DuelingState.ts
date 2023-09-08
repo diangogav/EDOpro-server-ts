@@ -74,6 +74,7 @@ type StartDuelMessage = {
 	header: number;
 	type: number;
 	cacheable: boolean;
+	duelRule: number;
 };
 
 type ReplayMessage = {
@@ -216,7 +217,7 @@ export class DuelingState extends RoomState {
 		this.logger.debug(`GAME: ${this.room.playerNames(0)} VS ${this.room.playerNames(1)}`);
 
 		const core = spawn(
-			`${__dirname}/../../../../../../core/CoreIntegrator`,
+			`${__dirname}/../../../../../../mercury/MercuryIntegrator`,
 			[
 				JSON.stringify({
 					config: {
@@ -228,6 +229,7 @@ export class DuelingState extends RoomState {
 						drawCountPerTurn: this.room.drawCount,
 						firstToPlay: this.room.firstToPlay,
 						timeLimit: this.room.timeLimit,
+						duelRule: this.room.duelRule,
 					},
 					players,
 				}),
@@ -318,6 +320,7 @@ export class DuelingState extends RoomState {
 
 		if (message.type === "CORE") {
 			const _coreMessage = message as unknown as RawCoreMessage;
+			console.log(_coreMessage);
 		}
 
 		if (message.type === "REPLAY") {
@@ -494,6 +497,7 @@ export class DuelingState extends RoomState {
 			playerExtraDeckSize: message.playerExtraDeckSize,
 			opponentMainDeckSize: message.opponentDeckSize,
 			opponentExtraDeckSize: message.opponentExtraDeckSize,
+			duelRule: message.duelRule,
 		});
 
 		const opponentGameMessage = StartDuelClientMessage.create({
@@ -503,8 +507,8 @@ export class DuelingState extends RoomState {
 			playerExtraDeckSize: message.playerExtraDeckSize,
 			opponentMainDeckSize: message.opponentDeckSize,
 			opponentExtraDeckSize: message.opponentExtraDeckSize,
+			duelRule: message.duelRule,
 		});
-
 		const spectatorGameMessage = StartDuelClientMessage.create({
 			lp: this.room.startLp,
 			team: 0xf0 | this.room.firstToPlay,
@@ -512,34 +516,29 @@ export class DuelingState extends RoomState {
 			playerExtraDeckSize: message.playerExtraDeckSize,
 			opponentMainDeckSize: message.opponentDeckSize,
 			opponentExtraDeckSize: message.opponentExtraDeckSize,
+			duelRule: message.duelRule,
 		});
-
 		this.room.replay.addMessage(playerGameMessage.subarray(3));
 		this.room.clearSpectatorCache();
 		this.room.cacheTeamMessage(3, spectatorGameMessage);
-
 		this.room.setPlayerDecksSize(message.playerDeckSize, message.playerExtraDeckSize);
 		this.room.setOpponentDecksSize(message.opponentDeckSize, message.opponentExtraDeckSize);
-
 		this.room.clients.forEach((client) => {
 			if (client.team === 0) {
 				client.sendMessage(playerGameMessage);
 			}
 		});
-
 		this.room.clients.forEach((client) => {
 			if (client.team === 1) {
 				client.sendMessage(opponentGameMessage);
 			}
 		});
-
 		this.room.spectators.forEach((spectator) => {
 			spectator.sendMessage(spectatorGameMessage);
 		});
-
 		this.room.sendMessageToCpp(
 			JSON.stringify({
-				command: "SET_DECKS",
+				command: "PROCESS",
 				data: {},
 			})
 		);
@@ -560,6 +559,7 @@ export class DuelingState extends RoomState {
 				playerExtraDeckSize: room.playerExtraDeckSize,
 				opponentMainDeckSize: room.opponentMainDeckSize,
 				opponentExtraDeckSize: room.opponentExtraDeckSize,
+				duelRule: 5,
 			})
 		);
 

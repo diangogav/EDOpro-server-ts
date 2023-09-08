@@ -1,15 +1,20 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import net, { Socket } from "net";
+import { EventEmitter } from "stream";
 import { v4 as uuidv4 } from "uuid";
 
 import { MessageEmitter } from "../modules/MessageEmitter";
 import { DisconnectHandler } from "../modules/room/application/DisconnectHandler";
+import { GameCreatorHandler } from "../modules/room/application/GameCreatorHandler";
+import { JoinHandler } from "../modules/room/application/JoinHandler";
 import { RecordMatch } from "../modules/room/application/RecordMatch";
 import { RoomFinder } from "../modules/room/application/RoomFinder";
 import { RedisRoomRepository } from "../modules/room/match/infrastructure/RedisRoomRepository";
 import { container } from "../modules/shared/dependency-injection";
 import { EventBus } from "../modules/shared/event-bus/EventBus";
 import { Logger } from "../modules/shared/logger/domain/Logger";
+import { UserFinder } from "../modules/user/application/UserFinder";
+import { UserRedisRepository } from "../modules/user/infrastructure/UserRedisRepository";
 
 export class YGOClientSocket extends Socket {
 	id?: string;
@@ -37,7 +42,15 @@ export class HostServer {
 			this.address = socket.remoteAddress;
 			const ygoClientSocket = socket as YGOClientSocket;
 			ygoClientSocket.setKeepAlive(true, 1000);
-			const messageEmitter = new MessageEmitter(this.logger, ygoClientSocket);
+			const eventEmitter = new EventEmitter();
+			new GameCreatorHandler(
+				eventEmitter,
+				this.logger,
+				ygoClientSocket,
+				new UserFinder(new UserRedisRepository())
+			);
+			new JoinHandler(eventEmitter, this.logger, ygoClientSocket);
+			const messageEmitter = new MessageEmitter(this.logger, eventEmitter);
 			ygoClientSocket.id = uuidv4();
 
 			socket.on("data", (data: Buffer) => {

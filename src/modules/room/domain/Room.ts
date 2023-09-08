@@ -234,6 +234,48 @@ export class Room {
 		this.resetReplay();
 	}
 
+	static create(id: number, emitter: EventEmitter, logger: Logger, data: Partial<RoomAttr>): Room {
+		const room = new Room({
+			id,
+			mode: 0,
+			needPass: false,
+			team0: 1,
+			team1: 1,
+			bestOf: 1,
+			duelFlag: 0,
+			forbiddenTypes: 0,
+			extraRules: 0,
+			startLp: 8000,
+			startHand: 5,
+			drawCount: 1,
+			timeLimit: 180,
+			rule: 0,
+			noCheck: false,
+			noShuffle: false,
+			banlistHash: 0,
+			isStart: "waiting",
+			mainMin: 40,
+			mainMax: 60,
+			extraMin: 0,
+			extraMax: 15,
+			sideMin: 0,
+			sideMax: 15,
+			duelRule: 5,
+			handshake: 0,
+			password: data.password ?? "",
+			duelFlagsHight: 0,
+			duelFlagsLow: 0,
+			ranked: false,
+			name: "",
+			notes: "",
+		});
+
+		room.emitter = emitter;
+		room.logger = logger;
+
+		return room;
+	}
+
 	static createFromCreateGameMessage(
 		message: CreateGameMessage,
 		playerInfo: PlayerInfoMessage,

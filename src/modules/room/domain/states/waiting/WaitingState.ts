@@ -238,6 +238,7 @@ export class WaitingState extends RoomState {
 
 	private async handle(message: ClientMessage, room: Room, socket: YGOClientSocket): Promise<void> {
 		this.logger.debug("WAITING: JOIN");
+
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		if (this.playerAlreadyInRoom(playerInfoMessage, room, socket)) {
 			this.sendErrorMessage(playerInfoMessage, socket);
@@ -346,20 +347,47 @@ export class WaitingState extends RoomState {
 		});
 
 		room.addClient(client);
-		this.sendJoinMessage(playerInfoMessage, joinGameMessage, socket, room, client);
-		this.sendNotReadyMessage(client, room);
-		this.sendTypeChangeMessage(client, socket);
-		const spectatorsCount = room.spectators.length;
-		const watchMessage = WatchChangeClientMessage.create({ count: spectatorsCount });
-		socket.write(watchMessage);
-		this.sendInfoMessage(room, socket);
 
-		const host = room.clients.find((client) => client.host);
-		if (!host) {
-			return;
-		}
+		socket.write(Buffer.from("150012119c0a2e0001050000000000401f00000501b400", "hex"));
+		socket.write(Buffer.from("02001301", "hex"));
+		socket.write(
+			Buffer.from(
+				"2b00205400450052004d004f000000360036003600360000000000c99867c8fe7e0000000400000000000001f7",
+				"hex"
+			)
+		);
 
-		this.notify(client, room, socket);
+		room.clients.forEach((item) => {
+			if (item.team === 0) {
+				item.socket.write(
+					Buffer.from(
+						"2b00205400450052004d004f000000320000003300000000000000c99867c8fe7e0000000400000000000001f7",
+						"hex"
+					)
+				);
+			}
+		});
+		// this.sendJoinMessage(playerInfoMessage, joinGameMessage, socket, room, client);
+		// this.sendNotReadyMessage(client, room);
+		// this.sendTypeChangeMessage(client, socket);
+		// room.clients.forEach((_client) => {
+		// 	_client.sendMessage(PlayerEnterClientMessage.create(playerInfoMessage.name, client.position));
+		// });
+
+		// room.spectators.forEach((_client) => {
+		// 	_client.sendMessage(PlayerEnterClientMessage.create(playerInfoMessage.name, client.position));
+		// });
+		// const spectatorsCount = room.spectators.length;
+		// const watchMessage = WatchChangeClientMessage.create({ count: spectatorsCount });
+		// socket.write(watchMessage);
+		// this.sendInfoMessage(room, socket);
+
+		// const host = room.clients.find((client) => client.host);
+		// if (!host) {
+		// 	return;
+		// }
+
+		// this.notify(client, room, socket);
 	}
 
 	private sendJoinMessage(
@@ -370,13 +398,6 @@ export class WaitingState extends RoomState {
 		client: Client
 	): void {
 		socket.write(JoinGameClientMessage.createFromRoom(message, room));
-		room.clients.forEach((_client) => {
-			_client.sendMessage(PlayerEnterClientMessage.create(playerInfoMessage.name, client.position));
-		});
-
-		room.spectators.forEach((_client) => {
-			_client.sendMessage(PlayerEnterClientMessage.create(playerInfoMessage.name, client.position));
-		});
 	}
 
 	private sendNotReadyMessage(client: Client, room: Room): void {

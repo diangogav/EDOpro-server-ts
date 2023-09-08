@@ -3,9 +3,12 @@
 #include "iostream"
 #include <iomanip>
 #include "./ocgcore/ocgapi.h"
+#include "./ocgcore/mtrandom.h"
 #include "./includes/duel_config.h"
 #include "./includes/player.h"
+#include "./includes/dueling.h"
 #include <stdexcept>
+#include <random>
 
 using json = nlohmann::json;
 
@@ -50,48 +53,41 @@ int main(int argc, char *argv[])
   /* Get duel players */
   std::vector<Player> player_list = data.at("players").get<std::vector<Player>>();
 
-  const auto duel = create_duel(123432423);
-  preload_script(duel, "./script/special.lua", 0);
-  preload_script(duel, "./script/init.lua", 0);
-  set_player_info(duel, 0, config.lp, config.starting_draw_count, config.draw_count);
-  set_player_info(duel, 1, config.lp, config.starting_draw_count, config.draw_count);
+  Dueling duel{config, player_list};
+  duel.create();
+  duel.load_scripts();
+  duel.load_players();
+  duel.load_decks();
+  duel.start();
 
-  for (const auto player : player_list)
-  {
-    for (const auto card : player.main_deck)
-    {
-      new_card(duel, card, player.team, player.team, LOCATION_DECK, 0, POS_FACEDOWN_DEFENSE);
-    }
-
-    for (const auto card : player.extra_deck)
-    {
-      new_card(duel, card, player.team, player.team, LOCATION_EXTRA, 0, POS_FACEDOWN_DEFENSE);
-    }
-  }
-
-  uint32_t player_deck_size = query_field_count(duel, 0, LOCATION_DECK);
-  uint32_t player_extra_deck_size = query_field_count(duel, 0, LOCATION_EXTRA);
-  uint32_t opponent_deck_size = query_field_count(duel, 1, LOCATION_DECK);
-  uint32_t opponent_extra_deck_size = query_field_count(duel, 1, LOCATION_EXTRA);
-
-  json message;
-  message["lp"] = config.lp;
-  message["playerDeckSize"] = player_deck_size;
-  message["playerExtraDeckSize"] = player_extra_deck_size;
-  message["opponentDeckSize"] = opponent_deck_size;
-  message["opponentExtraDeckSize"] = opponent_extra_deck_size;
-  message["duelRule"] = config.duel_rule;
-  message["header"] = 0x04;
-  message["type"] = "START";
-
-  std::string serialized_message = message.dump();
-
-  send_message(serialized_message);
-
-  int opt = (int)config.duel_rule << 16;
-  start_duel(duel, opt);
   while (true)
   {
+    std::string message;
+    std::getline(std::cin, message);
+    if (!message.empty())
+    {
+      json json_data = json::parse(message);
+      std::string command = json_data["command"];
+
+      if (command == "PROCESS")
+      {
+        for (;;)
+        {
+          const auto status = duel.status();
+          std::vector<std::vector<uint8_t>> core_messages = duel.messages();
+          for (const auto &core_message : core_messages)
+          {
+            duel.send_raw_message(core_message, status);
+            duel.distribute_message(core_message);
+          };
+
+          if (status >> 16  == 1)
+          {
+            break;
+          }
+        }
+      }
+    }
   }
 
   return 0;
