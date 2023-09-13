@@ -34,8 +34,8 @@ export class RpsChoiceCommandStrategy {
 			return;
 		}
 
-		const playerOne = players.find((player) => player.team === 0);
-		const playerTwo = players.find((player) => player.team === 1);
+		const playerOne = players.find((player) => player.team === 0 && player.inTurn);
+		const playerTwo = players.find((player) => player.team === 1 && player.inTurn);
 
 		if (!playerOne?.rpsChoise || !playerTwo?.rpsChoise) {
 			return;
