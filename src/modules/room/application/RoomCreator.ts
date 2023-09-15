@@ -21,7 +21,7 @@ export class RoomCreator {
 		const data = {
 			id: this.generateUniqueId(),
 			name: payload.name,
-			notes: "\x00x\x02@�\x7F",
+			notes: payload.name,
 			mode: 0,
 			needPass: false,
 			team0: 1,
