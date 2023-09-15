@@ -11,7 +11,8 @@ export class Server {
 	constructor(logger: Logger) {
 		this.logger = logger;
 		this.app = express();
-		loadRoutes(this.app);
+		this.app.use(express.json());
+		loadRoutes(this.app, this.logger);
 	}
 
 	async initialize(): Promise<void> {

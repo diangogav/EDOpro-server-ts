@@ -14,4 +14,8 @@ export default {
 	findByHash(hash: number): BanList | null {
 		return banLists.find((list) => list.hash === hash) ?? null;
 	},
+
+	findByName(name: string): BanList | null {
+		return banLists.find((list) => list.name === name) ?? null;
+	},
 };

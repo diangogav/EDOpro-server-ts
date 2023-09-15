@@ -34,7 +34,7 @@ export class BanListLoader {
 			}
 
 			if (line.startsWith("!")) {
-				banList.setName(line);
+				banList.setName(line.substring(1));
 			}
 
 			if (!line.includes(" ")) {
