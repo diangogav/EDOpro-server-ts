@@ -336,15 +336,27 @@ export class WaitingState extends RoomState {
 		playerInfoMessage: PlayerInfoMessage,
 		room: Room
 	): void {
+		const host = room.clients.some((client) => client.host);
+
 		const client = new Client({
 			socket,
-			host: false,
+			host: !host,
 			name: playerInfoMessage.name,
 			position: place.position,
 			roomId: room.id,
 			team: place.team,
 			logger: this.logger,
 		});
+
+		if (client.host) {
+			this.sendJoinMessage(playerInfoMessage, joinGameMessage, socket, room, client);
+			client.sendMessage(PlayerEnterClientMessage.create(playerInfoMessage.name, client.position));
+			this.sendNotReadyMessage(client, room);
+			this.sendTypeChangeMessage(client, socket);
+			room.addClient(client);
+
+			return;
+		}
 
 		room.addClient(client);
 		this.sendJoinMessage(playerInfoMessage, joinGameMessage, socket, room, client);
@@ -354,11 +366,6 @@ export class WaitingState extends RoomState {
 		const watchMessage = WatchChangeClientMessage.create({ count: spectatorsCount });
 		socket.write(watchMessage);
 		this.sendInfoMessage(room, socket);
-
-		const host = room.clients.find((client) => client.host);
-		if (!host) {
-			return;
-		}
 
 		this.notify(client, room, socket);
 	}

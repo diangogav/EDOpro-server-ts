@@ -3,10 +3,13 @@
 import { Express } from "express";
 import heapdump from "heapdump";
 
+import { Logger } from "../../modules/shared/logger/domain/Logger";
+import { CreateRoomController } from "../controllers/CreateRoomController";
 import { GetRoomListController } from "../controllers/GetRoomListController";
 
-export function loadRoutes(app: Express): void {
+export function loadRoutes(app: Express, logger: Logger): void {
 	app.get("/api/getrooms", (req, res) => new GetRoomListController().run(req, res));
+	app.post("/api/room", (req, res) => new CreateRoomController(logger).run(req, res));
 	app.get("/api/snapshot", (req, res) => {
 		heapdump.writeSnapshot((error, filename) => {
 			if (error) {
