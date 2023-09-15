@@ -1,6 +1,7 @@
 import { EventEmitter } from "stream";
 
 import { CreateRoomRequest } from "../../../http-server/controllers/CreateRoomController";
+import { UTF8ToUTF16 } from "../../../utils/UTF8ToUTF16";
 import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { Room } from "../domain/Room";
@@ -9,21 +10,23 @@ import RoomList from "../infrastructure/RoomList";
 export class RoomCreator {
 	constructor(private readonly logger: Logger) {}
 
-	create(payload: CreateRoomRequest): void {
+	create(payload: CreateRoomRequest): { password: string } {
 		const banlist = BanListMemoryRepository.findByName(payload.banlist);
 
 		if (!banlist) {
-			return;
+			throw new Error("Banlist not found");
 		}
 
 		const emitter = new EventEmitter();
+		const utf8Password = this.generateUniqueId().toString();
+		const password = UTF8ToUTF16(utf8Password, utf8Password.length).toString();
 
 		const data = {
 			id: this.generateUniqueId(),
 			name: payload.name,
 			notes: payload.name,
 			mode: 0,
-			needPass: false,
+			needPass: true,
 			team0: 1,
 			team1: 1,
 			bestOf: payload.bestOf,
@@ -47,7 +50,7 @@ export class RoomCreator {
 			sideMax: 15,
 			duelRule: 0,
 			handshake: 4043399681,
-			password: "",
+			password,
 			duelFlagsHight: 1,
 			duelFlagsLow: 853504,
 			ranked: false,
@@ -56,6 +59,11 @@ export class RoomCreator {
 		const room = Room.create(data, emitter, this.logger);
 		room.waiting();
 		RoomList.addRoom(room);
+		room.createMatch();
+
+		return {
+			password,
+		};
 	}
 
 	private generateUniqueId(): number {

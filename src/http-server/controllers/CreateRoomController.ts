@@ -17,7 +17,7 @@ export class CreateRoomController {
 	run(req: Request, res: Response): void {
 		const payload = req.body as CreateRoomRequest;
 		const roomCreator = new RoomCreator(this.logger);
-		roomCreator.create(payload);
-		res.status(200).json({});
+		const response = roomCreator.create(payload);
+		res.status(200).json(response);
 	}
 }
