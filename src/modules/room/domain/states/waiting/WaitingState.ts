@@ -111,8 +111,12 @@ export class WaitingState extends RoomState {
 			client.sendMessage(duelStartMessage);
 		});
 
-		const t0Client = room.clients.filter((_client) => _client.team === 0)[0];
-		const t1Client = room.clients.filter((_client) => _client.team === 1)[0];
+		const t0Client = room.clients
+			.filter((_client) => _client.team === 0)
+			.sort((a, b) => a.position - b.position)[0];
+		const t1Client = room.clients
+			.filter((_client) => _client.team === 1)
+			.sort((a, b) => a.position - b.position)[0];
 
 		const rpsChooseMessage = RPSChooseClientMessage.create();
 		t0Client.sendMessage(rpsChooseMessage);
