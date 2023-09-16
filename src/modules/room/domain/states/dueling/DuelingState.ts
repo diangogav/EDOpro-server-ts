@@ -202,6 +202,8 @@ export class DuelingState extends RoomState {
 	}
 
 	private handle(): void {
+		this.room.prepareTurnOrder();
+
 		const players = this.room.clients.map((item) => ({
 			team: item.team,
 			mainDeck: item.deck.main.map((card) => Number(card.code)),

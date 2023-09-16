@@ -58,7 +58,6 @@ export class ChossingOrderState extends RoomState {
 		}
 
 		room.setFirstToPlay(0);
-		room.prepareTurnOrder();
 		room.dueling();
 	}
 
