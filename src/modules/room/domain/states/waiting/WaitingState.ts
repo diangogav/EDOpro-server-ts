@@ -123,7 +123,6 @@ export class WaitingState extends RoomState {
 		t1Client.sendMessage(rpsChooseMessage);
 
 		room.initializeHistoricalData();
-		room.prepareTurnOrder();
 		room.rps();
 	}
 
