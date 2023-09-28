@@ -228,7 +228,7 @@ MessageTargets Dueling::get_message_target(const std::vector<uint8_t> message)
   case MSG_SELECT_DISFIELD:
   case MSG_SELECT_POSITION:
   case MSG_SORT_CARD:
-  case MSG_SORT_CHAIN:
+  // case MSG_SORT_CHAIN:
   case MSG_SELECT_COUNTER:
   case MSG_SELECT_SUM:
   case MSG_ROCK_PAPER_SCISSORS:
