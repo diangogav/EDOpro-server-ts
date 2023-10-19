@@ -90,18 +90,23 @@ npm install
 git clone https://github.com/ProjectIgnis/BabelCDB.git databases
 ```
 
-4. Clone card scripts inside the core folder:
+4. Clone banlists in the root folder:
+```
+git clone git clone https://github.com/ProjectIgnis/LFLists banlists-project-ignis banlists
+```
+
+5. Clone card scripts inside the core folder:
 ```
 git clone https://github.com/ProjectIgnis/CardScripts.git scripts
 ```
 
-5. Compile the project:
+6. Compile the project:
 
 ```bash
 npm run build
 ```
 
-6. Start the project:
+7. Start the project:
 
 ```bash
 npm start
