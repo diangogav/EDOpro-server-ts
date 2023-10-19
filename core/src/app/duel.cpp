@@ -672,14 +672,15 @@ void Duel::process_queries(const std::vector<QueryRequest> &query_requests)
       uint8_t team = this->get_swapped_team(query_location_request.con);
       const auto buffer = this->api.duelQueryLocation(duel, query);
 
+      // TODO: SEND REPLAY MESSAGE
+      const auto replay_data = this->create_update_data_message(query_location_request, buffer);
+      this->send_replay_message(replay_data);
+
       if (query_location_request.loc == LOCATION_DECK)
       {
         continue;
       }
 
-      // TODO: SEND REPLAY MESSAGE
-      const auto replay_data = this->create_update_data_message(query_location_request, buffer);
-      this->send_replay_message(replay_data);
       // addMessageToReplay.sendUpdateData(query_location_request.con, query_location_request.loc, buffer);
 
       const auto queries = this->deserializer.deserializeLocationQuery(buffer);
