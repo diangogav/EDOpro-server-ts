@@ -29,7 +29,7 @@ RUN conan install . --build missing --output-folder=./dependencies && \
     ./premake5 gmake && \
     make config=release
 
-FROM node:18.16.1 as server-builder
+FROM node:20 as server-builder
 
 WORKDIR /server
 
@@ -43,7 +43,7 @@ COPY . .
 
 RUN npm run build
 
-FROM node:18.16.1
+FROM node:20
 
 WORKDIR /app
 
