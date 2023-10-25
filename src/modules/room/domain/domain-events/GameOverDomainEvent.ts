@@ -1,12 +1,15 @@
 import { MatchHistory, Player } from "../../match/domain/Match";
 
+export type PlayerData = Player & MatchHistory & { winner: boolean };
+
 export type GameOverData = {
 	bestOf: number;
 	// needWins: number;
 	turn: number;
 	date: Date;
-	players: (Player & MatchHistory & { winner: boolean })[];
+	players: PlayerData[];
 	ranked: boolean;
+	banlistHash: number;
 };
 
 export class GameOverDomainEvent {

@@ -1,5 +1,9 @@
 /* eslint-disable no-await-in-loop */
+import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
 import { DomainEventSubscriber } from "../../shared/event-bus/EventBus";
+import { BanListLeaderboardCalculator } from "../../stats/application/BanListLeaderboardCalculator";
+import { EarnedPointsCalculator } from "../../stats/application/EarnedPointsCalculator";
+import { GlobalLeaderboardCalculator } from "../../stats/application/GlobalLeaderboardCalculator";
 import { GameOverDomainEvent } from "../domain/domain-events/GameOverDomainEvent";
 import { RoomRepository } from "../domain/RoomRepository";
 
@@ -16,26 +20,17 @@ export class RecordMatch implements DomainEventSubscriber<GameOverDomainEvent> {
 		if (!event.data.ranked) {
 			return;
 		}
+		const banList = BanListMemoryRepository.findByHash(event.data.banlistHash);
+
+		const handleStatsCalculations = new EarnedPointsCalculator(this.roomRepository, banList);
+
+		handleStatsCalculations
+			.setNextHandler(new GlobalLeaderboardCalculator(this.roomRepository))
+			.setNextHandler(new BanListLeaderboardCalculator(this.roomRepository, banList));
+
 		for (const player of event.data.players) {
-			const wins = player.games.filter((round) => round.result === "winner").length;
-			const defeats = player.games.filter((round) => round.result === "loser").length;
-			const earnedPoints = this.calculateEarnedPoints(wins, defeats, player.winner);
 			await this.roomRepository.saveMatch(player.name, event.data);
-			await this.roomRepository.updatePlayerPoints(player.name, earnedPoints);
-
-			if (player.winner) {
-				await this.roomRepository.increaseWins(player.name);
-			} else {
-				await this.roomRepository.increaseLoses(player.name);
-			}
+			await handleStatsCalculations.calculate(player);
 		}
-	}
-
-	private calculateEarnedPoints(wins: number, defeats: number, winner: boolean): number {
-		if (winner) {
-			return wins + (wins - defeats);
-		}
-
-		return wins;
 	}
 }
