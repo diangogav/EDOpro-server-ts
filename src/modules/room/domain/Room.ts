@@ -785,6 +785,16 @@ export class Room {
 		};
 	}
 
+	toRealTimePresentation(): { [key: string]: unknown } {
+		return {
+			id: this.id,
+			players: this.clients.map((client) => ({
+				position: client.position,
+				username: client.name,
+			})),
+		};
+	}
+
 	private writeToCppProcess(messageToCpp: string, retryCount: number): void {
 		if (retryCount <= 0) {
 			console.error(

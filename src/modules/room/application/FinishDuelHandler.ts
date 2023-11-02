@@ -1,3 +1,4 @@
+import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
 import { DuelEndMessage } from "../../messages/server-to-client/game-messages/DuelEndMessage";
 import { SideDeckClientMessage } from "../../messages/server-to-client/game-messages/SideDeckClientMessage";
 import { SideDeckWaitClientMessage } from "../../messages/server-to-client/game-messages/SideDeckWaitClientMessage";
@@ -10,6 +11,7 @@ import { EventBus } from "../../shared/event-bus/EventBus";
 import { GameOverDomainEvent } from "../domain/domain-events/GameOverDomainEvent";
 import { DuelFinishReason } from "../domain/DuelFinishReason";
 import { Room } from "../domain/Room";
+import RoomList from "../infrastructure/RoomList";
 
 export class FinishDuelHandler {
 	private readonly reason: DuelFinishReason;
@@ -105,6 +107,10 @@ export class FinishDuelHandler {
 					ranked: this.room.ranked,
 					banlistHash: this.room.banlistHash,
 				})
+			);
+
+			WebSocketSingleton.getInstance().broadcast(
+				JSON.stringify(RoomList.getRooms().map((room) => room.toRealTimePresentation()))
 			);
 
 			return;

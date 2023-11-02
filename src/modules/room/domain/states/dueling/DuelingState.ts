@@ -6,6 +6,7 @@ import EventEmitter from "events";
 
 import { YGOClientSocket } from "../../../../../socket-server/HostServer";
 import { decimalToBytesBuffer } from "../../../../../utils";
+import WebSocketSingleton from "../../../../../web-socket-server/WebSocketSingleton";
 import { Client } from "../../../../client/domain/Client";
 import { UpdateDeckMessageSizeCalculator } from "../../../../deck/application/UpdateDeckMessageSizeCalculator";
 import { JoinGameMessage } from "../../../../messages/client-to-server/JoinGameMessage";
@@ -25,6 +26,7 @@ import { Logger } from "../../../../shared/logger/domain/Logger";
 import { FinishDuelHandler } from "../../../application/FinishDuelHandler";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";
+import RoomList from "../../../infrastructure/RoomList";
 import { DuelFinishReason } from "../../DuelFinishReason";
 import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";
@@ -282,6 +284,10 @@ export class DuelingState extends RoomState {
 				this.logger.info(`score: ${this.room.score}`);
 			}
 		});
+
+		WebSocketSingleton.getInstance().broadcast(
+			JSON.stringify(RoomList.getRooms().map((room) => room.toRealTimePresentation()))
+		);
 	}
 
 	private processMessage(): void {
