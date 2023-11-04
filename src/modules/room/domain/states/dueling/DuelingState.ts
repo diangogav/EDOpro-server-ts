@@ -336,7 +336,7 @@ export class DuelingState extends RoomState {
 			const _coreMessage = message as unknown as RawCoreMessage;
 			if (_coreMessage.message === CoreMessages.MSG_DAMAGE) {
 				const data = Buffer.from(_coreMessage.data, "hex");
-				const team = data.readUint8(1);
+				const team = this.room.firstToPlay ^ data.readUint8(1);
 				const damage = data.readUint32LE(2);
 				this.room.decreaseLps(team as Team, damage);
 				WebSocketSingleton.getInstance().broadcast({
@@ -347,7 +347,7 @@ export class DuelingState extends RoomState {
 
 			if (_coreMessage.message === CoreMessages.MSG_RECOVER) {
 				const data = Buffer.from(_coreMessage.data, "hex");
-				const team = data.readUint8(1);
+				const team = this.room.firstToPlay ^ data.readUint8(1);
 				const health = data.readUint32LE(2);
 				this.room.increaseLps(team as Team, health);
 				WebSocketSingleton.getInstance().broadcast({
@@ -358,7 +358,7 @@ export class DuelingState extends RoomState {
 
 			if (_coreMessage.message === CoreMessages.MSG_PAY_LPCOST) {
 				const data = Buffer.from(_coreMessage.data, "hex");
-				const team = data.readUint8(1);
+				const team = this.room.firstToPlay ^ data.readUint8(1);
 				const cost = data.readUint32LE(2);
 				this.room.decreaseLps(team as Team, cost);
 				WebSocketSingleton.getInstance().broadcast({
