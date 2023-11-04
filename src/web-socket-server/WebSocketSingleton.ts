@@ -1,6 +1,7 @@
 /* eslint-disable no-use-before-define */
 import { readFileSync } from "fs";
 import { createServer } from "https";
+import path from "path";
 import WebSocket, { WebSocketServer } from "ws";
 
 import RoomList from "../modules/room/infrastructure/RoomList";
@@ -11,9 +12,10 @@ class WebSocketSingleton {
 	private readonly wss: WebSocketServer | null = null;
 
 	private constructor(port: number) {
+		const root = path.resolve(__dirname, "../../");
 		const server = createServer({
-			cert: readFileSync("./certs/cert.pem"),
-			key: readFileSync("./certs/privkey.pem"),
+			cert: readFileSync(`${root}/certs/cert.pem`),
+			key: readFileSync(`${root}/certs/privkey.pem`),
 		});
 		this.wss = new WebSocketServer({ port, server });
 		this.wss.on("connection", (ws: WebSocket) => {
