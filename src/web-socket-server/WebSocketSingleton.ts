@@ -1,4 +1,6 @@
 /* eslint-disable no-use-before-define */
+import { readFileSync } from "fs";
+import { createServer } from "https";
 import WebSocket, { WebSocketServer } from "ws";
 
 import RoomList from "../modules/room/infrastructure/RoomList";
@@ -9,7 +11,11 @@ class WebSocketSingleton {
 	private readonly wss: WebSocketServer | null = null;
 
 	private constructor(port: number) {
-		this.wss = new WebSocketServer({ port });
+		const server = createServer({
+			cert: readFileSync("./certs/cert.pem"),
+			key: readFileSync("./certs/privkey.pem"),
+		});
+		this.wss = new WebSocketServer({ port, server });
 		this.wss.on("connection", (ws: WebSocket) => {
 			ws.send(
 				JSON.stringify({
@@ -22,7 +28,6 @@ class WebSocketSingleton {
 
 	public static getInstance(): WebSocketSingleton {
 		if (!WebSocketSingleton.instance) {
-			console.log("WebSocket Server Up!");
 			WebSocketSingleton.instance = new WebSocketSingleton(4000);
 		}
 

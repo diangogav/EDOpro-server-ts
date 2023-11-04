@@ -13,3 +13,4 @@ core/CoreIntegrator
 *.env
 *banlists
 app.log
+certs
