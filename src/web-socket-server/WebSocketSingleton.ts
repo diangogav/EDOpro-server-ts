@@ -1,23 +1,17 @@
-/* eslint-disable no-use-before-define */
 import { readFileSync } from "fs";
-import { createServer } from "https";
-import path from "path";
+import https from "https";
 import WebSocket, { WebSocketServer } from "ws";
 
 import RoomList from "../modules/room/infrastructure/RoomList";
 import { WebSocketMessage } from "./WebSocketMessage";
 
 class WebSocketSingleton {
+	// eslint-disable-next-line no-use-before-define
 	private static instance: WebSocketSingleton | null = null;
 	private readonly wss: WebSocketServer | null = null;
 
-	private constructor(port: number) {
-		const root = path.resolve(__dirname, "../../");
-		const server = createServer({
-			cert: readFileSync(`${root}/letsencrypt/live/server.evolutionygo.com/cert.pem`),
-			key: readFileSync(`${root}/letsencrypt/live/server.evolutionygo.com/privkey.pem`),
-		});
-		this.wss = new WebSocketServer({ port, server });
+	private constructor(httpsServer: https.Server) {
+		this.wss = new WebSocketServer({ server: httpsServer });
 		this.wss.on("connection", (ws: WebSocket) => {
 			ws.send(
 				JSON.stringify({
@@ -28,9 +22,10 @@ class WebSocketSingleton {
 		});
 	}
 
-	public static getInstance(): WebSocketSingleton {
+	public static getInstance(httpsServer: https.Server): WebSocketSingleton {
 		if (!WebSocketSingleton.instance) {
-			WebSocketSingleton.instance = new WebSocketSingleton(4000);
+			console.log("WebSocket Server Up!");
+			WebSocketSingleton.instance = new WebSocketSingleton(httpsServer);
 		}
 
 		return WebSocketSingleton.instance;
@@ -48,3 +43,19 @@ class WebSocketSingleton {
 }
 
 export default WebSocketSingleton;
+
+// Crear el servidor HTTPS
+const options = {
+	cert: readFileSync(`./letsencrypt/live/server.evolutionygo.com/cert.pem`),
+	key: readFileSync(`./letsencrypt/live/server.evolutionygo.com/privkey.pem`),
+};
+
+const server = https.createServer(options, (_req, _res) => {
+	// Manejar solicitudes HTTP si es necesario
+});
+
+// Iniciar el servidor Express en el servidor HTTPS
+server.listen(4000, () => {
+	console.log("Server is running on port 4000");
+	WebSocketSingleton.getInstance(server);
+});
