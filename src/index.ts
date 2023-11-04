@@ -6,6 +6,7 @@ import { BanListLoader } from "./modules/ban-list/infrastructure/BanListLoader";
 import { SQLiteTypeORM } from "./modules/shared/db/postgres/infrastructure/SQLiteTypeORM";
 import { Pino } from "./modules/shared/logger/infrastructure/Pino";
 import { HostServer } from "./socket-server/HostServer";
+import WebSocketSingleton from "./web-socket-server/WebSocketSingleton";
 
 void start();
 
@@ -19,5 +20,6 @@ async function start(): Promise<void> {
 	await database.connect();
 	await database.initialize();
 	await server.initialize();
+	WebSocketSingleton.getInstance();
 	hostServer.initialize();
 }

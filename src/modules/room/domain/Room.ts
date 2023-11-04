@@ -3,6 +3,7 @@ import shuffle from "shuffle-array";
 import { EventEmitter } from "stream";
 
 import { YGOClientSocket } from "../../../socket-server/HostServer";
+import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
 import { CardSQLiteTYpeORMRepository } from "../../card/infrastructure/postgres/CardSQLiteTYpeORMRepository";
 import { Client } from "../../client/domain/Client";
 import { DeckCreator } from "../../deck/application/DeckCreator";
@@ -21,6 +22,7 @@ import { JoinToDuelAsSpectator } from "../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../application/Reconnect";
 import RoomList from "../infrastructure/RoomList";
 import { Match, MatchHistory, Player } from "../match/domain/Match";
+import { Duel } from "./Duel";
 import { DuelFinishReason } from "./DuelFinishReason";
 import { RoomState } from "./RoomState";
 import { ChossingOrderState } from "./states/chossing-order/ChossingOrderState";
@@ -28,6 +30,7 @@ import { DuelingState } from "./states/dueling/DuelingState";
 import { RockPaperScissorState } from "./states/rps/RockPaperScissorsState";
 import { SideDeckingState } from "./states/side-decking/SideDeckingState";
 import { WaitingState } from "./states/waiting/WaitingState";
+import { Team } from "./Team";
 import { Timer } from "./Timer";
 
 export enum Rule {
@@ -158,7 +161,7 @@ export class Room {
 	private _playerExtraDeckSize: number;
 	private _opponentMainDeckSize: number;
 	private _opponentExtraDeckSize: number;
-	private _turn = 0;
+	private readonly _turn = 0;
 	private _firstToPlay: number;
 	private readonly t0Positions: number[] = [];
 	private readonly t1Positions: number[] = [];
@@ -167,6 +170,7 @@ export class Room {
 	private roomState: RoomState | null = null;
 	private emitter: EventEmitter;
 	private logger: Logger;
+	private currentDuel: Duel | null = null;
 
 	private constructor(attr: RoomAttr) {
 		this.id = attr.id;
@@ -337,6 +341,10 @@ export class Room {
 		this._match = new Match({ bestOf: this.bestOf });
 	}
 
+	isFirstDuel(): boolean {
+		return this._match?.isFirstDuel() ?? true;
+	}
+
 	initializeHistoricalData(): void {
 		const players = this.clients.map((client) => ({
 			team: client.team,
@@ -427,6 +435,8 @@ export class Room {
 			// Volver a intentar la escritura después de un breve retraso
 			this.writeToCppProcess("¡Hola desde Node.js!", 3);
 		});
+		const banlist = BanListMemoryRepository.findByHash(this.banlistHash);
+		this.currentDuel = new Duel(0, [this.startLp, this.startLp], banlist);
 	}
 
 	get duel(): ChildProcessWithoutNullStreams | null {
@@ -440,7 +450,6 @@ export class Room {
 	dueling(): void {
 		this._state = DuelState.DUELING;
 		this.isStart = "start";
-		this._turn = 0;
 		this.roomState?.removeAllListener();
 		this.roomState = new DuelingState(
 			this.emitter,
@@ -561,11 +570,11 @@ export class Room {
 	}
 
 	increaseTurn(): void {
-		this._turn++;
+		this.currentDuel?.increaseTurn();
 	}
 
 	get turn(): number {
-		return this._turn;
+		return this.currentDuel?.turn ?? 0;
 	}
 
 	setFirstToPlay(team: number): void {
@@ -750,6 +759,14 @@ export class Room {
 		} ${this.playerNames(1)}`;
 	}
 
+	decreaseLps(team: Team, value: number): void {
+		this.currentDuel?.decreaseLps(team, value);
+	}
+
+	increaseLps(team: Team, value: number): void {
+		this.currentDuel?.increaseLps(team, value);
+	}
+
 	toPresentation(): { [key: string]: unknown } {
 		return {
 			roomid: this.id,
@@ -781,6 +798,23 @@ export class Room {
 			users: this.clients.map((player) => ({
 				name: player.name.replace(/\0/g, "").trim(),
 				pos: player.position,
+			})),
+		};
+	}
+
+	toRealTimePresentation(): { [key: string]: unknown } {
+		return {
+			id: this.id,
+			turn: this.currentDuel?.turn,
+			bestOf: this.bestOf,
+			banlist: {
+				name: this.currentDuel?.banlistName,
+			},
+			players: this.clients.map((client) => ({
+				position: client.position,
+				username: client.name,
+				lps: this.currentDuel?.lps[client.team],
+				score: client.team === Team.PLAYER ? this._match?.score.team0 : this._match?.score.team1,
 			})),
 		};
 	}

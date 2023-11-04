@@ -1,4 +1,5 @@
 import { YGOClientSocket } from "../../../socket-server/HostServer";
+import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
 import { PlayerChangeClientMessage } from "../../messages/server-to-client/PlayerChangeClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { WatchChangeClientMessage } from "../../messages/server-to-client/WatchChangeClientMessage";
@@ -21,6 +22,10 @@ export class DisconnectHandler {
 
 		if (room.clients.every((client) => client.socket.closed)) {
 			RoomList.deleteRoom(room);
+			WebSocketSingleton.getInstance().broadcast({
+				action: "REMOVE-ROOM",
+				data: room.toRealTimePresentation(),
+			});
 
 			return;
 		}
@@ -35,6 +40,10 @@ export class DisconnectHandler {
 
 		if (player.host && room.duelState === DuelState.WAITING) {
 			RoomList.deleteRoom(room);
+			WebSocketSingleton.getInstance().broadcast({
+				action: "REMOVE-ROOM",
+				data: room.toRealTimePresentation(),
+			});
 
 			return;
 		}

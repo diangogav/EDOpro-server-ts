@@ -1,3 +1,4 @@
+import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
 import { DuelEndMessage } from "../../messages/server-to-client/game-messages/DuelEndMessage";
 import { SideDeckClientMessage } from "../../messages/server-to-client/game-messages/SideDeckClientMessage";
 import { SideDeckWaitClientMessage } from "../../messages/server-to-client/game-messages/SideDeckWaitClientMessage";
@@ -27,7 +28,10 @@ export class FinishDuelHandler {
 	async run(): Promise<void> {
 		this.room.duel?.kill();
 		this.room.duelWinner(this.winner);
-
+		WebSocketSingleton.getInstance().broadcast({
+			action: "UPDATE-ROOM",
+			data: this.room.toRealTimePresentation(),
+		});
 		this.room.stopRoomTimer();
 		this.room.stopTimer(0);
 		this.room.stopTimer(1);
@@ -106,6 +110,11 @@ export class FinishDuelHandler {
 					banlistHash: this.room.banlistHash,
 				})
 			);
+
+			WebSocketSingleton.getInstance().broadcast({
+				action: "REMOVE-ROOM",
+				data: this.room.toRealTimePresentation(),
+			});
 
 			return;
 		}
