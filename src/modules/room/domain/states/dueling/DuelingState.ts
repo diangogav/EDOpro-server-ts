@@ -12,6 +12,7 @@ import { UpdateDeckMessageSizeCalculator } from "../../../../deck/application/Up
 import { JoinGameMessage } from "../../../../messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../../../messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../../messages/domain/Commands";
+import { CoreMessages } from "../../../../messages/domain/CoreMessages";
 import { JSONMessageProcessor } from "../../../../messages/JSONMessageProcessor";
 import { ClientMessage } from "../../../../messages/MessageProcessor";
 import { DuelStartClientMessage } from "../../../../messages/server-to-client/DuelStartClientMessage";
@@ -26,10 +27,10 @@ import { Logger } from "../../../../shared/logger/domain/Logger";
 import { FinishDuelHandler } from "../../../application/FinishDuelHandler";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";
-import RoomList from "../../../infrastructure/RoomList";
 import { DuelFinishReason } from "../../DuelFinishReason";
 import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";
+import { Team } from "../../Team";
 
 interface Message {
 	type: string;
@@ -285,9 +286,17 @@ export class DuelingState extends RoomState {
 			}
 		});
 
-		WebSocketSingleton.getInstance().broadcast(
-			JSON.stringify(RoomList.getRooms().map((room) => room.toRealTimePresentation()))
-		);
+		if (this.room.isFirstDuel()) {
+			WebSocketSingleton.getInstance().broadcast({
+				action: "ADD-ROOM",
+				data: this.room.toRealTimePresentation(),
+			});
+		} else {
+			WebSocketSingleton.getInstance().broadcast({
+				action: "UPDATE-ROOM",
+				data: this.room.toRealTimePresentation(),
+			});
+		}
 	}
 
 	private processMessage(): void {
@@ -325,6 +334,46 @@ export class DuelingState extends RoomState {
 
 		if (message.type === "CORE") {
 			const _coreMessage = message as unknown as RawCoreMessage;
+			if (_coreMessage.message === CoreMessages.MSG_DAMAGE) {
+				const data = Buffer.from(_coreMessage.data, "hex");
+				const team = data.readUint8(1);
+				const damage = data.readUint32LE(2);
+				this.room.decreaseLps(team as Team, damage);
+				WebSocketSingleton.getInstance().broadcast({
+					action: "UPDATE-ROOM",
+					data: this.room.toRealTimePresentation(),
+				});
+			}
+
+			if (_coreMessage.message === CoreMessages.MSG_RECOVER) {
+				const data = Buffer.from(_coreMessage.data, "hex");
+				const team = data.readUint8(1);
+				const health = data.readUint32LE(2);
+				this.room.increaseLps(team as Team, health);
+				WebSocketSingleton.getInstance().broadcast({
+					action: "UPDATE-ROOM",
+					data: this.room.toRealTimePresentation(),
+				});
+			}
+
+			if (_coreMessage.message === CoreMessages.MSG_PAY_LPCOST) {
+				const data = Buffer.from(_coreMessage.data, "hex");
+				const team = data.readUint8(1);
+				const cost = data.readUint32LE(2);
+				this.room.decreaseLps(team as Team, cost);
+				WebSocketSingleton.getInstance().broadcast({
+					action: "UPDATE-ROOM",
+					data: this.room.toRealTimePresentation(),
+				});
+			}
+
+			if (_coreMessage.message === CoreMessages.MSG_NEW_TURN) {
+				this.room.increaseTurn();
+				WebSocketSingleton.getInstance().broadcast({
+					action: "UPDATE-ROOM",
+					data: this.room.toRealTimePresentation(),
+				});
+			}
 		}
 
 		if (message.type === "REPLAY") {

@@ -11,7 +11,6 @@ import { EventBus } from "../../shared/event-bus/EventBus";
 import { GameOverDomainEvent } from "../domain/domain-events/GameOverDomainEvent";
 import { DuelFinishReason } from "../domain/DuelFinishReason";
 import { Room } from "../domain/Room";
-import RoomList from "../infrastructure/RoomList";
 
 export class FinishDuelHandler {
 	private readonly reason: DuelFinishReason;
@@ -29,7 +28,10 @@ export class FinishDuelHandler {
 	async run(): Promise<void> {
 		this.room.duel?.kill();
 		this.room.duelWinner(this.winner);
-
+		WebSocketSingleton.getInstance().broadcast({
+			action: "UPDATE-ROOM",
+			data: this.room.toRealTimePresentation(),
+		});
 		this.room.stopRoomTimer();
 		this.room.stopTimer(0);
 		this.room.stopTimer(1);
@@ -109,9 +111,10 @@ export class FinishDuelHandler {
 				})
 			);
 
-			WebSocketSingleton.getInstance().broadcast(
-				JSON.stringify(RoomList.getRooms().map((room) => room.toRealTimePresentation()))
-			);
+			WebSocketSingleton.getInstance().broadcast({
+				action: "REMOVE-ROOM",
+				data: this.room.toRealTimePresentation(),
+			});
 
 			return;
 		}

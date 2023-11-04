@@ -22,6 +22,8 @@ export class Match {
 	constructor({ bestOf }: { bestOf: number }) {
 		this.bestOf = bestOf;
 		this.needWins = Math.ceil(this.bestOf / 2);
+		this.playerScore = 0;
+		this.opponentScore = 0;
 	}
 
 	initializeHistoricalData(players: Player[]): void {
@@ -77,6 +79,10 @@ export class Match {
 			...player,
 			winner: this.winner() === player.team,
 		}));
+	}
+
+	isFirstDuel(): boolean {
+		return this.playerScore === 0 && this.opponentScore === 0;
 	}
 
 	private winner(): number {

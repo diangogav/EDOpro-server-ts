@@ -22,9 +22,10 @@ export class DisconnectHandler {
 
 		if (room.clients.every((client) => client.socket.closed)) {
 			RoomList.deleteRoom(room);
-			WebSocketSingleton.getInstance().broadcast(
-				JSON.stringify(RoomList.getRooms().map((room) => room.toRealTimePresentation()))
-			);
+			WebSocketSingleton.getInstance().broadcast({
+				action: "REMOVE-ROOM",
+				data: room.toRealTimePresentation(),
+			});
 
 			return;
 		}
@@ -39,9 +40,10 @@ export class DisconnectHandler {
 
 		if (player.host && room.duelState === DuelState.WAITING) {
 			RoomList.deleteRoom(room);
-			WebSocketSingleton.getInstance().broadcast(
-				JSON.stringify(RoomList.getRooms().map((room) => room.toRealTimePresentation()))
-			);
+			WebSocketSingleton.getInstance().broadcast({
+				action: "REMOVE-ROOM",
+				data: room.toRealTimePresentation(),
+			});
 
 			return;
 		}
