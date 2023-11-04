@@ -14,8 +14,8 @@ class WebSocketSingleton {
 	private constructor(port: number) {
 		const root = path.resolve(__dirname, "../../");
 		const server = createServer({
-			cert: readFileSync(`${root}/certs/cert.pem`),
-			key: readFileSync(`${root}/certs/privkey.pem`),
+			cert: readFileSync(`${root}/letsencrypt/live/server.evolutionygo.com/cert.pem`),
+			key: readFileSync(`${root}/letsencrypt/live/server.evolutionygo.com/privkey.pem`),
 		});
 		this.wss = new WebSocketServer({ port, server });
 		this.wss.on("connection", (ws: WebSocket) => {
