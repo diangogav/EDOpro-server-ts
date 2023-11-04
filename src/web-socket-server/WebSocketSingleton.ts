@@ -22,6 +22,7 @@ class WebSocketSingleton {
 
 	public static getInstance(): WebSocketSingleton {
 		if (!WebSocketSingleton.instance) {
+			console.log("WebSocket Server Up!");
 			WebSocketSingleton.instance = new WebSocketSingleton(4000);
 		}
 
