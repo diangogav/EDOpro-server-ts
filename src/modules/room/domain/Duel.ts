@@ -5,11 +5,13 @@ export class Duel {
 	private _turn: number;
 	private readonly _lps: [number, number];
 	private readonly _banlist: BanList | null;
+	private _surrendered: boolean;
 
 	constructor(turn: number, lps: [number, number], banlist: BanList | null) {
 		this._turn = turn;
 		this._lps = lps;
 		this._banlist = banlist;
+		this._surrendered = false;
 	}
 
 	increaseTurn(): void {
@@ -44,5 +46,13 @@ export class Duel {
 
 	get banlistName(): string | null {
 		return this._banlist?.name ?? "N/A";
+	}
+
+	get isSurrendered(): boolean {
+		return this._surrendered;
+	}
+
+	surrendered(): void {
+		this._surrendered = true;
 	}
 }

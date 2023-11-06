@@ -767,6 +767,10 @@ export class Room {
 		this.currentDuel?.increaseLps(team, value);
 	}
 
+	isSurrendered(): boolean {
+		return this.currentDuel?.isSurrendered ?? false;
+	}
+
 	toPresentation(): { [key: string]: unknown } {
 		return {
 			roomid: this.id,

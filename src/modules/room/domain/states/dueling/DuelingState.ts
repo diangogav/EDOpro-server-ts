@@ -651,6 +651,10 @@ export class DuelingState extends RoomState {
 	private handleSurrender(_message: ClientMessage, client: Client): void {
 		this.logger.debug("DUELING: SURRENDER");
 
+		if (this.room.isSurrendered()) {
+			return;
+		}
+
 		const finishDuelHandler = new FinishDuelHandler({
 			reason: DuelFinishReason.SURRENDERED,
 			winner: Number(!client.team),
