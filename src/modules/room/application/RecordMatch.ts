@@ -29,7 +29,10 @@ export class RecordMatch implements DomainEventSubscriber<GameOverDomainEvent> {
 			.setNextHandler(new BanListLeaderboardCalculator(this.roomRepository, banList));
 
 		for (const player of event.data.players) {
-			await this.roomRepository.saveMatch(player.name, event.data);
+			await this.roomRepository.saveMatch(player.name, {
+				...event.data,
+				banlistName: banList?.name ?? "N/A",
+			});
 			await handleStatsCalculations.calculate(player);
 		}
 	}

@@ -6,4 +6,5 @@ export const config = {
 	redis: {
 		uri: process.env.REDIS_URI,
 	},
+	env: process.env.NODE_ENV,
 };

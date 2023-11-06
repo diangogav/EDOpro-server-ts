@@ -4,6 +4,7 @@ import { createServer } from "https";
 import path from "path";
 import WebSocket, { WebSocketServer } from "ws";
 
+import { config } from "../config";
 import RoomList from "../modules/room/infrastructure/RoomList";
 import { WebSocketMessage } from "./WebSocketMessage";
 
@@ -12,12 +13,7 @@ class WebSocketSingleton {
 	private readonly wss: WebSocketServer | null = null;
 
 	private constructor(port: number) {
-		const root = path.resolve(__dirname, "../../");
-		const server = createServer({
-			cert: readFileSync(`${root}/letsencrypt/live/server.evolutionygo.com/cert.pem`),
-			key: readFileSync(`${root}/letsencrypt/live/server.evolutionygo.com/privkey.pem`),
-		});
-
+		const server = this.buildServer();
 		this.wss = new WebSocketServer({ server });
 		this.wss.on("connection", (ws: WebSocket) => {
 			ws.send(
@@ -48,6 +44,19 @@ class WebSocketSingleton {
 				}
 			});
 		}
+	}
+
+	private buildServer() {
+		if (config.env === "PRODUCTION") {
+			const root = path.resolve(__dirname, "../../");
+
+			return createServer({
+				cert: readFileSync(`${root}/letsencrypt/live/server.evolutionygo.com/cert.pem`),
+				key: readFileSync(`${root}/letsencrypt/live/server.evolutionygo.com/privkey.pem`),
+			});
+		}
+
+		return createServer();
 	}
 }
 

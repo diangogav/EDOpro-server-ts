@@ -1,3 +1,5 @@
 import { GameOverData } from "../../domain/domain-events/GameOverDomainEvent";
 
-export type MatchSummary = GameOverData;
+export type MatchSummary = GameOverData & {
+	banlistName: string;
+};
