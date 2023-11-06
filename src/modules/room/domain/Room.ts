@@ -816,6 +816,7 @@ export class Room {
 				lps: this.currentDuel?.lps[client.team],
 				score: client.team === Team.PLAYER ? this._match?.score.team0 : this._match?.score.team1,
 			})),
+			notes: this.notes,
 		};
 	}
 
