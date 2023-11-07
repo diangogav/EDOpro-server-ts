@@ -469,6 +469,12 @@ export class DuelingState extends RoomState {
 	private handleCoreFinish(message: FinishMessage) {
 		const reason = message.reason as DuelFinishReason;
 		const winner = message.winner;
+
+		if (this.room.isFinished()) {
+			return;
+		}
+
+		this.room.finished();
 		const duelFinisher = new FinishDuelHandler({
 			reason,
 			winner,
@@ -651,10 +657,11 @@ export class DuelingState extends RoomState {
 	private handleSurrender(_message: ClientMessage, client: Client): void {
 		this.logger.debug("DUELING: SURRENDER");
 
-		if (this.room.isSurrendered()) {
+		if (this.room.isFinished()) {
 			return;
 		}
 
+		this.room.finished();
 		const finishDuelHandler = new FinishDuelHandler({
 			reason: DuelFinishReason.SURRENDERED,
 			winner: Number(!client.team),
