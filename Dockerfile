@@ -56,6 +56,5 @@ COPY --from=core-integrator-builder /app/CoreIntegrator ./core/CoreIntegrator
 COPY --from=core-integrator-builder /repositories/scripts ./core/scripts/
 COPY --from=core-integrator-builder /repositories/databases ./databases/
 COPY --from=core-integrator-builder /repositories/banlists ./banlists/
-ENV NEW_RELIC_NO_CONFIG_FILE=true
 
 CMD ["npm", "start"]

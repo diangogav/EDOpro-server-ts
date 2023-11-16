@@ -8,9 +8,6 @@ import { Pino } from "./modules/shared/logger/infrastructure/Pino";
 import { HostServer } from "./socket-server/HostServer";
 import WebSocketSingleton from "./web-socket-server/WebSocketSingleton";
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-require("newrelic");
-
 void start();
 
 async function start(): Promise<void> {
