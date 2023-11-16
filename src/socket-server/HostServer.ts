@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
+import { randomUUID as uuidv4 } from "crypto";
 import net, { Socket } from "net";
-import { v4 as uuidv4 } from "uuid";
 
 import { MessageEmitter } from "../modules/MessageEmitter";
 import { DisconnectHandler } from "../modules/room/application/DisconnectHandler";
