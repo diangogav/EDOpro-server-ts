@@ -513,7 +513,9 @@ export class Room {
 	}
 
 	removeSpectator(spectator: Client): void {
-		this._spectators = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
+		spectator.socket.removeAllListeners();
+		const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
+		this._spectators = filtered;
 	}
 
 	get clients(): Client[] {
