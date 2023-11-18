@@ -1,5 +1,5 @@
 /* eslint-disable no-await-in-loop */
-import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
+import { BanListRepository } from "../../ban-list/domain/BanListRepository";
 import { DomainEventSubscriber } from "../../shared/event-bus/EventBus";
 import { BanListLeaderboardCalculator } from "../../stats/application/BanListLeaderboardCalculator";
 import { EarnedPointsCalculator } from "../../stats/application/EarnedPointsCalculator";
@@ -11,16 +11,18 @@ export class RecordMatch implements DomainEventSubscriber<GameOverDomainEvent> {
 	static readonly ListenTo = GameOverDomainEvent.DOMAIN_EVENT;
 
 	private readonly roomRepository: RoomRepository;
+	private readonly banListRepository: BanListRepository;
 
-	constructor(roomRepository: RoomRepository) {
+	constructor(roomRepository: RoomRepository, banListRepository: BanListRepository) {
 		this.roomRepository = roomRepository;
+		this.banListRepository = banListRepository;
 	}
 
 	async handle(event: GameOverDomainEvent): Promise<void> {
 		if (!event.data.ranked) {
 			return;
 		}
-		const banList = BanListMemoryRepository.findByHash(event.data.banlistHash);
+		const banList = this.banListRepository.findByHash(event.data.banlistHash);
 
 		const handleStatsCalculations = new EarnedPointsCalculator(this.roomRepository, banList);
 

@@ -3,7 +3,7 @@ import shuffle from "shuffle-array";
 import { EventEmitter } from "stream";
 
 import { YGOClientSocket } from "../../../socket-server/HostServer";
-import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
+import { BanListMemoryRepository } from "../../ban-list/infrastructure/BanListMemoryRepository";
 import { CardSQLiteTYpeORMRepository } from "../../card/infrastructure/postgres/CardSQLiteTYpeORMRepository";
 import { Client } from "../../client/domain/Client";
 import { DeckCreator } from "../../deck/application/DeckCreator";
@@ -301,7 +301,11 @@ export class Room {
 			this.emitter,
 			this.logger,
 			new UserFinder(new UserRedisRepository()),
-			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules)
+			new DeckCreator(
+				new CardSQLiteTYpeORMRepository(),
+				this.deckRules,
+				new BanListMemoryRepository()
+			)
 		);
 	}
 
@@ -435,7 +439,7 @@ export class Room {
 			// Volver a intentar la escritura después de un breve retraso
 			this.writeToCppProcess("¡Hola desde Node.js!", 3);
 		});
-		const banlist = BanListMemoryRepository.findByHash(this.banlistHash);
+		const banlist = new BanListMemoryRepository().findByHash(this.banlistHash);
 		this.currentDuel = new Duel(0, [this.startLp, this.startLp], banlist);
 	}
 
@@ -469,7 +473,11 @@ export class Room {
 			this.logger,
 			new Reconnect(new UserFinder(new UserRedisRepository())),
 			new JoinToDuelAsSpectator(),
-			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules)
+			new DeckCreator(
+				new CardSQLiteTYpeORMRepository(),
+				this.deckRules,
+				new BanListMemoryRepository()
+			)
 		);
 	}
 

@@ -2,16 +2,19 @@ import { EventEmitter } from "stream";
 
 import { CreateRoomRequest } from "../../../http-server/controllers/CreateRoomController";
 import { UTF8ToUTF16 } from "../../../utils/UTF8ToUTF16";
-import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
+import { BanListRepository } from "../../ban-list/domain/BanListRepository";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { Room } from "../domain/Room";
 import RoomList from "../infrastructure/RoomList";
 
 export class RoomCreator {
-	constructor(private readonly logger: Logger) {}
+	constructor(
+		private readonly logger: Logger,
+		private readonly banListRepository: BanListRepository
+	) {}
 
 	create(payload: CreateRoomRequest): { password: string } {
-		const banlist = BanListMemoryRepository.findByName(payload.banlist);
+		const banlist = this.banListRepository.findByName(payload.banlist);
 
 		if (!banlist) {
 			throw new Error("Banlist not found");

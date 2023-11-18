@@ -1,5 +1,5 @@
 import { BanList } from "../../ban-list/domain/BanList";
-import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
+import { BanListRepository } from "../../ban-list/domain/BanListRepository";
 import { Card } from "../../card/domain/Card";
 import { CardRepository } from "../../card/domain/CardRepository";
 import { DeckRules } from "../../room/domain/Room";
@@ -8,10 +8,16 @@ import { Deck } from "../domain/Deck";
 export class DeckCreator {
 	private readonly cardRepository: CardRepository;
 	private readonly deckRules: DeckRules;
+	private readonly banListRepository: BanListRepository;
 
-	constructor(cardRepositoy: CardRepository, deckRules: DeckRules) {
+	constructor(
+		cardRepositoy: CardRepository,
+		deckRules: DeckRules,
+		banListRepository: BanListRepository
+	) {
 		this.cardRepository = cardRepositoy;
 		this.deckRules = deckRules;
+		this.banListRepository = banListRepository;
 	}
 
 	async build({
@@ -45,7 +51,7 @@ export class DeckCreator {
 			sideDeck.push(card);
 		}
 
-		const banList = BanListMemoryRepository.findByHash(banListHash);
+		const banList = this.banListRepository.findByHash(banListHash);
 
 		return new Deck({
 			main: mainDeck,

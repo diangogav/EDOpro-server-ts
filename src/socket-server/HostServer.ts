@@ -2,6 +2,7 @@
 import { randomUUID as uuidv4 } from "crypto";
 import net, { Socket } from "net";
 
+import { BanListMemoryRepository } from "../modules/ban-list/infrastructure/BanListMemoryRepository";
 import { MessageEmitter } from "../modules/MessageEmitter";
 import { DisconnectHandler } from "../modules/room/application/DisconnectHandler";
 import { RecordMatch } from "../modules/room/application/RecordMatch";
@@ -71,6 +72,9 @@ export class HostServer {
 	private registerSubscribers(): void {
 		const eventBus = container.get(EventBus);
 
-		eventBus.subscribe(RecordMatch.ListenTo, new RecordMatch(new RedisRoomRepository()));
+		eventBus.subscribe(
+			RecordMatch.ListenTo,
+			new RecordMatch(new RedisRoomRepository(), new BanListMemoryRepository())
+		);
 	}
 }

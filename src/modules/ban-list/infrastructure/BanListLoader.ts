@@ -3,9 +3,11 @@ import { readdir } from "fs/promises";
 import { join } from "path";
 
 import { BanList } from "../domain/BanList";
-import BanListMemoryRepository from "./BanListMemoryRepository";
+import { BanListRepository } from "../domain/BanListRepository";
 
 export class BanListLoader {
+	constructor(private readonly banListRepository: BanListRepository) {}
+
 	async loadDirectory(path: string): Promise<void> {
 		const directoryPath = path;
 		const files = await readdir(directoryPath);
@@ -14,6 +16,8 @@ export class BanListLoader {
 			const filePath = join(directoryPath, file);
 			this.load(filePath);
 		}
+
+		await this.banListRepository.backup();
 	}
 
 	private load(path: string): void {
@@ -49,6 +53,6 @@ export class BanListLoader {
 			banList.add(Number(cardId), Number(quantity));
 		}
 
-		BanListMemoryRepository.add(banList);
+		this.banListRepository.add(banList);
 	}
 }
