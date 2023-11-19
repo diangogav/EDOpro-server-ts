@@ -128,6 +128,11 @@ export class WaitingState extends RoomState {
 
 	private handleReady(_message: ClientMessage, room: Room, player: Client): void {
 		this.logger.debug("WAITING: READY");
+		if (player.isUpdatingDeck) {
+			player.saveReadyCommand(_message);
+
+			return;
+		}
 
 		const status = (player.position << 4) | 0x09;
 		const message = PlayerChangeClientMessage.create({ status });
@@ -189,6 +194,7 @@ export class WaitingState extends RoomState {
 		player: Client
 	): Promise<void> {
 		this.logger.debug("WAITING: UPDATE_DECK");
+		player.updatingDeck();
 		const messageSize = new UpdateDeckMessageSizeCalculator(message.data).calculate();
 		const body = message.data.subarray(0, messageSize);
 		const mainAndExtraDeckSize = body.readUInt32LE(0);
@@ -226,6 +232,12 @@ export class WaitingState extends RoomState {
 		}
 
 		room.setDecksToPlayer(player.position, deck);
+		player.deckUpdated();
+
+		if (player.haveReadyCommand) {
+			player.clearReadyCommand();
+			this.handleReady(player.readyMessage, room, player);
+		}
 	}
 
 	private handleNotReady(_message: ClientMessage, room: Room, player: Client): void {

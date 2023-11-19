@@ -1,6 +1,6 @@
 import { YGOClientSocket } from "../../../socket-server/HostServer";
 import { Deck } from "../../deck/domain/Deck";
-import { MessageProcessor } from "../../messages/MessageProcessor";
+import { ClientMessage, MessageProcessor } from "../../messages/MessageProcessor";
 import { Choose } from "../../rock-paper-scissor/RockPaperScissor";
 import { Room } from "../../room/domain/Room";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
@@ -24,6 +24,9 @@ export class Client {
 	private _duelPosition: number;
 	private _turn: boolean;
 	private _canReconnect: boolean;
+	private _updatingDeck: boolean;
+	private _readyCommand: boolean;
+	private _readyMessage: ClientMessage;
 	private readonly logger: Logger;
 
 	constructor({
@@ -174,5 +177,34 @@ export class Client {
 
 	sendMessage(message: Buffer): void {
 		this._socket.write(message);
+	}
+
+	updatingDeck(): void {
+		this._updatingDeck = true;
+	}
+
+	deckUpdated(): void {
+		this._updatingDeck = false;
+	}
+
+	get isUpdatingDeck(): boolean {
+		return this._updatingDeck;
+	}
+
+	saveReadyCommand(message: ClientMessage): void {
+		this._readyCommand = true;
+		this._readyMessage = message;
+	}
+
+	clearReadyCommand(): void {
+		this._readyCommand = false;
+	}
+
+	get haveReadyCommand(): boolean {
+		return this._readyCommand;
+	}
+
+	get readyMessage(): ClientMessage {
+		return this._readyMessage;
 	}
 }
