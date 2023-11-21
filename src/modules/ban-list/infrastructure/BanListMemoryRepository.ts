@@ -28,4 +28,8 @@ export default {
 		await redis.client.rPush("banlists", names);
 		await redis.client.quit();
 	},
+
+	getOnlyWithName(): string[] {
+		return banLists.filter((banList) => banList.name).map((item) => item.name as string);
+	},
 };

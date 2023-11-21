@@ -1,4 +1,6 @@
+import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
 import { Redis } from "../../shared/db/redis/infrastructure/Redis";
+import { Rank } from "../../shared/value-objects/Rank";
 import { User } from "../domain/User";
 import { UserRepository } from "../domain/UserRepository";
 
@@ -10,12 +12,42 @@ export class UserRedisRepository implements UserRepository {
 			username: string;
 			password: string;
 		};
-		await redis.client.quit();
+		const banlistNames = BanListMemoryRepository.getOnlyWithName();
+		const requests = banlistNames.map((name) =>
+			redis.client.zRevRank(`leaderboard:${name}:points`, username)
+		);
+
+		const ranksResponses = await Promise.allSettled([
+			redis.client.zRevRank("leaderboard:points", username),
+			...requests,
+		]);
+
+		const ranks = ranksResponses
+			.filter((item) => item.status === "fulfilled")
+			.map((data: PromiseSettledResult<unknown>) => (data as PromiseFulfilledResult<number>).value);
 
 		if (!user.username) {
+			await redis.client.quit();
+
 			return null;
 		}
 
-		return new User(user);
+		const userRanks = banlistNames.map((item, index) => {
+			if (!index) {
+				return new Rank({ name: "Global", value: ranks[0] });
+			}
+
+			return new Rank({
+				name: banlistNames[index],
+				value: ranks[index],
+			});
+		});
+
+		await redis.client.quit();
+
+		return new User({
+			...user,
+			ranks: userRanks,
+		});
 	}
 }
