@@ -5,6 +5,7 @@ import { Choose } from "../../rock-paper-scissor/RockPaperScissor";
 import { Room } from "../../room/domain/Room";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
 import { Logger } from "../../shared/logger/domain/Logger";
+import { Rank } from "../../shared/value-objects/Rank";
 
 export class Listener {}
 
@@ -28,6 +29,7 @@ export class Client {
 	private _readyCommand: boolean;
 	private _readyMessage: ClientMessage;
 	private readonly logger: Logger;
+	private readonly ranks: Rank[];
 
 	constructor({
 		socket,
@@ -38,6 +40,7 @@ export class Client {
 		isReady = false,
 		team,
 		logger,
+		ranks = [],
 	}: {
 		socket: YGOClientSocket;
 		host: boolean;
@@ -47,6 +50,7 @@ export class Client {
 		isReady?: boolean;
 		team: number;
 		logger: Logger;
+		ranks: Rank[];
 	}) {
 		this._socket = socket;
 		this.host = host;
@@ -56,6 +60,7 @@ export class Client {
 		this._isReady = isReady;
 		this._team = team;
 		this.logger = logger;
+		this.ranks = ranks;
 	}
 
 	get socket(): YGOClientSocket {

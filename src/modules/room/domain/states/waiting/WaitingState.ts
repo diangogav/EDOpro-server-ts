@@ -23,6 +23,7 @@ import { ServerMessageClientMessage } from "../../../../messages/server-to-clien
 import { TypeChangeClientMessage } from "../../../../messages/server-to-client/TypeChangeClientMessage";
 import { WatchChangeClientMessage } from "../../../../messages/server-to-client/WatchChangeClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
+import { Rank } from "../../../../shared/value-objects/Rank";
 import { UserFinder } from "../../../../user/application/UserFinder";
 import { User } from "../../../../user/domain/User";
 import { PlayerRoomState } from "../../PlayerRoomState";
@@ -278,9 +279,9 @@ export class WaitingState extends RoomState {
 
 				return;
 			}
+			this.player(place, joinGameMessage, socket, playerInfoMessage, room, user.ranks);
 		}
-
-		this.player(place, joinGameMessage, socket, playerInfoMessage, room);
+		this.player(place, joinGameMessage, socket, playerInfoMessage, room, []);
 	}
 
 	private sendErrorMessage(playerInfoMessage: PlayerInfoMessage, socket: YGOClientSocket): void {
@@ -301,17 +302,7 @@ export class WaitingState extends RoomState {
 		playerInfoMessage: PlayerInfoMessage,
 		room: Room
 	): void {
-		const client = new Client({
-			socket,
-			host: false,
-			name: playerInfoMessage.name,
-			position: room.nextSpectatorPosition(),
-			roomId: room.id,
-			team: 3,
-			logger: this.logger,
-		});
-
-		room.addSpectator(client);
+		const client = room.createSpectator(socket, playerInfoMessage.name);
 
 		socket.write(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
 		const type = (Number(client.host) << 4) | client.position;
@@ -349,7 +340,8 @@ export class WaitingState extends RoomState {
 		joinGameMessage: JoinGameMessage,
 		socket: YGOClientSocket,
 		playerInfoMessage: PlayerInfoMessage,
-		room: Room
+		room: Room,
+		ranks: Rank[]
 	): void {
 		const host = room.clients.some((client) => client.host);
 
@@ -361,6 +353,7 @@ export class WaitingState extends RoomState {
 			roomId: room.id,
 			team: place.team,
 			logger: this.logger,
+			ranks,
 		});
 
 		if (client.host) {

@@ -1,5 +1,4 @@
 import { YGOClientSocket } from "../../../socket-server/HostServer";
-import { Client } from "../../client/domain/Client";
 import { JoinGameMessage } from "../../messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
 import { CatchUpClientMessage } from "../../messages/server-to-client/CatchUpClientMessage";
@@ -9,9 +8,7 @@ import { PlayerChangeClientMessage } from "../../messages/server-to-client/Playe
 import { PlayerEnterClientMessage } from "../../messages/server-to-client/PlayerEnterClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
-import { Pino } from "../../shared/logger/infrastructure/Pino";
 import { Room } from "../domain/Room";
-import { Team } from "../domain/Team";
 
 export class JoinToDuelAsSpectator {
 	run(
@@ -20,17 +17,7 @@ export class JoinToDuelAsSpectator {
 		socket: YGOClientSocket,
 		room: Room
 	): void {
-		const client = new Client({
-			socket,
-			host: false,
-			name: playerInfoMessage.name,
-			position: room.nextSpectatorPosition(),
-			roomId: room.id,
-			team: Team.SPECTATOR,
-			logger: new Pino(),
-		});
-
-		room.addSpectator(client);
+		const client = room.createSpectator(socket, playerInfoMessage.name);
 
 		socket.write(JoinGameClientMessage.createFromRoom(joinMessage, room));
 		socket.write(TypeChangeClientMessage.create({ type: 0x07 }));

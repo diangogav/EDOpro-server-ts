@@ -15,6 +15,7 @@ import { MessageProcessor } from "../../messages/MessageProcessor";
 import { Replay } from "../../replay/Replay";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
 import { Logger } from "../../shared/logger/domain/Logger";
+import { Rank } from "../../shared/value-objects/Rank";
 import { UserFinder } from "../../user/application/UserFinder";
 import { UserRedisRepository } from "../../user/infrastructure/UserRedisRepository";
 import { FinishDuelHandler } from "../application/FinishDuelHandler";
@@ -775,6 +776,40 @@ export class Room {
 
 	finished(): void {
 		this.currentDuel?.finished();
+	}
+
+	createHost(socket: YGOClientSocket, name: string, ranks: Rank[]): Client {
+		const client = new Client({
+			socket,
+			host: true,
+			name,
+			position: 0,
+			roomId: this.id,
+			team: Team.PLAYER,
+			logger: this.logger,
+			ranks,
+		});
+
+		this.addClient(client);
+
+		return client;
+	}
+
+	createSpectator(socket: YGOClientSocket, name: string): Client {
+		const client = new Client({
+			socket,
+			host: false,
+			name,
+			position: this.nextSpectatorPosition(),
+			roomId: this.id,
+			team: Team.SPECTATOR,
+			logger: this.logger,
+			ranks: [],
+		});
+
+		this.addSpectator(client);
+
+		return client;
 	}
 
 	toPresentation(): { [key: string]: unknown } {

@@ -1,7 +1,6 @@
 import { EventEmitter } from "stream";
 
 import { YGOClientSocket } from "../../../socket-server/HostServer";
-import { Client } from "../../client/domain/Client";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../messages/domain/Commands";
@@ -16,10 +15,10 @@ import { PlayerEnterClientMessage } from "../../messages/server-to-client/Player
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
 import { Logger } from "../../shared/logger/domain/Logger";
+import { Rank } from "../../shared/value-objects/Rank";
 import { UserFinder } from "../../user/application/UserFinder";
 import { User } from "../../user/domain/User";
 import { Room } from "../domain/Room";
-import { Team } from "../domain/Team";
 import RoomList from "../infrastructure/RoomList";
 
 export class GameCreatorHandler {
@@ -50,7 +49,7 @@ export class GameCreatorHandler {
 		const createGameMessage = new CreateGameMessage(message.data);
 
 		if (!playerInfoMessage.password) {
-			this.create(createGameMessage, playerInfoMessage);
+			this.create(createGameMessage, playerInfoMessage, []);
 
 			return;
 		}
@@ -64,10 +63,14 @@ export class GameCreatorHandler {
 			return;
 		}
 
-		this.create(createGameMessage, playerInfoMessage);
+		this.create(createGameMessage, playerInfoMessage, user.ranks);
 	}
 
-	private create(message: CreateGameMessage, playerInfoMessage: PlayerInfoMessage): void {
+	private create(
+		message: CreateGameMessage,
+		playerInfoMessage: PlayerInfoMessage,
+		ranks: Rank[]
+	): void {
 		const room = Room.createFromCreateGameMessage(
 			message,
 			playerInfoMessage,
@@ -78,17 +81,7 @@ export class GameCreatorHandler {
 
 		room.waiting();
 
-		const client = new Client({
-			socket: this.socket,
-			host: true,
-			name: playerInfoMessage.name,
-			position: 0,
-			roomId: room.id,
-			team: Team.PLAYER,
-			logger: this.logger,
-		});
-
-		room.addClient(client);
+		const client = room.createHost(this.socket, playerInfoMessage.name, ranks);
 		RoomList.addRoom(room);
 		room.createMatch();
 
