@@ -39,7 +39,7 @@ export class UserRedisRepository implements UserRepository {
 
 			return new Rank({
 				name: banlistNames[index],
-				value: ranks[index],
+				value: ranks[index] ?? Number.POSITIVE_INFINITY,
 			});
 		});
 

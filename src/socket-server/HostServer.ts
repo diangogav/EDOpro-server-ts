@@ -10,6 +10,7 @@ import { RedisRoomRepository } from "../modules/room/match/infrastructure/RedisR
 import { container } from "../modules/shared/dependency-injection";
 import { EventBus } from "../modules/shared/event-bus/EventBus";
 import { Logger } from "../modules/shared/logger/domain/Logger";
+import { RankRuleMemoryRepository } from "../modules/stats/rank-rules/infrastructure/RankRuleMemoryRepository";
 
 export class YGOClientSocket extends Socket {
 	id?: string;
@@ -71,6 +72,9 @@ export class HostServer {
 	private registerSubscribers(): void {
 		const eventBus = container.get(EventBus);
 
-		eventBus.subscribe(RecordMatch.ListenTo, new RecordMatch(new RedisRoomRepository()));
+		eventBus.subscribe(
+			RecordMatch.ListenTo,
+			new RecordMatch(new RedisRoomRepository(), new RankRuleMemoryRepository())
+		);
 	}
 }
