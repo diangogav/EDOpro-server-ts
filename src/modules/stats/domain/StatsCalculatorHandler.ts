@@ -1,4 +1,4 @@
-import { PlayerData } from "../../room/domain/domain-events/GameOverDomainEvent";
+import { PlayerData } from "../../shared/player/domain/PlayerData";
 
 export interface StatsCalculatorHandler {
 	setNextHandler(handler: StatsCalculatorHandler): StatsCalculatorHandler;
