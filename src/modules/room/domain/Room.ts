@@ -867,6 +867,26 @@ export class Room {
 		};
 	}
 
+	destroy(): void {
+		this.emitter.removeAllListeners();
+		this.timers.forEach((timer) => {
+			timer.stop();
+		});
+		this.roomTimer.stop();
+		if (this._duel) {
+			this._duel.stdin.destroy();
+			this._duel.stdout.destroy();
+		}
+		this._clients.forEach((client) => {
+			client.socket.removeAllListeners();
+			client.socket.destroy();
+		});
+		this._spectators.forEach((client) => {
+			client.socket.removeAllListeners();
+			client.socket.destroy();
+		});
+	}
+
 	private writeToCppProcess(messageToCpp: string, retryCount: number): void {
 		if (retryCount <= 0) {
 			console.error(
