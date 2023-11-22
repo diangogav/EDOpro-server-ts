@@ -15,6 +15,7 @@ import { MessageProcessor } from "../../messages/MessageProcessor";
 import { Replay } from "../../replay/Replay";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
 import { Logger } from "../../shared/logger/domain/Logger";
+import { PlayerData } from "../../shared/player/domain/PlayerData";
 import { Rank } from "../../shared/value-objects/Rank";
 import { UserFinder } from "../../user/application/UserFinder";
 import { UserRedisRepository } from "../../user/infrastructure/UserRedisRepository";
@@ -22,7 +23,7 @@ import { FinishDuelHandler } from "../application/FinishDuelHandler";
 import { JoinToDuelAsSpectator } from "../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../application/Reconnect";
 import RoomList from "../infrastructure/RoomList";
-import { Match, MatchHistory, Player } from "../match/domain/Match";
+import { Match } from "../match/domain/Match";
 import { Duel } from "./Duel";
 import { DuelFinishReason } from "./DuelFinishReason";
 import { RoomState } from "./RoomState";
@@ -350,6 +351,7 @@ export class Room {
 		const players = this.clients.map((client) => ({
 			team: client.team,
 			name: client.name,
+			ranks: client.ranks,
 			// deck: client.deck,
 		}));
 		this._match?.initializeHistoricalData(players);
@@ -366,7 +368,7 @@ export class Room {
 		return this._match.score;
 	}
 
-	get matchPlayersHistory(): (Player & MatchHistory & { winner: boolean })[] {
+	get matchPlayersHistory(): PlayerData[] {
 		return this._match?.playersHistory ?? [];
 	}
 

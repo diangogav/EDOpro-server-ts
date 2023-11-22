@@ -1,6 +1,4 @@
-import { MatchHistory, Player } from "../../match/domain/Match";
-
-export type PlayerData = Player & MatchHistory & { winner: boolean };
+import { PlayerData } from "../../../shared/player/domain/PlayerData";
 
 export type GameOverData = {
 	bestOf: number;

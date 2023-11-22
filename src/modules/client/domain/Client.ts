@@ -14,6 +14,7 @@ export class Client {
 	public readonly host: boolean;
 	public readonly name: string;
 	public readonly roomId: number;
+	public readonly ranks: Rank[];
 	private _team: number;
 	private _position: number;
 	private _socket: YGOClientSocket;
@@ -29,7 +30,6 @@ export class Client {
 	private _readyCommand: boolean;
 	private _readyMessage: ClientMessage;
 	private readonly logger: Logger;
-	private readonly ranks: Rank[];
 
 	constructor({
 		socket,

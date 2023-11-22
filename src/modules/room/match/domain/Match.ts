@@ -1,7 +1,11 @@
+import { PlayerData } from "../../../shared/player/domain/PlayerData";
+import { Rank } from "../../../shared/value-objects/Rank";
+
 export type Player = {
 	name: string;
 	// deck: Deck;
 	team: number;
+	ranks: Rank[];
 };
 
 export type MatchHistory = {
@@ -74,7 +78,7 @@ export class Match {
 		};
 	}
 
-	get playersHistory(): (Player & MatchHistory & { winner: boolean })[] {
+	get playersHistory(): PlayerData[] {
 		return this._players.map((player) => ({
 			...player,
 			winner: this.winner() === player.team,

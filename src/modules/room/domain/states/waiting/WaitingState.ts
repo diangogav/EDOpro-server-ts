@@ -130,11 +130,13 @@ export class WaitingState extends RoomState {
 	private handleReady(_message: ClientMessage, room: Room, player: Client): void {
 		this.logger.debug("WAITING: READY");
 		if (player.isUpdatingDeck) {
+			this.logger.debug("WAITING: SAVING READY COMMAND");
 			player.saveReadyCommand(_message);
 
 			return;
 		}
 
+		this.logger.debug("WAITING: EXECUTE READY COMMAND");
 		const status = (player.position << 4) | 0x09;
 		const message = PlayerChangeClientMessage.create({ status });
 
@@ -177,7 +179,9 @@ export class WaitingState extends RoomState {
 			player.sendMessage(TypeChangeClientMessage.create({ type }));
 
 			const spectatorsCount = room.spectators.length;
-			const watchMessage = WatchChangeClientMessage.create({ count: spectatorsCount });
+			const watchMessage = WatchChangeClientMessage.create({
+				count: spectatorsCount,
+			});
 
 			room.clients.forEach((_client) => {
 				_client.sendMessage(watchMessage);
@@ -236,6 +240,7 @@ export class WaitingState extends RoomState {
 		player.deckUpdated();
 
 		if (player.haveReadyCommand) {
+			this.logger.debug("WAITING: UPDATE_DECK: CALLING READY COMMAND");
 			player.clearReadyCommand();
 			this.handleReady(player.readyMessage, room, player);
 		}
@@ -280,6 +285,8 @@ export class WaitingState extends RoomState {
 				return;
 			}
 			this.player(place, joinGameMessage, socket, playerInfoMessage, room, user.ranks);
+
+			return;
 		}
 		this.player(place, joinGameMessage, socket, playerInfoMessage, room, []);
 	}
@@ -321,7 +328,9 @@ export class WaitingState extends RoomState {
 
 		const spectatorsCount = room.spectators.length;
 
-		const watchMessage = WatchChangeClientMessage.create({ count: spectatorsCount });
+		const watchMessage = WatchChangeClientMessage.create({
+			count: spectatorsCount,
+		});
 
 		room.clients.forEach((_client) => {
 			_client.sendMessage(watchMessage);
@@ -371,7 +380,9 @@ export class WaitingState extends RoomState {
 		this.sendNotReadyMessage(client, room);
 		this.sendTypeChangeMessage(client, socket);
 		const spectatorsCount = room.spectators.length;
-		const watchMessage = WatchChangeClientMessage.create({ count: spectatorsCount });
+		const watchMessage = WatchChangeClientMessage.create({
+			count: spectatorsCount,
+		});
 		socket.write(watchMessage);
 		this.sendInfoMessage(room, socket);
 
