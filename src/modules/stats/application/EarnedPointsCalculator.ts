@@ -32,7 +32,7 @@ export class EarnedPointsCalculator implements StatsCalculatorHandler {
 
 	async calculate(player: Player): Promise<void> {
 		const opponent = this.players.find((item) => item.name !== player.name);
-		if (!opponent || this.players.length > 2) {
+		if (!opponent) {
 			if (this.nextHandler) {
 				return this.nextHandler.calculate(player);
 			}
@@ -40,21 +40,28 @@ export class EarnedPointsCalculator implements StatsCalculatorHandler {
 			return;
 		}
 
-		const playerRule = await this.rankRuleRepository.findByRankPosition(player.globalRank.value);
+		const playerRule = await this.rankRuleRepository.findByRankPosition(player.globalRank.position);
 		const opponentRule = await this.rankRuleRepository.findByRankPosition(
-			opponent.globalRank.value
+			opponent.globalRank.position
 		);
-		const points = this.calculatePoints(player.winner, playerRule, opponentRule);
+		const points = this.calculatePoints(playerRule, opponentRule, player, "Global");
+
 		await this.roomRepository.updatePlayerPoints(player.name, points);
 
 		if (this.banlist?.name) {
 			const playerBanListRule = await this.rankRuleRepository.findByRankPosition(
-				player.getBanListRank(this.banlist.name).value
+				player.getBanListRank(this.banlist.name).position
 			);
 			const opponentBanListRule = await this.rankRuleRepository.findByRankPosition(
-				opponent.getBanListRank(this.banlist.name).value
+				opponent.getBanListRank(this.banlist.name).position
 			);
-			const points = this.calculatePoints(player.winner, playerBanListRule, opponentBanListRule);
+			const points = this.calculatePoints(
+				playerBanListRule,
+				opponentBanListRule,
+				player,
+				this.banlist.name
+			);
+
 			await this.roomRepository.updatePlayerPointsByBanList(player.name, points, this.banlist);
 		}
 		if (this.nextHandler) {
@@ -62,11 +69,23 @@ export class EarnedPointsCalculator implements StatsCalculatorHandler {
 		}
 	}
 
-	private calculatePoints(winner: boolean, playerRule: RankRule, opponentRule: RankRule) {
+	private calculatePoints(
+		playerRule: RankRule,
+		opponentRule: RankRule,
+		player: Player,
+		rankName: string
+	) {
 		const points = playerRule.calculatePoints(opponentRule);
 
-		if (winner) {
+		if (player.winner) {
 			return points.earned;
+		}
+
+		const rank = player.getBanListRank(rankName);
+		const difference = rank.points - points.lost;
+
+		if (difference < 0) {
+			return -rank.points;
 		}
 
 		return -points.lost;

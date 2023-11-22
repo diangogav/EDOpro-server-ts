@@ -35,13 +35,17 @@ export class RankRule {
 
 	calculatePoints(opponent: RankRule): { earned: number; lost: number } {
 		return {
-			earned: opponent.scorePerWin + this.calculateBonusPerWin(opponent),
-			lost: opponent.scorePerDefeat + this.calculatePunishmentPerDefeat(opponent),
+			earned: this.scorePerWin + this.calculateBonusPerWin(opponent),
+			lost: this.scorePerDefeat + this.calculatePunishmentPerDefeat(opponent),
 		};
 	}
 
 	private betterThan(rule: RankRule): boolean {
-		return this.name < rule.name;
+		if (rule.name === this.name) {
+			return false;
+		}
+
+		return !(this.name > rule.name);
 	}
 
 	private isEqualTo(rule: RankRule): boolean {
@@ -49,7 +53,11 @@ export class RankRule {
 	}
 
 	private calculateBonusPerWin(rule: RankRule): number {
-		if (this.betterThan(rule) || this.isEqualTo(rule)) {
+		if (this.isEqualTo(rule)) {
+			return 0;
+		}
+
+		if (this.betterThan(rule)) {
 			return 0;
 		}
 

@@ -14,6 +14,7 @@ export class RecordMatch implements DomainEventSubscriber<GameOverDomainEvent> {
 
 	private readonly roomRepository: RoomRepository;
 	private readonly rankRuleRepository: RankRuleRepository;
+	private readonly MIN_PLAYERS_FOR_RANKED = 2;
 
 	constructor(roomRepository: RoomRepository, rankRuleRepository: RankRuleRepository) {
 		this.roomRepository = roomRepository;
@@ -38,12 +39,17 @@ export class RecordMatch implements DomainEventSubscriber<GameOverDomainEvent> {
 			.setNextHandler(new GlobalLeaderboardCalculator(this.roomRepository))
 			.setNextHandler(new BanListLeaderboardCalculator(this.roomRepository, banList));
 
+		const totalPlayers = players.length;
+
 		for (const player of players) {
 			await this.roomRepository.saveMatch(player.name, {
 				...event.data,
 				banlistName: banList?.name ?? "N/A",
 			});
-			await handleStatsCalculations.calculate(player);
+
+			if (totalPlayers <= this.MIN_PLAYERS_FOR_RANKED) {
+				await handleStatsCalculations.calculate(player);
+			}
 		}
 	}
 }
