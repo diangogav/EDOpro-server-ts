@@ -8,7 +8,7 @@ export class BanList {
 	private _whitelisted = false;
 
 	setName(name: string): void {
-		this._name = name;
+		this._name = name.trim();
 	}
 
 	get name(): string | null {
