@@ -13,16 +13,30 @@ export class UserRedisRepository implements UserRepository {
 			password: string;
 		};
 		const banlistNames = BanListMemoryRepository.getOnlyWithName();
-		const requests = banlistNames.map((name) =>
+
+		const positionRequests = banlistNames.map((name) =>
 			redis.client.zRevRank(`leaderboard:${name}:points`, username)
 		);
 
-		const ranksResponses = await Promise.allSettled([
+		const scoreRequests = banlistNames.map((name) =>
+			redis.client.zScore(`leaderboard:${name}:points`, username)
+		);
+
+		const positionResponses = await Promise.allSettled([
 			redis.client.zRevRank("leaderboard:points", username),
-			...requests,
+			...positionRequests,
 		]);
 
-		const ranks = ranksResponses
+		const scoreResponses = await Promise.allSettled([
+			redis.client.zScore("leaderboard:points", username),
+			...scoreRequests,
+		]);
+
+		const positions = positionResponses
+			.filter((item) => item.status === "fulfilled")
+			.map((data: PromiseSettledResult<unknown>) => (data as PromiseFulfilledResult<number>).value);
+
+		const scores = scoreResponses
 			.filter((item) => item.status === "fulfilled")
 			.map((data: PromiseSettledResult<unknown>) => (data as PromiseFulfilledResult<number>).value);
 
@@ -33,13 +47,18 @@ export class UserRedisRepository implements UserRepository {
 		}
 
 		const userRanks = banlistNames.map((item, index) => {
-			if (!index) {
-				return new Rank({ name: "Global", value: ranks[0] });
+			if (index === 0) {
+				return new Rank({
+					name: "Global",
+					position: (positions[0] ?? Number.POSITIVE_INFINITY) + 1,
+					points: scores[index] ?? 0,
+				});
 			}
 
 			return new Rank({
-				name: banlistNames[index],
-				value: ranks[index],
+				name: banlistNames[index - 1],
+				position: (positions[index] ?? Number.POSITIVE_INFINITY) + 1,
+				points: scores[index] ?? 0,
 			});
 		});
 

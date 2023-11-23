@@ -1,6 +1,6 @@
-import { PlayerData } from "../../shared/player/domain/PlayerData";
+import { Player } from "../../room/match/domain/Match";
 
 export interface StatsCalculatorHandler {
 	setNextHandler(handler: StatsCalculatorHandler): StatsCalculatorHandler;
-	calculate(player: PlayerData): Promise<void>;
+	calculate(player: Player): Promise<void>;
 }

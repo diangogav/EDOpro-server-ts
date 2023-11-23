@@ -1,9 +1,11 @@
 export class Rank {
 	readonly name: string;
-	readonly value: number;
+	readonly position: number;
+	readonly points: number;
 
-	constructor({ name, value }: { name: string; value: number }) {
+	constructor({ name, position, points }: { name: string; position: number; points: number }) {
 		this.name = name;
-		this.value = value;
+		this.position = position;
+		this.points = points;
 	}
 }
