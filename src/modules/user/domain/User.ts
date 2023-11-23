@@ -12,7 +12,7 @@ export class User {
 	}: {
 		username: string;
 		password: string;
-		ranks: { name: string; position: number; points: number }[];
+		ranks: { name: string; value: number }[];
 	}) {
 		this.username = username;
 		this.password = password;
