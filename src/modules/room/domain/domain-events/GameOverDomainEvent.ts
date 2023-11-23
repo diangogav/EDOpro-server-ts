@@ -1,11 +1,11 @@
-import { PlayerData } from "../../../shared/player/domain/PlayerData";
+import { PlayerMatchSummary } from "../../../shared/player/domain/Player";
 
 export type GameOverData = {
 	bestOf: number;
 	// needWins: number;
-	turn: number;
+	// turn: number;
 	date: Date;
-	players: PlayerData[];
+	players: PlayerMatchSummary[];
 	ranked: boolean;
 	banlistHash: number;
 };
