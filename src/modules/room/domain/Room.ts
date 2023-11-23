@@ -885,6 +885,7 @@ export class Room {
 			client.socket.removeAllListeners();
 			client.socket.destroy();
 		});
+		this.clearSpectatorCache();
 	}
 
 	private writeToCppProcess(messageToCpp: string, retryCount: number): void {
