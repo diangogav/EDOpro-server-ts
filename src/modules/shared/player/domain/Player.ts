@@ -9,6 +9,7 @@ export type PlayerMatchSummary = {
 	games: { result: "winner" | "loser" | "deuce"; turns: number }[];
 	ranks: Rank[];
 	points?: { [key: string]: number };
+	score: number;
 };
 
 export class Player {
@@ -18,13 +19,15 @@ export class Player {
 	public readonly ranks: Rank[];
 	private _points: { [key: string]: number } = {};
 	private readonly _games: { result: "winner" | "loser" | "deuce"; turns: number }[];
+	private readonly score: number;
 
-	constructor({ ranks, name, team, winner, games }: PlayerData) {
+	constructor({ ranks, name, team, winner, games, score }: PlayerData) {
 		this.ranks = ranks;
 		this.name = name;
 		this.team = team;
 		this.winner = winner;
 		this._games = games;
+		this.score = score;
 	}
 
 	get globalRank(): Rank {
@@ -57,6 +60,7 @@ export class Player {
 			games: this._games,
 			ranks: this.ranks,
 			points: this._points,
+			score: this.score,
 		};
 	}
 }

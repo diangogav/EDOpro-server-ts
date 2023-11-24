@@ -1,5 +1,6 @@
 import { PlayerData } from "../../../shared/player/domain/PlayerData";
 import { Rank } from "../../../shared/value-objects/Rank";
+import { Team } from "../../domain/Team";
 
 export type Player = {
 	name: string;
@@ -82,6 +83,7 @@ export class Match {
 		return this._players.map((player) => ({
 			...player,
 			winner: this.winner() === player.team,
+			score: player.team === Team.PLAYER ? this.score.team0 : this.score.team1,
 		}));
 	}
 
