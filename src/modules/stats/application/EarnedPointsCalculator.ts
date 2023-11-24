@@ -95,7 +95,7 @@ export class EarnedPointsCalculator implements StatsCalculatorHandler {
 
 		const difference = rank.points - points.lost;
 
-		if (difference < 0) {
+		if (difference <= 0) {
 			return -rank.points;
 		}
 
