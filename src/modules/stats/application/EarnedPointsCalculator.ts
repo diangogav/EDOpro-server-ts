@@ -45,7 +45,7 @@ export class EarnedPointsCalculator implements StatsCalculatorHandler {
 			opponent.globalRank.position
 		);
 		const points = this.calculatePoints(playerRule, opponentRule, player, "Global");
-
+		player.recordPoints("Global", points);
 		await this.roomRepository.updatePlayerPoints(player.name, points);
 
 		if (this.banlist?.name) {
@@ -61,7 +61,7 @@ export class EarnedPointsCalculator implements StatsCalculatorHandler {
 				player,
 				this.banlist.name
 			);
-
+			player.recordPoints(this.banlist.name, points);
 			await this.roomRepository.updatePlayerPointsByBanList(player.name, points, this.banlist);
 		}
 		if (this.nextHandler) {

@@ -42,13 +42,21 @@ export class RecordMatch implements DomainEventSubscriber<GameOverDomainEvent> {
 		const totalPlayers = players.length;
 
 		for (const player of players) {
-			await this.roomRepository.saveMatch(player.name, {
-				...event.data,
-				banlistName: banList?.name ?? "N/A",
-			});
-
 			if (totalPlayers <= this.MIN_PLAYERS_FOR_RANKED) {
 				await handleStatsCalculations.calculate(player);
+			}
+		}
+
+		for (const player of players) {
+			if (totalPlayers <= this.MIN_PLAYERS_FOR_RANKED) {
+				await this.roomRepository.saveMatch(player.name, {
+					bestOf: event.data.bestOf,
+					date: event.data.date,
+					players: players.map((item) => item.toPresentation()),
+					ranked: event.data.ranked,
+					banlistHash: event.data.banlistHash,
+					banlistName: banList?.name ?? "N/A",
+				});
 			}
 		}
 	}

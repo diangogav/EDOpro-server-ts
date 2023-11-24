@@ -103,7 +103,6 @@ export class FinishDuelHandler {
 				GameOverDomainEvent.DOMAIN_EVENT,
 				new GameOverDomainEvent({
 					bestOf: this.room.bestOf,
-					turn: this.room.turn,
 					players: this.room.matchPlayersHistory,
 					date: new Date(),
 					ranked: this.room.ranked,
