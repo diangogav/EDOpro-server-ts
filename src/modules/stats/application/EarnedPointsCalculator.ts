@@ -40,9 +40,11 @@ export class EarnedPointsCalculator implements StatsCalculatorHandler {
 			return;
 		}
 
-		const playerRule = await this.rankRuleRepository.findByRankPosition(player.globalRank.position);
+		const playerRule = await this.rankRuleRepository.findByRankPosition(
+			player.globalRank.points === 0 ? Number.POSITIVE_INFINITY : player.globalRank.position
+		);
 		const opponentRule = await this.rankRuleRepository.findByRankPosition(
-			opponent.globalRank.position
+			opponent.globalRank.points === 0 ? Number.POSITIVE_INFINITY : opponent.globalRank.position
 		);
 		const points = this.calculatePoints(playerRule, opponentRule, player, "Global");
 		player.recordPoints("Global", points);
@@ -50,10 +52,14 @@ export class EarnedPointsCalculator implements StatsCalculatorHandler {
 
 		if (this.banlist?.name) {
 			const playerBanListRule = await this.rankRuleRepository.findByRankPosition(
-				player.getBanListRank(this.banlist.name).position
+				player.getBanListRank(this.banlist.name).points === 0
+					? Number.POSITIVE_INFINITY
+					: player.getBanListRank(this.banlist.name).position
 			);
 			const opponentBanListRule = await this.rankRuleRepository.findByRankPosition(
-				opponent.getBanListRank(this.banlist.name).position
+				opponent.getBanListRank(this.banlist.name).points === 0
+					? Number.POSITIVE_INFINITY
+					: opponent.getBanListRank(this.banlist.name).position
 			);
 			const points = this.calculatePoints(
 				playerBanListRule,
@@ -82,6 +88,11 @@ export class EarnedPointsCalculator implements StatsCalculatorHandler {
 		}
 
 		const rank = player.getBanListRank(rankName);
+
+		if (Number.isNaN(rank.points)) {
+			return 0;
+		}
+
 		const difference = rank.points - points.lost;
 
 		if (difference < 0) {
