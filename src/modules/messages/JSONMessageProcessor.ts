@@ -15,8 +15,8 @@ export class JSONMessageProcessor {
 	private readonly _previousMessage: Buffer;
 
 	constructor() {
-		this.buffer = Buffer.from([]);
-		this._data = Buffer.from([]).toString("utf-8");
+		this.buffer = Buffer.alloc(0);
+		this._data = Buffer.alloc(0).toString("utf-8");
 	}
 
 	read(data: Buffer): void {
@@ -30,7 +30,7 @@ export class JSONMessageProcessor {
 		if (this._data.length) {
 			// this._previousMessage = this._data;
 		}
-		this._size = this.buffer.subarray(0, 2).readUint16LE();
+		this._size = this.buffer.readUint16LE(0);
 		this._data = this.buffer
 			.subarray(2, this._size + 4)
 			.toString("utf-8")
@@ -66,5 +66,11 @@ export class JSONMessageProcessor {
 			size: this.size,
 			// previousMessage: this._previousMessage,
 		};
+	}
+
+	clear(): void {
+		this.buffer = Buffer.alloc(0);
+		this._size = 0;
+		this._data = "";
 	}
 }

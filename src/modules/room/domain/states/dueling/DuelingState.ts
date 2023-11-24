@@ -467,6 +467,7 @@ export class DuelingState extends RoomState {
 	}
 
 	private handleCoreFinish(message: FinishMessage) {
+		this.jsonMessageProcessor.clear();
 		const reason = message.reason as DuelFinishReason;
 		const winner = message.winner;
 
