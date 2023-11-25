@@ -57,4 +57,4 @@ COPY --from=core-integrator-builder /repositories/scripts ./core/scripts/
 COPY --from=core-integrator-builder /repositories/databases ./databases/
 COPY --from=core-integrator-builder /repositories/banlists ./banlists/
 
-CMD ["npm", "start"]
+CMD ["node", "./src/index.js"]
