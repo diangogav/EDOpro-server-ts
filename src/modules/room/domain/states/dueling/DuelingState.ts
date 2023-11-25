@@ -220,7 +220,7 @@ export class DuelingState extends RoomState {
 		this.logger.debug(`GAME: ${this.room.playerNames(0)} VS ${this.room.playerNames(1)}`);
 
 		const core = spawn(
-			`${__dirname}/../../../../../../core/CoreIntegrator`,
+			`./core/CoreIntegrator`,
 			[
 				JSON.stringify({
 					config: {
@@ -244,7 +244,6 @@ export class DuelingState extends RoomState {
 		this.room.setDuel(core);
 
 		core.stderr.on("data", (data: string) => {
-			console.error(data.toString());
 			this.logger.error(data.toString());
 		});
 

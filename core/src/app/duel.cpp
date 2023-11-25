@@ -648,10 +648,8 @@ void Duel::process_queries(const std::vector<QueryRequest> &query_requests)
       const auto player_buffer = this->serializer.serialize(duel_query, false);
       const auto stripped_buffer = this->serializer.serialize(duel_query, true);
 
-      // TODO: SEND REPLAY MESSAGE
       const auto replay_data = this->create_update_card_message(query_single_request, buffer);
       this->send_replay_message(replay_data);
-      // addMessageToReplay.sendUpdateCard(query_single_request.con, query_single_request.loc, query_single_request.seq, buffer);
 
       uint8_t team = this->get_swapped_team(query_single_request.con);
 
@@ -672,7 +670,6 @@ void Duel::process_queries(const std::vector<QueryRequest> &query_requests)
       uint8_t team = this->get_swapped_team(query_location_request.con);
       const auto buffer = this->api.duelQueryLocation(duel, query);
 
-      // TODO: SEND REPLAY MESSAGE
       const auto replay_data = this->create_update_data_message(query_location_request, buffer);
       this->send_replay_message(replay_data);
 
@@ -681,7 +678,11 @@ void Duel::process_queries(const std::vector<QueryRequest> &query_requests)
         continue;
       }
 
-      // addMessageToReplay.sendUpdateData(query_location_request.con, query_location_request.loc, buffer);
+      if (query_location_request.loc == LOCATION_EXTRA)
+      {
+        this->send_update_data_message(team, true, true, query_location_request, buffer);
+        continue;
+      }
 
       const auto queries = this->deserializer.deserializeLocationQuery(buffer);
       const auto player_buffer = this->serializer.serializeLocationQuery(queries, false);
@@ -908,7 +909,6 @@ MessageTargets Duel::get_message_target(const std::vector<uint8_t> message)
 
 void Duel::distribute_message(const std::vector<uint8_t> message)
 {
-  // TODO: SEND REPLAY MESSAGE
   this->send_core_replay_message(message);
 
   switch (this->get_message_target(message))
@@ -928,34 +928,32 @@ void Duel::distribute_message(const std::vector<uint8_t> message)
     std::vector<uint8_t> messageB = handler.handle(1, message);
 
     this->send_message_to(teamA, true, true, messageA);
-    // messageSender.send(1, 1, teamA, messageA);
     this->send_message_to(teamB, true, true, messageB);
-    // messageSender.send(1, 1, teamB, messageB);
 
     std::vector<uint8_t> strippedMessage = handler.handle(1, messageA);
     this->send_message_to(3, true, true, strippedMessage);
-    // messageSender.send(1, 1, 3, strippedMessage);
 
     break;
   }
   case MessageTargets::MSG_DIST_TYPE_EVERYONE:
   {
     this->send_message_to_all(message);
-    // sender.send(message);
     break;
   }
   case MessageTargets::MSG_DIST_TYPE_SPECIFIC_TEAM_DUELIST:
   {
     uint8_t team = this->get_team_message_receptor(message);
     this->send_message_to(this->get_swapped_team(team), true, false, message);
-    // messageSender.send(0, 1, calculateTeam(team), message);
     break;
   }
   case MessageTargets::MSG_DIST_TYPE_SPECIFIC_TEAM:
   {
     uint8_t team = this->get_team_message_receptor(message);
     this->send_message_to(this->get_swapped_team(team), false, true, message);
-    // messageSender.send(1, 0, calculateTeam(team), message);
+    break;
+  }
+  case MessageTargets::MSG_DIST_TYPE_EVERYONE_EXCEPT_TEAM_DUELIST:
+  {
     break;
   }
   }
