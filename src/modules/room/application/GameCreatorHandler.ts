@@ -15,13 +15,14 @@ import { PlayerEnterClientMessage } from "../../messages/server-to-client/Player
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
 import { Logger } from "../../shared/logger/domain/Logger";
+import { GameCreatorMessageHandler } from "../../shared/room/domain/GameCreatorMessageHandler";
 import { Rank } from "../../shared/value-objects/Rank";
 import { UserFinder } from "../../user/application/UserFinder";
 import { User } from "../../user/domain/User";
 import { Room } from "../domain/Room";
 import RoomList from "../infrastructure/RoomList";
 
-export class GameCreatorHandler {
+export class GameCreatorHandler implements GameCreatorMessageHandler {
 	private readonly eventEmitter: EventEmitter;
 	private readonly logger: Logger;
 	private readonly socket: YGOClientSocket;

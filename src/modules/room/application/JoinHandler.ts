@@ -8,9 +8,10 @@ import { ErrorMessages } from "../../messages/server-to-client/error-messages/Er
 import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientMessage";
 import { ServerErrorClientMessage } from "../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { Logger } from "../../shared/logger/domain/Logger";
+import { JoinMessageHandler } from "../../shared/room/domain/JoinMessageHandler";
 import RoomList from "../infrastructure/RoomList";
 
-export class JoinHandler {
+export class JoinHandler implements JoinMessageHandler {
 	private readonly eventEmitter: EventEmitter;
 	private readonly logger: Logger;
 	private readonly socket: YGOClientSocket;
