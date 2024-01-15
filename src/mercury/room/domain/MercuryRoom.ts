@@ -2,6 +2,9 @@ import { spawn } from "child_process";
 
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
 import { MercuryClient } from "../../client/domain/MercuryClient";
+import { HostInfo } from "./host-info/HostInfo";
+import { Mode } from "./host-info/Mode.enum";
+import { priorityRuleMappings, ruleMappings } from "./RuleMappings";
 
 export class MercuryRoom {
 	readonly id: string;
@@ -9,14 +12,51 @@ export class MercuryRoom {
 	private _logger: Logger;
 	private _coreStarted = false;
 	private _corePort: number | null = null;
+	private readonly _hostInfo: HostInfo;
 
-	private constructor({ id }: { id: string }) {
+	private constructor({ id, hostInfo }: { id: string; hostInfo: HostInfo }) {
 		this.id = id;
 		this._clients = [];
+		this._hostInfo = hostInfo;
 	}
 
 	static create(command: string, logger: Logger): MercuryRoom {
-		const room = new MercuryRoom({ id: command });
+		let hostInfo: HostInfo = {
+			mode: Mode.SINGLE,
+			startLp: 8000,
+		};
+
+		const [configuration, _password] = command.split("#");
+		const options = configuration.split(",");
+		const mappingKeys = Object.keys(ruleMappings);
+		const priorityMappingKeys = Object.keys(priorityRuleMappings);
+		const priorityRulesCommands: string[] = [];
+		options.forEach((option) => {
+			const mappingKey = mappingKeys.find((key) => option.startsWith(key));
+
+			if (mappingKey) {
+				const mapping = ruleMappings[mappingKey];
+				const rule = mapping.get(option);
+				hostInfo = { ...hostInfo, ...rule };
+			}
+
+			const priorityMappingKey = priorityMappingKeys.find((key) => option.startsWith(key));
+			if (priorityMappingKey) {
+				priorityRulesCommands.push(option);
+			}
+		});
+
+		priorityRulesCommands.forEach((option: string) => {
+			const priorityMappingKey = priorityMappingKeys.find((key) => option.startsWith(key));
+			if (priorityMappingKey) {
+				const mapping = priorityRuleMappings[priorityMappingKey];
+				const rule = mapping.get(option);
+				hostInfo = { ...hostInfo, ...rule };
+			}
+		});
+
+		const room = new MercuryRoom({ id: command, hostInfo });
+
 		room._logger = logger;
 
 		return room;
@@ -67,5 +107,9 @@ export class MercuryRoom {
 
 	get isCoreStarted(): boolean {
 		return this._coreStarted;
+	}
+
+	get hostInfo(): HostInfo {
+		return this._hostInfo;
 	}
 }

@@ -2,8 +2,8 @@ import { EventEmitter } from "stream";
 
 import { Commands } from "../../../modules/messages/domain/Commands";
 import { ClientMessage } from "../../../modules/messages/MessageProcessor";
-import { GameCreatorMessageHandler } from "../../../modules/shared/room/domain/GameCreatorMessageHandler";
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
+import { GameCreatorMessageHandler } from "../../../modules/shared/room/domain/GameCreatorMessageHandler";
 
 export class MercuryGameCreatorHandler implements GameCreatorMessageHandler {
 	private readonly logger: Logger;
