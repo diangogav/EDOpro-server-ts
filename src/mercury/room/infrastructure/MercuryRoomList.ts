@@ -11,7 +11,11 @@ export default {
 		return rooms;
 	},
 
-	findById(id: string): MercuryRoom | null {
+	findByName(name: string): MercuryRoom | null {
+		return rooms.find((room) => room.name === name) ?? null;
+	},
+
+	findById(id: number): MercuryRoom | null {
 		return rooms.find((room) => room.id === id) ?? null;
 	},
 

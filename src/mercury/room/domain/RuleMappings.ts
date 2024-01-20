@@ -51,4 +51,15 @@ export const priorityRuleMappings: RuleMappings = {
 			};
 		},
 	},
+
+	mr: {
+		get: (value: string) => {
+			const [_, duelRule] = value.split("mr");
+			const duelRuleValue = +duelRule;
+
+			return {
+				duelRule: duelRuleValue,
+			};
+		},
+	},
 };

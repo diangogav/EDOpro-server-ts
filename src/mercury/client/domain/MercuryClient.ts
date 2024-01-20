@@ -7,6 +7,7 @@ import { SimpleRoomMessageEmitter } from "../../MercuryRoomMessageEmitter";
 
 export class MercuryClient {
 	readonly name: string;
+	readonly position: number;
 	private readonly _coreClient: net.Socket;
 	private readonly _socket: YGOClientSocket;
 	private readonly _logger: Logger;
@@ -18,13 +19,16 @@ export class MercuryClient {
 		socket,
 		logger,
 		messages,
+		position,
 	}: {
 		name: string;
 		socket: YGOClientSocket;
 		logger: Logger;
 		messages: Buffer[];
+		position: number;
 	}) {
 		this.name = name;
+		this.position = position;
 		this._socket = socket;
 		this._coreClient = new net.Socket();
 		this._logger = logger;

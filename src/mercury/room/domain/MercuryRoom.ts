@@ -1,4 +1,5 @@
 import { spawn } from "child_process";
+import * as crypto from "crypto";
 
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
 import { MercuryClient } from "../../client/domain/MercuryClient";
@@ -7,29 +8,51 @@ import { Mode } from "./host-info/Mode.enum";
 import { priorityRuleMappings, ruleMappings } from "./RuleMappings";
 
 export class MercuryRoom {
-	readonly id: string;
+	readonly id: number;
+	readonly name: string;
+	readonly password: string;
 	private readonly _clients: MercuryClient[];
 	private _logger: Logger;
 	private _coreStarted = false;
 	private _corePort: number | null = null;
 	private readonly _hostInfo: HostInfo;
 
-	private constructor({ id, hostInfo }: { id: string; hostInfo: HostInfo }) {
+	private constructor({
+		id,
+		name,
+		password,
+		hostInfo,
+	}: {
+		id: number;
+		password: string;
+		name: string;
+		hostInfo: HostInfo;
+	}) {
 		this.id = id;
+		this.name = name;
+		this.password = password;
 		this._clients = [];
 		this._hostInfo = hostInfo;
 	}
 
-	static create(command: string, logger: Logger): MercuryRoom {
+	static create(id: number, command: string, logger: Logger): MercuryRoom {
 		let hostInfo: HostInfo = {
 			mode: Mode.SINGLE,
 			startLp: 8000,
+			startHand: 5,
+			drawCount: 1,
+			timeLimit: 180,
+			rule: 0,
+			noCheck: false,
+			noShuffle: false,
+			lflist: -1,
+			duelRule: 5,
 		};
 
-		const [configuration, _password] = command.split("#");
-		const options = configuration.split(",");
+		const [configuration, password] = command.split("#");
+		const options = configuration.split(",").map((_) => _.trim());
 		const mappingKeys = Object.keys(ruleMappings);
-		const priorityMappingKeys = Object.keys(priorityRuleMappings);
+		const priorityMappingKeys = Object.keys(priorityRuleMappings).map((_) => _.trim());
 		const priorityRulesCommands: string[] = [];
 		options.forEach((option) => {
 			const mappingKey = mappingKeys.find((key) => option.startsWith(key));
@@ -55,7 +78,7 @@ export class MercuryRoom {
 			}
 		});
 
-		const room = new MercuryRoom({ id: command, hostInfo });
+		const room = new MercuryRoom({ id, hostInfo, name: command, password });
 
 		room._logger = logger;
 
@@ -76,7 +99,21 @@ export class MercuryRoom {
 		this._logger.info("Starting Mercury Core");
 		const core = spawn(
 			"./ygopro",
-			["0", "-1", "0", "1", "5", "F", "F", "8000", "5", "1", "180", "2", "0", "0", "0"],
+			[
+				"0",
+				this._hostInfo.lflist.toString(),
+				this._hostInfo.rule.toString(),
+				this._hostInfo.mode.toString(),
+				this._hostInfo.duelRule.toString(),
+				this._hostInfo.noCheck ? "T" : "F",
+				this._hostInfo.noShuffle ? "T" : "F",
+				this._hostInfo.startLp.toString(),
+				this._hostInfo.startHand.toString(),
+				this._hostInfo.drawCount.toString(),
+				this._hostInfo.timeLimit.toString(),
+				"2", //REPLAY MODE
+				...this.generateSeeds(),
+			],
 			{
 				cwd: "ygopro",
 			}
@@ -111,5 +148,52 @@ export class MercuryRoom {
 
 	get hostInfo(): HostInfo {
 		return this._hostInfo;
+	}
+
+	get playersCount(): number {
+		return this._clients.length;
+	}
+
+	toPresentation(): { [key: string]: unknown } {
+		return {
+			roomid: this.id,
+			roomname: this.name,
+			roomnotes: "",
+			roommode: this._hostInfo.mode,
+			needpass: true,
+			team1: 1,
+			team2: 1,
+			best_of: 3,
+			duel_flag: 0,
+			forbidden_types: 0,
+			extra_rules: 0,
+			start_lp: this._hostInfo.startLp,
+			start_hand: this._hostInfo.startHand,
+			draw_count: this._hostInfo.drawCount,
+			time_limit: this._hostInfo.timeLimit,
+			rule: this._hostInfo.rule,
+			no_check: this._hostInfo.noCheck,
+			no_shuffle: this._hostInfo.noShuffle,
+			banlist_hash: 0,
+			istart: "waiting",
+			main_min: 40,
+			main_max: 60,
+			extra_min: 0,
+			extra_max: 15,
+			side_min: 0,
+			side_max: 15,
+			users: this._clients.map((player) => ({
+				name: player.name.replace(/\0/g, "").trim(),
+				pos: player.position,
+			})),
+		};
+	}
+
+	private generateSeeds(): string[] {
+		const randomSeed1 = crypto.randomBytes(8).readBigUInt64LE().toString();
+		const randomSeed2 = crypto.randomBytes(8).readBigUInt64LE().toString();
+		const randomSeed3 = crypto.randomBytes(8).readBigUInt64LE().toString();
+
+		return [randomSeed1, randomSeed2, randomSeed3];
 	}
 }

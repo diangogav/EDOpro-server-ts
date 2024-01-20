@@ -3,6 +3,7 @@ import { EventEmitter } from "stream";
 import { PlayerInfoMessage } from "../../../modules/messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../modules/messages/domain/Commands";
 import { ClientMessage } from "../../../modules/messages/MessageProcessor";
+import { VersionErrorClientMessage } from "../../../modules/messages/server-to-client/VersionErrorClientMessage";
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
 import { JoinMessageHandler } from "../../../modules/shared/room/domain/JoinMessageHandler";
 import { YGOClientSocket } from "../../../socket-server/HostServer";
@@ -34,17 +35,19 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 		this.logger.info(`version: ${joinMessage.version}`);
 
 		if (joinMessage.version !== 4960) {
-			this.socket.write(Buffer.from("0900020400000060130000", "hex"));
+			this.socket.write(VersionErrorClientMessage.create(4960));
 
 			return;
 		}
 		const messages = [message.previousRawMessage, message.raw];
+
 		const room = this.createRoomIfNotExists(joinMessage.pass);
 		const client = new MercuryClient({
 			socket: this.socket,
 			logger: this.logger,
 			messages,
 			name: playerInfoMessage.name,
+			position: room.playersCount,
 		});
 		room.addClient(client);
 
@@ -53,10 +56,17 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 		}
 	}
 
+	private generateUniqueId(): number {
+		const min = 1000;
+		const max = 9999;
+
+		return Math.floor(Math.random() * (max - min + 1)) + min;
+	}
+
 	private createRoomIfNotExists(name: string): MercuryRoom {
-		const existingRoom = MercuryRoomList.findById(name);
+		const existingRoom = MercuryRoomList.findByName(name);
 		if (!existingRoom) {
-			const room = MercuryRoom.create(name, this.logger);
+			const room = MercuryRoom.create(this.generateUniqueId(), name, this.logger);
 			MercuryRoomList.addRoom(room);
 
 			return room;

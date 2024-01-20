@@ -5,7 +5,7 @@ import { EventEmitter } from "stream";
 
 import { MessageEmitter } from "../modules/MessageEmitter";
 import { DisconnectHandler } from "../modules/room/application/DisconnectHandler";
-import { GameCreatorHandler } from "../modules/room/application/GameCreatorHandler";
+import { GameCreatorHandler } from "../modules/room/application/GameCreatorHandler.1";
 import { JoinHandler } from "../modules/room/application/JoinHandler";
 import { RecordMatch } from "../modules/room/application/RecordMatch";
 import { RoomFinder } from "../modules/room/application/RoomFinder";
