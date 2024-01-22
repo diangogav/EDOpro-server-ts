@@ -139,6 +139,7 @@ export class MercuryRoom {
 
 		core.stderr.on("data", (data: Buffer) => {
 			this._logger.info(`Error data: ${data.toString("hex")}`);
+			this._logger.info(`Error data: ${data.toString()}`);
 		});
 	}
 
