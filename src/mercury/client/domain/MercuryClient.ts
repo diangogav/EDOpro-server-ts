@@ -79,6 +79,7 @@ export class MercuryClient {
 			`Sending Data To ${this.name}: ${this._messageProcessor.payload.raw.toString("hex")}`
 		);
 		this._socket.write(this._messageProcessor.payload.raw);
+		this._logger.info(`MESSAGE COMMAND: ${this._messageProcessor.command}`);
 		this.processMessage();
 	}
 }

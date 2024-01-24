@@ -115,7 +115,7 @@ export class MercuryRoom {
 				...this.generateSeeds(),
 			],
 			{
-				cwd: "ygopro",
+				cwd: "mercury",
 			}
 		);
 
