@@ -1,13 +1,17 @@
 import { spawn } from "child_process";
 import * as crypto from "crypto";
+import { EventEmitter } from "stream";
 
+import { RoomState } from "../../../modules/room/domain/RoomState";
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
+import { YgoRoom } from "../../../modules/shared/room/domain/YgoRoom";
 import { MercuryClient } from "../../client/domain/MercuryClient";
 import { HostInfo } from "./host-info/HostInfo";
 import { Mode } from "./host-info/Mode.enum";
 import { priorityRuleMappings, ruleMappings } from "./RuleMappings";
+import { MercuryWaitingState } from "./states/MercuryWaitingState";
 
-export class MercuryRoom {
+export class MercuryRoom extends YgoRoom {
 	readonly id: number;
 	readonly name: string;
 	readonly password: string;
@@ -16,6 +20,7 @@ export class MercuryRoom {
 	private _coreStarted = false;
 	private _corePort: number | null = null;
 	private readonly _hostInfo: HostInfo;
+	private roomState: RoomState | null = null;
 
 	private constructor({
 		id,
@@ -28,6 +33,7 @@ export class MercuryRoom {
 		name: string;
 		hostInfo: HostInfo;
 	}) {
+		super();
 		this.id = id;
 		this.name = name;
 		this.password = password;
@@ -35,7 +41,7 @@ export class MercuryRoom {
 		this._hostInfo = hostInfo;
 	}
 
-	static create(id: number, command: string, logger: Logger): MercuryRoom {
+	static create(id: number, command: string, logger: Logger, emitter: EventEmitter): MercuryRoom {
 		let hostInfo: HostInfo = {
 			mode: Mode.SINGLE,
 			startLp: 8000,
@@ -81,6 +87,7 @@ export class MercuryRoom {
 		const room = new MercuryRoom({ id, hostInfo, name: command, password });
 
 		room._logger = logger;
+		room.emitter = emitter;
 
 		return room;
 	}
@@ -153,6 +160,11 @@ export class MercuryRoom {
 
 	get playersCount(): number {
 		return this._clients.length;
+	}
+
+	waiting(): void {
+		this.roomState?.removeAllListener();
+		this.roomState = new MercuryWaitingState(this.emitter, this._logger);
 	}
 
 	toPresentation(): { [key: string]: unknown } {

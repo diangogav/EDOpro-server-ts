@@ -1,8 +1,9 @@
 import net from "net";
 
-import { ClientMessage, MessageProcessor } from "../../../modules/messages/MessageProcessor";
+import { ClientMessage } from "../../../modules/messages/MessageProcessor";
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
 import { YGOClientSocket } from "../../../socket-server/HostServer";
+import { MercuryCoreMessageEmitter } from "../../MercuryCoreMessageEmitter";
 import { SimpleRoomMessageEmitter } from "../../MercuryRoomMessageEmitter";
 
 export class MercuryClient {
@@ -12,7 +13,7 @@ export class MercuryClient {
 	private readonly _socket: YGOClientSocket;
 	private readonly _logger: Logger;
 	private _pendingMessages: Buffer[];
-	private readonly _messageProcessor: MessageProcessor;
+	private readonly _mercuryRoomMessageEmitter: MercuryCoreMessageEmitter;
 
 	constructor({
 		name,
@@ -33,12 +34,11 @@ export class MercuryClient {
 		this._coreClient = new net.Socket();
 		this._logger = logger;
 		this._pendingMessages = messages;
-		this._messageProcessor = new MessageProcessor();
+		this._mercuryRoomMessageEmitter = new MercuryCoreMessageEmitter(this);
 
 		this._coreClient.on("data", (data: Buffer) => {
 			this._logger.info(`Data incoming from mercury core ${data.toString("hex")}`);
-			this._messageProcessor.read(data);
-			this.processMessage();
+			this._mercuryRoomMessageEmitter.handleMessage(data);
 		});
 
 		const roomMessageEmitter = new SimpleRoomMessageEmitter(this);
@@ -60,6 +60,10 @@ export class MercuryClient {
 		this._coreClient.write(message.raw);
 	}
 
+	sendMessageToClient(message: Buffer): void {
+		this._socket.write(message);
+	}
+
 	private sendPendingMessages(): void {
 		this._pendingMessages.forEach((message) => {
 			this._logger.info(`Message: ${message.toString("hex")}`);
@@ -67,19 +71,5 @@ export class MercuryClient {
 		});
 
 		this._pendingMessages = [];
-	}
-
-	private processMessage(): void {
-		if (!this._messageProcessor.isMessageReady()) {
-			return;
-		}
-
-		this._messageProcessor.process();
-		this._logger.info(
-			`Sending Data To ${this.name}: ${this._messageProcessor.payload.raw.toString("hex")}`
-		);
-		this._socket.write(this._messageProcessor.payload.raw);
-		this._logger.info(`MESSAGE COMMAND: ${this._messageProcessor.command}`);
-		this.processMessage();
 	}
 }

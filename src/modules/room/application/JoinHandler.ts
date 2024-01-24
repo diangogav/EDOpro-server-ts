@@ -1,17 +1,14 @@
 import { EventEmitter } from "stream";
 
-import { MercuryClient } from "../../../mercury/client/domain/MercuryClient";
 import { MercuryRoom } from "../../../mercury/room/domain/MercuryRoom";
 import MercuryRoomList from "../../../mercury/room/infrastructure/MercuryRoomList";
 import { YGOClientSocket } from "../../../socket-server/HostServer";
 import { JoinGameMessage } from "../../messages/client-to-server/JoinGameMessage";
-import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../messages/domain/Commands";
 import { ClientMessage } from "../../messages/MessageProcessor";
 import { ErrorMessages } from "../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientMessage";
 import { ServerErrorClientMessage } from "../../messages/server-to-client/ServerErrorMessageClientMessage";
-import { VersionErrorClientMessage } from "../../messages/server-to-client/VersionErrorClientMessage";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { JoinMessageHandler } from "../../shared/room/domain/JoinMessageHandler";
 import { Room } from "../domain/Room";
@@ -44,26 +41,6 @@ export class JoinHandler implements JoinMessageHandler {
 			this.socket.write(ErrorClientMessage.create(ErrorMessages.JOINERROR));
 
 			this.socket.destroy();
-
-			return;
-		}
-
-		if (room instanceof MercuryRoom) {
-			if (joinMessage.version2 !== 4960) {
-				this.socket.write(VersionErrorClientMessage.create(4960));
-
-				return;
-			}
-			const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
-			const messages = [message.previousRawMessage, message.raw];
-			const client = new MercuryClient({
-				socket: this.socket,
-				logger: this.logger,
-				messages,
-				name: playerInfoMessage.name,
-				position: room.playersCount,
-			});
-			room.addClient(client);
 
 			return;
 		}

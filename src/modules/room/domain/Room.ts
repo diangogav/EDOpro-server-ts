@@ -16,6 +16,7 @@ import { Replay } from "../../replay/Replay";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { PlayerData } from "../../shared/player/domain/PlayerData";
+import { YgoRoom } from "../../shared/room/domain/YgoRoom";
 import { Rank } from "../../shared/value-objects/Rank";
 import { UserFinder } from "../../user/application/UserFinder";
 import { UserRedisRepository } from "../../user/infrastructure/UserRedisRepository";
@@ -122,7 +123,7 @@ export enum DuelState {
 	SIDE_DECKING = "sideDecking",
 }
 
-export class Room {
+export class Room extends YgoRoom {
 	public readonly id: number;
 	public readonly name: string;
 	public readonly notes: string;
@@ -170,11 +171,11 @@ export class Room {
 	private readonly timers: Timer[];
 	private readonly roomTimer: Timer;
 	private roomState: RoomState | null = null;
-	private emitter: EventEmitter;
 	private logger: Logger;
 	private currentDuel: Duel | null = null;
 
 	private constructor(attr: RoomAttr) {
+		super();
 		this.id = attr.id;
 		this.name = attr.name;
 		this.notes = attr.notes;
@@ -305,10 +306,6 @@ export class Room {
 			new UserFinder(new UserRedisRepository()),
 			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules)
 		);
-	}
-
-	emit(event: string, message: unknown, socket: YGOClientSocket): void {
-		this.emitter.emit(event, message, this, socket);
 	}
 
 	emitRoomEvent(event: string, message: unknown, client: Client): void {

@@ -66,8 +66,14 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 	private createRoomIfNotExists(name: string): MercuryRoom {
 		const existingRoom = MercuryRoomList.findByName(name);
 		if (!existingRoom) {
-			const room = MercuryRoom.create(this.generateUniqueId(), name, this.logger);
+			const room = MercuryRoom.create(
+				this.generateUniqueId(),
+				name,
+				this.logger,
+				this.eventEmitter
+			);
 			MercuryRoomList.addRoom(room);
+			room.waiting();
 
 			return room;
 		}
