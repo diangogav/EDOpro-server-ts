@@ -16,7 +16,7 @@ import { Replay } from "../../replay/Replay";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { PlayerData } from "../../shared/player/domain/PlayerData";
-import { YgoRoom } from "../../shared/room/domain/YgoRoom";
+import { DuelState, YgoRoom } from "../../shared/room/domain/YgoRoom";
 import { Rank } from "../../shared/value-objects/Rank";
 import { UserFinder } from "../../user/application/UserFinder";
 import { UserRedisRepository } from "../../user/infrastructure/UserRedisRepository";
@@ -115,14 +115,6 @@ interface RoomAttr {
 	ranked: boolean;
 }
 
-export enum DuelState {
-	WAITING = "waiting",
-	DUELING = "dueling",
-	RPS = "rps",
-	CHOOSING_ORDER = "choosingOrder",
-	SIDE_DECKING = "sideDecking",
-}
-
 export class Room extends YgoRoom {
 	public readonly id: number;
 	public readonly name: string;
@@ -157,7 +149,6 @@ export class Room extends YgoRoom {
 	private readonly _kick: Client[] = [];
 	private _duel?: ChildProcessWithoutNullStreams;
 	private _match: Match | null;
-	private _state: DuelState;
 	private _clientWhoChoosesTurn: Client;
 	private readonly _lastMessageToTeam: { team: number; message: Buffer }[] = [];
 	private _playerMainDeckSize: number;
@@ -306,10 +297,6 @@ export class Room extends YgoRoom {
 			new UserFinder(new UserRedisRepository()),
 			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules)
 		);
-	}
-
-	emitRoomEvent(event: string, message: unknown, client: Client): void {
-		this.emitter.emit(event, message, this, client);
 	}
 
 	resetReplay(): void {

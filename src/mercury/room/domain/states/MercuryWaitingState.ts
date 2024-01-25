@@ -4,6 +4,7 @@ import { EventEmitter } from "stream";
 
 import { JoinGameMessage } from "../../../../modules/messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../../../modules/messages/client-to-server/PlayerInfoMessage";
+import { Commands } from "../../../../modules/messages/domain/Commands";
 import { ClientMessage } from "../../../../modules/messages/MessageProcessor";
 import { VersionErrorClientMessage } from "../../../../modules/messages/server-to-client/VersionErrorClientMessage";
 import { RoomState } from "../../../../modules/room/domain/RoomState";
@@ -19,6 +20,11 @@ export class MercuryWaitingState extends RoomState {
 			"JOIN",
 			(message: ClientMessage, room: MercuryRoom, socket: YGOClientSocket) =>
 				void this.handle.bind(this)(message, room, socket)
+		);
+		this.eventEmitter.on(
+			Commands.TRY_START as unknown as string,
+			(message: ClientMessage, room: MercuryRoom, socket: YGOClientSocket) =>
+				void this.tryStartHandler.bind(this)(message, room, socket)
 		);
 	}
 
@@ -38,7 +44,17 @@ export class MercuryWaitingState extends RoomState {
 			messages,
 			name: playerInfoMessage.name,
 			position: room.playersCount,
+			room,
 		});
 		room.addClient(client);
+	}
+
+	private tryStartHandler(
+		_message: ClientMessage,
+		room: MercuryRoom,
+		_socket: YGOClientSocket
+	): void {
+		this.logger.info("MERCURY: TRY_START");
+		room.rps();
 	}
 }

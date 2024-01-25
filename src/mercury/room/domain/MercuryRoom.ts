@@ -4,11 +4,12 @@ import { EventEmitter } from "stream";
 
 import { RoomState } from "../../../modules/room/domain/RoomState";
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
-import { YgoRoom } from "../../../modules/shared/room/domain/YgoRoom";
+import { DuelState, YgoRoom } from "../../../modules/shared/room/domain/YgoRoom";
 import { MercuryClient } from "../../client/domain/MercuryClient";
 import { HostInfo } from "./host-info/HostInfo";
 import { Mode } from "./host-info/Mode.enum";
 import { priorityRuleMappings, ruleMappings } from "./RuleMappings";
+import { MercuryRockPaperScissorState } from "./states/MercuryRockPaperScissorsState";
 import { MercuryWaitingState } from "./states/MercuryWaitingState";
 
 export class MercuryRoom extends YgoRoom {
@@ -39,6 +40,7 @@ export class MercuryRoom extends YgoRoom {
 		this.password = password;
 		this._clients = [];
 		this._hostInfo = hostInfo;
+		this._state = DuelState.WAITING;
 	}
 
 	static create(id: number, command: string, logger: Logger, emitter: EventEmitter): MercuryRoom {
@@ -165,6 +167,12 @@ export class MercuryRoom extends YgoRoom {
 	waiting(): void {
 		this.roomState?.removeAllListener();
 		this.roomState = new MercuryWaitingState(this.emitter, this._logger);
+	}
+
+	rps(): void {
+		this._state = DuelState.RPS;
+		this.roomState?.removeAllListener();
+		this.roomState = new MercuryRockPaperScissorState(this.emitter, this._logger);
 	}
 
 	toPresentation(): { [key: string]: unknown } {

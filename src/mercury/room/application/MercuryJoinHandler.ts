@@ -48,6 +48,7 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 			messages,
 			name: playerInfoMessage.name,
 			position: room.playersCount,
+			room,
 		});
 		room.addClient(client);
 

@@ -3,7 +3,8 @@ import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
 import { PlayerChangeClientMessage } from "../../messages/server-to-client/PlayerChangeClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { WatchChangeClientMessage } from "../../messages/server-to-client/WatchChangeClientMessage";
-import { DuelState, Room } from "../domain/Room";
+import { DuelState } from "../../shared/room/domain/YgoRoom";
+import { Room } from "../domain/Room";
 import RoomList from "../infrastructure/RoomList";
 import { RoomFinder } from "./RoomFinder";
 

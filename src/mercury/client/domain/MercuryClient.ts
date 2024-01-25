@@ -5,6 +5,7 @@ import { Logger } from "../../../modules/shared/logger/domain/Logger";
 import { YGOClientSocket } from "../../../socket-server/HostServer";
 import { MercuryCoreMessageEmitter } from "../../MercuryCoreMessageEmitter";
 import { SimpleRoomMessageEmitter } from "../../MercuryRoomMessageEmitter";
+import { MercuryRoom } from "../../room/domain/MercuryRoom";
 
 export class MercuryClient {
 	readonly name: string;
@@ -21,12 +22,14 @@ export class MercuryClient {
 		logger,
 		messages,
 		position,
+		room,
 	}: {
 		name: string;
 		socket: YGOClientSocket;
 		logger: Logger;
 		messages: Buffer[];
 		position: number;
+		room: MercuryRoom;
 	}) {
 		this.name = name;
 		this.position = position;
@@ -34,14 +37,14 @@ export class MercuryClient {
 		this._coreClient = new net.Socket();
 		this._logger = logger;
 		this._pendingMessages = messages;
-		this._mercuryRoomMessageEmitter = new MercuryCoreMessageEmitter(this);
+		this._mercuryRoomMessageEmitter = new MercuryCoreMessageEmitter(this, room);
 
 		this._coreClient.on("data", (data: Buffer) => {
 			this._logger.info(`Data incoming from mercury core ${data.toString("hex")}`);
 			this._mercuryRoomMessageEmitter.handleMessage(data);
 		});
 
-		const roomMessageEmitter = new SimpleRoomMessageEmitter(this);
+		const roomMessageEmitter = new SimpleRoomMessageEmitter(this, room);
 
 		this._socket.on("data", (data: Buffer) => {
 			roomMessageEmitter.handleMessage(data);
