@@ -23,7 +23,6 @@ export class MercuryCoreMessageEmitter {
 		this.messageProcessor.process();
 
 		const command = MercuryServerToClientMessages.get(this.messageProcessor.payload.command);
-
 		if (command) {
 			this.room.emitRoomEvent(command, this.messageProcessor.payload, this.client);
 		}

@@ -9,6 +9,7 @@ import { MercuryClient } from "../../client/domain/MercuryClient";
 import { HostInfo } from "./host-info/HostInfo";
 import { Mode } from "./host-info/Mode.enum";
 import { priorityRuleMappings, ruleMappings } from "./RuleMappings";
+import { MercuryChoosingOrderState } from "./states/MercuryChoosingOrderState";
 import { MercuryRockPaperScissorState } from "./states/MercuryRockPaperScissorsState";
 import { MercuryWaitingState } from "./states/MercuryWaitingState";
 
@@ -173,6 +174,12 @@ export class MercuryRoom extends YgoRoom {
 		this._state = DuelState.RPS;
 		this.roomState?.removeAllListener();
 		this.roomState = new MercuryRockPaperScissorState(this.emitter, this._logger);
+	}
+
+	choosigOrder(): void {
+		this._state = DuelState.CHOOSING_ORDER;
+		this.roomState?.removeAllListener();
+		this.roomState = new MercuryChoosingOrderState(this.emitter, this._logger);
 	}
 
 	toPresentation(): { [key: string]: unknown } {
