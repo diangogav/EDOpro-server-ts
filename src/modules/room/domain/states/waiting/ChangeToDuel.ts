@@ -15,7 +15,7 @@ export class ChangeToDuel {
 			return;
 		}
 
-		if (player.isSpectator) {
+		if (player.isSpectator && !room.kick.find((kick) => kick.socket.remoteAddress === ips)) {
 			room.removeSpectator(player);
 			room.clients.push(player);
 			this.sendPlayerEnterMessage(room, player, place);
