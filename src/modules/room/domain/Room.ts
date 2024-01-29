@@ -511,12 +511,10 @@ export class Room {
 	}
 
 	removePlayer(player: Client): void {
-		player.socket.removeAllListeners();
 		this._clients = this._clients.filter((item) => item.socket.id !== player.socket.id);
 	}
 
 	removeSpectator(spectator: Client): void {
-		spectator.socket.removeAllListeners();
 		const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
 		this._spectators = filtered;
 	}

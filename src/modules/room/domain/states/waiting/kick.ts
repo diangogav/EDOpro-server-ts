@@ -23,6 +23,7 @@ export class Kick {
 		if (ishost) {
 			room.addSpectator(playerselect);
 			room.removePlayer(playerselect);
+			playerselect.socket.removeAllListeners();
 			room.addKick(playerselect);
 
 			room.clients.forEach((_client) => {
