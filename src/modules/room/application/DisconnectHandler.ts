@@ -51,6 +51,7 @@ export class DisconnectHandler {
 
 		if (room.duelState === DuelState.WAITING) {
 			room.removePlayer(player);
+			player.socket.removeAllListeners();
 			const status = (player.position << 4) | 0xb;
 			const message = PlayerChangeClientMessage.create({ status });
 
@@ -90,6 +91,7 @@ export class DisconnectHandler {
 			return;
 		}
 		room.removeSpectator(spectator);
+		spectator.socket.removeAllListeners();
 
 		const message = WatchChangeClientMessage.create({
 			count: room.spectators.length,

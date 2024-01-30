@@ -30,7 +30,6 @@ import { PlayerRoomState } from "../../PlayerRoomState";
 import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";
 import { ChangeToDuel } from "./ChangeToDuel";
-import { Kick } from "./kick";
 
 export class WaitingState extends RoomState {
 	constructor(
@@ -91,8 +90,35 @@ export class WaitingState extends RoomState {
 
 	private handleKick(message: ClientMessage, room: Room, player: Client): void {
 		this.logger.debug("WAITING: KICK");
-		const kick = new Kick();
-		kick.execute(message, room, player);
+		const positionkick = message.data.readInt8();
+		const playerselect = room.clients.find((_client) => _client.position === positionkick);
+
+		if (!playerselect) {
+			return;
+		}
+
+		if (playerselect.host) {
+			return;
+		}
+
+		this.handleChangeToObserver(message, room, playerselect);
+		room.addKick(playerselect);
+
+		room.clients.forEach((_client) => {
+			_client.sendMessage(
+				ServerErrorClientMessage.create(
+					`El Jugador:${playerselect.name} ha sido Baneado de esta Sala, solo podra ingresar como espectador!!`
+				)
+			);
+		});
+
+		room.spectators.forEach((_client) => {
+			_client.sendMessage(
+				ServerErrorClientMessage.create(
+					`El Jugador:${playerselect.name} ha sido Baneado de esta Sala, solo podra ingresar como espectador!!`
+				)
+			);
+		});
 	}
 
 	private handleToDuel(_message: ClientMessage, room: Room, player: Client): void {
@@ -147,7 +173,7 @@ export class WaitingState extends RoomState {
 		player.ready();
 	}
 
-	private handleChangeToObserver(message: ClientMessage, room: Room, player: Client): void {
+	private handleChangeToObserver(_message: ClientMessage, room: Room, player: Client): void {
 		this.logger.debug("WAITING: TO_OBSERVER");
 
 		if (player.isSpectator) {
@@ -158,7 +184,7 @@ export class WaitingState extends RoomState {
 			const place = room.nextSpectatorPosition();
 			room.removePlayer(player);
 
-			room.addSpectator(player);
+			room.spectators.push(player);
 
 			room.clients.forEach((_client) => {
 				const status = (player.position << 4) | PlayerRoomState.SPECTATE;
