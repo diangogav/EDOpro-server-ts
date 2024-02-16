@@ -1,4 +1,4 @@
-FROM ubuntu:22.04 as core-integrator-builder
+FROM public.ecr.aws/ubuntu/ubuntu:22.04_stable as core-integrator-builder
 
 RUN apt-get update -y && \
     apt-get install -y python3 python3-pip wget tar git && \
@@ -29,7 +29,7 @@ RUN conan install . --build missing --output-folder=./dependencies && \
     ./premake5 gmake && \
     make config=release
 
-FROM node:18 as server-builder
+FROM public.ecr.aws/docker/library/node:18 as server-builder
 
 WORKDIR /server
 
@@ -43,7 +43,7 @@ COPY . .
 
 RUN npm run build
 
-FROM node:18
+FROM public.ecr.aws/docker/library/node:18
 
 WORKDIR /app
 
