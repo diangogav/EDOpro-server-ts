@@ -14,3 +14,4 @@ core/CoreIntegrator
 *banlists
 app.log
 certs
+.DS_Store
