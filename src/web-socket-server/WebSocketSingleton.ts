@@ -4,7 +4,7 @@ import { createServer } from "https";
 import path from "path";
 import WebSocket, { WebSocketServer } from "ws";
 
-import { config } from "../config";
+// import { config } from "../config";
 import RoomList from "../modules/room/infrastructure/RoomList";
 import { WebSocketMessage } from "./WebSocketMessage";
 
@@ -47,16 +47,16 @@ class WebSocketSingleton {
 	}
 
 	private buildServer() {
-		if (config.env === "PRODUCTION") {
+		// if (config.env === "PRODUCTION") {
 			const root = path.resolve(__dirname, "../../");
 
 			return createServer({
-				cert: readFileSync(`${root}/letsencrypt/live/server.evolutionygo.com/cert.pem`),
-				key: readFileSync(`${root}/letsencrypt/live/server.evolutionygo.com/privkey.pem`),
+				cert: readFileSync(`${root}/certs/cert.pem`),
+				key: readFileSync(`${root}/certs/key.pem`),
 			});
-		}
+		// }
 
-		return createServer();
+		// return createServer();
 	}
 }
 
