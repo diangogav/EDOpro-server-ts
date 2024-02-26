@@ -4,7 +4,6 @@ import { createServer } from "https";
 import path from "path";
 import WebSocket, { WebSocketServer } from "ws";
 
-// import { config } from "../config";
 import RoomList from "../modules/room/infrastructure/RoomList";
 import { WebSocketMessage } from "./WebSocketMessage";
 
@@ -47,16 +46,12 @@ class WebSocketSingleton {
 	}
 
 	private buildServer() {
-		// if (config.env === "PRODUCTION") {
-			const root = path.resolve(__dirname, "../../");
+		const root = path.resolve(__dirname, "../../");
 
-			return createServer({
-				cert: readFileSync(`${root}/certs/cert.pem`),
-				key: readFileSync(`${root}/certs/key.pem`),
-			});
-		// }
-
-		// return createServer();
+		return createServer({
+			cert: readFileSync(`${root}/certs/cert.pem`),
+			key: readFileSync(`${root}/certs/key.pem`),
+		});
 	}
 }
 
