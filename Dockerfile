@@ -41,7 +41,7 @@ COPY . .
 
 RUN npm run build
 
-FROM public.ecr.aws/docker/library/node:18-alpine
+FROM public.ecr.aws/docker/library/node:18-slim
 
 WORKDIR /app
 
@@ -57,3 +57,5 @@ COPY --from=core-integrator-builder /repositories/databases ./databases/
 COPY --from=core-integrator-builder /repositories/banlists ./banlists/
 
 CMD ["node", "./src/index.js"]
+
+EXPOSE 4000 7911 7922
