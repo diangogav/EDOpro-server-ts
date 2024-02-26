@@ -29,7 +29,7 @@ RUN conan install . --build missing --output-folder=./dependencies && \
     ./premake5 gmake && \
     make config=release
 
-FROM public.ecr.aws/docker/library/node:18-alpine as server-builder
+FROM public.ecr.aws/docker/library/node:18 as server-builder
 
 WORKDIR /server
 
