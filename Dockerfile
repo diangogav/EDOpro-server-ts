@@ -33,11 +33,11 @@ FROM public.ecr.aws/docker/library/node:18 as server-builder
 
 WORKDIR /server
 
-# COPY package.json package-lock.json ./
-
-COPY . .
+COPY package.json package-lock.json ./
 
 RUN npm ci
+
+COPY . .
 
 RUN npm run build
 
@@ -48,7 +48,7 @@ WORKDIR /app
 COPY certs ./certs
 
 COPY --from=server-builder /server/dist ./
-# COPY --from=server-builder /server/package.json ./package.json
+COPY --from=server-builder /server/package.json ./package.json
 COPY --from=server-builder /server/node_modules ./node_modules
 COPY --from=core-integrator-builder /app/libocgcore.so ./core/libocgcore.so
 COPY --from=core-integrator-builder /app/CoreIntegrator ./core/CoreIntegrator
