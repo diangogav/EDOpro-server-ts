@@ -205,6 +205,9 @@ export class DuelingState extends RoomState {
 	}
 
 	private handle(): void {
+		this.room.clients.forEach((item) => {
+			item.socket.write(ServerMessageClientMessage.create("Preparando el duelo"));
+		});
 		this.room.prepareTurnOrder();
 
 		const players = this.room.clients.map((item) => ({
@@ -215,9 +218,19 @@ export class DuelingState extends RoomState {
 			turn: item.duelPosition,
 		}));
 
+		this.room.clients.forEach((item) => {
+			item.socket.write(ServerMessageClientMessage.create("Generando seeds"));
+		});
 		const seeds = this.generateSeeds();
+		this.room.clients.forEach((item) => {
+			item.socket.write(ServerMessageClientMessage.create("Seeds generados"));
+		});
 		this.room.replay.setSeed(seeds);
 		this.logger.debug(`GAME: ${this.room.playerNames(0)} VS ${this.room.playerNames(1)}`);
+
+		this.room.clients.forEach((item) => {
+			item.socket.write(ServerMessageClientMessage.create("Iniciando duelo"));
+		});
 
 		const core = spawn(
 			`./core/CoreIntegrator`,
@@ -240,6 +253,10 @@ export class DuelingState extends RoomState {
 				cwd: process.cwd(),
 			}
 		);
+
+		this.room.clients.forEach((item) => {
+			item.socket.write(ServerMessageClientMessage.create("Go"));
+		});
 
 		this.room.setDuel(core);
 
