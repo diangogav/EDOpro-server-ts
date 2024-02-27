@@ -43,7 +43,7 @@ COPY . .
 
 RUN npm run build
 
-FROM public.ecr.aws/docker/library/node:18-alpine
+FROM public.ecr.aws/docker/library/node:18-slim
 
 WORKDIR /app
 
