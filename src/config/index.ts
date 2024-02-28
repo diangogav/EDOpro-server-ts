@@ -7,4 +7,5 @@ export const config = {
 		uri: process.env.REDIS_URI,
 	},
 	env: process.env.NODE_ENV,
+	adminApiKey: process.env.ADMIN_API_KEY,
 };
