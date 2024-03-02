@@ -262,6 +262,9 @@ export class DuelingState extends RoomState {
 
 		core.stderr.on("data", (data: string) => {
 			this.logger.error(data.toString());
+			this.room.clients.forEach((item) => {
+				item.socket.write(ServerMessageClientMessage.create(data.toString()));
+			});
 		});
 
 		core.on("exit", (code, signal) => {
