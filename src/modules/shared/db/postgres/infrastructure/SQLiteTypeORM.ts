@@ -9,6 +9,7 @@ import { dataSource } from "./data-source";
 
 export class SQLiteTypeORM implements Database {
 	private readonly dataSource: DataSource;
+	private readonly directoryPath = "./databases";
 
 	constructor() {
 		this.dataSource = dataSource;
@@ -25,11 +26,14 @@ export class SQLiteTypeORM implements Database {
 			return;
 		}
 
-		const directoryPath = "./databases";
-		const files = await readdir(directoryPath);
+		const files = await readdir(this.directoryPath);
 		const cdbFiles = files.filter((file) => file.endsWith(".cdb"));
+		await this.load(cdbFiles);
+	}
+
+	async load(cdbFiles: string[]): Promise<void> {
 		for (const file of cdbFiles) {
-			const filePath = join(directoryPath, file);
+			const filePath = join(this.directoryPath, file);
 			// eslint-disable-next-line no-await-in-loop
 			await this.merge(filePath);
 		}

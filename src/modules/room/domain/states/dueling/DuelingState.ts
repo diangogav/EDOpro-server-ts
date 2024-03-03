@@ -205,6 +205,9 @@ export class DuelingState extends RoomState {
 	}
 
 	private handle(): void {
+		this.room.clients.forEach((item) => {
+			item.socket.write(ServerMessageClientMessage.create("Preparando el duelo"));
+		});
 		this.room.prepareTurnOrder();
 
 		const players = this.room.clients.map((item) => ({
@@ -215,9 +218,19 @@ export class DuelingState extends RoomState {
 			turn: item.duelPosition,
 		}));
 
+		this.room.clients.forEach((item) => {
+			item.socket.write(ServerMessageClientMessage.create("Generando seeds"));
+		});
 		const seeds = this.generateSeeds();
+		this.room.clients.forEach((item) => {
+			item.socket.write(ServerMessageClientMessage.create("Seeds generados"));
+		});
 		this.room.replay.setSeed(seeds);
 		this.logger.debug(`GAME: ${this.room.playerNames(0)} VS ${this.room.playerNames(1)}`);
+
+		this.room.clients.forEach((item) => {
+			item.socket.write(ServerMessageClientMessage.create("Iniciando duelo"));
+		});
 
 		const core = spawn(
 			`./core/CoreIntegrator`,
@@ -241,10 +254,17 @@ export class DuelingState extends RoomState {
 			}
 		);
 
+		this.room.clients.forEach((item) => {
+			item.socket.write(ServerMessageClientMessage.create("Go"));
+		});
+
 		this.room.setDuel(core);
 
 		core.stderr.on("data", (data: string) => {
 			this.logger.error(data.toString());
+			this.room.clients.forEach((item) => {
+				item.socket.write(ServerMessageClientMessage.create(data.toString()));
+			});
 		});
 
 		core.on("exit", (code, signal) => {
@@ -550,6 +570,10 @@ export class DuelingState extends RoomState {
 	}
 
 	private handleCoreStart(message: StartDuelMessage): void {
+		this.room.clients.forEach((item) => {
+			item.socket.write(ServerMessageClientMessage.create("Go!"));
+		});
+
 		const playerGameMessage = StartDuelClientMessage.create({
 			lp: this.room.startLp,
 			team: this.room.firstToPlay ^ 0,
@@ -599,12 +623,20 @@ export class DuelingState extends RoomState {
 			spectator.sendMessage(spectatorGameMessage);
 		});
 
+		this.room.clients.forEach((item) => {
+			item.socket.write(ServerMessageClientMessage.create("Go!!"));
+		});
+
 		this.room.sendMessageToCpp(
 			JSON.stringify({
 				command: "SET_DECKS",
 				data: {},
 			})
 		);
+
+		this.room.clients.forEach((item) => {
+			item.socket.write(ServerMessageClientMessage.create("Go!!!"));
+		});
 	}
 
 	private handleReady(message: ClientMessage, room: Room, player: Client): void {
