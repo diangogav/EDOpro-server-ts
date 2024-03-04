@@ -62,6 +62,11 @@ void Duel::create()
   int duel_creation_result = this->api.createDuel(&this->duel, options);
 }
 
+void Duel::destroy()
+{
+  this->api.destroyDuel(this->duel);
+}
+
 void Duel::load_scripts()
 {
   std::filesystem::path current_path = std::filesystem::current_path();

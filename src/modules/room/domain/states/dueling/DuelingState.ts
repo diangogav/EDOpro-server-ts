@@ -495,6 +495,13 @@ export class DuelingState extends RoomState {
 			return;
 		}
 
+		this.room.sendMessageToCpp(
+			JSON.stringify({
+				command: "DESTROY_DUEL",
+				data: {},
+			})
+		);
+
 		this.room.finished();
 		const duelFinisher = new FinishDuelHandler({
 			reason,
@@ -695,6 +702,14 @@ export class DuelingState extends RoomState {
 		}
 
 		this.room.finished();
+
+		this.room.sendMessageToCpp(
+			JSON.stringify({
+				command: "DESTROY_DUEL",
+				data: {},
+			})
+		);
+
 		const finishDuelHandler = new FinishDuelHandler({
 			reason: DuelFinishReason.SURRENDERED,
 			winner: Number(!client.team),
