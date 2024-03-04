@@ -100,6 +100,11 @@ int main(int argc, char *argv[])
         duel.get_board(position);
       }
 
+      if (command == "DESTROY_DUEL")
+      {
+        duel.destroy();
+      }
+
       if (command == "RESPONSE")
       {
         uint8_t replier = json_data["data"]["replier"];

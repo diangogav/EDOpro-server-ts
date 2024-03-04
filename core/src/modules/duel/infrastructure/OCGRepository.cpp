@@ -9,7 +9,7 @@ void OCGRepository::loadFunctions()
 {
   std::filesystem::path currentPath = std::filesystem::current_path();
   std::filesystem::path libPath = currentPath / "core/libocgcore.so";
-  const char* path = libPath.c_str();
+  const char *path = libPath.c_str();
 
   libhandle = dlopen(path, RTLD_NOW | RTLD_LOCAL);
 
@@ -88,6 +88,12 @@ void OCGRepository::loadFunctions()
   if (!OCG_DuelQueryField)
   {
     throw std::runtime_error("Failed to load OCG_DuelQueryField function");
+  }
+
+  OCG_DestroyDuel = reinterpret_cast<OCG_DestroyDuel_t>(dlsym(libhandle, "OCG_DestroyDuel"));
+  if (!OCG_DestroyDuel)
+  {
+    throw std::runtime_error("Failed to load OCG_DestroyDuel function");
   }
 };
 
@@ -190,10 +196,14 @@ std::vector<uint8_t> OCGRepository::duelQueryField(OCG_Duel duel)
 {
   uint32_t length = 0U;
   auto *pointer = OCG_DuelQueryField(duel, &length);
-  
+
   std::vector<uint8_t> buffer(static_cast<std::vector<uint8_t>::size_type>(length));
   std::memcpy(buffer.data(), pointer, static_cast<std::size_t>(length));
 
   return buffer;
 }
 
+void OCGRepository::destroyDuel(OCG_Duel duel)
+{
+  OCG_DestroyDuel(duel);
+}

@@ -33,6 +33,7 @@ class Duel
 public:
   Duel(OCGRepository api, Config config, std::vector<Player> players);
   void create();
+  void destroy();
   void load_scripts();
   void load_decks();
   void start();
