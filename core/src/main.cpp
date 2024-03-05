@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
   std::cerr << "Creating duel \n" << std::endl;
   duel.create();
   std::cerr << "Loading Scripts \n" << std::endl;
-  duel.load_scripts();
+  // duel.load_scripts();
   std::cerr << "Loading Info \n" << std::endl;
   duel.load_decks();
   std::cerr << "Starting Duel \n" << std::endl;
