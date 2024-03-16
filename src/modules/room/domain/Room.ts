@@ -257,11 +257,12 @@ export class Room {
 	): Room {
 		const ranked = Boolean(playerInfo.password);
 		const room = new Room({
-			
 			id,
 			name: message.name,
 			banlistHash: message.banList,
-			notes: ranked ? `(Ranked) ${message.notes} - SD Max: ${message.sideDeckMax}` : `${message.notes} - SD Max: ${message.sideDeckMax}`,
+			notes: ranked
+				? `(Ranked) ${message.notes} - SD Max: ${message.sideDeckMax}`
+				: `${message.notes} - SD Max: ${message.sideDeckMax}`,
 			mode: message.mode,
 			needPass: Buffer.from(message.password).some((element) => element !== 0x00),
 			team0: message.t0Count,
