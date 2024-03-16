@@ -257,9 +257,11 @@ export class Room {
 	): Room {
 		const ranked = Boolean(playerInfo.password);
 		const room = new Room({
+			
 			id,
 			name: message.name,
-			notes: ranked ? `(Ranked) ${message.notes}` : message.notes,
+			banlistHash: message.banList,
+			notes: ranked ? `(Ranked) ${message.notes} - SD Max: ${message.sideDeckMax}` : `${message.notes} - SD Max: ${message.sideDeckMax}`,
 			mode: message.mode,
 			needPass: Buffer.from(message.password).some((element) => element !== 0x00),
 			team0: message.t0Count,
@@ -275,7 +277,6 @@ export class Room {
 			rule: message.allowed,
 			noCheck: Boolean(message.dontCheckDeckContent),
 			noShuffle: Boolean(message.dontShuffleDeck),
-			banlistHash: message.banList,
 			isStart: "waiting",
 			mainMin: message.mainDeckMin,
 			mainMax: message.mainDeckMax,
@@ -358,6 +359,17 @@ export class Room {
 	}
 
 	matchScore(): { team0: number; team1: number } {
+		if (!this._match) {
+			return {
+				team0: 0,
+				team1: 0,
+			};
+		}
+
+		return this._match.score;
+	}
+
+	matchSide(): { team0: number; team1: number } {
 		if (!this._match) {
 			return {
 				team0: 0,
@@ -759,6 +771,12 @@ export class Room {
 	get score(): string {
 		return `Score: ${this.playerNames(0)}: ${this.matchScore().team0} - ${
 			this.matchScore().team1
+		} ${this.playerNames(1)}`;
+	}
+
+	get side(): string {
+		return `Side: ${this.playerNames(0)}: ${this.matchSide().team0} - ${
+			this.matchSide().team1
 		} ${this.playerNames(1)}`;
 	}
 
