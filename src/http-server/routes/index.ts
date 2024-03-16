@@ -24,7 +24,6 @@ export function loadRoutes(app: Express, logger: Logger): void {
 		if (adminApiKey !== config.adminApiKey) {
 			return res.status(401).json({});
 		}
-		new SyncRepositoriesController().run(req, res);
+		void new SyncRepositoriesController().run(req, res);
 	});
-
 }
