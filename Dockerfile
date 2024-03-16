@@ -44,7 +44,7 @@ RUN npm run build
 FROM public.ecr.aws/docker/library/node:18-slim
 
 # Install curl:Necessary for local health checks
-RUN apt-get update && apt-get install -y curl
+RUN apt-get update && apt-get install -y curl git
 
 WORKDIR /app
 

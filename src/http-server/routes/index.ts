@@ -19,4 +19,12 @@ export function loadRoutes(app: Express, logger: Logger): void {
 		}
 		await new SyncRepositoriesController().run(req, res);
 	});
+	app.get("/api/admin/sync", (req, res) => {
+		const adminApiKey = req.query["admin-api-key"];
+		if (adminApiKey !== config.adminApiKey) {
+			return res.status(401).json({});
+		}
+		new SyncRepositoriesController().run(req, res);
+	});
+
 }
