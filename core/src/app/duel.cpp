@@ -11,30 +11,20 @@ constexpr LocInfo Read(const uint8_t *&ptr) noexcept
       Read<uint32_t>(ptr)};
 }
 
-void cardReaderDone(void *payload, OCG_CardData *data)
+Duel::Duel(OCGRepository api, Config config, std::vector<Player> players) : api{api}, config{config}, players{players},
+                                                                            cardSqliteRepo{nullptr}, scriptReader{nullptr}
 {
-  // Implement your custom card reader done function here.
 }
 
-void logHandlerFunction(void *payload, const char *string, int type)
+Duel::~Duel()
 {
-  // Implement your custom log handler function here.
 }
-
-void *logHandlerPayload = nullptr;     // Replace with your own payload data.
-void *cardReaderDonePayload = nullptr; // Replace with your own payload data.
-
-Duel::Duel(OCGRepository api, Config config, std::vector<Player> players) : api{api}, config{config}, players{players}
-{
-  FileReader file_reader;
-  QuerySerializer serializer;
-  QueryDeserializer deserializer;
-  DrawCardHandler handler;
-  DuelTimeRemainingCalculator time_remaining_calculator;
-};
 
 void Duel::create()
 {
+  cardSqliteRepo.reset(new CardSqliteRepository());
+  scriptReader.reset(new ScriptReader(this->api));
+
   const OCG_Player player = {
       this->config.lp,
       this->config.starting_draw_count,
@@ -49,13 +39,13 @@ void Duel::create()
       player,
       player,
       &CardSqliteRepository::handle,
-      &*new CardSqliteRepository(),
+      cardSqliteRepo.get(),
       &ScriptReader::handle,
-      &*new ScriptReader(this->api),
-      &logHandlerFunction,
-      &logHandlerPayload,
-      &cardReaderDone,
-      &cardReaderDonePayload,
+      scriptReader.get(),
+      nullptr,
+      nullptr,
+      nullptr,
+      nullptr,
       0};
 
   this->duel = {nullptr};

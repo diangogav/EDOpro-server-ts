@@ -32,6 +32,7 @@ class Duel
 {
 public:
   Duel(OCGRepository api, Config config, std::vector<Player> players);
+  ~Duel();
   void create();
   void destroy();
   void load_scripts();
@@ -55,8 +56,10 @@ public:
 private:
   OCGRepository api;
   Config config;
-  OCG_Duel duel;
   std::vector<Player> players;
+  OCG_Duel duel;
+  std::unique_ptr<CardSqliteRepository> cardSqliteRepo;
+  std::unique_ptr<ScriptReader> scriptReader;
   FileReader file_reader;
   QuerySerializer serializer;
   QueryDeserializer deserializer;
