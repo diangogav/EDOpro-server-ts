@@ -9,6 +9,7 @@
 #include "../modules/card/infrastructure/CardSqliteRepository.h"
 #include "../modules/shared/ScriptReader.h"
 #include "../modules/shared/FileReader.h"
+#include "../modules/shared/Http.h"
 #include "../modules/shared/DuelLocations.h"
 #include "../modules/shared/DuelPositions.h"
 #include "../modules/shared/Write.h"
@@ -61,6 +62,7 @@ private:
   std::unique_ptr<CardSqliteRepository> cardSqliteRepo;
   std::unique_ptr<ScriptReader> scriptReader;
   FileReader file_reader;
+  Http http;
   QuerySerializer serializer;
   QueryDeserializer deserializer;
   DrawCardHandler handler;
