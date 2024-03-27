@@ -885,22 +885,18 @@ export class Room {
 	}
 
 	destroy(): void {
-		if (this.duel) {
-			this.sendMessageToCpp(
-				JSON.stringify({
-					command: "DESTROY_DUEL",
-					data: {},
-				})
-			);
-		}
 		this.emitter.removeAllListeners();
 		this.timers.forEach((timer) => {
 			timer.stop();
 		});
 		this.roomTimer.stop();
 		if (this._duel) {
-			this._duel.stdin.destroy();
-			this._duel.stdout.destroy();
+			this.sendMessageToCpp(
+				JSON.stringify({
+					command: "DESTROY_DUEL",
+					data: {},
+				})
+			);
 		}
 		this._clients.forEach((client) => {
 			client.socket.removeAllListeners();
