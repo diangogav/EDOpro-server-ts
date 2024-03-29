@@ -11,30 +11,20 @@ constexpr LocInfo Read(const uint8_t *&ptr) noexcept
       Read<uint32_t>(ptr)};
 }
 
-void cardReaderDone(void *payload, OCG_CardData *data)
+Duel::Duel(OCGRepository api, Config config, std::vector<Player> players) : api{api}, config{config}, players{players},
+                                                                            cardSqliteRepo{nullptr}, scriptReader{nullptr}
 {
-  // Implement your custom card reader done function here.
 }
 
-void logHandlerFunction(void *payload, const char *string, int type)
+Duel::~Duel()
 {
-  // Implement your custom log handler function here.
 }
-
-void *logHandlerPayload = nullptr;     // Replace with your own payload data.
-void *cardReaderDonePayload = nullptr; // Replace with your own payload data.
-
-Duel::Duel(OCGRepository api, Config config, std::vector<Player> players) : api{api}, config{config}, players{players}
-{
-  FileReader file_reader;
-  QuerySerializer serializer;
-  QueryDeserializer deserializer;
-  DrawCardHandler handler;
-  DuelTimeRemainingCalculator time_remaining_calculator;
-};
 
 void Duel::create()
 {
+  cardSqliteRepo.reset(new CardSqliteRepository());
+  scriptReader.reset(new ScriptReader(this->api));
+
   const OCG_Player player = {
       this->config.lp,
       this->config.starting_draw_count,
@@ -49,17 +39,22 @@ void Duel::create()
       player,
       player,
       &CardSqliteRepository::handle,
-      &*new CardSqliteRepository(),
+      cardSqliteRepo.get(),
       &ScriptReader::handle,
-      &*new ScriptReader(this->api),
-      &logHandlerFunction,
-      &logHandlerPayload,
-      &cardReaderDone,
-      &cardReaderDonePayload,
+      scriptReader.get(),
+      nullptr,
+      nullptr,
+      nullptr,
+      nullptr,
       0};
 
   this->duel = {nullptr};
   int duel_creation_result = this->api.createDuel(&this->duel, options);
+}
+
+void Duel::destroy()
+{
+  this->api.destroyDuel(this->duel);
 }
 
 void Duel::load_scripts()
@@ -68,10 +63,10 @@ void Duel::load_scripts()
   std::filesystem::path scripts_path = current_path / "core/scripts";
   const char *path = scripts_path.c_str();
 
-  std::vector<char> constants_buffer = this->file_reader.read(path, "constant.lua");
+  std::vector<char> constants_buffer = this->http.get("https://raw.githubusercontent.com/ProjectIgnis/CardScripts/master/constant.lua");
   this->api.loadScript(this->duel, constants_buffer.data(), constants_buffer.size(), "constant.lua");
 
-  std::vector<char> utilityBuffer = this->file_reader.read(path, "utility.lua");
+  std::vector<char> utilityBuffer = this->http.get("https://raw.githubusercontent.com/ProjectIgnis/CardScripts/master/utility.lua");
   this->api.loadScript(this->duel, utilityBuffer.data(), utilityBuffer.size(), "utility.lua");
 }
 

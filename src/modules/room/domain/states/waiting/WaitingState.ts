@@ -88,7 +88,7 @@ export class WaitingState extends RoomState {
 		);
 	}
 
-	private handleKick(message: ClientMessage, room: Room, player: Client): void {
+	private handleKick(message: ClientMessage, room: Room, _player: Client): void {
 		this.logger.debug("WAITING: KICK");
 		const positionkick = message.data.readInt8();
 		const playerselect = room.clients.find((_client) => _client.position === positionkick);

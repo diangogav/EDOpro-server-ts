@@ -41,6 +41,13 @@ CardSqliteRepository::CardSqliteRepository()
   }
 }
 
+CardSqliteRepository::~CardSqliteRepository() noexcept
+{
+	sqlite3_finalize(attachQuery);
+	sqlite3_finalize(findQuery);
+	sqlite3_close(db);
+}
+
 const OCG_CardData &CardSqliteRepository::find(uint32_t code) const noexcept
 {
   auto AllocSetcodes = [&](uint64_t dbVal) -> uint16_t *

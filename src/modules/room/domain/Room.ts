@@ -251,7 +251,10 @@ export class Room extends YgoRoom {
 		const room = new Room({
 			id,
 			name: message.name,
-			notes: ranked ? `(Ranked) ${message.notes}` : message.notes,
+			banlistHash: message.banList,
+			notes: ranked
+				? `(Ranked) ${message.notes} - SD Max: ${message.sideDeckMax}`
+				: `${message.notes} - SD Max: ${message.sideDeckMax}`,
 			mode: message.mode,
 			needPass: Buffer.from(message.password).some((element) => element !== 0x00),
 			team0: message.t0Count,
@@ -267,7 +270,6 @@ export class Room extends YgoRoom {
 			rule: message.allowed,
 			noCheck: Boolean(message.dontCheckDeckContent),
 			noShuffle: Boolean(message.dontShuffleDeck),
-			banlistHash: message.banList,
 			isStart: "waiting",
 			mainMin: message.mainDeckMin,
 			mainMax: message.mainDeckMax,
@@ -342,6 +344,17 @@ export class Room extends YgoRoom {
 	}
 
 	matchScore(): { team0: number; team1: number } {
+		if (!this._match) {
+			return {
+				team0: 0,
+				team1: 0,
+			};
+		}
+
+		return this._match.score;
+	}
+
+	matchSide(): { team0: number; team1: number } {
 		if (!this._match) {
 			return {
 				team0: 0,
@@ -746,6 +759,12 @@ export class Room extends YgoRoom {
 		} ${this.playerNames(1)}`;
 	}
 
+	get side(): string {
+		return `Side: ${this.playerNames(0)}: ${this.matchSide().team0} - ${
+			this.matchSide().team1
+		} ${this.playerNames(1)}`;
+	}
+
 	decreaseLps(team: Team, value: number): void {
 		this.currentDuel?.decreaseLps(team, value);
 	}
@@ -856,8 +875,12 @@ export class Room extends YgoRoom {
 		});
 		this.roomTimer.stop();
 		if (this._duel) {
-			this._duel.stdin.destroy();
-			this._duel.stdout.destroy();
+			this.sendMessageToCpp(
+				JSON.stringify({
+					command: "DESTROY_DUEL",
+					data: {},
+				})
+			);
 		}
 		this._clients.forEach((client) => {
 			client.socket.removeAllListeners();

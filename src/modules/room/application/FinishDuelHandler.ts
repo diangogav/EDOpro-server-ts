@@ -26,7 +26,6 @@ export class FinishDuelHandler {
 	}
 
 	async run(): Promise<void> {
-		this.room.duel?.kill();
 		this.room.duelWinner(this.winner);
 		WebSocketSingleton.getInstance().broadcast({
 			action: "UPDATE-ROOM",

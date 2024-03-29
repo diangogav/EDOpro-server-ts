@@ -9,6 +9,7 @@
 #include "../modules/card/infrastructure/CardSqliteRepository.h"
 #include "../modules/shared/ScriptReader.h"
 #include "../modules/shared/FileReader.h"
+#include "../modules/shared/Http.h"
 #include "../modules/shared/DuelLocations.h"
 #include "../modules/shared/DuelPositions.h"
 #include "../modules/shared/Write.h"
@@ -32,7 +33,9 @@ class Duel
 {
 public:
   Duel(OCGRepository api, Config config, std::vector<Player> players);
+  ~Duel();
   void create();
+  void destroy();
   void load_scripts();
   void load_decks();
   void start();
@@ -54,9 +57,12 @@ public:
 private:
   OCGRepository api;
   Config config;
-  OCG_Duel duel;
   std::vector<Player> players;
+  OCG_Duel duel;
+  std::unique_ptr<CardSqliteRepository> cardSqliteRepo;
+  std::unique_ptr<ScriptReader> scriptReader;
   FileReader file_reader;
+  Http http;
   QuerySerializer serializer;
   QueryDeserializer deserializer;
   DrawCardHandler handler;

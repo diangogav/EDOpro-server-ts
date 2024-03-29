@@ -66,16 +66,21 @@ int main(int argc, char *argv[])
   OCGRepository api;
   Duel duel{api, config, player_list};
 
-  std::cerr << "Creating duel \n" << std::endl;
+  std::cerr << "Creating duel! \n"
+            << std::endl;
   duel.create();
-  std::cerr << "Loading Scripts \n" << std::endl;
+  std::cerr << "Loading Scripts! \n"
+            << std::endl;
   duel.load_scripts();
-  std::cerr << "Loading Info \n" << std::endl;
+  std::cerr << "Loading Info! \n"
+            << std::endl;
   duel.load_decks();
-  std::cerr << "Starting Duel \n" << std::endl;
+  std::cerr << "Starting Duel! \n"
+            << std::endl;
   duel.start();
+  bool should_exit = false;
 
-  while (true)
+  while (!should_exit)
   {
     std::string message;
     std::getline(std::cin, message);
@@ -98,6 +103,12 @@ int main(int argc, char *argv[])
       {
         uint8_t position = json_data["data"]["position"];
         duel.get_board(position);
+      }
+
+      if (command == "DESTROY_DUEL")
+      {
+        duel.destroy();
+        should_exit = true;
       }
 
       if (command == "RESPONSE")

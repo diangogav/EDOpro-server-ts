@@ -11,6 +11,7 @@ class CardSqliteRepository
 {
 public:
   CardSqliteRepository();
+  ~CardSqliteRepository();
   static void handle(void *payload, uint32_t code, OCG_CardData *data);
   bool merge(std::string_view path);
 	const OCG_CardData& find(uint32_t code) const noexcept;

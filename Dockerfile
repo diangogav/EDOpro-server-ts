@@ -25,7 +25,7 @@ RUN wget https://github.com/premake/premake-core/releases/download/v5.0.0-beta2/
     tar -zxvf premake-5.0.0-beta2-linux.tar.gz && \
     rm premake-5.0.0-beta2-linux.tar.gz
 
-RUN conan install . --build missing --output-folder=./dependencies && \
+RUN conan install . --build missing --output-folder=./dependencies --options=libcurl/8.6.0:shared=True && \
     ./premake5 gmake && \
     make config=release
 
@@ -44,7 +44,7 @@ RUN npm run build
 FROM public.ecr.aws/docker/library/node:18-slim
 
 # Install curl:Necessary for local health checks
-RUN apt-get update && apt-get install -y curl
+RUN apt-get update && apt-get install -y curl git
 
 WORKDIR /app
 

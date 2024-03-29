@@ -21,6 +21,7 @@ private:
   typedef void (*OCG_DuelSetResponse_t)(OCG_Duel, const void*, uint32_t);
   typedef void *(*OCG_DuelQuery_t)(OCG_Duel, uint32_t *, OCG_QueryInfo);
   typedef void *(*OCG_DuelQueryField_t)(OCG_Duel, uint32_t *);
+  typedef void *(*OCG_DestroyDuel_t)(OCG_Duel);
 
 
   OCG_GetVersion_t OCG_GetVersion;
@@ -35,6 +36,7 @@ private:
   OCG_DuelSetResponse_t OCG_DuelSetResponse;
   OCG_DuelQuery_t OCG_DuelQuery;
   OCG_DuelQueryField_t OCG_DuelQueryField;
+  OCG_DestroyDuel_t OCG_DestroyDuel;
 
 public:
   OCGRepository();
@@ -50,5 +52,6 @@ public:
   void setResponse(OCG_Duel duel, std::vector<uint8_t> buffer);
   std::vector<uint8_t> duelQuery(OCG_Duel duel, OCG_QueryInfo query);
   std::vector<uint8_t> duelQueryField(OCG_Duel duel);
+  void destroyDuel(OCG_Duel duel);
 };
 #endif
