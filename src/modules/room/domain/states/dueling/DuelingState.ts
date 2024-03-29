@@ -254,10 +254,6 @@ export class DuelingState extends RoomState {
 			}
 		);
 
-		this.room.clients.forEach((item) => {
-			item.socket.write(ServerMessageClientMessage.create("Go"));
-		});
-
 		this.room.setDuel(core);
 
 		core.stderr.on("data", (data: string) => {
@@ -577,10 +573,6 @@ export class DuelingState extends RoomState {
 	}
 
 	private handleCoreStart(message: StartDuelMessage): void {
-		this.room.clients.forEach((item) => {
-			item.socket.write(ServerMessageClientMessage.create("Go!"));
-		});
-
 		const playerGameMessage = StartDuelClientMessage.create({
 			lp: this.room.startLp,
 			team: this.room.firstToPlay ^ 0,
@@ -630,20 +622,12 @@ export class DuelingState extends RoomState {
 			spectator.sendMessage(spectatorGameMessage);
 		});
 
-		this.room.clients.forEach((item) => {
-			item.socket.write(ServerMessageClientMessage.create("Go!!"));
-		});
-
 		this.room.sendMessageToCpp(
 			JSON.stringify({
 				command: "SET_DECKS",
 				data: {},
 			})
 		);
-
-		this.room.clients.forEach((item) => {
-			item.socket.write(ServerMessageClientMessage.create("Go!!!"));
-		});
 	}
 
 	private handleReady(message: ClientMessage, room: Room, player: Client): void {
