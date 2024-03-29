@@ -60,7 +60,7 @@ wget https://github.com/premake/premake-core/releases/download/v5.0.0-beta2/prem
 4.  Install the dependencies using `Conan`
 
 ```bash
-conan install . --build missing --output-folder=./dependencies
+conan install . --build missing --output-folder=./dependencies --options=libcurl/8.6.0:shared=True
 ```
 
 5.  Generate the `make` file using `premake5` downloaded in step 3
