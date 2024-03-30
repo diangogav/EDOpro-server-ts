@@ -24,6 +24,7 @@ export class MercuryChoosingOrderState extends RoomState {
 		const gameMessage = message.data[0];
 		if (gameMessage === CoreMessages.MSG_START) {
 			this.logger.info("MERCURY CORE: MSG_START");
+			_room.dueling();
 		}
 	}
 }
