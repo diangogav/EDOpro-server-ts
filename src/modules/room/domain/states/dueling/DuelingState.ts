@@ -347,6 +347,10 @@ export class DuelingState extends RoomState {
 			this.handleCoreMessageAll(message as unknown as CoreMessage);
 		}
 
+		if (message.type === "MESSAGE_ALL_EXCEPT") {
+			this.handleCoreMessageAllExcept(message as unknown as CoreMessage);
+		}
+
 		if (message.type === "CORE") {
 			const _coreMessage = message as unknown as RawCoreMessage;
 			if (_coreMessage.message === CoreMessages.MSG_DAMAGE) {
@@ -532,6 +536,21 @@ export class DuelingState extends RoomState {
 		[...this.room.clients, ...this.room.spectators].forEach((client) => {
 			client.sendMessage(payload);
 		});
+	}
+
+	private handleCoreMessageAllExcept(message: CoreMessage) {
+		const data = Buffer.from(message.data, "hex");
+		const payload = Buffer.concat([decimalToBytesBuffer(data.length, 2), data]);
+
+		if (message.except !== undefined) {
+			this.room.clients.forEach((client) => {
+				if (!(client.team === message.except && client.inTurn)) {
+					client.sendMessage(payload);
+				}
+			});
+
+			this.room.cacheTeamMessage(3, payload);
+		}
 	}
 
 	private handleCoreMessage(message: CoreMessage) {
