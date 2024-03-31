@@ -973,7 +973,7 @@ void Duel::distribute_message(const std::vector<uint8_t> message)
   case MessageTargets::MSG_DIST_TYPE_EVERYONE_EXCEPT_TEAM_DUELIST:
   {
     uint8_t team = this->get_team_message_receptor(message);
-    this->send_message_to_all_except(team, false, message);
+    this->send_message_to_all_except(this->get_swapped_team(team), false, message);
     break;
   }
   }
