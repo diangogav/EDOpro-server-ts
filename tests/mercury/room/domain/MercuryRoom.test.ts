@@ -47,4 +47,21 @@ describe("MercuryRoom", () => {
 		expect(room.hostInfo.duelRule).toBe(2);
 		expect(room.hostInfo.mode).toBe(Mode.MATCH);
 	});
+
+	it("Should create a room with rule 5 if command contains ot", () => {
+		const room = MercuryRoom.create(id, "ot#123", logger, emitter);
+		expect(room.hostInfo.rule).toBe(5);
+	});
+
+	it("Should create a single match room, allowing all cards from TCG and OCG (But the Forbidden/Limited List is still OCG's) sending rule 5 if command contains ot", () => {
+		const room = MercuryRoom.create(id, "ot#123", logger, emitter);
+		expect(room.hostInfo.rule).toBe(5);
+	});
+
+	it("Should create a tag room, allowing all cards from TCG and OCG, with a life point total of 36000.", () => {
+		const room = MercuryRoom.create(id, "T,OT,LP36000#123", logger, emitter);
+		expect(room.hostInfo.rule).toBe(5);
+		expect(room.hostInfo.startLp).toBe(36000);
+		expect(room.hostInfo.mode).toBe(Mode.TAG);
+	});
 });
