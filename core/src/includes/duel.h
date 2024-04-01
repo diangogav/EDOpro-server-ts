@@ -75,6 +75,7 @@ private:
   void set_extra_deck(uint8_t team);
   void send_start_message(uint32_t player_deck_size, uint32_t player_extra_deck_size, uint32_t opponent_deck_size, uint32_t opponent_extra_deck_size);
   void send_message_to(uint8_t team, bool cacheable, bool all, std::vector<uint8_t> core_message);
+  void send_message_to_all_except(uint8_t except_team, bool cacheable, std::vector<uint8_t> core_message);
   void send_message_to_all(std::vector<uint8_t> core_message);
   void send_duel_message();
   void send_message(std::string message);
