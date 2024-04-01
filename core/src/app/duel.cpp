@@ -810,6 +810,29 @@ void Duel::send_message_to_all(std::vector<uint8_t> core_message)
   this->send_message(serialized_message);
 }
 
+void Duel::send_message_to_all_except(uint8_t except_team, bool cacheable, std::vector<uint8_t> core_message)
+{
+  std::vector<uint8_t> data(1 + core_message.size());
+  auto *data_ptr = data.data();
+  Write<uint8_t>(data_ptr, 0x01);
+  std::memcpy(data_ptr, core_message.data(), core_message.size());
+
+  std::stringstream hex_representation;
+  for (const auto byte : data)
+  {
+    hex_representation << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte);
+  }
+
+  json message;
+  message["data"] = hex_representation.str();
+  message["type"] = "MESSAGE_ALL_EXCEPT";
+  message["except"] = except_team;
+
+  std::string serialized_message = message.dump();
+
+  this->send_message(serialized_message);
+}
+
 MessageTargets Duel::get_message_target(const std::vector<uint8_t> message)
 {
   switch (message[0U])
@@ -949,6 +972,8 @@ void Duel::distribute_message(const std::vector<uint8_t> message)
   }
   case MessageTargets::MSG_DIST_TYPE_EVERYONE_EXCEPT_TEAM_DUELIST:
   {
+    uint8_t team = this->get_team_message_receptor(message);
+    this->send_message_to_all_except(this->get_swapped_team(team), false, message);
     break;
   }
   }
