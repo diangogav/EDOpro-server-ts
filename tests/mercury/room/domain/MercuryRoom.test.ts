@@ -48,11 +48,6 @@ describe("MercuryRoom", () => {
 		expect(room.hostInfo.mode).toBe(Mode.MATCH);
 	});
 
-	it("Should create a room with rule 5 if command contains ot", () => {
-		const room = MercuryRoom.create(id, "ot#123", logger, emitter);
-		expect(room.hostInfo.rule).toBe(5);
-	});
-
 	it("Should create a single match room, allowing all cards from TCG and OCG (But the Forbidden/Limited List is still OCG's) sending rule 5 if command contains ot", () => {
 		const room = MercuryRoom.create(id, "ot#123", logger, emitter);
 		expect(room.hostInfo.rule).toBe(5);
