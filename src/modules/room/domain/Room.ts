@@ -910,6 +910,7 @@ export class Room {
 		});
 		this.clearSpectatorCache();
 		this._replay.destroy();
+		this.roomTimer.stop();
 	}
 
 	private writeToCppProcess(messageToCpp: string, retryCount: number): void {
