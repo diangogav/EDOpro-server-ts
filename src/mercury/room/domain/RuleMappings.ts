@@ -62,4 +62,8 @@ export const priorityRuleMappings: RuleMappings = {
 			};
 		},
 	},
+
+	ot: {
+		get: () => ({ rule: 5 }),
+	},
 };

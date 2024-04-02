@@ -60,7 +60,10 @@ export class MercuryRoom extends YgoRoom {
 		};
 
 		const [configuration, password] = command.split("#");
-		const options = configuration.split(",").map((_) => _.trim());
+		const options = configuration
+			.toLowerCase()
+			.split(",")
+			.map((_) => _.trim());
 		const mappingKeys = Object.keys(ruleMappings);
 		const priorityMappingKeys = Object.keys(priorityRuleMappings).map((_) => _.trim());
 		const priorityRulesCommands: string[] = [];
