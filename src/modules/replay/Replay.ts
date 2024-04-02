@@ -81,7 +81,7 @@ export class Replay {
 	private _seed: bigint[] = [BigInt(0), BigInt(0), BigInt(0), BigInt(0)];
 	private _messages: Buffer[] = [];
 	private _responses: Buffer[] = [];
-	private _players: Client[];
+	private _players: Client[] = [];
 	private _extraCards = [];
 	private readonly startingLp: number;
 	private readonly startingDrawCount: number;

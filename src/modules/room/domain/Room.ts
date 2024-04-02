@@ -318,7 +318,11 @@ export class Room {
 	}
 
 	resetReplay(): void {
-		this._replay.reset();
+		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+		if (this._replay) {
+			this._replay.reset();
+		}
+
 		this._replay = new Replay({
 			startingDrawCount: this.startHand,
 			startingLp: this.startLp,
@@ -909,7 +913,10 @@ export class Room {
 			client.socket.destroy();
 		});
 		this.clearSpectatorCache();
-		this._replay.destroy();
+		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+		if (this._replay) {
+			this._replay.destroy();
+		}
 		this.roomTimer.stop();
 	}
 
