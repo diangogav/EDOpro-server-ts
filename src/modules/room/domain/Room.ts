@@ -318,6 +318,7 @@ export class Room {
 	}
 
 	resetReplay(): void {
+		this._replay.reset();
 		this._replay = new Replay({
 			startingDrawCount: this.startHand,
 			startingLp: this.startLp,
@@ -886,6 +887,7 @@ export class Room {
 
 	destroy(): void {
 		this.emitter.removeAllListeners();
+		this.roomState?.removeAllListener();
 		this.timers.forEach((timer) => {
 			timer.stop();
 		});
@@ -907,6 +909,7 @@ export class Room {
 			client.socket.destroy();
 		});
 		this.clearSpectatorCache();
+		this._replay.destroy();
 	}
 
 	private writeToCppProcess(messageToCpp: string, retryCount: number): void {

@@ -79,10 +79,10 @@ class ReplayBuffer {
 
 export class Replay {
 	private _seed: bigint[] = [BigInt(0), BigInt(0), BigInt(0), BigInt(0)];
-	private readonly _messages: Buffer[] = [];
-	private readonly _responses: Buffer[] = [];
+	private _messages: Buffer[] = [];
+	private _responses: Buffer[] = [];
 	private _players: Client[];
-	private readonly _extraCards = [];
+	private _extraCards = [];
 	private readonly startingLp: number;
 	private readonly startingDrawCount: number;
 	private readonly drawCountPerTurn: number;
@@ -250,6 +250,19 @@ export class Replay {
 		compressedBuffer.writeBuffer(compressedData);
 
 		return compressedBuffer.data;
+	}
+
+	destroy(): void {
+		this._players.forEach((item) => {
+			item.socket.removeAllListeners();
+		});
+	}
+
+	reset(): void {
+		this._players = [];
+		this._messages = [];
+		this._responses = [];
+		this._extraCards = [];
 	}
 
 	private buildExtendedReplayHeader(buffer: ReplayBuffer): ExtendedReplayHeader {
