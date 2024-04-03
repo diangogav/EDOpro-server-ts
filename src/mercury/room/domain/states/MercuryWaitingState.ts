@@ -13,7 +13,6 @@ import { YGOClientSocket } from "../../../../socket-server/HostServer";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { MercuryRoom } from "../MercuryRoom";
 
-
 export class MercuryWaitingState extends RoomState {
 	constructor(eventEmitter: EventEmitter, private readonly logger: Logger) {
 		super(eventEmitter);
@@ -47,8 +46,6 @@ export class MercuryWaitingState extends RoomState {
 			position: room.playersCount,
 			room,
 		});
-
-
 		room.addClient(client);
 	}
 

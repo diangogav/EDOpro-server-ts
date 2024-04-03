@@ -97,8 +97,4 @@ export const priorityRuleMappings: RuleMappings = {
 	ot: {
 		get: () => ({ rule: 5 }),
 	},
-
-	nw: {
-		get: () => ({ noWatch: true }),
-	},
 };

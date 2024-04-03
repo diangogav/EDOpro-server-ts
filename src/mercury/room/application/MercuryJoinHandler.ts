@@ -34,7 +34,6 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 		const joinMessage = new MercuryJoinGameMessage(message.data);
 		this.logger.info(`version: ${joinMessage.version}`);
 		
-
 		if (joinMessage.version !== 4960) {
 			this.socket.write(VersionErrorClientMessage.create(4960));
 
@@ -42,9 +41,7 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 		}
 
 		const messages = [message.previousRawMessage, message.raw];
-
 		const room = this.createRoomIfNotExists(joinMessage.pass);
-
 		const client = new MercuryClient({
 			socket: this.socket,
 			logger: this.logger,
