@@ -11,5 +11,4 @@ export type HostInfo = {
 	noShuffle: boolean;
 	lflist: number;
 	duelRule: number;
-	noWatch: boolean;
 };
