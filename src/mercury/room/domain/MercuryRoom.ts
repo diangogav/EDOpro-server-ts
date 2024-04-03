@@ -57,6 +57,7 @@ export class MercuryRoom extends YgoRoom {
 			noShuffle: false,
 			lflist: -1,
 			duelRule: 5,
+			noWatch: false,
 		};
 
 		const [configuration, password] = command.split("#");
@@ -125,6 +126,7 @@ export class MercuryRoom extends YgoRoom {
 				this._hostInfo.startHand.toString(),
 				this._hostInfo.drawCount.toString(),
 				this._hostInfo.timeLimit.toString(),
+				this._hostInfo.noWatch ? "T" : "F",
 				"2", //REPLAY MODE
 				...this.generateSeeds(),
 			],

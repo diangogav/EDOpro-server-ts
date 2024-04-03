@@ -15,7 +15,7 @@ interface RuleMappings {
 
 export const ruleMappings: RuleMappings = {
 	m: {
-		get: () => ({ mode: Mode.MATCH }),
+		get: () => ({ mode: Mode.MATCH, startLp: 8000 }),
 	},
 	t: {
 		get: () => ({ mode: Mode.TAG, startLp: 16000 }),
@@ -52,6 +52,37 @@ export const priorityRuleMappings: RuleMappings = {
 		},
 	},
 
+	tm: {
+		get: (value: string) => {
+			const [_, tms] = value.split("tm");
+			if (!isInt(tms)) {
+				return {
+					timeLimit: 180,
+
+				};
+			}
+
+			const numberValue = parseInt(value, 10);
+
+			if (numberValue <= 0) {
+				return {
+					timeLimit: 1,
+				};
+			}
+
+			if (numberValue >= 99999) {
+				return {
+					timeLimit: 99999,
+				};
+			}
+
+			return {
+				timeLimit: +tms,
+			};
+		},
+	},
+
+
 	mr: {
 		get: (value: string) => {
 			const [_, duelRule] = value.split("mr");
@@ -65,5 +96,9 @@ export const priorityRuleMappings: RuleMappings = {
 
 	ot: {
 		get: () => ({ rule: 5 }),
+	},
+
+	nw: {
+		get: () => ({ noWatch: true }),
 	},
 };
