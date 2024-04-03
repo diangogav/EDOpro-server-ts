@@ -58,7 +58,6 @@ export const priorityRuleMappings: RuleMappings = {
 			if (!isInt(tms)) {
 				return {
 					timeLimit: 180,
-
 				};
 			}
 
@@ -81,7 +80,6 @@ export const priorityRuleMappings: RuleMappings = {
 			};
 		},
 	},
-
 
 	mr: {
 		get: (value: string) => {
