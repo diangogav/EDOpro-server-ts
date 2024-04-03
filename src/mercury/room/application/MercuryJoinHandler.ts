@@ -33,14 +33,14 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 		this.logger.info(`name: ${playerInfoMessage.name}`);
 		const joinMessage = new MercuryJoinGameMessage(message.data);
 		this.logger.info(`version: ${joinMessage.version}`);
-
+		
 		if (joinMessage.version !== 4960) {
 			this.socket.write(VersionErrorClientMessage.create(4960));
 
 			return;
 		}
-		const messages = [message.previousRawMessage, message.raw];
 
+		const messages = [message.previousRawMessage, message.raw];
 		const room = this.createRoomIfNotExists(joinMessage.pass);
 		const client = new MercuryClient({
 			socket: this.socket,
