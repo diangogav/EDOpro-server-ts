@@ -10,15 +10,18 @@ function isInt(value: string): boolean {
 interface RuleMappings {
 	[key: string]: {
 		get: (value?: string) => Partial<HostInfo>;
+		validate: (value: string) => boolean;
 	};
 }
 
 export const ruleMappings: RuleMappings = {
 	m: {
 		get: () => ({ mode: Mode.MATCH, startLp: 8000 }),
+		validate: (value) => value === "m" || value === "match",
 	},
 	t: {
 		get: () => ({ mode: Mode.TAG, startLp: 16000 }),
+		validate: (value) => value === "t" || value === "tag",
 	},
 };
 
@@ -50,34 +53,38 @@ export const priorityRuleMappings: RuleMappings = {
 				startLp: +lps,
 			};
 		},
+		validate: (value) => {
+			const regex = /^lp\d+$/;
+
+			return regex.test(value);
+		},
 	},
 
 	tm: {
 		get: (value: string) => {
-			const [_, tms] = value.split("tm");
-			if (!isInt(tms)) {
+			const [_, time] = value.split("tm");
+			const numberValue = parseInt(time, 10);
+
+			if (numberValue >= 1 && numberValue <= 60) {
 				return {
-					timeLimit: 180,
+					timeLimit: numberValue * 60,
 				};
 			}
 
-			const numberValue = parseInt(value, 10);
-
-			if (numberValue <= 0) {
+			if (numberValue >= 999) {
 				return {
-					timeLimit: 1,
-				};
-			}
-
-			if (numberValue >= 99999) {
-				return {
-					timeLimit: 99999,
+					timeLimit: 999,
 				};
 			}
 
 			return {
-				timeLimit: +tms,
+				timeLimit: +time,
 			};
+		},
+		validate: (value) => {
+			const regex = /^(tm|tiem)\d+$/;
+
+			return regex.test(value);
 		},
 	},
 
@@ -90,9 +97,17 @@ export const priorityRuleMappings: RuleMappings = {
 				duelRule: duelRuleValue,
 			};
 		},
+		validate: (value) => {
+			const regex = /^(mr|duelrule)\d+$/;
+
+			return regex.test(value);
+		},
 	},
 
 	ot: {
 		get: () => ({ rule: 5 }),
+		validate: (value) => {
+			return value === "ot" || value === "tcg";
+		},
 	},
 };
