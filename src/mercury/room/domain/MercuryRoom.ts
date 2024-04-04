@@ -64,28 +64,32 @@ export class MercuryRoom extends YgoRoom {
 			.toLowerCase()
 			.split(",")
 			.map((_) => _.trim());
-		const mappingKeys = Object.keys(ruleMappings);
-		const priorityMappingKeys = Object.keys(priorityRuleMappings).map((_) => _.trim());
-		const priorityRulesCommands: string[] = [];
-		options.forEach((option) => {
-			const mappingKey = mappingKeys.find((key) => option.startsWith(key));
 
-			if (mappingKey) {
-				const mapping = ruleMappings[mappingKey];
+		const mappingKeys = Object.keys(ruleMappings);
+		const priorityMappingKeys = Object.keys(priorityRuleMappings);
+		const mappings = mappingKeys.map((key) => ruleMappings[key]);
+		const priorityMappings = priorityMappingKeys.map((key) => priorityRuleMappings[key]);
+
+		options.forEach((option) => {
+			const items = mappings.filter((item) => item.validate(option));
+			if (items.length > 1) {
+				throw new Error(`Error: param match with two rules.`);
+			}
+
+			const mapping = items.shift();
+			if (mapping) {
 				const rule = mapping.get(option);
 				hostInfo = { ...hostInfo, ...rule };
 			}
-
-			const priorityMappingKey = priorityMappingKeys.find((key) => option.startsWith(key));
-			if (priorityMappingKey) {
-				priorityRulesCommands.push(option);
-			}
 		});
 
-		priorityRulesCommands.forEach((option: string) => {
-			const priorityMappingKey = priorityMappingKeys.find((key) => option.startsWith(key));
-			if (priorityMappingKey) {
-				const mapping = priorityRuleMappings[priorityMappingKey];
+		options.forEach((option) => {
+			const items = priorityMappings.filter((item) => item.validate(option));
+			if (items.length > 1) {
+				throw new Error(`Error: param match with two rules.`);
+			}
+			const mapping = items.shift();
+			if (mapping) {
 				const rule = mapping.get(option);
 				hostInfo = { ...hostInfo, ...rule };
 			}

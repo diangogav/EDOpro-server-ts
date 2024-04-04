@@ -59,4 +59,35 @@ describe("MercuryRoom", () => {
 		expect(room.hostInfo.startLp).toBe(36000);
 		expect(room.hostInfo.mode).toBe(Mode.TAG);
 	});
+
+	it("Should create room with timelimit of 300 segs (for values between 1 and 60 should be covert to seconds)  if the command is tm5#123", () => {
+		const room = MercuryRoom.create(id, "tm5#123", logger, emitter);
+		expect(room.hostInfo.timeLimit).toBe(300);
+		expect(room.hostInfo.startLp).toBe(8000);
+	});
+
+	it("Should create room with timelimit of 500 segs if the command is tm500#123", () => {
+		const room = MercuryRoom.create(id, "tm500#123", logger, emitter);
+		expect(room.hostInfo.timeLimit).toBe(500);
+		expect(room.hostInfo.startLp).toBe(8000);
+	});
+
+	it("Should create room with timelimit passed by param if the param is greater than 60 and lowerthan 999 , for example: tm1200#123", () => {
+		const room = MercuryRoom.create(id, "tm200#123", logger, emitter);
+		expect(room.hostInfo.timeLimit).toBe(200);
+		expect(room.hostInfo.startLp).toBe(8000);
+	});
+
+	it("Should create a room with the default timelimit if time command if not sent correctly", () => {
+		const room = MercuryRoom.create(id, "tm#123", logger, emitter);
+		expect(room.hostInfo.timeLimit).toBe(180);
+		expect(room.hostInfo.startLp).toBe(8000);
+	});
+
+	it("Should create a tag room with time params correcty", () => {
+		const room = MercuryRoom.create(id, "t,tm200#123", logger, emitter);
+		expect(room.hostInfo.timeLimit).toBe(200);
+		expect(room.hostInfo.startLp).toBe(16000);
+		expect(room.hostInfo.mode).toBe(Mode.TAG);
+	});
 });
