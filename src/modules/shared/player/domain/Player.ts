@@ -52,6 +52,14 @@ export class Player {
 		this._points[rankName] = points;
 	}
 
+	get wins(): number {
+		return this._games.filter((game) => game.result === "winner").length;
+	}
+
+	get losses(): number {
+		return this._games.filter((game) => game.result === "loser").length;
+	}
+
 	toPresentation(): PlayerMatchSummary {
 		return {
 			team: this.team,

@@ -9,8 +9,7 @@ import { RedisRoomRepository } from "../modules/room/match/infrastructure/RedisR
 import { container } from "../modules/shared/dependency-injection";
 import { EventBus } from "../modules/shared/event-bus/EventBus";
 import { Logger } from "../modules/shared/logger/domain/Logger";
-import { RecordMatch } from "../modules/stats/by-rank-rule/application/RecordMatch";
-import { RankRuleMemoryRepository } from "../modules/stats/by-rank-rule/rank-rules/infrastructure/RankRuleMemoryRepository";
+import { BasicStatsCalculator } from "../modules/stats/basic/application/BasicStatsCalculator";
 
 export class YGOClientSocket extends Socket {
 	id?: string;
@@ -73,8 +72,8 @@ export class HostServer {
 		const eventBus = container.get(EventBus);
 
 		eventBus.subscribe(
-			RecordMatch.ListenTo,
-			new RecordMatch(new RedisRoomRepository(), new RankRuleMemoryRepository())
+			BasicStatsCalculator.ListenTo,
+			new BasicStatsCalculator(new RedisRoomRepository())
 		);
 	}
 }
