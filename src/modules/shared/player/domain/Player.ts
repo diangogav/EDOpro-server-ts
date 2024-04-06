@@ -12,13 +12,15 @@ export type PlayerMatchSummary = {
 	score: number;
 };
 
+export type Game = { result: "winner" | "loser" | "deuce"; turns: number };
+
 export class Player {
 	public readonly name: string;
 	public readonly team: Team;
 	public readonly winner: boolean;
 	public readonly ranks: Rank[];
 	private _points: { [key: string]: number } = {};
-	private readonly _games: { result: "winner" | "loser" | "deuce"; turns: number }[];
+	private readonly _games: Game[];
 	private readonly score: number;
 
 	constructor({ ranks, name, team, winner, games, score }: PlayerData) {

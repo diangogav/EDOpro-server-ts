@@ -25,6 +25,7 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 			const points = this.calculatePoints(player);
 			player.recordPoints("Global", points);
 			await this.roomRepository.updatePlayerPoints(player.name, points);
+
 			if (player.winner) {
 				await this.roomRepository.increaseWins(player.name);
 			} else {
@@ -42,6 +43,15 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 					await this.roomRepository.increaseLosesByBanList(player.name, banList);
 				}
 			}
+
+			await this.roomRepository.saveMatch(player.name, {
+				bestOf: event.data.bestOf,
+				date: event.data.date,
+				players: players.map((item) => item.toPresentation()),
+				ranked: event.data.ranked,
+				banlistHash: event.data.banlistHash,
+				banlistName: banList?.name ?? "N/A",
+			});
 		}
 	}
 

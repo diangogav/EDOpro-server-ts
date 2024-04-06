@@ -32,6 +32,7 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
+    "@faker-js/faker": "^8.4.1",
     "@types/shuffle-array": "^1.0.2",
     "array-shuffle": "^3.0.0",
     "diod": "^2.0.0",
