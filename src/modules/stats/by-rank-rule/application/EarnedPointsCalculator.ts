@@ -1,6 +1,6 @@
-import { BanList } from "../../ban-list/domain/BanList";
-import { RoomRepository } from "../../room/domain/RoomRepository";
-import { Player } from "../../shared/player/domain/Player";
+import { BanList } from "../../../ban-list/domain/BanList";
+import { RoomRepository } from "../../../room/domain/RoomRepository";
+import { Player } from "../../../shared/player/domain/Player";
 import { StatsCalculatorHandler } from "../domain/StatsCalculatorHandler";
 import { RankRule } from "../rank-rules/domain/RankRule";
 import { RankRuleRepository } from "../rank-rules/domain/RankRuleRepository";

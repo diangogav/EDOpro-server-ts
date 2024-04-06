@@ -4,13 +4,13 @@ import net, { Socket } from "net";
 
 import { MessageEmitter } from "../modules/MessageEmitter";
 import { DisconnectHandler } from "../modules/room/application/DisconnectHandler";
-import { RecordMatch } from "../modules/room/application/RecordMatch";
 import { RoomFinder } from "../modules/room/application/RoomFinder";
 import { RedisRoomRepository } from "../modules/room/match/infrastructure/RedisRoomRepository";
 import { container } from "../modules/shared/dependency-injection";
 import { EventBus } from "../modules/shared/event-bus/EventBus";
 import { Logger } from "../modules/shared/logger/domain/Logger";
-import { RankRuleMemoryRepository } from "../modules/stats/rank-rules/infrastructure/RankRuleMemoryRepository";
+import { RecordMatch } from "../modules/stats/by-rank-rule/application/RecordMatch";
+import { RankRuleMemoryRepository } from "../modules/stats/by-rank-rule/rank-rules/infrastructure/RankRuleMemoryRepository";
 
 export class YGOClientSocket extends Socket {
 	id?: string;

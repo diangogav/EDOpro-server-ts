@@ -1,5 +1,5 @@
-import { RankRuleRepository } from "../../../src/modules/stats/rank-rules/domain/RankRuleRepository";
-import { RankRuleMemoryRepository } from "../../../src/modules/stats/rank-rules/infrastructure/RankRuleMemoryRepository";
+import { RankRuleRepository } from "../../../src/modules/stats/by-rank-rule/rank-rules/domain/RankRuleRepository";
+import { RankRuleMemoryRepository } from "../../../src/modules/stats/by-rank-rule/rank-rules/infrastructure/RankRuleMemoryRepository";
 
 describe("Rank Rule", () => {
 	const rankRuleRepository: RankRuleRepository = new RankRuleMemoryRepository();
