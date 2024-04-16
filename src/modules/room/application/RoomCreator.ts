@@ -30,7 +30,7 @@ export class RoomCreator {
 			team0: 1,
 			team1: 1,
 			bestOf: payload.bestOf,
-			duelFlag: 853505,
+			duelFlag: BigInt(853505),
 			forbiddenTypes: 83886080,
 			extraRules: 0,
 			startLp: 8000,

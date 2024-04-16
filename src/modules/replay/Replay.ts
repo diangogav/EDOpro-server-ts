@@ -86,7 +86,7 @@ export class Replay {
 	private readonly startingLp: number;
 	private readonly startingDrawCount: number;
 	private readonly drawCountPerTurn: number;
-	private readonly flags: number;
+	private readonly flags: bigint;
 
 	constructor({
 		startingLp,
@@ -97,7 +97,7 @@ export class Replay {
 		startingLp: number;
 		startingDrawCount: number;
 		drawCountPerTurn: number;
-		flags: number;
+		flags: bigint;
 	}) {
 		this.startingLp = startingLp;
 		this.startingDrawCount = startingDrawCount;
