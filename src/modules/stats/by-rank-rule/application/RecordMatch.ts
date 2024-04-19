@@ -1,13 +1,13 @@
 /* eslint-disable no-await-in-loop */
-import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
-import { DomainEventSubscriber } from "../../shared/event-bus/EventBus";
-import { Player } from "../../shared/player/domain/Player";
-import { BanListLeaderboardCalculator } from "../../stats/application/BanListLeaderboardCalculator";
-import { EarnedPointsCalculator } from "../../stats/application/EarnedPointsCalculator";
-import { GlobalLeaderboardCalculator } from "../../stats/application/GlobalLeaderboardCalculator";
-import { RankRuleRepository } from "../../stats/rank-rules/domain/RankRuleRepository";
-import { GameOverDomainEvent } from "../domain/domain-events/GameOverDomainEvent";
-import { RoomRepository } from "../domain/RoomRepository";
+import BanListMemoryRepository from "../../../ban-list/infrastructure/BanListMemoryRepository";
+import { GameOverDomainEvent } from "../../../room/domain/domain-events/GameOverDomainEvent";
+import { RoomRepository } from "../../../room/domain/RoomRepository";
+import { DomainEventSubscriber } from "../../../shared/event-bus/EventBus";
+import { Player } from "../../../shared/player/domain/Player";
+import { RankRuleRepository } from "../rank-rules/domain/RankRuleRepository";
+import { BanListLeaderboardCalculator } from "./BanListLeaderboardCalculator";
+import { EarnedPointsCalculator } from "./EarnedPointsCalculator";
+import { GlobalLeaderboardCalculator } from "./GlobalLeaderboardCalculator";
 
 export class RecordMatch implements DomainEventSubscriber<GameOverDomainEvent> {
 	static readonly ListenTo = GameOverDomainEvent.DOMAIN_EVENT;

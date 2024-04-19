@@ -12,13 +12,15 @@ export type PlayerMatchSummary = {
 	score: number;
 };
 
+export type Game = { result: "winner" | "loser" | "deuce"; turns: number };
+
 export class Player {
 	public readonly name: string;
 	public readonly team: Team;
 	public readonly winner: boolean;
 	public readonly ranks: Rank[];
 	private _points: { [key: string]: number } = {};
-	private readonly _games: { result: "winner" | "loser" | "deuce"; turns: number }[];
+	private readonly _games: Game[];
 	private readonly score: number;
 
 	constructor({ ranks, name, team, winner, games, score }: PlayerData) {
@@ -50,6 +52,14 @@ export class Player {
 
 	recordPoints(rankName: string, points: number): void {
 		this._points[rankName] = points;
+	}
+
+	get wins(): number {
+		return this._games.filter((game) => game.result === "winner").length;
+	}
+
+	get losses(): number {
+		return this._games.filter((game) => game.result === "loser").length;
 	}
 
 	toPresentation(): PlayerMatchSummary {

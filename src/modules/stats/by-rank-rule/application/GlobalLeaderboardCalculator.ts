@@ -1,5 +1,5 @@
-import { RoomRepository } from "../../room/domain/RoomRepository";
-import { PlayerData } from "../../shared/player/domain/PlayerData";
+import { RoomRepository } from "../../../room/domain/RoomRepository";
+import { PlayerData } from "../../../shared/player/domain/PlayerData";
 import { StatsCalculatorHandler } from "../domain/StatsCalculatorHandler";
 
 export class GlobalLeaderboardCalculator implements StatsCalculatorHandler {

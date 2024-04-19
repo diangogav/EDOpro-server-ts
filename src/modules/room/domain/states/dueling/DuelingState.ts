@@ -239,7 +239,7 @@ export class DuelingState extends RoomState {
 					config: {
 						startLp: this.room.startLp.toString(),
 						seeds: seeds.map((seed) => Number(seed)),
-						flags: this.room.duelFlag,
+						flags: Number(this.room.duelFlag),
 						lp: this.room.startLp,
 						startingDrawCount: this.room.startHand,
 						drawCountPerTurn: this.room.drawCount,

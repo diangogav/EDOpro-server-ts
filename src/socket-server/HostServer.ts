@@ -16,6 +16,7 @@ import { Logger } from "../modules/shared/logger/domain/Logger";
 import { RankRuleMemoryRepository } from "../modules/stats/rank-rules/infrastructure/RankRuleMemoryRepository";
 import { UserFinder } from "../modules/user/application/UserFinder";
 import { UserRedisRepository } from "../modules/user/infrastructure/UserRedisRepository";
+import { BasicStatsCalculator } from "../modules/stats/basic/application/BasicStatsCalculator";
 
 export class YGOClientSocket extends Socket {
 	id?: string;
@@ -92,8 +93,8 @@ export class HostServer {
 		const eventBus = container.get(EventBus);
 
 		eventBus.subscribe(
-			RecordMatch.ListenTo,
-			new RecordMatch(new RedisRoomRepository(), new RankRuleMemoryRepository())
+			BasicStatsCalculator.ListenTo,
+			new BasicStatsCalculator(new RedisRoomRepository())
 		);
 	}
 }

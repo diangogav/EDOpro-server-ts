@@ -1,6 +1,6 @@
-import { BanList } from "../../ban-list/domain/BanList";
-import { RoomRepository } from "../../room/domain/RoomRepository";
-import { PlayerData } from "../../shared/player/domain/PlayerData";
+import { BanList } from "../../../ban-list/domain/BanList";
+import { RoomRepository } from "../../../room/domain/RoomRepository";
+import { PlayerData } from "../../../shared/player/domain/PlayerData";
 import { StatsCalculatorHandler } from "../domain/StatsCalculatorHandler";
 
 export class BanListLeaderboardCalculator implements StatsCalculatorHandler {

@@ -88,7 +88,7 @@ interface RoomAttr {
 	team0: number;
 	team1: number;
 	bestOf: number;
-	duelFlag: number;
+	duelFlag: bigint;
 	duelFlagsHight: number;
 	duelFlagsLow: number;
 	forbiddenTypes: number;
@@ -124,7 +124,7 @@ export class Room extends YgoRoom {
 	public readonly team0: number;
 	public readonly team1: number;
 	public readonly bestOf: number;
-	public readonly duelFlag: number;
+	public readonly duelFlag: bigint;
 	public readonly duelFlagsLow: number;
 	public readonly duelFlagsHight: number;
 	public readonly forbiddenTypes: number;
@@ -248,6 +248,7 @@ export class Room extends YgoRoom {
 		logger: Logger
 	): Room {
 		const ranked = Boolean(playerInfo.password);
+
 		const room = new Room({
 			id,
 			name: message.name,
@@ -260,7 +261,7 @@ export class Room extends YgoRoom {
 			team0: message.t0Count,
 			team1: message.t1Count,
 			bestOf: message.bestOf,
-			duelFlag: message.duelFlagsLow | (message.duelFlagsHight << 32),
+			duelFlag: BigInt(message.duelFlagsLow) | (BigInt(message.duelFlagsHight) << BigInt(32)),
 			forbiddenTypes: message.forbidden,
 			extraRules: message.extraRules,
 			startLp: message.lp,
@@ -302,6 +303,11 @@ export class Room extends YgoRoom {
 	}
 
 	resetReplay(): void {
+		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+		if (this._replay) {
+			this._replay.reset();
+		}
+
 		this._replay = new Replay({
 			startingDrawCount: this.startHand,
 			startingLp: this.startLp,
@@ -825,7 +831,7 @@ export class Room extends YgoRoom {
 			team1: this.team0,
 			team2: this.team1,
 			best_of: this.bestOf,
-			duel_flag: this.duelFlag,
+			duel_flag: Number(this.duelFlag),
 			forbidden_types: this.forbiddenTypes,
 			extra_rules: this.extraRules,
 			start_lp: this.startLp,
@@ -870,6 +876,7 @@ export class Room extends YgoRoom {
 
 	destroy(): void {
 		this.emitter.removeAllListeners();
+		this.roomState?.removeAllListener();
 		this.timers.forEach((timer) => {
 			timer.stop();
 		});
@@ -891,6 +898,11 @@ export class Room extends YgoRoom {
 			client.socket.destroy();
 		});
 		this.clearSpectatorCache();
+		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+		if (this._replay) {
+			this._replay.destroy();
+		}
+		this.roomTimer.stop();
 	}
 
 	private writeToCppProcess(messageToCpp: string, retryCount: number): void {
