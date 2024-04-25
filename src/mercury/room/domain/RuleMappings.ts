@@ -110,4 +110,15 @@ export const priorityRuleMappings: RuleMappings = {
 			return value === "ot" || value === "tcg";
 		},
 	},
+
+	ns: {
+		get: () => {
+			return {
+				noShuffle: true,
+			};
+		},
+		validate: (value) => {
+			return value === "ns" || value === "noshuffle";
+		},
+	},
 };
