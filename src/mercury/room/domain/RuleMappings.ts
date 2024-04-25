@@ -132,4 +132,39 @@ export const priorityRuleMappings: RuleMappings = {
 			return value === "nc" || value === "nocheck";
 		},
 	},
+
+	dr: {
+		get: (value: string) => {
+			const [_, count] = value.split("dr");
+
+			if (!isInt(count)) {
+				return {
+					drawCount: 1,
+				};
+			}
+
+			const countNumberValue = parseInt(count, 10);
+
+			if (countNumberValue > 35) {
+				return {
+					drawCount: 35,
+				};
+			}
+
+			if (countNumberValue <= 0) {
+				return {
+					drawCount: 1,
+				};
+			}
+
+			return {
+				drawCount: countNumberValue,
+			};
+		},
+		validate: (value) => {
+			const regex = /^(dr|draw)\d+$/;
+
+			return regex.test(value);
+		},
+	},
 };
