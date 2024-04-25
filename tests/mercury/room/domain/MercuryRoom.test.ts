@@ -128,6 +128,31 @@ describe("MercuryRoom", () => {
 
 	it("Should create a room with deck count 1 if dr param value is invalid", () => {
 		const room = MercuryRoom.create(id, "mr2,m,dr#123", logger, emitter);
-		expect(room.hostInfo.drawCount).toBe(35);
+		expect(room.hostInfo.drawCount).toBe(1);
+	});
+
+	it("Should create a room with start hand count  1 if st param is not send", () => {
+		const room = MercuryRoom.create(id, "mr2,m#123", logger, emitter);
+		expect(room.hostInfo.startHand).toBe(5);
+	});
+
+	it("Should create a room with start hand count passed by params if st param is send", () => {
+		const room = MercuryRoom.create(id, "mr2,m,st10#123", logger, emitter);
+		expect(room.hostInfo.startHand).toBe(10);
+	});
+
+	it("Should create a room with start hand count 40 if st param value is greater than 40", () => {
+		const room = MercuryRoom.create(id, "mr2,m,st50#123", logger, emitter);
+		expect(room.hostInfo.startHand).toBe(40);
+	});
+
+	it("Should create a room with start hand count 5 if st param value is invalid", () => {
+		const room = MercuryRoom.create(id, "mr2,m,stundefined#123", logger, emitter);
+		expect(room.hostInfo.startHand).toBe(5);
+	});
+
+	it("Should create a room with start hand count 5 if st param value is lower than zero", () => {
+		const room = MercuryRoom.create(id, "mr2,m,st0#123", logger, emitter);
+		expect(room.hostInfo.startHand).toBe(5);
 	});
 });

@@ -167,4 +167,38 @@ export const priorityRuleMappings: RuleMappings = {
 			return regex.test(value);
 		},
 	},
+
+	st: {
+		get: (value: string) => {
+			const [_, count] = value.split("st");
+			if (!isInt(count)) {
+				return {
+					startHand: 5,
+				};
+			}
+
+			const numberValue = parseInt(count, 10);
+
+			if (numberValue > 40) {
+				return {
+					startHand: 40,
+				};
+			}
+
+			if (numberValue <= 0) {
+				return {
+					startHand: 5,
+				};
+			}
+
+			return {
+				startHand: numberValue,
+			};
+		},
+		validate: (value) => {
+			const regex = /^(st|start)\d+$/;
+
+			return regex.test(value);
+		},
+	},
 };
