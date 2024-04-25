@@ -121,4 +121,15 @@ export const priorityRuleMappings: RuleMappings = {
 			return value === "ns" || value === "noshuffle";
 		},
 	},
+
+	nc: {
+		get: () => {
+			return {
+				noCheck: true,
+			};
+		},
+		validate: (value) => {
+			return value === "nc" || value === "nocheck";
+		},
+	},
 };

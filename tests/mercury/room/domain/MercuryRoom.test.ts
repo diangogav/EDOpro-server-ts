@@ -91,13 +91,23 @@ describe("MercuryRoom", () => {
 		expect(room.hostInfo.mode).toBe(Mode.TAG);
 	});
 
-	it("Should create a tag room without deck shuffling if ns param is send", () => {
+	it("Should create a room without deck shuffling if ns param is send", () => {
 		const room = MercuryRoom.create(id, "m,ns#123", logger, emitter);
 		expect(room.hostInfo.noShuffle).toBe(true);
 	});
 
-	it("Should create a tag room with deck shuffling if ns param is not send", () => {
+	it("Should create a room with deck shuffling if ns param is not send", () => {
 		const room = MercuryRoom.create(id, "mr2,m#123", logger, emitter);
 		expect(room.hostInfo.noShuffle).toBe(false);
+	});
+
+	it("Should create a room without deck checking if nc param is send", () => {
+		const room = MercuryRoom.create(id, "m,nc#123", logger, emitter);
+		expect(room.hostInfo.noCheck).toBe(true);
+	});
+
+	it("Should create a room with deck checking if nc param is not send", () => {
+		const room = MercuryRoom.create(id, "mr2,m#123", logger, emitter);
+		expect(room.hostInfo.noCheck).toBe(false);
 	});
 });
