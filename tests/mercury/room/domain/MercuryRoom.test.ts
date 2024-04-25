@@ -48,6 +48,11 @@ describe("MercuryRoom", () => {
 		expect(room.hostInfo.mode).toBe(Mode.MATCH);
 	});
 
+	it("Should create a room with Match mode and duel rule 2  if command is duelrule2,m#123", () => {
+		const room = MercuryRoom.create(id, "duelrule2,m#123", logger, emitter);
+		expect(room.hostInfo.duelRule).toBe(2);
+		expect(room.hostInfo.mode).toBe(Mode.MATCH);
+	});
 	it("Should create a single match room, allowing all cards from TCG and OCG (But the Forbidden/Limited List is still OCG's) sending rule 5 if command contains ot", () => {
 		const room = MercuryRoom.create(id, "ot#123", logger, emitter);
 		expect(room.hostInfo.rule).toBe(5);
@@ -62,6 +67,12 @@ describe("MercuryRoom", () => {
 
 	it("Should create room with timelimit of 300 segs (for values between 1 and 60 should be covert to seconds)  if the command is tm5#123", () => {
 		const room = MercuryRoom.create(id, "tm5#123", logger, emitter);
+		expect(room.hostInfo.timeLimit).toBe(300);
+		expect(room.hostInfo.startLp).toBe(8000);
+	});
+
+	it("Should create room with timelimit of 300 segs (for values between 1 and 60 should be covert to seconds)  if the command is time5#123", () => {
+		const room = MercuryRoom.create(id, "time5#123", logger, emitter);
 		expect(room.hostInfo.timeLimit).toBe(300);
 		expect(room.hostInfo.startLp).toBe(8000);
 	});
@@ -121,6 +132,11 @@ describe("MercuryRoom", () => {
 		expect(room.hostInfo.drawCount).toBe(9);
 	});
 
+	it("Should create a room with deck count passed by params if draw param is send", () => {
+		const room = MercuryRoom.create(id, "mr2,m,draw9#123", logger, emitter);
+		expect(room.hostInfo.drawCount).toBe(9);
+	});
+
 	it("Should create a room with deck count 35 if dr param value is greater than 35", () => {
 		const room = MercuryRoom.create(id, "mr2,m,dr40#123", logger, emitter);
 		expect(room.hostInfo.drawCount).toBe(35);
@@ -154,5 +170,10 @@ describe("MercuryRoom", () => {
 	it("Should create a room with start hand count 5 if st param value is lower than zero", () => {
 		const room = MercuryRoom.create(id, "mr2,m,st0#123", logger, emitter);
 		expect(room.hostInfo.startHand).toBe(5);
+	});
+
+	it("Should create a room with start hand count passed by params if start param is send", () => {
+		const room = MercuryRoom.create(id, "mr2,m,start10#123", logger, emitter);
+		expect(room.hostInfo.startHand).toBe(10);
 	});
 });

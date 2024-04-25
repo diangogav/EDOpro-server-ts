@@ -14,6 +14,12 @@ interface RuleMappings {
 	};
 }
 
+function extractNumberFromCommand(input: string): number | null {
+	const match = input.match(/-?\d+(\.\d+)?/);
+
+	return match ? parseFloat(match[0]) : null;
+}
+
 export const ruleMappings: RuleMappings = {
 	m: {
 		get: () => ({ mode: Mode.MATCH, startLp: 8000 }),
@@ -28,8 +34,9 @@ export const ruleMappings: RuleMappings = {
 export const priorityRuleMappings: RuleMappings = {
 	lp: {
 		get: (value: string) => {
-			const [_, lps] = value.split("lp");
-			if (!isInt(lps)) {
+			const lps = extractNumberFromCommand(value);
+
+			if (lps === null) {
 				return {
 					startLp: 8000,
 				};
@@ -62,27 +69,31 @@ export const priorityRuleMappings: RuleMappings = {
 
 	tm: {
 		get: (value: string) => {
-			const [_, time] = value.split("tm");
-			const numberValue = parseInt(time, 10);
-
-			if (numberValue >= 1 && numberValue <= 60) {
+			const time = extractNumberFromCommand(value);
+			if (time === null) {
 				return {
-					timeLimit: numberValue * 60,
+					timeLimit: 180,
 				};
 			}
 
-			if (numberValue >= 999) {
+			if (time >= 1 && time <= 60) {
+				return {
+					timeLimit: time * 60,
+				};
+			}
+
+			if (time >= 999) {
 				return {
 					timeLimit: 999,
 				};
 			}
 
 			return {
-				timeLimit: +time,
+				timeLimit: time,
 			};
 		},
 		validate: (value) => {
-			const regex = /^(tm|tiem)\d+$/;
+			const regex = /^(tm|time)\d+$/;
 
 			return regex.test(value);
 		},
@@ -90,12 +101,15 @@ export const priorityRuleMappings: RuleMappings = {
 
 	mr: {
 		get: (value: string) => {
-			const [_, duelRule] = value.split("mr");
-			const duelRuleValue = +duelRule;
+			const duelRule = extractNumberFromCommand(value);
 
-			return {
-				duelRule: duelRuleValue,
-			};
+			if (duelRule && duelRule > 0 && duelRule <= 5) {
+				return {
+					duelRule,
+				};
+			}
+
+			return {};
 		},
 		validate: (value) => {
 			const regex = /^(mr|duelrule)\d+$/;
@@ -135,30 +149,28 @@ export const priorityRuleMappings: RuleMappings = {
 
 	dr: {
 		get: (value: string) => {
-			const [_, count] = value.split("dr");
+			const count = extractNumberFromCommand(value);
 
-			if (!isInt(count)) {
+			if (count === null) {
 				return {
 					drawCount: 1,
 				};
 			}
 
-			const countNumberValue = parseInt(count, 10);
-
-			if (countNumberValue > 35) {
+			if (count > 35) {
 				return {
 					drawCount: 35,
 				};
 			}
 
-			if (countNumberValue <= 0) {
+			if (count <= 0) {
 				return {
 					drawCount: 1,
 				};
 			}
 
 			return {
-				drawCount: countNumberValue,
+				drawCount: count,
 			};
 		},
 		validate: (value) => {
@@ -170,29 +182,28 @@ export const priorityRuleMappings: RuleMappings = {
 
 	st: {
 		get: (value: string) => {
-			const [_, count] = value.split("st");
-			if (!isInt(count)) {
+			const count = extractNumberFromCommand(value);
+
+			if (count === null) {
 				return {
 					startHand: 5,
 				};
 			}
 
-			const numberValue = parseInt(count, 10);
-
-			if (numberValue > 40) {
+			if (count > 40) {
 				return {
 					startHand: 40,
 				};
 			}
 
-			if (numberValue <= 0) {
+			if (count <= 0) {
 				return {
 					startHand: 5,
 				};
 			}
 
 			return {
-				startHand: numberValue,
+				startHand: count,
 			};
 		},
 		validate: (value) => {
