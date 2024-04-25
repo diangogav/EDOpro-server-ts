@@ -110,4 +110,24 @@ describe("MercuryRoom", () => {
 		const room = MercuryRoom.create(id, "mr2,m#123", logger, emitter);
 		expect(room.hostInfo.noCheck).toBe(false);
 	});
+
+	it("Should create a room with deck count 1 if dr param is not send", () => {
+		const room = MercuryRoom.create(id, "mr2,m#123", logger, emitter);
+		expect(room.hostInfo.drawCount).toBe(1);
+	});
+
+	it("Should create a room with deck count passed by params if dr param is send", () => {
+		const room = MercuryRoom.create(id, "mr2,m,dr9#123", logger, emitter);
+		expect(room.hostInfo.drawCount).toBe(9);
+	});
+
+	it("Should create a room with deck count 35 if dr param value is greater than 35", () => {
+		const room = MercuryRoom.create(id, "mr2,m,dr40#123", logger, emitter);
+		expect(room.hostInfo.drawCount).toBe(35);
+	});
+
+	it("Should create a room with deck count 1 if dr param value is invalid", () => {
+		const room = MercuryRoom.create(id, "mr2,m,dr#123", logger, emitter);
+		expect(room.hostInfo.drawCount).toBe(35);
+	});
 });
