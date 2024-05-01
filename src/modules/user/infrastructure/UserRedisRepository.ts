@@ -7,28 +7,27 @@ import { UserRepository } from "../domain/UserRepository";
 export class UserRedisRepository implements UserRepository {
 	async findBy(username: string): Promise<User | null> {
 		const redis = Redis.getInstance();
-		await redis.connect();
-		const user = (await redis.client.hGetAll(`user:${username}`)) as {
+		const user = (await redis.hgetall(`user:${username}`)) as {
 			username: string;
 			password: string;
 		};
 		const banlistNames = BanListMemoryRepository.getOnlyWithName();
 
 		const positionRequests = banlistNames.map((name) =>
-			redis.client.zRevRank(`leaderboard:${name}:points`, username)
+			redis.zrevrank(`leaderboard:${name}:points`, username)
 		);
 
 		const scoreRequests = banlistNames.map((name) =>
-			redis.client.zScore(`leaderboard:${name}:points`, username)
+			redis.zscore(`leaderboard:${name}:points`, username)
 		);
 
 		const positionResponses = await Promise.allSettled([
-			redis.client.zRevRank("leaderboard:points", username),
+			redis.zrevrank("leaderboard:points", username),
 			...positionRequests,
 		]);
 
 		const scoreResponses = await Promise.allSettled([
-			redis.client.zScore("leaderboard:points", username),
+			redis.zscore("leaderboard:points", username),
 			...scoreRequests,
 		]);
 
@@ -41,8 +40,6 @@ export class UserRedisRepository implements UserRepository {
 			.map((data: PromiseSettledResult<unknown>) => (data as PromiseFulfilledResult<number>).value);
 
 		if (!user.username) {
-			await redis.client.quit();
-
 			return null;
 		}
 
@@ -61,8 +58,6 @@ export class UserRedisRepository implements UserRepository {
 				points: scores[index] ?? 0,
 			});
 		});
-
-		await redis.client.quit();
 
 		return new User({
 			...user,

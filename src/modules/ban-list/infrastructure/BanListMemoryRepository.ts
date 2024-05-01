@@ -23,10 +23,8 @@ export default {
 	async backup(): Promise<void> {
 		const names = banLists.filter((banList) => banList.name).map((item) => item.name as string);
 		const redis = Redis.getInstance();
-		await redis.connect();
-		await redis.client.del("banlists");
-		await redis.client.rPush("banlists", names);
-		await redis.client.quit();
+		await redis.del("banlists");
+		await redis.rpush("banlists", ...names);
 	},
 
 	getOnlyWithName(): string[] {
