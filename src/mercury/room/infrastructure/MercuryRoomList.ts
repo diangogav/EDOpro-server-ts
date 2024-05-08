@@ -19,11 +19,10 @@ export default {
 		return rooms.find((room) => room.id === id) ?? null;
 	},
 
-	deleteRoom(_room: MercuryRoom): void {
-		// room.destroy();
-		// const index = rooms.findIndex((item) => item.id === room.id);
-		// if (index !== -1) {
-		// 	rooms.splice(index, 1);
-		// }
+	deleteRoom(room: MercuryRoom): void {
+		const index = rooms.findIndex((item) => item.id === room.id);
+		if (index !== -1) {
+			rooms.splice(index, 1);
+		}
 	},
 };

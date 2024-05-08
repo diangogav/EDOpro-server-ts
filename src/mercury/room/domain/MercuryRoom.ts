@@ -6,6 +6,7 @@ import { RoomState } from "../../../modules/room/domain/RoomState";
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
 import { DuelState, YgoRoom } from "../../../modules/shared/room/domain/YgoRoom";
 import { MercuryClient } from "../../client/domain/MercuryClient";
+import MercuryRoomList from "../infrastructure/MercuryRoomList";
 import { HostInfo } from "./host-info/HostInfo";
 import { Mode } from "./host-info/Mode.enum";
 import { priorityRuleMappings, ruleMappings } from "./RuleMappings";
@@ -140,6 +141,15 @@ export class MercuryRoom extends YgoRoom {
 		core.on("error", (error) => {
 			this._logger.error("Error running mercury core");
 			this._logger.error(error);
+		});
+
+		core.on("exit", (code, signal) => {
+			this._logger.info(
+				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+				`Core closed for room ${this.id} with code: ${code} and signal: ${signal} `
+			);
+
+			MercuryRoomList.deleteRoom(this);
 		});
 
 		core.stdout.setEncoding("utf8");
