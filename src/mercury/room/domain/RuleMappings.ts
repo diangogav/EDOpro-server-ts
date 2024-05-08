@@ -1,12 +1,6 @@
 import { HostInfo } from "./host-info/HostInfo";
 import { Mode } from "./host-info/Mode.enum";
 
-function isInt(value: string): boolean {
-	const numberValue = parseInt(value, 10);
-
-	return !isNaN(numberValue) && Number.isInteger(numberValue);
-}
-
 interface RuleMappings {
 	[key: string]: {
 		get: (value?: string) => Partial<HostInfo>;
