@@ -2,9 +2,9 @@ name: PR Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "mycard" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "mycard" ]
 
 jobs:
 
