@@ -15,6 +15,7 @@ export enum DuelState {
 export abstract class YgoRoom {
 	protected emitter: EventEmitter;
 	protected _state: DuelState;
+	protected _spectatorCache: Buffer[] = [];
 
 	emit(event: string, message: unknown, socket: YGOClientSocket): void {
 		this.emitter.emit(event, message, this, socket);
@@ -22,5 +23,17 @@ export abstract class YgoRoom {
 
 	emitRoomEvent(event: string, message: unknown, client: Client | MercuryClient): void {
 		this.emitter.emit(event, message, this, client);
+	}
+
+	get duelState(): DuelState {
+		return this._state;
+	}
+
+	get spectatorCache(): Buffer[] {
+		return this._spectatorCache;
+	}
+
+	clearSpectatorCache(): void {
+		this._spectatorCache = [];
 	}
 }

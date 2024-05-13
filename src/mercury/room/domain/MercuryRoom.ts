@@ -1,11 +1,18 @@
 import { spawn } from "child_process";
 import * as crypto from "crypto";
+import net from "net";
 import { EventEmitter } from "stream";
 
 import { RoomState } from "../../../modules/room/domain/RoomState";
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
 import { DuelState, YgoRoom } from "../../../modules/shared/room/domain/YgoRoom";
+import { YGOClientSocket } from "../../../socket-server/HostServer";
 import { MercuryClient } from "../../client/domain/MercuryClient";
+import {
+	MercuryJointGameToCoreMessage,
+	MercuryPlayerInfoToCoreMessage,
+	MercuryToObserverToCoreMessage,
+} from "../../messages/server-to-core";
 import MercuryRoomList from "../infrastructure/MercuryRoomList";
 import { HostInfo } from "./host-info/HostInfo";
 import { Mode } from "./host-info/Mode.enum";
@@ -25,6 +32,7 @@ export class MercuryRoom extends YgoRoom {
 	private _corePort: number | null = null;
 	private readonly _hostInfo: HostInfo;
 	private roomState: RoomState | null = null;
+	private readonly _spectators: YGOClientSocket[] = [];
 
 	private constructor({
 		id,
@@ -114,8 +122,16 @@ export class MercuryRoom extends YgoRoom {
 		}
 	}
 
+	addSpectator(socket: YGOClientSocket): void {
+		this._spectators.push(socket);
+		this.spectatorCache.forEach((message) => {
+			socket.write(message);
+		});
+	}
+
 	startCore(): void {
-		this._logger.info("Starting Mercury Core");
+		this._logger.debug("Starting Mercury Core");
+
 		const core = spawn(
 			"./ygopro",
 			[
@@ -144,7 +160,7 @@ export class MercuryRoom extends YgoRoom {
 		});
 
 		core.on("exit", (code, signal) => {
-			this._logger.info(
+			this._logger.debug(
 				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 				`Core closed for room ${this.id} with code: ${code} and signal: ${signal} `
 			);
@@ -154,7 +170,7 @@ export class MercuryRoom extends YgoRoom {
 
 		core.stdout.setEncoding("utf8");
 		core.stdout.once("data", (data: Buffer) => {
-			this._logger.info(`Started Mercury Core at port: ${data.toString()}`);
+			this._logger.debug(`Started Mercury Core at port: ${data.toString()}`);
 			this._coreStarted = true;
 			this._corePort = +data.toString();
 			this._clients.forEach((client) => {
@@ -163,11 +179,30 @@ export class MercuryRoom extends YgoRoom {
 					port: +data.toString(),
 				});
 			});
+
+			const watch = net.connect(this._corePort, "127.0.0.1", () => {
+				this._logger.debug("Connected to watch");
+				watch.write(MercuryPlayerInfoToCoreMessage.create("Evolution"));
+				watch.write(MercuryJointGameToCoreMessage.create(this.password));
+				watch.write(MercuryToObserverToCoreMessage.create());
+			});
+
+			watch.on("data", (data: Buffer) => {
+				this._logger.debug(`Incoming data for expectators: ${data.toString("hex")}`);
+				this.spectatorCache.push(data);
+				this._spectators.forEach((spectator) => {
+					spectator.write(data);
+				});
+			});
+
+			watch.on("error", (error) => {
+				this._logger.error("Error connecting watch at mercury room");
+				this._logger.error(error);
+			});
 		});
 
 		core.stderr.on("data", (data: Buffer) => {
-			this._logger.info(`Error data: ${data.toString("hex")}`);
-			this._logger.info(`Error data: ${data.toString()}`);
+			this._logger.error(`Error data at mercury core: ${data.toString()}`);
 		});
 	}
 
@@ -239,6 +274,14 @@ export class MercuryRoom extends YgoRoom {
 				pos: player.position,
 			})),
 		};
+	}
+
+	destroy(): void {
+		this.emitter.removeAllListeners();
+		this.roomState?.removeAllListener();
+		this._clients.forEach((client) => {
+			client.destroy();
+		});
 	}
 
 	private generateSeeds(): string[] {

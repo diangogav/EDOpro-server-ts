@@ -6,8 +6,10 @@ import { ClientMessage } from "../../../modules/messages/MessageProcessor";
 import { VersionErrorClientMessage } from "../../../modules/messages/server-to-client/VersionErrorClientMessage";
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
 import { JoinMessageHandler } from "../../../modules/shared/room/domain/JoinMessageHandler";
+import { DuelState } from "../../../modules/shared/room/domain/YgoRoom";
 import { YGOClientSocket } from "../../../socket-server/HostServer";
 import { MercuryClient } from "../../client/domain/MercuryClient";
+import { mercuryConfig } from "../../config";
 import { MercuryJoinGameMessage } from "../../messages/MercuryJoinGameMessage";
 import { MercuryRoom } from "../domain/MercuryRoom";
 import MercuryRoomList from "../infrastructure/MercuryRoomList";
@@ -34,14 +36,21 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 		const joinMessage = new MercuryJoinGameMessage(message.data);
 		this.logger.info(`version: ${joinMessage.version}`);
 
-		if (joinMessage.version !== 4960) {
-			this.socket.write(VersionErrorClientMessage.create(4960));
+		if (joinMessage.version !== mercuryConfig.version) {
+			this.socket.write(VersionErrorClientMessage.create(mercuryConfig.version));
 
 			return;
 		}
 
 		const messages = [message.previousRawMessage, message.raw];
 		const room = this.createRoomIfNotExists(joinMessage.pass);
+
+		if (room.duelState === DuelState.DUELING) {
+			room.addSpectator(this.socket);
+
+			return;
+		}
+
 		const client = new MercuryClient({
 			socket: this.socket,
 			logger: this.logger,
@@ -50,6 +59,7 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 			position: room.playersCount,
 			room,
 		});
+
 		room.addClient(client);
 
 		if (!room.isCoreStarted) {

@@ -143,7 +143,6 @@ export class Room extends YgoRoom {
 	public readonly ranked: boolean;
 	private _replay: Replay;
 	private isStart: string;
-	private _spectatorCache: Buffer[] = [];
 	private _clients: Client[] = [];
 	private _spectators: Client[] = [];
 	private readonly _kick: Client[] = [];
@@ -501,10 +500,6 @@ export class Room extends YgoRoom {
 		);
 	}
 
-	get duelState(): DuelState {
-		return this._state;
-	}
-
 	setClientWhoChoosesTurn(client: Client): void {
 		this._clientWhoChoosesTurn = client;
 	}
@@ -539,14 +534,6 @@ export class Room extends YgoRoom {
 				player.setLastMessage(message);
 			});
 		}
-	}
-
-	get spectatorCache(): Buffer[] {
-		return this._spectatorCache;
-	}
-
-	clearSpectatorCache(): void {
-		this._spectatorCache = [];
 	}
 
 	setPlayerDecksSize(mainSize: number, extraSize: number): void {

@@ -67,6 +67,11 @@ export class MercuryClient {
 		this._socket.write(message);
 	}
 
+	destroy(): void {
+		this._socket.removeAllListeners();
+		this._socket.destroy();
+	}
+
 	private sendPendingMessages(): void {
 		this._pendingMessages.forEach((message) => {
 			this._logger.info(`Message: ${message.toString("hex")}`);

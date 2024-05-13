@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { EventEmitter } from "events";
 
 import { ClientMessage } from "../../../../modules/messages/MessageProcessor";
@@ -12,7 +14,6 @@ export class MercuryDuelingState extends RoomState {
 		this.eventEmitter.on(
 			"DUEL_END",
 			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
 				this.handle.bind(this)(message, room, client)
 		);
 	}

@@ -11,6 +11,7 @@ import { RoomState } from "../../../../modules/room/domain/RoomState";
 import { Logger } from "../../../../modules/shared/logger/domain/Logger";
 import { YGOClientSocket } from "../../../../socket-server/HostServer";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
+import { mercuryConfig } from "../../../config";
 import { MercuryRoom } from "../MercuryRoom";
 
 export class MercuryWaitingState extends RoomState {
@@ -31,8 +32,8 @@ export class MercuryWaitingState extends RoomState {
 	private handle(message: ClientMessage, room: MercuryRoom, socket: YGOClientSocket): void {
 		const joinMessage = new JoinGameMessage(message.data);
 
-		if (joinMessage.version2 !== 4960) {
-			socket.write(VersionErrorClientMessage.create(4960));
+		if (joinMessage.version2 !== mercuryConfig.version) {
+			socket.write(VersionErrorClientMessage.create(mercuryConfig.version));
 
 			return;
 		}
