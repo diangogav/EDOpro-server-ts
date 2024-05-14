@@ -17,13 +17,13 @@ export function loadRoutes(app: Express, logger: Logger): void {
 		if (adminApiKey !== config.adminApiKey) {
 			return res.status(401).json({});
 		}
-		await new SyncRepositoriesController().run(req, res);
+		await new SyncRepositoriesController(logger).run(req, res);
 	});
 	app.get("/api/admin/sync", (req, res) => {
 		const adminApiKey = req.query["admin-api-key"];
 		if (adminApiKey !== config.adminApiKey) {
 			return res.status(401).json({});
 		}
-		void new SyncRepositoriesController().run(req, res);
+		void new SyncRepositoriesController(logger).run(req, res);
 	});
 }

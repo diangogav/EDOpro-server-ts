@@ -20,12 +20,6 @@ export class SQLiteTypeORM implements Database {
 	}
 
 	async initialize(): Promise<void> {
-		const databaseLoaded = await this.isLoaded();
-
-		if (databaseLoaded) {
-			return;
-		}
-
 		const files = await readdir(this.directoryPath);
 		const cdbFiles = files.filter((file) => file.endsWith(".cdb"));
 		await this.load(cdbFiles);
@@ -40,11 +34,21 @@ export class SQLiteTypeORM implements Database {
 	}
 
 	private async merge(path: string): Promise<void> {
-		const queryRunner = dataSource.manager;
-		await queryRunner.query(`ATTACH DATABASE '${path}' AS toMerge`);
-		await queryRunner.query("INSERT OR REPLACE INTO datas SELECT * FROM toMerge.datas");
-		await queryRunner.query("INSERT OR REPLACE INTO texts SELECT * FROM toMerge.texts");
-		await queryRunner.query("DETACH toMerge");
+		const queryRunner = dataSource.createQueryRunner();
+		await queryRunner.connect();
+		await queryRunner.startTransaction();
+		try {
+			await queryRunner.query(`ATTACH DATABASE '${path}' AS toMerge`);
+			await queryRunner.query("INSERT OR REPLACE INTO datas SELECT * FROM toMerge.datas");
+			await queryRunner.query("INSERT OR REPLACE INTO texts SELECT * FROM toMerge.texts");
+			await queryRunner.commitTransaction();
+			await queryRunner.query("DETACH toMerge");
+		} catch (error) {
+			await queryRunner.rollbackTransaction();
+			throw error;
+		} finally {
+			await queryRunner.release();
+		}
 	}
 
 	private async isLoaded(): Promise<boolean> {
