@@ -18,7 +18,7 @@ export class SyncRepositoriesController {
 
 	private async syncScripts(): Promise<void> {
 		const options: Partial<SimpleGitOptions> = {
-			baseDir: "core/scripts",
+			baseDir: "scripts/evolution",
 			binary: "git",
 			maxConcurrentProcesses: 1,
 			trimmed: false,
@@ -29,7 +29,7 @@ export class SyncRepositoriesController {
 
 	private async syncDatabase(): Promise<void> {
 		const options: Partial<SimpleGitOptions> = {
-			baseDir: "databases",
+			baseDir: "databases/evolution",
 			binary: "git",
 			maxConcurrentProcesses: 1,
 			trimmed: false,

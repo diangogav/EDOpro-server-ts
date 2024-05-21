@@ -17,7 +17,7 @@ async function start(): Promise<void> {
 	const hostServer = new HostServer(logger);
 	const database = new SQLiteTypeORM();
 	const banListLoader = new BanListLoader();
-	await banListLoader.loadDirectory("./banlists");
+	await banListLoader.loadDirectory("./banlists/evolution");
 	await BanListMemoryRepository.backup();
 	await database.connect();
 	await database.initialize();
