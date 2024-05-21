@@ -3,10 +3,10 @@
 #include <filesystem>
 namespace fs = std::filesystem;
 
-static constexpr const char *ATTACH_STMT =
-    R"(
-ATTACH ? AS toMerge;
-)";
+// static constexpr const char *ATTACH_STMT =
+//     R"(
+// ATTACH ? AS toMerge;
+// )";
 
 static constexpr const char *SEARCH_STMT =
     R"(
@@ -25,12 +25,12 @@ CardSqliteRepository::CardSqliteRepository()
 
   char *err = nullptr;
 
-  if (sqlite3_prepare_v2(db, ATTACH_STMT, -1, &attachQuery, nullptr) != SQLITE_OK)
-  {
-    std::string errStr(sqlite3_errmsg(db));
-    sqlite3_close(db);
-    throw std::runtime_error(errStr);
-  }
+  // if (sqlite3_prepare_v2(db, ATTACH_STMT, -1, &attachQuery, nullptr) != SQLITE_OK)
+  // {
+  //   std::string errStr(sqlite3_errmsg(db));
+  //   sqlite3_close(db);
+  //   throw std::runtime_error(errStr);
+  // }
 
   if (sqlite3_prepare_v2(db, SEARCH_STMT, -1, &findQuery, nullptr) != SQLITE_OK)
   {
