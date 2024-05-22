@@ -2,17 +2,23 @@ import { Request, Response } from "express";
 import { SimpleGit, simpleGit, SimpleGitOptions } from "simple-git";
 
 import { SQLiteTypeORM } from "../../modules/shared/db/postgres/infrastructure/SQLiteTypeORM";
+import { Logger } from "../../modules/shared/logger/domain/Logger";
 
 export class SyncRepositoriesController {
+	constructor(private readonly logger: Logger) {}
+
 	async run(_req: Request, response: Response): Promise<void> {
-		await this.syncDatabase();
-		await this.syncScripts();
+		this.logger.info("Init sync database and scripts");
 		response.status(200).json({});
+		await this.syncDatabase();
+		this.logger.info("Database updated.");
+		await this.syncScripts();
+		this.logger.info("Scripts updated.");
 	}
 
 	private async syncScripts(): Promise<void> {
 		const options: Partial<SimpleGitOptions> = {
-			baseDir: "core/scripts",
+			baseDir: "scripts/evolution",
 			binary: "git",
 			maxConcurrentProcesses: 1,
 			trimmed: false,
@@ -23,19 +29,17 @@ export class SyncRepositoriesController {
 
 	private async syncDatabase(): Promise<void> {
 		const options: Partial<SimpleGitOptions> = {
-			baseDir: "databases",
+			baseDir: "databases/evolution",
 			binary: "git",
 			maxConcurrentProcesses: 1,
 			trimmed: false,
 		};
 		const git: SimpleGit = simpleGit(options);
 		const localCommit = (await git.revparse(["HEAD"])).trim();
+		this.logger.info("Pulling databases");
 		await git.pull();
+		this.logger.info("Databases pull success");
 		const remoteCommit = (await git.revparse(["HEAD"])).trim();
-
-		if (localCommit === remoteCommit) {
-			return;
-		}
 
 		const diffSummary = await git.diff([
 			"--name-only",
@@ -43,9 +47,9 @@ export class SyncRepositoriesController {
 			`${localCommit}..${remoteCommit}`,
 		]);
 
-		const updatedFiles = diffSummary.split("\n").filter((item) => item !== "");
+		this.logger.info(`Databases difference: ${JSON.stringify(diffSummary)}`);
 
 		const database = new SQLiteTypeORM();
-		await database.load(updatedFiles);
+		await database.initialize();
 	}
 }

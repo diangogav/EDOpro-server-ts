@@ -1,5 +1,6 @@
 import EventEmitter from "events";
 
+import { MercuryBanListLoader } from "../../../../src/mercury/ban-list/infrastructure/MercuryBanListLoader";
 import { Mode } from "../../../../src/mercury/room/domain/host-info/Mode.enum";
 import { MercuryRoom } from "../../../../src/mercury/room/domain/MercuryRoom";
 import { Pino } from "../../../../src/modules/shared/logger/infrastructure/Pino";
@@ -175,5 +176,38 @@ describe("MercuryRoom", () => {
 	it("Should create a room with start hand count passed by params if start param is send", () => {
 		const room = MercuryRoom.create(id, "mr2,m,start10#123", logger, emitter);
 		expect(room.hostInfo.startHand).toBe(10);
+	});
+
+	it("Should create a single match room, allowing only TCG cards with the most recent TCG banlist (OCG cards are not allowed), sending rule 1 if command contains to", async () => {
+		await MercuryBanListLoader.load("mercury/lflist.conf");
+		const room = MercuryRoom.create(id, "to#123", logger, emitter);
+		expect(room.hostInfo.rule).toBe(1);
+		expect(room.hostInfo.lflist).toBe(1);
+	});
+
+	it("Should create a single match room, allowing only TCG cards with the most recent TCG banlist (OCG cards are not allowed), sending rule 1 if command contains to", async () => {
+		await MercuryBanListLoader.load("mercury/lflist.conf");
+		const room = MercuryRoom.create(id, "TCGONLY#123", logger, emitter);
+		expect(room.hostInfo.rule).toBe(1);
+		expect(room.hostInfo.lflist).toBe(1);
+	});
+
+	it("Should create a single match room, with the lflist selected minos 1 throw lf command", () => {
+		const room = MercuryRoom.create(id, "lf2#123", logger, emitter);
+		expect(room.hostInfo.lflist).toBe(1);
+	});
+
+	it("Should create a single match room, with the lflist selected minos 1 throw lflist command", () => {
+		const room = MercuryRoom.create(id, "lf10#123", logger, emitter);
+		expect(room.hostInfo.lflist).toBe(9);
+	});
+
+	it("Should create a single match room, with the lflist -1 if lf command is bad", () => {
+		const room1 = MercuryRoom.create(id, "lfbad#123", logger, emitter);
+		expect(room1.hostInfo.lflist).toBe(-1);
+		const room2 = MercuryRoom.create(id, "lf#123", logger, emitter);
+		expect(room2.hostInfo.lflist).toBe(-1);
+		const room3 = MercuryRoom.create(id, "lflist#123", logger, emitter);
+		expect(room3.hostInfo.lflist).toBe(-1);
 	});
 });
