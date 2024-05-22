@@ -9,7 +9,7 @@ import { dataSource } from "./data-source";
 
 export class SQLiteTypeORM implements Database {
 	private readonly dataSource: DataSource;
-	private readonly directoryPath = "./databases";
+	private readonly directoryPath = "./databases/evolution";
 
 	constructor() {
 		this.dataSource = dataSource;

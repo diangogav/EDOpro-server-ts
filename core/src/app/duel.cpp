@@ -60,7 +60,7 @@ void Duel::destroy()
 void Duel::load_scripts()
 {
   std::filesystem::path current_path = std::filesystem::current_path();
-  std::filesystem::path scripts_path = current_path / "core/scripts";
+  std::filesystem::path scripts_path = current_path / "scripts/evolution";
   const char *path = scripts_path.c_str();
 
   std::vector<char> constants_buffer = this->http.get("https://raw.githubusercontent.com/ProjectIgnis/CardScripts/master/constant.lua");

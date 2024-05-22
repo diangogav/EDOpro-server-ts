@@ -14,12 +14,12 @@ async function start(): Promise<void> {
 	const server = new Server(logger);
 	const mercuryServer = new MercuryServer(logger);
 	const hostServer = new HostServer(logger);
-	// const database = new SQLiteTypeORM();
-	// const banListLoader = new BanListLoader();
-	// await banListLoader.loadDirectory("./banlists");
-	// await BanListMemoryRepository.backup();
-	// await database.connect();
-	// await database.initialize();
+	const database = new SQLiteTypeORM();
+	const banListLoader = new BanListLoader();
+	await banListLoader.loadDirectory("./banlists/evolution");
+	await BanListMemoryRepository.backup();
+	await database.connect();
+	await database.initialize();
 	await server.initialize();
 	WebSocketSingleton.getInstance();
 	hostServer.initialize();

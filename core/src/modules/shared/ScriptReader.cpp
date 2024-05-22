@@ -16,7 +16,7 @@ int ScriptReader::read(void *duel, const char *name)
 {
   FileReader reader;
   std::filesystem::path currentPath = std::filesystem::current_path();
-  std::filesystem::path scriptsPath = currentPath / "core/scripts";
+  std::filesystem::path scriptsPath = currentPath / "scripts/evolution";
   const char* path = scriptsPath.c_str();
 
   std::vector<char> buffer = reader.read(path, name);

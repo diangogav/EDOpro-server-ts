@@ -1,6 +1,6 @@
 node_modules
 dist
-core/scripts
+scripts
 core/dependencies
 core/build
 core/Makefile
