@@ -1,3 +1,4 @@
+import MercuryBanListMemoryRepository from "../../ban-list/infrastructure/MercuryBanListMemoryRepository";
 import { HostInfo } from "./host-info/HostInfo";
 import { Mode } from "./host-info/Mode.enum";
 
@@ -202,6 +203,37 @@ export const priorityRuleMappings: RuleMappings = {
 		},
 		validate: (value) => {
 			const regex = /^(st|start)\d+$/;
+
+			return regex.test(value);
+		},
+	},
+	to: {
+		get: () => {
+			return {
+				rule: 1,
+				lflist: MercuryBanListMemoryRepository.getLastTCGIndex(),
+			};
+		},
+		validate: (value) => {
+			return value === "to" || value === "tcgonly";
+		},
+	},
+	lf: {
+		get: (value: string) => {
+			const lflist = extractNumberFromCommand(value);
+
+			if (lflist === null) {
+				return {
+					lflist: -1,
+				};
+			}
+
+			return {
+				lflist: lflist - 1,
+			};
+		},
+		validate: (value) => {
+			const regex = /^(lf|lflist)\d+$/;
 
 			return regex.test(value);
 		},
