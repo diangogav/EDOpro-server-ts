@@ -238,4 +238,14 @@ export const priorityRuleMappings: RuleMappings = {
 			return regex.test(value);
 		},
 	},
+	nf: {
+		get: () => {
+			return {
+				lflist: -1,
+			};
+		},
+		validate: (value) => {
+			return value === "nf" || value === "nolflist";
+		},
+	},
 };

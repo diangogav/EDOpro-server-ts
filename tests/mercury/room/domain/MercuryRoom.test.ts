@@ -210,4 +210,13 @@ describe("MercuryRoom", () => {
 		const room3 = MercuryRoom.create(id, "lflist#123", logger, emitter);
 		expect(room3.hostInfo.lflist).toBe(-1);
 	});
+
+	it("Should create a single match room, with the lflist -1 if lf command is nf or nolflist", () => {
+		const room1 = MercuryRoom.create(id, "NF#123", logger, emitter);
+		expect(room1.hostInfo.lflist).toBe(-1);
+		const room2 = MercuryRoom.create(id, "nf#123", logger, emitter);
+		expect(room2.hostInfo.lflist).toBe(-1);
+		const room3 = MercuryRoom.create(id, "nolflist#123", logger, emitter);
+		expect(room3.hostInfo.lflist).toBe(-1);
+	});
 });
