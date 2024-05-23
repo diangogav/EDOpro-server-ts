@@ -26,7 +26,7 @@ export class MercuryRoom extends YgoRoom {
 	readonly id: number;
 	readonly name: string;
 	readonly password: string;
-	private readonly _clients: MercuryClient[];
+	private _clients: MercuryClient[];
 	private _logger: Logger;
 	private _coreStarted = false;
 	private _corePort: number | null = null;
@@ -282,6 +282,14 @@ export class MercuryRoom extends YgoRoom {
 		this._clients.forEach((client) => {
 			client.destroy();
 		});
+	}
+
+	get clients(): MercuryClient[] {
+		return this._clients;
+	}
+
+	removePlayer(player: MercuryClient): void {
+		this._clients = this._clients.filter((item) => item.socket.id !== player.socket.id);
 	}
 
 	private generateSeeds(): string[] {

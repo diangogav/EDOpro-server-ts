@@ -70,6 +70,7 @@ export class MercuryClient {
 	destroy(): void {
 		this._socket.removeAllListeners();
 		this._socket.destroy();
+		this._coreClient.destroy();
 	}
 
 	private sendPendingMessages(): void {
@@ -79,5 +80,9 @@ export class MercuryClient {
 		});
 
 		this._pendingMessages = [];
+	}
+
+	get socket(): YGOClientSocket {
+		return this._socket;
 	}
 }
