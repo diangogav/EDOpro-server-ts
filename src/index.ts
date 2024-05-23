@@ -4,6 +4,7 @@ import "./modules/shared/error-handler/error-handler";
 import { Server } from "./http-server/Server";
 import { MercuryBanListLoader } from "./mercury/ban-list/infrastructure/MercuryBanListLoader";
 import { BanListLoader } from "./modules/ban-list/infrastructure/BanListLoader";
+import BanListMemoryRepository from "./modules/ban-list/infrastructure/BanListMemoryRepository";
 import { SQLiteTypeORM } from "./modules/shared/db/postgres/infrastructure/SQLiteTypeORM";
 import { Pino } from "./modules/shared/logger/infrastructure/Pino";
 import { HostServer } from "./socket-server/HostServer";
@@ -20,7 +21,7 @@ async function start(): Promise<void> {
 	const database = new SQLiteTypeORM();
 	const banListLoader = new BanListLoader();
 	await banListLoader.loadDirectory("./banlists/evolution");
-	// await BanListMemoryRepository.backup();
+	await BanListMemoryRepository.backup();
 	await MercuryBanListLoader.load("./mercury/lflist.conf");
 	await database.connect();
 	await database.initialize();
