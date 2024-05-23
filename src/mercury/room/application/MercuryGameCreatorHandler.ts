@@ -19,6 +19,6 @@ export class MercuryGameCreatorHandler implements GameCreatorMessageHandler {
 
 	// eslint-disable-next-line @typescript-eslint/require-await
 	async handle(message: ClientMessage): Promise<void> {
-		this.logger.info(`Game Creator Message: ${message.data.toString("hex")}`);
+		this.logger.debug(`Game Creator Message: ${message.data.toString("hex")}`);
 	}
 }

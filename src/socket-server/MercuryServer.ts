@@ -42,7 +42,7 @@ export class MercuryServer {
 			);
 			ygoClientSocket.id = uuidv4();
 			socket.on("data", (data: Buffer) => {
-				this.logger.info(`Incoming message handle by Mercury Server: ${data.toString("hex")}`);
+				this.logger.debug(`Incoming message handle by Mercury Server: ${data.toString("hex")}`);
 				messageEmitter.handleMessage(data);
 			});
 

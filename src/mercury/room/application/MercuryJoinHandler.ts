@@ -29,10 +29,10 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 	}
 
 	handle(message: ClientMessage): void {
-		this.logger.info(`Join Message: ${message.data.toString("hex")}`);
+		this.logger.debug(`Join Message: ${message.data.toString("hex")}`);
 
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
-		this.logger.info(`name: ${playerInfoMessage.name}`);
+		this.logger.debug(`name: ${playerInfoMessage.name}`);
 		const joinMessage = new MercuryJoinGameMessage(message.data);
 		this.logger.info(`version: ${joinMessage.version}`);
 

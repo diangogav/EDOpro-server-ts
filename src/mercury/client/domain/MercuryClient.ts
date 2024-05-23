@@ -40,7 +40,7 @@ export class MercuryClient {
 		this._mercuryRoomMessageEmitter = new MercuryCoreMessageEmitter(this, room);
 
 		this._coreClient.on("data", (data: Buffer) => {
-			this._logger.info(`Data incoming from mercury core ${data.toString("hex")}`);
+			this._logger.debug(`Data incoming from mercury core ${data.toString("hex")}`);
 			this._mercuryRoomMessageEmitter.handleMessage(data);
 		});
 
@@ -75,7 +75,7 @@ export class MercuryClient {
 
 	private sendPendingMessages(): void {
 		this._pendingMessages.forEach((message) => {
-			this._logger.info(`Message: ${message.toString("hex")}`);
+			this._logger.debug(`Message: ${message.toString("hex")}`);
 			this._coreClient.write(message);
 		});
 

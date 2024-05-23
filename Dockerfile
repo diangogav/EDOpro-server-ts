@@ -44,7 +44,7 @@ RUN npm run build
 FROM public.ecr.aws/docker/library/node:18-slim
 
 # Install curl:Necessary for local health checks
-RUN apt-get update && apt-get install -y curl git
+RUN apt-get update && apt-get install -y curl git && apt-get install -y liblua5.3-dev libsqlite3-dev libevent-dev
 
 WORKDIR /app
 
@@ -53,6 +53,7 @@ COPY certs ./certs
 COPY --from=server-builder /server/dist ./
 COPY --from=server-builder /server/package.json ./package.json
 COPY --from=server-builder /server/node_modules ./node_modules
+COPY --from=server-builder /server/mercury ./mercury
 COPY --from=core-integrator-builder /app/libocgcore.so ./core/libocgcore.so
 COPY --from=core-integrator-builder /app/CoreIntegrator ./core/CoreIntegrator
 COPY --from=core-integrator-builder /repositories/scripts ./scripts/evolution/

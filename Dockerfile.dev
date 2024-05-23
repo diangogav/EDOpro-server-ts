@@ -30,7 +30,9 @@ RUN conan install . --build missing --output-folder=./dependencies --options=lib
     ./premake5 gmake && \
     make config=release
 
-FROM public.ecr.aws/docker/library/node:18
+FROM public.ecr.aws/docker/library/node:20
+
+RUN apt-get update &&  apt-get install -y liblua5.3-dev
 
 WORKDIR /app
 

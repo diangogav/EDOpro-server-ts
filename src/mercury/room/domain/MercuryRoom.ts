@@ -250,7 +250,7 @@ export class MercuryRoom extends YgoRoom {
 			needpass: true,
 			team1: 1,
 			team2: 1,
-			best_of: 3,
+			best_of: this.calculateBestOf(),
 			duel_flag: 0,
 			forbidden_types: 0,
 			extra_rules: 0,
@@ -298,5 +298,13 @@ export class MercuryRoom extends YgoRoom {
 		const randomSeed3 = crypto.randomBytes(8).readBigUInt64LE().toString();
 
 		return [randomSeed1, randomSeed2, randomSeed3];
+	}
+
+	private calculateBestOf(): number {
+		if (this._hostInfo.mode === Mode.MATCH) {
+			return 3;
+		}
+
+		return 1;
 	}
 }
