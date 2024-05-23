@@ -105,6 +105,8 @@ export class DisconnectHandler {
 		const player = room.clients.find((client) => client.socket.id === this.socket.id);
 
 		if (!(player instanceof MercuryClient)) {
+			this.removeMercurySpectator(room);
+
 			return;
 		}
 
@@ -131,5 +133,15 @@ export class DisconnectHandler {
 		room.spectators.forEach((_client) => {
 			_client.sendMessage(message);
 		});
+	}
+
+	private removeMercurySpectator(room: MercuryRoom): void {
+		const spectator = room.spectators.find((client) => client.socket.id === this.socket.id);
+
+		if (!spectator) {
+			return;
+		}
+
+		room.removeSpectator(spectator);
 	}
 }
