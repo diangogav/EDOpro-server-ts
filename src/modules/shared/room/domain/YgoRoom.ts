@@ -3,6 +3,7 @@ import { EventEmitter } from "stream";
 import { MercuryClient } from "../../../../mercury/client/domain/MercuryClient";
 import { YGOClientSocket } from "../../../../socket-server/HostServer";
 import { Client } from "../../../client/domain/Client";
+import { YgoClient } from "../../client/domain/YgoClient";
 
 export enum DuelState {
 	WAITING = "waiting",
@@ -16,6 +17,7 @@ export abstract class YgoRoom {
 	protected emitter: EventEmitter;
 	protected _state: DuelState;
 	protected _spectatorCache: Buffer[] = [];
+	protected _clients: YgoClient[] = [];
 
 	emit(event: string, message: unknown, socket: YGOClientSocket): void {
 		this.emitter.emit(event, message, this, socket);
@@ -35,5 +37,13 @@ export abstract class YgoRoom {
 
 	clearSpectatorCache(): void {
 		this._spectatorCache = [];
+	}
+
+	removePlayer(player: YgoClient): void {
+		this._clients = this._clients.filter((item) => item.socket.id !== player.socket.id);
+	}
+
+	get clients(): YgoClient[] {
+		return this._clients;
 	}
 }

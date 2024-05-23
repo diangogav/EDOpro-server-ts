@@ -1,5 +1,8 @@
+import { MercuryClient } from "../../../mercury/client/domain/MercuryClient";
+import { MercuryRoom } from "../../../mercury/room/domain/MercuryRoom";
 import { YGOClientSocket } from "../../../socket-server/HostServer";
 import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
+import { Client } from "../../client/domain/Client";
 import { PlayerChangeClientMessage } from "../../messages/server-to-client/PlayerChangeClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { WatchChangeClientMessage } from "../../messages/server-to-client/WatchChangeClientMessage";
@@ -21,6 +24,19 @@ export class DisconnectHandler {
 			return;
 		}
 
+		if (room instanceof Room) {
+			this.handle(room, address);
+
+			return;
+		}
+		if (room instanceof MercuryRoom) {
+			this.handleMercury(room);
+
+			return;
+		}
+	}
+
+	private handle(room: Room, address?: string): void {
 		if (room.clients.every((client) => client.socket.closed)) {
 			RoomList.deleteRoom(room);
 			WebSocketSingleton.getInstance().broadcast({
@@ -33,7 +49,7 @@ export class DisconnectHandler {
 
 		const player = room.clients.find((client) => client.socket.id === this.socket.id);
 
-		if (!player) {
+		if (!(player instanceof Client)) {
 			this.removeSpectator(room);
 
 			return;
@@ -55,7 +71,7 @@ export class DisconnectHandler {
 			const status = (player.position << 4) | 0xb;
 			const message = PlayerChangeClientMessage.create({ status });
 
-			room.clients.forEach((client) => {
+			room.clients.forEach((client: Client) => {
 				client.sendMessage(message);
 			});
 
@@ -67,7 +83,7 @@ export class DisconnectHandler {
 		}
 
 		if (address) {
-			room.clients.forEach((client) => {
+			room.clients.forEach((client: Client) => {
 				client.sendMessage(
 					ServerMessageClientMessage.create(
 						`${player.name.replace(/\0/g, "").trim()} ha salido del duelo`
@@ -85,6 +101,17 @@ export class DisconnectHandler {
 		}
 	}
 
+	private handleMercury(room: MercuryRoom): void {
+		const player = room.clients.find((client) => client.socket.id === this.socket.id);
+
+		if (!(player instanceof MercuryClient)) {
+			return;
+		}
+
+		player.destroy();
+		room.removePlayer(player);
+	}
+
 	private removeSpectator(room: Room): void {
 		const spectator = room.spectators.find((client) => client.socket.id === this.socket.id);
 		if (!spectator) {
@@ -97,7 +124,7 @@ export class DisconnectHandler {
 			count: room.spectators.length,
 		});
 
-		room.clients.forEach((_client) => {
+		room.clients.forEach((_client: Client) => {
 			_client.sendMessage(message);
 		});
 

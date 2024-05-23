@@ -48,7 +48,7 @@ export class ChossingOrderState extends RoomState {
 		this.logger.debug("CHOSSING_ORDER");
 
 		const turn = message.data.readInt8();
-		const team = room.clients.find((client) => client === player)?.team;
+		const team = (<Client | undefined>room.clients.find((client) => client === player))?.team;
 
 		if ((team === 0 && turn === 0) || (team === 1 && turn === 1)) {
 			room.setFirstToPlay(1);

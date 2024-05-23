@@ -1,4 +1,5 @@
 import { YGOClientSocket } from "../../../socket-server/HostServer";
+import { Client } from "../../client/domain/Client";
 import { JoinGameMessage } from "../../messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
 import { CatchUpClientMessage } from "../../messages/server-to-client/CatchUpClientMessage";
@@ -39,11 +40,11 @@ export class JoinToDuelAsSpectator {
 		socket.write(CatchUpClientMessage.create({ catchingUp: false }));
 
 		const team0 = room.clients
-			.filter((player) => player.team === 0)
+			.filter((player: Client) => player.team === 0)
 			.map((item) => item.name.replace(/\0/g, "").trim());
 
 		const team1 = room.clients
-			.filter((player) => player.team === 1)
+			.filter((player: Client) => player.team === 1)
 			.map((item) => item.name.replace(/\0/g, "").trim());
 
 		socket.write(
@@ -57,7 +58,7 @@ export class JoinToDuelAsSpectator {
 			)
 		);
 
-		[...room.clients, ...room.spectators].forEach((_client) => {
+		[...room.clients, ...room.spectators].forEach((_client: Client) => {
 			_client.sendMessage(
 				ServerMessageClientMessage.create(`${client.name} ha ingresado como espectador`)
 			);

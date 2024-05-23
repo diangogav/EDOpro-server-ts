@@ -123,7 +123,7 @@ export class SideDeckingState extends RoomState {
 	private startDuel(room: Room): void {
 		this.logger.debug("SIDEDECKING: START_DUEL");
 
-		const allClientsNotReady = room.clients.some((client) => !client.isReady);
+		const allClientsNotReady = room.clients.some((client: Client) => !client.isReady);
 		if (allClientsNotReady) {
 			return;
 		}

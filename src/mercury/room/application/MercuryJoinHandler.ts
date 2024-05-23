@@ -46,7 +46,15 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 		const room = this.createRoomIfNotExists(joinMessage.pass);
 
 		if (room.duelState === DuelState.DUELING) {
-			room.addSpectator(this.socket);
+			const spectator = new MercuryClient({
+				socket: this.socket,
+				logger: this.logger,
+				messages: [],
+				name: playerInfoMessage.name,
+				position: room.playersCount,
+				room,
+			});
+			room.addSpectator(spectator);
 
 			return;
 		}

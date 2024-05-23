@@ -143,7 +143,6 @@ export class Room extends YgoRoom {
 	public readonly ranked: boolean;
 	private _replay: Replay;
 	private isStart: string;
-	private _clients: Client[] = [];
 	private _spectators: Client[] = [];
 	private readonly _kick: Client[] = [];
 	private _duel?: ChildProcessWithoutNullStreams;
@@ -339,7 +338,7 @@ export class Room extends YgoRoom {
 	}
 
 	initializeHistoricalData(): void {
-		const players = this.clients.map((client) => ({
+		const players = this.clients.map((client: Client) => ({
 			team: client.team,
 			name: client.name,
 			ranks: client.ranks,
@@ -418,7 +417,7 @@ export class Room extends YgoRoom {
 
 	setDecksToPlayer(position: number, deck: Deck): void {
 		const client = this._clients.find((client) => client.position === position);
-		if (!client) {
+		if (!client || !(client instanceof Client)) {
 			return;
 		}
 
@@ -508,17 +507,9 @@ export class Room extends YgoRoom {
 		return this._clientWhoChoosesTurn;
 	}
 
-	removePlayer(player: Client): void {
-		this._clients = this._clients.filter((item) => item.socket.id !== player.socket.id);
-	}
-
 	removeSpectator(spectator: Client): void {
 		const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
 		this._spectators = filtered;
-	}
-
-	get clients(): Client[] {
-		return this._clients;
 	}
 
 	cacheTeamMessage(team: number, message: Buffer): void {
@@ -529,8 +520,8 @@ export class Room extends YgoRoom {
 		}
 
 		if (message[2] === 0x01) {
-			const players = this.clients.filter((client) => client.team === team);
-			players.forEach((player) => {
+			const players = this.clients.filter((client: Client) => client.team === team);
+			players.forEach((player: Client) => {
 				player.setLastMessage(message);
 			});
 		}
@@ -619,7 +610,7 @@ export class Room extends YgoRoom {
 
 	calculaPlace(): { position: number; team: number } | null {
 		const team0 = this.clients
-			.filter((client) => client.team === 0)
+			.filter((client: Client) => client.team === 0)
 			.map((client) => client.position);
 
 		const availableTeam0Positions = this.getDifference(this.t0Positions, team0);
@@ -632,7 +623,7 @@ export class Room extends YgoRoom {
 		}
 
 		const team1 = this.clients
-			.filter((client) => client.team === 1)
+			.filter((client: Client) => client.team === 1)
 			.map((client) => client.position);
 
 		const availableTeam1Positions = this.getDifference(this.t1Positions, team1);
@@ -648,49 +639,49 @@ export class Room extends YgoRoom {
 	}
 
 	prepareTurnOrder(): void {
-		const team0Players = this.clients.filter((player) => player.team === 0);
-		const team1Players = this.clients.filter((player) => player.team === 1);
+		const team0Players = this.clients.filter((player: Client) => player.team === 0);
+		const team1Players = this.clients.filter((player: Client) => player.team === 1);
 
 		if (this.firstToPlay === 0) {
-			team0Players.forEach((item) => {
+			team0Players.forEach((item: Client) => {
 				item.setDuelPosition(item.position % this.team0);
 				item.clearTurn();
 			});
 
-			team1Players.forEach((item) => {
+			team1Players.forEach((item: Client) => {
 				item.setDuelPosition((item.position + 1) % this.team1);
 				item.clearTurn();
 			});
 		} else {
-			team0Players.forEach((item) => {
+			team0Players.forEach((item: Client) => {
 				item.setDuelPosition((item.position + 1) % this.team0);
 				item.clearTurn();
 			});
 
-			team1Players.forEach((item) => {
+			team1Players.forEach((item: Client) => {
 				item.setDuelPosition(item.position % this.team1);
 				item.clearTurn();
 			});
 		}
 
-		const team0Player = team0Players.find((player) => player.duelPosition === 0);
-		team0Player?.turn();
+		const team0Player = team0Players.find((player: Client) => player.duelPosition === 0);
+		(<Client | undefined>team0Player)?.turn();
 
-		const team1Player = team1Players.find((player) => player.duelPosition === 0);
-		team1Player?.turn();
+		const team1Player = team1Players.find((player: Client) => player.duelPosition === 0);
+		(<Client | undefined>team1Player)?.turn();
 	}
 
 	nextTurn(team: number): void {
-		const player = this.clients.find((player) => player.inTurn && player.team === team);
-		if (!player) {
+		const player = this.clients.find((player: Client) => player.inTurn && player.team === team);
+		if (!player || !(player instanceof Client)) {
 			return;
 		}
 		const teamCount = team === 0 ? this.team0 : this.team1;
 		const duelPLayerPositionTurn = (player.duelPosition + 1) % teamCount;
 		const nextPlayer = this.clients.find(
-			(player) => player.duelPosition === duelPLayerPositionTurn && player.team === team
+			(player: Client) => player.duelPosition === duelPLayerPositionTurn && player.team === team
 		);
-		if (!nextPlayer) {
+		if (!nextPlayer || !(nextPlayer instanceof Client)) {
 			return;
 		}
 		player.clearTurn();
@@ -731,8 +722,8 @@ export class Room extends YgoRoom {
 
 	playerNames(team: number): string {
 		return this.clients
-			.filter((player) => player.team === team)
-			.map((item) => `${item.name} ${item.socket.remoteAddress ?? ""}`)
+			.filter((player: Client) => player.team === team)
+			.map((item: Client) => `${item.name} ${item.socket.remoteAddress ?? ""}`)
 			.join(",");
 	}
 
@@ -851,7 +842,7 @@ export class Room extends YgoRoom {
 			banlist: {
 				name: this.currentDuel?.banlistName,
 			},
-			players: this.clients.map((client) => ({
+			players: this.clients.map((client: Client) => ({
 				position: client.position,
 				username: client.name,
 				lps: this.currentDuel?.lps[client.team],
@@ -876,7 +867,7 @@ export class Room extends YgoRoom {
 				})
 			);
 		}
-		this._clients.forEach((client) => {
+		this._clients.forEach((client: Client) => {
 			client.socket.removeAllListeners();
 			client.socket.destroy();
 		});

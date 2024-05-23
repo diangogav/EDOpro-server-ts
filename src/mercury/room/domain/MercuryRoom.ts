@@ -6,7 +6,6 @@ import { EventEmitter } from "stream";
 import { RoomState } from "../../../modules/room/domain/RoomState";
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
 import { DuelState, YgoRoom } from "../../../modules/shared/room/domain/YgoRoom";
-import { YGOClientSocket } from "../../../socket-server/HostServer";
 import { MercuryClient } from "../../client/domain/MercuryClient";
 import {
 	MercuryJointGameToCoreMessage,
@@ -26,13 +25,12 @@ export class MercuryRoom extends YgoRoom {
 	readonly id: number;
 	readonly name: string;
 	readonly password: string;
-	private _clients: MercuryClient[];
 	private _logger: Logger;
 	private _coreStarted = false;
 	private _corePort: number | null = null;
 	private readonly _hostInfo: HostInfo;
 	private roomState: RoomState | null = null;
-	private readonly _spectators: YGOClientSocket[] = [];
+	private readonly _spectators: MercuryClient[] = [];
 
 	private constructor({
 		id,
@@ -122,10 +120,10 @@ export class MercuryRoom extends YgoRoom {
 		}
 	}
 
-	addSpectator(socket: YGOClientSocket): void {
-		this._spectators.push(socket);
+	addSpectator(spectator: MercuryClient): void {
+		this._spectators.push(spectator);
 		this.spectatorCache.forEach((message) => {
-			socket.write(message);
+			spectator.socket.write(message);
 		});
 	}
 
@@ -173,7 +171,7 @@ export class MercuryRoom extends YgoRoom {
 			this._logger.debug(`Started Mercury Core at port: ${data.toString()}`);
 			this._coreStarted = true;
 			this._corePort = +data.toString();
-			this._clients.forEach((client) => {
+			this._clients.forEach((client: MercuryClient) => {
 				client.connectToCore({
 					url: "127.0.0.1",
 					port: +data.toString(),
@@ -191,7 +189,7 @@ export class MercuryRoom extends YgoRoom {
 				this._logger.debug(`Incoming data for expectators: ${data.toString("hex")}`);
 				this.spectatorCache.push(data);
 				this._spectators.forEach((spectator) => {
-					spectator.write(data);
+					spectator.socket.write(data);
 				});
 			});
 
@@ -279,17 +277,13 @@ export class MercuryRoom extends YgoRoom {
 	destroy(): void {
 		this.emitter.removeAllListeners();
 		this.roomState?.removeAllListener();
-		this._clients.forEach((client) => {
+		this._clients.forEach((client: MercuryClient) => {
 			client.destroy();
 		});
 	}
 
-	get clients(): MercuryClient[] {
-		return this._clients;
-	}
-
-	removePlayer(player: MercuryClient): void {
-		this._clients = this._clients.filter((item) => item.socket.id !== player.socket.id);
+	get spectators(): MercuryClient[] {
+		return this._spectators;
 	}
 
 	private generateSeeds(): string[] {

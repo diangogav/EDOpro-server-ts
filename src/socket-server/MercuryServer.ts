@@ -4,19 +4,21 @@ import { EventEmitter } from "stream";
 
 import { MercuryGameCreatorHandler } from "../mercury/room/application/MercuryGameCreatorHandler";
 import { MercuryJoinHandler } from "../mercury/room/application/MercuryJoinHandler";
-import { MercuryRoom } from "../mercury/room/domain/MercuryRoom";
-import MercuryRoomList from "../mercury/room/infrastructure/MercuryRoomList";
 import { MessageEmitter } from "../modules/MessageEmitter";
+import { DisconnectHandler } from "../modules/room/application/DisconnectHandler";
+import { RoomFinder } from "../modules/room/application/RoomFinder";
 import { Logger } from "../modules/shared/logger/domain/Logger";
 import { YGOClientSocket } from "./HostServer";
 
 export class MercuryServer {
 	private readonly server: net.Server;
 	private readonly logger: Logger;
+	private readonly roomFinder: RoomFinder;
 	private address?: string;
 
 	constructor(logger: Logger) {
 		this.logger = logger;
+		this.roomFinder = new RoomFinder();
 		this.server = net.createServer({ keepAlive: true });
 	}
 
@@ -49,38 +51,22 @@ export class MercuryServer {
 			socket.on("end", () => {
 				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 				this.logger.info(`${socket.remoteAddress} left in end event`);
-				const rooms = MercuryRoomList.getRooms();
-				let room: MercuryRoom | null = null;
-				for (const item of rooms) {
-					const found = item.clients.find((client) => client.socket.id === ygoClientSocket.id);
-					if (found) {
-						room = item;
-						break;
-					}
-				}
-
-				if (!room) {
-					return;
-				}
-
-				const player = room.clients.find((client) => client.socket.id === ygoClientSocket.id);
-
-				if (!player) {
-					return;
-				}
-
-				player.destroy();
-				room.removePlayer(player);
+				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
+				disconnectHandler.run(this.address);
 			});
 
 			socket.on("close", () => {
 				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 				this.logger.info(`${socket.remoteAddress} left in close event`);
+				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
+				disconnectHandler.run(this.address);
 			});
 
 			socket.on("error", (_error) => {
 				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 				this.logger.info(`${socket.remoteAddress} left in error event`);
+				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
+				disconnectHandler.run(this.address);
 			});
 		});
 	}

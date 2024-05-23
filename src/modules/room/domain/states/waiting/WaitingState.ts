@@ -93,7 +93,7 @@ export class WaitingState extends RoomState {
 		const positionkick = message.data.readInt8();
 		const playerselect = room.clients.find((_client) => _client.position === positionkick);
 
-		if (!playerselect) {
+		if (!(playerselect instanceof Client)) {
 			return;
 		}
 
@@ -104,7 +104,7 @@ export class WaitingState extends RoomState {
 		this.handleChangeToObserver(message, room, playerselect);
 		room.addKick(playerselect);
 
-		room.clients.forEach((_client) => {
+		room.clients.forEach((_client: Client) => {
 			_client.sendMessage(
 				ServerErrorClientMessage.create(
 					`El Jugador:${playerselect.name} ha sido Baneado de esta Sala, solo podra ingresar como espectador!!`
@@ -130,7 +130,7 @@ export class WaitingState extends RoomState {
 	private tryStartHandler(_message: ClientMessage, room: Room, _player: Client): void {
 		this.logger.debug("WAITING: TRY_START");
 		const duelStartMessage = DuelStartClientMessage.create();
-		room.clients.forEach((client) => {
+		room.clients.forEach((client: Client) => {
 			client.sendMessage(duelStartMessage);
 		});
 
@@ -139,15 +139,15 @@ export class WaitingState extends RoomState {
 		});
 
 		const t0Client = room.clients
-			.filter((_client) => _client.team === 0)
+			.filter((_client: Client) => _client.team === 0)
 			.sort((a, b) => a.position - b.position)[0];
 		const t1Client = room.clients
-			.filter((_client) => _client.team === 1)
+			.filter((_client: Client) => _client.team === 1)
 			.sort((a, b) => a.position - b.position)[0];
 
 		const rpsChooseMessage = RPSChooseClientMessage.create();
-		t0Client.sendMessage(rpsChooseMessage);
-		t1Client.sendMessage(rpsChooseMessage);
+		(t0Client as Client).sendMessage(rpsChooseMessage);
+		(t1Client as Client).sendMessage(rpsChooseMessage);
 
 		room.initializeHistoricalData();
 		room.rps();
@@ -166,7 +166,7 @@ export class WaitingState extends RoomState {
 		const status = (player.position << 4) | 0x09;
 		const message = PlayerChangeClientMessage.create({ status });
 
-		[...room.spectators, ...room.clients].forEach((client) => {
+		[...room.spectators, ...room.clients].forEach((client: Client) => {
 			client.sendMessage(message);
 		});
 
@@ -186,7 +186,7 @@ export class WaitingState extends RoomState {
 
 			room.spectators.push(player);
 
-			room.clients.forEach((_client) => {
+			room.clients.forEach((_client: Client) => {
 				const status = (player.position << 4) | PlayerRoomState.SPECTATE;
 
 				_client.sendMessage(PlayerChangeClientMessage.create({ status }));
@@ -209,7 +209,7 @@ export class WaitingState extends RoomState {
 				count: spectatorsCount,
 			});
 
-			room.clients.forEach((_client) => {
+			room.clients.forEach((_client: Client) => {
 				_client.sendMessage(watchMessage);
 			});
 
@@ -277,7 +277,7 @@ export class WaitingState extends RoomState {
 
 		const status = (player.position << 4) | 0x0a;
 		const playerChangeMessage = PlayerChangeClientMessage.create({ status });
-		[...room.spectators, ...room.clients].forEach((client) => {
+		[...room.spectators, ...room.clients].forEach((client: Client) => {
 			client.sendMessage(playerChangeMessage);
 		});
 
@@ -343,7 +343,9 @@ export class WaitingState extends RoomState {
 
 		room.clients.forEach((_client) => {
 			if (_client.socket.id !== client.socket.id) {
-				const status = room.clients.find((item) => item.position === _client.position)?.isReady
+				const status = (<Client | undefined>(
+					room.clients.find((item: Client) => item.position === _client.position)
+				))?.isReady
 					? (_client.position << 4) | PlayerRoomState.READY
 					: (_client.position << 4) | PlayerRoomState.NOT_READY;
 
@@ -358,7 +360,7 @@ export class WaitingState extends RoomState {
 			count: spectatorsCount,
 		});
 
-		room.clients.forEach((_client) => {
+		room.clients.forEach((_client: Client) => {
 			_client.sendMessage(watchMessage);
 		});
 
@@ -378,7 +380,7 @@ export class WaitingState extends RoomState {
 		room: Room,
 		ranks: Rank[]
 	): void {
-		const host = room.clients.some((client) => client.host);
+		const host = room.clients.some((client: Client) => client.host);
 
 		const client = new Client({
 			socket,
@@ -423,7 +425,7 @@ export class WaitingState extends RoomState {
 		client: Client
 	): void {
 		socket.write(JoinGameClientMessage.createFromRoom(message, room));
-		room.clients.forEach((_client) => {
+		room.clients.forEach((_client: Client) => {
 			_client.sendMessage(PlayerEnterClientMessage.create(playerInfoMessage.name, client.position));
 		});
 
@@ -434,11 +436,11 @@ export class WaitingState extends RoomState {
 
 	private sendNotReadyMessage(client: Client, room: Room): void {
 		const notReady = (client.position << 4) | PlayerRoomState.NOT_READY;
-		room.clients.forEach((_client) => {
+		room.clients.forEach((_client: Client) => {
 			_client.sendMessage(PlayerChangeClientMessage.create({ status: notReady }));
 		});
 
-		room.spectators.forEach((_client) => {
+		room.spectators.forEach((_client: Client) => {
 			_client.sendMessage(PlayerChangeClientMessage.create({ status: notReady }));
 		});
 	}
@@ -451,7 +453,9 @@ export class WaitingState extends RoomState {
 	private notify(client: Client, room: Room, socket: YGOClientSocket): void {
 		room.clients.forEach((_client) => {
 			if (_client.socket.id !== client.socket.id) {
-				const status = room.clients.find((item) => item.position === _client.position)?.isReady
+				const status = (<Client | undefined>(
+					room.clients.find((item) => item.position === _client.position)
+				))?.isReady
 					? (_client.position << 4) | PlayerRoomState.READY
 					: (_client.position << 4) | PlayerRoomState.NOT_READY;
 

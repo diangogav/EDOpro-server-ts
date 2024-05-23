@@ -1,4 +1,5 @@
 import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
+import { Client } from "../../client/domain/Client";
 import { DuelEndMessage } from "../../messages/server-to-client/game-messages/DuelEndMessage";
 import { SideDeckClientMessage } from "../../messages/server-to-client/game-messages/SideDeckClientMessage";
 import { SideDeckWaitClientMessage } from "../../messages/server-to-client/game-messages/SideDeckWaitClientMessage";
@@ -36,7 +37,7 @@ export class FinishDuelHandler {
 		this.room.stopTimer(1);
 
 		const scoreTitleMessage = ServerMessageClientMessage.create(this.room.score);
-		this.room.clients.forEach((player) => {
+		this.room.clients.forEach((player: Client) => {
 			player.sendMessage(scoreTitleMessage);
 		});
 
@@ -53,7 +54,7 @@ export class FinishDuelHandler {
 
 		this.room.replay.addMessage(winMessage.subarray(3));
 
-		this.room.replay.addPlayers(this.room.clients);
+		this.room.replay.addPlayers(this.room.clients as Client[]);
 
 		const replayData = await this.room.replay.serialize();
 		this.room.resetReplay();
@@ -61,7 +62,7 @@ export class FinishDuelHandler {
 		const replayMessage = ReplayBufferMessage.create(replayData);
 
 		if (this.reason === DuelFinishReason.SURRENDERED) {
-			this.room.clients.forEach((item) => {
+			this.room.clients.forEach((item: Client) => {
 				item.sendMessage(winMessage);
 			});
 			this.room.spectators.forEach((item) => {
@@ -69,7 +70,7 @@ export class FinishDuelHandler {
 			});
 		}
 
-		this.room.clients.forEach((item) => {
+		this.room.clients.forEach((item: Client) => {
 			item.sendMessage(replayMessage);
 		});
 
@@ -77,7 +78,7 @@ export class FinishDuelHandler {
 			item.sendMessage(replayMessage);
 		});
 
-		this.room.clients.forEach((item) => {
+		this.room.clients.forEach((item: Client) => {
 			item.sendMessage(replayPromptMessage);
 		});
 
@@ -86,7 +87,7 @@ export class FinishDuelHandler {
 		});
 
 		if (this.room.isMatchFinished()) {
-			this.room.clients.forEach((player) => {
+			this.room.clients.forEach((player: Client) => {
 				player.sendMessage(DuelEndMessage.create());
 			});
 
@@ -123,21 +124,21 @@ export class FinishDuelHandler {
 
 		if (this.winner === 0) {
 			const looser = this.room.clients.find(
-				(_client) => _client.position % this.room.team1 === 0 && _client.team === 1
+				(_client: Client) => _client.position % this.room.team1 === 0 && _client.team === 1
 			);
-			if (looser) {
+			if (looser && looser instanceof Client) {
 				this.room.setClientWhoChoosesTurn(looser);
 			}
 		} else {
 			const looser = this.room.clients.find(
-				(_client) => _client.position % this.room.team0 === 0 && _client.team === 0
+				(_client: Client) => _client.position % this.room.team0 === 0 && _client.team === 0
 			);
-			if (looser) {
+			if (looser && looser instanceof Client) {
 				this.room.setClientWhoChoosesTurn(looser);
 			}
 		}
 
-		this.room.clients.forEach((client) => {
+		this.room.clients.forEach((client: Client) => {
 			client.sendMessage(message);
 			client.notReady();
 		});

@@ -4,20 +4,18 @@ import { ClientMessage, MessageProcessor } from "../../messages/MessageProcessor
 import { Choose } from "../../rock-paper-scissor/RockPaperScissor";
 import { Room } from "../../room/domain/Room";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
+import { YgoClient } from "../../shared/client/domain/YgoClient";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { Rank } from "../../shared/value-objects/Rank";
 
 export class Listener {}
 
-export class Client {
+export class Client extends YgoClient {
 	public readonly listener: Listener;
 	public readonly host: boolean;
-	public readonly name: string;
 	public readonly roomId: number;
 	public readonly ranks: Rank[];
 	private _team: number;
-	private _position: number;
-	private _socket: YGOClientSocket;
 	private _isReady: boolean;
 	private _rpsChosen: Choose | null = null;
 	private _lastMessage: Buffer | null = null;
@@ -52,10 +50,8 @@ export class Client {
 		logger: Logger;
 		ranks: Rank[];
 	}) {
-		this._socket = socket;
+		super({ name, position, socket });
 		this.host = host;
-		this.name = name;
-		this._position = position;
 		this.roomId = roomId;
 		this._isReady = isReady;
 		this._team = team;
@@ -157,10 +153,6 @@ export class Client {
 	spectatorPosition(position: number): void {
 		this._position = position;
 		this._team = 3;
-	}
-
-	get position(): number {
-		return this._position;
 	}
 
 	playerPosition(position: number, team: number): void {

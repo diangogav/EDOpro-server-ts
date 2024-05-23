@@ -210,7 +210,7 @@ export class DuelingState extends RoomState {
 		});
 		this.room.prepareTurnOrder();
 
-		const players = this.room.clients.map((item) => ({
+		const players = this.room.clients.map((item: Client) => ({
 			team: item.team,
 			mainDeck: item.deck.main.map((card) => Number(card.code)),
 			sideDeck: item.deck.side.map((card) => Number(card.code)),
@@ -426,16 +426,17 @@ export class DuelingState extends RoomState {
 
 		const player = this.room.clients.find((player) => player.position === position);
 
-		if (!player) {
+		if (!(player instanceof Client)) {
 			return;
 		}
+
 		if (!player.cache) {
 			return;
 		}
 		player.sendMessage(player.cache);
 		player.clearReconnecting();
 
-		this.room.clients.forEach((client) => {
+		this.room.clients.forEach((client: Client) => {
 			client.sendMessage(ServerMessageClientMessage.create(`${player.name} ha ingresado al duelo`));
 		});
 
@@ -452,7 +453,7 @@ export class DuelingState extends RoomState {
 
 		const player = this.room.clients.find((player) => player.position === message.position);
 
-		if (!player) {
+		if (!(player instanceof Client)) {
 			return;
 		}
 
@@ -519,7 +520,7 @@ export class DuelingState extends RoomState {
 
 		this.room.resetTimer(payload.team, payload.time);
 
-		this.room.clients.forEach((client) => {
+		this.room.clients.forEach((client: Client) => {
 			this.room.cacheTeamMessage(client.team, message);
 			client.sendMessage(message);
 		});
@@ -533,7 +534,7 @@ export class DuelingState extends RoomState {
 		const data = Buffer.from(message.data, "hex");
 		const payload = Buffer.concat([decimalToBytesBuffer(data.length, 2), data]);
 		this.room.cacheTeamMessage(3, payload);
-		[...this.room.clients, ...this.room.spectators].forEach((client) => {
+		[...this.room.clients, ...this.room.spectators].forEach((client: Client) => {
 			client.sendMessage(payload);
 		});
 	}
@@ -543,7 +544,7 @@ export class DuelingState extends RoomState {
 		const payload = Buffer.concat([decimalToBytesBuffer(data.length, 2), data]);
 
 		if (message.except !== undefined) {
-			this.room.clients.forEach((client) => {
+			this.room.clients.forEach((client: Client) => {
 				if (!(client.team === message.except && client.inTurn)) {
 					client.sendMessage(payload);
 				}
@@ -562,7 +563,7 @@ export class DuelingState extends RoomState {
 		}
 
 		if (message.except !== undefined) {
-			this.room.clients.forEach((client) => {
+			this.room.clients.forEach((client: Client) => {
 				if (!(client.team === message.except && client.inTurn)) {
 					client.sendMessage(payload);
 				}
@@ -575,7 +576,7 @@ export class DuelingState extends RoomState {
 			const data = Buffer.from(message.data, "hex");
 			const payload = Buffer.concat([decimalToBytesBuffer(data.length, 2), data]);
 
-			[...this.room.clients, ...this.room.spectators].forEach((client) => {
+			[...this.room.clients, ...this.room.spectators].forEach((client: Client) => {
 				if (client.team === message.receiver) {
 					client.sendMessage(payload);
 				}
@@ -585,10 +586,10 @@ export class DuelingState extends RoomState {
 		}
 
 		const player = [...this.room.clients, ...this.room.spectators].find(
-			(player) => player.inTurn && player.team === message.receiver
+			(player: Client) => player.inTurn && player.team === message.receiver
 		);
 
-		player?.sendMessage(payload);
+		(<Client | undefined>player)?.sendMessage(payload);
 	}
 
 	private handleCoreStart(message: StartDuelMessage): void {
@@ -625,13 +626,13 @@ export class DuelingState extends RoomState {
 		this.room.setPlayerDecksSize(message.playerDeckSize, message.playerExtraDeckSize);
 		this.room.setOpponentDecksSize(message.opponentDeckSize, message.opponentExtraDeckSize);
 
-		this.room.clients.forEach((client) => {
+		this.room.clients.forEach((client: Client) => {
 			if (client.team === 0) {
 				client.sendMessage(playerGameMessage);
 			}
 		});
 
-		this.room.clients.forEach((client) => {
+		this.room.clients.forEach((client: Client) => {
 			if (client.team === 1) {
 				client.sendMessage(opponentGameMessage);
 			}

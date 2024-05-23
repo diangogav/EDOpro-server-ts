@@ -39,7 +39,7 @@ export class Reconnect {
 			// }
 		}
 
-		player.setSocket(socket, room.clients, room);
+		player.setSocket(socket, room.clients as Client[], room);
 		player.reconnecting();
 		player.sendMessage(JoinGameClientMessage.createFromRoom(joinMessage, room));
 		const type = (Number(player.host) << 4) | player.position;

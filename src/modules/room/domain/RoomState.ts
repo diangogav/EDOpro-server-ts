@@ -40,14 +40,22 @@ export abstract class RoomState {
 				);
 			});
 
-			return player ?? null;
+			if (!(player instanceof Client)) {
+				return null;
+			}
+
+			return player;
 		}
 
 		const player = room.clients.find((client) => {
 			return playerInfoMessage.name === client.name;
 		});
 
-		return player ?? null;
+		if (!(player instanceof Client)) {
+			return null;
+		}
+
+		return player;
 	}
 
 	private handleChat(message: ClientMessage, room: Room, client: Client): void {
@@ -62,7 +70,7 @@ export abstract class RoomState {
 				client.name.replace(/\0/g, "").trim(),
 				message.data
 			);
-			room.clients.forEach((player) => {
+			room.clients.forEach((player: Client) => {
 				player.sendMessage(chatMessage);
 			});
 
@@ -84,7 +92,7 @@ export abstract class RoomState {
 			Number(!client.team)
 		);
 
-		room.clients.forEach((player) => {
+		room.clients.forEach((player: Client) => {
 			const message = player.team === client.team ? playerMessage : opponentMessage;
 			player.sendMessage(message);
 		});

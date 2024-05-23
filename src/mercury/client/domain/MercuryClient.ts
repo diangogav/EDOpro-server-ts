@@ -1,17 +1,16 @@
 import net from "net";
 
 import { ClientMessage } from "../../../modules/messages/MessageProcessor";
+import { YgoClient } from "../../../modules/shared/client/domain/YgoClient";
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
 import { YGOClientSocket } from "../../../socket-server/HostServer";
 import { MercuryCoreMessageEmitter } from "../../MercuryCoreMessageEmitter";
 import { SimpleRoomMessageEmitter } from "../../MercuryRoomMessageEmitter";
 import { MercuryRoom } from "../../room/domain/MercuryRoom";
 
-export class MercuryClient {
+export class MercuryClient extends YgoClient {
 	readonly name: string;
-	readonly position: number;
 	private readonly _coreClient: net.Socket;
-	private readonly _socket: YGOClientSocket;
 	private readonly _logger: Logger;
 	private _pendingMessages: Buffer[];
 	private readonly _mercuryRoomMessageEmitter: MercuryCoreMessageEmitter;
@@ -31,9 +30,7 @@ export class MercuryClient {
 		position: number;
 		room: MercuryRoom;
 	}) {
-		this.name = name;
-		this.position = position;
-		this._socket = socket;
+		super({ name, position, socket });
 		this._coreClient = new net.Socket();
 		this._logger = logger;
 		this._pendingMessages = messages;
@@ -68,9 +65,10 @@ export class MercuryClient {
 	}
 
 	destroy(): void {
+		this._logger.debug("DESTROY");
+		this._coreClient.destroy();
 		this._socket.removeAllListeners();
 		this._socket.destroy();
-		this._coreClient.destroy();
 	}
 
 	private sendPendingMessages(): void {
