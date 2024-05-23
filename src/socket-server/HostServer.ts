@@ -4,14 +4,14 @@ import net, { Socket } from "net";
 import { EventEmitter } from "stream";
 
 import { MessageEmitter } from "../modules/MessageEmitter";
-import { DisconnectHandler } from "../modules/room/application/DisconnectHandler";
 import { GameCreatorHandler } from "../modules/room/application/GameCreatorHandler";
 import { JoinHandler } from "../modules/room/application/JoinHandler";
-import { RoomFinder } from "../modules/room/application/RoomFinder";
 import { RedisRoomRepository } from "../modules/room/match/infrastructure/RedisRoomRepository";
 import { container } from "../modules/shared/dependency-injection";
 import { EventBus } from "../modules/shared/event-bus/EventBus";
 import { Logger } from "../modules/shared/logger/domain/Logger";
+import { DisconnectHandler } from "../modules/shared/room/application/DisconnectHandler";
+import { RoomFinder } from "../modules/shared/room/application/RoomFinder";
 import { BasicStatsCalculator } from "../modules/stats/basic/application/BasicStatsCalculator";
 import { UserFinder } from "../modules/user/application/UserFinder";
 import { UserRedisRepository } from "../modules/user/infrastructure/UserRedisRepository";

@@ -5,9 +5,9 @@ import { EventEmitter } from "stream";
 import { MercuryGameCreatorHandler } from "../mercury/room/application/MercuryGameCreatorHandler";
 import { MercuryJoinHandler } from "../mercury/room/application/MercuryJoinHandler";
 import { MessageEmitter } from "../modules/MessageEmitter";
-import { DisconnectHandler } from "../modules/room/application/DisconnectHandler";
-import { RoomFinder } from "../modules/room/application/RoomFinder";
 import { Logger } from "../modules/shared/logger/domain/Logger";
+import { DisconnectHandler } from "../modules/shared/room/application/DisconnectHandler";
+import { RoomFinder } from "../modules/shared/room/application/RoomFinder";
 import { YGOClientSocket } from "./HostServer";
 
 export class MercuryServer {
