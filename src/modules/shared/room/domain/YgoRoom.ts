@@ -1,9 +1,9 @@
 import { EventEmitter } from "stream";
 
 import { MercuryClient } from "../../../../mercury/client/domain/MercuryClient";
-import { YGOClientSocket } from "../../../../socket-server/HostServer";
 import { Client } from "../../../client/domain/Client";
 import { YgoClient } from "../../client/domain/YgoClient";
+import { YGOClientSocket } from "../../socket/domain/YGOClientSocket";
 
 export enum DuelState {
 	WAITING = "waiting",

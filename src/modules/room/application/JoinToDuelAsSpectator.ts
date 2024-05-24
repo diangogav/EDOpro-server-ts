@@ -1,4 +1,3 @@
-import { YGOClientSocket } from "../../../socket-server/HostServer";
 import { Client } from "../../client/domain/Client";
 import { JoinGameMessage } from "../../messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
@@ -9,6 +8,7 @@ import { PlayerChangeClientMessage } from "../../messages/server-to-client/Playe
 import { PlayerEnterClientMessage } from "../../messages/server-to-client/PlayerEnterClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
+import { YGOClientSocket } from "../../shared/socket/domain/YGOClientSocket";
 import { Room } from "../domain/Room";
 
 export class JoinToDuelAsSpectator {

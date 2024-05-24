@@ -1,6 +1,5 @@
 import { EventEmitter } from "stream";
 
-import { YGOClientSocket } from "../../../socket-server/HostServer";
 import { BufferToUTF16 } from "../../../utils/BufferToUTF16";
 import { Client } from "../../client/domain/Client";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
@@ -9,6 +8,7 @@ import { ClientMessage } from "../../messages/MessageProcessor";
 import { PlayerMessageClientMessage } from "../../messages/server-to-client/PlayerMessageClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { SpectatorMessageClientMessage } from "../../messages/server-to-client/SpectatorMessageClientMessage";
+import { YGOClientSocket } from "../../shared/socket/domain/YGOClientSocket";
 import { Room } from "./Room";
 
 export abstract class RoomState {

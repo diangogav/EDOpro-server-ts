@@ -1,4 +1,4 @@
-import { YGOClientSocket } from "../../../../socket-server/HostServer";
+import { YGOClientSocket } from "../../../shared/socket/domain/YGOClientSocket";
 import { JoinGameMessage } from "../../../messages/client-to-server/JoinGameMessage";
 import { Room } from "../Room";
 

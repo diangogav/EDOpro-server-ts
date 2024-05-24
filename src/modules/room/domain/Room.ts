@@ -2,7 +2,6 @@ import { ChildProcessWithoutNullStreams } from "child_process";
 import shuffle from "shuffle-array";
 import { EventEmitter } from "stream";
 
-import { YGOClientSocket } from "../../../socket-server/HostServer";
 import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
 import { CardSQLiteTYpeORMRepository } from "../../card/infrastructure/postgres/CardSQLiteTYpeORMRepository";
 import { Client } from "../../client/domain/Client";
@@ -17,6 +16,7 @@ import { RoomMessageEmitter } from "../../RoomMessageEmitter";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { PlayerData } from "../../shared/player/domain/PlayerData";
 import { DuelState, YgoRoom } from "../../shared/room/domain/YgoRoom";
+import { YGOClientSocket } from "../../shared/socket/domain/YGOClientSocket";
 import { Rank } from "../../shared/value-objects/Rank";
 import { UserFinder } from "../../user/application/UserFinder";
 import { UserRedisRepository } from "../../user/infrastructure/UserRedisRepository";

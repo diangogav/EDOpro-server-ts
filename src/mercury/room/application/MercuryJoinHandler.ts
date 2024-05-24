@@ -7,7 +7,7 @@ import { VersionErrorClientMessage } from "../../../modules/messages/server-to-c
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
 import { JoinMessageHandler } from "../../../modules/shared/room/domain/JoinMessageHandler";
 import { DuelState } from "../../../modules/shared/room/domain/YgoRoom";
-import { YGOClientSocket } from "../../../socket-server/HostServer";
+import { YGOClientSocket } from "../../../modules/shared/socket/domain/YGOClientSocket";
 import { MercuryClient } from "../../client/domain/MercuryClient";
 import { mercuryConfig } from "../../config";
 import { MercuryJoinGameMessage } from "../../messages/MercuryJoinGameMessage";

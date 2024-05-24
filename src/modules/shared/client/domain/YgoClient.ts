@@ -1,4 +1,4 @@
-import { YGOClientSocket } from "../../../../socket-server/HostServer";
+import { YGOClientSocket } from "../../socket/domain/YGOClientSocket";
 
 export abstract class YgoClient {
 	public readonly name: string;

@@ -4,7 +4,6 @@ import { spawn } from "child_process";
 import * as crypto from "crypto";
 import EventEmitter from "events";
 
-import { YGOClientSocket } from "../../../../../socket-server/HostServer";
 import { decimalToBytesBuffer } from "../../../../../utils";
 import WebSocketSingleton from "../../../../../web-socket-server/WebSocketSingleton";
 import { Client } from "../../../../client/domain/Client";
@@ -24,6 +23,7 @@ import { PlayerChangeClientMessage } from "../../../../messages/server-to-client
 import { ServerErrorClientMessage } from "../../../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { ServerMessageClientMessage } from "../../../../messages/server-to-client/ServerMessageClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
+import { YGOClientSocket } from "../../../../shared/socket/domain/YGOClientSocket";
 import { FinishDuelHandler } from "../../../application/FinishDuelHandler";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";

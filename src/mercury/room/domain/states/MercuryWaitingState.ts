@@ -9,7 +9,7 @@ import { ClientMessage } from "../../../../modules/messages/MessageProcessor";
 import { VersionErrorClientMessage } from "../../../../modules/messages/server-to-client/VersionErrorClientMessage";
 import { RoomState } from "../../../../modules/room/domain/RoomState";
 import { Logger } from "../../../../modules/shared/logger/domain/Logger";
-import { YGOClientSocket } from "../../../../socket-server/HostServer";
+import { YGOClientSocket } from "../../../../modules/shared/socket/domain/YGOClientSocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { mercuryConfig } from "../../../config";
 import { MercuryRoom } from "../MercuryRoom";

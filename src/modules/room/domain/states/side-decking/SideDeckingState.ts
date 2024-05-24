@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import EventEmitter from "events";
 
-import { YGOClientSocket } from "../../../../../socket-server/HostServer";
 import { Client } from "../../../../client/domain/Client";
 import { DeckCreator } from "../../../../deck/application/DeckCreator";
 import { UpdateDeckMessageSizeCalculator } from "../../../../deck/application/UpdateDeckMessageSizeCalculator";
@@ -16,6 +15,7 @@ import { ErrorMessages } from "../../../../messages/server-to-client/error-messa
 import { ErrorClientMessage } from "../../../../messages/server-to-client/ErrorClientMessage";
 import { SideDeckClientMessage } from "../../../../messages/server-to-client/game-messages/SideDeckClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
+import { YGOClientSocket } from "../../../../shared/socket/domain/YGOClientSocket";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";
 import { Room } from "../../Room";

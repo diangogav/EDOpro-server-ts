@@ -1,4 +1,3 @@
-import { YGOClientSocket } from "../../../socket-server/HostServer";
 import { Client } from "../../client/domain/Client";
 import { JoinGameMessage } from "../../messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
@@ -7,6 +6,7 @@ import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientM
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
 import { PlayerEnterClientMessage } from "../../messages/server-to-client/PlayerEnterClientMessage";
 import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
+import { YGOClientSocket } from "../../shared/socket/domain/YGOClientSocket";
 import { UserFinder } from "../../user/application/UserFinder";
 import { User } from "../../user/domain/User";
 import { Room } from "../domain/Room";

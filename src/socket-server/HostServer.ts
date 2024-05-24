@@ -12,14 +12,10 @@ import { EventBus } from "../modules/shared/event-bus/EventBus";
 import { Logger } from "../modules/shared/logger/domain/Logger";
 import { DisconnectHandler } from "../modules/shared/room/application/DisconnectHandler";
 import { RoomFinder } from "../modules/shared/room/application/RoomFinder";
+import { YGOClientSocket } from "../modules/shared/socket/domain/YGOClientSocket";
 import { BasicStatsCalculator } from "../modules/stats/basic/application/BasicStatsCalculator";
 import { UserFinder } from "../modules/user/application/UserFinder";
 import { UserRedisRepository } from "../modules/user/infrastructure/UserRedisRepository";
-
-export class YGOClientSocket extends Socket {
-	id?: string;
-	roomId?: number;
-}
 
 export class HostServer {
 	private readonly server: net.Server;

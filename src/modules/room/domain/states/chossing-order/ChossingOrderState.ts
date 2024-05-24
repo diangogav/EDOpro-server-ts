@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import EventEmitter from "events";
 
-import { YGOClientSocket } from "../../../../../socket-server/HostServer";
 import { Client } from "../../../../client/domain/Client";
 import { JoinGameMessage } from "../../../../messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../../../messages/client-to-server/PlayerInfoMessage";
@@ -11,6 +10,7 @@ import { ClientMessage } from "../../../../messages/MessageProcessor";
 import { ChooseOrderClientMessage } from "../../../../messages/server-to-client/ChooseOrderClientMessage";
 import { DuelStartClientMessage } from "../../../../messages/server-to-client/DuelStartClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
+import { YGOClientSocket } from "../../../../shared/socket/domain/YGOClientSocket";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";
 import { Room } from "../../Room";

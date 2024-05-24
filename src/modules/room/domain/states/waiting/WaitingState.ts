@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { EventEmitter } from "stream";
 
-import { YGOClientSocket } from "../../../../../socket-server/HostServer";
 import { Client } from "../../../../client/domain/Client";
 import { DeckCreator } from "../../../../deck/application/DeckCreator";
 import { UpdateDeckMessageSizeCalculator } from "../../../../deck/application/UpdateDeckMessageSizeCalculator";
@@ -23,6 +22,7 @@ import { ServerMessageClientMessage } from "../../../../messages/server-to-clien
 import { TypeChangeClientMessage } from "../../../../messages/server-to-client/TypeChangeClientMessage";
 import { WatchChangeClientMessage } from "../../../../messages/server-to-client/WatchChangeClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
+import { YGOClientSocket } from "../../../../shared/socket/domain/YGOClientSocket";
 import { Rank } from "../../../../shared/value-objects/Rank";
 import { UserFinder } from "../../../../user/application/UserFinder";
 import { User } from "../../../../user/domain/User";

@@ -1,4 +1,3 @@
-import { YGOClientSocket } from "../../../socket-server/HostServer";
 import { Deck } from "../../deck/domain/Deck";
 import { ClientMessage, MessageProcessor } from "../../messages/MessageProcessor";
 import { Choose } from "../../rock-paper-scissor/RockPaperScissor";
@@ -6,6 +5,7 @@ import { Room } from "../../room/domain/Room";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
 import { YgoClient } from "../../shared/client/domain/YgoClient";
 import { Logger } from "../../shared/logger/domain/Logger";
+import { YGOClientSocket } from "../../shared/socket/domain/YGOClientSocket";
 import { Rank } from "../../shared/value-objects/Rank";
 
 export class Listener {}

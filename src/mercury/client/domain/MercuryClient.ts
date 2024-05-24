@@ -3,7 +3,7 @@ import net from "net";
 import { ClientMessage } from "../../../modules/messages/MessageProcessor";
 import { YgoClient } from "../../../modules/shared/client/domain/YgoClient";
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
-import { YGOClientSocket } from "../../../socket-server/HostServer";
+import { YGOClientSocket } from "../../../modules/shared/socket/domain/YGOClientSocket";
 import { MercuryCoreMessageEmitter } from "../../MercuryCoreMessageEmitter";
 import { SimpleRoomMessageEmitter } from "../../MercuryRoomMessageEmitter";
 import { MercuryRoom } from "../../room/domain/MercuryRoom";

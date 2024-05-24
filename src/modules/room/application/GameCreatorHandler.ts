@@ -1,6 +1,5 @@
 import { EventEmitter } from "stream";
 
-import { YGOClientSocket } from "../../../socket-server/HostServer";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../messages/domain/Commands";
@@ -16,6 +15,7 @@ import { ServerMessageClientMessage } from "../../messages/server-to-client/Serv
 import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { GameCreatorMessageHandler } from "../../shared/room/domain/GameCreatorMessageHandler";
+import { YGOClientSocket } from "../../shared/socket/domain/YGOClientSocket";
 import { Rank } from "../../shared/value-objects/Rank";
 import { UserFinder } from "../../user/application/UserFinder";
 import { User } from "../../user/domain/User";

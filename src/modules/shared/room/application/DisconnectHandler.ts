@@ -1,6 +1,6 @@
 import { MercuryClient } from "../../../../mercury/client/domain/MercuryClient";
 import { MercuryRoom } from "../../../../mercury/room/domain/MercuryRoom";
-import { YGOClientSocket } from "../../../../socket-server/HostServer";
+import { YGOClientSocket } from "../../socket/domain/YGOClientSocket";
 import WebSocketSingleton from "../../../../web-socket-server/WebSocketSingleton";
 import { Client } from "../../../client/domain/Client";
 import { PlayerChangeClientMessage } from "../../../messages/server-to-client/PlayerChangeClientMessage";

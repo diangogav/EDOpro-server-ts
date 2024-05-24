@@ -2,7 +2,6 @@ import { EventEmitter } from "stream";
 
 import { MercuryRoom } from "../../../mercury/room/domain/MercuryRoom";
 import MercuryRoomList from "../../../mercury/room/infrastructure/MercuryRoomList";
-import { YGOClientSocket } from "../../../socket-server/HostServer";
 import { JoinGameMessage } from "../../messages/client-to-server/JoinGameMessage";
 import { Commands } from "../../messages/domain/Commands";
 import { ClientMessage } from "../../messages/MessageProcessor";
@@ -11,6 +10,7 @@ import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientM
 import { ServerErrorClientMessage } from "../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { JoinMessageHandler } from "../../shared/room/domain/JoinMessageHandler";
+import { YGOClientSocket } from "../../shared/socket/domain/YGOClientSocket";
 import { Room } from "../domain/Room";
 import RoomList from "../infrastructure/RoomList";
 
