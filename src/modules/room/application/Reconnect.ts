@@ -6,7 +6,7 @@ import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientM
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
 import { PlayerEnterClientMessage } from "../../messages/server-to-client/PlayerEnterClientMessage";
 import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
-import { YGOClientSocket } from "../../shared/socket/domain/YGOClientSocket";
+import { TCPClientSocket } from "../../shared/socket/domain/TCPClientSocket";
 import { UserFinder } from "../../user/application/UserFinder";
 import { User } from "../../user/domain/User";
 import { Room } from "../domain/Room";
@@ -18,7 +18,7 @@ export class Reconnect {
 		playerInfoMessage: PlayerInfoMessage,
 		player: Client,
 		joinMessage: JoinGameMessage,
-		socket: YGOClientSocket,
+		socket: TCPClientSocket,
 		room: Room
 	): Promise<void> {
 		if (room.ranked) {

@@ -8,14 +8,14 @@ import { PlayerChangeClientMessage } from "../../messages/server-to-client/Playe
 import { PlayerEnterClientMessage } from "../../messages/server-to-client/PlayerEnterClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
-import { YGOClientSocket } from "../../shared/socket/domain/YGOClientSocket";
+import { TCPClientSocket } from "../../shared/socket/domain/TCPClientSocket";
 import { Room } from "../domain/Room";
 
 export class JoinToDuelAsSpectator {
 	run(
 		joinMessage: JoinGameMessage,
 		playerInfoMessage: PlayerInfoMessage,
-		socket: YGOClientSocket,
+		socket: TCPClientSocket,
 		room: Room
 	): void {
 		const client = room.createSpectator(socket, playerInfoMessage.name);

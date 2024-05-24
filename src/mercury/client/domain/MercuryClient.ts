@@ -3,7 +3,7 @@ import net from "net";
 import { ClientMessage } from "../../../modules/messages/MessageProcessor";
 import { YgoClient } from "../../../modules/shared/client/domain/YgoClient";
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
-import { YGOClientSocket } from "../../../modules/shared/socket/domain/YGOClientSocket";
+import { TCPClientSocket } from "../../../modules/shared/socket/domain/TCPClientSocket";
 import { MercuryCoreMessageEmitter } from "../../MercuryCoreMessageEmitter";
 import { SimpleRoomMessageEmitter } from "../../MercuryRoomMessageEmitter";
 import { MercuryRoom } from "../../room/domain/MercuryRoom";
@@ -24,7 +24,7 @@ export class MercuryClient extends YgoClient {
 		room,
 	}: {
 		name: string;
-		socket: YGOClientSocket;
+		socket: TCPClientSocket;
 		logger: Logger;
 		messages: Buffer[];
 		position: number;
@@ -80,7 +80,7 @@ export class MercuryClient extends YgoClient {
 		this._pendingMessages = [];
 	}
 
-	get socket(): YGOClientSocket {
+	get socket(): TCPClientSocket {
 		return this._socket;
 	}
 }

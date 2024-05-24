@@ -7,7 +7,7 @@ import { VersionErrorClientMessage } from "../../../modules/messages/server-to-c
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
 import { JoinMessageHandler } from "../../../modules/shared/room/domain/JoinMessageHandler";
 import { DuelState } from "../../../modules/shared/room/domain/YgoRoom";
-import { YGOClientSocket } from "../../../modules/shared/socket/domain/YGOClientSocket";
+import { TCPClientSocket } from "../../../modules/shared/socket/domain/TCPClientSocket";
 import { MercuryClient } from "../../client/domain/MercuryClient";
 import { mercuryConfig } from "../../config";
 import { MercuryJoinGameMessage } from "../../messages/MercuryJoinGameMessage";
@@ -17,9 +17,9 @@ import MercuryRoomList from "../infrastructure/MercuryRoomList";
 export class MercuryJoinHandler implements JoinMessageHandler {
 	private readonly eventEmitter: EventEmitter;
 	private readonly logger: Logger;
-	private readonly socket: YGOClientSocket;
+	private readonly socket: TCPClientSocket;
 
-	constructor(eventEmitter: EventEmitter, logger: Logger, socket: YGOClientSocket) {
+	constructor(eventEmitter: EventEmitter, logger: Logger, socket: TCPClientSocket) {
 		this.eventEmitter = eventEmitter;
 		this.logger = logger;
 		this.socket = socket;

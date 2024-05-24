@@ -10,7 +10,7 @@ import { ClientMessage } from "../../../../messages/MessageProcessor";
 import { ChooseOrderClientMessage } from "../../../../messages/server-to-client/ChooseOrderClientMessage";
 import { DuelStartClientMessage } from "../../../../messages/server-to-client/DuelStartClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
-import { YGOClientSocket } from "../../../../shared/socket/domain/YGOClientSocket";
+import { TCPClientSocket } from "../../../../shared/socket/domain/TCPClientSocket";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";
 import { Room } from "../../Room";
@@ -27,7 +27,7 @@ export class ChossingOrderState extends RoomState {
 
 		this.eventEmitter.on(
 			"JOIN" as unknown as string,
-			(message: ClientMessage, room: Room, socket: YGOClientSocket) =>
+			(message: ClientMessage, room: Room, socket: TCPClientSocket) =>
 				this.handleJoin.bind(this)(message, room, socket)
 		);
 
@@ -81,7 +81,7 @@ export class ChossingOrderState extends RoomState {
 	private async handleJoin(
 		message: ClientMessage,
 		room: Room,
-		socket: YGOClientSocket
+		socket: TCPClientSocket
 	): Promise<void> {
 		this.logger.debug("CHOSSING_ORDER: JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);

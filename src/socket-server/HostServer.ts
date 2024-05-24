@@ -12,7 +12,7 @@ import { EventBus } from "../modules/shared/event-bus/EventBus";
 import { Logger } from "../modules/shared/logger/domain/Logger";
 import { DisconnectHandler } from "../modules/shared/room/application/DisconnectHandler";
 import { RoomFinder } from "../modules/shared/room/application/RoomFinder";
-import { YGOClientSocket } from "../modules/shared/socket/domain/YGOClientSocket";
+import { TCPClientSocket } from "../modules/shared/socket/domain/TCPClientSocket";
 import { BasicStatsCalculator } from "../modules/stats/basic/application/BasicStatsCalculator";
 import { UserFinder } from "../modules/user/application/UserFinder";
 import { UserRedisRepository } from "../modules/user/infrastructure/UserRedisRepository";
@@ -36,7 +36,7 @@ export class HostServer {
 		});
 		this.server.on("connection", (socket: Socket) => {
 			this.address = socket.remoteAddress;
-			const ygoClientSocket = socket as YGOClientSocket;
+			const ygoClientSocket = socket as TCPClientSocket;
 			ygoClientSocket.setKeepAlive(true, 1000);
 			const eventEmitter = new EventEmitter();
 			const gameCreatorHandler = new GameCreatorHandler(

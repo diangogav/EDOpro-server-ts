@@ -15,7 +15,7 @@ import { ServerMessageClientMessage } from "../../messages/server-to-client/Serv
 import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { GameCreatorMessageHandler } from "../../shared/room/domain/GameCreatorMessageHandler";
-import { YGOClientSocket } from "../../shared/socket/domain/YGOClientSocket";
+import { TCPClientSocket } from "../../shared/socket/domain/TCPClientSocket";
 import { Rank } from "../../shared/value-objects/Rank";
 import { UserFinder } from "../../user/application/UserFinder";
 import { User } from "../../user/domain/User";
@@ -25,14 +25,14 @@ import RoomList from "../infrastructure/RoomList";
 export class GameCreatorHandler implements GameCreatorMessageHandler {
 	private readonly eventEmitter: EventEmitter;
 	private readonly logger: Logger;
-	private readonly socket: YGOClientSocket;
+	private readonly socket: TCPClientSocket;
 	private readonly userFinder: UserFinder;
 	private readonly HOST_CLIENT = 0x10;
 
 	constructor(
 		eventEmitter: EventEmitter,
 		logger: Logger,
-		socket: YGOClientSocket,
+		socket: TCPClientSocket,
 		userFinder: UserFinder
 	) {
 		this.eventEmitter = eventEmitter;

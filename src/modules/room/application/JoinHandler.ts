@@ -10,16 +10,16 @@ import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientM
 import { ServerErrorClientMessage } from "../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { JoinMessageHandler } from "../../shared/room/domain/JoinMessageHandler";
-import { YGOClientSocket } from "../../shared/socket/domain/YGOClientSocket";
+import { TCPClientSocket } from "../../shared/socket/domain/TCPClientSocket";
 import { Room } from "../domain/Room";
 import RoomList from "../infrastructure/RoomList";
 
 export class JoinHandler implements JoinMessageHandler {
 	private readonly eventEmitter: EventEmitter;
 	private readonly logger: Logger;
-	private readonly socket: YGOClientSocket;
+	private readonly socket: TCPClientSocket;
 
-	constructor(eventEmitter: EventEmitter, logger: Logger, socket: YGOClientSocket) {
+	constructor(eventEmitter: EventEmitter, logger: Logger, socket: TCPClientSocket) {
 		this.eventEmitter = eventEmitter;
 		this.logger = logger;
 		this.socket = socket;

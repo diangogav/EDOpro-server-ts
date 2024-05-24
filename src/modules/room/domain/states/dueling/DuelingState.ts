@@ -23,7 +23,7 @@ import { PlayerChangeClientMessage } from "../../../../messages/server-to-client
 import { ServerErrorClientMessage } from "../../../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { ServerMessageClientMessage } from "../../../../messages/server-to-client/ServerMessageClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
-import { YGOClientSocket } from "../../../../shared/socket/domain/YGOClientSocket";
+import { TCPClientSocket } from "../../../../shared/socket/domain/TCPClientSocket";
 import { FinishDuelHandler } from "../../../application/FinishDuelHandler";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";
@@ -106,7 +106,7 @@ export class DuelingState extends RoomState {
 
 		this.eventEmitter.on(
 			"JOIN" as unknown as string,
-			(message: ClientMessage, room: Room, socket: YGOClientSocket) =>
+			(message: ClientMessage, room: Room, socket: TCPClientSocket) =>
 				this.handleJoin.bind(this)(message, room, socket)
 		);
 
@@ -681,7 +681,7 @@ export class DuelingState extends RoomState {
 	private async handleJoin(
 		message: ClientMessage,
 		room: Room,
-		socket: YGOClientSocket
+		socket: TCPClientSocket
 	): Promise<void> {
 		this.logger.debug("DUELING: JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);

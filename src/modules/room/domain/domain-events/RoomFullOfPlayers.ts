@@ -1,9 +1,9 @@
-import { YGOClientSocket } from "../../../shared/socket/domain/YGOClientSocket";
+import { TCPClientSocket } from "../../../shared/socket/domain/TCPClientSocket";
 import { JoinGameMessage } from "../../../messages/client-to-server/JoinGameMessage";
 import { Room } from "../Room";
 
 type RoomFullOfPlayersData = {
-	socket: YGOClientSocket;
+	socket: TCPClientSocket;
 	message: JoinGameMessage;
 	playerName: string;
 	room: Room;

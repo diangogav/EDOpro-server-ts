@@ -22,7 +22,7 @@ import { ServerMessageClientMessage } from "../../../../messages/server-to-clien
 import { TypeChangeClientMessage } from "../../../../messages/server-to-client/TypeChangeClientMessage";
 import { WatchChangeClientMessage } from "../../../../messages/server-to-client/WatchChangeClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
-import { YGOClientSocket } from "../../../../shared/socket/domain/YGOClientSocket";
+import { TCPClientSocket } from "../../../../shared/socket/domain/TCPClientSocket";
 import { Rank } from "../../../../shared/value-objects/Rank";
 import { UserFinder } from "../../../../user/application/UserFinder";
 import { User } from "../../../../user/domain/User";
@@ -41,7 +41,7 @@ export class WaitingState extends RoomState {
 		super(eventEmitter);
 		this.eventEmitter.on(
 			"JOIN",
-			(message: ClientMessage, room: Room, socket: YGOClientSocket) =>
+			(message: ClientMessage, room: Room, socket: TCPClientSocket) =>
 				void this.handle.bind(this)(message, room, socket)
 		);
 
@@ -284,7 +284,7 @@ export class WaitingState extends RoomState {
 		player.notReady();
 	}
 
-	private async handle(message: ClientMessage, room: Room, socket: YGOClientSocket): Promise<void> {
+	private async handle(message: ClientMessage, room: Room, socket: TCPClientSocket): Promise<void> {
 		this.logger.debug("WAITING: JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		if (this.playerAlreadyInRoom(playerInfoMessage, room, socket)) {
@@ -317,7 +317,7 @@ export class WaitingState extends RoomState {
 		this.player(place, joinGameMessage, socket, playerInfoMessage, room, []);
 	}
 
-	private sendErrorMessage(playerInfoMessage: PlayerInfoMessage, socket: YGOClientSocket): void {
+	private sendErrorMessage(playerInfoMessage: PlayerInfoMessage, socket: TCPClientSocket): void {
 		socket.write(
 			ServerErrorClientMessage.create(
 				`Ya existe un jugador con el nombre :${playerInfoMessage.name}`
@@ -331,7 +331,7 @@ export class WaitingState extends RoomState {
 
 	private spectator(
 		joinGameMessage: JoinGameMessage,
-		socket: YGOClientSocket,
+		socket: TCPClientSocket,
 		playerInfoMessage: PlayerInfoMessage,
 		room: Room
 	): void {
@@ -375,7 +375,7 @@ export class WaitingState extends RoomState {
 			team: number;
 		},
 		joinGameMessage: JoinGameMessage,
-		socket: YGOClientSocket,
+		socket: TCPClientSocket,
 		playerInfoMessage: PlayerInfoMessage,
 		room: Room,
 		ranks: Rank[]
@@ -420,7 +420,7 @@ export class WaitingState extends RoomState {
 	private sendJoinMessage(
 		playerInfoMessage: PlayerInfoMessage,
 		message: JoinGameMessage,
-		socket: YGOClientSocket,
+		socket: TCPClientSocket,
 		room: Room,
 		client: Client
 	): void {
@@ -445,12 +445,12 @@ export class WaitingState extends RoomState {
 		});
 	}
 
-	private sendTypeChangeMessage(client: Client, socket: YGOClientSocket): void {
+	private sendTypeChangeMessage(client: Client, socket: TCPClientSocket): void {
 		const type = (Number(client.host) << 4) | client.position;
 		socket.write(TypeChangeClientMessage.create({ type }));
 	}
 
-	private notify(client: Client, room: Room, socket: YGOClientSocket): void {
+	private notify(client: Client, room: Room, socket: TCPClientSocket): void {
 		room.clients.forEach((_client) => {
 			if (_client.socket.id !== client.socket.id) {
 				const status = (<Client | undefined>(
@@ -465,7 +465,7 @@ export class WaitingState extends RoomState {
 		});
 	}
 
-	private sendInfoMessage(room: Room, socket: YGOClientSocket): void {
+	private sendInfoMessage(room: Room, socket: TCPClientSocket): void {
 		if (room.ranked) {
 			socket.write(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
 			socket.write(

@@ -8,7 +8,7 @@ import { MessageEmitter } from "../modules/MessageEmitter";
 import { Logger } from "../modules/shared/logger/domain/Logger";
 import { DisconnectHandler } from "../modules/shared/room/application/DisconnectHandler";
 import { RoomFinder } from "../modules/shared/room/application/RoomFinder";
-import { YGOClientSocket } from "../modules/shared/socket/domain/YGOClientSocket";
+import { TCPClientSocket } from "../modules/shared/socket/domain/TCPClientSocket";
 
 export class MercuryServer {
 	private readonly server: net.Server;
@@ -30,7 +30,7 @@ export class MercuryServer {
 		this.server.on("connection", (socket: Socket) => {
 			this.logger.info("Client connected to Mercury server!!");
 			this.address = socket.remoteAddress;
-			const ygoClientSocket = socket as YGOClientSocket;
+			const ygoClientSocket = socket as TCPClientSocket;
 			ygoClientSocket.setKeepAlive(true, 1000);
 			const eventEmitter = new EventEmitter();
 			const gameCreatorHandler = new MercuryGameCreatorHandler(eventEmitter, this.logger);

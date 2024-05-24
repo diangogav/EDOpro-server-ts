@@ -10,7 +10,7 @@ import { ClientMessage } from "../../../../messages/MessageProcessor";
 import { DuelStartClientMessage } from "../../../../messages/server-to-client/DuelStartClientMessage";
 import { RPSChooseClientMessage } from "../../../../messages/server-to-client/RPSChooseClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
-import { YGOClientSocket } from "../../../../shared/socket/domain/YGOClientSocket";
+import { TCPClientSocket } from "../../../../shared/socket/domain/TCPClientSocket";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";
 import { Room } from "../../Room";
@@ -28,7 +28,7 @@ export class RockPaperScissorState extends RoomState {
 
 		this.eventEmitter.on(
 			"JOIN" as unknown as string,
-			(message: ClientMessage, room: Room, socket: YGOClientSocket) =>
+			(message: ClientMessage, room: Room, socket: TCPClientSocket) =>
 				this.handleJoin.bind(this)(message, room, socket)
 		);
 
@@ -72,7 +72,7 @@ export class RockPaperScissorState extends RoomState {
 	private async handleJoin(
 		message: ClientMessage,
 		room: Room,
-		socket: YGOClientSocket
+		socket: TCPClientSocket
 	): Promise<void> {
 		this.logger.debug("RPS: JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);

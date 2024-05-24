@@ -9,7 +9,7 @@ import { ClientMessage } from "../../../../modules/messages/MessageProcessor";
 import { VersionErrorClientMessage } from "../../../../modules/messages/server-to-client/VersionErrorClientMessage";
 import { RoomState } from "../../../../modules/room/domain/RoomState";
 import { Logger } from "../../../../modules/shared/logger/domain/Logger";
-import { YGOClientSocket } from "../../../../modules/shared/socket/domain/YGOClientSocket";
+import { TCPClientSocket } from "../../../../modules/shared/socket/domain/TCPClientSocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { mercuryConfig } from "../../../config";
 import { MercuryRoom } from "../MercuryRoom";
@@ -19,17 +19,17 @@ export class MercuryWaitingState extends RoomState {
 		super(eventEmitter);
 		this.eventEmitter.on(
 			"JOIN",
-			(message: ClientMessage, room: MercuryRoom, socket: YGOClientSocket) =>
+			(message: ClientMessage, room: MercuryRoom, socket: TCPClientSocket) =>
 				void this.handle.bind(this)(message, room, socket)
 		);
 		this.eventEmitter.on(
 			Commands.TRY_START as unknown as string,
-			(message: ClientMessage, room: MercuryRoom, socket: YGOClientSocket) =>
+			(message: ClientMessage, room: MercuryRoom, socket: TCPClientSocket) =>
 				void this.tryStartHandler.bind(this)(message, room, socket)
 		);
 	}
 
-	private handle(message: ClientMessage, room: MercuryRoom, socket: YGOClientSocket): void {
+	private handle(message: ClientMessage, room: MercuryRoom, socket: TCPClientSocket): void {
 		const joinMessage = new JoinGameMessage(message.data);
 
 		if (joinMessage.version2 !== mercuryConfig.version) {
@@ -53,7 +53,7 @@ export class MercuryWaitingState extends RoomState {
 	private tryStartHandler(
 		_message: ClientMessage,
 		room: MercuryRoom,
-		_socket: YGOClientSocket
+		_socket: TCPClientSocket
 	): void {
 		this.logger.info("MERCURY: TRY_START");
 		room.rps();

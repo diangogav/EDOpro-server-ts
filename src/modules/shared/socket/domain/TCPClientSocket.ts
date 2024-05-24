@@ -1,6 +1,6 @@
 import { Socket } from "net";
 
-export class YGOClientSocket extends Socket {
+export abstract class TCPClientSocket extends Socket {
 	id?: string;
 	roomId?: number;
 }

@@ -1,6 +1,6 @@
 import { MercuryClient } from "../../../../mercury/client/domain/MercuryClient";
 import { MercuryRoom } from "../../../../mercury/room/domain/MercuryRoom";
-import { YGOClientSocket } from "../../socket/domain/YGOClientSocket";
+import { TCPClientSocket } from "../../socket/domain/TCPClientSocket";
 import WebSocketSingleton from "../../../../web-socket-server/WebSocketSingleton";
 import { Client } from "../../../client/domain/Client";
 import { PlayerChangeClientMessage } from "../../../messages/server-to-client/PlayerChangeClientMessage";
@@ -12,7 +12,7 @@ import { DuelState } from "../domain/YgoRoom";
 import { RoomFinder } from "./RoomFinder";
 
 export class DisconnectHandler {
-	constructor(private readonly socket: YGOClientSocket, private readonly roomFinder: RoomFinder) {}
+	constructor(private readonly socket: TCPClientSocket, private readonly roomFinder: RoomFinder) {}
 
 	run(address?: string): void {
 		if (!this.socket.id) {

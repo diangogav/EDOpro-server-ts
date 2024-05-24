@@ -16,7 +16,7 @@ import { RoomMessageEmitter } from "../../RoomMessageEmitter";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { PlayerData } from "../../shared/player/domain/PlayerData";
 import { DuelState, YgoRoom } from "../../shared/room/domain/YgoRoom";
-import { YGOClientSocket } from "../../shared/socket/domain/YGOClientSocket";
+import { TCPClientSocket } from "../../shared/socket/domain/TCPClientSocket";
 import { Rank } from "../../shared/value-objects/Rank";
 import { UserFinder } from "../../user/application/UserFinder";
 import { UserRedisRepository } from "../../user/infrastructure/UserRedisRepository";
@@ -765,7 +765,7 @@ export class Room extends YgoRoom {
 		this.currentDuel?.finished();
 	}
 
-	createHost(socket: YGOClientSocket, name: string, ranks: Rank[]): Client {
+	createHost(socket: TCPClientSocket, name: string, ranks: Rank[]): Client {
 		const client = new Client({
 			socket,
 			host: true,
@@ -782,7 +782,7 @@ export class Room extends YgoRoom {
 		return client;
 	}
 
-	createSpectator(socket: YGOClientSocket, name: string): Client {
+	createSpectator(socket: TCPClientSocket, name: string): Client {
 		const client = new Client({
 			socket,
 			host: false,
