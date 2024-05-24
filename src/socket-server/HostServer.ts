@@ -36,23 +36,22 @@ export class HostServer {
 		});
 		this.server.on("connection", (socket: Socket) => {
 			this.address = socket.remoteAddress;
-			const ygoClientSocket = socket as TCPClientSocket;
-			ygoClientSocket.setKeepAlive(true, 1000);
+			const tcpClientSocket = new TCPClientSocket(socket);
 			const eventEmitter = new EventEmitter();
 			const gameCreatorHandler = new GameCreatorHandler(
 				eventEmitter,
 				this.logger,
-				ygoClientSocket,
+				tcpClientSocket,
 				new UserFinder(new UserRedisRepository())
 			);
-			const joinHandler = new JoinHandler(eventEmitter, this.logger, ygoClientSocket);
+			const joinHandler = new JoinHandler(eventEmitter, this.logger, tcpClientSocket);
 			const messageEmitter = new MessageEmitter(
 				this.logger,
 				eventEmitter,
 				gameCreatorHandler,
 				joinHandler
 			);
-			ygoClientSocket.id = uuidv4();
+			tcpClientSocket.id = uuidv4();
 
 			socket.on("data", (data: Buffer) => {
 				this.logger.debug(`Incoming message: ${data.toString("hex")}`);
@@ -62,21 +61,21 @@ export class HostServer {
 			socket.on("end", () => {
 				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 				this.logger.info(`${socket.remoteAddress} left in end event`);
-				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
+				const disconnectHandler = new DisconnectHandler(tcpClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
 			});
 
 			socket.on("close", () => {
 				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 				this.logger.info(`${socket.remoteAddress} left in close event`);
-				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
+				const disconnectHandler = new DisconnectHandler(tcpClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
 			});
 
 			socket.on("error", (_error) => {
 				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 				this.logger.info(`${socket.remoteAddress} left in error event`);
-				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
+				const disconnectHandler = new DisconnectHandler(tcpClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
 			});
 		});

@@ -16,7 +16,7 @@ import { RoomMessageEmitter } from "../../RoomMessageEmitter";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { PlayerData } from "../../shared/player/domain/PlayerData";
 import { DuelState, YgoRoom } from "../../shared/room/domain/YgoRoom";
-import { TCPClientSocket } from "../../shared/socket/domain/TCPClientSocket";
+import { ISocket } from "../../shared/socket/domain/ISocket";
 import { Rank } from "../../shared/value-objects/Rank";
 import { UserFinder } from "../../user/application/UserFinder";
 import { UserRedisRepository } from "../../user/infrastructure/UserRedisRepository";
@@ -379,7 +379,7 @@ export class Room extends YgoRoom {
 		const messageProcessor = new MessageProcessor();
 		const roomMessageEmitter = new RoomMessageEmitter(client, this);
 
-		client.socket.on("data", (data) => {
+		client.socket.onMessage((data) => {
 			roomMessageEmitter.handleMessage(data);
 			messageProcessor.read(data);
 			// this.handleMessage(messageProcessor, client);
@@ -392,7 +392,7 @@ export class Room extends YgoRoom {
 		const messageProcessor = new MessageProcessor();
 		const roomMessageEmitter = new RoomMessageEmitter(client, this);
 
-		client.socket.on("data", (data) => {
+		client.socket.onMessage((data) => {
 			roomMessageEmitter.handleMessage(data);
 			messageProcessor.read(data);
 			// this.handleMessage(messageProcessor, client);
@@ -723,7 +723,7 @@ export class Room extends YgoRoom {
 	playerNames(team: number): string {
 		return this.clients
 			.filter((player: Client) => player.team === team)
-			.map((item: Client) => `${item.name} ${item.socket.remoteAddress ?? ""}`)
+			.map((item: Client) => `${item.name}`)
 			.join(",");
 	}
 
@@ -765,7 +765,7 @@ export class Room extends YgoRoom {
 		this.currentDuel?.finished();
 	}
 
-	createHost(socket: TCPClientSocket, name: string, ranks: Rank[]): Client {
+	createHost(socket: ISocket, name: string, ranks: Rank[]): Client {
 		const client = new Client({
 			socket,
 			host: true,
@@ -782,7 +782,7 @@ export class Room extends YgoRoom {
 		return client;
 	}
 
-	createSpectator(socket: TCPClientSocket, name: string): Client {
+	createSpectator(socket: ISocket, name: string): Client {
 		const client = new Client({
 			socket,
 			host: false,
@@ -868,11 +868,9 @@ export class Room extends YgoRoom {
 			);
 		}
 		this._clients.forEach((client: Client) => {
-			client.socket.removeAllListeners();
 			client.socket.destroy();
 		});
 		this._spectators.forEach((client) => {
-			client.socket.removeAllListeners();
 			client.socket.destroy();
 		});
 		this.clearSpectatorCache();

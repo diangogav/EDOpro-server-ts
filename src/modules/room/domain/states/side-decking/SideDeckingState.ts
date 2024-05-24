@@ -15,7 +15,7 @@ import { ErrorMessages } from "../../../../messages/server-to-client/error-messa
 import { ErrorClientMessage } from "../../../../messages/server-to-client/ErrorClientMessage";
 import { SideDeckClientMessage } from "../../../../messages/server-to-client/game-messages/SideDeckClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
-import { TCPClientSocket } from "../../../../shared/socket/domain/TCPClientSocket";
+import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";
 import { Room } from "../../Room";
@@ -39,12 +39,12 @@ export class SideDeckingState extends RoomState {
 
 		this.eventEmitter.on(
 			"JOIN" as unknown as string,
-			(message: ClientMessage, room: Room, socket: TCPClientSocket) =>
+			(message: ClientMessage, room: Room, socket: ISocket) =>
 				this.handle.bind(this)(message, room, socket)
 		);
 	}
 
-	async handle(message: ClientMessage, room: Room, socket: TCPClientSocket): Promise<void> {
+	async handle(message: ClientMessage, room: Room, socket: ISocket): Promise<void> {
 		this.logger.debug("SIDEDECKING: JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const joinMessage = new JoinGameMessage(message.data);

@@ -23,7 +23,7 @@ import { PlayerChangeClientMessage } from "../../../../messages/server-to-client
 import { ServerErrorClientMessage } from "../../../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { ServerMessageClientMessage } from "../../../../messages/server-to-client/ServerMessageClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
-import { TCPClientSocket } from "../../../../shared/socket/domain/TCPClientSocket";
+import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { FinishDuelHandler } from "../../../application/FinishDuelHandler";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";
@@ -106,7 +106,7 @@ export class DuelingState extends RoomState {
 
 		this.eventEmitter.on(
 			"JOIN" as unknown as string,
-			(message: ClientMessage, room: Room, socket: TCPClientSocket) =>
+			(message: ClientMessage, room: Room, socket: ISocket) =>
 				this.handleJoin.bind(this)(message, room, socket)
 		);
 
@@ -166,36 +166,36 @@ export class DuelingState extends RoomState {
 		].map((item) => Number(item.code));
 
 		if (completeCurrentDeck.length !== completeIncomingDeck.length) {
-			client.socket.write(
+			client.socket.send(
 				ServerErrorClientMessage.create(
 					"Por favor selecciona el mismo deck de la partida en curso para poder reconectar"
 				)
 			);
 			const message = ErrorClientMessage.create(ErrorMessages.DECKERROR);
-			client.socket.write(message);
+			client.socket.send(message);
 
 			const status = (client.position << 4) | 0x0a;
 			const playerChangeMessage = PlayerChangeClientMessage.create({ status });
 
-			client.socket.write(playerChangeMessage);
+			client.socket.send(playerChangeMessage);
 			client.setCanReconnect(false);
 
 			return;
 		}
 
 		if (!completeIncomingDeck.every((item) => completeCurrentDeck.includes(item))) {
-			client.socket.write(
+			client.socket.send(
 				ServerErrorClientMessage.create(
 					"Por favor selecciona el mismo deck de la partida en curso para poder reconectar"
 				)
 			);
 
 			const message = ErrorClientMessage.create(ErrorMessages.DECKERROR);
-			client.socket.write(message);
+			client.socket.send(message);
 
 			const status = (client.position << 4) | 0x0a;
 			const playerChangeMessage = PlayerChangeClientMessage.create({ status });
-			client.socket.write(playerChangeMessage);
+			client.socket.send(playerChangeMessage);
 			client.setCanReconnect(false);
 
 			return;
@@ -206,7 +206,7 @@ export class DuelingState extends RoomState {
 
 	private handle(): void {
 		this.room.clients.forEach((item) => {
-			item.socket.write(ServerMessageClientMessage.create("Preparando el duelo"));
+			item.socket.send(ServerMessageClientMessage.create("Preparando el duelo"));
 		});
 		this.room.prepareTurnOrder();
 
@@ -219,17 +219,17 @@ export class DuelingState extends RoomState {
 		}));
 
 		this.room.clients.forEach((item) => {
-			item.socket.write(ServerMessageClientMessage.create("Generando seeds"));
+			item.socket.send(ServerMessageClientMessage.create("Generando seeds"));
 		});
 		const seeds = this.generateSeeds();
 		this.room.clients.forEach((item) => {
-			item.socket.write(ServerMessageClientMessage.create("Seeds generados"));
+			item.socket.send(ServerMessageClientMessage.create("Seeds generados"));
 		});
 		this.room.replay.setSeed(seeds);
 		this.logger.debug(`GAME: ${this.room.playerNames(0)} VS ${this.room.playerNames(1)}`);
 
 		this.room.clients.forEach((item) => {
-			item.socket.write(ServerMessageClientMessage.create("Iniciando duelo"));
+			item.socket.send(ServerMessageClientMessage.create("Iniciando duelo"));
 		});
 
 		const core = spawn(
@@ -259,7 +259,7 @@ export class DuelingState extends RoomState {
 		core.stderr.on("data", (data: string) => {
 			this.logger.error(data.toString());
 			this.room.clients.forEach((item) => {
-				item.socket.write(ServerMessageClientMessage.create(data.toString()));
+				item.socket.send(ServerMessageClientMessage.create(data.toString()));
 			});
 		});
 
@@ -678,11 +678,7 @@ export class DuelingState extends RoomState {
 		);
 	}
 
-	private async handleJoin(
-		message: ClientMessage,
-		room: Room,
-		socket: TCPClientSocket
-	): Promise<void> {
+	private async handleJoin(message: ClientMessage, room: Room, socket: ISocket): Promise<void> {
 		this.logger.debug("DUELING: JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const joinMessage = new JoinGameMessage(message.data);

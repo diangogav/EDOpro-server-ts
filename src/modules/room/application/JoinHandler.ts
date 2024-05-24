@@ -10,16 +10,16 @@ import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientM
 import { ServerErrorClientMessage } from "../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { JoinMessageHandler } from "../../shared/room/domain/JoinMessageHandler";
-import { TCPClientSocket } from "../../shared/socket/domain/TCPClientSocket";
+import { ISocket } from "../../shared/socket/domain/ISocket";
 import { Room } from "../domain/Room";
 import RoomList from "../infrastructure/RoomList";
 
 export class JoinHandler implements JoinMessageHandler {
 	private readonly eventEmitter: EventEmitter;
 	private readonly logger: Logger;
-	private readonly socket: TCPClientSocket;
+	private readonly socket: ISocket;
 
-	constructor(eventEmitter: EventEmitter, logger: Logger, socket: TCPClientSocket) {
+	constructor(eventEmitter: EventEmitter, logger: Logger, socket: ISocket) {
 		this.eventEmitter = eventEmitter;
 		this.logger = logger;
 		this.socket = socket;
@@ -34,11 +34,11 @@ export class JoinHandler implements JoinMessageHandler {
 		const room = this.findRoom(joinMessage);
 
 		if (!room) {
-			this.socket.write(
+			this.socket.send(
 				ServerErrorClientMessage.create("Sala no encontrada. Intenta recargando la lista")
 			);
 
-			this.socket.write(ErrorClientMessage.create(ErrorMessages.JOINERROR));
+			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOINERROR));
 
 			this.socket.destroy();
 
@@ -46,8 +46,8 @@ export class JoinHandler implements JoinMessageHandler {
 		}
 
 		if (room.password !== joinMessage.password) {
-			this.socket.write(ServerErrorClientMessage.create("Clave incorrecta"));
-			this.socket.write(ErrorClientMessage.create(ErrorMessages.JOINERROR));
+			this.socket.send(ServerErrorClientMessage.create("Clave incorrecta"));
+			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOINERROR));
 			this.socket.destroy();
 
 			return;

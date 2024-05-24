@@ -1,9 +1,9 @@
-import { TCPClientSocket } from "../../../shared/socket/domain/TCPClientSocket";
 import { JoinGameMessage } from "../../../messages/client-to-server/JoinGameMessage";
+import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { Room } from "../Room";
 
 type ClientEnteredDuringDuelData = {
-	socket: TCPClientSocket;
+	socket: ISocket;
 	message: JoinGameMessage;
 	playerName: string;
 	room: Room;

@@ -6,7 +6,7 @@ import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientM
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
 import { PlayerEnterClientMessage } from "../../messages/server-to-client/PlayerEnterClientMessage";
 import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
-import { TCPClientSocket } from "../../shared/socket/domain/TCPClientSocket";
+import { ISocket } from "../../shared/socket/domain/ISocket";
 import { UserFinder } from "../../user/application/UserFinder";
 import { User } from "../../user/domain/User";
 import { Room } from "../domain/Room";
@@ -18,15 +18,15 @@ export class Reconnect {
 		playerInfoMessage: PlayerInfoMessage,
 		player: Client,
 		joinMessage: JoinGameMessage,
-		socket: TCPClientSocket,
+		socket: ISocket,
 		room: Room
 	): Promise<void> {
 		if (room.ranked) {
 			const user = await this.userFinder.run(playerInfoMessage);
 
 			if (!(user instanceof User)) {
-				socket.write(user as Buffer);
-				socket.write(ErrorClientMessage.create(ErrorMessages.JOINERROR));
+				socket.send(user as Buffer);
+				socket.send(ErrorClientMessage.create(ErrorMessages.JOINERROR));
 
 				return;
 			}

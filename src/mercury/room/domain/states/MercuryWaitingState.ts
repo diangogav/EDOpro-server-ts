@@ -9,7 +9,7 @@ import { ClientMessage } from "../../../../modules/messages/MessageProcessor";
 import { VersionErrorClientMessage } from "../../../../modules/messages/server-to-client/VersionErrorClientMessage";
 import { RoomState } from "../../../../modules/room/domain/RoomState";
 import { Logger } from "../../../../modules/shared/logger/domain/Logger";
-import { TCPClientSocket } from "../../../../modules/shared/socket/domain/TCPClientSocket";
+import { ISocket } from "../../../../modules/shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { mercuryConfig } from "../../../config";
 import { MercuryRoom } from "../MercuryRoom";
@@ -19,21 +19,21 @@ export class MercuryWaitingState extends RoomState {
 		super(eventEmitter);
 		this.eventEmitter.on(
 			"JOIN",
-			(message: ClientMessage, room: MercuryRoom, socket: TCPClientSocket) =>
+			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
 				void this.handle.bind(this)(message, room, socket)
 		);
 		this.eventEmitter.on(
 			Commands.TRY_START as unknown as string,
-			(message: ClientMessage, room: MercuryRoom, socket: TCPClientSocket) =>
+			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
 				void this.tryStartHandler.bind(this)(message, room, socket)
 		);
 	}
 
-	private handle(message: ClientMessage, room: MercuryRoom, socket: TCPClientSocket): void {
+	private handle(message: ClientMessage, room: MercuryRoom, socket: ISocket): void {
 		const joinMessage = new JoinGameMessage(message.data);
 
 		if (joinMessage.version2 !== mercuryConfig.version) {
-			socket.write(VersionErrorClientMessage.create(mercuryConfig.version));
+			socket.send(VersionErrorClientMessage.create(mercuryConfig.version));
 
 			return;
 		}
@@ -50,11 +50,7 @@ export class MercuryWaitingState extends RoomState {
 		room.addClient(client);
 	}
 
-	private tryStartHandler(
-		_message: ClientMessage,
-		room: MercuryRoom,
-		_socket: TCPClientSocket
-	): void {
+	private tryStartHandler(_message: ClientMessage, room: MercuryRoom, _socket: ISocket): void {
 		this.logger.info("MERCURY: TRY_START");
 		room.rps();
 	}

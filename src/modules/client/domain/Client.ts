@@ -5,7 +5,7 @@ import { Room } from "../../room/domain/Room";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
 import { YgoClient } from "../../shared/client/domain/YgoClient";
 import { Logger } from "../../shared/logger/domain/Logger";
-import { TCPClientSocket } from "../../shared/socket/domain/TCPClientSocket";
+import { ISocket } from "../../shared/socket/domain/ISocket";
 import { Rank } from "../../shared/value-objects/Rank";
 
 export class Listener {}
@@ -40,7 +40,7 @@ export class Client extends YgoClient {
 		logger,
 		ranks = [],
 	}: {
-		socket: TCPClientSocket;
+		socket: ISocket;
 		host: boolean;
 		name: string;
 		position: number;
@@ -59,15 +59,11 @@ export class Client extends YgoClient {
 		this.ranks = ranks;
 	}
 
-	get socket(): TCPClientSocket {
-		return this._socket;
-	}
-
-	setSocket(socket: TCPClientSocket, clients: Client[], room: Room): void {
+	setSocket(socket: ISocket, clients: Client[], room: Room): void {
 		this._socket = socket;
 		const messageProcessor = new MessageProcessor();
 		const roomMessageEmitter = new RoomMessageEmitter(this, room);
-		this._socket.on("data", (data) => {
+		this._socket.onMessage((data) => {
 			roomMessageEmitter.handleMessage(data);
 			messageProcessor.read(data);
 			// this.handleMessage(messageProcessor, clients, room);
@@ -173,7 +169,7 @@ export class Client extends YgoClient {
 	}
 
 	sendMessage(message: Buffer): void {
-		this._socket.write(message);
+		this._socket.send(message);
 	}
 
 	updatingDeck(): void {

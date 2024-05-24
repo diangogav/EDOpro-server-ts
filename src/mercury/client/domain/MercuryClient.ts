@@ -3,7 +3,7 @@ import net from "net";
 import { ClientMessage } from "../../../modules/messages/MessageProcessor";
 import { YgoClient } from "../../../modules/shared/client/domain/YgoClient";
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
-import { TCPClientSocket } from "../../../modules/shared/socket/domain/TCPClientSocket";
+import { ISocket } from "../../../modules/shared/socket/domain/ISocket";
 import { MercuryCoreMessageEmitter } from "../../MercuryCoreMessageEmitter";
 import { SimpleRoomMessageEmitter } from "../../MercuryRoomMessageEmitter";
 import { MercuryRoom } from "../../room/domain/MercuryRoom";
@@ -24,7 +24,7 @@ export class MercuryClient extends YgoClient {
 		room,
 	}: {
 		name: string;
-		socket: TCPClientSocket;
+		socket: ISocket;
 		logger: Logger;
 		messages: Buffer[];
 		position: number;
@@ -43,7 +43,7 @@ export class MercuryClient extends YgoClient {
 
 		const roomMessageEmitter = new SimpleRoomMessageEmitter(this, room);
 
-		this._socket.on("data", (data: Buffer) => {
+		this._socket.onMessage((data: Buffer) => {
 			roomMessageEmitter.handleMessage(data);
 		});
 	}
@@ -61,13 +61,12 @@ export class MercuryClient extends YgoClient {
 	}
 
 	sendMessageToClient(message: Buffer): void {
-		this._socket.write(message);
+		this._socket.send(message);
 	}
 
 	destroy(): void {
 		this._logger.debug("DESTROY");
 		this._coreClient.destroy();
-		this._socket.removeAllListeners();
 		this._socket.destroy();
 	}
 
@@ -80,7 +79,7 @@ export class MercuryClient extends YgoClient {
 		this._pendingMessages = [];
 	}
 
-	get socket(): TCPClientSocket {
+	get socket(): ISocket {
 		return this._socket;
 	}
 }

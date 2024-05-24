@@ -8,7 +8,7 @@ import { ClientMessage } from "../../messages/MessageProcessor";
 import { PlayerMessageClientMessage } from "../../messages/server-to-client/PlayerMessageClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { SpectatorMessageClientMessage } from "../../messages/server-to-client/SpectatorMessageClientMessage";
-import { TCPClientSocket } from "../../shared/socket/domain/TCPClientSocket";
+import { ISocket } from "../../shared/socket/domain/ISocket";
 import { Room } from "./Room";
 
 export abstract class RoomState {
@@ -30,7 +30,7 @@ export abstract class RoomState {
 	protected playerAlreadyInRoom(
 		playerInfoMessage: PlayerInfoMessage,
 		room: Room,
-		socket: TCPClientSocket
+		socket: ISocket
 	): Client | null {
 		if (!room.ranked) {
 			const player = room.clients.find((client) => {

@@ -8,36 +8,36 @@ import { PlayerChangeClientMessage } from "../../messages/server-to-client/Playe
 import { PlayerEnterClientMessage } from "../../messages/server-to-client/PlayerEnterClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
-import { TCPClientSocket } from "../../shared/socket/domain/TCPClientSocket";
+import { ISocket } from "../../shared/socket/domain/ISocket";
 import { Room } from "../domain/Room";
 
 export class JoinToDuelAsSpectator {
 	run(
 		joinMessage: JoinGameMessage,
 		playerInfoMessage: PlayerInfoMessage,
-		socket: TCPClientSocket,
+		socket: ISocket,
 		room: Room
 	): void {
 		const client = room.createSpectator(socket, playerInfoMessage.name);
 
-		socket.write(JoinGameClientMessage.createFromRoom(joinMessage, room));
-		socket.write(TypeChangeClientMessage.create({ type: 0x07 }));
+		socket.send(JoinGameClientMessage.createFromRoom(joinMessage, room));
+		socket.send(TypeChangeClientMessage.create({ type: 0x07 }));
 
 		room.clients.forEach((item) => {
 			const status = (item.position << 4) | 0x09;
-			socket.write(PlayerEnterClientMessage.create(item.name, item.position));
-			socket.write(PlayerChangeClientMessage.create({ status }));
+			socket.send(PlayerEnterClientMessage.create(item.name, item.position));
+			socket.send(PlayerChangeClientMessage.create({ status }));
 		});
 
-		socket.write(DuelStartClientMessage.create());
+		socket.send(DuelStartClientMessage.create());
 
-		socket.write(CatchUpClientMessage.create({ catchingUp: true }));
+		socket.send(CatchUpClientMessage.create({ catchingUp: true }));
 
 		room.spectatorCache.forEach((item) => {
-			socket.write(item);
+			socket.send(item);
 		});
 
-		socket.write(CatchUpClientMessage.create({ catchingUp: false }));
+		socket.send(CatchUpClientMessage.create({ catchingUp: false }));
 
 		const team0 = room.clients
 			.filter((player: Client) => player.team === 0)
@@ -47,10 +47,10 @@ export class JoinToDuelAsSpectator {
 			.filter((player: Client) => player.team === 1)
 			.map((item) => item.name.replace(/\0/g, "").trim());
 
-		socket.write(
+		socket.send(
 			ServerMessageClientMessage.create(`Bienvenido ${client.name.replace(/\0/g, "").trim()}`)
 		);
-		socket.write(
+		socket.send(
 			ServerMessageClientMessage.create(
 				`Score: ${team0.join(",")}: ${room.matchScore().team0} vs ${team1.join(",")}: ${
 					room.matchScore().team1

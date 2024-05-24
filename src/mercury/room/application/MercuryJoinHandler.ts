@@ -7,7 +7,7 @@ import { VersionErrorClientMessage } from "../../../modules/messages/server-to-c
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
 import { JoinMessageHandler } from "../../../modules/shared/room/domain/JoinMessageHandler";
 import { DuelState } from "../../../modules/shared/room/domain/YgoRoom";
-import { TCPClientSocket } from "../../../modules/shared/socket/domain/TCPClientSocket";
+import { ISocket } from "../../../modules/shared/socket/domain/ISocket";
 import { MercuryClient } from "../../client/domain/MercuryClient";
 import { mercuryConfig } from "../../config";
 import { MercuryJoinGameMessage } from "../../messages/MercuryJoinGameMessage";
@@ -17,9 +17,9 @@ import MercuryRoomList from "../infrastructure/MercuryRoomList";
 export class MercuryJoinHandler implements JoinMessageHandler {
 	private readonly eventEmitter: EventEmitter;
 	private readonly logger: Logger;
-	private readonly socket: TCPClientSocket;
+	private readonly socket: ISocket;
 
-	constructor(eventEmitter: EventEmitter, logger: Logger, socket: TCPClientSocket) {
+	constructor(eventEmitter: EventEmitter, logger: Logger, socket: ISocket) {
 		this.eventEmitter = eventEmitter;
 		this.logger = logger;
 		this.socket = socket;
@@ -37,7 +37,7 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 		this.logger.info(`version: ${joinMessage.version}`);
 
 		if (joinMessage.version !== mercuryConfig.version) {
-			this.socket.write(VersionErrorClientMessage.create(mercuryConfig.version));
+			this.socket.send(VersionErrorClientMessage.create(mercuryConfig.version));
 
 			return;
 		}

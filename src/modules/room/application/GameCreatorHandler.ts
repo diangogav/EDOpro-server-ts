@@ -15,7 +15,7 @@ import { ServerMessageClientMessage } from "../../messages/server-to-client/Serv
 import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { GameCreatorMessageHandler } from "../../shared/room/domain/GameCreatorMessageHandler";
-import { TCPClientSocket } from "../../shared/socket/domain/TCPClientSocket";
+import { ISocket } from "../../shared/socket/domain/ISocket";
 import { Rank } from "../../shared/value-objects/Rank";
 import { UserFinder } from "../../user/application/UserFinder";
 import { User } from "../../user/domain/User";
@@ -25,16 +25,11 @@ import RoomList from "../infrastructure/RoomList";
 export class GameCreatorHandler implements GameCreatorMessageHandler {
 	private readonly eventEmitter: EventEmitter;
 	private readonly logger: Logger;
-	private readonly socket: TCPClientSocket;
+	private readonly socket: ISocket;
 	private readonly userFinder: UserFinder;
 	private readonly HOST_CLIENT = 0x10;
 
-	constructor(
-		eventEmitter: EventEmitter,
-		logger: Logger,
-		socket: TCPClientSocket,
-		userFinder: UserFinder
-	) {
+	constructor(eventEmitter: EventEmitter, logger: Logger, socket: ISocket, userFinder: UserFinder) {
 		this.eventEmitter = eventEmitter;
 		this.logger = logger;
 		this.socket = socket;
@@ -58,8 +53,8 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 		const user = await this.userFinder.run(playerInfoMessage);
 
 		if (!(user instanceof User)) {
-			this.socket.write(user as Buffer);
-			this.socket.write(ErrorClientMessage.create(ErrorMessages.JOINERROR));
+			this.socket.send(user as Buffer);
+			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOINERROR));
 
 			return;
 		}
@@ -86,11 +81,11 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 		RoomList.addRoom(room);
 		room.createMatch();
 
-		this.socket.write(CreateGameClientMessage.create(room));
-		this.socket.write(JoinGameClientMessage.createFromCreateGameMessage(message));
-		this.socket.write(PlayerEnterClientMessage.create(playerInfoMessage.name, client.position));
-		this.socket.write(PlayerChangeClientMessage.create({}));
-		this.socket.write(TypeChangeClientMessage.create({ type: this.HOST_CLIENT }));
+		this.socket.send(CreateGameClientMessage.create(room));
+		this.socket.send(JoinGameClientMessage.createFromCreateGameMessage(message));
+		this.socket.send(PlayerEnterClientMessage.create(playerInfoMessage.name, client.position));
+		this.socket.send(PlayerChangeClientMessage.create({}));
+		this.socket.send(TypeChangeClientMessage.create({ type: this.HOST_CLIENT }));
 
 		if (room.ranked) {
 			this.sendRankedMessage();
@@ -102,21 +97,21 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 	}
 
 	private sendRankedMessage(): void {
-		this.socket.write(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
-		this.socket.write(
+		this.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
+		this.socket.send(
 			ServerMessageClientMessage.create(ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS)
 		);
-		this.socket.write(
+		this.socket.send(
 			ServerMessageClientMessage.create(ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION)
 		);
 	}
 
 	private sendUnrankedMessage(): void {
-		this.socket.write(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
-		this.socket.write(
+		this.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
+		this.socket.send(
 			ServerMessageClientMessage.create(ServerInfoMessage.UNRANKED_ROOM_CREATION_SUCCESS)
 		);
-		this.socket.write(ServerMessageClientMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));
+		this.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));
 	}
 
 	private generateUniqueId(): number {

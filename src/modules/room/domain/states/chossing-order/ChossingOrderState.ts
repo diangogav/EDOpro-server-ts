@@ -10,7 +10,7 @@ import { ClientMessage } from "../../../../messages/MessageProcessor";
 import { ChooseOrderClientMessage } from "../../../../messages/server-to-client/ChooseOrderClientMessage";
 import { DuelStartClientMessage } from "../../../../messages/server-to-client/DuelStartClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
-import { TCPClientSocket } from "../../../../shared/socket/domain/TCPClientSocket";
+import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";
 import { Room } from "../../Room";
@@ -27,7 +27,7 @@ export class ChossingOrderState extends RoomState {
 
 		this.eventEmitter.on(
 			"JOIN" as unknown as string,
-			(message: ClientMessage, room: Room, socket: TCPClientSocket) =>
+			(message: ClientMessage, room: Room, socket: ISocket) =>
 				this.handleJoin.bind(this)(message, room, socket)
 		);
 
@@ -78,11 +78,7 @@ export class ChossingOrderState extends RoomState {
 		player.clearReconnecting();
 	}
 
-	private async handleJoin(
-		message: ClientMessage,
-		room: Room,
-		socket: TCPClientSocket
-	): Promise<void> {
+	private async handleJoin(message: ClientMessage, room: Room, socket: ISocket): Promise<void> {
 		this.logger.debug("CHOSSING_ORDER: JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const joinMessage = new JoinGameMessage(message.data);

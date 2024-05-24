@@ -123,7 +123,7 @@ export class MercuryRoom extends YgoRoom {
 	addSpectator(spectator: MercuryClient): void {
 		this._spectators.push(spectator);
 		this.spectatorCache.forEach((message) => {
-			spectator.socket.write(message);
+			spectator.socket.send(message);
 		});
 	}
 
@@ -189,7 +189,7 @@ export class MercuryRoom extends YgoRoom {
 				this._logger.debug(`Incoming data for expectators: ${data.toString("hex")}`);
 				this.spectatorCache.push(data);
 				this._spectators.forEach((spectator) => {
-					spectator.socket.write(data);
+					spectator.socket.send(data);
 				});
 			});
 
