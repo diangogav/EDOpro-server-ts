@@ -37,7 +37,6 @@ export class MercuryServer {
 			const joinHandler = new MercuryJoinHandler(eventEmitter, this.logger, ygoClientSocket);
 			const messageEmitter = new MessageEmitter(
 				this.logger,
-				ygoClientSocket,
 				eventEmitter,
 				gameCreatorHandler,
 				joinHandler

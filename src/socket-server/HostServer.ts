@@ -52,7 +52,6 @@ export class HostServer {
 			const joinHandler = new JoinHandler(eventEmitter, this.logger, ygoClientSocket);
 			const messageEmitter = new MessageEmitter(
 				this.logger,
-				ygoClientSocket,
 				eventEmitter,
 				gameCreatorHandler,
 				joinHandler

@@ -1,6 +1,5 @@
 import { EventEmitter } from "stream";
 
-import { YGOClientSocket } from "../socket-server/HostServer";
 import { Commands } from "./messages/domain/Commands";
 import { MessageProcessor } from "./messages/MessageProcessor";
 import { Logger } from "./shared/logger/domain/Logger";
@@ -11,7 +10,6 @@ export class MessageEmitter {
 	private readonly messageProcessor: MessageProcessor;
 	constructor(
 		private readonly logger: Logger,
-		private readonly socket: YGOClientSocket,
 		private readonly eventEmitter: EventEmitter,
 		private readonly gameCreaJoinJoinHandlertorHandler: GameCreatorMessageHandler,
 		private readonly joinHandler: JoinMessageHandler
