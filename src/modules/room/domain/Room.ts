@@ -143,7 +143,6 @@ export class Room extends YgoRoom {
 	public readonly ranked: boolean;
 	private _replay: Replay;
 	private isStart: string;
-	private _spectators: Client[] = [];
 	private readonly _kick: Client[] = [];
 	private _duel?: ChildProcessWithoutNullStreams;
 	private _match: Match | null;
@@ -398,10 +397,6 @@ export class Room extends YgoRoom {
 
 	get replay(): Replay {
 		return this._replay;
-	}
-
-	get spectators(): Client[] {
-		return this._spectators;
 	}
 
 	addKick(client: Client): void {

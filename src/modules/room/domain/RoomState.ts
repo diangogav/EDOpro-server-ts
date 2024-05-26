@@ -8,6 +8,8 @@ import { ClientMessage } from "../../messages/MessageProcessor";
 import { PlayerMessageClientMessage } from "../../messages/server-to-client/PlayerMessageClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { SpectatorMessageClientMessage } from "../../messages/server-to-client/SpectatorMessageClientMessage";
+import { YgoClient } from "../../shared/client/domain/YgoClient";
+import { YgoRoom } from "../../shared/room/domain/YgoRoom";
 import { ISocket } from "../../shared/socket/domain/ISocket";
 import { Room } from "./Room";
 
@@ -58,13 +60,17 @@ export abstract class RoomState {
 		return player;
 	}
 
-	private handleChat(message: ClientMessage, room: Room, client: Client): void {
+	private handleChat(message: ClientMessage, room: YgoRoom, client: YgoClient): void {
 		const sanitized = BufferToUTF16(message.data, message.data.length);
-		if (sanitized === ":score") {
-			client.sendMessage(ServerMessageClientMessage.create(room.score));
 
-			return;
+		if (room instanceof Room) {
+			if (sanitized === ":score") {
+				client.socket.send(ServerMessageClientMessage.create(room.score));
+
+				return;
+			}
 		}
+
 		if (client.isSpectator) {
 			const chatMessage = SpectatorMessageClientMessage.create(
 				client.name.replace(/\0/g, "").trim(),
@@ -75,7 +81,7 @@ export abstract class RoomState {
 			});
 
 			room.spectators.forEach((spectator) => {
-				spectator.sendMessage(chatMessage);
+				spectator.socket.send(chatMessage);
 			});
 
 			return;
@@ -92,13 +98,13 @@ export abstract class RoomState {
 			Number(!client.team)
 		);
 
-		room.clients.forEach((player: Client) => {
+		room.clients.forEach((player: YgoClient) => {
 			const message = player.team === client.team ? playerMessage : opponentMessage;
-			player.sendMessage(message);
+			player.socket.send(message);
 		});
 
 		room.spectators.forEach((spectator) => {
-			spectator.sendMessage(opponentMessage);
+			spectator.socket.send(opponentMessage);
 		});
 	}
 }

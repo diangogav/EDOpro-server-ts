@@ -2,6 +2,7 @@ import { ISocket } from "../../socket/domain/ISocket";
 
 export abstract class YgoClient {
 	public readonly name: string;
+	public readonly host: boolean;
 	protected _position: number;
 	protected _team: number;
 	protected _socket: ISocket;
@@ -11,16 +12,19 @@ export abstract class YgoClient {
 		position,
 		team,
 		socket,
+		host,
 	}: {
 		name: string;
 		position: number;
 		team: number;
 		socket: ISocket;
+		host: boolean;
 	}) {
 		this.name = name;
 		this._position = position;
 		this._socket = socket;
 		this._team = team;
+		this.host = host;
 	}
 
 	get position(): number {
@@ -43,5 +47,9 @@ export abstract class YgoClient {
 	spectatorPosition(position: number): void {
 		this._position = position;
 		this._team = 3;
+	}
+
+	get isSpectator(): boolean {
+		return this._team === 3;
 	}
 }

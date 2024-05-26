@@ -22,6 +22,7 @@ export abstract class YgoRoom {
 	protected _state: DuelState;
 	protected _spectatorCache: Buffer[] = [];
 	protected _clients: YgoClient[] = [];
+	protected _spectators: YgoClient[] = [];
 
 	constructor({ team0, team1 }: { team0: number; team1: number }) {
 		this.team0 = team0;
@@ -56,6 +57,10 @@ export abstract class YgoRoom {
 
 	get clients(): YgoClient[] {
 		return this._clients;
+	}
+
+	get spectators(): YgoClient[] {
+		return this._spectators;
 	}
 
 	calculaPlace(startPosition?: number): { position: number; team: number } | null {

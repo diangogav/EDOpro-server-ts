@@ -69,7 +69,7 @@ export class RpsChoiceCommandStrategy {
 			}
 		});
 
-		room.spectators.forEach((spectator) => {
+		room.spectators.forEach((spectator: Client) => {
 			spectator.sendMessage(team0Response);
 		});
 

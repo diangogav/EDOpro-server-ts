@@ -30,7 +30,6 @@ export class MercuryRoom extends YgoRoom {
 	private _corePort: number | null = null;
 	private readonly _hostInfo: HostInfo;
 	private roomState: RoomState | null = null;
-	private _spectators: MercuryClient[] = [];
 
 	private constructor({
 		id,
@@ -125,10 +124,6 @@ export class MercuryRoom extends YgoRoom {
 
 	addClient(client: MercuryClient): void {
 		this._clients.push(client);
-
-		if (client.connectedToCore) {
-			return;
-		}
 
 		if (this._coreStarted && this._corePort) {
 			client.connectToCore({
@@ -298,10 +293,6 @@ export class MercuryRoom extends YgoRoom {
 		this._clients.forEach((client: MercuryClient) => {
 			client.destroy();
 		});
-	}
-
-	get spectators(): MercuryClient[] {
-		return this._spectators;
 	}
 
 	removeSpectator(spectator: MercuryClient): void {

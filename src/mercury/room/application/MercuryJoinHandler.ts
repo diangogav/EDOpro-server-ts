@@ -44,7 +44,6 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 
 		const messages = [message.previousRawMessage, message.raw];
 		const room = this.createRoomIfNotExists(joinMessage.pass);
-
 		if (room.duelState === DuelState.DUELING) {
 			const spectator = new MercuryClient({
 				socket: this.socket,
@@ -53,11 +52,14 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 				name: playerInfoMessage.name,
 				position: room.playersCount,
 				room,
+				host: false,
 			});
 			room.addSpectator(spectator);
 
 			return;
 		}
+
+		const host = room.clients.length === 0;
 
 		const client = new MercuryClient({
 			socket: this.socket,
@@ -66,6 +68,7 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 			name: playerInfoMessage.name,
 			position: room.playersCount,
 			room,
+			host,
 		});
 
 		room.addClient(client);

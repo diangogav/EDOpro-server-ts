@@ -112,7 +112,7 @@ export class WaitingState extends RoomState {
 			);
 		});
 
-		room.spectators.forEach((_client) => {
+		room.spectators.forEach((_client: Client) => {
 			_client.sendMessage(
 				ServerErrorClientMessage.create(
 					`El Jugador:${playerselect.name} ha sido Baneado de esta Sala, solo podra ingresar como espectador!!`
@@ -134,7 +134,7 @@ export class WaitingState extends RoomState {
 			client.sendMessage(duelStartMessage);
 		});
 
-		room.spectators.forEach((client) => {
+		room.spectators.forEach((client: Client) => {
 			client.sendMessage(duelStartMessage);
 		});
 
@@ -192,7 +192,7 @@ export class WaitingState extends RoomState {
 				_client.sendMessage(PlayerChangeClientMessage.create({ status }));
 			});
 
-			room.spectators.forEach((_client) => {
+			room.spectators.forEach((_client: Client) => {
 				const status = (player.position << 4) | PlayerRoomState.SPECTATE;
 
 				_client.sendMessage(PlayerChangeClientMessage.create({ status }));
@@ -213,7 +213,7 @@ export class WaitingState extends RoomState {
 				_client.sendMessage(watchMessage);
 			});
 
-			room.spectators.forEach((_client) => {
+			room.spectators.forEach((_client: Client) => {
 				_client.sendMessage(watchMessage);
 			});
 		}
@@ -364,7 +364,7 @@ export class WaitingState extends RoomState {
 			_client.sendMessage(watchMessage);
 		});
 
-		room.spectators.forEach((_client) => {
+		room.spectators.forEach((_client: Client) => {
 			_client.sendMessage(watchMessage);
 		});
 	}
@@ -429,7 +429,7 @@ export class WaitingState extends RoomState {
 			_client.sendMessage(PlayerEnterClientMessage.create(playerInfoMessage.name, client.position));
 		});
 
-		room.spectators.forEach((_client) => {
+		room.spectators.forEach((_client: Client) => {
 			_client.sendMessage(PlayerEnterClientMessage.create(playerInfoMessage.name, client.position));
 		});
 	}

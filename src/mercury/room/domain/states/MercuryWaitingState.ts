@@ -58,6 +58,7 @@ export class MercuryWaitingState extends RoomState {
 			name: playerInfoMessage.name,
 			position: room.playersCount,
 			room,
+			host: false,
 		});
 		room.addClient(client);
 	}
@@ -80,8 +81,7 @@ export class MercuryWaitingState extends RoomState {
 		this.logger.debug(`from: ${previousPosition}`);
 		this.logger.debug(`to: ${newPosition}`);
 		client.playerPosition(newPosition);
-
-		if (newPosition === 8) {
+		if (newPosition === 8 && !client.host) {
 			room.removePlayer(client);
 			room.addSpectator(client);
 

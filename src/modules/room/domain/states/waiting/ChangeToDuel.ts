@@ -53,7 +53,7 @@ export class ChangeToDuel {
 			_client.sendMessage(PlayerEnterClientMessage.create(client.name, place.position));
 		});
 
-		room.spectators.forEach((_client) => {
+		room.spectators.forEach((_client: Client) => {
 			_client.sendMessage(PlayerEnterClientMessage.create(client.name, place.position));
 		});
 	}
@@ -69,7 +69,7 @@ export class ChangeToDuel {
 			_client.sendMessage(PlayerChangeClientMessage.create({ status }));
 		});
 
-		room.spectators.forEach((_client) => {
+		room.spectators.forEach((_client: Client) => {
 			const status = (client.position << 4) | place.position;
 
 			_client.sendMessage(PlayerChangeClientMessage.create({ status }));
@@ -83,7 +83,7 @@ export class ChangeToDuel {
 			_client.sendMessage(PlayerChangeClientMessage.create({ status }));
 		});
 
-		room.spectators.forEach((_client) => {
+		room.spectators.forEach((_client: Client) => {
 			const status = (client.position << 4) | PlayerRoomState.NOT_READY;
 
 			_client.sendMessage(PlayerChangeClientMessage.create({ status }));
@@ -98,7 +98,7 @@ export class ChangeToDuel {
 			_client.sendMessage(watchMessage);
 		});
 
-		room.spectators.forEach((_client) => {
+		room.spectators.forEach((_client: Client) => {
 			_client.sendMessage(watchMessage);
 		});
 	}

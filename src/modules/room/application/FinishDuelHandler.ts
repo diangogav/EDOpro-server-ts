@@ -41,7 +41,7 @@ export class FinishDuelHandler {
 			player.sendMessage(scoreTitleMessage);
 		});
 
-		this.room.spectators.forEach((spectator) => {
+		this.room.spectators.forEach((spectator: Client) => {
 			spectator.sendMessage(scoreTitleMessage);
 		});
 
@@ -65,7 +65,7 @@ export class FinishDuelHandler {
 			this.room.clients.forEach((item: Client) => {
 				item.sendMessage(winMessage);
 			});
-			this.room.spectators.forEach((item) => {
+			this.room.spectators.forEach((item: Client) => {
 				item.sendMessage(winMessage);
 			});
 		}
@@ -74,7 +74,7 @@ export class FinishDuelHandler {
 			item.sendMessage(replayMessage);
 		});
 
-		this.room.spectators.forEach((item) => {
+		this.room.spectators.forEach((item: Client) => {
 			item.sendMessage(replayMessage);
 		});
 
@@ -82,7 +82,7 @@ export class FinishDuelHandler {
 			item.sendMessage(replayPromptMessage);
 		});
 
-		this.room.spectators.forEach((item) => {
+		this.room.spectators.forEach((item: Client) => {
 			item.sendMessage(replayPromptMessage);
 		});
 
@@ -91,7 +91,7 @@ export class FinishDuelHandler {
 				player.sendMessage(DuelEndMessage.create());
 			});
 
-			this.room.spectators.forEach((player) => {
+			this.room.spectators.forEach((player: Client) => {
 				player.sendMessage(DuelEndMessage.create());
 			});
 
@@ -143,7 +143,7 @@ export class FinishDuelHandler {
 			client.notReady();
 		});
 
-		this.room.spectators.forEach((spectator) => {
+		this.room.spectators.forEach((spectator: Client) => {
 			spectator.sendMessage(SideDeckWaitClientMessage.create());
 		});
 	}

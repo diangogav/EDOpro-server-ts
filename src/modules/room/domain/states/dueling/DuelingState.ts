@@ -440,7 +440,7 @@ export class DuelingState extends RoomState {
 			client.sendMessage(ServerMessageClientMessage.create(`${player.name} ha ingresado al duelo`));
 		});
 
-		this.room.spectators.forEach((spectator) => {
+		this.room.spectators.forEach((spectator: Client) => {
 			spectator.sendMessage(
 				ServerMessageClientMessage.create(`${player.name} ha ingresado al duelo`)
 			);
@@ -467,23 +467,6 @@ export class DuelingState extends RoomState {
 				},
 			})
 		);
-
-		// if (params.length === 1) {
-		// 	return;
-		// }
-		// const position = Number(params[0]);
-		// const buffer = Buffer.from(params.slice(1).map(Number));
-		// const header = Buffer.from([0x01]);
-		// const type = Buffer.from([0xa2]);
-		// const data = Buffer.concat([type, buffer]);
-		// const size = decimalToBytesBuffer(1 + data.length, 2);
-		// const message = Buffer.concat([size, header, data]);
-		// const player = this.room.clients.find((player) => player.position === position);
-		// if (!player) {
-		// 	return;
-		// }
-		// player.sendMessage(message);
-		// this.room.sendMessageToCpp(`CMD:REFRESH|${player.team}|${position}\n`);
 	}
 
 	private handleCoreFinish(message: FinishMessage) {
@@ -525,7 +508,7 @@ export class DuelingState extends RoomState {
 			client.sendMessage(message);
 		});
 
-		this.room.spectators.forEach((client) => {
+		this.room.spectators.forEach((client: Client) => {
 			client.sendMessage(message);
 		});
 	}
@@ -638,7 +621,7 @@ export class DuelingState extends RoomState {
 			}
 		});
 
-		this.room.spectators.forEach((spectator) => {
+		this.room.spectators.forEach((spectator: Client) => {
 			spectator.sendMessage(spectatorGameMessage);
 		});
 

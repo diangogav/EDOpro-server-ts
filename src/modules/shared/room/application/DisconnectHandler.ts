@@ -75,7 +75,7 @@ export class DisconnectHandler {
 				client.sendMessage(message);
 			});
 
-			room.spectators.forEach((spectator) => {
+			room.spectators.forEach((spectator: Client) => {
 				spectator.sendMessage(message);
 			});
 
@@ -91,7 +91,7 @@ export class DisconnectHandler {
 				);
 			});
 
-			room.spectators.forEach((spectator) => {
+			room.spectators.forEach((spectator: Client) => {
 				spectator.sendMessage(
 					ServerMessageClientMessage.create(
 						`${player.name.replace(/\0/g, "").trim()} ha salido del duelo`
@@ -116,7 +116,7 @@ export class DisconnectHandler {
 
 	private removeSpectator(room: Room): void {
 		const spectator = room.spectators.find((client) => client.socket.id === this.socket.id);
-		if (!spectator) {
+		if (!(spectator instanceof Client)) {
 			return;
 		}
 		room.removeSpectator(spectator);
@@ -130,7 +130,7 @@ export class DisconnectHandler {
 			_client.sendMessage(message);
 		});
 
-		room.spectators.forEach((_client) => {
+		room.spectators.forEach((_client: Client) => {
 			_client.sendMessage(message);
 		});
 	}
@@ -138,7 +138,7 @@ export class DisconnectHandler {
 	private removeMercurySpectator(room: MercuryRoom): void {
 		const spectator = room.spectators.find((client) => client.socket.id === this.socket.id);
 
-		if (!spectator) {
+		if (!(spectator instanceof MercuryClient)) {
 			return;
 		}
 

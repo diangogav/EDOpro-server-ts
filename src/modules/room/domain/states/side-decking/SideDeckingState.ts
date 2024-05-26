@@ -113,7 +113,7 @@ export class SideDeckingState extends RoomState {
 			return;
 		}
 
-		room.spectators.forEach((spectator) => {
+		room.spectators.forEach((spectator: Client) => {
 			spectator.sendMessage(duelStartMessage);
 		});
 
