@@ -8,10 +8,12 @@ import { Commands } from "../../../../modules/messages/domain/Commands";
 import { ClientMessage } from "../../../../modules/messages/MessageProcessor";
 import { VersionErrorClientMessage } from "../../../../modules/messages/server-to-client/VersionErrorClientMessage";
 import { RoomState } from "../../../../modules/room/domain/RoomState";
+import { YgoClient } from "../../../../modules/shared/client/domain/YgoClient";
 import { Logger } from "../../../../modules/shared/logger/domain/Logger";
 import { ISocket } from "../../../../modules/shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { mercuryConfig } from "../../../config";
+import { PlayerEnterMessage } from "../../../messages/core-to-client/PlayerEnterCoreToClientMessage";
 import { MercuryRoom } from "../MercuryRoom";
 
 export class MercuryWaitingState extends RoomState {
@@ -26,6 +28,16 @@ export class MercuryWaitingState extends RoomState {
 			Commands.TRY_START as unknown as string,
 			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
 				void this.tryStartHandler.bind(this)(message, room, socket)
+		);
+		this.eventEmitter.on(
+			"HS_PLAYER_CHANGE" as unknown as string,
+			(message: ClientMessage, room: MercuryRoom, client: YgoClient) =>
+				void this.handlePlayerChange.bind(this)(message, room, client)
+		);
+		this.eventEmitter.on(
+			"HS_PLAYER_ENTER" as unknown as string,
+			(message: ClientMessage, room: MercuryRoom, client: YgoClient) =>
+				void this.handlePlayerEnter.bind(this)(message, room, client)
 		);
 	}
 
@@ -53,5 +65,34 @@ export class MercuryWaitingState extends RoomState {
 	private tryStartHandler(_message: ClientMessage, room: MercuryRoom, _socket: ISocket): void {
 		this.logger.info("MERCURY: TRY_START");
 		room.rps();
+	}
+
+	private handlePlayerChange(
+		message: ClientMessage,
+		room: MercuryRoom,
+		client: MercuryClient
+	): void {
+		this.logger.debug("Mercury HS_PLAYER_CHANGE");
+		const status = parseInt(message.data.toString("hex"), 16);
+		const previousPosition = (status >> 4) & 0x0f;
+		const newPosition = status & 0x0f;
+		this.logger.debug(`status: ${status}`);
+		this.logger.debug(`from: ${previousPosition}`);
+		this.logger.debug(`to: ${newPosition}`);
+		client.playerPosition(newPosition);
+	}
+
+	private handlePlayerEnter(
+		message: ClientMessage,
+		_room: MercuryRoom,
+		client: MercuryClient
+	): void {
+		this.logger.debug("Mercury HS_PLAYER_ENTER");
+		this.logger.debug(`Mercury HS_PLAYER_ENTER MESSAGE: ${message.data.toString("hex")}`);
+		const playerEnterMessage = new PlayerEnterMessage(message.data);
+		if (playerEnterMessage.name === "Evolution") {
+			return;
+		}
+		client.playerPosition(playerEnterMessage.position);
 	}
 }

@@ -37,13 +37,17 @@ export class MercuryRoom extends YgoRoom {
 		name,
 		password,
 		hostInfo,
+		team0,
+		team1,
 	}: {
 		id: number;
 		password: string;
 		name: string;
 		hostInfo: HostInfo;
+		team0: number;
+		team1: number;
 	}) {
-		super();
+		super({ team0, team1 });
 		this.id = id;
 		this.name = name;
 		this.password = password;
@@ -102,7 +106,16 @@ export class MercuryRoom extends YgoRoom {
 			}
 		});
 
-		const room = new MercuryRoom({ id, hostInfo, name: command, password });
+		const teamCount = hostInfo.mode === Mode.TAG ? 2 : 1;
+
+		const room = new MercuryRoom({
+			id,
+			hostInfo,
+			name: command,
+			password,
+			team0: teamCount,
+			team1: teamCount,
+		});
 
 		room._logger = logger;
 		room.emitter = emitter;

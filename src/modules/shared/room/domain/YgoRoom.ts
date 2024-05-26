@@ -14,10 +14,21 @@ export enum DuelState {
 }
 
 export abstract class YgoRoom {
+	public readonly team0: number;
+	public readonly team1: number;
+	protected readonly t0Positions: number[] = [];
+	protected readonly t1Positions: number[] = [];
 	protected emitter: EventEmitter;
 	protected _state: DuelState;
 	protected _spectatorCache: Buffer[] = [];
 	protected _clients: YgoClient[] = [];
+
+	constructor({ team0, team1 }: { team0: number; team1: number }) {
+		this.team0 = team0;
+		this.team1 = team1;
+		this.t0Positions = Array.from({ length: this.team0 }, (_, index) => index);
+		this.t1Positions = Array.from({ length: this.team1 }, (_, index) => this.team0 + index);
+	}
 
 	emit(event: string, message: unknown, socket: ISocket): void {
 		this.emitter.emit(event, message, this, socket);
@@ -45,5 +56,57 @@ export abstract class YgoRoom {
 
 	get clients(): YgoClient[] {
 		return this._clients;
+	}
+
+	calculaPlace(startPosition?: number): { position: number; team: number } | null {
+		const team0 = this.clients
+			.filter((client: Client) => client.team === 0)
+			.map((client) => client.position);
+
+		const availableTeam0Positions = this.getDifference(this.t0Positions, team0);
+
+		if (availableTeam0Positions.length > 0) {
+			const nextPosition0 = this.findNextPosition(availableTeam0Positions, startPosition);
+			if (nextPosition0 !== null) {
+				return {
+					position: nextPosition0,
+					team: 0,
+				};
+			}
+		}
+
+		const team1 = this.clients
+			.filter((client: Client) => client.team === 1)
+			.map((client) => client.position);
+
+		const availableTeam1Positions = this.getDifference(this.t1Positions, team1);
+
+		if (availableTeam1Positions.length > 0) {
+			const nextPosition1 = this.findNextPosition(availableTeam1Positions, startPosition);
+			if (nextPosition1 !== null) {
+				return {
+					position: nextPosition1,
+					team: 1,
+				};
+			}
+		}
+
+		return null;
+	}
+
+	protected findNextPosition(availablePositions: number[], startPosition?: number): number | null {
+		if (startPosition !== undefined) {
+			for (const pos of availablePositions) {
+				if (pos > startPosition) {
+					return pos;
+				}
+			}
+		}
+
+		return availablePositions.length > 0 ? availablePositions[0] : null;
+	}
+
+	protected getDifference(a: number[], b: number[]): number[] {
+		return a.filter((item) => !b.includes(item));
 	}
 }

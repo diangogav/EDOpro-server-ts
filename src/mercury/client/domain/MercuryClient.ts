@@ -1,6 +1,7 @@
 import net from "net";
 
 import { ClientMessage } from "../../../modules/messages/MessageProcessor";
+import { Team } from "../../../modules/room/domain/Team";
 import { YgoClient } from "../../../modules/shared/client/domain/YgoClient";
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
 import { ISocket } from "../../../modules/shared/socket/domain/ISocket";
@@ -30,7 +31,7 @@ export class MercuryClient extends YgoClient {
 		position: number;
 		room: MercuryRoom;
 	}) {
-		super({ name, position, socket });
+		super({ name, position, team: Team.SPECTATOR, socket });
 		this._coreClient = new net.Socket();
 		this._logger = logger;
 		this._pendingMessages = messages;
@@ -68,6 +69,15 @@ export class MercuryClient extends YgoClient {
 		this._logger.debug("DESTROY");
 		this._coreClient.destroy();
 		this._socket.destroy();
+	}
+
+	playerPosition(position: number): void {
+		this._position = position;
+		if (position >= 0 && position < 2) {
+			super.playerPosition(position, Team.PLAYER);
+		} else {
+			super.playerPosition(position, Team.OPPONENT);
+		}
 	}
 
 	private sendPendingMessages(): void {

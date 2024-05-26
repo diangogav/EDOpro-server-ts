@@ -155,8 +155,6 @@ export class Room extends YgoRoom {
 	private _opponentExtraDeckSize: number;
 	private readonly _turn = 0;
 	private _firstToPlay: number;
-	private readonly t0Positions: number[] = [];
-	private readonly t1Positions: number[] = [];
 	private readonly timers: Timer[];
 	private readonly roomTimer: Timer;
 	private roomState: RoomState | null = null;
@@ -164,14 +162,15 @@ export class Room extends YgoRoom {
 	private currentDuel: Duel | null = null;
 
 	private constructor(attr: RoomAttr) {
-		super();
+		super({
+			team0: attr.team0,
+			team1: attr.team1,
+		});
 		this.id = attr.id;
 		this.name = attr.name;
 		this.notes = attr.notes;
 		this.mode = attr.mode;
 		this.needPass = attr.needPass;
-		this.team0 = attr.team0;
-		this.team1 = attr.team1;
 		this.bestOf = attr.bestOf;
 		this.duelFlag = attr.duelFlag;
 		this.forbiddenTypes = attr.forbiddenTypes;
@@ -200,8 +199,6 @@ export class Room extends YgoRoom {
 		this._state = DuelState.WAITING;
 		this.duelFlagsLow = attr.duelFlagsLow;
 		this.duelFlagsHight = attr.duelFlagsHight;
-		this.t0Positions = Array.from({ length: this.team0 }, (_, index) => index);
-		this.t1Positions = Array.from({ length: this.team1 }, (_, index) => this.team0 + index);
 		this.timers = [
 			new Timer(this.timeLimit * 1000, () => {
 				const finishDuelHandler = new FinishDuelHandler({
@@ -608,36 +605,6 @@ export class Room extends YgoRoom {
 		};
 	}
 
-	calculaPlace(): { position: number; team: number } | null {
-		const team0 = this.clients
-			.filter((client: Client) => client.team === 0)
-			.map((client) => client.position);
-
-		const availableTeam0Positions = this.getDifference(this.t0Positions, team0);
-
-		if (availableTeam0Positions.length > 0) {
-			return {
-				position: availableTeam0Positions[0],
-				team: 0,
-			};
-		}
-
-		const team1 = this.clients
-			.filter((client: Client) => client.team === 1)
-			.map((client) => client.position);
-
-		const availableTeam1Positions = this.getDifference(this.t1Positions, team1);
-
-		if (availableTeam1Positions.length > 0) {
-			return {
-				position: availableTeam1Positions[0],
-				team: 1,
-			};
-		}
-
-		return null;
-	}
-
 	prepareTurnOrder(): void {
 		const team0Players = this.clients.filter((player: Client) => player.team === 0);
 		const team1Players = this.clients.filter((player: Client) => player.team === 1);
@@ -899,9 +866,5 @@ export class Room extends YgoRoom {
 				this.writeToCppProcess(messageToCpp, retryCount - 1);
 			}, 100);
 		}
-	}
-
-	private getDifference(a: number[], b: number[]) {
-		return a.filter((item) => !b.includes(item));
 	}
 }

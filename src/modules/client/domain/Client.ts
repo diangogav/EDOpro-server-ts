@@ -15,7 +15,6 @@ export class Client extends YgoClient {
 	public readonly host: boolean;
 	public readonly roomId: number;
 	public readonly ranks: Rank[];
-	private _team: number;
 	private _isReady: boolean;
 	private _rpsChosen: Choose | null = null;
 	private _lastMessage: Buffer | null = null;
@@ -50,11 +49,10 @@ export class Client extends YgoClient {
 		logger: Logger;
 		ranks: Rank[];
 	}) {
-		super({ name, position, socket });
+		super({ name, position, team, socket });
 		this.host = host;
 		this.roomId = roomId;
 		this._isReady = isReady;
-		this._team = team;
 		this.logger = logger;
 		this.ranks = ranks;
 	}
@@ -144,16 +142,6 @@ export class Client extends YgoClient {
 
 	get isSpectator(): boolean {
 		return this._team === 3;
-	}
-
-	spectatorPosition(position: number): void {
-		this._position = position;
-		this._team = 3;
-	}
-
-	playerPosition(position: number, team: number): void {
-		this._position = position;
-		this._team = team;
 	}
 
 	get team(): number {
