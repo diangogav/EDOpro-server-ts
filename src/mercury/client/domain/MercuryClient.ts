@@ -92,4 +92,8 @@ export class MercuryClient extends YgoClient {
 	get socket(): ISocket {
 		return this._socket;
 	}
+
+	get connectedToCore(): boolean {
+		return Boolean(this._coreClient);
+	}
 }

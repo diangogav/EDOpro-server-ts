@@ -125,6 +125,11 @@ export class MercuryRoom extends YgoRoom {
 
 	addClient(client: MercuryClient): void {
 		this._clients.push(client);
+
+		if (client.connectedToCore) {
+			return;
+		}
+
 		if (this._coreStarted && this._corePort) {
 			client.connectToCore({
 				url: "127.0.0.1",

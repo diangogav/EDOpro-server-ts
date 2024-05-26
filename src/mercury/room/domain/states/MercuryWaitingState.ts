@@ -80,6 +80,20 @@ export class MercuryWaitingState extends RoomState {
 		this.logger.debug(`from: ${previousPosition}`);
 		this.logger.debug(`to: ${newPosition}`);
 		client.playerPosition(newPosition);
+
+		if (newPosition === 8) {
+			room.removePlayer(client);
+			room.addSpectator(client);
+
+			return;
+		}
+
+		if (previousPosition === 8 && newPosition !== 8) {
+			room.removeSpectator(client);
+			room.addSpectator(client);
+
+			return;
+		}
 	}
 
 	private handlePlayerEnter(
