@@ -28,13 +28,14 @@ export class MercuryRoom extends YgoRoom {
 	private _logger: Logger;
 	private _coreStarted = false;
 	private _corePort: number | null = null;
+	private _banlistHash: number;
 	private readonly _hostInfo: HostInfo;
 	private roomState: RoomState | null = null;
 
 	private constructor({
 		id,
 		name,
-		password,
+		password = "",
 		hostInfo,
 		team0,
 		team1,
@@ -53,6 +54,7 @@ export class MercuryRoom extends YgoRoom {
 		this._clients = [];
 		this._hostInfo = hostInfo;
 		this._state = DuelState.WAITING;
+		this._banlistHash = 0;
 	}
 
 	static create(id: number, command: string, logger: Logger, emitter: EventEmitter): MercuryRoom {
@@ -62,10 +64,10 @@ export class MercuryRoom extends YgoRoom {
 			startHand: 5,
 			drawCount: 1,
 			timeLimit: 180,
-			rule: 0,
+			rule: 1,
 			noCheck: false,
 			noShuffle: false,
-			lflist: -1,
+			lflist: 1,
 			duelRule: 5,
 		};
 
@@ -252,15 +254,19 @@ export class MercuryRoom extends YgoRoom {
 		this.roomState = new MercuryDuelingState(this.emitter, this._logger);
 	}
 
+	setBanlistHash(banlistHash: number): void {
+		this._banlistHash = banlistHash;
+	}
+
 	toPresentation(): { [key: string]: unknown } {
 		return {
 			roomid: this.id,
 			roomname: this.name,
 			roomnotes: "",
 			roommode: this._hostInfo.mode,
-			needpass: true,
-			team1: 1,
-			team2: 1,
+			needpass: this.password.length > 0,
+			team1: this.team0,
+			team2: this.team1,
 			best_of: this.calculateBestOf(),
 			duel_flag: 0,
 			forbidden_types: 0,
@@ -272,7 +278,7 @@ export class MercuryRoom extends YgoRoom {
 			rule: this._hostInfo.rule,
 			no_check: this._hostInfo.noCheck,
 			no_shuffle: this._hostInfo.noShuffle,
-			banlist_hash: 0,
+			banlist_hash: this._banlistHash,
 			istart: "waiting",
 			main_min: 40,
 			main_max: 60,

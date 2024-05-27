@@ -13,6 +13,7 @@ import { Logger } from "../../../../modules/shared/logger/domain/Logger";
 import { ISocket } from "../../../../modules/shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { mercuryConfig } from "../../../config";
+import { JoinGameCoreToClientMessage } from "../../../messages/core-to-client/JoinGameCoreToClientMessage";
 import { PlayerEnterMessage } from "../../../messages/core-to-client/PlayerEnterCoreToClientMessage";
 import { MercuryRoom } from "../MercuryRoom";
 
@@ -28,6 +29,11 @@ export class MercuryWaitingState extends RoomState {
 			Commands.TRY_START as unknown as string,
 			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
 				void this.tryStartHandler.bind(this)(message, room, socket)
+		);
+		this.eventEmitter.on(
+			"JOIN_GAME" as unknown as string,
+			(message: ClientMessage, room: MercuryRoom, client: YgoClient) =>
+				void this.handleJoinGame.bind(this)(message, room, client)
 		);
 		this.eventEmitter.on(
 			"HS_PLAYER_CHANGE" as unknown as string,
@@ -108,5 +114,11 @@ export class MercuryWaitingState extends RoomState {
 			return;
 		}
 		client.playerPosition(playerEnterMessage.position);
+	}
+
+	private handleJoinGame(message: ClientMessage, room: MercuryRoom, _client: MercuryClient): void {
+		this.logger.debug("MERCURY: JOIN_GAME");
+		const joinGameMessage = new JoinGameCoreToClientMessage(message.data);
+		room.setBanlistHash(joinGameMessage.banList);
 	}
 }
