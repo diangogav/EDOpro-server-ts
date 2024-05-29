@@ -28,7 +28,7 @@ export class MercuryServer {
 		});
 
 		this.server.on("connection", (socket: Socket) => {
-			this.logger.info("Client connected to Mercury server!!");
+			this.logger.info("Client connected to Mercury server!!!");
 			this.address = socket.remoteAddress;
 			const ygoClientSocket = new TCPClientSocket(socket);
 			const eventEmitter = new EventEmitter();
