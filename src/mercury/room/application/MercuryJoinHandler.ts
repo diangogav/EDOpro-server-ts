@@ -3,13 +3,9 @@ import { EventEmitter } from "stream";
 import { PlayerInfoMessage } from "../../../modules/messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../modules/messages/domain/Commands";
 import { ClientMessage } from "../../../modules/messages/MessageProcessor";
-import { VersionErrorClientMessage } from "../../../modules/messages/server-to-client/VersionErrorClientMessage";
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
 import { JoinMessageHandler } from "../../../modules/shared/room/domain/JoinMessageHandler";
-import { DuelState } from "../../../modules/shared/room/domain/YgoRoom";
 import { ISocket } from "../../../modules/shared/socket/domain/ISocket";
-import { MercuryClient } from "../../client/domain/MercuryClient";
-import { mercuryConfig } from "../../config";
 import { MercuryJoinGameMessage } from "../../messages/MercuryJoinGameMessage";
 import { MercuryRoom } from "../domain/MercuryRoom";
 import MercuryRoomList from "../infrastructure/MercuryRoomList";
@@ -30,52 +26,25 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 
 	handle(message: ClientMessage): void {
 		this.logger.debug(`Join Message: ${message.data.toString("hex")}`);
-
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		this.logger.debug(`name: ${playerInfoMessage.name}`);
 		const joinMessage = new MercuryJoinGameMessage(message.data);
-		this.logger.info(`version: ${joinMessage.version}`);
-
-		if (joinMessage.version !== mercuryConfig.version) {
-			this.socket.send(VersionErrorClientMessage.create(mercuryConfig.version));
-
-			return;
-		}
-
-		const messages = [message.previousRawMessage, message.raw];
 		const room = this.createRoomIfNotExists(joinMessage.pass);
-		if (room.duelState === DuelState.DUELING) {
-			const spectator = new MercuryClient({
-				socket: this.socket,
-				logger: this.logger,
-				messages: [],
-				name: playerInfoMessage.name,
-				position: room.playersCount,
-				room,
-				host: false,
-			});
-			room.addSpectator(spectator, false);
+		room.emit("JOIN", message, this.socket);
+		// if (room.duelState === DuelState.DUELING) {
+		// 	const spectator = new MercuryClient({
+		// 		socket: this.socket,
+		// 		logger: this.logger,
+		// 		messages: [],
+		// 		name: playerInfoMessage.name,
+		// 		position: room.playersCount,
+		// 		room,
+		// 		host: false,
+		// 	});
+		// 	room.addSpectator(spectator, false);
 
-			return;
-		}
-
-		const host = room.clients.length === 0;
-
-		const client = new MercuryClient({
-			socket: this.socket,
-			logger: this.logger,
-			messages,
-			name: playerInfoMessage.name,
-			position: room.playersCount,
-			room,
-			host,
-		});
-
-		room.addClient(client);
-
-		if (!room.isCoreStarted) {
-			room.startCore();
-		}
+		// 	return;
+		// }
 	}
 
 	private generateUniqueId(): number {

@@ -1,5 +1,7 @@
 import { EventEmitter } from "stream";
 
+import { mercuryConfig } from "../../../mercury/config";
+import { MercuryJoinGameMessage } from "../../../mercury/messages/MercuryJoinGameMessage";
 import { BufferToUTF16 } from "../../../utils/BufferToUTF16";
 import { Client } from "../../client/domain/Client";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
@@ -8,6 +10,7 @@ import { ClientMessage } from "../../messages/MessageProcessor";
 import { PlayerMessageClientMessage } from "../../messages/server-to-client/PlayerMessageClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { SpectatorMessageClientMessage } from "../../messages/server-to-client/SpectatorMessageClientMessage";
+import { VersionErrorClientMessage } from "../../messages/server-to-client/VersionErrorClientMessage";
 import { YgoClient } from "../../shared/client/domain/YgoClient";
 import { YgoRoom } from "../../shared/room/domain/YgoRoom";
 import { ISocket } from "../../shared/socket/domain/ISocket";
@@ -58,6 +61,16 @@ export abstract class RoomState {
 		}
 
 		return player;
+	}
+
+	protected validateVersion(message: Buffer, socket: ISocket): void {
+		const joinMessage = new MercuryJoinGameMessage(message);
+
+		if (joinMessage.version !== mercuryConfig.version) {
+			socket.send(VersionErrorClientMessage.create(mercuryConfig.version));
+
+			throw new Error("Version mismatch");
+		}
 	}
 
 	private handleChat(message: ClientMessage, room: YgoRoom, client: YgoClient): void {

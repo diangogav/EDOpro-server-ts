@@ -2,17 +2,14 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { EventEmitter } from "stream";
 
-import { JoinGameMessage } from "../../../../modules/messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../../../modules/messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../../modules/messages/domain/Commands";
 import { ClientMessage } from "../../../../modules/messages/MessageProcessor";
-import { VersionErrorClientMessage } from "../../../../modules/messages/server-to-client/VersionErrorClientMessage";
 import { RoomState } from "../../../../modules/room/domain/RoomState";
 import { YgoClient } from "../../../../modules/shared/client/domain/YgoClient";
 import { Logger } from "../../../../modules/shared/logger/domain/Logger";
 import { ISocket } from "../../../../modules/shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
-import { mercuryConfig } from "../../../config";
 import { JoinGameCoreToClientMessage } from "../../../messages/core-to-client/JoinGameCoreToClientMessage";
 import { PlayerEnterMessage } from "../../../messages/core-to-client/PlayerEnterCoreToClientMessage";
 import { MercuryRoom } from "../MercuryRoom";
@@ -48,15 +45,10 @@ export class MercuryWaitingState extends RoomState {
 	}
 
 	private handle(message: ClientMessage, room: MercuryRoom, socket: ISocket): void {
-		const joinMessage = new JoinGameMessage(message.data);
-
-		if (joinMessage.version2 !== mercuryConfig.version) {
-			socket.send(VersionErrorClientMessage.create(mercuryConfig.version));
-
-			return;
-		}
+		this.validateVersion(message.data, socket);
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const messages = [message.previousRawMessage, message.raw];
+		const host = room.clients.length === 0;
 		const client = new MercuryClient({
 			socket,
 			logger: this.logger,
@@ -64,9 +56,13 @@ export class MercuryWaitingState extends RoomState {
 			name: playerInfoMessage.name,
 			position: room.playersCount,
 			room,
-			host: false,
+			host,
 		});
 		room.addClient(client);
+
+		if (!room.isCoreStarted) {
+			room.startCore();
+		}
 	}
 
 	private tryStartHandler(_message: ClientMessage, room: MercuryRoom, _socket: ISocket): void {
