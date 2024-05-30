@@ -54,7 +54,7 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 				room,
 				host: false,
 			});
-			room.addSpectator(spectator);
+			room.addSpectator(spectator, false);
 
 			return;
 		}

@@ -36,9 +36,9 @@ export class MercuryWaitingState extends RoomState {
 				void this.handleJoinGame.bind(this)(message, room, client)
 		);
 		this.eventEmitter.on(
-			"HS_PLAYER_CHANGE" as unknown as string,
+			"TYPE_CHANGE" as unknown as string,
 			(message: ClientMessage, room: MercuryRoom, client: YgoClient) =>
-				void this.handlePlayerChange.bind(this)(message, room, client)
+				void this.handleTypeChange.bind(this)(message, room, client)
 		);
 		this.eventEmitter.on(
 			"HS_PLAYER_ENTER" as unknown as string,
@@ -74,32 +74,30 @@ export class MercuryWaitingState extends RoomState {
 		room.rps();
 	}
 
-	private handlePlayerChange(
-		message: ClientMessage,
-		room: MercuryRoom,
-		client: MercuryClient
-	): void {
-		this.logger.debug("Mercury HS_PLAYER_CHANGE");
-		const status = parseInt(message.data.toString("hex"), 16);
-		const previousPosition = (status >> 4) & 0x0f;
-		const newPosition = status & 0x0f;
-		this.logger.debug(`status: ${status}`);
-		this.logger.debug(`from: ${previousPosition}`);
-		this.logger.debug(`to: ${newPosition}`);
-		client.playerPosition(newPosition);
-		if (newPosition === 8 && !client.host) {
+	private handleTypeChange(message: ClientMessage, room: MercuryRoom, client: MercuryClient): void {
+		this.logger.debug(`Mercury TYPE_CHANGE: ${message.data.toString("hex")}`);
+		const value = parseInt(message.data.toString("hex"), 16);
+		const type = value & 0x0f;
+		const isHost = (type & 0x10) !== 0;
+
+		if (type === 7 && room.clients.find((player) => player.name === client.name)) {
 			room.removePlayer(client);
-			room.addSpectator(client);
+			client.setHost(isHost);
+			room.addSpectator(client, true);
 
 			return;
 		}
 
-		if (previousPosition === 8 && newPosition !== 8) {
+		if (type !== 7 && room.spectators.find((spectator) => spectator.name === client.name)) {
 			room.removeSpectator(client);
-			room.addSpectator(client);
+			client.setHost(isHost);
+			room.addClient(client);
 
 			return;
 		}
+
+		client.setHost(isHost);
+		client.playerPosition(type);
 	}
 
 	private handlePlayerEnter(
@@ -110,9 +108,6 @@ export class MercuryWaitingState extends RoomState {
 		this.logger.debug("Mercury HS_PLAYER_ENTER");
 		this.logger.debug(`Mercury HS_PLAYER_ENTER MESSAGE: ${message.data.toString("hex")}`);
 		const playerEnterMessage = new PlayerEnterMessage(message.data);
-		if (playerEnterMessage.name === "Evolution") {
-			return;
-		}
 		client.playerPosition(playerEnterMessage.position);
 	}
 

@@ -15,6 +15,8 @@ export class MercuryClient extends YgoClient {
 	private readonly _logger: Logger;
 	private _pendingMessages: Buffer[];
 	private readonly _mercuryRoomMessageEmitter: MercuryCoreMessageEmitter;
+	private _connectedToCore = false;
+	private _needSpectatorMessages = false;
 
 	constructor({
 		name,
@@ -44,6 +46,10 @@ export class MercuryClient extends YgoClient {
 			this._mercuryRoomMessageEmitter.handleMessage(data);
 		});
 
+		this._coreClient.on("connect", () => {
+			this._connectedToCore = true;
+		});
+
 		const roomMessageEmitter = new SimpleRoomMessageEmitter(this, room);
 
 		this._socket.onMessage((data: Buffer) => {
@@ -52,6 +58,9 @@ export class MercuryClient extends YgoClient {
 	}
 
 	connectToCore({ url, port }: { url: string; port: number }): void {
+		if (this._connectedToCore) {
+			return;
+		}
 		this._coreClient.connect(port, url, () => {
 			this._logger.info(`Connected to Mercury Core at port: ${port}`);
 			this.sendPendingMessages();
@@ -82,6 +91,14 @@ export class MercuryClient extends YgoClient {
 		}
 	}
 
+	setNeedSpectatorMessages(value: boolean): void {
+		this._needSpectatorMessages = value;
+	}
+
+	setHost(value: boolean): void {
+		this._host = value;
+	}
+
 	private sendPendingMessages(): void {
 		this._pendingMessages.forEach((message) => {
 			this._logger.debug(`Message: ${message.toString("hex")}`);
@@ -96,6 +113,10 @@ export class MercuryClient extends YgoClient {
 	}
 
 	get connectedToCore(): boolean {
-		return Boolean(this._coreClient);
+		return this._connectedToCore;
+	}
+
+	get needSpectatorMessages(): boolean {
+		return this._needSpectatorMessages;
 	}
 }

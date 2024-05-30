@@ -125,18 +125,19 @@ export class MercuryRoom extends YgoRoom {
 	}
 
 	addClient(client: MercuryClient): void {
+		client.setNeedSpectatorMessages(false);
 		this._clients.push(client);
-
-		if (this._coreStarted && this._corePort) {
-			client.connectToCore({
-				url: "127.0.0.1",
-				port: this._corePort,
-			});
+		if (client.connectedToCore) {
+			return;
 		}
+
+		this.connectClientToCore(client);
 	}
 
-	addSpectator(spectator: MercuryClient): void {
+	addSpectator(spectator: MercuryClient, needSpectatorMessages: boolean): void {
+		spectator.setNeedSpectatorMessages(needSpectatorMessages);
 		this._spectators.push(spectator);
+		this.connectClientToCore(spectator);
 		this.spectatorCache.forEach((message) => {
 			spectator.socket.send(message);
 		});
@@ -195,16 +196,18 @@ export class MercuryRoom extends YgoRoom {
 
 			const watch = net.connect(this._corePort, "127.0.0.1", () => {
 				this._logger.debug("Connected to watch");
-				watch.write(MercuryPlayerInfoToCoreMessage.create("Evolution"));
-				watch.write(MercuryJointGameToCoreMessage.create(this.password));
+				watch.write(MercuryPlayerInfoToCoreMessage.create("the Big Brother"));
+				watch.write(MercuryJointGameToCoreMessage.create("the Big Brother"));
 				watch.write(MercuryToObserverToCoreMessage.create());
 			});
 
 			watch.on("data", (data: Buffer) => {
 				this._logger.debug(`Incoming data for expectators: ${data.toString("hex")}`);
 				this.spectatorCache.push(data);
-				this._spectators.forEach((spectator) => {
-					spectator.socket.send(data);
+				this._spectators.forEach((spectator: MercuryClient) => {
+					if (spectator.needSpectatorMessages) {
+						spectator.socket.send(data);
+					}
 				});
 			});
 
@@ -229,6 +232,10 @@ export class MercuryRoom extends YgoRoom {
 
 	get playersCount(): number {
 		return this._clients.length;
+	}
+
+	get spectatorsCount(): number {
+		return this.spectators.length;
 	}
 
 	waiting(): void {
@@ -304,7 +311,23 @@ export class MercuryRoom extends YgoRoom {
 	removeSpectator(spectator: MercuryClient): void {
 		const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
 		this._spectators = filtered;
-		spectator.destroy();
+	}
+
+	isFull(): boolean {
+		if (this._hostInfo.mode === Mode.MATCH || this._hostInfo.mode === Mode.SINGLE) {
+			return this._clients.length === 2;
+		}
+
+		return this._clients.length === 4;
+	}
+
+	private connectClientToCore(client: MercuryClient): void {
+		if (this._coreStarted && this._corePort) {
+			client.connectToCore({
+				url: "127.0.0.1",
+				port: this._corePort,
+			});
+		}
 	}
 
 	private generateSeeds(): string[] {
