@@ -69,7 +69,7 @@ function s.spop(e,tp,eg,ep,ev,re,r,rp)
 	end
 end
 function s.sumcon(e,tp,eg,ep,ev,re,r,rp)
-	return eg:IsContains(e:GetLabelObject()) 
+	return eg:IsContains(e:GetLabelObject())
 end
 function s.sumop(e,tp,eg,ep,ev,re,r,rp)
 	e:SetLabel(1)
@@ -108,7 +108,7 @@ end
 function s.fucost(e,tp,eg,ep,ev,re,r,rp,chk)
 	local c=e:GetHandler()
 	if chk==0 then return Duel.IsExistingMatchingCard(Card.IsDiscardable,tp,LOCATION_HAND,0,1,e:GetHandler())
-		and c:IsAbleToGraveAsCost() end
+		and c:IsAbleToGraveAsCost() and c:IsStatus(STATUS_EFFECT_ENABLED) end
 	Duel.DiscardHand(tp,Card.IsDiscardable,1,1,REASON_COST+REASON_DISCARD)
 	Duel.SendtoGrave(c,REASON_COST)
 end

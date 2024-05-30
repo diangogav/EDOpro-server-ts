@@ -143,8 +143,11 @@ end
 function Auxiliary.PuzzleOp(e,tp)
 	Duel.SetLP(0,0)
 end
---Duel.SelectOption with option condition
---Return value starts from 1, different from Duel.SelectOption
+---Duel.SelectOption with option condition
+---Return value starts from 1, different from Duel.SelectOption
+---@param tp integer
+---@param ... table {condition, option[, value]}
+---@return integer|nil
 function Auxiliary.SelectFromOptions(tp,...)
 	local options={...}
 	local ops={}
@@ -465,7 +468,7 @@ function Auxiliary.IsMaterialListCode(c,code)
 end
 function Auxiliary.IsMaterialListSetCard(c,setcode)
 	if not c.material_setcode then return false end
-	if type(c.material_setcode)=='table' then
+	if type(c.material_setcode)=="table" then
 		for i,scode in ipairs(c.material_setcode) do
 			if setcode&0xfff==scode&0xfff and setcode&scode==setcode then return true end
 		end
@@ -757,13 +760,15 @@ function Auxiliary.qlifilter(e,te)
 end
 --sp_summon condition for gladiator beast monsters
 function Auxiliary.gbspcon(e,tp,eg,ep,ev,re,r,rp)
-	local st=e:GetHandler():GetSummonType()
-	return st&SUMMON_VALUE_GLADIATOR>0
+	local c=e:GetHandler()
+	local typ=c:GetSpecialSummonInfo(SUMMON_INFO_TYPE)
+	return c:IsSummonType(SUMMON_VALUE_GLADIATOR) or (typ&TYPE_MONSTER~=0 and c:IsSpecialSummonSetCard(0x19))
 end
 --sp_summon condition for evolsaur monsters
 function Auxiliary.evospcon(e,tp,eg,ep,ev,re,r,rp)
-	local st=e:GetHandler():GetSummonType()
-	return st&SUMMON_VALUE_EVOLTILE>0
+	local c=e:GetHandler()
+	local typ=c:GetSpecialSummonInfo(SUMMON_INFO_TYPE)
+	return c:IsSummonType(SUMMON_VALUE_EVOLTILE) or (typ&TYPE_MONSTER~=0 and c:IsSpecialSummonSetCard(0x304e))
 end
 --filter for necro_valley test
 function Auxiliary.NecroValleyFilter(f)
@@ -1019,7 +1024,7 @@ end
 ---@return boolean
 function Auxiliary.mzctcheckrel(g,tp,reason)
 	reason=reason or REASON_COST
-	return Duel.GetMZoneCount(tp,g)>0 and Duel.CheckReleaseGroup(reason,tp,Auxiliary.IsInGroup,#g,nil,g)
+	return Duel.GetMZoneCount(tp,g)>0 and Duel.CheckReleaseGroupEx(tp,Auxiliary.IsInGroup,#g,reason,false,nil,g)
 end
 --used for "except this card"
 function Auxiliary.ExceptThisCard(e)
@@ -1074,7 +1079,7 @@ end
 ---@param f function
 ---@param min? integer
 ---@param max? integer
----@param ...? unknown
+---@param ... any
 ---@return boolean
 function Group.CheckSubGroup(g,f,min,max,...)
 	min=min or 1
@@ -1099,7 +1104,7 @@ end
 ---@param cancelable boolean
 ---@param min? integer
 ---@param max? integer
----@param ...? unknown
+---@param ... any
 ---@return Group|nil
 function Group.SelectSubGroup(g,tp,f,cancelable,min,max,...)
 	Auxiliary.SubGroupCaptured=Group.CreateGroup()
@@ -1182,7 +1187,7 @@ end
 ---@param g Group
 ---@param checks table
 ---@param f? function
----@param ...? unknown
+---@param ... any
 ---@return boolean
 function Group.CheckSubGroupEach(g,checks,f,...)
 	if f==nil then f=Auxiliary.TRUE end
@@ -1197,7 +1202,7 @@ end
 ---@param checks table
 ---@param cancelable? boolean
 ---@param f? function
----@param ...? unknown
+---@param ... any
 ---@return Group|nil
 function Group.SelectSubGroupEach(g,tp,checks,cancelable,f,...)
 	if cancelable==nil then cancelable=false end
@@ -1278,9 +1283,6 @@ function Auxiliary.UseExtraReleaseCount(g,tp)
 end
 function Auxiliary.ExtraReleaseFilter(c,tp)
 	return c:IsControler(1-tp) and c:IsHasEffect(EFFECT_EXTRA_RELEASE_NONSUM,tp)
-end
-function Auxiliary.IsSpecialSummonedByEffect(e)
-	return not ((e:GetCode()==EFFECT_SPSUMMON_PROC or e:GetCode()==EFFECT_SPSUMMON_PROC_G) and e:GetProperty()&(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)==(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE))
 end
 --
 function Auxiliary.GetCappedLevel(c)
@@ -1478,17 +1480,121 @@ function Auxiliary.EPDestroyOperation(e,tp,eg,ep,ev,re,r,rp)
 	end
 end
 --
-function Auxiliary.SameValueFilter(f,value)
-	return	function(c)
-				return f(c)&value==0
-			end
+function Auxiliary.NegateSummonCondition()
+	return Duel.GetReadyChain()==0
 end
 ---Check if all cards in g have the same Attribute/Race
 ---@param g Group
----@param f function
+---@param f function Like Card.GetAttribute, must return binary value
 ---@return boolean
 function Auxiliary.SameValueCheck(g,f)
+	if #g<=1 then return true end
+	if #g==2 then return f(g:GetFirst())&f(g:GetNext())~=0 end
 	local tc=g:GetFirst()
-	local filter=Auxiliary.SameValueFilter(f,f(tc))
-	return not g:IsExists(filter,1,tc)
+	local v=f(tc)
+	tc=g:GetNext()
+	while tc do
+		v=v&f(tc)
+		if v==0 then return false end
+		tc=g:GetNext()
+	end
+	return v~=0
+end
+---
+---@param tp integer
+---@return boolean
+function Auxiliary.IsPlayerCanNormalDraw(tp)
+	return Duel.GetDrawCount(tp)>0 and Duel.GetFieldGroupCount(tp,LOCATION_DECK,0)>0
+		and Duel.GetFlagEffect(tp,FLAG_ID_NO_NORMAL_DRAW)==0
+end
+---
+---@param e Effect
+---@param tp integer
+---@param property? integer
+function Auxiliary.GiveUpNormalDraw(e,tp,property)
+	property=property or 0
+	local c=e:GetHandler()
+	local e1=Effect.CreateEffect(c)
+	e1:SetType(EFFECT_TYPE_FIELD)
+	e1:SetProperty(EFFECT_FLAG_PLAYER_TARGET|property)
+	e1:SetCode(EFFECT_DRAW_COUNT)
+	e1:SetTargetRange(1,0)
+	e1:SetReset(RESET_PHASE+PHASE_DRAW)
+	e1:SetValue(0)
+	Duel.RegisterEffect(e1,tp)
+	Duel.RegisterFlagEffect(tp,FLAG_ID_NO_NORMAL_DRAW,RESET_PHASE+PHASE_DRAW,property,1)
+end
+---Add EFFECT_TYPE_ACTIVATE effect to Equip Spell Cards
+---@param c Card
+---@param is_self boolean
+---@param is_opponent boolean
+---@param filter function
+---@param eqlimit function|nil
+---@param pause? boolean
+---@param skip_target? boolean
+function Auxiliary.AddEquipSpellEffect(c,is_self,is_opponent,filter,eqlimit,pause,skip_target)
+	local value=(type(eqlimit)=="function") and eqlimit or 1
+	if pause==nil then pause=false end
+	if skip_target==nil then skip_target=false end
+	--Activate
+	local e1=Effect.CreateEffect(c)
+	e1:SetCategory(CATEGORY_EQUIP)
+	e1:SetType(EFFECT_TYPE_ACTIVATE)
+	e1:SetCode(EVENT_FREE_CHAIN)
+	e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_CONTINUOUS_TARGET)
+	if not skip_target then
+		e1:SetTarget(Auxiliary.EquipSpellTarget(is_self,is_opponent,filter,eqlimit))
+	end
+	e1:SetOperation(Auxiliary.EquipSpellOperation(eqlimit))
+	if not pause then
+		c:RegisterEffect(e1)
+	end
+	--Equip limit
+	local e2=Effect.CreateEffect(c)
+	e2:SetType(EFFECT_TYPE_SINGLE)
+	e2:SetCode(EFFECT_EQUIP_LIMIT)
+	e2:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)
+	e2:SetValue(value)
+	c:RegisterEffect(e2)
+	return e1
+end
+function Auxiliary.EquipSpellTarget(is_self,is_opponent,filter,eqlimit)
+	local loc1=is_self and LOCATION_MZONE or 0
+	local loc2=is_opponent and LOCATION_MZONE or 0
+	return function(e,tp,eg,ep,ev,re,r,rp,chk,chkc)
+		if chkc then return chkc:IsLocation(LOCATION_MZONE) and chkc:IsFaceup() and (not eqlimit or eqlimit(e,chkc)) end
+		if chk==0 then return Duel.IsExistingTarget(filter,tp,loc1,loc2,1,nil) end
+		Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_EQUIP)
+		Duel.SelectTarget(tp,filter,tp,loc1,loc2,1,1,nil)
+		Duel.SetOperationInfo(0,CATEGORY_EQUIP,e:GetHandler(),1,0,0)
+	end
+end
+function Auxiliary.EquipSpellOperation(eqlimit)
+	return function (e,tp,eg,ep,ev,re,r,rp)
+		local c=e:GetHandler()
+		local tc=Duel.GetFirstTarget()
+		if c:IsRelateToEffect(e) and tc:IsRelateToEffect(e) and tc:IsFaceup() and (not eqlimit or eqlimit(e,tc)) then
+			Duel.Equip(tp,c,tc)
+		end
+	end
+end
+---If this face-up card would leave the field, banish it instead.
+---@param c Card
+---@param condition? function
+function Auxiliary.AddBanishRedirect(c,condition)
+	if type(condition)~="function" then
+		condition=Auxiliary.BanishRedirectCondition
+	end
+	local e1=Effect.CreateEffect(c)
+	e1:SetType(EFFECT_TYPE_SINGLE)
+	e1:SetCode(EFFECT_LEAVE_FIELD_REDIRECT)
+	e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_CAN_FORBIDDEN)
+	e1:SetCondition(condition)
+	e1:SetValue(LOCATION_REMOVED)
+	c:RegisterEffect(e1)
+end
+---
+---@param e Effect
+function Auxiliary.BanishRedirectCondition(e)
+	return e:GetHandler():IsFaceup()
 end

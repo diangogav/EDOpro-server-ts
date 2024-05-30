@@ -41,7 +41,6 @@ function c30989084.initial_effect(c)
 	e3:SetOperation(s.rmop)
 	c:RegisterEffect(e3)
 end
---to hand
 function s.filter(c)
 	return c:IsSetCard(0xc9) and c:IsAbleToHand()
 end
@@ -58,7 +57,6 @@ function s.thop(e,tp,eg,ep,ev,re,r,rp)
 		Duel.ConfirmCards(1-tp,g)
 	end
 end
---special
 function s.spcon(e,tp,eg,ep,ev,re,r,rp)
 	return ep==tp
 end
@@ -85,14 +83,13 @@ function s.spop(e,tp,eg,ep,ev,re,r,rp)
 		Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP,zone)
 	end
 end
---remove
 function s.cfilter(c,g)
 	return g:IsContains(c)
 end
 function s.rmcost(e,tp,eg,ep,ev,re,r,rp,chk)
 	local lg=e:GetHandler():GetLinkedGroup()
-	if chk==0 then return Duel.CheckReleaseGroup(REASON_COST,tp,s.cfilter,1,nil,lg) end
-	local g=Duel.SelectReleaseGroup(REASON_COST,tp,s.cfilter,1,1,nil,lg)
+	if chk==0 then return Duel.CheckReleaseGroup(tp,s.cfilter,1,nil,lg) end
+	local g=Duel.SelectReleaseGroup(tp,s.cfilter,1,1,nil,lg)
 	Duel.Release(g,REASON_COST)
 end
 function s.rmfilter(c,e,tp)
