@@ -19,7 +19,6 @@ export class MercuryDuelingState extends RoomState {
 				this.handle.bind(this)(message, room, client)
 		);
 
-		super(eventEmitter);
 		this.eventEmitter.on(
 			"JOIN",
 			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
@@ -43,6 +42,6 @@ export class MercuryDuelingState extends RoomState {
 			room,
 			host: false,
 		});
-		room.addSpectator(spectator, false);
+		room.addSpectator(spectator, true);
 	}
 }
