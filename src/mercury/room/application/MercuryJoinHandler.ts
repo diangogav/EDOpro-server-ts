@@ -31,20 +31,6 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 		const joinMessage = new MercuryJoinGameMessage(message.data);
 		const room = this.createRoomIfNotExists(joinMessage.pass);
 		room.emit("JOIN", message, this.socket);
-		// if (room.duelState === DuelState.DUELING) {
-		// 	const spectator = new MercuryClient({
-		// 		socket: this.socket,
-		// 		logger: this.logger,
-		// 		messages: [],
-		// 		name: playerInfoMessage.name,
-		// 		position: room.playersCount,
-		// 		room,
-		// 		host: false,
-		// 	});
-		// 	room.addSpectator(spectator, false);
-
-		// 	return;
-		// }
 	}
 
 	private generateUniqueId(): number {
