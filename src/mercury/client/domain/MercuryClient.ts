@@ -17,6 +17,7 @@ export class MercuryClient extends YgoClient {
 	private readonly _mercuryRoomMessageEmitter: MercuryCoreMessageEmitter;
 	private _connectedToCore = false;
 	private _needSpectatorMessages = false;
+	private readonly _roomMessageEmitter: SimpleRoomMessageEmitter;
 
 	constructor({
 		name,
@@ -50,10 +51,10 @@ export class MercuryClient extends YgoClient {
 			this._connectedToCore = true;
 		});
 
-		const roomMessageEmitter = new SimpleRoomMessageEmitter(this, room);
+		this._roomMessageEmitter = new SimpleRoomMessageEmitter(this, room);
 
 		this._socket.onMessage((data: Buffer) => {
-			roomMessageEmitter.handleMessage(data);
+			this._roomMessageEmitter.handleMessage(data);
 		});
 	}
 
@@ -70,6 +71,11 @@ export class MercuryClient extends YgoClient {
 	sendMessageToCore(message: ClientMessage): void {
 		this._logger.info(`SENDING TO CORE: ${message.raw.toString("hex")} `);
 		this._coreClient.write(message.raw);
+	}
+
+	sendToCore(message: Buffer): void {
+		this._logger.info(`SENDING TO CORE: ${message.toString("hex")} `);
+		this._coreClient.write(message);
 	}
 
 	sendMessageToClient(message: Buffer): void {
@@ -97,6 +103,13 @@ export class MercuryClient extends YgoClient {
 
 	setHost(value: boolean): void {
 		this._host = value;
+	}
+
+	setSocket(socket: ISocket): void {
+		socket.onMessage((data: Buffer) => {
+			this._roomMessageEmitter.handleMessage(data);
+		});
+		this._socket = socket;
 	}
 
 	private sendPendingMessages(): void {

@@ -4,8 +4,8 @@ import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMes
 import { ErrorMessages } from "../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientMessage";
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
-import { PlayerEnterClientMessage } from "../../messages/server-to-client/PlayerEnterClientMessage";
-import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
+import { PlayerEnterClientMessage } from "../../shared/messages/server-to-client/PlayerEnterClientMessage";
+import { TypeChangeClientMessage } from "../../shared/messages/server-to-client/TypeChangeClientMessage";
 import { ISocket } from "../../shared/socket/domain/ISocket";
 import { UserFinder } from "../../user/application/UserFinder";
 import { User } from "../../user/domain/User";

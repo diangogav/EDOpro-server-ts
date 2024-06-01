@@ -1,4 +1,4 @@
-import { decimalToBytesBuffer } from "../../../utils";
+import { decimalToBytesBuffer } from "../../../../utils";
 
 export class TypeChangeClientMessage {
 	static create({ type = 0x00 }: { type?: number }): Buffer {

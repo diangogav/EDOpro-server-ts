@@ -1,8 +1,8 @@
 import { Client } from "../../../../client/domain/Client";
 import { PlayerChangeClientMessage } from "../../../../messages/server-to-client/PlayerChangeClientMessage";
-import { PlayerEnterClientMessage } from "../../../../messages/server-to-client/PlayerEnterClientMessage";
-import { TypeChangeClientMessage } from "../../../../messages/server-to-client/TypeChangeClientMessage";
 import { WatchChangeClientMessage } from "../../../../messages/server-to-client/WatchChangeClientMessage";
+import { PlayerEnterClientMessage } from "../../../../shared/messages/server-to-client/PlayerEnterClientMessage";
+import { TypeChangeClientMessage } from "../../../../shared/messages/server-to-client/TypeChangeClientMessage";
 import { PlayerRoomState } from "../../PlayerRoomState";
 import { Room } from "../../Room";
 

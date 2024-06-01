@@ -34,10 +34,10 @@ export abstract class RoomState {
 
 	protected playerAlreadyInRoom(
 		playerInfoMessage: PlayerInfoMessage,
-		room: Room,
+		room: YgoRoom,
 		socket: ISocket
-	): Client | null {
-		if (!room.ranked) {
+	): YgoClient | null {
+		if (!(room as Room).ranked) {
 			const player = room.clients.find((client) => {
 				return (
 					client.socket.remoteAddress === socket.remoteAddress &&
@@ -45,7 +45,7 @@ export abstract class RoomState {
 				);
 			});
 
-			if (!(player instanceof Client)) {
+			if (!player) {
 				return null;
 			}
 
@@ -56,7 +56,7 @@ export abstract class RoomState {
 			return playerInfoMessage.name === client.name;
 		});
 
-		if (!(player instanceof Client)) {
+		if (!player) {
 			return null;
 		}
 

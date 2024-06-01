@@ -5,9 +5,9 @@ import { CatchUpClientMessage } from "../../messages/server-to-client/CatchUpCli
 import { DuelStartClientMessage } from "../../messages/server-to-client/DuelStartClientMessage";
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
 import { PlayerChangeClientMessage } from "../../messages/server-to-client/PlayerChangeClientMessage";
-import { PlayerEnterClientMessage } from "../../messages/server-to-client/PlayerEnterClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
-import { TypeChangeClientMessage } from "../../messages/server-to-client/TypeChangeClientMessage";
+import { PlayerEnterClientMessage } from "../../shared/messages/server-to-client/PlayerEnterClientMessage";
+import { TypeChangeClientMessage } from "../../shared/messages/server-to-client/TypeChangeClientMessage";
 import { ISocket } from "../../shared/socket/domain/ISocket";
 import { Room } from "../domain/Room";
 

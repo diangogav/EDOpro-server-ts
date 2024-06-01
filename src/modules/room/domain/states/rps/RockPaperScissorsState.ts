@@ -75,7 +75,7 @@ export class RockPaperScissorState extends RoomState {
 		const joinMessage = new JoinGameMessage(message.data);
 		const reconnectingPlayer = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
 
-		if (!reconnectingPlayer) {
+		if (!(reconnectingPlayer instanceof Client)) {
 			this.joinToDuelAsSpectator.run(joinMessage, playerInfoMessage, socket, room);
 
 			return;

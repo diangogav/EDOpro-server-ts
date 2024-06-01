@@ -29,6 +29,7 @@ export class MercuryRoom extends YgoRoom {
 	private _coreStarted = false;
 	private _corePort: number | null = null;
 	private _banlistHash: number;
+	private _joinBuffer: Buffer | null = null;
 	private readonly _hostInfo: HostInfo;
 	private roomState: RoomState | null = null;
 
@@ -236,6 +237,14 @@ export class MercuryRoom extends YgoRoom {
 
 	get spectatorsCount(): number {
 		return this.spectators.length;
+	}
+
+	get joinBuffer(): Buffer | null {
+		return this._joinBuffer;
+	}
+
+	setJoinBuffer(buffer: Buffer): void {
+		this._joinBuffer = buffer;
 	}
 
 	waiting(): void {

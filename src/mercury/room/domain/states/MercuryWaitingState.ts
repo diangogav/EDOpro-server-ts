@@ -11,7 +11,6 @@ import { Logger } from "../../../../modules/shared/logger/domain/Logger";
 import { ISocket } from "../../../../modules/shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { JoinGameCoreToClientMessage } from "../../../messages/core-to-client/JoinGameCoreToClientMessage";
-import { PlayerEnterMessage } from "../../../messages/core-to-client/PlayerEnterCoreToClientMessage";
 import { MercuryRoom } from "../MercuryRoom";
 
 export class MercuryWaitingState extends RoomState {
@@ -36,11 +35,6 @@ export class MercuryWaitingState extends RoomState {
 			"TYPE_CHANGE" as unknown as string,
 			(message: ClientMessage, room: MercuryRoom, client: YgoClient) =>
 				void this.handleTypeChange.bind(this)(message, room, client)
-		);
-		this.eventEmitter.on(
-			"HS_PLAYER_ENTER" as unknown as string,
-			(message: ClientMessage, room: MercuryRoom, client: YgoClient) =>
-				void this.handlePlayerEnter.bind(this)(message, room, client)
 		);
 	}
 
@@ -96,20 +90,12 @@ export class MercuryWaitingState extends RoomState {
 		client.playerPosition(type);
 	}
 
-	private handlePlayerEnter(
-		message: ClientMessage,
-		_room: MercuryRoom,
-		client: MercuryClient
-	): void {
-		this.logger.debug("Mercury HS_PLAYER_ENTER");
-		this.logger.debug(`Mercury HS_PLAYER_ENTER MESSAGE: ${message.data.toString("hex")}`);
-		const playerEnterMessage = new PlayerEnterMessage(message.data);
-		client.playerPosition(playerEnterMessage.position);
-	}
-
 	private handleJoinGame(message: ClientMessage, room: MercuryRoom, _client: MercuryClient): void {
 		this.logger.debug("MERCURY: JOIN_GAME");
 		const joinGameMessage = new JoinGameCoreToClientMessage(message.data);
 		room.setBanlistHash(joinGameMessage.banList);
+		if (!room.joinBuffer) {
+			room.setJoinBuffer(message.raw);
+		}
 	}
 }
