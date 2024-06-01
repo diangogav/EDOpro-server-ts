@@ -16,8 +16,6 @@ export class Client extends YgoClient {
 	public readonly ranks: Rank[];
 	private _isReady: boolean;
 	private _rpsChosen: Choose | null = null;
-	private _lastMessage: Buffer | null = null;
-	private _reconnecting = false;
 	private _deck: Deck;
 	private _duelPosition: number;
 	private _turn: boolean;
@@ -90,25 +88,7 @@ export class Client extends YgoClient {
 		return this._isReady;
 	}
 
-	get cache(): Buffer | null {
-		return this._lastMessage;
-	}
 
-	setLastMessage(message: Buffer): void {
-		this._lastMessage = message;
-	}
-
-	reconnecting(): void {
-		this._reconnecting = true;
-	}
-
-	clearReconnecting(): void {
-		this._reconnecting = false;
-	}
-
-	get isReconnecting(): boolean {
-		return this._reconnecting;
-	}
 
 	setDeck(deck: Deck): void {
 		this._deck = deck;

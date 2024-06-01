@@ -29,9 +29,33 @@ export class MercuryDuelingState extends RoomState {
 		);
 
 		this.eventEmitter.on(
+			"GAME_MSG",
+			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
+				void this.handleGameMessage.bind(this)(message, room, socket)
+		);
+
+		this.eventEmitter.on(
+			"FIELD_FINISH",
+			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
+				void this.handleFieldFinish.bind(this)(message, room, socket)
+		);
+
+		this.eventEmitter.on(
+			"TIME_LIMIT",
+			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
+				void this.handleTimeLimit.bind(this)(message, room, socket)
+		);
+
+		this.eventEmitter.on(
 			Commands.UPDATE_DECK as unknown as string,
 			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
 				void this.handleUpdateDeck.bind(this)(message, room, socket)
+		);
+
+		this.eventEmitter.on(
+			Commands.TIME_CONFIRM as unknown as string,
+			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
+				void this.handleTimeConfirm.bind(this)(message, room, socket)
 		);
 	}
 
@@ -61,6 +85,7 @@ export class MercuryDuelingState extends RoomState {
 
 		playerAlreadyInRoom.setSocket(socket);
 		if (room.joinBuffer) {
+			playerAlreadyInRoom.reconnecting();
 			playerAlreadyInRoom.socket.send(room.joinBuffer);
 			const type = playerAlreadyInRoom.host
 				? playerAlreadyInRoom.position + 0x10
@@ -75,6 +100,32 @@ export class MercuryDuelingState extends RoomState {
 		}
 	}
 
+	private handleGameMessage(
+		message: ClientMessage,
+		_room: MercuryRoom,
+		player: MercuryClient
+	): void {
+		this.logger.info("MERCURY: GAME_MSG");
+		if (player.isReconnecting) {
+			return;
+		}
+		if (message.raw.readInt8(3) !== 1) {
+			this.logger.debug(`last message ${player.name} ${message.raw.toString("hex")}`);
+			player.setLastMessage(message.raw);
+		}
+	}
+
+	private handleFieldFinish(
+		message: ClientMessage,
+		_room: MercuryRoom,
+		player: MercuryClient
+	): void {
+		if (player.cache) {
+			player.socket.send(player.cache);
+			player.clearReconnecting();
+		}
+	}
+
 	private handleUpdateDeck(
 		_message: ClientMessage,
 		_room: MercuryRoom,
@@ -82,5 +133,23 @@ export class MercuryDuelingState extends RoomState {
 	): void {
 		this.logger.info("MERCURY: UPDATE_DECK");
 		player.sendToCore(Buffer.from([0x01, 0x00, 0x30]));
+	}
+
+	private handleTimeConfirm(
+		_message: ClientMessage,
+		_room: MercuryRoom,
+		player: MercuryClient
+	): void {
+		this.logger.info("MERCURY: TIME_CONFIRM");
+		player.setTimeConfirmRequired(false);
+	}
+
+	private handleTimeLimit(
+		_message: ClientMessage,
+		_room: MercuryRoom,
+		player: MercuryClient
+	): void {
+		this.logger.info("MERCURY: TIME_LIMIT");
+		player.setTimeConfirmRequired(true);
 	}
 }

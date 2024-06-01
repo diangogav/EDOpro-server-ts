@@ -110,8 +110,10 @@ export class DisconnectHandler {
 			return;
 		}
 
-		player.destroy();
-		room.removePlayer(player);
+		if (room.duelState === DuelState.WAITING) {
+			player.destroy();
+			room.removePlayer(player);
+		}
 	}
 
 	private removeSpectator(room: Room): void {

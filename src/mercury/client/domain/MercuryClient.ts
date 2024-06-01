@@ -18,6 +18,7 @@ export class MercuryClient extends YgoClient {
 	private _connectedToCore = false;
 	private _needSpectatorMessages = false;
 	private readonly _roomMessageEmitter: SimpleRoomMessageEmitter;
+	private _timeConfirmRequired = false;
 
 	constructor({
 		name,
@@ -112,6 +113,10 @@ export class MercuryClient extends YgoClient {
 		this._socket = socket;
 	}
 
+	setTimeConfirmRequired(value: boolean): void {
+		this._timeConfirmRequired = value;
+	}
+
 	private sendPendingMessages(): void {
 		this._pendingMessages.forEach((message) => {
 			this._logger.debug(`Message: ${message.toString("hex")}`);
@@ -119,6 +124,10 @@ export class MercuryClient extends YgoClient {
 		});
 
 		this._pendingMessages = [];
+	}
+
+	get timeConfirmRequired(): boolean {
+		return this._timeConfirmRequired;
 	}
 
 	get socket(): ISocket {

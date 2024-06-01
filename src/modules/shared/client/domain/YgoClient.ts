@@ -6,6 +6,8 @@ export abstract class YgoClient {
 	protected _position: number;
 	protected _team: number;
 	protected _socket: ISocket;
+	protected _lastMessage: Buffer | null = null;
+	protected _reconnecting = false;
 
 	constructor({
 		name,
@@ -55,5 +57,25 @@ export abstract class YgoClient {
 
 	get host(): boolean {
 		return this._host;
+	}
+
+	get cache(): Buffer | null {
+		return this._lastMessage;
+	}
+
+	setLastMessage(message: Buffer): void {
+		this._lastMessage = message;
+	}
+
+	reconnecting(): void {
+		this._reconnecting = true;
+	}
+
+	clearReconnecting(): void {
+		this._reconnecting = false;
+	}
+
+	get isReconnecting(): boolean {
+		return this._reconnecting;
 	}
 }
