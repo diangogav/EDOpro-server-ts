@@ -88,8 +88,6 @@ export class Client extends YgoClient {
 		return this._isReady;
 	}
 
-
-
 	setDeck(deck: Deck): void {
 		this._deck = deck;
 	}
