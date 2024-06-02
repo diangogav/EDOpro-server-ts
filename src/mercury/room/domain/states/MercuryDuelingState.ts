@@ -7,10 +7,9 @@ import { Commands } from "../../../../modules/messages/domain/Commands";
 import { ClientMessage } from "../../../../modules/messages/MessageProcessor";
 import { RoomState } from "../../../../modules/room/domain/RoomState";
 import { Logger } from "../../../../modules/shared/logger/domain/Logger";
-import { PlayerEnterClientMessage } from "../../../../modules/shared/messages/server-to-client/PlayerEnterClientMessage";
-import { TypeChangeClientMessage } from "../../../../modules/shared/messages/server-to-client/TypeChangeClientMessage";
 import { ISocket } from "../../../../modules/shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
+import { MercuryReconnect } from "../../application/MercuryReconnect";
 import { MercuryRoom } from "../MercuryRoom";
 
 export class MercuryDuelingState extends RoomState {
@@ -83,21 +82,7 @@ export class MercuryDuelingState extends RoomState {
 			return;
 		}
 
-		playerAlreadyInRoom.setSocket(socket);
-		if (room.joinBuffer) {
-			playerAlreadyInRoom.reconnecting();
-			playerAlreadyInRoom.socket.send(room.joinBuffer);
-			const type = playerAlreadyInRoom.host
-				? playerAlreadyInRoom.position + 0x10
-				: playerAlreadyInRoom.position;
-			playerAlreadyInRoom.socket.send(TypeChangeClientMessage.create({ type }));
-
-			room.clients.forEach((player) => {
-				playerAlreadyInRoom.socket.send(
-					PlayerEnterClientMessage.create(player.name, player.position)
-				);
-			});
-		}
+		MercuryReconnect.run(playerAlreadyInRoom, room, socket);
 	}
 
 	private handleGameMessage(
