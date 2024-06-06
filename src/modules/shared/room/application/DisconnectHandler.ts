@@ -10,6 +10,7 @@ import RoomList from "../../../room/infrastructure/RoomList";
 import { ISocket } from "../../socket/domain/ISocket";
 import { DuelState } from "../domain/YgoRoom";
 import { RoomFinder } from "./RoomFinder";
+import MercuryRoomList from "../../../../mercury/room/infrastructure/MercuryRoomList";
 
 export class DisconnectHandler {
 	constructor(private readonly socket: ISocket, private readonly roomFinder: RoomFinder) {}
@@ -102,6 +103,13 @@ export class DisconnectHandler {
 	}
 
 	private handleMercury(room: MercuryRoom): void {
+		if (room.clients.every((client) => client.socket.closed)) {
+			MercuryRoomList.deleteRoom(room);
+
+			return;
+		}
+
+
 		const player = room.clients.find((client) => client.socket.id === this.socket.id);
 
 		if (!(player instanceof MercuryClient)) {
