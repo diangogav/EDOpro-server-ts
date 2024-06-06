@@ -203,7 +203,7 @@ export class MercuryRoom extends YgoRoom {
 			});
 
 			watch.on("data", (data: Buffer) => {
-				this._logger.debug(`Incoming data for expectators: ${data.toString("hex")}`);
+				this._logger.debug(`Incoming data for spectators: ${data.toString("hex")}`);
 				this.spectatorCache.push(data);
 				this._spectators.forEach((spectator: MercuryClient) => {
 					if (spectator.needSpectatorMessages) {
