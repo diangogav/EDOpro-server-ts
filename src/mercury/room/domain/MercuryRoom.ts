@@ -318,16 +318,7 @@ export class MercuryRoom extends YgoRoom {
 	}
 
 	removeSpectator(spectator: MercuryClient): void {
-		const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
-		this._spectators = filtered;
-	}
-
-	isFull(): boolean {
-		if (this._hostInfo.mode === Mode.MATCH || this._hostInfo.mode === Mode.SINGLE) {
-			return this._clients.length === 2;
-		}
-
-		return this._clients.length === 4;
+		this._spectators = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
 	}
 
 	private connectClientToCore(client: MercuryClient): void {
