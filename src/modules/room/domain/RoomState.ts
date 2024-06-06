@@ -41,6 +41,7 @@ export abstract class RoomState {
 			const player = room.clients.find((client) => {
 				return (
 					client.socket.remoteAddress === socket.remoteAddress &&
+					client.socket.closed &&
 					playerInfoMessage.name === client.name
 				);
 			});
