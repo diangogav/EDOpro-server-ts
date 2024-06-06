@@ -15,8 +15,8 @@ export class MercuryReconnect {
 		const type = player.host ? player.position + 0x10 : player.position;
 		player.socket.send(TypeChangeClientMessage.create({ type }));
 
-		room.clients.forEach((player) => {
-			player.socket.send(PlayerEnterClientMessage.create(player.name, player.position));
+		room.clients.forEach((_player) => {
+			player.socket.send(PlayerEnterClientMessage.create(_player.name, _player.position));
 		});
 	}
 }
