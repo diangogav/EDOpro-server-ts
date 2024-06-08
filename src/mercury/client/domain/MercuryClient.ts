@@ -18,6 +18,7 @@ export class MercuryClient extends YgoClient {
 	private _connectedToCore = false;
 	private _needSpectatorMessages = false;
 	private readonly _roomMessageEmitter: SimpleRoomMessageEmitter;
+	private _rpsChosen: boolean;
 
 	constructor({
 		name,
@@ -112,6 +113,14 @@ export class MercuryClient extends YgoClient {
 		this._socket = socket;
 	}
 
+	rpsChoose(): void {
+		this._rpsChosen = true;
+	}
+
+	rpsRpsChoose(): void {
+		this._rpsChosen = false;
+	}
+
 	private sendPendingMessages(): void {
 		this._pendingMessages.forEach((message) => {
 			this._logger.debug(`Message: ${message.toString("hex")}`);
@@ -131,5 +140,9 @@ export class MercuryClient extends YgoClient {
 
 	get needSpectatorMessages(): boolean {
 		return this._needSpectatorMessages;
+	}
+
+	get rpsChosen(): boolean {
+		return this._rpsChosen;
 	}
 }

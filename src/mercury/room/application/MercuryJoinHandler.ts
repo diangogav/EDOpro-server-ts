@@ -1,8 +1,12 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+
 import { EventEmitter } from "stream";
 
 import { PlayerInfoMessage } from "../../../modules/messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../modules/messages/domain/Commands";
 import { ClientMessage } from "../../../modules/messages/MessageProcessor";
+import { RoomState } from "../../../modules/room/domain/RoomState";
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
 import { JoinMessageHandler } from "../../../modules/shared/room/domain/JoinMessageHandler";
 import { ISocket } from "../../../modules/shared/socket/domain/ISocket";
@@ -10,13 +14,12 @@ import { MercuryJoinGameMessage } from "../../messages/MercuryJoinGameMessage";
 import { MercuryRoom } from "../domain/MercuryRoom";
 import MercuryRoomList from "../infrastructure/MercuryRoomList";
 
-export class MercuryJoinHandler implements JoinMessageHandler {
-	private readonly eventEmitter: EventEmitter;
+export class MercuryJoinHandler extends RoomState implements JoinMessageHandler {
 	private readonly logger: Logger;
 	private readonly socket: ISocket;
 
 	constructor(eventEmitter: EventEmitter, logger: Logger, socket: ISocket) {
-		this.eventEmitter = eventEmitter;
+		super(eventEmitter);
 		this.logger = logger;
 		this.socket = socket;
 		this.eventEmitter.on(Commands.JOIN_GAME as unknown as string, (message: ClientMessage) =>

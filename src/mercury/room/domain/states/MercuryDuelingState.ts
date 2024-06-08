@@ -101,7 +101,7 @@ export class MercuryDuelingState extends RoomState {
 	}
 
 	private handleFieldFinish(
-		message: ClientMessage,
+		_message: ClientMessage,
 		_room: MercuryRoom,
 		player: MercuryClient
 	): void {
@@ -123,18 +123,16 @@ export class MercuryDuelingState extends RoomState {
 	private handleTimeConfirm(
 		_message: ClientMessage,
 		_room: MercuryRoom,
-		player: MercuryClient
+		_player: MercuryClient
 	): void {
 		this.logger.info("MERCURY: TIME_CONFIRM");
-		player.setTimeConfirmRequired(false);
 	}
 
 	private handleTimeLimit(
 		_message: ClientMessage,
 		_room: MercuryRoom,
-		player: MercuryClient
+		_player: MercuryClient
 	): void {
 		this.logger.info("MERCURY: TIME_LIMIT");
-		player.setTimeConfirmRequired(true);
 	}
 }
