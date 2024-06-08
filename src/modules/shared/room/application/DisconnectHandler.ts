@@ -1,5 +1,6 @@
 import { MercuryClient } from "../../../../mercury/client/domain/MercuryClient";
 import { MercuryRoom } from "../../../../mercury/room/domain/MercuryRoom";
+import MercuryRoomList from "../../../../mercury/room/infrastructure/MercuryRoomList";
 import WebSocketSingleton from "../../../../web-socket-server/WebSocketSingleton";
 import { Client } from "../../../client/domain/Client";
 import { PlayerChangeClientMessage } from "../../../messages/server-to-client/PlayerChangeClientMessage";
@@ -10,7 +11,6 @@ import RoomList from "../../../room/infrastructure/RoomList";
 import { ISocket } from "../../socket/domain/ISocket";
 import { DuelState } from "../domain/YgoRoom";
 import { RoomFinder } from "./RoomFinder";
-import MercuryRoomList from "../../../../mercury/room/infrastructure/MercuryRoomList";
 
 export class DisconnectHandler {
 	constructor(private readonly socket: ISocket, private readonly roomFinder: RoomFinder) {}
@@ -108,7 +108,6 @@ export class DisconnectHandler {
 
 			return;
 		}
-
 
 		const player = room.clients.find((client) => client.socket.id === this.socket.id);
 

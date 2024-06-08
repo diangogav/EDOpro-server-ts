@@ -490,7 +490,6 @@ export class Room extends YgoRoom {
 		);
 	}
 
-
 	removeSpectator(spectator: Client): void {
 		const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
 		this._spectators = filtered;
