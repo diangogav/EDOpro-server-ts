@@ -146,7 +146,6 @@ export class Room extends YgoRoom {
 	private readonly _kick: Client[] = [];
 	private _duel?: ChildProcessWithoutNullStreams;
 	private _match: Match | null;
-	private _clientWhoChoosesTurn: Client;
 	private readonly _lastMessageToTeam: { team: number; message: Buffer }[] = [];
 	private _playerMainDeckSize: number;
 	private _playerExtraDeckSize: number;
@@ -491,13 +490,6 @@ export class Room extends YgoRoom {
 		);
 	}
 
-	setClientWhoChoosesTurn(client: Client): void {
-		this._clientWhoChoosesTurn = client;
-	}
-
-	get clientWhoChoosesTurn(): Client {
-		return this._clientWhoChoosesTurn;
-	}
 
 	removeSpectator(spectator: Client): void {
 		const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);

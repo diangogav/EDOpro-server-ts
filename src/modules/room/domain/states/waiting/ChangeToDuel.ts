@@ -8,7 +8,7 @@ import { Room } from "../../Room";
 
 export class ChangeToDuel {
 	execute(room: Room, player: Client): void {
-		const place = room.calculaPlace();
+		const place = room.calculatePlace();
 		const ips = player.socket.remoteAddress;
 
 		if (place === null) {

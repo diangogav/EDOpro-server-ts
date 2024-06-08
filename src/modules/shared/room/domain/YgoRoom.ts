@@ -23,8 +23,9 @@ export abstract class YgoRoom {
 	protected _spectatorCache: Buffer[] = [];
 	protected _clients: YgoClient[] = [];
 	protected _spectators: YgoClient[] = [];
+	protected _clientWhoChoosesTurn: YgoClient;
 
-	constructor({ team0, team1 }: { team0: number; team1: number }) {
+	protected constructor({ team0, team1 }: { team0: number; team1: number }) {
 		this.team0 = team0;
 		this.team1 = team1;
 		this.t0Positions = Array.from({ length: this.team0 }, (_, index) => index);
@@ -63,7 +64,7 @@ export abstract class YgoRoom {
 		return this._spectators;
 	}
 
-	calculaPlace(startPosition?: number): { position: number; team: number } | null {
+	calculatePlace(startPosition?: number): { position: number; team: number } | null {
 		const team0 = this.clients
 			.filter((client: Client) => client.team === 0)
 			.map((client) => client.position);
@@ -97,6 +98,14 @@ export abstract class YgoRoom {
 		}
 
 		return null;
+	}
+
+	setClientWhoChoosesTurn(client: YgoClient): void {
+		this._clientWhoChoosesTurn = client;
+	}
+
+	get clientWhoChoosesTurn(): YgoClient {
+		return this._clientWhoChoosesTurn;
 	}
 
 	protected findNextPosition(availablePositions: number[], startPosition?: number): number | null {

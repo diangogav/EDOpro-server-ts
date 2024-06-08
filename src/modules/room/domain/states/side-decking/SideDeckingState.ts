@@ -129,7 +129,7 @@ export class SideDeckingState extends RoomState {
 		}
 
 		const message = ChooseOrderClientMessage.create();
-		room.clientWhoChoosesTurn.sendMessage(message);
+		room.clientWhoChoosesTurn.socket.send(message);
 		room.choosingOrder();
 	}
 }

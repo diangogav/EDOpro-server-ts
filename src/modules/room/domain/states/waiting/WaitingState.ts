@@ -293,7 +293,7 @@ export class WaitingState extends RoomState {
 			return;
 		}
 
-		const place = room.calculaPlace();
+		const place = room.calculatePlace();
 		const joinGameMessage = new JoinGameMessage(message.data);
 		if (!place) {
 			this.spectator(joinGameMessage, socket, playerInfoMessage, room);

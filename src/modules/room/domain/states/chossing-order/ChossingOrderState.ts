@@ -72,7 +72,7 @@ export class ChossingOrderState extends RoomState {
 
 		if (room.clientWhoChoosesTurn.position === player.position) {
 			const message = ChooseOrderClientMessage.create();
-			room.clientWhoChoosesTurn.sendMessage(message);
+			room.clientWhoChoosesTurn.socket.send(message);
 		}
 
 		player.clearReconnecting();
