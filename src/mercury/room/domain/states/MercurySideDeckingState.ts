@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-import EventEmitter from "events";
+import { EventEmitter } from "stream";
 
 import { PlayerInfoMessage } from "../../../../modules/messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../../modules/messages/domain/Commands";
 import { ClientMessage } from "../../../../modules/messages/MessageProcessor";
-import { RPSChooseClientMessage } from "../../../../modules/messages/server-to-client/RPSChooseClientMessage";
+import { SideDeckClientMessage } from "../../../../modules/messages/server-to-client/game-messages/SideDeckClientMessage";
 import { Room } from "../../../../modules/room/domain/Room";
 import { RoomState } from "../../../../modules/room/domain/RoomState";
 import { Logger } from "../../../../modules/shared/logger/domain/Logger";
@@ -15,44 +15,25 @@ import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { MercuryReconnect } from "../../application/MercuryReconnect";
 import { MercuryRoom } from "../MercuryRoom";
 
-export class MercuryRockPaperScissorState extends RoomState {
+export class MercurySideDeckingState extends RoomState {
 	constructor(eventEmitter: EventEmitter, private readonly logger: Logger) {
 		super(eventEmitter);
-		this.eventEmitter.on(
-			"SELECT_TP",
-			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
-				this.handle.bind(this)(message, room, client)
-		);
-		this.eventEmitter.on(
-			Commands.RPS_CHOICE as unknown as string,
-			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
-				this.handleRPSChoice.bind(this)(message, room, client)
-		);
+
 		this.eventEmitter.on(
 			"JOIN",
 			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
 				void this.handleJoin.bind(this)(message, room, socket)
 		);
+
 		this.eventEmitter.on(
 			Commands.READY as unknown as string,
 			(message: ClientMessage, room: Room, client: MercuryClient) =>
 				this.handleReady.bind(this)(message, room, client)
 		);
-		this.eventEmitter.on(
-			"HAND_RESULT",
-			(message: ClientMessage, room: Room, client: MercuryClient) =>
-				this.handleHandResult.bind(this)(message, room, client)
-		);
-	}
-
-	private handle(_message: ClientMessage, room: MercuryRoom, player: MercuryClient): void {
-		this.logger.info("MERCURY: SELECT_TP");
-		room.setClientWhoChoosesTurn(player);
-		room.choosigOrder();
 	}
 
 	private handleJoin(message: ClientMessage, room: MercuryRoom, socket: ISocket): void {
-		this.logger.info("MERCURY: JOIN");
+		this.logger.info("MERCURY_SIDE_DECKING: JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const playerAlreadyInRoom = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
 
@@ -74,33 +55,17 @@ export class MercuryRockPaperScissorState extends RoomState {
 		MercuryReconnect.run(playerAlreadyInRoom, room, socket);
 	}
 
-	private handleReady(_message: ClientMessage, _room: Room, player: MercuryClient): void {
-		this.logger.debug("MERCURY RPS: READY");
+	private handleReady(_message: ClientMessage, room: MercuryRoom, player: MercuryClient): void {
+		this.logger.debug("MERCURY_SIDE_DECKING: READY");
 		if (!player.isReconnecting) {
 			return;
 		}
 
 		player.socket.send(DuelStartClientMessage.create());
 
-		if (!player.rpsChosen) {
-			const rpsChooseMessage = RPSChooseClientMessage.create();
-			player.socket.send(rpsChooseMessage);
-		}
+		const message = SideDeckClientMessage.create();
+		player.socket.send(message);
 
 		player.clearReconnecting();
-	}
-
-	private handleRPSChoice(message: ClientMessage, _room: MercuryRoom, player: MercuryClient): void {
-		this.logger.debug(`MERCURY RPS: RPS_CHOICE: ${message.raw.toString("hex")}`);
-		player.rpsChoose();
-	}
-
-	private handleHandResult(
-		message: ClientMessage,
-		_room: MercuryRoom,
-		player: MercuryClient
-	): void {
-		this.logger.debug(`MERCURY RPS: HAND_RESULT: ${message.raw.toString("hex")}`);
-		player.rpsRpsChoose();
 	}
 }

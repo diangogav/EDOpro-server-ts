@@ -8,8 +8,8 @@ import { PlayerInfoMessage } from "../../../../messages/client-to-server/PlayerI
 import { Commands } from "../../../../messages/domain/Commands";
 import { ClientMessage } from "../../../../messages/MessageProcessor";
 import { ChooseOrderClientMessage } from "../../../../messages/server-to-client/ChooseOrderClientMessage";
-import { DuelStartClientMessage } from "../../../../messages/server-to-client/DuelStartClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
+import { DuelStartClientMessage } from "../../../../shared/messages/server-to-client/DuelStartClientMessage";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";

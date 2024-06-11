@@ -7,6 +7,7 @@ import { Commands } from "../../../../modules/messages/domain/Commands";
 import { ClientMessage } from "../../../../modules/messages/MessageProcessor";
 import { RoomState } from "../../../../modules/room/domain/RoomState";
 import { Logger } from "../../../../modules/shared/logger/domain/Logger";
+import { DuelState } from "../../../../modules/shared/room/domain/YgoRoom";
 import { ISocket } from "../../../../modules/shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { MercuryReconnect } from "../../application/MercuryReconnect";
@@ -43,6 +44,12 @@ export class MercuryDuelingState extends RoomState {
 			"TIME_LIMIT",
 			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
 				void this.handleTimeLimit.bind(this)(message, room, socket)
+		);
+
+		this.eventEmitter.on(
+			"CHANGE_SIDE",
+			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
+				void this.handleChangeSide.bind(this)(message, room, socket)
 		);
 
 		this.eventEmitter.on(
@@ -134,5 +141,19 @@ export class MercuryDuelingState extends RoomState {
 		_player: MercuryClient
 	): void {
 		this.logger.info("MERCURY: TIME_LIMIT");
+	}
+
+	private handleChangeSide(
+		_message: ClientMessage,
+		room: MercuryRoom,
+		_player: MercuryClient
+	): void {
+		this.logger.info("MERCURY: CHANGE_SIDE");
+
+		if (room.duelState === DuelState.DUELING) {
+			room.sideDecking();
+
+			return;
+		}
 	}
 }

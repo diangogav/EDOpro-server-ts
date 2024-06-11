@@ -10,7 +10,6 @@ import { PlayerInfoMessage } from "../../../../messages/client-to-server/PlayerI
 import { Commands } from "../../../../messages/domain/Commands";
 import { ServerInfoMessage } from "../../../../messages/domain/ServerInfoMessage";
 import { ClientMessage } from "../../../../messages/MessageProcessor";
-import { DuelStartClientMessage } from "../../../../messages/server-to-client/DuelStartClientMessage";
 import { ErrorMessages } from "../../../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../../../messages/server-to-client/ErrorClientMessage";
 import { JoinGameClientMessage } from "../../../../messages/server-to-client/JoinGameClientMessage";
@@ -20,6 +19,7 @@ import { ServerErrorClientMessage } from "../../../../messages/server-to-client/
 import { ServerMessageClientMessage } from "../../../../messages/server-to-client/ServerMessageClientMessage";
 import { WatchChangeClientMessage } from "../../../../messages/server-to-client/WatchChangeClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
+import { DuelStartClientMessage } from "../../../../shared/messages/server-to-client/DuelStartClientMessage";
 import { PlayerEnterClientMessage } from "../../../../shared/messages/server-to-client/PlayerEnterClientMessage";
 import { TypeChangeClientMessage } from "../../../../shared/messages/server-to-client/TypeChangeClientMessage";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";

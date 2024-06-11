@@ -19,6 +19,7 @@ import { priorityRuleMappings, ruleMappings } from "./RuleMappings";
 import { MercuryChoosingOrderState } from "./states/MercuryChoosingOrderState";
 import { MercuryDuelingState } from "./states/MercuryDuelingState";
 import { MercuryRockPaperScissorState } from "./states/MercuryRockPaperScissorsState";
+import { MercurySideDeckingState } from "./states/MercurySideDeckingState";
 import { MercuryWaitingState } from "./states/MercuryWaitingState";
 
 export class MercuryRoom extends YgoRoom {
@@ -268,6 +269,12 @@ export class MercuryRoom extends YgoRoom {
 		this._state = DuelState.DUELING;
 		this.roomState?.removeAllListener();
 		this.roomState = new MercuryDuelingState(this.emitter, this._logger);
+	}
+
+	sideDecking(): void {
+		this._state = DuelState.SIDE_DECKING;
+		this.roomState?.removeAllListener();
+		this.roomState = new MercurySideDeckingState(this.emitter, this._logger);
 	}
 
 	setBanlistHash(banlistHash: number): void {

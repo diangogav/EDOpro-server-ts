@@ -7,9 +7,9 @@ import { JoinGameMessage } from "../../../../messages/client-to-server/JoinGameM
 import { PlayerInfoMessage } from "../../../../messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../../messages/domain/Commands";
 import { ClientMessage } from "../../../../messages/MessageProcessor";
-import { DuelStartClientMessage } from "../../../../messages/server-to-client/DuelStartClientMessage";
 import { RPSChooseClientMessage } from "../../../../messages/server-to-client/RPSChooseClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
+import { DuelStartClientMessage } from "../../../../shared/messages/server-to-client/DuelStartClientMessage";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";

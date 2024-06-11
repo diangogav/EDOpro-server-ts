@@ -9,6 +9,7 @@ export class MercuryReconnect {
 		if (!room.joinBuffer) {
 			return;
 		}
+		player.socket.removeAllListeners();
 		player.setSocket(socket);
 		player.reconnecting();
 		player.socket.send(room.joinBuffer);
