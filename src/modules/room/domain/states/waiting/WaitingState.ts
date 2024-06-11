@@ -76,7 +76,7 @@ export class WaitingState extends RoomState {
 		);
 
 		this.eventEmitter.on(
-			Commands.TODUEL as unknown as string,
+			Commands.TO_DUEL as unknown as string,
 			(message: ClientMessage, room: Room, client: Client) =>
 				this.handleToDuel.bind(this)(message, room, client)
 		);
