@@ -32,7 +32,7 @@ export class MercuryJoinHandler extends RoomState implements JoinMessageHandler 
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		this.logger.debug(`name: ${playerInfoMessage.name}`);
 		const joinMessage = new MercuryJoinGameMessage(message.data);
-		const room = this.createRoomIfNotExists(joinMessage.pass);
+		const room = this.createRoomIfNotExists(joinMessage.pass, playerInfoMessage);
 		room.emit("JOIN", message, this.socket);
 	}
 
@@ -43,14 +43,15 @@ export class MercuryJoinHandler extends RoomState implements JoinMessageHandler 
 		return Math.floor(Math.random() * (max - min + 1)) + min;
 	}
 
-	private createRoomIfNotExists(name: string): MercuryRoom {
+	private createRoomIfNotExists(name: string, playerInfo: PlayerInfoMessage): MercuryRoom {
 		const existingRoom = MercuryRoomList.findByName(name);
 		if (!existingRoom) {
 			const room = MercuryRoom.create(
 				this.generateUniqueId(),
 				name,
 				this.logger,
-				this.eventEmitter
+				this.eventEmitter,
+				playerInfo
 			);
 			MercuryRoomList.addRoom(room);
 			room.waiting();

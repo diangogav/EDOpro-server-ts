@@ -16,6 +16,7 @@ export enum DuelState {
 export abstract class YgoRoom {
 	public readonly team0: number;
 	public readonly team1: number;
+	public readonly ranked: boolean;
 	protected readonly t0Positions: number[] = [];
 	protected readonly t1Positions: number[] = [];
 	protected emitter: EventEmitter;
@@ -25,9 +26,18 @@ export abstract class YgoRoom {
 	protected _spectators: YgoClient[] = [];
 	protected _clientWhoChoosesTurn: YgoClient;
 
-	protected constructor({ team0, team1 }: { team0: number; team1: number }) {
+	protected constructor({
+		team0,
+		team1,
+		ranked,
+	}: {
+		team0: number;
+		team1: number;
+		ranked: boolean;
+	}) {
 		this.team0 = team0;
 		this.team1 = team1;
+		this.ranked = ranked;
 		this.t0Positions = Array.from({ length: this.team0 }, (_, index) => index);
 		this.t1Positions = Array.from({ length: this.team1 }, (_, index) => this.team0 + index);
 	}

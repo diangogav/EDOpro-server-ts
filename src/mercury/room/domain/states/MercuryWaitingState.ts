@@ -42,21 +42,37 @@ export class MercuryWaitingState extends RoomState {
 		this.validateVersion(message.data, socket);
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const messages = [message.previousRawMessage, message.raw];
-		const host = room.clients.length === 0;
-		const client = new MercuryClient({
+
+		if (!room.isPlayersFull) {
+			const host = room.clients.length === 0;
+			const client = new MercuryClient({
+				socket,
+				logger: this.logger,
+				messages,
+				name: playerInfoMessage.name,
+				position: room.playersCount,
+				room,
+				host,
+			});
+			room.addClient(client);
+			if (!room.isCoreStarted) {
+				room.startCore();
+			}
+
+			return;
+		}
+
+		const spectator = new MercuryClient({
 			socket,
 			logger: this.logger,
 			messages,
 			name: playerInfoMessage.name,
 			position: room.playersCount,
 			room,
-			host,
+			host: false,
 		});
-		room.addClient(client);
 
-		if (!room.isCoreStarted) {
-			room.startCore();
-		}
+		room.addSpectator(spectator, false);
 	}
 
 	private tryStartHandler(_message: ClientMessage, room: MercuryRoom, _socket: ISocket): void {

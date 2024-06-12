@@ -140,7 +140,6 @@ export class Room extends YgoRoom {
 	public readonly duelRule: number;
 	public readonly handshake: number;
 	public readonly password: string;
-	public readonly ranked: boolean;
 	private _replay: Replay;
 	private isStart: string;
 	private readonly _kick: Client[] = [];
@@ -163,6 +162,7 @@ export class Room extends YgoRoom {
 		super({
 			team0: attr.team0,
 			team1: attr.team1,
+			ranked: attr.ranked
 		});
 		this.id = attr.id;
 		this.name = attr.name;
@@ -221,7 +221,6 @@ export class Room extends YgoRoom {
 		this.roomTimer = new Timer(this.timeLimit * 2 * 1000, () => {
 			RoomList.deleteRoom(this);
 		});
-		this.ranked = attr.ranked;
 		this.resetReplay();
 	}
 

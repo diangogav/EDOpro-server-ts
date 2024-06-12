@@ -3,6 +3,7 @@ import * as crypto from "crypto";
 import net from "net";
 import { EventEmitter } from "stream";
 
+import { PlayerInfoMessage } from "../../../modules/messages/client-to-server/PlayerInfoMessage";
 import { RoomState } from "../../../modules/room/domain/RoomState";
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
 import { DuelState, YgoRoom } from "../../../modules/shared/room/domain/YgoRoom";
@@ -41,6 +42,7 @@ export class MercuryRoom extends YgoRoom {
 		hostInfo,
 		team0,
 		team1,
+		ranked,
 	}: {
 		id: number;
 		password: string;
@@ -48,8 +50,9 @@ export class MercuryRoom extends YgoRoom {
 		hostInfo: HostInfo;
 		team0: number;
 		team1: number;
+		ranked: boolean;
 	}) {
-		super({ team0, team1 });
+		super({ team0, team1, ranked });
 		this.id = id;
 		this.name = name;
 		this.password = password;
@@ -59,7 +62,13 @@ export class MercuryRoom extends YgoRoom {
 		this._banListHash = 0;
 	}
 
-	static create(id: number, command: string, logger: Logger, emitter: EventEmitter): MercuryRoom {
+	static create(
+		id: number,
+		command: string,
+		logger: Logger,
+		emitter: EventEmitter,
+		playerInfo: PlayerInfoMessage
+	): MercuryRoom {
 		let hostInfo: HostInfo = {
 			mode: Mode.SINGLE,
 			startLp: 8000,
@@ -110,7 +119,7 @@ export class MercuryRoom extends YgoRoom {
 		});
 
 		const teamCount = hostInfo.mode === Mode.TAG ? 2 : 1;
-
+		const ranked = Boolean(playerInfo.password);
 		const room = new MercuryRoom({
 			id,
 			hostInfo,
@@ -118,6 +127,7 @@ export class MercuryRoom extends YgoRoom {
 			password,
 			team0: teamCount,
 			team1: teamCount,
+			ranked,
 		});
 
 		room._logger = logger;
@@ -275,6 +285,13 @@ export class MercuryRoom extends YgoRoom {
 
 	setBanListHash(banListHash: number): void {
 		this._banListHash = banListHash;
+	}
+
+	get isPlayersFull(): boolean {
+		return (
+			(this._hostInfo.mode === Mode.SINGLE || this._hostInfo.mode === Mode.MATCH) &&
+			this.playersCount === 2
+		);
 	}
 
 	toPresentation(): { [key: string]: unknown } {
