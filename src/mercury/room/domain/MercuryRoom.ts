@@ -29,7 +29,7 @@ export class MercuryRoom extends YgoRoom {
 	private _logger: Logger;
 	private _coreStarted = false;
 	private _corePort: number | null = null;
-	private _banlistHash: number;
+	private _banListHash: number;
 	private _joinBuffer: Buffer | null = null;
 	private readonly _hostInfo: HostInfo;
 	private roomState: RoomState | null = null;
@@ -56,7 +56,7 @@ export class MercuryRoom extends YgoRoom {
 		this._clients = [];
 		this._hostInfo = hostInfo;
 		this._state = DuelState.WAITING;
-		this._banlistHash = 0;
+		this._banListHash = 0;
 	}
 
 	static create(id: number, command: string, logger: Logger, emitter: EventEmitter): MercuryRoom {
@@ -236,10 +236,6 @@ export class MercuryRoom extends YgoRoom {
 		return this._clients.length;
 	}
 
-	get spectatorsCount(): number {
-		return this.spectators.length;
-	}
-
 	get joinBuffer(): Buffer | null {
 		return this._joinBuffer;
 	}
@@ -259,7 +255,7 @@ export class MercuryRoom extends YgoRoom {
 		this.roomState = new MercuryRockPaperScissorState(this.emitter, this._logger);
 	}
 
-	choosigOrder(): void {
+	choosingOrder(): void {
 		this._state = DuelState.CHOOSING_ORDER;
 		this.roomState?.removeAllListener();
 		this.roomState = new MercuryChoosingOrderState(this.emitter, this._logger);
@@ -277,8 +273,8 @@ export class MercuryRoom extends YgoRoom {
 		this.roomState = new MercurySideDeckingState(this.emitter, this._logger);
 	}
 
-	setBanlistHash(banlistHash: number): void {
-		this._banlistHash = banlistHash;
+	setBanListHash(banListHash: number): void {
+		this._banListHash = banListHash;
 	}
 
 	toPresentation(): { [key: string]: unknown } {
@@ -301,7 +297,7 @@ export class MercuryRoom extends YgoRoom {
 			rule: this._hostInfo.rule,
 			no_check: this._hostInfo.noCheck,
 			no_shuffle: this._hostInfo.noShuffle,
-			banlist_hash: this._banlistHash,
+			banlist_hash: this._banListHash,
 			istart: "waiting",
 			main_min: 40,
 			main_max: 60,

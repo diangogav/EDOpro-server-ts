@@ -93,7 +93,7 @@ export class MercuryWaitingState extends RoomState {
 	private handleJoinGame(message: ClientMessage, room: MercuryRoom, _client: MercuryClient): void {
 		this.logger.debug("MERCURY: JOIN_GAME");
 		const joinGameMessage = new JoinGameCoreToClientMessage(message.data);
-		room.setBanlistHash(joinGameMessage.banList);
+		room.setBanListHash(joinGameMessage.banList);
 		if (!room.joinBuffer) {
 			room.setJoinBuffer(message.raw);
 		}

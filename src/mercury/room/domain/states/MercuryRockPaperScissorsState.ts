@@ -48,7 +48,7 @@ export class MercuryRockPaperScissorState extends RoomState {
 	private handle(_message: ClientMessage, room: MercuryRoom, player: MercuryClient): void {
 		this.logger.info("MERCURY: SELECT_TP");
 		room.setClientWhoChoosesTurn(player);
-		room.choosigOrder();
+		room.choosingOrder();
 	}
 
 	private handleJoin(message: ClientMessage, room: MercuryRoom, socket: ISocket): void {
