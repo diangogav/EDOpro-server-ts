@@ -7,6 +7,7 @@ services:
     ports:
       - "7911:7911"
       - "7922:7922"
+      - "7711:7711"
     environment:
       - REDIS_URI=${REDIS_URI}
     depends_on:

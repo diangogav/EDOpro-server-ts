@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { EventEmitter } from "stream";
 
-import { YGOClientSocket } from "../../../../../socket-server/HostServer";
 import { Client } from "../../../../client/domain/Client";
 import { DeckCreator } from "../../../../deck/application/DeckCreator";
 import { UpdateDeckMessageSizeCalculator } from "../../../../deck/application/UpdateDeckMessageSizeCalculator";
@@ -11,18 +10,19 @@ import { PlayerInfoMessage } from "../../../../messages/client-to-server/PlayerI
 import { Commands } from "../../../../messages/domain/Commands";
 import { ServerInfoMessage } from "../../../../messages/domain/ServerInfoMessage";
 import { ClientMessage } from "../../../../messages/MessageProcessor";
-import { DuelStartClientMessage } from "../../../../messages/server-to-client/DuelStartClientMessage";
 import { ErrorMessages } from "../../../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../../../messages/server-to-client/ErrorClientMessage";
 import { JoinGameClientMessage } from "../../../../messages/server-to-client/JoinGameClientMessage";
 import { PlayerChangeClientMessage } from "../../../../messages/server-to-client/PlayerChangeClientMessage";
-import { PlayerEnterClientMessage } from "../../../../messages/server-to-client/PlayerEnterClientMessage";
 import { RPSChooseClientMessage } from "../../../../messages/server-to-client/RPSChooseClientMessage";
 import { ServerErrorClientMessage } from "../../../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { ServerMessageClientMessage } from "../../../../messages/server-to-client/ServerMessageClientMessage";
-import { TypeChangeClientMessage } from "../../../../messages/server-to-client/TypeChangeClientMessage";
 import { WatchChangeClientMessage } from "../../../../messages/server-to-client/WatchChangeClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
+import { DuelStartClientMessage } from "../../../../shared/messages/server-to-client/DuelStartClientMessage";
+import { PlayerEnterClientMessage } from "../../../../shared/messages/server-to-client/PlayerEnterClientMessage";
+import { TypeChangeClientMessage } from "../../../../shared/messages/server-to-client/TypeChangeClientMessage";
+import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { Rank } from "../../../../shared/value-objects/Rank";
 import { UserFinder } from "../../../../user/application/UserFinder";
 import { User } from "../../../../user/domain/User";
@@ -41,7 +41,7 @@ export class WaitingState extends RoomState {
 		super(eventEmitter);
 		this.eventEmitter.on(
 			"JOIN",
-			(message: ClientMessage, room: Room, socket: YGOClientSocket) =>
+			(message: ClientMessage, room: Room, socket: ISocket) =>
 				void this.handle.bind(this)(message, room, socket)
 		);
 
@@ -76,7 +76,7 @@ export class WaitingState extends RoomState {
 		);
 
 		this.eventEmitter.on(
-			Commands.TODUEL as unknown as string,
+			Commands.TO_DUEL as unknown as string,
 			(message: ClientMessage, room: Room, client: Client) =>
 				this.handleToDuel.bind(this)(message, room, client)
 		);
@@ -93,7 +93,7 @@ export class WaitingState extends RoomState {
 		const positionkick = message.data.readInt8();
 		const playerselect = room.clients.find((_client) => _client.position === positionkick);
 
-		if (!playerselect) {
+		if (!(playerselect instanceof Client)) {
 			return;
 		}
 
@@ -104,7 +104,7 @@ export class WaitingState extends RoomState {
 		this.handleChangeToObserver(message, room, playerselect);
 		room.addKick(playerselect);
 
-		room.clients.forEach((_client) => {
+		room.clients.forEach((_client: Client) => {
 			_client.sendMessage(
 				ServerErrorClientMessage.create(
 					`El Jugador:${playerselect.name} ha sido Baneado de esta Sala, solo podra ingresar como espectador!!`
@@ -112,7 +112,7 @@ export class WaitingState extends RoomState {
 			);
 		});
 
-		room.spectators.forEach((_client) => {
+		room.spectators.forEach((_client: Client) => {
 			_client.sendMessage(
 				ServerErrorClientMessage.create(
 					`El Jugador:${playerselect.name} ha sido Baneado de esta Sala, solo podra ingresar como espectador!!`
@@ -130,24 +130,24 @@ export class WaitingState extends RoomState {
 	private tryStartHandler(_message: ClientMessage, room: Room, _player: Client): void {
 		this.logger.debug("WAITING: TRY_START");
 		const duelStartMessage = DuelStartClientMessage.create();
-		room.clients.forEach((client) => {
+		room.clients.forEach((client: Client) => {
 			client.sendMessage(duelStartMessage);
 		});
 
-		room.spectators.forEach((client) => {
+		room.spectators.forEach((client: Client) => {
 			client.sendMessage(duelStartMessage);
 		});
 
 		const t0Client = room.clients
-			.filter((_client) => _client.team === 0)
+			.filter((_client: Client) => _client.team === 0)
 			.sort((a, b) => a.position - b.position)[0];
 		const t1Client = room.clients
-			.filter((_client) => _client.team === 1)
+			.filter((_client: Client) => _client.team === 1)
 			.sort((a, b) => a.position - b.position)[0];
 
 		const rpsChooseMessage = RPSChooseClientMessage.create();
-		t0Client.sendMessage(rpsChooseMessage);
-		t1Client.sendMessage(rpsChooseMessage);
+		(t0Client as Client).sendMessage(rpsChooseMessage);
+		(t1Client as Client).sendMessage(rpsChooseMessage);
 
 		room.initializeHistoricalData();
 		room.rps();
@@ -166,7 +166,7 @@ export class WaitingState extends RoomState {
 		const status = (player.position << 4) | 0x09;
 		const message = PlayerChangeClientMessage.create({ status });
 
-		[...room.spectators, ...room.clients].forEach((client) => {
+		[...room.spectators, ...room.clients].forEach((client: Client) => {
 			client.sendMessage(message);
 		});
 
@@ -186,13 +186,13 @@ export class WaitingState extends RoomState {
 
 			room.spectators.push(player);
 
-			room.clients.forEach((_client) => {
+			room.clients.forEach((_client: Client) => {
 				const status = (player.position << 4) | PlayerRoomState.SPECTATE;
 
 				_client.sendMessage(PlayerChangeClientMessage.create({ status }));
 			});
 
-			room.spectators.forEach((_client) => {
+			room.spectators.forEach((_client: Client) => {
 				const status = (player.position << 4) | PlayerRoomState.SPECTATE;
 
 				_client.sendMessage(PlayerChangeClientMessage.create({ status }));
@@ -209,11 +209,11 @@ export class WaitingState extends RoomState {
 				count: spectatorsCount,
 			});
 
-			room.clients.forEach((_client) => {
+			room.clients.forEach((_client: Client) => {
 				_client.sendMessage(watchMessage);
 			});
 
-			room.spectators.forEach((_client) => {
+			room.spectators.forEach((_client: Client) => {
 				_client.sendMessage(watchMessage);
 			});
 		}
@@ -277,14 +277,14 @@ export class WaitingState extends RoomState {
 
 		const status = (player.position << 4) | 0x0a;
 		const playerChangeMessage = PlayerChangeClientMessage.create({ status });
-		[...room.spectators, ...room.clients].forEach((client) => {
+		[...room.spectators, ...room.clients].forEach((client: Client) => {
 			client.sendMessage(playerChangeMessage);
 		});
 
 		player.notReady();
 	}
 
-	private async handle(message: ClientMessage, room: Room, socket: YGOClientSocket): Promise<void> {
+	private async handle(message: ClientMessage, room: Room, socket: ISocket): Promise<void> {
 		this.logger.debug("WAITING: JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		if (this.playerAlreadyInRoom(playerInfoMessage, room, socket)) {
@@ -293,7 +293,7 @@ export class WaitingState extends RoomState {
 			return;
 		}
 
-		const place = room.calculaPlace();
+		const place = room.calculatePlace();
 		const joinGameMessage = new JoinGameMessage(message.data);
 		if (!place) {
 			this.spectator(joinGameMessage, socket, playerInfoMessage, room);
@@ -305,8 +305,8 @@ export class WaitingState extends RoomState {
 			const user = await this.userFinder.run(playerInfoMessage);
 
 			if (!(user instanceof User)) {
-				socket.write(user as Buffer);
-				socket.write(ErrorClientMessage.create(ErrorMessages.JOINERROR));
+				socket.send(user as Buffer);
+				socket.send(ErrorClientMessage.create(ErrorMessages.JOINERROR));
 
 				return;
 			}
@@ -317,13 +317,13 @@ export class WaitingState extends RoomState {
 		this.player(place, joinGameMessage, socket, playerInfoMessage, room, []);
 	}
 
-	private sendErrorMessage(playerInfoMessage: PlayerInfoMessage, socket: YGOClientSocket): void {
-		socket.write(
+	private sendErrorMessage(playerInfoMessage: PlayerInfoMessage, socket: ISocket): void {
+		socket.send(
 			ServerErrorClientMessage.create(
 				`Ya existe un jugador con el nombre :${playerInfoMessage.name}`
 			)
 		);
-		socket.write(ErrorClientMessage.create(ErrorMessages.JOINERROR));
+		socket.send(ErrorClientMessage.create(ErrorMessages.JOINERROR));
 		socket.destroy();
 
 		return;
@@ -331,24 +331,26 @@ export class WaitingState extends RoomState {
 
 	private spectator(
 		joinGameMessage: JoinGameMessage,
-		socket: YGOClientSocket,
+		socket: ISocket,
 		playerInfoMessage: PlayerInfoMessage,
 		room: Room
 	): void {
 		const client = room.createSpectator(socket, playerInfoMessage.name);
 
-		socket.write(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
+		socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
 		const type = (Number(client.host) << 4) | client.position;
-		socket.write(TypeChangeClientMessage.create({ type }));
+		socket.send(TypeChangeClientMessage.create({ type }));
 
 		room.clients.forEach((_client) => {
 			if (_client.socket.id !== client.socket.id) {
-				const status = room.clients.find((item) => item.position === _client.position)?.isReady
+				const status = (<Client | undefined>(
+					room.clients.find((item: Client) => item.position === _client.position)
+				))?.isReady
 					? (_client.position << 4) | PlayerRoomState.READY
 					: (_client.position << 4) | PlayerRoomState.NOT_READY;
 
-				socket.write(PlayerEnterClientMessage.create(_client.name, _client.position));
-				socket.write(PlayerChangeClientMessage.create({ status }));
+				socket.send(PlayerEnterClientMessage.create(_client.name, _client.position));
+				socket.send(PlayerChangeClientMessage.create({ status }));
 			}
 		});
 
@@ -358,11 +360,11 @@ export class WaitingState extends RoomState {
 			count: spectatorsCount,
 		});
 
-		room.clients.forEach((_client) => {
+		room.clients.forEach((_client: Client) => {
 			_client.sendMessage(watchMessage);
 		});
 
-		room.spectators.forEach((_client) => {
+		room.spectators.forEach((_client: Client) => {
 			_client.sendMessage(watchMessage);
 		});
 	}
@@ -373,12 +375,12 @@ export class WaitingState extends RoomState {
 			team: number;
 		},
 		joinGameMessage: JoinGameMessage,
-		socket: YGOClientSocket,
+		socket: ISocket,
 		playerInfoMessage: PlayerInfoMessage,
 		room: Room,
 		ranks: Rank[]
 	): void {
-		const host = room.clients.some((client) => client.host);
+		const host = room.clients.some((client: Client) => client.host);
 
 		const client = new Client({
 			socket,
@@ -409,7 +411,7 @@ export class WaitingState extends RoomState {
 		const watchMessage = WatchChangeClientMessage.create({
 			count: spectatorsCount,
 		});
-		socket.write(watchMessage);
+		socket.send(watchMessage);
 		this.sendInfoMessage(room, socket);
 
 		this.notify(client, room, socket);
@@ -418,64 +420,66 @@ export class WaitingState extends RoomState {
 	private sendJoinMessage(
 		playerInfoMessage: PlayerInfoMessage,
 		message: JoinGameMessage,
-		socket: YGOClientSocket,
+		socket: ISocket,
 		room: Room,
 		client: Client
 	): void {
-		socket.write(JoinGameClientMessage.createFromRoom(message, room));
-		room.clients.forEach((_client) => {
+		socket.send(JoinGameClientMessage.createFromRoom(message, room));
+		room.clients.forEach((_client: Client) => {
 			_client.sendMessage(PlayerEnterClientMessage.create(playerInfoMessage.name, client.position));
 		});
 
-		room.spectators.forEach((_client) => {
+		room.spectators.forEach((_client: Client) => {
 			_client.sendMessage(PlayerEnterClientMessage.create(playerInfoMessage.name, client.position));
 		});
 	}
 
 	private sendNotReadyMessage(client: Client, room: Room): void {
 		const notReady = (client.position << 4) | PlayerRoomState.NOT_READY;
-		room.clients.forEach((_client) => {
+		room.clients.forEach((_client: Client) => {
 			_client.sendMessage(PlayerChangeClientMessage.create({ status: notReady }));
 		});
 
-		room.spectators.forEach((_client) => {
+		room.spectators.forEach((_client: Client) => {
 			_client.sendMessage(PlayerChangeClientMessage.create({ status: notReady }));
 		});
 	}
 
-	private sendTypeChangeMessage(client: Client, socket: YGOClientSocket): void {
+	private sendTypeChangeMessage(client: Client, socket: ISocket): void {
 		const type = (Number(client.host) << 4) | client.position;
-		socket.write(TypeChangeClientMessage.create({ type }));
+		socket.send(TypeChangeClientMessage.create({ type }));
 	}
 
-	private notify(client: Client, room: Room, socket: YGOClientSocket): void {
+	private notify(client: Client, room: Room, socket: ISocket): void {
 		room.clients.forEach((_client) => {
 			if (_client.socket.id !== client.socket.id) {
-				const status = room.clients.find((item) => item.position === _client.position)?.isReady
+				const status = (<Client | undefined>(
+					room.clients.find((item) => item.position === _client.position)
+				))?.isReady
 					? (_client.position << 4) | PlayerRoomState.READY
 					: (_client.position << 4) | PlayerRoomState.NOT_READY;
 
-				socket.write(PlayerEnterClientMessage.create(_client.name, _client.position));
-				socket.write(PlayerChangeClientMessage.create({ status }));
+				socket.send(PlayerEnterClientMessage.create(_client.name, _client.position));
+				socket.send(PlayerChangeClientMessage.create({ status }));
 			}
 		});
 	}
 
-	private sendInfoMessage(room: Room, socket: YGOClientSocket): void {
+	private sendInfoMessage(room: Room, socket: ISocket): void {
 		if (room.ranked) {
-			socket.write(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
-			socket.write(
+			socket.send(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
+			socket.send(
 				ServerMessageClientMessage.create(ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS)
 			);
-			socket.write(ServerMessageClientMessage.create(ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION));
+			socket.send(ServerMessageClientMessage.create(ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION));
 
 			return;
 		}
 
-		socket.write(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
-		socket.write(
+		socket.send(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
+		socket.send(
 			ServerMessageClientMessage.create(ServerInfoMessage.UNRANKED_ROOM_CREATION_SUCCESS)
 		);
-		socket.write(ServerMessageClientMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));
+		socket.send(ServerMessageClientMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));
 	}
 }

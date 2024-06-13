@@ -15,3 +15,4 @@ core/CoreIntegrator
 app.log
 certs
 .DS_Store
+.idea

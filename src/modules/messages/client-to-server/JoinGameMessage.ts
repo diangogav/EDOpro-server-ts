@@ -12,7 +12,7 @@ export class JoinGameMessage implements Message {
 	constructor(buffer: Buffer) {
 		this.version2 = buffer.subarray(0, 2).readUInt16LE();
 		this.id = buffer.subarray(4, 8).readUint32LE();
-		this.password = new TextVO(buffer.subarray(8, 48)).value;
+		this.password = Buffer.from(new TextVO(buffer.subarray(8, 48)).value).toString("utf16le");
 		this.clientVersion = buffer.subarray(46, 50).readUInt32LE();
 	}
 }
