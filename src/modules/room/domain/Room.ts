@@ -162,7 +162,7 @@ export class Room extends YgoRoom {
 		super({
 			team0: attr.team0,
 			team1: attr.team1,
-			ranked: attr.ranked
+			ranked: attr.ranked,
 		});
 		this.id = attr.id;
 		this.name = attr.name;
