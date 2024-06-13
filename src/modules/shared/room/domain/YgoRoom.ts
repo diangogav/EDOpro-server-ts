@@ -25,6 +25,7 @@ export abstract class YgoRoom {
 	protected _clients: YgoClient[] = [];
 	protected _spectators: YgoClient[] = [];
 	protected _clientWhoChoosesTurn: YgoClient;
+	abstract score: string;
 
 	protected constructor({
 		team0,

@@ -14,7 +14,6 @@ import { VersionErrorClientMessage } from "../../messages/server-to-client/Versi
 import { YgoClient } from "../../shared/client/domain/YgoClient";
 import { YgoRoom } from "../../shared/room/domain/YgoRoom";
 import { ISocket } from "../../shared/socket/domain/ISocket";
-import { Room } from "./Room";
 
 export abstract class RoomState {
 	protected readonly eventEmitter: EventEmitter;
@@ -24,7 +23,8 @@ export abstract class RoomState {
 
 		this.eventEmitter.on(
 			Commands.CHAT as unknown as string,
-			(message: ClientMessage, room: Room, client: Client) => this.handleChat(message, room, client)
+			(message: ClientMessage, room: YgoRoom, client: Client) =>
+				this.handleChat(message, room, client)
 		);
 	}
 
@@ -37,7 +37,7 @@ export abstract class RoomState {
 		room: YgoRoom,
 		socket: ISocket
 	): YgoClient | null {
-		if (!(room as Room).ranked) {
+		if (!room.ranked) {
 			const player = room.clients.find((client) => {
 				return (
 					client.socket.remoteAddress === socket.remoteAddress &&
@@ -77,12 +77,10 @@ export abstract class RoomState {
 	private handleChat(message: ClientMessage, room: YgoRoom, client: YgoClient): void {
 		const sanitized = BufferToUTF16(message.data, message.data.length);
 
-		if (room instanceof Room) {
-			if (sanitized === ":score") {
-				client.socket.send(ServerMessageClientMessage.create(room.score));
+		if (sanitized === ":score") {
+			client.socket.send(ServerMessageClientMessage.create(room.score));
 
-				return;
-			}
+			return;
 		}
 
 		if (client.isSpectator) {

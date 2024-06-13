@@ -7,7 +7,6 @@ import { Commands } from "../../../../modules/messages/domain/Commands";
 import { CoreMessages } from "../../../../modules/messages/domain/CoreMessages";
 import { ClientMessage } from "../../../../modules/messages/MessageProcessor";
 import { ChooseOrderClientMessage } from "../../../../modules/messages/server-to-client/ChooseOrderClientMessage";
-import { Room } from "../../../../modules/room/domain/Room";
 import { RoomState } from "../../../../modules/room/domain/RoomState";
 import { Logger } from "../../../../modules/shared/logger/domain/Logger";
 import { DuelStartClientMessage } from "../../../../modules/shared/messages/server-to-client/DuelStartClientMessage";
@@ -31,7 +30,7 @@ export class MercuryChoosingOrderState extends RoomState {
 		);
 		this.eventEmitter.on(
 			Commands.READY as unknown as string,
-			(message: ClientMessage, room: Room, client: MercuryClient) =>
+			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
 				this.handleReady.bind(this)(message, room, client)
 		);
 	}

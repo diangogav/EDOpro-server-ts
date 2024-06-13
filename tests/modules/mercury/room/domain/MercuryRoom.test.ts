@@ -1,10 +1,10 @@
 import EventEmitter from "events";
 
-import { MercuryBanListLoader } from "../../../../src/mercury/ban-list/infrastructure/MercuryBanListLoader";
-import { Mode } from "../../../../src/mercury/room/domain/host-info/Mode.enum";
-import { MercuryRoom } from "../../../../src/mercury/room/domain/MercuryRoom";
-import { Pino } from "../../../../src/modules/shared/logger/infrastructure/Pino";
-import { PlayerInfoMessageMother } from "../../../shared/mothers/PlayerInfoMessageMother";
+import { MercuryBanListLoader } from "../../../../../src/mercury/ban-list/infrastructure/MercuryBanListLoader";
+import { Mode } from "../../../../../src/mercury/room/domain/host-info/Mode.enum";
+import { MercuryRoom } from "../../../../../src/mercury/room/domain/MercuryRoom";
+import { Pino } from "../../../../../src/modules/shared/logger/infrastructure/Pino";
+import { PlayerInfoMessageMother } from "../../../../shared/mothers/PlayerInfoMessageMother";
 
 describe("MercuryRoom", () => {
 	const logger = new Pino();
@@ -210,13 +210,13 @@ describe("MercuryRoom", () => {
 		expect(room.hostInfo.lflist).toBe(9);
 	});
 
-	it("Should create a single match room, with the lflist -1 if lf command is bad", () => {
+	it("Should create a single match room, with the lflist 1 if lf command is bad", () => {
 		const room1 = MercuryRoom.create(id, "lfbad#123", logger, emitter, playerInfoMessage);
-		expect(room1.hostInfo.lflist).toBe(-1);
+		expect(room1.hostInfo.lflist).toBe(1);
 		const room2 = MercuryRoom.create(id, "lf#123", logger, emitter, playerInfoMessage);
-		expect(room2.hostInfo.lflist).toBe(-1);
+		expect(room2.hostInfo.lflist).toBe(1);
 		const room3 = MercuryRoom.create(id, "lflist#123", logger, emitter, playerInfoMessage);
-		expect(room3.hostInfo.lflist).toBe(-1);
+		expect(room3.hostInfo.lflist).toBe(1);
 	});
 
 	it("Should create a single match room, with the lflist -1 if lf command is nf or nolflist", () => {

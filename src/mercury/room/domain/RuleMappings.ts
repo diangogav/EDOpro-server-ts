@@ -221,7 +221,6 @@ export const priorityRuleMappings: RuleMappings = {
 	lf: {
 		get: (value: string) => {
 			const lflist = extractNumberFromCommand(value);
-
 			if (lflist === null) {
 				return {
 					lflist: -1,

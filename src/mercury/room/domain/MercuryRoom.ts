@@ -341,6 +341,10 @@ export class MercuryRoom extends YgoRoom {
 		this._spectators = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
 	}
 
+	get score(): string {
+		return "no implemeted for mercury rooms";
+	}
+
 	private connectClientToCore(client: MercuryClient): void {
 		if (this._coreStarted && this._corePort) {
 			client.connectToCore({
