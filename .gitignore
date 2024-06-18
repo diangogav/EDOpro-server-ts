@@ -2,9 +2,10 @@
 node_modules
 dist
 
-#Mercury
+# Mercury
 mercury/script
 
+# Evolution
 *scripts
 *dependencies
 *build
@@ -14,10 +15,15 @@ core/premake5
 core/CoreIntegrator
 *databases
 *.db
-*.vscode
 *.env
 *banlists
-app.log
 certs
+app.log
+
+# VSCode
+*.vscode
+
+# IntellJ
 .DS_Store
 .idea
+
