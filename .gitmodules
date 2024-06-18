@@ -1,0 +1,3 @@
+[submodule "mercury/script"]
+	path = mercury/script
+	url = https://github.com/Smile-DK/ygopro-scripts.git
