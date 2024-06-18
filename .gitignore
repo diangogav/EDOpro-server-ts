@@ -1,5 +1,10 @@
+# NodeJS
 node_modules
 dist
+
+#Mercury
+mercury/script
+
 *scripts
 *dependencies
 *build
