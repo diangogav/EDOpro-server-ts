@@ -1,4 +1,3 @@
-version: '3'
 services:
   node-app:
     build:
@@ -14,8 +13,6 @@ services:
       - redis
     env_file:
       - .env
-    volumes:
-      - .:/app
 
   redis:
     image: redis
