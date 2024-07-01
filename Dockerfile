@@ -30,7 +30,7 @@ RUN conan install . --build missing --output-folder=./dependencies --options=lib
     ./premake5 gmake && \
     make config=release
 
-FROM public.ecr.aws/docker/library/node:18 as server-builder
+FROM public.ecr.aws/docker/library/node:20.15.0 as server-builder
 
 WORKDIR /server
 
@@ -42,7 +42,7 @@ COPY . .
 
 RUN npm run build
 
-FROM public.ecr.aws/docker/library/node:18-slim
+FROM public.ecr.aws/docker/library/node:20.15.0-slim
 
 # Install curl:Necessary for local health checks
 RUN apt-get update && apt-get install -y curl git && apt-get install -y liblua5.3-dev libsqlite3-dev libevent-dev
@@ -64,4 +64,4 @@ COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/scri
 
 CMD ["node", "./src/index.js"]
 
-EXPOSE 4000 7911 7922
+EXPOSE 4000 7711 7911 7922
