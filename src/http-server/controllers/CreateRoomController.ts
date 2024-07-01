@@ -5,10 +5,13 @@ import { Logger } from "../../modules/shared/logger/domain/Logger";
 
 export class CreateRoomRequest {
 	name: string;
+	mode: number;
 	bestOf: number;
-	allowed: number;
-	tournament: string;
+	rule: number;
 	banlist: string;
+	teamQuantity: number;
+	isRanked: boolean;
+	tournament: string;
 }
 
 export class CreateRoomController {
