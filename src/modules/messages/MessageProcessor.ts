@@ -2,8 +2,10 @@
 import { Commands } from "./domain/Commands";
 
 export interface ClientMessage {
+	raw: Buffer;
 	data: Buffer;
 	previousMessage: Buffer;
+	previousRawMessage: Buffer;
 	size: number;
 	command: Commands;
 }
@@ -14,6 +16,8 @@ export class MessageProcessor {
 	private _command: number;
 	private _data: Buffer;
 	private _previousMessage: Buffer;
+	private _previousRawMessage: Buffer;
+	private _raw: Buffer;
 
 	constructor() {
 		this.buffer = Buffer.from([]);
@@ -30,10 +34,13 @@ export class MessageProcessor {
 		}
 		if (this._data.length) {
 			this._previousMessage = this._data;
+			this._previousRawMessage = this._raw;
 		}
+
 		this._size = this.buffer.subarray(0, 2).readUint16LE();
 		this._command = this.buffer.subarray(2).readInt8();
 		this._data = this.buffer.subarray(3, this._size + 2);
+		this._raw = this.buffer.subarray(0, this._size + 2);
 		this.buffer = this.buffer.subarray(this._size + 2);
 	}
 
@@ -65,10 +72,12 @@ export class MessageProcessor {
 
 	get payload(): ClientMessage {
 		return {
+			raw: this._raw,
 			data: this._data,
 			size: this.size,
 			command: this._command as Commands,
 			previousMessage: this._previousMessage,
+			previousRawMessage: this._previousRawMessage,
 		};
 	}
 }

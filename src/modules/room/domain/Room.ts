@@ -2,7 +2,6 @@ import { ChildProcessWithoutNullStreams } from "child_process";
 import shuffle from "shuffle-array";
 import { EventEmitter } from "stream";
 
-import { YGOClientSocket } from "../../../socket-server/HostServer";
 import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
 import { CardSQLiteTYpeORMRepository } from "../../card/infrastructure/postgres/CardSQLiteTYpeORMRepository";
 import { Client } from "../../client/domain/Client";
@@ -16,6 +15,8 @@ import { Replay } from "../../replay/Replay";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { PlayerData } from "../../shared/player/domain/PlayerData";
+import { DuelState, YgoRoom } from "../../shared/room/domain/YgoRoom";
+import { ISocket } from "../../shared/socket/domain/ISocket";
 import { Rank } from "../../shared/value-objects/Rank";
 import { UserFinder } from "../../user/application/UserFinder";
 import { UserRedisRepository } from "../../user/infrastructure/UserRedisRepository";
@@ -114,15 +115,7 @@ interface RoomAttr {
 	ranked: boolean;
 }
 
-export enum DuelState {
-	WAITING = "waiting",
-	DUELING = "dueling",
-	RPS = "rps",
-	CHOOSING_ORDER = "choosingOrder",
-	SIDE_DECKING = "sideDecking",
-}
-
-export class Room {
+export class Room extends YgoRoom {
 	public readonly id: number;
 	public readonly name: string;
 	public readonly notes: string;
@@ -147,17 +140,11 @@ export class Room {
 	public readonly duelRule: number;
 	public readonly handshake: number;
 	public readonly password: string;
-	public readonly ranked: boolean;
 	private _replay: Replay;
 	private isStart: string;
-	private _spectatorCache: Buffer[] = [];
-	private _clients: Client[] = [];
-	private _spectators: Client[] = [];
 	private readonly _kick: Client[] = [];
 	private _duel?: ChildProcessWithoutNullStreams;
 	private _match: Match | null;
-	private _state: DuelState;
-	private _clientWhoChoosesTurn: Client;
 	private readonly _lastMessageToTeam: { team: number; message: Buffer }[] = [];
 	private _playerMainDeckSize: number;
 	private _playerExtraDeckSize: number;
@@ -165,23 +152,23 @@ export class Room {
 	private _opponentExtraDeckSize: number;
 	private readonly _turn = 0;
 	private _firstToPlay: number;
-	private readonly t0Positions: number[] = [];
-	private readonly t1Positions: number[] = [];
 	private readonly timers: Timer[];
 	private readonly roomTimer: Timer;
 	private roomState: RoomState | null = null;
-	private emitter: EventEmitter;
 	private logger: Logger;
 	private currentDuel: Duel | null = null;
 
 	private constructor(attr: RoomAttr) {
+		super({
+			team0: attr.team0,
+			team1: attr.team1,
+			ranked: attr.ranked,
+		});
 		this.id = attr.id;
 		this.name = attr.name;
 		this.notes = attr.notes;
 		this.mode = attr.mode;
 		this.needPass = attr.needPass;
-		this.team0 = attr.team0;
-		this.team1 = attr.team1;
 		this.bestOf = attr.bestOf;
 		this.duelFlag = attr.duelFlag;
 		this.forbiddenTypes = attr.forbiddenTypes;
@@ -210,8 +197,6 @@ export class Room {
 		this._state = DuelState.WAITING;
 		this.duelFlagsLow = attr.duelFlagsLow;
 		this.duelFlagsHight = attr.duelFlagsHight;
-		this.t0Positions = Array.from({ length: this.team0 }, (_, index) => index);
-		this.t1Positions = Array.from({ length: this.team1 }, (_, index) => this.team0 + index);
 		this.timers = [
 			new Timer(this.timeLimit * 1000, () => {
 				const finishDuelHandler = new FinishDuelHandler({
@@ -236,7 +221,6 @@ export class Room {
 		this.roomTimer = new Timer(this.timeLimit * 2 * 1000, () => {
 			RoomList.deleteRoom(this);
 		});
-		this.ranked = attr.ranked;
 		this.resetReplay();
 	}
 
@@ -310,14 +294,6 @@ export class Room {
 		);
 	}
 
-	emit(event: string, message: unknown, socket: YGOClientSocket): void {
-		this.emitter.emit(event, message, this, socket);
-	}
-
-	emitRoomEvent(event: string, message: unknown, client: Client): void {
-		this.emitter.emit(event, message, this, client);
-	}
-
 	resetReplay(): void {
 		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 		if (this._replay) {
@@ -356,7 +332,7 @@ export class Room {
 	}
 
 	initializeHistoricalData(): void {
-		const players = this.clients.map((client) => ({
+		const players = this.clients.map((client: Client) => ({
 			team: client.team,
 			name: client.name,
 			ranks: client.ranks,
@@ -397,7 +373,7 @@ export class Room {
 		const messageProcessor = new MessageProcessor();
 		const roomMessageEmitter = new RoomMessageEmitter(client, this);
 
-		client.socket.on("data", (data) => {
+		client.socket.onMessage((data) => {
 			roomMessageEmitter.handleMessage(data);
 			messageProcessor.read(data);
 			// this.handleMessage(messageProcessor, client);
@@ -410,7 +386,7 @@ export class Room {
 		const messageProcessor = new MessageProcessor();
 		const roomMessageEmitter = new RoomMessageEmitter(client, this);
 
-		client.socket.on("data", (data) => {
+		client.socket.onMessage((data) => {
 			roomMessageEmitter.handleMessage(data);
 			messageProcessor.read(data);
 			// this.handleMessage(messageProcessor, client);
@@ -419,10 +395,6 @@ export class Room {
 
 	get replay(): Replay {
 		return this._replay;
-	}
-
-	get spectators(): Client[] {
-		return this._spectators;
 	}
 
 	addKick(client: Client): void {
@@ -435,7 +407,7 @@ export class Room {
 
 	setDecksToPlayer(position: number, deck: Deck): void {
 		const client = this._clients.find((client) => client.position === position);
-		if (!client) {
+		if (!client || !(client instanceof Client)) {
 			return;
 		}
 
@@ -517,29 +489,9 @@ export class Room {
 		);
 	}
 
-	get duelState(): DuelState {
-		return this._state;
-	}
-
-	setClientWhoChoosesTurn(client: Client): void {
-		this._clientWhoChoosesTurn = client;
-	}
-
-	get clientWhoChoosesTurn(): Client {
-		return this._clientWhoChoosesTurn;
-	}
-
-	removePlayer(player: Client): void {
-		this._clients = this._clients.filter((item) => item.socket.id !== player.socket.id);
-	}
-
 	removeSpectator(spectator: Client): void {
 		const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
 		this._spectators = filtered;
-	}
-
-	get clients(): Client[] {
-		return this._clients;
 	}
 
 	cacheTeamMessage(team: number, message: Buffer): void {
@@ -550,19 +502,11 @@ export class Room {
 		}
 
 		if (message[2] === 0x01) {
-			const players = this.clients.filter((client) => client.team === team);
-			players.forEach((player) => {
+			const players = this.clients.filter((client: Client) => client.team === team);
+			players.forEach((player: Client) => {
 				player.setLastMessage(message);
 			});
 		}
-	}
-
-	get spectatorCache(): Buffer[] {
-		return this._spectatorCache;
-	}
-
-	clearSpectatorCache(): void {
-		this._spectatorCache = [];
 	}
 
 	setPlayerDecksSize(mainSize: number, extraSize: number): void {
@@ -646,80 +590,50 @@ export class Room {
 		};
 	}
 
-	calculaPlace(): { position: number; team: number } | null {
-		const team0 = this.clients
-			.filter((client) => client.team === 0)
-			.map((client) => client.position);
-
-		const availableTeam0Positions = this.getDifference(this.t0Positions, team0);
-
-		if (availableTeam0Positions.length > 0) {
-			return {
-				position: availableTeam0Positions[0],
-				team: 0,
-			};
-		}
-
-		const team1 = this.clients
-			.filter((client) => client.team === 1)
-			.map((client) => client.position);
-
-		const availableTeam1Positions = this.getDifference(this.t1Positions, team1);
-
-		if (availableTeam1Positions.length > 0) {
-			return {
-				position: availableTeam1Positions[0],
-				team: 1,
-			};
-		}
-
-		return null;
-	}
-
 	prepareTurnOrder(): void {
-		const team0Players = this.clients.filter((player) => player.team === 0);
-		const team1Players = this.clients.filter((player) => player.team === 1);
+		const team0Players = this.clients.filter((player: Client) => player.team === 0);
+		const team1Players = this.clients.filter((player: Client) => player.team === 1);
 
 		if (this.firstToPlay === 0) {
-			team0Players.forEach((item) => {
+			team0Players.forEach((item: Client) => {
 				item.setDuelPosition(item.position % this.team0);
 				item.clearTurn();
 			});
 
-			team1Players.forEach((item) => {
+			team1Players.forEach((item: Client) => {
 				item.setDuelPosition((item.position + 1) % this.team1);
 				item.clearTurn();
 			});
 		} else {
-			team0Players.forEach((item) => {
+			team0Players.forEach((item: Client) => {
 				item.setDuelPosition((item.position + 1) % this.team0);
 				item.clearTurn();
 			});
 
-			team1Players.forEach((item) => {
+			team1Players.forEach((item: Client) => {
 				item.setDuelPosition(item.position % this.team1);
 				item.clearTurn();
 			});
 		}
 
-		const team0Player = team0Players.find((player) => player.duelPosition === 0);
-		team0Player?.turn();
+		const team0Player = team0Players.find((player: Client) => player.duelPosition === 0);
+		(<Client | undefined>team0Player)?.turn();
 
-		const team1Player = team1Players.find((player) => player.duelPosition === 0);
-		team1Player?.turn();
+		const team1Player = team1Players.find((player: Client) => player.duelPosition === 0);
+		(<Client | undefined>team1Player)?.turn();
 	}
 
 	nextTurn(team: number): void {
-		const player = this.clients.find((player) => player.inTurn && player.team === team);
-		if (!player) {
+		const player = this.clients.find((player: Client) => player.inTurn && player.team === team);
+		if (!player || !(player instanceof Client)) {
 			return;
 		}
 		const teamCount = team === 0 ? this.team0 : this.team1;
 		const duelPLayerPositionTurn = (player.duelPosition + 1) % teamCount;
 		const nextPlayer = this.clients.find(
-			(player) => player.duelPosition === duelPLayerPositionTurn && player.team === team
+			(player: Client) => player.duelPosition === duelPLayerPositionTurn && player.team === team
 		);
-		if (!nextPlayer) {
+		if (!nextPlayer || !(nextPlayer instanceof Client)) {
 			return;
 		}
 		player.clearTurn();
@@ -760,8 +674,8 @@ export class Room {
 
 	playerNames(team: number): string {
 		return this.clients
-			.filter((player) => player.team === team)
-			.map((item) => `${item.name} ${item.socket.remoteAddress ?? ""}`)
+			.filter((player: Client) => player.team === team)
+			.map((item: Client) => `${item.name}`)
 			.join(",");
 	}
 
@@ -803,7 +717,7 @@ export class Room {
 		this.currentDuel?.finished();
 	}
 
-	createHost(socket: YGOClientSocket, name: string, ranks: Rank[]): Client {
+	createHost(socket: ISocket, name: string, ranks: Rank[]): Client {
 		const client = new Client({
 			socket,
 			host: true,
@@ -820,7 +734,7 @@ export class Room {
 		return client;
 	}
 
-	createSpectator(socket: YGOClientSocket, name: string): Client {
+	createSpectator(socket: ISocket, name: string): Client {
 		const client = new Client({
 			socket,
 			host: false,
@@ -880,7 +794,7 @@ export class Room {
 			banlist: {
 				name: this.currentDuel?.banlistName,
 			},
-			players: this.clients.map((client) => ({
+			players: this.clients.map((client: Client) => ({
 				position: client.position,
 				username: client.name,
 				lps: this.currentDuel?.lps[client.team],
@@ -905,12 +819,10 @@ export class Room {
 				})
 			);
 		}
-		this._clients.forEach((client) => {
-			client.socket.removeAllListeners();
+		this._clients.forEach((client: Client) => {
 			client.socket.destroy();
 		});
 		this._spectators.forEach((client) => {
-			client.socket.removeAllListeners();
 			client.socket.destroy();
 		});
 		this.clearSpectatorCache();
@@ -939,9 +851,5 @@ export class Room {
 				this.writeToCppProcess(messageToCpp, retryCount - 1);
 			}, 100);
 		}
-	}
-
-	private getDifference(a: number[], b: number[]) {
-		return a.filter((item) => !b.includes(item));
 	}
 }

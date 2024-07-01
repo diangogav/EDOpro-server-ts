@@ -23,21 +23,25 @@ export class RpsChoiceCommandStrategy {
 		const body = message.data.readInt8() as keyof typeof NumberToChoose;
 		const choise = NumberToChoose[body] as Choose;
 		const player = room.clients.find((_client) => _client === client);
-		if (!player) {
+		if (!(player instanceof Client)) {
 			return;
 		}
 		player.setRpsChosen(choise);
 
-		const players = room.clients.filter((client) => client.rpsChoise !== null);
+		const players = room.clients.filter((client: Client) => client.rpsChoise !== null);
 
 		if (players.length < 2) {
 			return;
 		}
 
-		const playerOne = players.find((player) => player.team === 0);
-		const playerTwo = players.find((player) => player.team === 1);
+		const playerOne = players.find((player: Client) => player.team === 0);
+		const playerTwo = players.find((player: Client) => player.team === 1);
 
-		if (!playerOne?.rpsChoise || !playerTwo?.rpsChoise) {
+		if (!(playerOne instanceof Client) || !(playerTwo instanceof Client)) {
+			return;
+		}
+
+		if (!playerOne.rpsChoise || !playerTwo.rpsChoise) {
 			return;
 		}
 
@@ -53,29 +57,29 @@ export class RpsChoiceCommandStrategy {
 			choise2: ChooseToNumber[playerOne.rpsChoise as keyof typeof ChooseToNumber],
 		});
 
-		room.clients.forEach((player) => {
+		room.clients.forEach((player: Client) => {
 			if (player.team === 0) {
 				player.sendMessage(team0Response);
 			}
 		});
 
-		room.clients.forEach((player) => {
+		room.clients.forEach((player: Client) => {
 			if (player.team === 1) {
 				player.sendMessage(team1Response);
 			}
 		});
 
-		room.spectators.forEach((spectator) => {
+		room.spectators.forEach((spectator: Client) => {
 			spectator.sendMessage(team0Response);
 		});
 
-		room.clients.forEach((client) => {
+		room.clients.forEach((client: Client) => {
 			client.clearRpsChoise();
 		});
 
 		if (result === "TIE") {
 			const rpsChooseMessage = RPSChooseClientMessage.create();
-			players.forEach((player) => {
+			players.forEach((player: Client) => {
 				player.sendMessage(rpsChooseMessage);
 			});
 
@@ -83,11 +87,11 @@ export class RpsChoiceCommandStrategy {
 		}
 
 		const player0Turn = room.clients.find(
-			(_client) => _client.position % room.team0 === 0 && _client.team === 0
+			(_client: Client) => _client.position % room.team0 === 0 && _client.team === 0
 		);
 
 		const player1Turn = room.clients.find(
-			(_client) => _client.position % room.team1 === 0 && _client.team === 1
+			(_client: Client) => _client.position % room.team1 === 0 && _client.team === 1
 		);
 
 		if (!player0Turn || !player1Turn) {
@@ -96,8 +100,8 @@ export class RpsChoiceCommandStrategy {
 
 		const winner = result === "PLAYER_ONE_WINNER" ? player0Turn : player1Turn;
 
-		winner.sendMessage(ChooseOrderClientMessage.create());
-		room.setClientWhoChoosesTurn(winner);
+		(winner as Client).sendMessage(ChooseOrderClientMessage.create());
+		room.setClientWhoChoosesTurn(winner as Client);
 		room.choosingOrder();
 	}
 }

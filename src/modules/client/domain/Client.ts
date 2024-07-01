@@ -1,27 +1,21 @@
-import { YGOClientSocket } from "../../../socket-server/HostServer";
 import { Deck } from "../../deck/domain/Deck";
 import { ClientMessage, MessageProcessor } from "../../messages/MessageProcessor";
 import { Choose } from "../../rock-paper-scissor/RockPaperScissor";
 import { Room } from "../../room/domain/Room";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
+import { YgoClient } from "../../shared/client/domain/YgoClient";
 import { Logger } from "../../shared/logger/domain/Logger";
+import { ISocket } from "../../shared/socket/domain/ISocket";
 import { Rank } from "../../shared/value-objects/Rank";
 
 export class Listener {}
 
-export class Client {
+export class Client extends YgoClient {
 	public readonly listener: Listener;
-	public readonly host: boolean;
-	public readonly name: string;
 	public readonly roomId: number;
 	public readonly ranks: Rank[];
-	private _team: number;
-	private _position: number;
-	private _socket: YGOClientSocket;
 	private _isReady: boolean;
 	private _rpsChosen: Choose | null = null;
-	private _lastMessage: Buffer | null = null;
-	private _reconnecting = false;
 	private _deck: Deck;
 	private _duelPosition: number;
 	private _turn: boolean;
@@ -42,7 +36,7 @@ export class Client {
 		logger,
 		ranks = [],
 	}: {
-		socket: YGOClientSocket;
+		socket: ISocket;
 		host: boolean;
 		name: string;
 		position: number;
@@ -52,26 +46,18 @@ export class Client {
 		logger: Logger;
 		ranks: Rank[];
 	}) {
-		this._socket = socket;
-		this.host = host;
-		this.name = name;
-		this._position = position;
+		super({ name, position, team, socket, host });
 		this.roomId = roomId;
 		this._isReady = isReady;
-		this._team = team;
 		this.logger = logger;
 		this.ranks = ranks;
 	}
 
-	get socket(): YGOClientSocket {
-		return this._socket;
-	}
-
-	setSocket(socket: YGOClientSocket, clients: Client[], room: Room): void {
+	setSocket(socket: ISocket, clients: Client[], room: Room): void {
 		this._socket = socket;
 		const messageProcessor = new MessageProcessor();
 		const roomMessageEmitter = new RoomMessageEmitter(this, room);
-		this._socket.on("data", (data) => {
+		this._socket.onMessage((data) => {
 			roomMessageEmitter.handleMessage(data);
 			messageProcessor.read(data);
 			// this.handleMessage(messageProcessor, clients, room);
@@ -102,26 +88,6 @@ export class Client {
 		return this._isReady;
 	}
 
-	get cache(): Buffer | null {
-		return this._lastMessage;
-	}
-
-	setLastMessage(message: Buffer): void {
-		this._lastMessage = message;
-	}
-
-	reconnecting(): void {
-		this._reconnecting = true;
-	}
-
-	clearReconnecting(): void {
-		this._reconnecting = false;
-	}
-
-	get isReconnecting(): boolean {
-		return this._reconnecting;
-	}
-
 	setDeck(deck: Deck): void {
 		this._deck = deck;
 	}
@@ -150,24 +116,6 @@ export class Client {
 		return this._turn;
 	}
 
-	get isSpectator(): boolean {
-		return this._team === 3;
-	}
-
-	spectatorPosition(position: number): void {
-		this._position = position;
-		this._team = 3;
-	}
-
-	get position(): number {
-		return this._position;
-	}
-
-	playerPosition(position: number, team: number): void {
-		this._position = position;
-		this._team = team;
-	}
-
 	get team(): number {
 		return this._team;
 	}
@@ -181,7 +129,7 @@ export class Client {
 	}
 
 	sendMessage(message: Buffer): void {
-		this._socket.write(message);
+		this._socket.send(message);
 	}
 
 	updatingDeck(): void {

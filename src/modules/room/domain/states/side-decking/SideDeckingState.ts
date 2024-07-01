@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import EventEmitter from "events";
 
-import { YGOClientSocket } from "../../../../../socket-server/HostServer";
 import { Client } from "../../../../client/domain/Client";
 import { DeckCreator } from "../../../../deck/application/DeckCreator";
 import { UpdateDeckMessageSizeCalculator } from "../../../../deck/application/UpdateDeckMessageSizeCalculator";
@@ -11,11 +10,12 @@ import { PlayerInfoMessage } from "../../../../messages/client-to-server/PlayerI
 import { Commands } from "../../../../messages/domain/Commands";
 import { ClientMessage } from "../../../../messages/MessageProcessor";
 import { ChooseOrderClientMessage } from "../../../../messages/server-to-client/ChooseOrderClientMessage";
-import { DuelStartClientMessage } from "../../../../messages/server-to-client/DuelStartClientMessage";
 import { ErrorMessages } from "../../../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../../../messages/server-to-client/ErrorClientMessage";
 import { SideDeckClientMessage } from "../../../../messages/server-to-client/game-messages/SideDeckClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
+import { DuelStartClientMessage } from "../../../../shared/messages/server-to-client/DuelStartClientMessage";
+import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";
 import { Room } from "../../Room";
@@ -39,18 +39,18 @@ export class SideDeckingState extends RoomState {
 
 		this.eventEmitter.on(
 			"JOIN" as unknown as string,
-			(message: ClientMessage, room: Room, socket: YGOClientSocket) =>
+			(message: ClientMessage, room: Room, socket: ISocket) =>
 				this.handle.bind(this)(message, room, socket)
 		);
 	}
 
-	async handle(message: ClientMessage, room: Room, socket: YGOClientSocket): Promise<void> {
+	async handle(message: ClientMessage, room: Room, socket: ISocket): Promise<void> {
 		this.logger.debug("SIDEDECKING: JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const joinMessage = new JoinGameMessage(message.data);
 		const reconnectingPlayer = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
 
-		if (!reconnectingPlayer) {
+		if (!(reconnectingPlayer instanceof Client)) {
 			this.joinToDuelAsSpectator.run(joinMessage, playerInfoMessage, socket, room);
 
 			return;
@@ -113,7 +113,7 @@ export class SideDeckingState extends RoomState {
 			return;
 		}
 
-		room.spectators.forEach((spectator) => {
+		room.spectators.forEach((spectator: Client) => {
 			spectator.sendMessage(duelStartMessage);
 		});
 
@@ -123,13 +123,13 @@ export class SideDeckingState extends RoomState {
 	private startDuel(room: Room): void {
 		this.logger.debug("SIDEDECKING: START_DUEL");
 
-		const allClientsNotReady = room.clients.some((client) => !client.isReady);
+		const allClientsNotReady = room.clients.some((client: Client) => !client.isReady);
 		if (allClientsNotReady) {
 			return;
 		}
 
 		const message = ChooseOrderClientMessage.create();
-		room.clientWhoChoosesTurn.sendMessage(message);
+		room.clientWhoChoosesTurn.socket.send(message);
 		room.choosingOrder();
 	}
 }
