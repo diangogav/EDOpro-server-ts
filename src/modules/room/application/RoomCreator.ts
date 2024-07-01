@@ -25,11 +25,11 @@ export class RoomCreator {
 			id: this.generateUniqueId(),
 			name: payload.name,
 			notes: payload.name,
-			mode: 0,
+			mode: payload.mode || 0, // 0 = Single, 1 = Match, 2 = Tag
 			needPass: true,
-			team0: 1,
-			team1: 1,
-			bestOf: payload.bestOf,
+			team0: payload.teamQuantity || 1,
+			team1: payload.teamQuantity || 1,
+			bestOf: payload.bestOf || 1,
 			duelFlag: BigInt(853505),
 			forbiddenTypes: 83886080,
 			extraRules: 0,
@@ -37,7 +37,7 @@ export class RoomCreator {
 			startHand: 5,
 			drawCount: 1,
 			timeLimit: 700,
-			rule: payload.allowed,
+			rule: payload.rule || 4, // 0 = OCG, 1 = TCG, 2 = OCG/TCG, 3 = Prerelease, 4 = Anything Goes
 			noCheck: false,
 			noShuffle: false,
 			banlistHash: banlist.hash,
@@ -53,7 +53,7 @@ export class RoomCreator {
 			password,
 			duelFlagsHight: 1,
 			duelFlagsLow: 853504,
-			ranked: false,
+			ranked: payload.isRanked || false,
 		};
 
 		const room = Room.create(data, emitter, this.logger);
