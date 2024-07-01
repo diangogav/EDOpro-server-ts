@@ -24,7 +24,7 @@ export class RoomCreator {
 		const data = {
 			id: this.generateUniqueId(),
 			name: payload.name,
-			notes: payload.name,
+			notes: (payload.tournament ? `[${payload.tournament}] ` : "") + payload.name,
 			mode: payload.mode || 0, // 0 = Single, 1 = Match, 2 = Tag
 			needPass: true,
 			team0: payload.teamQuantity || 1,
