@@ -225,6 +225,7 @@ export class Room extends YgoRoom {
 	}
 
 	static create(payload: RoomAttr, emitter: EventEmitter, logger: Logger): Room {
+		payload.notes = payload.ranked ? `(Ranked) ${payload.notes}` : payload.notes;
 		const room = new Room(payload);
 		room.emitter = emitter;
 		room.logger = logger;
