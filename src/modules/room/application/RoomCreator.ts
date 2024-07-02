@@ -19,7 +19,7 @@ export class RoomCreator {
 
 		const emitter = new EventEmitter();
 		const utf8Password = this.generateUniqueId().toString();
-		const password = UTF8ToUTF16(utf8Password, utf8Password.length).toString();
+		const password = UTF8ToUTF16(utf8Password, utf8Password.length * 2).toString("utf16le");
 
 		const data = {
 			id: this.generateUniqueId(),
