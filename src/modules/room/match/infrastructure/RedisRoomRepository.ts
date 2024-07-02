@@ -6,7 +6,7 @@ import { RoomRepository } from "../../domain/RoomRepository";
 export class RedisRoomRepository implements RoomRepository {
 	async saveMatch(id: string, data: GameOverData): Promise<void> {
 		const redis = Redis.getInstance();
-		if(!redis){
+		if (!redis) {
 			return;
 		}
 		await redis.lpush(`user:${id}:duels`, JSON.stringify(data));
@@ -14,7 +14,7 @@ export class RedisRoomRepository implements RoomRepository {
 
 	async updatePlayerPoints(id: string, points: number): Promise<void> {
 		const redis = Redis.getInstance();
-		if(!redis){
+		if (!redis) {
 			return;
 		}
 		await redis.zincrby("leaderboard:points", points, id);
@@ -25,7 +25,7 @@ export class RedisRoomRepository implements RoomRepository {
 			return;
 		}
 		const redis = Redis.getInstance();
-		if(!redis){
+		if (!redis) {
 			return;
 		}
 		await redis.zincrby(`leaderboard:${banList.name}:points`, points, id);
@@ -33,7 +33,7 @@ export class RedisRoomRepository implements RoomRepository {
 
 	async increaseWins(id: string): Promise<void> {
 		const redis = Redis.getInstance();
-		if(!redis){
+		if (!redis) {
 			return;
 		}
 		await redis.zincrby("leaderboard:wins", 1, id);
@@ -41,7 +41,7 @@ export class RedisRoomRepository implements RoomRepository {
 
 	async increaseLoses(id: string): Promise<void> {
 		const redis = Redis.getInstance();
-		if(!redis){
+		if (!redis) {
 			return;
 		}
 		await redis.zincrby("leaderboard:losses", 1, id);
@@ -52,7 +52,7 @@ export class RedisRoomRepository implements RoomRepository {
 			return;
 		}
 		const redis = Redis.getInstance();
-		if(!redis){
+		if (!redis) {
 			return;
 		}
 		await redis.zincrby(`leaderboard:${banList.name}:wins`, 1, id);
@@ -63,7 +63,7 @@ export class RedisRoomRepository implements RoomRepository {
 			return;
 		}
 		const redis = Redis.getInstance();
-		if(!redis){
+		if (!redis) {
 			return;
 		}
 		await redis.zincrby(`leaderboard:${banList.name}:losses`, 1, id);

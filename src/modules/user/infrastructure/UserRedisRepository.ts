@@ -7,7 +7,7 @@ import { UserRepository } from "../domain/UserRepository";
 export class UserRedisRepository implements UserRepository {
 	async findBy(username: string): Promise<User | null> {
 		const redis = Redis.getInstance();
-		if(!redis){
+		if (!redis) {
 			return null;
 		}
 		const user = (await redis.hgetall(`user:${username}`)) as {
