@@ -2,6 +2,7 @@ import { ChildProcessWithoutNullStreams } from "child_process";
 import shuffle from "shuffle-array";
 import { EventEmitter } from "stream";
 
+import { config } from "../../../config";
 import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
 import { CardSQLiteTYpeORMRepository } from "../../card/infrastructure/postgres/CardSQLiteTYpeORMRepository";
 import { Client } from "../../client/domain/Client";
@@ -240,7 +241,7 @@ export class Room extends YgoRoom {
 		emitter: EventEmitter,
 		logger: Logger
 	): Room {
-		const ranked = Boolean(playerInfo.password);
+		const ranked = Room.isRanked(playerInfo.password);
 
 		const room = new Room({
 			id,
@@ -283,6 +284,14 @@ export class Room extends YgoRoom {
 		room.logger = logger;
 
 		return room;
+	}
+
+	static isRanked(password: string | null): boolean {
+		if (config.redis.use) {
+			return Boolean(password);
+		}
+
+		return false;
 	}
 
 	waiting(): void {
