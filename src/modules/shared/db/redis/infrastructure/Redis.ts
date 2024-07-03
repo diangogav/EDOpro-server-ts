@@ -9,7 +9,7 @@ export class Redis implements Database {
 	private static instance?: RedisLibrary;
 
 	static getInstance(): RedisLibrary | undefined {
-		if (!config.useRedis || !config.redis.uri) {
+		if (!config.redis.use || !config.redis.uri) {
 			this.logger.info("Redis is not enabled or URI is not set.");
 
 			return undefined;
