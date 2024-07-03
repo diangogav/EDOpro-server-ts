@@ -10,7 +10,7 @@ import { SyncRepositoriesController } from "../controllers/SyncRepositoriesContr
 import { AuthMiddleware } from "../middlewares/AuthMiddleware";
 
 export function loadRoutes(app: Express, logger: Logger): void {
-	app.get("/api/room", (req, res) => new GetRoomListController().run(req, res));
+	app.get("/api/getrooms", (req, res) => new GetRoomListController().run(req, res));
 
 	app.post("/api/room", (req, res) => new CreateRoomController(logger).run(req, res));
 
