@@ -7,10 +7,10 @@ import { Logger } from "../../modules/shared/logger/domain/Logger";
 
 export class CreateMessageRequest {
 	message: string;
-	sender: string;
+	reason: string;
 }
 
-export class SendMessageToAllRooms {
+export class ServerMessagesController {
 	constructor(private readonly logger: Logger) {}
 
 	// eslint-disable-next-line @typescript-eslint/require-await
@@ -21,7 +21,7 @@ export class SendMessageToAllRooms {
 			const allClients = [...room.clients, ...room.spectators];
 			for (const client of allClients) {
 				const socket = client.socket;
-				socket.send(ServerMessageClientMessage.create(payload.message));
+				socket.send(ServerMessageClientMessage.create(`[${payload.reason}] ${payload.message}`));
 			}
 		}
 		response.status(200).json({ ...payload });
