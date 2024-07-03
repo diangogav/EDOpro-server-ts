@@ -5,7 +5,7 @@ import { Pino } from "../../../logger/infrastructure/Pino";
 import { Database } from "../../domain/Database";
 
 export class Redis implements Database {
-	private static readonly logger: Pino;
+	private static readonly logger: Pino = new Pino();
 	private static instance?: RedisLibrary;
 
 	static getInstance(): RedisLibrary | undefined {

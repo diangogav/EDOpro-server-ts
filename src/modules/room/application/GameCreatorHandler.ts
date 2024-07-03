@@ -1,5 +1,6 @@
 import { EventEmitter } from "stream";
 
+import { config } from "../../../config";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../messages/domain/Commands";
@@ -44,7 +45,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const createGameMessage = new CreateGameMessage(message.data);
 
-		if (!playerInfoMessage.password) {
+		if (!playerInfoMessage.password || !config.redis.use) {
 			this.create(createGameMessage, playerInfoMessage, []);
 
 			return;
@@ -111,6 +112,14 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 		this.socket.send(
 			ServerMessageClientMessage.create(ServerInfoMessage.UNRANKED_ROOM_CREATION_SUCCESS)
 		);
+		if (!config.redis.use) {
+			this.socket.send(
+				ServerMessageClientMessage.create(
+					"En este momento, el sistema de clasificación no está disponible."
+				)
+			);
+		}
+
 		this.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));
 	}
 
