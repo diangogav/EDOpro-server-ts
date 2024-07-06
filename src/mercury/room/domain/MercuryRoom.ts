@@ -1,5 +1,4 @@
 import { spawn } from "child_process";
-import * as crypto from "crypto";
 import net from "net";
 import { EventEmitter } from "stream";
 
