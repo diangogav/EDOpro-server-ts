@@ -1,5 +1,4 @@
 import { spawn } from "child_process";
-import * as crypto from "crypto";
 import net from "net";
 import { EventEmitter } from "stream";
 
@@ -173,7 +172,6 @@ export class MercuryRoom extends YgoRoom {
 				this._hostInfo.drawCount.toString(),
 				this._hostInfo.timeLimit.toString(),
 				"2", //REPLAY MODE
-				...this.generateSeeds(),
 			],
 			{
 				cwd: "mercury",
@@ -352,14 +350,6 @@ export class MercuryRoom extends YgoRoom {
 				port: this._corePort,
 			});
 		}
-	}
-
-	private generateSeeds(): string[] {
-		const randomSeed1 = crypto.randomBytes(8).readBigUInt64LE().toString();
-		const randomSeed2 = crypto.randomBytes(8).readBigUInt64LE().toString();
-		const randomSeed3 = crypto.randomBytes(8).readBigUInt64LE().toString();
-
-		return [randomSeed1, randomSeed2, randomSeed3];
 	}
 
 	private calculateBestOf(): number {
