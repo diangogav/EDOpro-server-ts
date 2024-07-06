@@ -218,13 +218,7 @@ export class DuelingState extends RoomState {
 			turn: item.duelPosition,
 		}));
 
-		this.room.clients.forEach((item) => {
-			item.socket.send(ServerMessageClientMessage.create("Generando seeds"));
-		});
 		const seeds = this.generateSeeds();
-		this.room.clients.forEach((item) => {
-			item.socket.send(ServerMessageClientMessage.create("Seeds generados"));
-		});
 		this.room.replay.setSeed(seeds);
 		this.logger.debug(`GAME: ${this.room.playerNames(0)} VS ${this.room.playerNames(1)}`);
 
