@@ -10,7 +10,9 @@ RUN git clone https://github.com/ProjectIgnis/CardScripts.git scripts && \
     git clone https://github.com/ProjectIgnis/BabelCDB.git databases && \
     git clone https://github.com/ProjectIgnis/LFLists banlists-project-ignis && \
     git clone https://github.com/termitaklk/lflist banlists-evolution && \
-    git clone https://github.com/Smile-DK/ygopro-scripts.git mercury-scripts
+    git clone https://github.com/Smile-DK/ygopro-scripts.git mercury-scripts && \
+    wget -O mercury-lflist.conf https://raw.githubusercontent.com/moecube/ygopro/server/lflist.conf && \
+    wget -O mercury-cards.cdb https://raw.githubusercontent.com/moecube/ygopro/server/cards.cdb
 
 RUN mkdir banlists
 RUN mv banlists-project-ignis/* banlists/
@@ -61,6 +63,8 @@ COPY --from=core-integrator-builder /repositories/scripts ./scripts/evolution/
 COPY --from=core-integrator-builder /repositories/databases ./databases/evolution/
 COPY --from=core-integrator-builder /repositories/banlists ./banlists/evolution/
 COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/script
+COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/lflist.conf
+COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/cards.cdb
 
 CMD ["node", "./src/index.js"]
 
