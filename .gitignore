@@ -16,6 +16,8 @@ core/CoreIntegrator
 *databases
 *.db
 *.env
+*.cdb
+*.conf
 *banlists
 certs
 app.log
