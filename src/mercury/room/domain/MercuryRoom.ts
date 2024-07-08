@@ -26,6 +26,7 @@ export class MercuryRoom extends YgoRoom {
 	readonly id: number;
 	readonly name: string;
 	readonly password: string;
+	readonly createdBySocketId: string;
 	private _logger: Logger;
 	private _coreStarted = false;
 	private _corePort: number | null = null;
@@ -42,6 +43,7 @@ export class MercuryRoom extends YgoRoom {
 		team0,
 		team1,
 		ranked,
+		createdBySocketId,
 	}: {
 		id: number;
 		password: string;
@@ -50,6 +52,7 @@ export class MercuryRoom extends YgoRoom {
 		team0: number;
 		team1: number;
 		ranked: boolean;
+		createdBySocketId: string;
 	}) {
 		super({ team0, team1, ranked });
 		this.id = id;
@@ -59,6 +62,7 @@ export class MercuryRoom extends YgoRoom {
 		this._hostInfo = hostInfo;
 		this._state = DuelState.WAITING;
 		this._banListHash = 0;
+		this.createdBySocketId = createdBySocketId;
 	}
 
 	static create(
@@ -66,7 +70,8 @@ export class MercuryRoom extends YgoRoom {
 		command: string,
 		logger: Logger,
 		emitter: EventEmitter,
-		playerInfo: PlayerInfoMessage
+		playerInfo: PlayerInfoMessage,
+		createdBySocketId: string
 	): MercuryRoom {
 		let hostInfo: HostInfo = {
 			mode: Mode.SINGLE,
@@ -127,6 +132,7 @@ export class MercuryRoom extends YgoRoom {
 			team0: teamCount,
 			team1: teamCount,
 			ranked,
+			createdBySocketId,
 		});
 
 		room._logger = logger;

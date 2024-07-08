@@ -15,6 +15,12 @@ export class RoomFinder {
 			}
 		}
 
+		if (!room) {
+			const mercuryRooms = MercuryRoomList.getRooms();
+
+			return mercuryRooms.find((mercuryRoom) => mercuryRoom.createdBySocketId === socketId) ?? null;
+		}
+
 		return room;
 	}
 }
