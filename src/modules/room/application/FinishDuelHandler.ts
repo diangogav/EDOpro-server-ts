@@ -46,22 +46,14 @@ export class FinishDuelHandler {
 		});
 
 		const replayPromptMessage = ReplayPromptMessage.create();
+		if (this.reason === DuelFinishReason.SURRENDERED || this.reason === DuelFinishReason.TIMEOUT) {
+			const winMessage = WinClientMessage.create({
+				reason: this.reason,
+				winner: this.room.firstToPlay ^ this.winner,
+			});
 
-		const winMessage = WinClientMessage.create({
-			reason: 0,
-			winner: this.room.firstToPlay ^ this.winner,
-		});
+			this.room.replay.addMessage(winMessage.subarray(3));
 
-		this.room.replay.addMessage(winMessage.subarray(3));
-
-		this.room.replay.addPlayers(this.room.clients as Client[]);
-
-		const replayData = await this.room.replay.serialize();
-		this.room.resetReplay();
-
-		const replayMessage = ReplayBufferMessage.create(replayData);
-
-		if (this.reason === DuelFinishReason.SURRENDERED) {
 			this.room.clients.forEach((item: Client) => {
 				item.sendMessage(winMessage);
 			});
@@ -69,6 +61,13 @@ export class FinishDuelHandler {
 				item.sendMessage(winMessage);
 			});
 		}
+
+		this.room.replay.addPlayers(this.room.clients as Client[]);
+
+		const replayData = await this.room.replay.serialize();
+		this.room.resetReplay();
+
+		const replayMessage = ReplayBufferMessage.create(replayData);
 
 		this.room.clients.forEach((item: Client) => {
 			item.sendMessage(replayMessage);

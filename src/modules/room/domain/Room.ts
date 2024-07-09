@@ -201,7 +201,7 @@ export class Room extends YgoRoom {
 		this.timers = [
 			new Timer(this.timeLimit * 1000, () => {
 				const finishDuelHandler = new FinishDuelHandler({
-					reason: DuelFinishReason.SURRENDERED,
+					reason: DuelFinishReason.TIMEOUT,
 					winner: 1,
 					room: this,
 				});
@@ -210,7 +210,7 @@ export class Room extends YgoRoom {
 			}),
 			new Timer(this.timeLimit * 1000, () => {
 				const finishDuelHandler = new FinishDuelHandler({
-					reason: DuelFinishReason.SURRENDERED,
+					reason: DuelFinishReason.TIMEOUT,
 					winner: 0,
 					room: this,
 				});
