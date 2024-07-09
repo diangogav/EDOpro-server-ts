@@ -1,8 +1,8 @@
 export const enum DuelFinishReason {
-	DUEL_WON,
 	SURRENDERED,
-	TIMEOUT,
+	DUEL_WON,
 	WRONG_RESPONSE,
+	TIMEOUT,
 	CONNECTION_LOST,
 	CORE_CRASHED,
 }

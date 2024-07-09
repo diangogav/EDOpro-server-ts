@@ -1000,7 +1000,7 @@ bool Duel::is_duel_finished(const std::vector<uint8_t> core_message)
 
   json message;
   message["type"] = "FINISH";
-  message["reason"] = 0;
+  message["reason"] = -1;
   message["winner"] = winner;
 
   std::string serialized_message = message.dump();
