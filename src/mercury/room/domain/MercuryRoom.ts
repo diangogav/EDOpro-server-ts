@@ -6,6 +6,7 @@ import { PlayerInfoMessage } from "../../../modules/messages/client-to-server/Pl
 import { RoomState } from "../../../modules/room/domain/RoomState";
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
 import { DuelState, YgoRoom } from "../../../modules/shared/room/domain/YgoRoom";
+import MercuryBanListMemoryRepository from "../../ban-list/infrastructure/MercuryBanListMemoryRepository";
 import { MercuryClient } from "../../client/domain/MercuryClient";
 import {
 	MercuryJointGameToCoreMessage,
@@ -82,7 +83,7 @@ export class MercuryRoom extends YgoRoom {
 			rule: 1,
 			noCheck: false,
 			noShuffle: false,
-			lflist: 1,
+			lflist: MercuryBanListMemoryRepository.getLastTCGIndex(),
 			duelRule: 5,
 		};
 
