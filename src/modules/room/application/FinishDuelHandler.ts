@@ -49,7 +49,7 @@ export class FinishDuelHandler {
 
 		const winMessage = WinClientMessage.create({
 			reason: 0,
-			winner: this.winner,
+			winner: this.room.firstToPlay ^ this.winner,
 		});
 
 		this.room.replay.addMessage(winMessage.subarray(3));
