@@ -6,7 +6,6 @@ import { EventEmitter } from "stream";
 import { PlayerInfoMessage } from "../../../modules/messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../modules/messages/domain/Commands";
 import { ClientMessage } from "../../../modules/messages/MessageProcessor";
-import { RoomState } from "../../../modules/room/domain/RoomState";
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
 import { JoinMessageHandler } from "../../../modules/shared/room/domain/JoinMessageHandler";
 import { ISocket } from "../../../modules/shared/socket/domain/ISocket";
@@ -14,14 +13,15 @@ import { MercuryJoinGameMessage } from "../../messages/MercuryJoinGameMessage";
 import { MercuryRoom } from "../domain/MercuryRoom";
 import MercuryRoomList from "../infrastructure/MercuryRoomList";
 
-export class MercuryJoinHandler extends RoomState implements JoinMessageHandler {
+export class MercuryJoinHandler implements JoinMessageHandler {
 	private readonly logger: Logger;
 	private readonly socket: ISocket;
+	private readonly eventEmitter: EventEmitter;
 
 	constructor(eventEmitter: EventEmitter, logger: Logger, socket: ISocket) {
-		super(eventEmitter);
 		this.logger = logger;
 		this.socket = socket;
+		this.eventEmitter = eventEmitter;
 		this.eventEmitter.on(Commands.JOIN_GAME as unknown as string, (message: ClientMessage) =>
 			this.handle(message)
 		);
