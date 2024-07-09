@@ -1,6 +1,7 @@
 import { faker } from "@faker-js/faker";
 import EventEmitter from "events";
 
+import MercuryBanListMemoryRepository from "../../../../../src/mercury/ban-list/infrastructure/MercuryBanListMemoryRepository";
 import { Mode } from "../../../../../src/mercury/room/domain/host-info/Mode.enum";
 import { MercuryRoom } from "../../../../../src/mercury/room/domain/MercuryRoom";
 import { Pino } from "../../../../../src/modules/shared/logger/infrastructure/Pino";
@@ -296,7 +297,9 @@ describe("MercuryRoom", () => {
 		expect(room.hostInfo.lflist).toBe(9);
 	});
 
-	it("Should create a single match room, with the lflist 1 if lf command is bad", () => {
+	it("Should create a single match room, with the last tcg list if lf command is bad", () => {
+		MercuryBanListMemoryRepository.add({ date: "2024.01", tcg: false });
+		MercuryBanListMemoryRepository.add({ date: "2024.4", tcg: true });
 		const room1 = MercuryRoom.create(id, "lfbad#123", logger, emitter, playerInfoMessage, socketId);
 		expect(room1.hostInfo.lflist).toBe(1);
 		const room2 = MercuryRoom.create(id, "lf#123", logger, emitter, playerInfoMessage, socketId);
