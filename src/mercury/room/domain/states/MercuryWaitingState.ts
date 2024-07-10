@@ -86,9 +86,10 @@ export class MercuryWaitingState extends RoomState {
 		const type = value & 0x0f;
 		const isHost = (type & 0x10) !== 0;
 
-		if (type === 7 && room.clients.find((player) => player.name === client.name)) {
+		if (type === 7 && room.clients.find((player) => player.socket.id === client.socket.id)) {
 			room.removePlayer(client);
 			client.setHost(isHost);
+
 			room.addSpectator(client, true);
 
 			return;
