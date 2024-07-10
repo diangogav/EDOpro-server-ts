@@ -11,7 +11,7 @@ RUN git clone https://github.com/ProjectIgnis/CardScripts.git scripts && \
     git clone https://github.com/ProjectIgnis/LFLists banlists-project-ignis && \
     git clone https://github.com/termitaklk/lflist banlists-evolution && \
     git clone https://github.com/Smile-DK/ygopro-scripts.git mercury-scripts && \
-    wget -O mercury-lflist.conf https://github.com/fallenstardust/YGOMobile-cn-ko-en/blob/master/mobile/assets/data/conf/lflist.conf && \
+    wget -O mercury-lflist.conf https://raw.githubusercontent.com/fallenstardust/YGOMobile-cn-ko-en/master/mobile/assets/data/conf/lflist.conf && \
     wget -O mercury-cards.cdb https://raw.githubusercontent.com/moecube/ygopro/server/cards.cdb
 
 RUN mkdir banlists
