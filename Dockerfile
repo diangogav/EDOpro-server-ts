@@ -46,7 +46,7 @@ RUN npm run build
 
 FROM public.ecr.aws/docker/library/node:20.15.0-slim
 
-RUN apt-get update && apt-get install -y liblua5.3-dev libsqlite3-dev libevent-dev
+RUN apt-get update && apt-get install -y curl git && apt-get install -y liblua5.3-dev libsqlite3-dev libevent-dev
 
 WORKDIR /app
 
