@@ -1,12 +1,13 @@
 import "reflect-metadata";
-import "./modules/shared/error-handler/error-handler";
+import "@modules/shared/error-handler/error-handler";
+
+import { BanListLoader } from "@modules/ban-list/infrastructure/BanListLoader";
+import BanListMemoryRepository from "@modules/ban-list/infrastructure/BanListMemoryRepository";
+import { SQLiteTypeORM } from "@modules/shared/db/postgres/infrastructure/SQLiteTypeORM";
+import { Pino } from "@modules/shared/logger/infrastructure/Pino";
 
 import { Server } from "./http-server/Server";
 import { MercuryBanListLoader } from "./mercury/ban-list/infrastructure/MercuryBanListLoader";
-import { BanListLoader } from "./modules/ban-list/infrastructure/BanListLoader";
-import BanListMemoryRepository from "./modules/ban-list/infrastructure/BanListMemoryRepository";
-import { SQLiteTypeORM } from "./modules/shared/db/postgres/infrastructure/SQLiteTypeORM";
-import { Pino } from "./modules/shared/logger/infrastructure/Pino";
 import { HostServer } from "./socket-server/HostServer";
 import { MercuryServer } from "./socket-server/MercuryServer";
 import WebSocketSingleton from "./web-socket-server/WebSocketSingleton";

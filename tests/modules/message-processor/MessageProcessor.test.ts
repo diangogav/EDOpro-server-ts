@@ -1,5 +1,5 @@
-import { Commands } from "../../../src/modules/messages/domain/Commands";
-import { MessageProcessor } from "../../../src/modules/messages/MessageProcessor";
+import { Commands } from "@modules/messages/domain/Commands";
+import { MessageProcessor } from "@modules/messages/MessageProcessor";
 
 describe("Message Processor", () => {
 	let data: Buffer;

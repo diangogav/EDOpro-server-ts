@@ -1,6 +1,5 @@
 import { faker } from "@faker-js/faker";
-
-import { Game } from "../../../../../src/modules/shared/player/domain/Player";
+import { Game } from "@modules/shared/player/domain/Player";
 
 const GAME_RESULTS = ["winner", "losser", "deuce"];
 

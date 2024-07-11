@@ -1,9 +1,10 @@
-import { BanList } from "../../../../src/modules/ban-list/domain/BanList";
-import BanListMemoryRepository from "../../../../src/modules/ban-list/infrastructure/BanListMemoryRepository";
-import { Team } from "../../../../src/modules/room/domain/Team";
-import { Player } from "../../../../src/modules/shared/player/domain/Player";
-import { Rank } from "../../../../src/modules/shared/value-objects/Rank";
-import { BasicStatsCalculator } from "../../../../src/modules/stats/basic/application/BasicStatsCalculator";
+import { BanList } from "@modules/ban-list/domain/BanList";
+import BanListMemoryRepository from "@modules/ban-list/infrastructure/BanListMemoryRepository";
+import { Team } from "@modules/room/domain/Team";
+import { Player } from "@modules/shared/player/domain/Player";
+import { Rank } from "@modules/shared/value-objects/Rank";
+import { BasicStatsCalculator } from "@modules/stats/basic/application/BasicStatsCalculator";
+
 import { GameMother } from "../../shared/mothers/player/GameMother";
 import { GameOverDomainEventMother } from "../../shared/mothers/player/GameOverDomainEventMother";
 import { PlayerMother } from "../../shared/mothers/player/PlayerMother";

@@ -122,8 +122,6 @@ export class Room extends YgoRoom {
 	public readonly notes: string;
 	public readonly mode: number;
 	public readonly needPass: boolean;
-	public readonly team0: number;
-	public readonly team1: number;
 	public readonly bestOf: number;
 	public readonly duelFlag: bigint;
 	public readonly duelFlagsLow: number;
