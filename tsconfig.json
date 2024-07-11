@@ -6,7 +6,7 @@
     "emitDecoratorMetadata": true,
     "module": "commonjs",
     "resolveJsonModule": true,
-    "outDir": "./dist",
+    "outDir": "./dist/src",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": false,
@@ -23,7 +23,6 @@
   },
   "include": [
     "src/**/*",
-    "tests/**/*"
   ],
   "exclude": [
     "node_modules",
