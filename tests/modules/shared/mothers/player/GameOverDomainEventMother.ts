@@ -1,9 +1,9 @@
 import { faker } from "@faker-js/faker";
-
 import {
 	GameOverData,
 	GameOverDomainEvent,
-} from "../../../../../src/modules/room/domain/domain-events/GameOverDomainEvent";
+} from "@modules/room/domain/domain-events/GameOverDomainEvent";
+
 import { PlayerMother } from "./PlayerMother";
 
 export class GameOverDomainEventMother {
