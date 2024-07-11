@@ -1,12 +1,17 @@
+version: '3'
 services:
   node-app:
     build:
       context: .
       dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+      - /app/node_modules
     ports:
       - "7911:7911"
       - "7922:7922"
       - "7711:7711"
+      - "9229:9229"
     environment:
       - REDIS_URI=${REDIS_URI}
     depends_on:
@@ -18,3 +23,6 @@ services:
     image: redis
     ports:
       - "6379:6379"
+
+volumes:
+  node_modules:
