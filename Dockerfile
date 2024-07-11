@@ -34,6 +34,8 @@ RUN conan install . --build missing --output-folder=./dependencies --options=lib
 
 FROM public.ecr.aws/docker/library/node:20.15.0 as server-builder
 
+ENV USER node
+
 WORKDIR /server
 
 COPY package.json package-lock.json ./
@@ -42,11 +44,12 @@ RUN npm ci
 
 COPY . .
 
-RUN npm run build
+RUN npm run build && \
+    npm prune --production
 
 FROM public.ecr.aws/docker/library/node:20.15.0-slim
 
-RUN apt-get update && apt-get install -y curl git && apt-get install -y liblua5.3-dev libsqlite3-dev libevent-dev
+RUN apt-get update && apt-get install -y curl git && apt-get install -y liblua5.3-dev libsqlite3-dev libevent-dev dumb-init
 
 WORKDIR /app
 
@@ -65,6 +68,6 @@ COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/scri
 COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/lflist.conf
 COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/cards.cdb
 
-CMD ["node", "./src/index.js"]
-
 EXPOSE 4000 7711 7911 7922
+USER $USER
+CMD ["dumb-init", "node", "./src/index.js"]

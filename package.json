@@ -6,7 +6,7 @@
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
-    "dev": "ts-node-dev -r tsconfig-paths/register --respawn --poll src/index.ts ",
+    "dev": "ts-node-dev --inspect=0.0.0.0:9229 -r tsconfig-paths/register --respawn --poll src/index.ts ",
     "build": "tsc && tsc-alias -p tsconfig.json",
     "start": "npm run build && node ./dist/src/index.js",
     "lint": "eslint --ignore-path .gitignore . --ext .ts",
