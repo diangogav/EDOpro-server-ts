@@ -10,7 +10,6 @@ import { SimpleRoomMessageEmitter } from "../../MercuryRoomMessageEmitter";
 import { MercuryRoom } from "../../room/domain/MercuryRoom";
 
 export class MercuryClient extends YgoClient {
-	readonly name: string;
 	private readonly _coreClient: net.Socket;
 	private readonly _logger: Logger;
 	private _pendingMessages: Buffer[];

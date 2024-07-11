@@ -1,8 +1,8 @@
 import { faker } from "@faker-js/faker";
+import { Team } from "@modules/room/domain/Team";
+import { Player } from "@modules/shared/player/domain/Player";
+import { PlayerData } from "@modules/shared/player/domain/PlayerData";
 
-import { Team } from "../../../../../src/modules/room/domain/Team";
-import { Player } from "../../../../../src/modules/shared/player/domain/Player";
-import { PlayerData } from "../../../../../src/modules/shared/player/domain/PlayerData";
 import { GameMother } from "./GameMother";
 import { RankMother } from "./RankMother";
 

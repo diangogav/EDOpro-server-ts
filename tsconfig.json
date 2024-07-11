@@ -1,21 +1,32 @@
 {
   "compilerOptions": {
-    "target": "es6",                                  /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
-    "experimentalDecorators": true,                   /* Enable experimental support for legacy experimental decorators. */
-    "emitDecoratorMetadata": true,                    /* Emit design-type metadata for decorated declarations in source files. */
-    "module": "commonjs",                                /* Specify what module code is generated. */
-    "resolveJsonModule": true,                        /* Enable importing .json files. */
-    "outDir": "./dist",                                   /* Specify an output folder for all emitted files. */
-    "esModuleInterop": true,                             /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables 'allowSyntheticDefaultImports' for type compatibility. */
-    "forceConsistentCasingInFileNames": true,            /* Ensure that casing is correct in imports. */
-    "strict": false,                                      /* Enable all strict type-checking options. */
-    "strictNullChecks": true,                         /* When type checking, take into account 'null' and 'undefined'. */
-    "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */,
+    "baseUrl": ".",
+    "target": "ES2022",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "module": "commonjs",
+    "resolveJsonModule": true,
+    "outDir": "./dist",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": false,
+    "strictNullChecks": true,
+    "skipLibCheck": true,
     "moduleResolution": "node",
     "sourceMap": true,
+    "inlineSources": true,
+    "paths": {
+      "@modules/*": [
+        "src/modules/*"
+      ]
+    }
   },
   "include": [
     "src/**/*",
-    "tests/**/*",
+    "tests/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
   ]
 }
