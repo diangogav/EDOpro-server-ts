@@ -2,7 +2,6 @@ import { EventEmitter } from "stream";
 
 import { mercuryConfig } from "../../../mercury/config";
 import { MercuryJoinGameMessage } from "../../../mercury/messages/MercuryJoinGameMessage";
-import { MercuryPlayerChatMessage } from "../../../mercury/messages/server-to-client/MercuryPlayerChatMessage";
 import { BufferToUTF16 } from "../../../utils/BufferToUTF16";
 import { Client } from "../../client/domain/Client";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
@@ -90,12 +89,10 @@ export abstract class RoomState {
 			);
 			room.clients.forEach((player: Client) => {
 				player.socket.send(chatMessage);
-				player.socket.send(MercuryPlayerChatMessage.create(message.data));
 			});
 
 			room.spectators.forEach((spectator) => {
 				spectator.socket.send(chatMessage);
-				spectator.socket.send(MercuryPlayerChatMessage.create(message.data));
 			});
 
 			return;
