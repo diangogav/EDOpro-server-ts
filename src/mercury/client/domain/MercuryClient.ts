@@ -92,6 +92,8 @@ export class MercuryClient extends YgoClient {
 		this._position = position;
 		if (position >= 0 && position < 2) {
 			super.playerPosition(position, Team.PLAYER);
+		} else if (position >= 7) {
+			super.playerPosition(position, Team.SPECTATOR);
 		} else {
 			super.playerPosition(position, Team.OPPONENT);
 		}
