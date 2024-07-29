@@ -3,9 +3,6 @@ import { EventEmitter } from "stream";
 import { CreateRoomRequest } from "../../../http-server/controllers/CreateRoomController";
 import { UTF8ToUTF16 } from "../../../utils/UTF8ToUTF16";
 import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
-import { ErrorMessages } from "../../messages/server-to-client/error-messages/ErrorMessages";
-import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientMessage";
-import { ServerErrorClientMessage } from "../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { ISocket } from "../../shared/socket/domain/ISocket";
 import { Room } from "../domain/Room";
@@ -20,15 +17,6 @@ export class RoomCreator {
 
 		if (!banlist) {
 			throw new Error("Banlist not found");
-		}
-
-		//if banlist hash is not in the array of banlists then send error message and destroy the socket
-		if (!BanListMemoryRepository.get().find((list) => list.hash === banlist.hash)) {
-			this.socket.send(ServerErrorClientMessage.create("Not supported banlist"));
-			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOINERROR));
-			this.socket.destroy();
-
-			throw new Error("Not supported banlist");
 		}
 
 		const emitter = new EventEmitter();
