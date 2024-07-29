@@ -27,6 +27,8 @@ export class RoomCreator {
 			this.socket.send(ServerErrorClientMessage.create("Not supported banlist"));
 			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOINERROR));
 			this.socket.destroy();
+
+			throw new Error("Not supported banlist");
 		}
 
 		const emitter = new EventEmitter();
