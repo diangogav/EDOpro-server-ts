@@ -1,5 +1,3 @@
-import BanListMemoryRepository from "@modules/ban-list/infrastructure/BanListMemoryRepository";
-import { ServerErrorClientMessage } from "@modules/messages/server-to-client/ServerErrorMessageClientMessage";
 import { EventEmitter } from "stream";
 
 import { config } from "../../../config";
@@ -77,15 +75,6 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 			this.eventEmitter,
 			this.logger
 		);
-
-		//if banlist hash is not in the array of banlists then send error message and destroy the socket
-		if (!BanListMemoryRepository.get().find((list) => list.hash === room.banlistHash)) {
-			this.socket.send(ServerErrorClientMessage.create("Not supported banlist"));
-			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOINERROR));
-			this.socket.destroy();
-
-			throw new Error("Not supported banlist");
-		}
 
 		room.waiting();
 
