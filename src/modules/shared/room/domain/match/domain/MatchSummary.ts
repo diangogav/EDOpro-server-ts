@@ -1,4 +1,4 @@
-import { GameOverData } from "../../../../../room/domain/domain-events/GameOverDomainEvent";
+import { GameOverData } from "./domain-events/GameOverDomainEvent";
 
 export type MatchSummary = GameOverData & {
 	banlistName: string;

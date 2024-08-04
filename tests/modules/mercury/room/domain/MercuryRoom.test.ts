@@ -1,3 +1,5 @@
+import "reflect-metadata";
+
 import { faker } from "@faker-js/faker";
 import EventEmitter from "events";
 

@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import { CoreMessages } from "@modules/messages/domain/CoreMessages";
+import { container } from "@modules/shared/dependency-injection";
+import { EventBus } from "@modules/shared/event-bus/EventBus";
+import { GameOverDomainEvent } from "@modules/shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
 import { EventEmitter } from "events";
 
 import { PlayerInfoMessage } from "../../../../modules/messages/client-to-server/PlayerInfoMessage";
@@ -15,8 +18,11 @@ import { MercuryReconnect } from "../../application/MercuryReconnect";
 import { MercuryRoom } from "../MercuryRoom";
 
 export class MercuryDuelingState extends RoomState {
+	private readonly eventBus: EventBus;
+
 	constructor(eventEmitter: EventEmitter, private readonly logger: Logger) {
 		super(eventEmitter);
+		this.eventBus = container.get(EventBus);
 		this.eventEmitter.on(
 			"DUEL_END",
 			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
@@ -113,6 +119,19 @@ export class MercuryDuelingState extends RoomState {
 			const winner = room.firstToPlay ^ message.raw.readInt8(4);
 
 			room.duelWinner(winner);
+
+			if (room.isMatchFinished()) {
+				this.eventBus.publish(
+					GameOverDomainEvent.DOMAIN_EVENT,
+					new GameOverDomainEvent({
+						bestOf: room.bestOf,
+						players: room.matchPlayersHistory,
+						date: new Date(),
+						ranked: room.ranked,
+						banlistHash: room.banlistHash,
+					})
+				);
+			}
 		}
 	}
 

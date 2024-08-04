@@ -359,6 +359,10 @@ export class MercuryRoom extends YgoRoom {
 		return "no implemeted for mercury rooms";
 	}
 
+	get banlistHash(): number {
+		return this._banListHash;
+	}
+
 	private connectClientToCore(client: MercuryClient): void {
 		if (this._coreStarted && this._corePort) {
 			client.connectToCore({
