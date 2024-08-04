@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
+import { CoreMessages } from "@modules/messages/domain/CoreMessages";
 import { EventEmitter } from "events";
 
 import { PlayerInfoMessage } from "../../../../modules/messages/client-to-server/PlayerInfoMessage";
@@ -97,13 +98,19 @@ export class MercuryDuelingState extends RoomState {
 		_room: MercuryRoom,
 		player: MercuryClient
 	): void {
-		this.logger.info("MERCURY: GAME_MSG");
+		this.logger.info(`MERCURY: GAME_MSG: ${message.raw.toString("hex")}`);
 		if (player.isReconnecting) {
 			return;
 		}
-		if (message.raw.readInt8(3) !== 1) {
+		const coreMessageType = message.raw.readInt8(3);
+
+		if (coreMessageType !== 1) {
 			this.logger.debug(`last message ${player.name} ${message.raw.toString("hex")}`);
 			player.setLastMessage(message.raw);
+		}
+
+		if (coreMessageType === CoreMessages.MSG_WIN) {
+			this.logger.info(`WINNER IS TEAM ${message.raw.readInt8(4)}`);
 		}
 	}
 

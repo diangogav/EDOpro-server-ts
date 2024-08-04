@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
+import { CoreMessages } from "@modules/messages/domain/CoreMessages";
 import { EventEmitter } from "stream";
 
 import { PlayerInfoMessage } from "../../../../modules/messages/client-to-server/PlayerInfoMessage";
@@ -23,6 +24,12 @@ export class MercurySideDeckingState extends RoomState {
 			"JOIN",
 			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
 				void this.handleJoin.bind(this)(message, room, socket)
+		);
+
+		this.eventEmitter.on(
+			"GAME_MSG",
+			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
+				this.handleGameMessage.bind(this)(message, room, client)
 		);
 
 		this.eventEmitter.on(
@@ -67,5 +74,18 @@ export class MercurySideDeckingState extends RoomState {
 		player.socket.send(message);
 
 		player.clearReconnecting();
+	}
+
+	private handleGameMessage(
+		message: ClientMessage,
+		room: MercuryRoom,
+		_player: MercuryClient
+	): void {
+		this.logger.info("MERCURY_SIDE_DECKING: GAME_MSG");
+		const gameMessage = message.data[0];
+		if (gameMessage === CoreMessages.MSG_START) {
+			this.logger.info("MERCURY CORE: MSG_START");
+			room.dueling();
+		}
 	}
 }
