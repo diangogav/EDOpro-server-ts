@@ -288,7 +288,7 @@ export class WaitingState extends RoomState {
 		this.logger.debug("WAITING: JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		if (this.playerAlreadyInRoom(playerInfoMessage, room, socket)) {
-			this.sendErrorMessage(playerInfoMessage, socket);
+			this.sendExistingPlayerErrorMessage(playerInfoMessage, socket);
 
 			return;
 		}
@@ -315,18 +315,6 @@ export class WaitingState extends RoomState {
 			return;
 		}
 		this.player(place, joinGameMessage, socket, playerInfoMessage, room, []);
-	}
-
-	private sendErrorMessage(playerInfoMessage: PlayerInfoMessage, socket: ISocket): void {
-		socket.send(
-			ServerErrorClientMessage.create(
-				`Ya existe un jugador con el nombre :${playerInfoMessage.name}`
-			)
-		);
-		socket.send(ErrorClientMessage.create(ErrorMessages.JOINERROR));
-		socket.destroy();
-
-		return;
 	}
 
 	private spectator(

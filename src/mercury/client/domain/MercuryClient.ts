@@ -1,4 +1,5 @@
 import net from "net";
+import { MercuryPlayerInfoToCoreMessage } from "src/mercury/messages/server-to-core";
 
 import { ClientMessage } from "../../../modules/messages/MessageProcessor";
 import { Team } from "../../../modules/room/domain/Team";
@@ -118,7 +119,13 @@ export class MercuryClient extends YgoClient {
 	private sendPendingMessages(): void {
 		this._pendingMessages.forEach((message) => {
 			this._logger.debug(`Message: ${message.toString("hex")}`);
-			this._coreClient.write(message);
+			const messageType = message.readInt8(2);
+			if (messageType === 0x10) {
+				const playerInfoMessage = MercuryPlayerInfoToCoreMessage.create(this.name);
+				this._coreClient.write(playerInfoMessage);
+			} else {
+				this._coreClient.write(message);
+			}
 		});
 
 		this._pendingMessages = [];

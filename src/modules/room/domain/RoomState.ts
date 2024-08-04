@@ -1,3 +1,6 @@
+import { ErrorMessages } from "@modules/messages/server-to-client/error-messages/ErrorMessages";
+import { ErrorClientMessage } from "@modules/messages/server-to-client/ErrorClientMessage";
+import { ServerErrorClientMessage } from "@modules/messages/server-to-client/ServerErrorMessageClientMessage";
 import { EventEmitter } from "stream";
 
 import { mercuryConfig } from "../../../mercury/config";
@@ -72,6 +75,21 @@ export abstract class RoomState {
 
 			throw new Error("Version mismatch");
 		}
+	}
+
+	protected sendExistingPlayerErrorMessage(
+		playerInfoMessage: PlayerInfoMessage,
+		socket: ISocket
+	): void {
+		socket.send(
+			ServerErrorClientMessage.create(
+				`Ya existe un jugador con el nombre :${playerInfoMessage.name}`
+			)
+		);
+		socket.send(ErrorClientMessage.create(ErrorMessages.JOINERROR));
+		socket.destroy();
+
+		return;
 	}
 
 	private handleChat(message: ClientMessage, room: YgoRoom, client: YgoClient): void {

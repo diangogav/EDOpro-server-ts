@@ -1,5 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
+import { ErrorMessages } from "@modules/messages/server-to-client/error-messages/ErrorMessages";
+import { ErrorClientMessage } from "@modules/messages/server-to-client/ErrorClientMessage";
+import { UserFinder } from "@modules/user/application/UserFinder";
+import { User } from "@modules/user/domain/User";
 import { EventEmitter } from "stream";
 
 import { PlayerInfoMessage } from "../../../../modules/messages/client-to-server/PlayerInfoMessage";
@@ -14,7 +18,11 @@ import { JoinGameCoreToClientMessage } from "../../../messages/core-to-client/Jo
 import { MercuryRoom } from "../MercuryRoom";
 
 export class MercuryWaitingState extends RoomState {
-	constructor(eventEmitter: EventEmitter, private readonly logger: Logger) {
+	constructor(
+		private readonly userFinder: UserFinder,
+		eventEmitter: EventEmitter,
+		private readonly logger: Logger
+	) {
 		super(eventEmitter);
 		this.eventEmitter.on(
 			"JOIN",
@@ -38,12 +46,27 @@ export class MercuryWaitingState extends RoomState {
 		);
 	}
 
-	private handle(message: ClientMessage, room: MercuryRoom, socket: ISocket): void {
+	private async handle(message: ClientMessage, room: MercuryRoom, socket: ISocket): Promise<void> {
 		this.validateVersion(message.data, socket);
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
+		if (this.playerAlreadyInRoom(playerInfoMessage, room, socket)) {
+			this.sendExistingPlayerErrorMessage(playerInfoMessage, socket);
+
+			return;
+		}
+
 		const messages = [message.previousRawMessage, message.raw];
 
 		if (!room.isPlayersFull) {
+			if (room.ranked) {
+				const user = await this.userFinder.run(playerInfoMessage);
+				if (!(user instanceof User)) {
+					socket.send(user as Buffer);
+					socket.send(ErrorClientMessage.create(ErrorMessages.JOINERROR));
+
+					return;
+				}
+			}
 			const host = room.clients.length === 0;
 			const client = new MercuryClient({
 				socket,
