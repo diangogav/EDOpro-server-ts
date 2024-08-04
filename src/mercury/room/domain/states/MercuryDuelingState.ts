@@ -95,7 +95,7 @@ export class MercuryDuelingState extends RoomState {
 
 	private handleGameMessage(
 		message: ClientMessage,
-		_room: MercuryRoom,
+		room: MercuryRoom,
 		player: MercuryClient
 	): void {
 		this.logger.info(`MERCURY: GAME_MSG: ${message.raw.toString("hex")}`);
@@ -109,8 +109,10 @@ export class MercuryDuelingState extends RoomState {
 			player.setLastMessage(message.raw);
 		}
 
-		if (coreMessageType === CoreMessages.MSG_WIN) {
-			this.logger.info(`WINNER IS TEAM ${message.raw.readInt8(4)}`);
+		if (coreMessageType === CoreMessages.MSG_WIN && !room.isMatchFinished()) {
+			const winner = room.firstToPlay ^ message.raw.readInt8(4);
+
+			room.duelWinner(winner);
 		}
 	}
 
