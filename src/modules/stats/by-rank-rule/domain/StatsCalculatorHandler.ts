@@ -1,4 +1,4 @@
-import { Player } from "../../../room/match/domain/Match";
+import { Player } from "@modules/shared/room/domain/match/domain/Match";
 
 export interface StatsCalculatorHandler {
 	setNextHandler(handler: StatsCalculatorHandler): StatsCalculatorHandler;

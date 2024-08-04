@@ -25,7 +25,6 @@ import { FinishDuelHandler } from "../application/FinishDuelHandler";
 import { JoinToDuelAsSpectator } from "../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../application/Reconnect";
 import RoomList from "../infrastructure/RoomList";
-import { Match } from "../match/domain/Match";
 import { Duel } from "./Duel";
 import { DuelFinishReason } from "./DuelFinishReason";
 import { RoomState } from "./RoomState";
@@ -122,7 +121,6 @@ export class Room extends YgoRoom {
 	public readonly notes: string;
 	public readonly mode: number;
 	public readonly needPass: boolean;
-	public readonly bestOf: number;
 	public readonly duelFlag: bigint;
 	public readonly duelFlagsLow: number;
 	public readonly duelFlagsHight: number;
@@ -143,7 +141,6 @@ export class Room extends YgoRoom {
 	private isStart: string;
 	private readonly _kick: Client[] = [];
 	private _duel?: ChildProcessWithoutNullStreams;
-	private _match: Match | null;
 	private readonly _lastMessageToTeam: { team: number; message: Buffer }[] = [];
 	private _playerMainDeckSize: number;
 	private _playerExtraDeckSize: number;
@@ -162,13 +159,13 @@ export class Room extends YgoRoom {
 			team0: attr.team0,
 			team1: attr.team1,
 			ranked: attr.ranked,
+			bestOf: attr.bestOf,
 		});
 		this.id = attr.id;
 		this.name = attr.name;
 		this.notes = attr.notes;
 		this.mode = attr.mode;
 		this.needPass = attr.needPass;
-		this.bestOf = attr.bestOf;
 		this.duelFlag = attr.duelFlag;
 		this.forbiddenTypes = attr.forbiddenTypes;
 		this.extraRules = attr.extraRules;
@@ -329,10 +326,6 @@ export class Room extends YgoRoom {
 		}
 
 		return this._match.isFinished();
-	}
-
-	createMatch(): void {
-		this._match = new Match({ bestOf: this.bestOf });
 	}
 
 	isFirstDuel(): boolean {

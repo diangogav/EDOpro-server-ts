@@ -1,5 +1,5 @@
-import { BanList } from "../../ban-list/domain/BanList";
-import { MatchSummary } from "../match/domain/MatchSummary";
+import { BanList } from "@modules/ban-list/domain/BanList";
+import { MatchSummary } from "@modules/shared/room/domain/match/domain/MatchSummary";
 
 export interface RoomRepository {
 	saveMatch(id: string, room: MatchSummary): Promise<void>;

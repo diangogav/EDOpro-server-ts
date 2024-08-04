@@ -1,6 +1,6 @@
-import { Team } from "@modules/room/domain/Team";
-import { PlayerData } from "@modules/shared/player/domain/PlayerData";
-import { Rank } from "@modules/shared/value-objects/Rank";
+import { Team } from "../../../../../room/domain/Team";
+import { PlayerData } from "../../../../player/domain/PlayerData";
+import { Rank } from "../../../../value-objects/Rank";
 
 export type Player = {
 	name: string;

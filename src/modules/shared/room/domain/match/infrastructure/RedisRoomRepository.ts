@@ -1,7 +1,7 @@
-import { BanList } from "@modules/ban-list/domain/BanList";
-import { GameOverData } from "@modules/room/domain/domain-events/GameOverDomainEvent";
-import { RoomRepository } from "@modules/room/domain/RoomRepository";
-import { Redis } from "@modules/shared/db/redis/infrastructure/Redis";
+import { BanList } from "../../../../../ban-list/domain/BanList";
+import { GameOverData } from "../../../../../room/domain/domain-events/GameOverDomainEvent";
+import { RoomRepository } from "../../../../../room/domain/RoomRepository";
+import { Redis } from "../../../../db/redis/infrastructure/Redis";
 
 export class RedisRoomRepository implements RoomRepository {
 	async saveMatch(id: string, data: GameOverData): Promise<void> {
