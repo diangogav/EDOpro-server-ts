@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1](https://github.com/diangogav/EDOpro-server-ts/compare/v2.1.0...v2.1.1) (2024-08-04)
+
+
+### Bug Fixes
+
+* :ambulance: Auth for mercury players ([#112](https://github.com/diangogav/EDOpro-server-ts/issues/112)) ([d094a4f](https://github.com/diangogav/EDOpro-server-ts/commit/d094a4f0016840ad7380c0d6446cfc66ba3388d2))
+
 ## [2.1.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.0.0...v2.1.0) (2024-08-04)
 
 
