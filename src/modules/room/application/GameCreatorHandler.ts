@@ -80,8 +80,6 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 
 		const client = room.createHost(this.socket, playerInfoMessage.name, ranks);
 		RoomList.addRoom(room);
-		room.createMatch();
-
 		this.socket.send(CreateGameClientMessage.create(room));
 		this.socket.send(JoinGameClientMessage.createFromCreateGameMessage(message));
 		this.socket.send(PlayerEnterClientMessage.create(playerInfoMessage.name, client.position));

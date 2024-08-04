@@ -1,3 +1,4 @@
+import { Team } from "@modules/room/domain/Team";
 import { spawn } from "child_process";
 import net from "net";
 import { EventEmitter } from "stream";
@@ -45,6 +46,7 @@ export class MercuryRoom extends YgoRoom {
 		team1,
 		ranked,
 		createdBySocketId,
+		bestOf,
 	}: {
 		id: number;
 		password: string;
@@ -54,8 +56,9 @@ export class MercuryRoom extends YgoRoom {
 		team1: number;
 		ranked: boolean;
 		createdBySocketId: string;
+		bestOf: number;
 	}) {
-		super({ team0, team1, ranked });
+		super({ team0, team1, ranked, bestOf });
 		this.id = id;
 		this.name = name;
 		this.password = password;
@@ -134,6 +137,7 @@ export class MercuryRoom extends YgoRoom {
 			team1: teamCount,
 			ranked,
 			createdBySocketId,
+			bestOf: hostInfo.mode === Mode.MATCH ? 3 : 1,
 		});
 
 		room._logger = logger;
@@ -292,6 +296,11 @@ export class MercuryRoom extends YgoRoom {
 		this._banListHash = banListHash;
 	}
 
+	calculatePlayerTeam(client: MercuryClient, position: number): void {
+		const team = this.determineTeam(position);
+		client.playerPosition(position, team);
+	}
+
 	get isPlayersFull(): boolean {
 		return (
 			(this._hostInfo.mode === Mode.SINGLE || this._hostInfo.mode === Mode.MATCH) &&
@@ -308,7 +317,7 @@ export class MercuryRoom extends YgoRoom {
 			needpass: this.password.length > 0,
 			team1: this.team0,
 			team2: this.team1,
-			best_of: this.calculateBestOf(),
+			best_of: this.bestOf,
 			duel_flag: 0,
 			forbidden_types: 0,
 			extra_rules: 0,
@@ -359,11 +368,18 @@ export class MercuryRoom extends YgoRoom {
 		}
 	}
 
-	private calculateBestOf(): number {
-		if (this._hostInfo.mode === Mode.MATCH) {
-			return 3;
+	private determineTeam(position: number): Team {
+		if (this._hostInfo.mode === Mode.TAG) {
+			if (position >= 0 && position < 2) {
+				return Team.PLAYER;
+			}
+			if (position >= 7) {
+				return Team.SPECTATOR;
+			}
+
+			return Team.OPPONENT;
 		}
 
-		return 1;
+		return position === 0 ? Team.PLAYER : Team.OPPONENT;
 	}
 }

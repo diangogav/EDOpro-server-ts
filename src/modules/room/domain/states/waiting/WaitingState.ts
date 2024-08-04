@@ -149,7 +149,7 @@ export class WaitingState extends RoomState {
 		(t0Client as Client).sendMessage(rpsChooseMessage);
 		(t1Client as Client).sendMessage(rpsChooseMessage);
 
-		room.initializeHistoricalData();
+		room.createMatch();
 		room.rps();
 	}
 

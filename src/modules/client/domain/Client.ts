@@ -14,7 +14,6 @@ export class Client extends YgoClient {
 	public readonly listener: Listener;
 	public readonly roomId: number;
 	public readonly ranks: Rank[];
-	private _isReady: boolean;
 	private _rpsChosen: Choose | null = null;
 	private _deck: Deck;
 	private _duelPosition: number;
@@ -76,16 +75,8 @@ export class Client extends YgoClient {
 		return this._rpsChosen;
 	}
 
-	ready(): void {
-		this._isReady = true;
-	}
-
 	notReady(): void {
 		this._isReady = false;
-	}
-
-	get isReady(): boolean {
-		return this._isReady;
 	}
 
 	setDeck(deck: Deck): void {

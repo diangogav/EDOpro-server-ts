@@ -15,7 +15,6 @@ import { MessageProcessor } from "../../messages/MessageProcessor";
 import { Replay } from "../../replay/Replay";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
 import { Logger } from "../../shared/logger/domain/Logger";
-import { PlayerData } from "../../shared/player/domain/PlayerData";
 import { DuelState, YgoRoom } from "../../shared/room/domain/YgoRoom";
 import { ISocket } from "../../shared/socket/domain/ISocket";
 import { Rank } from "../../shared/value-objects/Rank";
@@ -147,7 +146,6 @@ export class Room extends YgoRoom {
 	private _opponentMainDeckSize: number;
 	private _opponentExtraDeckSize: number;
 	private readonly _turn = 0;
-	private _firstToPlay: number;
 	private readonly timers: Timer[];
 	private readonly roomTimer: Timer;
 	private roomState: RoomState | null = null;
@@ -313,33 +311,8 @@ export class Room extends YgoRoom {
 		});
 	}
 
-	duelWinner(winner: number): void {
-		if (!this._match) {
-			return;
-		}
-		this._match.duelWinner(winner, this.turn);
-	}
-
-	isMatchFinished(): boolean {
-		if (!this._match) {
-			return true;
-		}
-
-		return this._match.isFinished();
-	}
-
 	isFirstDuel(): boolean {
 		return this._match?.isFirstDuel() ?? true;
-	}
-
-	initializeHistoricalData(): void {
-		const players = this.clients.map((client: Client) => ({
-			team: client.team,
-			name: client.name,
-			ranks: client.ranks,
-			// deck: client.deck,
-		}));
-		this._match?.initializeHistoricalData(players);
 	}
 
 	matchScore(): { team0: number; team1: number } {
@@ -362,10 +335,6 @@ export class Room extends YgoRoom {
 		}
 
 		return this._match.score;
-	}
-
-	get matchPlayersHistory(): PlayerData[] {
-		return this._match?.playersHistory ?? [];
 	}
 
 	addClient(client: Client): void {
@@ -542,14 +511,6 @@ export class Room extends YgoRoom {
 
 	get turn(): number {
 		return this.currentDuel?.turn ?? 0;
-	}
-
-	setFirstToPlay(team: number): void {
-		this._firstToPlay = team;
-	}
-
-	get firstToPlay(): number {
-		return this._firstToPlay;
 	}
 
 	nextAvailablePosition(position: number): { position: number; team: number } | null {
