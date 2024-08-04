@@ -8,6 +8,7 @@ export abstract class YgoClient {
 	protected _socket: ISocket;
 	protected _lastMessage: Buffer | null = null;
 	protected _reconnecting = false;
+	protected _isReady: boolean;
 
 	constructor({
 		name,
@@ -73,6 +74,14 @@ export abstract class YgoClient {
 
 	clearReconnecting(): void {
 		this._reconnecting = false;
+	}
+
+	ready(): void {
+		this._isReady = true;
+	}
+
+	get isReady(): boolean {
+		return this._isReady;
 	}
 
 	get isReconnecting(): boolean {

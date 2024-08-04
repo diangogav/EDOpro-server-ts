@@ -61,7 +61,6 @@ export class RoomCreator {
 		const room = Room.create(data, emitter, this.logger);
 		room.waiting();
 		RoomList.addRoom(room);
-		room.createMatch();
 
 		return {
 			password,

@@ -1,9 +1,11 @@
+import { PlayerData } from "@modules/shared/player/domain/PlayerData";
 import { EventEmitter } from "stream";
 
 import { MercuryClient } from "../../../../mercury/client/domain/MercuryClient";
 import { Client } from "../../../client/domain/Client";
 import { YgoClient } from "../../client/domain/YgoClient";
 import { ISocket } from "../../socket/domain/ISocket";
+import { Match } from "./match/domain/Match";
 
 export enum DuelState {
 	WAITING = "waiting",
@@ -17,6 +19,7 @@ export abstract class YgoRoom {
 	public readonly team0: number;
 	public readonly team1: number;
 	public readonly ranked: boolean;
+	public readonly bestOf: number;
 	protected readonly t0Positions: number[] = [];
 	protected readonly t1Positions: number[] = [];
 	protected emitter: EventEmitter;
@@ -25,20 +28,25 @@ export abstract class YgoRoom {
 	protected _clients: YgoClient[] = [];
 	protected _spectators: YgoClient[] = [];
 	protected _clientWhoChoosesTurn: YgoClient;
+	protected _match: Match | null;
+	protected _firstToPlay: number;
 	abstract score: string;
 
 	protected constructor({
 		team0,
 		team1,
 		ranked,
+		bestOf,
 	}: {
 		team0: number;
 		team1: number;
 		ranked: boolean;
+		bestOf: number;
 	}) {
 		this.team0 = team0;
 		this.team1 = team1;
 		this.ranked = ranked;
+		this.bestOf = bestOf;
 		this.t0Positions = Array.from({ length: this.team0 }, (_, index) => index);
 		this.t1Positions = Array.from({ length: this.team1 }, (_, index) => this.team0 + index);
 	}
@@ -65,6 +73,17 @@ export abstract class YgoRoom {
 
 	removePlayer(player: YgoClient): void {
 		this._clients = this._clients.filter((item) => item.socket.id !== player.socket.id);
+	}
+
+	duelWinner(winner: number): void {
+		if (!this._match) {
+			return;
+		}
+		this._match.duelWinner(winner, 0);
+	}
+
+	get matchPlayersHistory(): PlayerData[] {
+		return this._match?.playersHistory ?? [];
 	}
 
 	get clients(): YgoClient[] {
@@ -113,6 +132,37 @@ export abstract class YgoRoom {
 
 	setClientWhoChoosesTurn(client: YgoClient): void {
 		this._clientWhoChoosesTurn = client;
+	}
+
+	createMatch(): void {
+		this._match = new Match({ bestOf: this.bestOf });
+		this.initializeHistoricalData();
+	}
+
+	initializeHistoricalData(): void {
+		const players = this.clients.map((client: Client) => ({
+			team: client.team,
+			name: client.name,
+			ranks: client.ranks,
+			// deck: client.deck,
+		}));
+		this._match?.initializeHistoricalData(players);
+	}
+
+	isMatchFinished(): boolean {
+		if (!this._match) {
+			return true;
+		}
+
+		return this._match.isFinished();
+	}
+
+	setFirstToPlay(team: number): void {
+		this._firstToPlay = team;
+	}
+
+	get firstToPlay(): number {
+		return this._firstToPlay;
 	}
 
 	get clientWhoChoosesTurn(): YgoClient {

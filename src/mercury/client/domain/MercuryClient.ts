@@ -88,15 +88,8 @@ export class MercuryClient extends YgoClient {
 		this._socket.destroy();
 	}
 
-	playerPosition(position: number): void {
-		this._position = position;
-		if (position >= 0 && position < 2) {
-			super.playerPosition(position, Team.PLAYER);
-		} else if (position >= 7) {
-			super.playerPosition(position, Team.SPECTATOR);
-		} else {
-			super.playerPosition(position, Team.OPPONENT);
-		}
+	playerPosition(position: number, team: Team): void {
+		super.playerPosition(position, team);
 	}
 
 	setNeedSpectatorMessages(value: boolean): void {

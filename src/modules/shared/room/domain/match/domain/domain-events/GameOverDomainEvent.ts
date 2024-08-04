@@ -1,4 +1,4 @@
-import { PlayerMatchSummary } from "../../../shared/player/domain/Player";
+import { PlayerMatchSummary } from "@modules/shared/player/domain/Player";
 
 export type GameOverData = {
 	bestOf: number;

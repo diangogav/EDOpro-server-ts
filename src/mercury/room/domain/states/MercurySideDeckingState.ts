@@ -26,6 +26,12 @@ export class MercurySideDeckingState extends RoomState {
 		);
 
 		this.eventEmitter.on(
+			Commands.UPDATE_DECK as unknown as string,
+			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
+				void this.handleUpdateDeck.bind(this)(message, room, client)
+		);
+
+		this.eventEmitter.on(
 			Commands.READY as unknown as string,
 			(message: ClientMessage, room: Room, client: MercuryClient) =>
 				this.handleReady.bind(this)(message, room, client)
@@ -67,5 +73,15 @@ export class MercurySideDeckingState extends RoomState {
 		player.socket.send(message);
 
 		player.clearReconnecting();
+	}
+
+	private handleUpdateDeck(message: ClientMessage, room: MercuryRoom, player: MercuryClient): void {
+		player.ready();
+		const allClientsNotReady = room.clients.some((client: MercuryClient) => !client.isReady);
+		if (allClientsNotReady) {
+			return;
+		}
+		this.logger.info("SIDE_DECKING: READY");
+		room.choosingOrder();
 	}
 }

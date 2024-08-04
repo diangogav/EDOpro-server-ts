@@ -9,7 +9,7 @@ import { ReplayPromptMessage } from "../../messages/server-to-client/ReplayPromp
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { container } from "../../shared/dependency-injection";
 import { EventBus } from "../../shared/event-bus/EventBus";
-import { GameOverDomainEvent } from "../domain/domain-events/GameOverDomainEvent";
+import { GameOverDomainEvent } from "../../shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
 import { DuelFinishReason } from "../domain/DuelFinishReason";
 import { Room } from "../domain/Room";
 

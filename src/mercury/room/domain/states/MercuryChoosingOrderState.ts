@@ -21,7 +21,7 @@ export class MercuryChoosingOrderState extends RoomState {
 		this.eventEmitter.on(
 			"GAME_MSG",
 			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
-				this.startHandler.bind(this)(message, room, client)
+				this.gameMessageHandler.bind(this)(message, room, client)
 		);
 		this.eventEmitter.on(
 			"JOIN",
@@ -33,13 +33,37 @@ export class MercuryChoosingOrderState extends RoomState {
 			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
 				this.handleReady.bind(this)(message, room, client)
 		);
+		this.eventEmitter.on(
+			Commands.TURN_CHOICE as unknown as string,
+			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
+				this.handle.bind(this)(message, room, client)
+		);
 	}
 
-	private startHandler(message: ClientMessage, _room: MercuryRoom, _player: MercuryClient): void {
-		this.logger.info("MERCURY: GAME_MSG");
+	private handle(message: ClientMessage, room: MercuryRoom, player: MercuryClient): void {
+		this.logger.info("MERCURY: CHOOSING_ORDER");
+		const turn = message.data.readInt8();
+		const team = (<MercuryClient | undefined>room.clients.find((client) => client === player))
+			?.team;
+
+		if ((team === 0 && turn === 0) || (team === 1 && turn === 1)) {
+			room.setFirstToPlay(1);
+
+			return;
+		}
+
+		room.setFirstToPlay(0);
+	}
+
+	private gameMessageHandler(
+		message: ClientMessage,
+		_room: MercuryRoom,
+		_player: MercuryClient
+	): void {
+		this.logger.info("MERCURY_CHOOSING_ORDER: GAME_MSG");
 		const gameMessage = message.data[0];
 		if (gameMessage === CoreMessages.MSG_START) {
-			this.logger.info("MERCURY CORE: MSG_START");
+			this.logger.info("MERCURY_CHOOSING_ORDER CORE: MSG_START");
 			_room.dueling();
 		}
 	}

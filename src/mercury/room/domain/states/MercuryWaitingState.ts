@@ -77,6 +77,7 @@ export class MercuryWaitingState extends RoomState {
 
 	private tryStartHandler(_message: ClientMessage, room: MercuryRoom, _socket: ISocket): void {
 		this.logger.info("MERCURY: TRY_START");
+		room.createMatch();
 		room.rps();
 	}
 
@@ -104,7 +105,7 @@ export class MercuryWaitingState extends RoomState {
 		}
 
 		client.setHost(isHost);
-		client.playerPosition(type);
+		room.calculatePlayerTeam(client, type);
 	}
 
 	private handleJoinGame(message: ClientMessage, room: MercuryRoom, _client: MercuryClient): void {

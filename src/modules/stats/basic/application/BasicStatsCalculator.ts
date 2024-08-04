@@ -1,10 +1,10 @@
 /* eslint-disable no-await-in-loop */
 
 import BanListMemoryRepository from "../../../ban-list/infrastructure/BanListMemoryRepository";
-import { GameOverDomainEvent } from "../../../room/domain/domain-events/GameOverDomainEvent";
 import { RoomRepository } from "../../../room/domain/RoomRepository";
 import { DomainEventSubscriber } from "../../../shared/event-bus/EventBus";
 import { Player } from "../../../shared/player/domain/Player";
+import { GameOverDomainEvent } from "../../../shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
 
 export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomainEvent> {
 	static readonly ListenTo = GameOverDomainEvent.DOMAIN_EVENT;

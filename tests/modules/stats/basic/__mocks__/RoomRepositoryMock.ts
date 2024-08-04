@@ -1,6 +1,6 @@
 import { BanList } from "@modules/ban-list/domain/BanList";
-import { GameOverData } from "@modules/room/domain/domain-events/GameOverDomainEvent";
 import { RoomRepository } from "@modules/room/domain/RoomRepository";
+import { GameOverData } from "@modules/shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
 
 export class RoomRepositoryMock implements RoomRepository {
 	readonly mockSaveMatch = jest.fn();
