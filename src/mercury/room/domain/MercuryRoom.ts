@@ -1,4 +1,6 @@
 import { Team } from "@modules/room/domain/Team";
+import { UserFinder } from "@modules/user/application/UserFinder";
+import { UserRedisRepository } from "@modules/user/infrastructure/UserRedisRepository";
 import { spawn } from "child_process";
 import net from "net";
 import { EventEmitter } from "stream";
@@ -265,7 +267,11 @@ export class MercuryRoom extends YgoRoom {
 
 	waiting(): void {
 		this.roomState?.removeAllListener();
-		this.roomState = new MercuryWaitingState(this.emitter, this._logger);
+		this.roomState = new MercuryWaitingState(
+			new UserFinder(new UserRedisRepository()),
+			this.emitter,
+			this._logger
+		);
 	}
 
 	rps(): void {
