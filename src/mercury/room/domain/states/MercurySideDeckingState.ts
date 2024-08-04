@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-import { CoreMessages } from "@modules/messages/domain/CoreMessages";
 import { EventEmitter } from "stream";
 
 import { PlayerInfoMessage } from "../../../../modules/messages/client-to-server/PlayerInfoMessage";
@@ -27,9 +26,9 @@ export class MercurySideDeckingState extends RoomState {
 		);
 
 		this.eventEmitter.on(
-			"GAME_MSG",
+			Commands.UPDATE_DECK as unknown as string,
 			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
-				this.handleGameMessage.bind(this)(message, room, client)
+				void this.handleUpdateDeck.bind(this)(message, room, client)
 		);
 
 		this.eventEmitter.on(
@@ -76,16 +75,13 @@ export class MercurySideDeckingState extends RoomState {
 		player.clearReconnecting();
 	}
 
-	private handleGameMessage(
-		message: ClientMessage,
-		room: MercuryRoom,
-		_player: MercuryClient
-	): void {
-		this.logger.info("MERCURY_SIDE_DECKING: GAME_MSG");
-		const gameMessage = message.data[0];
-		if (gameMessage === CoreMessages.MSG_START) {
-			this.logger.info("MERCURY CORE: MSG_START");
-			room.dueling();
+	private handleUpdateDeck(message: ClientMessage, room: MercuryRoom, player: MercuryClient): void {
+		player.ready();
+		const allClientsNotReady = room.clients.some((client: MercuryClient) => !client.isReady);
+		if (allClientsNotReady) {
+			return;
 		}
+		this.logger.info("SIDE_DECKING: READY");
+		room.choosingOrder();
 	}
 }
