@@ -1,3 +1,4 @@
+import { Rank } from "@modules/shared/value-objects/Rank";
 import net from "net";
 import { MercuryPlayerInfoToCoreMessage } from "src/mercury/messages/server-to-core";
 
@@ -28,6 +29,7 @@ export class MercuryClient extends YgoClient {
 		position,
 		room,
 		host,
+		ranks = [],
 	}: {
 		name: string;
 		socket: ISocket;
@@ -36,8 +38,9 @@ export class MercuryClient extends YgoClient {
 		position: number;
 		room: MercuryRoom;
 		host: boolean;
+		ranks: Rank[];
 	}) {
-		super({ name, position, team: Team.SPECTATOR, socket, host });
+		super({ name, position, team: Team.SPECTATOR, socket, host, ranks });
 		this._coreClient = new net.Socket();
 		this._logger = logger;
 		this._pendingMessages = messages;

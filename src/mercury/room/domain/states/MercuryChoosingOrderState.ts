@@ -82,6 +82,7 @@ export class MercuryChoosingOrderState extends RoomState {
 				position: room.playersCount,
 				room,
 				host: false,
+				ranks: [],
 			});
 			room.addSpectator(spectator, true);
 
