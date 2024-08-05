@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.2](https://github.com/diangogav/EDOpro-server-ts/compare/v2.1.1...v2.1.2) (2024-08-05)
+
+
+### Bug Fixes
+
+* :ambulance: Mercury rank points persistence, score command and messages ([c60fd9c](https://github.com/diangogav/EDOpro-server-ts/commit/c60fd9c1f94a7daafd510ce87ae10e13874e3a69))
+
 ## [2.1.1](https://github.com/diangogav/EDOpro-server-ts/compare/v2.1.0...v2.1.1) (2024-08-04)
 
 
