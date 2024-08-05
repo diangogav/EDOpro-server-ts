@@ -1,3 +1,4 @@
+import { ServerInfoMessage } from "@modules/messages/domain/ServerInfoMessage";
 import { ErrorMessages } from "@modules/messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "@modules/messages/server-to-client/ErrorClientMessage";
 import { ServerErrorClientMessage } from "@modules/messages/server-to-client/ServerErrorMessageClientMessage";
@@ -17,6 +18,7 @@ import { VersionErrorClientMessage } from "../../messages/server-to-client/Versi
 import { YgoClient } from "../../shared/client/domain/YgoClient";
 import { YgoRoom } from "../../shared/room/domain/YgoRoom";
 import { ISocket } from "../../shared/socket/domain/ISocket";
+import { MercuryPlayerChatMessage } from "./../../../mercury/messages/server-to-client/MercuryPlayerChatMessage";
 
 export abstract class RoomState {
 	protected readonly eventEmitter: EventEmitter;
@@ -86,16 +88,44 @@ export abstract class RoomState {
 				`Ya existe un jugador con el nombre :${playerInfoMessage.name}`
 			)
 		);
-		socket.send(ErrorClientMessage.create(ErrorMessages.JOINERROR));
+		socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 		socket.destroy();
 
 		return;
+	}
+
+	protected sendInfoMessage(room: YgoRoom, socket: ISocket): void {
+		if (room.ranked) {
+			socket.send(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
+			socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.WELCOME));
+			socket.send(
+				ServerMessageClientMessage.create(ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS)
+			);
+			socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS));
+
+			socket.send(ServerMessageClientMessage.create(ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION));
+			socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION));
+
+			return;
+		}
+
+		socket.send(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
+		socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.WELCOME));
+
+		socket.send(
+			ServerMessageClientMessage.create(ServerInfoMessage.UN_RANKED_ROOM_CREATION_SUCCESS)
+		);
+		socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.UN_RANKED_ROOM_CREATION_SUCCESS));
+
+		socket.send(ServerMessageClientMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));
+		socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));
 	}
 
 	private handleChat(message: ClientMessage, room: YgoRoom, client: YgoClient): void {
 		const sanitized = BufferToUTF16(message.data, message.data.length);
 		if (sanitized === ":score") {
 			client.socket.send(ServerMessageClientMessage.create(room.score));
+			client.socket.send(MercuryPlayerChatMessage.create(room.score));
 
 			return;
 		}

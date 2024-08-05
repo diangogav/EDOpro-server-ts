@@ -1,7 +1,10 @@
+import { Rank } from "@modules/shared/value-objects/Rank";
+
 import { ISocket } from "../../socket/domain/ISocket";
 
 export abstract class YgoClient {
 	public readonly name: string;
+	public readonly ranks: Rank[];
 	protected _host: boolean;
 	protected _position: number;
 	protected _team: number;
@@ -16,14 +19,17 @@ export abstract class YgoClient {
 		team,
 		socket,
 		host,
+		ranks = [],
 	}: {
 		name: string;
 		position: number;
 		team: number;
 		socket: ISocket;
 		host: boolean;
+		ranks: Rank[];
 	}) {
 		this.name = name;
+		this.ranks = ranks;
 		this._position = position;
 		this._socket = socket;
 		this._team = team;

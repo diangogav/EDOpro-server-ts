@@ -30,7 +30,6 @@ export abstract class YgoRoom {
 	protected _clientWhoChoosesTurn: YgoClient;
 	protected _match: Match | null;
 	protected _firstToPlay: number;
-	abstract score: string;
 
 	protected constructor({
 		team0,
@@ -161,12 +160,36 @@ export abstract class YgoRoom {
 		this._firstToPlay = team;
 	}
 
+	matchScore(): { team0: number; team1: number } {
+		if (!this._match) {
+			return {
+				team0: 0,
+				team1: 0,
+			};
+		}
+
+		return this._match.score;
+	}
+
+	playerNames(team: number): string {
+		return this.clients
+			.filter((player: Client) => player.team === team)
+			.map((item: Client) => `${item.name}`)
+			.join(",");
+	}
+
 	get firstToPlay(): number {
 		return this._firstToPlay;
 	}
 
 	get clientWhoChoosesTurn(): YgoClient {
 		return this._clientWhoChoosesTurn;
+	}
+
+	get score(): string {
+		return `Score: ${this.playerNames(0)}: ${this.matchScore().team0} - ${
+			this.matchScore().team1
+		} ${this.playerNames(1)}`;
 	}
 
 	protected findNextPosition(availablePositions: number[], startPosition?: number): number | null {

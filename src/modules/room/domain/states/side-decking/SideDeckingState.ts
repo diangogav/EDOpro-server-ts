@@ -86,7 +86,7 @@ export class SideDeckingState extends RoomState {
 		}
 
 		if (!player.deck.isSideDeckValid(mainDeck)) {
-			const message = ErrorClientMessage.create(ErrorMessages.SIDEERROR);
+			const message = ErrorClientMessage.create(ErrorMessages.SIDE_ERROR);
 			player.sendMessage(message);
 
 			return;
@@ -95,7 +95,7 @@ export class SideDeckingState extends RoomState {
 		const deck = await this.deckCreator.build({
 			main: mainDeck,
 			side: sideDeck,
-			banListHash: room.banlistHash,
+			banListHash: room.banListHash,
 		});
 
 		room.setDecksToPlayer(player.position, deck);

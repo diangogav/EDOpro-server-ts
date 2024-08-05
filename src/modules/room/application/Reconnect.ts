@@ -26,7 +26,7 @@ export class Reconnect {
 
 			if (!(user instanceof User)) {
 				socket.send(user as Buffer);
-				socket.send(ErrorClientMessage.create(ErrorMessages.JOINERROR));
+				socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 
 				return;
 			}

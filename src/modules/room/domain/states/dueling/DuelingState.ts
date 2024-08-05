@@ -171,7 +171,7 @@ export class DuelingState extends RoomState {
 					"Por favor selecciona el mismo deck de la partida en curso para poder reconectar"
 				)
 			);
-			const message = ErrorClientMessage.create(ErrorMessages.DECKERROR);
+			const message = ErrorClientMessage.create(ErrorMessages.DECK_ERROR);
 			client.socket.send(message);
 
 			const status = (client.position << 4) | 0x0a;
@@ -190,7 +190,7 @@ export class DuelingState extends RoomState {
 				)
 			);
 
-			const message = ErrorClientMessage.create(ErrorMessages.DECKERROR);
+			const message = ErrorClientMessage.create(ErrorMessages.DECK_ERROR);
 			client.socket.send(message);
 
 			const status = (client.position << 4) | 0x0a;

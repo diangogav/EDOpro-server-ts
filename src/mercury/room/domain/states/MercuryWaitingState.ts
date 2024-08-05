@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { ErrorMessages } from "@modules/messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "@modules/messages/server-to-client/ErrorClientMessage";
+import { Rank } from "@modules/shared/value-objects/Rank";
 import { UserFinder } from "@modules/user/application/UserFinder";
 import { User } from "@modules/user/domain/User";
 import { EventEmitter } from "stream";
@@ -58,29 +59,40 @@ export class MercuryWaitingState extends RoomState {
 		const messages = [message.previousRawMessage, message.raw];
 
 		if (!room.isPlayersFull) {
+			const host = room.clients.length === 0;
+
 			if (room.ranked) {
 				const user = await this.userFinder.run(playerInfoMessage);
 				if (!(user instanceof User)) {
 					socket.send(user as Buffer);
-					socket.send(ErrorClientMessage.create(ErrorMessages.JOINERROR));
+					socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 
 					return;
 				}
+				const client = this.createPlayer({
+					socket,
+					messages,
+					name: playerInfoMessage.name,
+					room,
+					host,
+					ranks: user.ranks,
+				});
+				room.addClient(client);
+			} else {
+				const client = this.createPlayer({
+					socket,
+					messages,
+					name: playerInfoMessage.name,
+					room,
+					host,
+					ranks: [],
+				});
+				room.addClient(client);
 			}
-			const host = room.clients.length === 0;
-			const client = new MercuryClient({
-				socket,
-				logger: this.logger,
-				messages,
-				name: playerInfoMessage.name,
-				position: room.playersCount,
-				room,
-				host,
-			});
-			room.addClient(client);
 			if (!room.isCoreStarted) {
 				room.startCore();
 			}
+			this.sendInfoMessage(room, socket);
 
 			return;
 		}
@@ -93,6 +105,7 @@ export class MercuryWaitingState extends RoomState {
 			position: room.playersCount,
 			room,
 			host: false,
+			ranks: [],
 		});
 
 		room.addSpectator(spectator, false);
@@ -138,5 +151,32 @@ export class MercuryWaitingState extends RoomState {
 		if (!room.joinBuffer) {
 			room.setJoinBuffer(message.raw);
 		}
+	}
+
+	private createPlayer({
+		socket,
+		messages,
+		name,
+		room,
+		host,
+		ranks,
+	}: {
+		socket: ISocket;
+		messages: Buffer[];
+		name: string;
+		room: MercuryRoom;
+		host: boolean;
+		ranks: Rank[];
+	}): MercuryClient {
+		return new MercuryClient({
+			socket,
+			logger: this.logger,
+			messages,
+			name,
+			position: room.playersCount,
+			room,
+			host,
+			ranks,
+		});
 	}
 }
