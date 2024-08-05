@@ -8,7 +8,6 @@ import { UpdateDeckMessageSizeCalculator } from "../../../../deck/application/Up
 import { JoinGameMessage } from "../../../../messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../../../messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../../messages/domain/Commands";
-import { ServerInfoMessage } from "../../../../messages/domain/ServerInfoMessage";
 import { ClientMessage } from "../../../../messages/MessageProcessor";
 import { ErrorMessages } from "../../../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../../../messages/server-to-client/ErrorClientMessage";
@@ -16,7 +15,6 @@ import { JoinGameClientMessage } from "../../../../messages/server-to-client/Joi
 import { PlayerChangeClientMessage } from "../../../../messages/server-to-client/PlayerChangeClientMessage";
 import { RPSChooseClientMessage } from "../../../../messages/server-to-client/RPSChooseClientMessage";
 import { ServerErrorClientMessage } from "../../../../messages/server-to-client/ServerErrorMessageClientMessage";
-import { ServerMessageClientMessage } from "../../../../messages/server-to-client/ServerMessageClientMessage";
 import { WatchChangeClientMessage } from "../../../../messages/server-to-client/WatchChangeClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
 import { DuelStartClientMessage } from "../../../../shared/messages/server-to-client/DuelStartClientMessage";
@@ -451,23 +449,5 @@ export class WaitingState extends RoomState {
 				socket.send(PlayerChangeClientMessage.create({ status }));
 			}
 		});
-	}
-
-	private sendInfoMessage(room: Room, socket: ISocket): void {
-		if (room.ranked) {
-			socket.send(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
-			socket.send(
-				ServerMessageClientMessage.create(ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS)
-			);
-			socket.send(ServerMessageClientMessage.create(ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION));
-
-			return;
-		}
-
-		socket.send(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
-		socket.send(
-			ServerMessageClientMessage.create(ServerInfoMessage.UNRANKED_ROOM_CREATION_SUCCESS)
-		);
-		socket.send(ServerMessageClientMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));
 	}
 }

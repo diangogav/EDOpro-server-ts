@@ -92,6 +92,7 @@ export class MercuryWaitingState extends RoomState {
 			if (!room.isCoreStarted) {
 				room.startCore();
 			}
+			this.sendInfoMessage(room, socket);
 
 			return;
 		}

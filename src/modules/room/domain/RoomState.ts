@@ -1,3 +1,4 @@
+import { ServerInfoMessage } from "@modules/messages/domain/ServerInfoMessage";
 import { ErrorMessages } from "@modules/messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "@modules/messages/server-to-client/ErrorClientMessage";
 import { ServerErrorClientMessage } from "@modules/messages/server-to-client/ServerErrorMessageClientMessage";
@@ -91,6 +92,33 @@ export abstract class RoomState {
 		socket.destroy();
 
 		return;
+	}
+
+	protected sendInfoMessage(room: YgoRoom, socket: ISocket): void {
+		if (room.ranked) {
+			socket.send(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
+			socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.WELCOME));
+			socket.send(
+				ServerMessageClientMessage.create(ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS)
+			);
+			socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS));
+
+			socket.send(ServerMessageClientMessage.create(ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION));
+			socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION));
+
+			return;
+		}
+
+		socket.send(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
+		socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.WELCOME));
+
+		socket.send(
+			ServerMessageClientMessage.create(ServerInfoMessage.UNRANKED_ROOM_CREATION_SUCCESS)
+		);
+		socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.UNRANKED_ROOM_CREATION_SUCCESS));
+
+		socket.send(ServerMessageClientMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));
+		socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));
 	}
 
 	private handleChat(message: ClientMessage, room: YgoRoom, client: YgoClient): void {
