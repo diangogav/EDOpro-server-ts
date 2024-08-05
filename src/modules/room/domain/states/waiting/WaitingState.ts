@@ -247,7 +247,7 @@ export class WaitingState extends RoomState {
 		const deck = await this.deckCreator.build({
 			main: mainDeck,
 			side: sideDeck,
-			banListHash: room.banlistHash,
+			banListHash: room.banListHash,
 		});
 
 		const hasError = deck.validate();

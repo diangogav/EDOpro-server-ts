@@ -42,7 +42,7 @@ export class RoomCreator {
 			rule: payload.rule || 4, // 0 = OCG, 1 = TCG, 2 = OCG/TCG, 3 = Prerelease, 4 = Anything Goes
 			noCheck: false,
 			noShuffle: false,
-			banlistHash: banlist.hash,
+			banListHash: banlist.hash,
 			isStart: "waiting",
 			mainMin: 40,
 			mainMax: 60,

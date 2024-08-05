@@ -99,7 +99,7 @@ interface RoomAttr {
 	rule: number;
 	noCheck: boolean;
 	noShuffle: boolean;
-	banlistHash: number;
+	banListHash: number;
 	isStart: string;
 	mainMin: number;
 	mainMax: number;
@@ -131,7 +131,7 @@ export class Room extends YgoRoom {
 	public readonly timeLimit: number;
 	public readonly noCheck: boolean;
 	public readonly noShuffle: boolean;
-	public readonly banlistHash: number;
+	public readonly banListHash: number;
 	public readonly deckRules: DeckRules;
 	public readonly duelRule: number;
 	public readonly handshake: number;
@@ -173,7 +173,7 @@ export class Room extends YgoRoom {
 		this.timeLimit = attr.timeLimit;
 		this.noCheck = attr.noCheck;
 		this.noShuffle = attr.noShuffle;
-		this.banlistHash = attr.banlistHash;
+		this.banListHash = attr.banListHash;
 		this.isStart = attr.isStart;
 		this.deckRules = new DeckRules({
 			mainMin: attr.mainMin,
@@ -239,7 +239,7 @@ export class Room extends YgoRoom {
 		const room = new Room({
 			id,
 			name: message.name,
-			banlistHash: message.banList,
+			banListHash: message.banList,
 			notes: ranked
 				? `(Ranked) ${message.notes} - SD Max: ${message.sideDeckMax}`
 				: `${message.notes} - SD Max: ${message.sideDeckMax}`,
@@ -388,7 +388,7 @@ export class Room extends YgoRoom {
 			// Volver a intentar la escritura después de un breve retraso
 			this.writeToCppProcess("¡Hola desde Node.js!", 3);
 		});
-		const banlist = BanListMemoryRepository.findByHash(this.banlistHash);
+		const banlist = BanListMemoryRepository.findByHash(this.banListHash);
 		this.currentDuel = new Duel(0, [this.startLp, this.startLp], banlist);
 	}
 
@@ -709,7 +709,7 @@ export class Room extends YgoRoom {
 			rule: this.deckRules.rule,
 			no_check: this.noCheck,
 			no_shuffle: this.noShuffle,
-			banlist_hash: this.banlistHash,
+			banlist_hash: this.banListHash,
 			istart: this.isStart,
 			main_min: this.deckRules.mainMin,
 			main_max: this.deckRules.mainMax,

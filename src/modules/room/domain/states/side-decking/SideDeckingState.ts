@@ -95,7 +95,7 @@ export class SideDeckingState extends RoomState {
 		const deck = await this.deckCreator.build({
 			main: mainDeck,
 			side: sideDeck,
-			banListHash: room.banlistHash,
+			banListHash: room.banListHash,
 		});
 
 		room.setDecksToPlayer(player.position, deck);

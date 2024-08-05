@@ -105,7 +105,7 @@ export class FinishDuelHandler {
 					players: this.room.matchPlayersHistory,
 					date: new Date(),
 					ranked: this.room.ranked,
-					banlistHash: this.room.banlistHash,
+					banlistHash: this.room.banListHash,
 				})
 			);
 
