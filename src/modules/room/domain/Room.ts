@@ -315,17 +315,6 @@ export class Room extends YgoRoom {
 		return this._match?.isFirstDuel() ?? true;
 	}
 
-	matchScore(): { team0: number; team1: number } {
-		if (!this._match) {
-			return {
-				team0: 0,
-				team1: 0,
-			};
-		}
-
-		return this._match.score;
-	}
-
 	matchSide(): { team0: number; team1: number } {
 		if (!this._match) {
 			return {
@@ -634,13 +623,6 @@ export class Room extends YgoRoom {
 		this.roomTimer.stop();
 	}
 
-	playerNames(team: number): string {
-		return this.clients
-			.filter((player: Client) => player.team === team)
-			.map((item: Client) => `${item.name}`)
-			.join(",");
-	}
-
 	nextSpectatorPosition(): number {
 		const sorted = [...this.spectators].sort((a, b) => b.position - a.position);
 
@@ -649,12 +631,6 @@ export class Room extends YgoRoom {
 
 	public sendMessageToCpp(message: string): void {
 		this.writeToCppProcess(message, 3);
-	}
-
-	get score(): string {
-		return `Score: ${this.playerNames(0)}: ${this.matchScore().team0} - ${
-			this.matchScore().team1
-		} ${this.playerNames(1)}`;
 	}
 
 	get side(): string {

@@ -17,6 +17,7 @@ import { VersionErrorClientMessage } from "../../messages/server-to-client/Versi
 import { YgoClient } from "../../shared/client/domain/YgoClient";
 import { YgoRoom } from "../../shared/room/domain/YgoRoom";
 import { ISocket } from "../../shared/socket/domain/ISocket";
+import { MercuryPlayerChatMessage } from "./../../../mercury/messages/server-to-client/MercuryPlayerChatMessage";
 
 export abstract class RoomState {
 	protected readonly eventEmitter: EventEmitter;
@@ -96,6 +97,7 @@ export abstract class RoomState {
 		const sanitized = BufferToUTF16(message.data, message.data.length);
 		if (sanitized === ":score") {
 			client.socket.send(ServerMessageClientMessage.create(room.score));
+			client.socket.send(MercuryPlayerChatMessage.create(room.score));
 
 			return;
 		}
