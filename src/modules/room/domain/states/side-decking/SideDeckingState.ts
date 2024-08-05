@@ -86,7 +86,7 @@ export class SideDeckingState extends RoomState {
 		}
 
 		if (!player.deck.isSideDeckValid(mainDeck)) {
-			const message = ErrorClientMessage.create(ErrorMessages.SIDEERROR);
+			const message = ErrorClientMessage.create(ErrorMessages.SIDE_ERROR);
 			player.sendMessage(message);
 
 			return;

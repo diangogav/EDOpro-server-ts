@@ -88,7 +88,7 @@ export abstract class RoomState {
 				`Ya existe un jugador con el nombre :${playerInfoMessage.name}`
 			)
 		);
-		socket.send(ErrorClientMessage.create(ErrorMessages.JOINERROR));
+		socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 		socket.destroy();
 
 		return;
@@ -113,9 +113,9 @@ export abstract class RoomState {
 		socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.WELCOME));
 
 		socket.send(
-			ServerMessageClientMessage.create(ServerInfoMessage.UNRANKED_ROOM_CREATION_SUCCESS)
+			ServerMessageClientMessage.create(ServerInfoMessage.UN_RANKED_ROOM_CREATION_SUCCESS)
 		);
-		socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.UNRANKED_ROOM_CREATION_SUCCESS));
+		socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.UN_RANKED_ROOM_CREATION_SUCCESS));
 
 		socket.send(ServerMessageClientMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));
 		socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));

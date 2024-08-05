@@ -88,24 +88,24 @@ export class WaitingState extends RoomState {
 
 	private handleKick(message: ClientMessage, room: Room, _player: Client): void {
 		this.logger.debug("WAITING: KICK");
-		const positionkick = message.data.readInt8();
-		const playerselect = room.clients.find((_client) => _client.position === positionkick);
+		const positionKick = message.data.readInt8();
+		const playerSelect = room.clients.find((_client) => _client.position === positionKick);
 
-		if (!(playerselect instanceof Client)) {
+		if (!(playerSelect instanceof Client)) {
 			return;
 		}
 
-		if (playerselect.host) {
+		if (playerSelect.host) {
 			return;
 		}
 
-		this.handleChangeToObserver(message, room, playerselect);
-		room.addKick(playerselect);
+		this.handleChangeToObserver(message, room, playerSelect);
+		room.addKick(playerSelect);
 
 		room.clients.forEach((_client: Client) => {
 			_client.sendMessage(
 				ServerErrorClientMessage.create(
-					`El Jugador:${playerselect.name} ha sido Baneado de esta Sala, solo podra ingresar como espectador!!`
+					`El Jugador:${playerSelect.name} ha sido Baneado de esta Sala, solo podra ingresar como espectador!!`
 				)
 			);
 		});
@@ -113,7 +113,7 @@ export class WaitingState extends RoomState {
 		room.spectators.forEach((_client: Client) => {
 			_client.sendMessage(
 				ServerErrorClientMessage.create(
-					`El Jugador:${playerselect.name} ha sido Baneado de esta Sala, solo podra ingresar como espectador!!`
+					`El Jugador:${playerSelect.name} ha sido Baneado de esta Sala, solo podra ingresar como espectador!!`
 				)
 			);
 		});
@@ -304,7 +304,7 @@ export class WaitingState extends RoomState {
 
 			if (!(user instanceof User)) {
 				socket.send(user as Buffer);
-				socket.send(ErrorClientMessage.create(ErrorMessages.JOINERROR));
+				socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 
 				return;
 			}

@@ -1,7 +1,7 @@
 export enum ErrorMessages {
-	JOINERROR = 0x1,
-	DECKERROR = 0x2,
-	SIDEERROR = 0x3,
-	VERERROR = 0x4,
-	VERERROR2 = 0x5,
+	JOIN_ERROR = 0x1,
+	DECK_ERROR = 0x2,
+	SIDE_ERROR = 0x3,
+	VER_ERROR = 0x4,
+	VER_ERROR_2 = 0x5,
 }

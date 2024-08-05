@@ -55,7 +55,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 
 		if (!(user instanceof User)) {
 			this.socket.send(user as Buffer);
-			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOINERROR));
+			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 
 			return;
 		}
@@ -108,7 +108,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 	private sendUnrankedMessage(): void {
 		this.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
 		this.socket.send(
-			ServerMessageClientMessage.create(ServerInfoMessage.UNRANKED_ROOM_CREATION_SUCCESS)
+			ServerMessageClientMessage.create(ServerInfoMessage.UN_RANKED_ROOM_CREATION_SUCCESS)
 		);
 		if (!config.redis.use) {
 			this.socket.send(
