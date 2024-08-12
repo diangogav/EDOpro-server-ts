@@ -11,8 +11,13 @@ RUN git clone --depth 1 https://github.com/ProjectIgnis/CardScripts.git scripts 
     git clone --depth 1 https://github.com/ProjectIgnis/LFLists banlists-project-ignis && \
     git clone --depth 1 https://github.com/termitaklk/lflist banlists-evolution && \
     git clone --depth 1 https://github.com/mycard/ygopro-scripts.git mercury-scripts && \
+		git clone --depth 1 https://code.mycard.moe/mycard/pre-release-database-cdb mercury-pre-release && \
     wget -O mercury-lflist.conf https://raw.githubusercontent.com/fallenstardust/YGOMobile-cn-ko-en/master/mobile/assets/data/conf/lflist.conf && \
     wget -O mercury-cards.cdb https://github.com/purerosefallen/ygopro/raw/server/cards.cdb
+
+RUN mkdir -p mercury/databases/
+RUN mv mercury-pre-release/*.cdb mercury/databases/
+RUN mv mercury-cards.cdb mercury/databases/cards.cdb
 
 RUN mkdir banlists
 RUN mv banlists-project-ignis/* banlists/
@@ -66,7 +71,8 @@ COPY --from=core-integrator-builder /repositories/databases ./databases/evolutio
 COPY --from=core-integrator-builder /repositories/banlists ./banlists/evolution/
 COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/script
 COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/lflist.conf
-COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/cards.cdb
+# COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/cards.cdb
+COPY --from=core-integrator-builder /repositories/mercury/databases ./mercury/
 
 EXPOSE 4000 7711 7911 7922
 USER $USER
