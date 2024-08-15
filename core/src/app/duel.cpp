@@ -63,10 +63,10 @@ void Duel::load_scripts()
   std::filesystem::path scripts_path = current_path / "scripts/evolution";
   const char *path = scripts_path.c_str();
 
-  std::vector<char> constants_buffer = this->http.get("https://raw.githubusercontent.com/ProjectIgnis/CardScripts/master/constant.lua");
+  std::vector<char> constants_buffer = this->file_reader.read(path, "constant.lua");
   this->api.loadScript(this->duel, constants_buffer.data(), constants_buffer.size(), "constant.lua");
 
-  std::vector<char> utilityBuffer = this->http.get("https://raw.githubusercontent.com/ProjectIgnis/CardScripts/master/utility.lua");
+  std::vector<char> utilityBuffer = this->file_reader.read(path, "utility.lua");
   this->api.loadScript(this->duel, utilityBuffer.data(), utilityBuffer.size(), "utility.lua");
 }
 
