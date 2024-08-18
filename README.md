@@ -1,13 +1,15 @@
-# TSPRO 🎮
+<h1 align="center">Evolution Server 🎮</h1>
 
 
 ![Logo](https://raw.githubusercontent.com/diangogav/EDOpro-server-ts/main/assets/1.svg)
 
-Welcome to TSPRO, another server for creating Yu-Gi-Oh! matches using the EDOPro core! But this time, we focus on the scalability of the code, allowing for easy implementation of new features related to the data generated during the duels.
+Welcome to Evolution Server, a versatile platform for creating Yu-Gi-Oh! matches, fully compatible with EDOPro, Koishi, and YGO Mobile! But this time, we focus on the scalability of the code, allowing for easy implementation of new features related to the data generated during the duels.
 
 ## Features ✨
 
 - 🏰 Room creation through the EDOPro lobby.
+- 📱 Duel creation supported through Koishi and YGO Mobile.
+- 🧪 Cross-client duels between different platforms - (Experimental).
 - 🔌 Reconnection to the match in case of closure or disconnection.
 - 📊 Collection of duel data for generating statistics.
 - 🚀 Core isolation for each match.
@@ -37,79 +39,34 @@ pip install conan
 conan profile detect
 ```
 
-## C++ Compilation Guide 🛠️
+## Installation Guide 🚀
 
-1. Clone this repository to your local machine using the following command:
-
+### Step 1: Clone the repository
+Clone this repository to your local machine using the following command:
 ```bash
-git clone https://github.com/tuusuario/edo-pro-server.git
+git clone https://github.com/diangogav/EDOpro-server-ts
 ```
 
-2. Navigate to the core folder, which contains all the C++ code of the project.
-
-3. Download `premake` and copy it to the path from step 2 (This step only needs to be done once)
-
+### Step 2: Clone required repositories
+Run the `clone_repositories.sh` script to clone all necessary repositories:
 ```bash
-wget https://github.com/premake/premake-core/releases/download/v5.0.0-beta2/premake-5.0.0-beta2-linux.tar.gz
+bash clone_repositories.sh
 ```
 
-```
- tar -zxvf premake-5.0.0-beta2-linux.tar.gz
-```
-
-4.  Install the dependencies using `Conan`
-
+### Step 3: Build the Core Integrator
+Run the `build_core_integrator.sh` script to build the C++ components:
 ```bash
-conan install . --build missing --output-folder=./dependencies --options=libcurl/8.6.0:shared=True
+bash build_core_integrator.sh
 ```
 
-5.  Generate the `make` file using `premake5` downloaded in step 3
-
-```bash
-./premake5 gmake
-```
-
-6.  Build the binary:
-
-```bash
-make
-```
-
-## Starting the Server
-
-1. Navigate to the root of the project.
-
-2. Install the dependencies using `npm`:
-
+### Step 4: Install the project dependencies using `npm`:
 ```bash
 npm install
 ```
 
-3. Clone card databases in the root folder:
-```
-git clone https://github.com/ProjectIgnis/BabelCDB.git databases
-```
-
-4. Clone banlists in the root folder:
-```
-git clone git clone https://github.com/ProjectIgnis/LFLists banlists-project-ignis banlists
-```
-
-5. Clone card scripts inside the core folder:
-```
-git clone https://github.com/ProjectIgnis/CardScripts.git scripts
-```
-
-6. Compile the project:
-
+### Step 5: Start the project
 ```bash
-npm run build
-```
-
-7. Start the project:
-
-```bash
-npm start
+npm run dev
 ```
 
 ## Running with Docker 🐳
