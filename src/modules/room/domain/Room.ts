@@ -478,6 +478,10 @@ export class Room extends YgoRoom {
 		this._opponentMainDeckSize = mainSize;
 	}
 
+	get isRelay(): boolean {
+		return (this.duelFlagsLow & 0x80) !== 0;
+	}
+
 	get playerMainDeckSize(): number {
 		return this._playerMainDeckSize;
 	}
@@ -545,7 +549,17 @@ export class Room extends YgoRoom {
 		const team0Players = this.clients.filter((player: Client) => player.team === 0);
 		const team1Players = this.clients.filter((player: Client) => player.team === 1);
 
-		if (this.firstToPlay === 0) {
+		if (this.isRelay) {
+			team0Players.forEach((item: Client) => {
+				item.setDuelPosition(item.position % this.team0);
+				item.clearTurn();
+			});
+
+			team1Players.forEach((item: Client) => {
+				item.setDuelPosition(item.position % this.team1);
+				item.clearTurn();
+			});
+		} else if (this.firstToPlay === 0) {
 			team0Players.forEach((item: Client) => {
 				item.setDuelPosition(item.position % this.team0);
 				item.clearTurn();
