@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.3](https://github.com/diangogav/EDOpro-server-ts/compare/v2.1.2...v2.1.3) (2024-08-18)
+
+
+### Bug Fixes
+
+* :bug: Relay player order ([a11dc89](https://github.com/diangogav/EDOpro-server-ts/commit/a11dc897dc01e5c9a84c78557cd3b62a490b8f5c))
+
 ## [2.2.0](https://github.com/diegofcornejo/EDOpro-server-ts/compare/v2.1.2...v2.2.0) (2024-08-05)
 
 
