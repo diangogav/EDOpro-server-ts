@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.4](https://github.com/diangogav/EDOpro-server-ts/compare/v2.1.3...v2.1.4) (2024-08-20)
+
+
+### Bug Fixes
+
+* :ambulance: Fix score in draw duel ([5ea62b4](https://github.com/diangogav/EDOpro-server-ts/commit/5ea62b466ed062fb10ac71382f9152a8a7d34f4a))
+
 ## [2.1.3](https://github.com/diangogav/EDOpro-server-ts/compare/v2.1.2...v2.1.3) (2024-08-18)
 
 
