@@ -23,6 +23,7 @@ export class Match {
 	private readonly bestOf: number;
 	private readonly needWins: number;
 	private _players: (Player & MatchHistory)[] = [];
+	private readonly DRAW = 2;
 
 	constructor({ bestOf }: { bestOf: number }) {
 		this.bestOf = bestOf;
@@ -40,7 +41,13 @@ export class Match {
 
 	duelWinner(winner: number, turns: number): void {
 		this._players.forEach((player) => {
-			if (player.team === winner) {
+			if (winner === this.DRAW) {
+				player.games.push({
+					result: "deuce",
+					turns,
+					// score: 1,
+				});
+			} else if (player.team === winner) {
 				player.games.push({
 					result: "winner",
 					turns,
@@ -56,6 +63,13 @@ export class Match {
 		});
 
 		if (this.isFinished()) {
+			return;
+		}
+
+		if (winner === this.DRAW) {
+			this.playerScore++;
+			this.opponentScore++;
+
 			return;
 		}
 
