@@ -100,7 +100,6 @@ interface RoomAttr {
 	noCheck: boolean;
 	noShuffle: boolean;
 	banListHash: number;
-	isStart: string;
 	mainMin: number;
 	mainMax: number;
 	extraMin: number;
@@ -137,7 +136,6 @@ export class Room extends YgoRoom {
 	public readonly handshake: number;
 	public readonly password: string;
 	private _replay: Replay;
-	private isStart: string;
 	private readonly _kick: Client[] = [];
 	private _duel?: ChildProcessWithoutNullStreams;
 	private readonly _lastMessageToTeam: { team: number; message: Buffer }[] = [];
@@ -174,7 +172,6 @@ export class Room extends YgoRoom {
 		this.noCheck = attr.noCheck;
 		this.noShuffle = attr.noShuffle;
 		this.banListHash = attr.banListHash;
-		this.isStart = attr.isStart;
 		this.deckRules = new DeckRules({
 			mainMin: attr.mainMin,
 			mainMax: attr.mainMax,
@@ -258,7 +255,6 @@ export class Room extends YgoRoom {
 			rule: message.allowed,
 			noCheck: Boolean(message.dontCheckDeckContent),
 			noShuffle: Boolean(message.dontShuffleDeck),
-			isStart: "waiting",
 			mainMin: message.mainDeckMin,
 			mainMax: message.mainDeckMax,
 			extraMin: message.extraDeckMin,

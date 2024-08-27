@@ -30,6 +30,7 @@ export abstract class YgoRoom {
 	protected _clientWhoChoosesTurn: YgoClient;
 	protected _match: Match | null;
 	protected _firstToPlay: number;
+	protected isStart: string;
 
 	protected constructor({
 		team0,
@@ -48,6 +49,7 @@ export abstract class YgoRoom {
 		this.bestOf = bestOf;
 		this.t0Positions = Array.from({ length: this.team0 }, (_, index) => index);
 		this.t1Positions = Array.from({ length: this.team1 }, (_, index) => this.team0 + index);
+		this.isStart = "waiting";
 	}
 
 	emit(event: string, message: unknown, socket: ISocket): void {
