@@ -288,6 +288,7 @@ export class MercuryRoom extends YgoRoom {
 
 	dueling(): void {
 		this._state = DuelState.DUELING;
+		this.isStart = "start";
 		this.roomState?.removeAllListener();
 		this.roomState = new MercuryDuelingState(this.emitter, this._logger);
 	}
@@ -335,7 +336,7 @@ export class MercuryRoom extends YgoRoom {
 			no_check: this._hostInfo.noCheck,
 			no_shuffle: this._hostInfo.noShuffle,
 			banlist_hash: this._banListHash,
-			istart: "waiting",
+			istart: this.isStart,
 			main_min: 40,
 			main_max: 60,
 			extra_min: 0,
