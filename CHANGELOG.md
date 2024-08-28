@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.5](https://github.com/diangogav/EDOpro-server-ts/compare/v2.1.4...v2.1.5) (2024-08-28)
+
+
+### Bug Fixes
+
+* :bug: Fix duel status for mercury duels in edopro lobby ([688fb22](https://github.com/diangogav/EDOpro-server-ts/commit/688fb22b6453fc30e19db1dc3f98d9392c4ccb6f))
+
 ## [2.1.4](https://github.com/diangogav/EDOpro-server-ts/compare/v2.1.3...v2.1.4) (2024-08-20)
 
 
