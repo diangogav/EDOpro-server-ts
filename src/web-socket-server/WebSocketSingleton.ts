@@ -2,6 +2,7 @@
 import { readFileSync } from "fs";
 import { createServer } from "https";
 import path from "path";
+import MercuryRoomList from "src/mercury/room/infrastructure/MercuryRoomList";
 import WebSocket, { WebSocketServer } from "ws";
 
 import RoomList from "../modules/room/infrastructure/RoomList";
@@ -18,7 +19,7 @@ class WebSocketSingleton {
 			ws.send(
 				JSON.stringify({
 					action: "GET-ROOMS",
-					data: RoomList.getRooms()
+					data: [...RoomList.getRooms(), ...MercuryRoomList.getRooms()]
 						.filter((item) => item.turn !== 0)
 						.map((room) => room.toRealTimePresentation()),
 				})
