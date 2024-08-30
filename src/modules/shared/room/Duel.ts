@@ -1,16 +1,15 @@
-import { BanList } from "../../ban-list/domain/BanList";
 import { Team } from "./Team";
 
 export class Duel {
 	private _turn: number;
 	private readonly _lps: [number, number];
-	private readonly _banlist: BanList | null;
+	private readonly _banListName: string;
 	private _finished: boolean;
 
-	constructor(turn: number, lps: [number, number], banlist: BanList | null) {
+	constructor(turn: number, lps: [number, number], banListName: string | null) {
 		this._turn = turn;
 		this._lps = lps;
-		this._banlist = banlist;
+		this._banListName = banListName ?? "N/A";
 		this._finished = false;
 	}
 
@@ -44,8 +43,8 @@ export class Duel {
 		return this._turn;
 	}
 
-	get banlistName(): string | null {
-		return this._banlist?.name ?? "N/A";
+	get banListName(): string {
+		return this._banListName;
 	}
 
 	get isFinished(): boolean {

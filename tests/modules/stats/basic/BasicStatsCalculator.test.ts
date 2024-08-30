@@ -1,7 +1,7 @@
 import { BanList } from "@modules/ban-list/domain/BanList";
 import BanListMemoryRepository from "@modules/ban-list/infrastructure/BanListMemoryRepository";
-import { Team } from "@modules/room/domain/Team";
 import { Player } from "@modules/shared/player/domain/Player";
+import { Team } from "@modules/shared/room/Team";
 import { Rank } from "@modules/shared/value-objects/Rank";
 import { BasicStatsCalculator } from "@modules/stats/basic/application/BasicStatsCalculator";
 

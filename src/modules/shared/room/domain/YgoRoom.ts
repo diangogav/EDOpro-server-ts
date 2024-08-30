@@ -1,4 +1,6 @@
 import { PlayerData } from "@modules/shared/player/domain/PlayerData";
+import { Duel } from "@modules/shared/room/Duel";
+import { Team } from "@modules/shared/room/Team";
 import { EventEmitter } from "stream";
 
 import { MercuryClient } from "../../../../mercury/client/domain/MercuryClient";
@@ -16,10 +18,14 @@ export enum DuelState {
 }
 
 export abstract class YgoRoom {
+	public readonly id: number;
+	public readonly notes: string;
 	public readonly team0: number;
 	public readonly team1: number;
 	public readonly ranked: boolean;
 	public readonly bestOf: number;
+	public readonly startLp: number;
+	public readonly STARTING_TURN = 0;
 	protected readonly t0Positions: number[] = [];
 	protected readonly t1Positions: number[] = [];
 	protected emitter: EventEmitter;
@@ -31,17 +37,24 @@ export abstract class YgoRoom {
 	protected _match: Match | null;
 	protected _firstToPlay: number;
 	protected isStart: string;
+	protected currentDuel: Duel | null = null;
 
 	protected constructor({
 		team0,
 		team1,
 		ranked,
 		bestOf,
+		startLp,
+		id,
+		notes,
 	}: {
 		team0: number;
 		team1: number;
 		ranked: boolean;
 		bestOf: number;
+		startLp: number;
+		id: number;
+		notes: string;
 	}) {
 		this.team0 = team0;
 		this.team1 = team1;
@@ -50,6 +63,9 @@ export abstract class YgoRoom {
 		this.t0Positions = Array.from({ length: this.team0 }, (_, index) => index);
 		this.t1Positions = Array.from({ length: this.team1 }, (_, index) => this.team0 + index);
 		this.isStart = "waiting";
+		this.startLp = startLp;
+		this.id = id;
+		this.notes = notes;
 	}
 
 	emit(event: string, message: unknown, socket: ISocket): void {
@@ -180,6 +196,26 @@ export abstract class YgoRoom {
 			.join(",");
 	}
 
+	createDuel(banListName: string | null): void {
+		this.currentDuel = new Duel(this.STARTING_TURN, [this.startLp, this.startLp], banListName);
+	}
+
+	decreaseLps(team: Team, value: number): void {
+		this.currentDuel?.decreaseLps(team, value);
+	}
+
+	increaseLps(team: Team, value: number): void {
+		this.currentDuel?.increaseLps(team, value);
+	}
+
+	increaseTurn(): void {
+		this.currentDuel?.increaseTurn();
+	}
+
+	get turn(): number {
+		return this.currentDuel?.turn ?? 0;
+	}
+
 	get firstToPlay(): number {
 		return this._firstToPlay;
 	}
@@ -192,6 +228,28 @@ export abstract class YgoRoom {
 		return `Score: ${this.playerNames(0)}: ${this.matchScore().team0} - ${
 			this.matchScore().team1
 		} ${this.playerNames(1)}`;
+	}
+
+	isFirstDuel(): boolean {
+		return this._match?.isFirstDuel() ?? true;
+	}
+
+	toRealTimePresentation(): { [key: string]: unknown } {
+		return {
+			id: this.id,
+			turn: this.currentDuel?.turn,
+			bestOf: this.bestOf,
+			banlist: {
+				name: this.currentDuel?.banListName,
+			},
+			players: this.clients.map((client: Client) => ({
+				position: client.position,
+				username: client.name,
+				lps: this.currentDuel?.lps[client.team],
+				score: client.team === Team.PLAYER ? this._match?.score.team0 : this._match?.score.team1,
+			})),
+			notes: this.notes,
+		};
 	}
 
 	protected findNextPosition(availablePositions: number[], startPosition?: number): number | null {

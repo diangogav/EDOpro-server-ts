@@ -1,4 +1,4 @@
-import { Team } from "../../../room/domain/Team";
+import { Team } from "../../room/Team";
 import { Rank } from "../../value-objects/Rank";
 import { PlayerData } from "./PlayerData";
 

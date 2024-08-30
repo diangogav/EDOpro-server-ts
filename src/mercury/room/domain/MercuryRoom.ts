@@ -1,4 +1,5 @@
-import { Team } from "@modules/room/domain/Team";
+import BanListMemoryRepository from "@modules/ban-list/infrastructure/BanListMemoryRepository";
+import { Team } from "@modules/shared/room/Team";
 import { UserFinder } from "@modules/user/application/UserFinder";
 import { UserRedisRepository } from "@modules/user/infrastructure/UserRedisRepository";
 import { spawn } from "child_process";
@@ -27,7 +28,6 @@ import { MercurySideDeckingState } from "./states/MercurySideDeckingState";
 import { MercuryWaitingState } from "./states/MercuryWaitingState";
 
 export class MercuryRoom extends YgoRoom {
-	readonly id: number;
 	readonly name: string;
 	readonly password: string;
 	readonly createdBySocketId: string;
@@ -49,6 +49,7 @@ export class MercuryRoom extends YgoRoom {
 		ranked,
 		createdBySocketId,
 		bestOf,
+		startLp,
 	}: {
 		id: number;
 		password: string;
@@ -59,9 +60,9 @@ export class MercuryRoom extends YgoRoom {
 		ranked: boolean;
 		createdBySocketId: string;
 		bestOf: number;
+		startLp: number;
 	}) {
-		super({ team0, team1, ranked, bestOf });
-		this.id = id;
+		super({ team0, team1, ranked, bestOf, startLp, id, notes: "" });
 		this.name = name;
 		this.password = password;
 		this._clients = [];
@@ -140,6 +141,7 @@ export class MercuryRoom extends YgoRoom {
 			ranked,
 			createdBySocketId,
 			bestOf: hostInfo.mode === Mode.MATCH ? 3 : 1,
+			startLp: hostInfo.startLp,
 		});
 
 		room._logger = logger;
@@ -290,7 +292,10 @@ export class MercuryRoom extends YgoRoom {
 		this._state = DuelState.DUELING;
 		this.isStart = "start";
 		this.roomState?.removeAllListener();
-		this.roomState = new MercuryDuelingState(this.emitter, this._logger);
+		this.roomState = new MercuryDuelingState(this, this.emitter, this._logger);
+		//TODO: Mercury and EdoPro lists are linked by means of scripts in infrastructure
+		const banList = BanListMemoryRepository.findByHash(this._banListHash);
+		this.createDuel(banList?.name ?? null);
 	}
 
 	sideDecking(): void {
@@ -362,7 +367,7 @@ export class MercuryRoom extends YgoRoom {
 		this._spectators = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
 	}
 
-	get banlistHash(): number {
+	get banListHash(): number {
 		return this._banListHash;
 	}
 

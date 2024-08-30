@@ -1,9 +1,9 @@
+import BanListMemoryRepository from "@modules/ban-list/infrastructure/BanListMemoryRepository";
 import { ChildProcessWithoutNullStreams } from "child_process";
 import shuffle from "shuffle-array";
 import { EventEmitter } from "stream";
 
 import { config } from "../../../config";
-import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
 import { CardSQLiteTYpeORMRepository } from "../../card/infrastructure/postgres/CardSQLiteTYpeORMRepository";
 import { Client } from "../../client/domain/Client";
 import { DeckCreator } from "../../deck/application/DeckCreator";
@@ -16,6 +16,7 @@ import { Replay } from "../../replay/Replay";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { DuelState, YgoRoom } from "../../shared/room/domain/YgoRoom";
+import { Team } from "../../shared/room/Team";
 import { ISocket } from "../../shared/socket/domain/ISocket";
 import { Rank } from "../../shared/value-objects/Rank";
 import { UserFinder } from "../../user/application/UserFinder";
@@ -24,7 +25,6 @@ import { FinishDuelHandler } from "../application/FinishDuelHandler";
 import { JoinToDuelAsSpectator } from "../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../application/Reconnect";
 import RoomList from "../infrastructure/RoomList";
-import { Duel } from "./Duel";
 import { DuelFinishReason } from "./DuelFinishReason";
 import { RoomState } from "./RoomState";
 import { ChossingOrderState } from "./states/chossing-order/ChossingOrderState";
@@ -32,7 +32,6 @@ import { DuelingState } from "./states/dueling/DuelingState";
 import { RockPaperScissorState } from "./states/rps/RockPaperScissorsState";
 import { SideDeckingState } from "./states/side-decking/SideDeckingState";
 import { WaitingState } from "./states/waiting/WaitingState";
-import { Team } from "./Team";
 import { Timer } from "./Timer";
 
 export enum Rule {
@@ -114,9 +113,7 @@ interface RoomAttr {
 }
 
 export class Room extends YgoRoom {
-	public readonly id: number;
 	public readonly name: string;
-	public readonly notes: string;
 	public readonly mode: number;
 	public readonly needPass: boolean;
 	public readonly duelFlag: bigint;
@@ -124,7 +121,6 @@ export class Room extends YgoRoom {
 	public readonly duelFlagsHight: number;
 	public readonly forbiddenTypes: number;
 	public readonly extraRules: number;
-	public readonly startLp: number;
 	public readonly startHand: number;
 	public readonly drawCount: number;
 	public readonly timeLimit: number;
@@ -148,24 +144,23 @@ export class Room extends YgoRoom {
 	private readonly roomTimer: Timer;
 	private roomState: RoomState | null = null;
 	private logger: Logger;
-	private currentDuel: Duel | null = null;
 
 	private constructor(attr: RoomAttr) {
 		super({
+			id: attr.id,
 			team0: attr.team0,
 			team1: attr.team1,
 			ranked: attr.ranked,
 			bestOf: attr.bestOf,
+			startLp: attr.startLp,
+			notes: attr.notes,
 		});
-		this.id = attr.id;
 		this.name = attr.name;
-		this.notes = attr.notes;
 		this.mode = attr.mode;
 		this.needPass = attr.needPass;
 		this.duelFlag = attr.duelFlag;
 		this.forbiddenTypes = attr.forbiddenTypes;
 		this.extraRules = attr.extraRules;
-		this.startLp = attr.startLp;
 		this.startHand = attr.startHand;
 		this.drawCount = attr.drawCount;
 		this.timeLimit = attr.timeLimit;
@@ -307,10 +302,6 @@ export class Room extends YgoRoom {
 		});
 	}
 
-	isFirstDuel(): boolean {
-		return this._match?.isFirstDuel() ?? true;
-	}
-
 	matchSide(): { team0: number; team1: number } {
 		if (!this._match) {
 			return {
@@ -381,11 +372,8 @@ export class Room extends YgoRoom {
 		this._duel = duel;
 		this._duel.stdin.on("error", (err) => {
 			console.error("Error al escribir en el proceso secundario:", err.message);
-			// Volver a intentar la escritura después de un breve retraso
 			this.writeToCppProcess("¡Hola desde Node.js!", 3);
 		});
-		const banlist = BanListMemoryRepository.findByHash(this.banListHash);
-		this.currentDuel = new Duel(0, [this.startLp, this.startLp], banlist);
 	}
 
 	get duel(): ChildProcessWithoutNullStreams | null {
@@ -408,6 +396,8 @@ export class Room extends YgoRoom {
 			this,
 			new JSONMessageProcessor()
 		);
+		const banList = BanListMemoryRepository.findByHash(this.banListHash);
+		this.createDuel(banList?.name ?? null);
 	}
 
 	sideDecking(): void {
@@ -492,14 +482,6 @@ export class Room extends YgoRoom {
 
 	get opponentExtraDeckSize(): number {
 		return this._opponentExtraDeckSize;
-	}
-
-	increaseTurn(): void {
-		this.currentDuel?.increaseTurn();
-	}
-
-	get turn(): number {
-		return this.currentDuel?.turn ?? 0;
 	}
 
 	nextAvailablePosition(position: number): { position: number; team: number } | null {
@@ -649,14 +631,6 @@ export class Room extends YgoRoom {
 		} ${this.playerNames(1)}`;
 	}
 
-	decreaseLps(team: Team, value: number): void {
-		this.currentDuel?.decreaseLps(team, value);
-	}
-
-	increaseLps(team: Team, value: number): void {
-		this.currentDuel?.increaseLps(team, value);
-	}
-
 	isFinished(): boolean {
 		return this.currentDuel?.isFinished ?? false;
 	}
@@ -731,24 +705,6 @@ export class Room extends YgoRoom {
 				name: player.name.replace(/\0/g, "").trim(),
 				pos: player.position,
 			})),
-		};
-	}
-
-	toRealTimePresentation(): { [key: string]: unknown } {
-		return {
-			id: this.id,
-			turn: this.currentDuel?.turn,
-			bestOf: this.bestOf,
-			banlist: {
-				name: this.currentDuel?.banlistName,
-			},
-			players: this.clients.map((client: Client) => ({
-				position: client.position,
-				username: client.name,
-				lps: this.currentDuel?.lps[client.team],
-				score: client.team === Team.PLAYER ? this._match?.score.team0 : this._match?.score.team1,
-			})),
-			notes: this.notes,
 		};
 	}
 

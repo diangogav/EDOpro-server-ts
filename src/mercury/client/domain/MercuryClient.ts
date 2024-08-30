@@ -3,9 +3,9 @@ import net from "net";
 import { MercuryPlayerInfoToCoreMessage } from "src/mercury/messages/server-to-core";
 
 import { ClientMessage } from "../../../modules/messages/MessageProcessor";
-import { Team } from "../../../modules/room/domain/Team";
 import { YgoClient } from "../../../modules/shared/client/domain/YgoClient";
 import { Logger } from "../../../modules/shared/logger/domain/Logger";
+import { Team } from "../../../modules/shared/room/Team";
 import { ISocket } from "../../../modules/shared/socket/domain/ISocket";
 import { MercuryCoreMessageEmitter } from "../../MercuryCoreMessageEmitter";
 import { SimpleRoomMessageEmitter } from "../../MercuryRoomMessageEmitter";
