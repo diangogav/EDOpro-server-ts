@@ -1,4 +1,5 @@
 import { PlayerData } from "@modules/shared/player/domain/PlayerData";
+import { Duel } from "@modules/shared/room/Duel";
 import { EventEmitter } from "stream";
 
 import { MercuryClient } from "../../../../mercury/client/domain/MercuryClient";
@@ -20,6 +21,8 @@ export abstract class YgoRoom {
 	public readonly team1: number;
 	public readonly ranked: boolean;
 	public readonly bestOf: number;
+	public readonly startLp: number;
+	public readonly STARTING_TURN = 0;
 	protected readonly t0Positions: number[] = [];
 	protected readonly t1Positions: number[] = [];
 	protected emitter: EventEmitter;
@@ -31,17 +34,20 @@ export abstract class YgoRoom {
 	protected _match: Match | null;
 	protected _firstToPlay: number;
 	protected isStart: string;
+	protected currentDuel: Duel | null = null;
 
 	protected constructor({
 		team0,
 		team1,
 		ranked,
 		bestOf,
+		startLp,
 	}: {
 		team0: number;
 		team1: number;
 		ranked: boolean;
 		bestOf: number;
+		startLp: number;
 	}) {
 		this.team0 = team0;
 		this.team1 = team1;
@@ -50,6 +56,7 @@ export abstract class YgoRoom {
 		this.t0Positions = Array.from({ length: this.team0 }, (_, index) => index);
 		this.t1Positions = Array.from({ length: this.team1 }, (_, index) => this.team0 + index);
 		this.isStart = "waiting";
+		this.startLp = startLp;
 	}
 
 	emit(event: string, message: unknown, socket: ISocket): void {
@@ -178,6 +185,10 @@ export abstract class YgoRoom {
 			.filter((player: Client) => player.team === team)
 			.map((item: Client) => `${item.name}`)
 			.join(",");
+	}
+
+	createDuel(banListName: string | null): void {
+		this.currentDuel = new Duel(this.STARTING_TURN, [this.startLp, this.startLp], banListName);
 	}
 
 	get firstToPlay(): number {

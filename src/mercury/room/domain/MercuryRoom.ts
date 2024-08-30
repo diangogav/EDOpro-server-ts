@@ -1,3 +1,4 @@
+import BanListMemoryRepository from "@modules/ban-list/infrastructure/BanListMemoryRepository";
 import { Team } from "@modules/room/domain/Team";
 import { UserFinder } from "@modules/user/application/UserFinder";
 import { UserRedisRepository } from "@modules/user/infrastructure/UserRedisRepository";
@@ -49,6 +50,7 @@ export class MercuryRoom extends YgoRoom {
 		ranked,
 		createdBySocketId,
 		bestOf,
+		startLp,
 	}: {
 		id: number;
 		password: string;
@@ -59,8 +61,9 @@ export class MercuryRoom extends YgoRoom {
 		ranked: boolean;
 		createdBySocketId: string;
 		bestOf: number;
+		startLp: number;
 	}) {
-		super({ team0, team1, ranked, bestOf });
+		super({ team0, team1, ranked, bestOf, startLp });
 		this.id = id;
 		this.name = name;
 		this.password = password;
@@ -140,6 +143,7 @@ export class MercuryRoom extends YgoRoom {
 			ranked,
 			createdBySocketId,
 			bestOf: hostInfo.mode === Mode.MATCH ? 3 : 1,
+			startLp: hostInfo.startLp,
 		});
 
 		room._logger = logger;
@@ -291,6 +295,9 @@ export class MercuryRoom extends YgoRoom {
 		this.isStart = "start";
 		this.roomState?.removeAllListener();
 		this.roomState = new MercuryDuelingState(this.emitter, this._logger);
+		//TODO: Mercury and EdoPro lists are linked by means of scripts in infrastructure
+		const banList = BanListMemoryRepository.findByHash(this._banListHash);
+		this.createDuel(banList?.name ?? null);
 	}
 
 	sideDecking(): void {
@@ -362,7 +369,7 @@ export class MercuryRoom extends YgoRoom {
 		this._spectators = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
 	}
 
-	get banlistHash(): number {
+	get banListHash(): number {
 		return this._banListHash;
 	}
 
