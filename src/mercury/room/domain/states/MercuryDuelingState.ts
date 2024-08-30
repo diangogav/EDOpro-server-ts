@@ -5,6 +5,7 @@ import { container } from "@modules/shared/dependency-injection";
 import { EventBus } from "@modules/shared/event-bus/EventBus";
 import { GameOverDomainEvent } from "@modules/shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
 import { EventEmitter } from "events";
+import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 
 import { PlayerInfoMessage } from "../../../../modules/messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../../modules/messages/domain/Commands";
@@ -20,13 +21,18 @@ import { MercuryRoom } from "../MercuryRoom";
 export class MercuryDuelingState extends RoomState {
 	private readonly eventBus: EventBus;
 
-	constructor(eventEmitter: EventEmitter, private readonly logger: Logger) {
+	constructor(
+		private readonly room: MercuryRoom,
+		eventEmitter: EventEmitter,
+		private readonly logger: Logger
+	) {
 		super(eventEmitter);
+		this.handle();
 		this.eventBus = container.get(EventBus);
 		this.eventEmitter.on(
 			"DUEL_END",
 			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
-				this.handle.bind(this)(message, room, client)
+				this.handleDuelEnd.bind(this)(message, room, client)
 		);
 
 		this.eventEmitter.on(
@@ -72,7 +78,11 @@ export class MercuryDuelingState extends RoomState {
 		);
 	}
 
-	private handle(_message: ClientMessage, _room: MercuryRoom, _player: MercuryClient): void {
+	private handle(): void {
+		this.notifyDuelStart(this.room);
+	}
+
+	private handleDuelEnd(_message: ClientMessage, _room: MercuryRoom, _player: MercuryClient): void {
 		this.logger.info("MERCURY: DUEL_END");
 	}
 
@@ -123,6 +133,11 @@ export class MercuryDuelingState extends RoomState {
 
 			room.duelWinner(winner);
 
+			WebSocketSingleton.getInstance().broadcast({
+				action: "UPDATE-ROOM",
+				data: room.toRealTimePresentation(),
+			});
+
 			if (room.isMatchFinished()) {
 				this.eventBus.publish(
 					GameOverDomainEvent.DOMAIN_EVENT,
@@ -134,6 +149,11 @@ export class MercuryDuelingState extends RoomState {
 						banlistHash: room.banListHash,
 					})
 				);
+
+				WebSocketSingleton.getInstance().broadcast({
+					action: "REMOVE-ROOM",
+					data: room.toRealTimePresentation(),
+				});
 			}
 		}
 	}

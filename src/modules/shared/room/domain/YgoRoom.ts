@@ -230,6 +230,10 @@ export abstract class YgoRoom {
 		} ${this.playerNames(1)}`;
 	}
 
+	isFirstDuel(): boolean {
+		return this._match?.isFirstDuel() ?? true;
+	}
+
 	toRealTimePresentation(): { [key: string]: unknown } {
 		return {
 			id: this.id,

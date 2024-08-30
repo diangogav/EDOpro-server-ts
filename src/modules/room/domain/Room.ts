@@ -302,10 +302,6 @@ export class Room extends YgoRoom {
 		});
 	}
 
-	isFirstDuel(): boolean {
-		return this._match?.isFirstDuel() ?? true;
-	}
-
 	matchSide(): { team0: number; team1: number } {
 		if (!this._match) {
 			return {

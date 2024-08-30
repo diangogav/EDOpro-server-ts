@@ -105,6 +105,10 @@ export class DisconnectHandler {
 	private handleMercury(room: MercuryRoom): void {
 		if (room.clients.every((client) => client.socket.closed)) {
 			MercuryRoomList.deleteRoom(room);
+			WebSocketSingleton.getInstance().broadcast({
+				action: "REMOVE-ROOM",
+				data: room.toRealTimePresentation(),
+			});
 
 			return;
 		}

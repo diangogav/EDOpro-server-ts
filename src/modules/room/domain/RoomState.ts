@@ -164,6 +164,20 @@ export abstract class RoomState {
 		}
 	}
 
+	protected notifyDuelStart(room: YgoRoom): void {
+		if (room.isFirstDuel()) {
+			WebSocketSingleton.getInstance().broadcast({
+				action: "ADD-ROOM",
+				data: room.toRealTimePresentation(),
+			});
+		} else {
+			WebSocketSingleton.getInstance().broadcast({
+				action: "UPDATE-ROOM",
+				data: room.toRealTimePresentation(),
+			});
+		}
+	}
+
 	private handleChat(message: ClientMessage, room: YgoRoom, client: YgoClient): void {
 		const sanitized = BufferToUTF16(message.data, message.data.length);
 		if (sanitized === ":score") {

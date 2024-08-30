@@ -5,13 +5,11 @@ import * as crypto from "crypto";
 import EventEmitter from "events";
 
 import { decimalToBytesBuffer } from "../../../../../utils";
-import WebSocketSingleton from "../../../../../web-socket-server/WebSocketSingleton";
 import { Client } from "../../../../client/domain/Client";
 import { UpdateDeckMessageSizeCalculator } from "../../../../deck/application/UpdateDeckMessageSizeCalculator";
 import { JoinGameMessage } from "../../../../messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../../../messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../../messages/domain/Commands";
-import { CoreMessages } from "../../../../messages/domain/CoreMessages";
 import { JSONMessageProcessor } from "../../../../messages/JSONMessageProcessor";
 import { ClientMessage } from "../../../../messages/MessageProcessor";
 import { ErrorMessages } from "../../../../messages/server-to-client/error-messages/ErrorMessages";
@@ -294,17 +292,7 @@ export class DuelingState extends RoomState {
 			}
 		});
 
-		if (this.room.isFirstDuel()) {
-			WebSocketSingleton.getInstance().broadcast({
-				action: "ADD-ROOM",
-				data: this.room.toRealTimePresentation(),
-			});
-		} else {
-			WebSocketSingleton.getInstance().broadcast({
-				action: "UPDATE-ROOM",
-				data: this.room.toRealTimePresentation(),
-			});
-		}
+		this.notifyDuelStart(this.room);
 	}
 
 	private processMessage(): void {
@@ -351,14 +339,6 @@ export class DuelingState extends RoomState {
 				Buffer.from(_coreMessage.data, "hex"),
 				this.room
 			);
-
-			if (_coreMessage.message === CoreMessages.MSG_NEW_TURN) {
-				this.room.increaseTurn();
-				WebSocketSingleton.getInstance().broadcast({
-					action: "UPDATE-ROOM",
-					data: this.room.toRealTimePresentation(),
-				});
-			}
 		}
 
 		if (message.type === "REPLAY") {
