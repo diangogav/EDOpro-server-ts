@@ -16,6 +16,7 @@ import { Replay } from "../../replay/Replay";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { DuelState, YgoRoom } from "../../shared/room/domain/YgoRoom";
+import { Team } from "../../shared/room/Team";
 import { ISocket } from "../../shared/socket/domain/ISocket";
 import { Rank } from "../../shared/value-objects/Rank";
 import { UserFinder } from "../../user/application/UserFinder";
@@ -31,7 +32,6 @@ import { DuelingState } from "./states/dueling/DuelingState";
 import { RockPaperScissorState } from "./states/rps/RockPaperScissorsState";
 import { SideDeckingState } from "./states/side-decking/SideDeckingState";
 import { WaitingState } from "./states/waiting/WaitingState";
-import { Team } from "./Team";
 import { Timer } from "./Timer";
 
 export enum Rule {
@@ -643,14 +643,6 @@ export class Room extends YgoRoom {
 		return `Side: ${this.playerNames(0)}: ${this.matchSide().team0} - ${
 			this.matchSide().team1
 		} ${this.playerNames(1)}`;
-	}
-
-	decreaseLps(team: Team, value: number): void {
-		this.currentDuel?.decreaseLps(team, value);
-	}
-
-	increaseLps(team: Team, value: number): void {
-		this.currentDuel?.increaseLps(team, value);
 	}
 
 	isFinished(): boolean {

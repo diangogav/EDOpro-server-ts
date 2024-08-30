@@ -1,4 +1,4 @@
-import { Team } from "../../room/domain/Team";
+import { Team } from "./Team";
 
 export class Duel {
 	private _turn: number;

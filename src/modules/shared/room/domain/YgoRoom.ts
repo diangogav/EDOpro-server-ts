@@ -1,5 +1,6 @@
 import { PlayerData } from "@modules/shared/player/domain/PlayerData";
 import { Duel } from "@modules/shared/room/Duel";
+import { Team } from "@modules/shared/room/Team";
 import { EventEmitter } from "stream";
 
 import { MercuryClient } from "../../../../mercury/client/domain/MercuryClient";
@@ -189,6 +190,14 @@ export abstract class YgoRoom {
 
 	createDuel(banListName: string | null): void {
 		this.currentDuel = new Duel(this.STARTING_TURN, [this.startLp, this.startLp], banListName);
+	}
+
+	decreaseLps(team: Team, value: number): void {
+		this.currentDuel?.decreaseLps(team, value);
+	}
+
+	increaseLps(team: Team, value: number): void {
+		this.currentDuel?.increaseLps(team, value);
 	}
 
 	get firstToPlay(): number {

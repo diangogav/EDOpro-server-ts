@@ -1,5 +1,5 @@
 import BanListMemoryRepository from "@modules/ban-list/infrastructure/BanListMemoryRepository";
-import { Team } from "@modules/room/domain/Team";
+import { Team } from "@modules/shared/room/Team";
 import { UserFinder } from "@modules/user/application/UserFinder";
 import { UserRedisRepository } from "@modules/user/infrastructure/UserRedisRepository";
 import { spawn } from "child_process";

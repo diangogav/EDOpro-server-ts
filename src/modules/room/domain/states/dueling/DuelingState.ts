@@ -23,6 +23,7 @@ import { ServerErrorClientMessage } from "../../../../messages/server-to-client/
 import { ServerMessageClientMessage } from "../../../../messages/server-to-client/ServerMessageClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
 import { DuelStartClientMessage } from "../../../../shared/messages/server-to-client/DuelStartClientMessage";
+import { Team } from "../../../../shared/room/Team";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { FinishDuelHandler } from "../../../application/FinishDuelHandler";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
@@ -30,7 +31,6 @@ import { Reconnect } from "../../../application/Reconnect";
 import { DuelFinishReason } from "../../DuelFinishReason";
 import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";
-import { Team } from "../../Team";
 
 interface Message {
 	type: string;

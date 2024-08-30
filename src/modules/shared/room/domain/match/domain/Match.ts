@@ -1,6 +1,6 @@
-import { Team } from "../../../../../room/domain/Team";
 import { PlayerData } from "../../../../player/domain/PlayerData";
 import { Rank } from "../../../../value-objects/Rank";
+import { Team } from "../../../Team";
 
 export type Player = {
 	name: string;
