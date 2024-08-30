@@ -19,7 +19,6 @@ export class Timer {
 		if (this.timerId === null) {
 			this.startTime = Date.now();
 			this.endTime = this.startTime + this.remainingTime;
-			// this.displayRemainingTime();
 			this.timerId = setInterval(() => {
 				const currentTime = Date.now();
 				if (currentTime >= this.endTime) {
@@ -27,7 +26,6 @@ export class Timer {
 					this.callback();
 				} else {
 					this.remainingTime = this.endTime - currentTime;
-					// this.displayRemainingTime();
 				}
 			}, 1000);
 		}
@@ -45,12 +43,14 @@ export class Timer {
 		this.startTime = 0;
 		this.endTime = 0;
 		this.remainingTime = newDuration !== undefined ? newDuration : this.duration;
-		// this.displayRemainingTime();
 		this.start();
 	}
 
-	// private displayRemainingTime() {
-	// 	const seconds = Math.ceil(this.remainingTime / 1000);
-	// 	console.log(`Tiempo restante: ${seconds} segundos`);
-	// }
+	get time(): number {
+		if (Math.ceil(this.remainingTime / 1000) === 0) {
+			return 0;
+		}
+
+		return Math.ceil(this.remainingTime / 1000);
+	}
 }

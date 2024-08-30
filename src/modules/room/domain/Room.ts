@@ -134,7 +134,7 @@ export class Room extends YgoRoom {
 	private _replay: Replay;
 	private readonly _kick: Client[] = [];
 	private _duel?: ChildProcessWithoutNullStreams;
-	private readonly _lastMessageToTeam: { team: number; message: Buffer }[] = [];
+	private _lastPhase: Buffer | null = null;
 	private _playerMainDeckSize: number;
 	private _playerExtraDeckSize: number;
 	private _opponentMainDeckSize: number;
@@ -603,6 +603,10 @@ export class Room extends YgoRoom {
 		this.timers[team].reset(time * 1000);
 	}
 
+	getTime(team: Team): number {
+		return Math.ceil(this.timers[team].time);
+	}
+
 	startRoomTimer(): void {
 		this.roomTimer.start();
 	}
@@ -671,6 +675,14 @@ export class Room extends YgoRoom {
 		this.addSpectator(client);
 
 		return client;
+	}
+
+	setLastPhaseMessage(message: Buffer): void {
+		this._lastPhase = message;
+	}
+
+	get lastPhaseMessage(): Buffer | null {
+		return this._lastPhase;
 	}
 
 	toPresentation(): { [key: string]: unknown } {
