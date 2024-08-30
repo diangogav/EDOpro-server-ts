@@ -1,5 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
+import { CoreMessages } from "@modules/messages/domain/CoreMessages";
+import { DuelStartClientMessage } from "@modules/shared/messages/server-to-client/DuelStartClientMessage";
+import { Team } from "@modules/shared/room/Team";
 import { spawn } from "child_process";
 import * as crypto from "crypto";
 import EventEmitter from "events";
@@ -20,7 +23,6 @@ import { PlayerChangeClientMessage } from "../../../../messages/server-to-client
 import { ServerErrorClientMessage } from "../../../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { ServerMessageClientMessage } from "../../../../messages/server-to-client/ServerMessageClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
-import { DuelStartClientMessage } from "../../../../shared/messages/server-to-client/DuelStartClientMessage";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { FinishDuelHandler } from "../../../application/FinishDuelHandler";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
@@ -334,6 +336,11 @@ export class DuelingState extends RoomState {
 
 		if (message.type === "CORE") {
 			const _coreMessage = message as unknown as RawCoreMessage;
+
+			if (_coreMessage.message === CoreMessages.MSG_NEW_PHASE) {
+				this.room.setLastPhaseMessage(Buffer.from(_coreMessage.data, "hex"));
+			}
+
 			this.processDuelMessage(
 				_coreMessage.message,
 				Buffer.from(_coreMessage.data, "hex"),
@@ -379,7 +386,19 @@ export class DuelingState extends RoomState {
 		if (!player.cache) {
 			return;
 		}
+
 		player.sendMessage(player.cache);
+		const opponentTimeMessage = TimeLimitClientMessage.create({
+			team: this.room.calculateTimeReceiver(Team.OPPONENT),
+			timeLimit: this.room.getTime(Team.OPPONENT),
+		});
+		player.sendMessage(opponentTimeMessage);
+		const playerTimeMessage = TimeLimitClientMessage.create({
+			team: this.room.calculateTimeReceiver(Team.PLAYER),
+			timeLimit: this.room.getTime(Team.PLAYER),
+		});
+		player.sendMessage(playerTimeMessage);
+
 		player.clearReconnecting();
 
 		this.room.clients.forEach((client: Client) => {
@@ -596,7 +615,10 @@ export class DuelingState extends RoomState {
 				opponentExtraDeckSize: room.opponentExtraDeckSize,
 			})
 		);
-
+		player.sendMessage(Buffer.from("0300012800", "hex"));
+		if (room.lastPhaseMessage) {
+			player.sendMessage(Buffer.from(`040001${room.lastPhaseMessage.toString("hex")}`, "hex"));
+		}
 		room.sendMessageToCpp(
 			JSON.stringify({
 				command: "GET_FIELD",
