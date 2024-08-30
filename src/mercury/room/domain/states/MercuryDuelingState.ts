@@ -116,6 +116,8 @@ export class MercuryDuelingState extends RoomState {
 			player.setLastMessage(message.raw);
 		}
 
+		this.processDuelMessage(coreMessageType, message.raw, room);
+
 		if (coreMessageType === CoreMessages.MSG_WIN && !room.isMatchFinished()) {
 			const winner = room.firstToPlay ^ message.raw.readInt8(4);
 

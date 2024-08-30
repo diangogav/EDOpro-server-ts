@@ -1,7 +1,10 @@
+import { CoreMessages } from "@modules/messages/domain/CoreMessages";
 import { ServerInfoMessage } from "@modules/messages/domain/ServerInfoMessage";
 import { ErrorMessages } from "@modules/messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "@modules/messages/server-to-client/ErrorClientMessage";
 import { ServerErrorClientMessage } from "@modules/messages/server-to-client/ServerErrorMessageClientMessage";
+import { Team } from "@modules/shared/room/Team";
+import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 import { EventEmitter } from "stream";
 
 import { mercuryConfig } from "../../../mercury/config";
@@ -119,6 +122,46 @@ export abstract class RoomState {
 
 		socket.send(ServerMessageClientMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));
 		socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));
+	}
+
+	protected processDuelMessage(messageType: CoreMessages, data: Buffer, room: YgoRoom): void {
+		if (messageType === CoreMessages.MSG_DAMAGE) {
+			const team = room.firstToPlay ^ data.readUint8(1);
+			const damage = data.readUint32LE(2);
+			room.decreaseLps(team as Team, damage);
+			WebSocketSingleton.getInstance().broadcast({
+				action: "UPDATE-ROOM",
+				data: room.toRealTimePresentation(),
+			});
+		}
+
+		if (messageType === CoreMessages.MSG_RECOVER) {
+			const team = room.firstToPlay ^ data.readUint8(1);
+			const health = data.readUint32LE(2);
+			room.increaseLps(team as Team, health);
+			WebSocketSingleton.getInstance().broadcast({
+				action: "UPDATE-ROOM",
+				data: room.toRealTimePresentation(),
+			});
+		}
+
+		if (messageType === CoreMessages.MSG_PAY_LPCOST) {
+			const team = room.firstToPlay ^ data.readUint8(1);
+			const cost = data.readUint32LE(2);
+			room.decreaseLps(team as Team, cost);
+			WebSocketSingleton.getInstance().broadcast({
+				action: "UPDATE-ROOM",
+				data: room.toRealTimePresentation(),
+			});
+		}
+
+		if (messageType === CoreMessages.MSG_NEW_TURN) {
+			room.increaseTurn();
+			WebSocketSingleton.getInstance().broadcast({
+				action: "UPDATE-ROOM",
+				data: room.toRealTimePresentation(),
+			});
+		}
 	}
 
 	private handleChat(message: ClientMessage, room: YgoRoom, client: YgoClient): void {

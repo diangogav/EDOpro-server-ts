@@ -28,7 +28,6 @@ import { MercurySideDeckingState } from "./states/MercurySideDeckingState";
 import { MercuryWaitingState } from "./states/MercuryWaitingState";
 
 export class MercuryRoom extends YgoRoom {
-	readonly id: number;
 	readonly name: string;
 	readonly password: string;
 	readonly createdBySocketId: string;
@@ -63,8 +62,7 @@ export class MercuryRoom extends YgoRoom {
 		bestOf: number;
 		startLp: number;
 	}) {
-		super({ team0, team1, ranked, bestOf, startLp });
-		this.id = id;
+		super({ team0, team1, ranked, bestOf, startLp, id, notes: "" });
 		this.name = name;
 		this.password = password;
 		this._clients = [];

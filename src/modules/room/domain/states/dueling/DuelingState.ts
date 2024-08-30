@@ -23,7 +23,6 @@ import { ServerErrorClientMessage } from "../../../../messages/server-to-client/
 import { ServerMessageClientMessage } from "../../../../messages/server-to-client/ServerMessageClientMessage";
 import { Logger } from "../../../../shared/logger/domain/Logger";
 import { DuelStartClientMessage } from "../../../../shared/messages/server-to-client/DuelStartClientMessage";
-import { Team } from "../../../../shared/room/Team";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { FinishDuelHandler } from "../../../application/FinishDuelHandler";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
@@ -347,38 +346,11 @@ export class DuelingState extends RoomState {
 
 		if (message.type === "CORE") {
 			const _coreMessage = message as unknown as RawCoreMessage;
-			if (_coreMessage.message === CoreMessages.MSG_DAMAGE) {
-				const data = Buffer.from(_coreMessage.data, "hex");
-				const team = this.room.firstToPlay ^ data.readUint8(1);
-				const damage = data.readUint32LE(2);
-				this.room.decreaseLps(team as Team, damage);
-				WebSocketSingleton.getInstance().broadcast({
-					action: "UPDATE-ROOM",
-					data: this.room.toRealTimePresentation(),
-				});
-			}
-
-			if (_coreMessage.message === CoreMessages.MSG_RECOVER) {
-				const data = Buffer.from(_coreMessage.data, "hex");
-				const team = this.room.firstToPlay ^ data.readUint8(1);
-				const health = data.readUint32LE(2);
-				this.room.increaseLps(team as Team, health);
-				WebSocketSingleton.getInstance().broadcast({
-					action: "UPDATE-ROOM",
-					data: this.room.toRealTimePresentation(),
-				});
-			}
-
-			if (_coreMessage.message === CoreMessages.MSG_PAY_LPCOST) {
-				const data = Buffer.from(_coreMessage.data, "hex");
-				const team = this.room.firstToPlay ^ data.readUint8(1);
-				const cost = data.readUint32LE(2);
-				this.room.decreaseLps(team as Team, cost);
-				WebSocketSingleton.getInstance().broadcast({
-					action: "UPDATE-ROOM",
-					data: this.room.toRealTimePresentation(),
-				});
-			}
+			this.processDuelMessage(
+				_coreMessage.message,
+				Buffer.from(_coreMessage.data, "hex"),
+				this.room
+			);
 
 			if (_coreMessage.message === CoreMessages.MSG_NEW_TURN) {
 				this.room.increaseTurn();

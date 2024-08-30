@@ -18,6 +18,8 @@ export enum DuelState {
 }
 
 export abstract class YgoRoom {
+	public readonly id: number;
+	public readonly notes: string;
 	public readonly team0: number;
 	public readonly team1: number;
 	public readonly ranked: boolean;
@@ -43,12 +45,16 @@ export abstract class YgoRoom {
 		ranked,
 		bestOf,
 		startLp,
+		id,
+		notes,
 	}: {
 		team0: number;
 		team1: number;
 		ranked: boolean;
 		bestOf: number;
 		startLp: number;
+		id: number;
+		notes: string;
 	}) {
 		this.team0 = team0;
 		this.team1 = team1;
@@ -58,6 +64,8 @@ export abstract class YgoRoom {
 		this.t1Positions = Array.from({ length: this.team1 }, (_, index) => this.team0 + index);
 		this.isStart = "waiting";
 		this.startLp = startLp;
+		this.id = id;
+		this.notes = notes;
 	}
 
 	emit(event: string, message: unknown, socket: ISocket): void {
@@ -200,6 +208,14 @@ export abstract class YgoRoom {
 		this.currentDuel?.increaseLps(team, value);
 	}
 
+	increaseTurn(): void {
+		this.currentDuel?.increaseTurn();
+	}
+
+	get turn(): number {
+		return this.currentDuel?.turn ?? 0;
+	}
+
 	get firstToPlay(): number {
 		return this._firstToPlay;
 	}
@@ -212,6 +228,24 @@ export abstract class YgoRoom {
 		return `Score: ${this.playerNames(0)}: ${this.matchScore().team0} - ${
 			this.matchScore().team1
 		} ${this.playerNames(1)}`;
+	}
+
+	toRealTimePresentation(): { [key: string]: unknown } {
+		return {
+			id: this.id,
+			turn: this.currentDuel?.turn,
+			bestOf: this.bestOf,
+			banlist: {
+				name: this.currentDuel?.banListName,
+			},
+			players: this.clients.map((client: Client) => ({
+				position: client.position,
+				username: client.name,
+				lps: this.currentDuel?.lps[client.team],
+				score: client.team === Team.PLAYER ? this._match?.score.team0 : this._match?.score.team1,
+			})),
+			notes: this.notes,
+		};
 	}
 
 	protected findNextPosition(availablePositions: number[], startPosition?: number): number | null {

@@ -113,9 +113,7 @@ interface RoomAttr {
 }
 
 export class Room extends YgoRoom {
-	public readonly id: number;
 	public readonly name: string;
-	public readonly notes: string;
 	public readonly mode: number;
 	public readonly needPass: boolean;
 	public readonly duelFlag: bigint;
@@ -149,15 +147,15 @@ export class Room extends YgoRoom {
 
 	private constructor(attr: RoomAttr) {
 		super({
+			id: attr.id,
 			team0: attr.team0,
 			team1: attr.team1,
 			ranked: attr.ranked,
 			bestOf: attr.bestOf,
 			startLp: attr.startLp,
+			notes: attr.notes,
 		});
-		this.id = attr.id;
 		this.name = attr.name;
-		this.notes = attr.notes;
 		this.mode = attr.mode;
 		this.needPass = attr.needPass;
 		this.duelFlag = attr.duelFlag;
@@ -490,14 +488,6 @@ export class Room extends YgoRoom {
 		return this._opponentExtraDeckSize;
 	}
 
-	increaseTurn(): void {
-		this.currentDuel?.increaseTurn();
-	}
-
-	get turn(): number {
-		return this.currentDuel?.turn ?? 0;
-	}
-
 	nextAvailablePosition(position: number): { position: number; team: number } | null {
 		const positions = [...this.t1Positions, ...this.t0Positions].sort((a, b) => a - b);
 		const ocuppiedPositions = this.clients.map((client) => client.position);
@@ -719,24 +709,6 @@ export class Room extends YgoRoom {
 				name: player.name.replace(/\0/g, "").trim(),
 				pos: player.position,
 			})),
-		};
-	}
-
-	toRealTimePresentation(): { [key: string]: unknown } {
-		return {
-			id: this.id,
-			turn: this.currentDuel?.turn,
-			bestOf: this.bestOf,
-			banlist: {
-				name: this.currentDuel?.banListName,
-			},
-			players: this.clients.map((client: Client) => ({
-				position: client.position,
-				username: client.name,
-				lps: this.currentDuel?.lps[client.team],
-				score: client.team === Team.PLAYER ? this._match?.score.team0 : this._match?.score.team1,
-			})),
-			notes: this.notes,
 		};
 	}
 
