@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.1.5...v2.2.0) (2024-08-30)
+
+
+### Features
+
+* :sparkles: Mercury rooms are now integrated with the websockets tracking system ([086a107](https://github.com/diangogav/EDOpro-server-ts/commit/086a1078288d08a143ea2132e05702780c6f053b))
+
 ## [2.1.5](https://github.com/diangogav/EDOpro-server-ts/compare/v2.1.4...v2.1.5) (2024-08-28)
 
 
