@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.1](https://github.com/diangogav/EDOpro-server-ts/compare/v2.2.0...v2.2.1) (2024-08-30)
+
+
+### Bug Fixes
+
+* :bug: Mercury rooms were not returned to show them in real time on the web ([#129](https://github.com/diangogav/EDOpro-server-ts/issues/129)) ([1aeac54](https://github.com/diangogav/EDOpro-server-ts/commit/1aeac5495d221e365804b1677cafdf395163fbcf))
+* :bug: Visual errors corrected when reconnecting in edopro rooms ([#128](https://github.com/diangogav/EDOpro-server-ts/issues/128)) ([07f0d3e](https://github.com/diangogav/EDOpro-server-ts/commit/07f0d3e3c9fb2669a5c737d150e146ab5982cc6d))
+
 ## [2.2.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.1.5...v2.2.0) (2024-08-30)
 
 
