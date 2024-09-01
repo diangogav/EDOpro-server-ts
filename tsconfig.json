@@ -16,8 +16,8 @@
     "sourceMap": true,
     "inlineSources": true,
     "paths": {
-      "@modules/*": [
-        "src/modules/*"
+      "@edopro/*": [
+        "src/edopro/*"
       ]
     }
   },

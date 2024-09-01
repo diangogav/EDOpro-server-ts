@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 
+import RoomList from "../../edopro/room/infrastructure/RoomList";
 import MercuryRoomList from "../../mercury/room/infrastructure/MercuryRoomList";
-import RoomList from "../../modules/room/infrastructure/RoomList";
 
 export class GetRoomListController {
 	run(_req: Request, response: Response): void {

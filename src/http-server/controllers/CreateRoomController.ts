@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 
-import { RoomCreator } from "../../modules/room/application/RoomCreator";
-import { Logger } from "../../modules/shared/logger/domain/Logger";
+import { RoomCreator } from "../../edopro/room/application/RoomCreator";
+import { Logger } from "../../shared/logger/domain/Logger";
 
 export class CreateRoomRequest {
 	name: string;

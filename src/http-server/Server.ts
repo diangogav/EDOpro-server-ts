@@ -1,6 +1,6 @@
 import express, { Express } from "express";
 
-import { Logger } from "../modules/shared/logger/domain/Logger";
+import { Logger } from "../shared/logger/domain/Logger";
 import { createDirectoryIfNotExists } from "../utils";
 import { loadRoutes } from "./routes";
 

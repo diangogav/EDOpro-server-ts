@@ -3,19 +3,19 @@ import { randomUUID as uuidv4 } from "crypto";
 import net, { Socket } from "net";
 import { EventEmitter } from "stream";
 
-import { MessageEmitter } from "../modules/MessageEmitter";
-import { GameCreatorHandler } from "../modules/room/application/GameCreatorHandler";
-import { JoinHandler } from "../modules/room/application/JoinHandler";
-import { container } from "../modules/shared/dependency-injection";
-import { EventBus } from "../modules/shared/event-bus/EventBus";
-import { Logger } from "../modules/shared/logger/domain/Logger";
-import { DisconnectHandler } from "../modules/shared/room/application/DisconnectHandler";
-import { RoomFinder } from "../modules/shared/room/application/RoomFinder";
-import { RedisRoomRepository } from "../modules/shared/room/domain/match/infrastructure/RedisRoomRepository";
-import { TCPClientSocket } from "../modules/shared/socket/domain/TCPClientSocket";
-import { BasicStatsCalculator } from "../modules/stats/basic/application/BasicStatsCalculator";
-import { UserFinder } from "../modules/user/application/UserFinder";
-import { UserRedisRepository } from "../modules/user/infrastructure/UserRedisRepository";
+import { MessageEmitter } from "../edopro/MessageEmitter";
+import { GameCreatorHandler } from "../edopro/room/application/GameCreatorHandler";
+import { JoinHandler } from "../edopro/room/application/JoinHandler";
+import { BasicStatsCalculator } from "../edopro/stats/basic/application/BasicStatsCalculator";
+import { UserFinder } from "../edopro/user/application/UserFinder";
+import { UserRedisRepository } from "../edopro/user/infrastructure/UserRedisRepository";
+import { container } from "../shared/dependency-injection";
+import { EventBus } from "../shared/event-bus/EventBus";
+import { Logger } from "../shared/logger/domain/Logger";
+import { DisconnectHandler } from "../shared/room/application/DisconnectHandler";
+import { RoomFinder } from "../shared/room/application/RoomFinder";
+import { RedisRoomRepository } from "../shared/room/domain/match/infrastructure/RedisRoomRepository";
+import { TCPClientSocket } from "../shared/socket/domain/TCPClientSocket";
 
 export class HostServer {
 	private readonly server: net.Server;

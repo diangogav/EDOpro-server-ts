@@ -2,13 +2,13 @@ import { randomUUID as uuidv4 } from "crypto";
 import net, { Socket } from "net";
 import { EventEmitter } from "stream";
 
+import { MessageEmitter } from "../edopro/MessageEmitter";
 import { MercuryGameCreatorHandler } from "../mercury/room/application/MercuryGameCreatorHandler";
 import { MercuryJoinHandler } from "../mercury/room/application/MercuryJoinHandler";
-import { MessageEmitter } from "../modules/MessageEmitter";
-import { Logger } from "../modules/shared/logger/domain/Logger";
-import { DisconnectHandler } from "../modules/shared/room/application/DisconnectHandler";
-import { RoomFinder } from "../modules/shared/room/application/RoomFinder";
-import { TCPClientSocket } from "../modules/shared/socket/domain/TCPClientSocket";
+import { Logger } from "../shared/logger/domain/Logger";
+import { DisconnectHandler } from "../shared/room/application/DisconnectHandler";
+import { RoomFinder } from "../shared/room/application/RoomFinder";
+import { TCPClientSocket } from "../shared/socket/domain/TCPClientSocket";
 
 export class MercuryServer {
 	private readonly server: net.Server;

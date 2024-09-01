@@ -2,15 +2,15 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { EventEmitter } from "stream";
 
-import { PlayerInfoMessage } from "../../../../modules/messages/client-to-server/PlayerInfoMessage";
-import { Commands } from "../../../../modules/messages/domain/Commands";
-import { ClientMessage } from "../../../../modules/messages/MessageProcessor";
-import { SideDeckClientMessage } from "../../../../modules/messages/server-to-client/game-messages/SideDeckClientMessage";
-import { Room } from "../../../../modules/room/domain/Room";
-import { RoomState } from "../../../../modules/room/domain/RoomState";
-import { Logger } from "../../../../modules/shared/logger/domain/Logger";
-import { DuelStartClientMessage } from "../../../../modules/shared/messages/server-to-client/DuelStartClientMessage";
-import { ISocket } from "../../../../modules/shared/socket/domain/ISocket";
+import { PlayerInfoMessage } from "../../../../edopro/messages/client-to-server/PlayerInfoMessage";
+import { Commands } from "../../../../edopro/messages/domain/Commands";
+import { ClientMessage } from "../../../../edopro/messages/MessageProcessor";
+import { SideDeckClientMessage } from "../../../../edopro/messages/server-to-client/game-messages/SideDeckClientMessage";
+import { Room } from "../../../../edopro/room/domain/Room";
+import { RoomState } from "../../../../edopro/room/domain/RoomState";
+import { Logger } from "../../../../shared/logger/domain/Logger";
+import { DuelStartClientMessage } from "../../../../shared/messages/server-to-client/DuelStartClientMessage";
+import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { MercuryReconnect } from "../../application/MercuryReconnect";
 import { MercuryRoom } from "../MercuryRoom";

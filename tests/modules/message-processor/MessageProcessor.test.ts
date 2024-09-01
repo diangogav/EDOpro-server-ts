@@ -1,5 +1,5 @@
-import { Commands } from "@modules/messages/domain/Commands";
-import { MessageProcessor } from "@modules/messages/MessageProcessor";
+import { Commands } from "src/edopro/messages/domain/Commands";
+import { MessageProcessor } from "src/edopro/messages/MessageProcessor";
 
 describe("Message Processor", () => {
 	let data: Buffer;

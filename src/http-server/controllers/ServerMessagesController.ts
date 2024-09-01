@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 
+import { ServerMessageClientMessage } from "../../edopro/messages/server-to-client/ServerMessageClientMessage";
+import RoomList from "../../edopro/room/infrastructure/RoomList";
 import MercuryRoomList from "../../mercury/room/infrastructure/MercuryRoomList";
-import { ServerMessageClientMessage } from "../../modules/messages/server-to-client/ServerMessageClientMessage";
-import RoomList from "../../modules/room/infrastructure/RoomList";
-import { Logger } from "../../modules/shared/logger/domain/Logger";
+import { Logger } from "../../shared/logger/domain/Logger";
 
 export class CreateMessageRequest {
 	message: string;

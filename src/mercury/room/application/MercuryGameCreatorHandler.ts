@@ -1,9 +1,9 @@
 import { EventEmitter } from "stream";
 
-import { Commands } from "../../../modules/messages/domain/Commands";
-import { ClientMessage } from "../../../modules/messages/MessageProcessor";
-import { Logger } from "../../../modules/shared/logger/domain/Logger";
-import { GameCreatorMessageHandler } from "../../../modules/shared/room/domain/GameCreatorMessageHandler";
+import { Commands } from "../../../edopro/messages/domain/Commands";
+import { ClientMessage } from "../../../edopro/messages/MessageProcessor";
+import { Logger } from "../../../shared/logger/domain/Logger";
+import { GameCreatorMessageHandler } from "../../../shared/room/domain/GameCreatorMessageHandler";
 
 export class MercuryGameCreatorHandler implements GameCreatorMessageHandler {
 	private readonly logger: Logger;

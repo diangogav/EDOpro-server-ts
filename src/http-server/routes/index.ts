@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 import { Express } from "express";
 
-import { Logger } from "../../modules/shared/logger/domain/Logger";
+import { Logger } from "../../shared/logger/domain/Logger";
 import { CreateRoomController } from "../controllers/CreateRoomController";
 import { GetRoomListController } from "../controllers/GetRoomListController";
 import { ServerMessagesController } from "../controllers/ServerMessagesController";

@@ -6,7 +6,7 @@ import EventEmitter from "events";
 import MercuryBanListMemoryRepository from "../../../../../src/mercury/ban-list/infrastructure/MercuryBanListMemoryRepository";
 import { Mode } from "../../../../../src/mercury/room/domain/host-info/Mode.enum";
 import { MercuryRoom } from "../../../../../src/mercury/room/domain/MercuryRoom";
-import { Pino } from "../../../../../src/modules/shared/logger/infrastructure/Pino";
+import { Pino } from "../../../../../src/shared/logger/infrastructure/Pino";
 import { PlayerInfoMessageMother } from "../../../../shared/mothers/PlayerInfoMessageMother";
 
 describe("MercuryRoom", () => {
