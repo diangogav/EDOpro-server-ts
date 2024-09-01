@@ -42,6 +42,8 @@ export enum Rule {
 	ALL,
 }
 
+const CHILD_PROCESS_RETRY_MAX = 3;
+
 export class DeckRules {
 	public readonly mainMin: number;
 	public readonly mainMax: number;
@@ -322,7 +324,6 @@ export class Room extends YgoRoom {
 		client.socket.onMessage((data) => {
 			roomMessageEmitter.handleMessage(data);
 			messageProcessor.read(data);
-			// this.handleMessage(messageProcessor, client);
 		});
 	}
 
@@ -335,7 +336,6 @@ export class Room extends YgoRoom {
 		client.socket.onMessage((data) => {
 			roomMessageEmitter.handleMessage(data);
 			messageProcessor.read(data);
-			// this.handleMessage(messageProcessor, client);
 		});
 	}
 
@@ -370,9 +370,9 @@ export class Room extends YgoRoom {
 
 	setDuel(duel: ChildProcessWithoutNullStreams): void {
 		this._duel = duel;
-		this._duel.stdin.on("error", (err) => {
-			console.error("Error al escribir en el proceso secundario:", err.message);
-			this.writeToCppProcess("¡Hola desde Node.js!", 3);
+		this._duel.stdin.on("error", (error) => {
+			this.logger.error("Error writing to the child process");
+			this.logger.error(error);
 		});
 	}
 
@@ -486,8 +486,8 @@ export class Room extends YgoRoom {
 
 	nextAvailablePosition(position: number): { position: number; team: number } | null {
 		const positions = [...this.t1Positions, ...this.t0Positions].sort((a, b) => a - b);
-		const ocuppiedPositions = this.clients.map((client) => client.position);
-		const difference = this.getDifference(positions, ocuppiedPositions);
+		const occupiedPositions = this.clients.map((client) => client.position);
+		const difference = this.getDifference(positions, occupiedPositions);
 		if (difference.length === 0) {
 			return null;
 		}
@@ -626,7 +626,7 @@ export class Room extends YgoRoom {
 	}
 
 	public sendMessageToCpp(message: string): void {
-		this.writeToCppProcess(message, 3);
+		this.writeToCppProcess(message, CHILD_PROCESS_RETRY_MAX);
 	}
 
 	get side(): string {
@@ -751,9 +751,7 @@ export class Room extends YgoRoom {
 
 	private writeToCppProcess(messageToCpp: string, retryCount: number): void {
 		if (retryCount <= 0) {
-			console.error(
-				"Error: No se pudo escribir en el proceso secundario después de varios intentos."
-			);
+			this.logger.error("Error: Failed to write to the child process after multiple attempts");
 
 			return;
 		}
@@ -762,7 +760,7 @@ export class Room extends YgoRoom {
 		const success = this.duel?.stdin.write(message);
 
 		if (!success) {
-			console.error("Advertencia: La escritura no fue exitosa, reintentando...");
+			this.logger.error(`Warning: Write was unsuccessful, retrying...`);
 			setTimeout(() => {
 				this.writeToCppProcess(messageToCpp, retryCount - 1);
 			}, 100);
