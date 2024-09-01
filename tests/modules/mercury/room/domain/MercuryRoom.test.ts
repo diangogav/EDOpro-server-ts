@@ -332,4 +332,9 @@ describe("MercuryRoom", () => {
 		);
 		expect(room3.hostInfo.lflist).toBe(-1);
 	});
+	it("Should create a room with OCG ban list and ocg only if command is oo", () => {
+		const room = MercuryRoom.create(id, "oor#123", logger, emitter, playerInfoMessage, socketId);
+		expect(room.hostInfo.rule).toBe(0);
+		expect(room.hostInfo.lflist).toBe(0);
+	});
 });

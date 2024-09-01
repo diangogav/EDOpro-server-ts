@@ -215,7 +215,7 @@ export const priorityRuleMappings: RuleMappings = {
 			};
 		},
 		validate: (value) => {
-			return value === "to" || value === "tcgonly";
+			return value === "to" || value === "tcgonly" || value === "tor";
 		},
 	},
 	lf: {
@@ -245,6 +245,87 @@ export const priorityRuleMappings: RuleMappings = {
 		},
 		validate: (value) => {
 			return value === "nf" || value === "nolflist";
+		},
+	},
+	oor: {
+		get: () => {
+			return {
+				rule: 0,
+				lflist: 0,
+			};
+		},
+		validate: (value) => {
+			return value === "oor";
+		},
+	},
+	or: {
+		get: () => {
+			return {
+				rule: 5,
+				lflist: 0,
+			};
+		},
+		validate: (value) => {
+			return value === "or";
+		},
+	},
+	tr: {
+		get: () => {
+			return {
+				rule: 5,
+				lflist: MercuryBanListMemoryRepository.getLastTCGIndex(),
+			};
+		},
+		validate: (value) => {
+			return value === "tr";
+		},
+	},
+	oomr: {
+		get: () => {
+			return {
+				rule: 0,
+				lflist: 0,
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			return value === "oomr";
+		},
+	},
+	omr: {
+		get: () => {
+			return {
+				rule: 5,
+				lflist: 0,
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			return value === "omr";
+		},
+	},
+	tomr: {
+		get: () => {
+			return {
+				rule: 1,
+				lflist: MercuryBanListMemoryRepository.getLastTCGIndex(),
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			return value === "tomr";
+		},
+	},
+	tmr: {
+		get: () => {
+			return {
+				rule: 5,
+				lflist: MercuryBanListMemoryRepository.getLastTCGIndex(),
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			return value === "tmr";
 		},
 	},
 };
