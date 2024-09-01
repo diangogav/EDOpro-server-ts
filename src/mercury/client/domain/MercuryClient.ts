@@ -1,12 +1,12 @@
-import { Rank } from "@modules/shared/value-objects/Rank";
 import net from "net";
 import { MercuryPlayerInfoToCoreMessage } from "src/mercury/messages/server-to-core";
+import { Rank } from "src/shared/value-objects/Rank";
 
-import { ClientMessage } from "../../../modules/messages/MessageProcessor";
-import { YgoClient } from "../../../modules/shared/client/domain/YgoClient";
-import { Logger } from "../../../modules/shared/logger/domain/Logger";
-import { Team } from "../../../modules/shared/room/Team";
-import { ISocket } from "../../../modules/shared/socket/domain/ISocket";
+import { ClientMessage } from "../../../edopro/messages/MessageProcessor";
+import { YgoClient } from "../../../shared/client/domain/YgoClient";
+import { Logger } from "../../../shared/logger/domain/Logger";
+import { Team } from "../../../shared/room/Team";
+import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { MercuryCoreMessageEmitter } from "../../MercuryCoreMessageEmitter";
 import { SimpleRoomMessageEmitter } from "../../MercuryRoomMessageEmitter";
 import { MercuryRoom } from "../../room/domain/MercuryRoom";

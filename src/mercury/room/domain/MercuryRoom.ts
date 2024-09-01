@@ -1,15 +1,15 @@
-import BanListMemoryRepository from "@modules/ban-list/infrastructure/BanListMemoryRepository";
-import { Team } from "@modules/shared/room/Team";
-import { UserFinder } from "@modules/user/application/UserFinder";
-import { UserRedisRepository } from "@modules/user/infrastructure/UserRedisRepository";
 import { spawn } from "child_process";
 import net from "net";
+import BanListMemoryRepository from "src/edopro/ban-list/infrastructure/BanListMemoryRepository";
+import { UserFinder } from "src/edopro/user/application/UserFinder";
+import { UserRedisRepository } from "src/edopro/user/infrastructure/UserRedisRepository";
+import { Team } from "src/shared/room/Team";
 import { EventEmitter } from "stream";
 
-import { PlayerInfoMessage } from "../../../modules/messages/client-to-server/PlayerInfoMessage";
-import { RoomState } from "../../../modules/room/domain/RoomState";
-import { Logger } from "../../../modules/shared/logger/domain/Logger";
-import { DuelState, YgoRoom } from "../../../modules/shared/room/domain/YgoRoom";
+import { PlayerInfoMessage } from "../../../edopro/messages/client-to-server/PlayerInfoMessage";
+import { RoomState } from "../../../edopro/room/domain/RoomState";
+import { Logger } from "../../../shared/logger/domain/Logger";
+import { DuelState, YgoRoom } from "../../../shared/room/domain/YgoRoom";
 import MercuryBanListMemoryRepository from "../../ban-list/infrastructure/MercuryBanListMemoryRepository";
 import { MercuryClient } from "../../client/domain/MercuryClient";
 import {

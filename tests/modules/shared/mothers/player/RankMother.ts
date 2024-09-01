@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { Rank, RankAttributes } from "@modules/shared/value-objects/Rank";
+import { Rank, RankAttributes } from "src/shared/value-objects/Rank";
 
 export class RankMother {
 	static create(params?: Partial<RankAttributes>): Rank {

@@ -5,7 +5,7 @@ import path from "path";
 import MercuryRoomList from "src/mercury/room/infrastructure/MercuryRoomList";
 import WebSocket, { WebSocketServer } from "ws";
 
-import RoomList from "../modules/room/infrastructure/RoomList";
+import RoomList from "../edopro/room/infrastructure/RoomList";
 import { WebSocketMessage } from "./WebSocketMessage";
 
 class WebSocketSingleton {

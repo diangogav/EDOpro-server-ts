@@ -1,19 +1,19 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-import { ErrorMessages } from "@modules/messages/server-to-client/error-messages/ErrorMessages";
-import { ErrorClientMessage } from "@modules/messages/server-to-client/ErrorClientMessage";
-import { Rank } from "@modules/shared/value-objects/Rank";
-import { UserFinder } from "@modules/user/application/UserFinder";
-import { User } from "@modules/user/domain/User";
+import { ErrorMessages } from "src/edopro/messages/server-to-client/error-messages/ErrorMessages";
+import { ErrorClientMessage } from "src/edopro/messages/server-to-client/ErrorClientMessage";
+import { UserFinder } from "src/edopro/user/application/UserFinder";
+import { User } from "src/edopro/user/domain/User";
+import { Rank } from "src/shared/value-objects/Rank";
 import { EventEmitter } from "stream";
 
-import { PlayerInfoMessage } from "../../../../modules/messages/client-to-server/PlayerInfoMessage";
-import { Commands } from "../../../../modules/messages/domain/Commands";
-import { ClientMessage } from "../../../../modules/messages/MessageProcessor";
-import { RoomState } from "../../../../modules/room/domain/RoomState";
-import { YgoClient } from "../../../../modules/shared/client/domain/YgoClient";
-import { Logger } from "../../../../modules/shared/logger/domain/Logger";
-import { ISocket } from "../../../../modules/shared/socket/domain/ISocket";
+import { PlayerInfoMessage } from "../../../../edopro/messages/client-to-server/PlayerInfoMessage";
+import { Commands } from "../../../../edopro/messages/domain/Commands";
+import { ClientMessage } from "../../../../edopro/messages/MessageProcessor";
+import { RoomState } from "../../../../edopro/room/domain/RoomState";
+import { YgoClient } from "../../../../shared/client/domain/YgoClient";
+import { Logger } from "../../../../shared/logger/domain/Logger";
+import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { JoinGameCoreToClientMessage } from "../../../messages/core-to-client/JoinGameCoreToClientMessage";
 import { MercuryRoom } from "../MercuryRoom";

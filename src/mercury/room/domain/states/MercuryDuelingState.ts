@@ -1,19 +1,19 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-import { CoreMessages } from "@modules/messages/domain/CoreMessages";
-import { container } from "@modules/shared/dependency-injection";
-import { EventBus } from "@modules/shared/event-bus/EventBus";
-import { GameOverDomainEvent } from "@modules/shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
 import { EventEmitter } from "events";
+import { CoreMessages } from "src/edopro/messages/domain/CoreMessages";
+import { container } from "src/shared/dependency-injection";
+import { EventBus } from "src/shared/event-bus/EventBus";
+import { GameOverDomainEvent } from "src/shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 
-import { PlayerInfoMessage } from "../../../../modules/messages/client-to-server/PlayerInfoMessage";
-import { Commands } from "../../../../modules/messages/domain/Commands";
-import { ClientMessage } from "../../../../modules/messages/MessageProcessor";
-import { RoomState } from "../../../../modules/room/domain/RoomState";
-import { Logger } from "../../../../modules/shared/logger/domain/Logger";
-import { DuelState } from "../../../../modules/shared/room/domain/YgoRoom";
-import { ISocket } from "../../../../modules/shared/socket/domain/ISocket";
+import { PlayerInfoMessage } from "../../../../edopro/messages/client-to-server/PlayerInfoMessage";
+import { Commands } from "../../../../edopro/messages/domain/Commands";
+import { ClientMessage } from "../../../../edopro/messages/MessageProcessor";
+import { RoomState } from "../../../../edopro/room/domain/RoomState";
+import { Logger } from "../../../../shared/logger/domain/Logger";
+import { DuelState } from "../../../../shared/room/domain/YgoRoom";
+import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { MercuryReconnect } from "../../application/MercuryReconnect";
 import { MercuryRoom } from "../MercuryRoom";

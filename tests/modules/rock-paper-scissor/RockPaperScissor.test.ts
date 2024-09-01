@@ -1,5 +1,5 @@
-import { Choose, Result, RockPaperScissor } from "@modules/rock-paper-scissor/RockPaperScissor";
-import { RuleNotFoundError } from "@modules/rock-paper-scissor/RuleNotFoundError";
+import { Choose, Result, RockPaperScissor } from "src/edopro/rock-paper-scissor/RockPaperScissor";
+import { RuleNotFoundError } from "src/edopro/rock-paper-scissor/RuleNotFoundError";
 
 describe("<RockPaperScissor>", () => {
 	let SUT: RockPaperScissor;

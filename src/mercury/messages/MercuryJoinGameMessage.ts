@@ -1,5 +1,5 @@
-import { Message } from "../../modules/messages/Message";
-import { TextVO } from "../../modules/shared/value-objects/TextVO";
+import { Message } from "../../edopro/messages/Message";
+import { TextVO } from "../../shared/value-objects/TextVO";
 
 export class MercuryJoinGameMessage implements Message {
 	public readonly version: number;

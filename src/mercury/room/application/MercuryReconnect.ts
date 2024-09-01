@@ -1,6 +1,6 @@
-import { PlayerEnterClientMessage } from "../../../modules/shared/messages/server-to-client/PlayerEnterClientMessage";
-import { TypeChangeClientMessage } from "../../../modules/shared/messages/server-to-client/TypeChangeClientMessage";
-import { ISocket } from "../../../modules/shared/socket/domain/ISocket";
+import { PlayerEnterClientMessage } from "../../../shared/messages/server-to-client/PlayerEnterClientMessage";
+import { TypeChangeClientMessage } from "../../../shared/messages/server-to-client/TypeChangeClientMessage";
+import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { MercuryClient } from "../../client/domain/MercuryClient";
 import { MercuryRoom } from "../domain/MercuryRoom";
 
