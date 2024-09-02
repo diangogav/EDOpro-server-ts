@@ -13,6 +13,6 @@ export class UserEntity {
 	@Column()
 	password: string;
 
-	@Column("simple-json")
-	avatar: string;
+	@Column("simple-json", { nullable: true })
+	avatar: string | null;
 }
