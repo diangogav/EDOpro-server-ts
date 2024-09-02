@@ -12,8 +12,8 @@
     "lint": "eslint --ignore-path .gitignore . --ext .ts",
     "lint:fix": "npm run lint -- --fix",
     "prepare": "husky",
-    "create-user": "ts-node-dev -r tsconfig-paths/register --respawn --poll src/scripts/create-user.ts",
-    "migrate-users": "ts-node-dev -r tsconfig-paths/register --respawn --poll src/scripts/migrate-user-from-redis-to-postgres.ts"
+    "create-user": "ts-node-dev -r tsconfig-paths/register --respawn --poll src/utils/create-user.ts",
+    "migrate-users": "ts-node-dev -r tsconfig-paths/register --respawn --poll src/utils/migrate-user-from-redis-to-postgres.ts"
   },
   "keywords": [],
   "author": "",
