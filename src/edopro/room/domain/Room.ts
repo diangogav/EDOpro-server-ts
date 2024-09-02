@@ -1,6 +1,8 @@
 import { ChildProcessWithoutNullStreams } from "child_process";
 import shuffle from "shuffle-array";
 import BanListMemoryRepository from "src/edopro/ban-list/infrastructure/BanListMemoryRepository";
+import { UserFinder } from "src/shared/user/application/UserFinder";
+import { UserRedisRepository } from "src/shared/user/infrastructure/UserRedisRepository";
 import { EventEmitter } from "stream";
 
 import { config } from "../../../config";
@@ -19,8 +21,6 @@ import { JSONMessageProcessor } from "../../messages/JSONMessageProcessor";
 import { MessageProcessor } from "../../messages/MessageProcessor";
 import { Replay } from "../../replay/Replay";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
-import { UserFinder } from "../../user/application/UserFinder";
-import { UserRedisRepository } from "../../user/infrastructure/UserRedisRepository";
 import { FinishDuelHandler } from "../application/FinishDuelHandler";
 import { JoinToDuelAsSpectator } from "../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../application/Reconnect";

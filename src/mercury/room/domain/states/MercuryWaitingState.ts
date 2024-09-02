@@ -2,8 +2,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { ErrorMessages } from "src/edopro/messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "src/edopro/messages/server-to-client/ErrorClientMessage";
-import { UserFinder } from "src/edopro/user/application/UserFinder";
-import { User } from "src/edopro/user/domain/User";
+import { UserFinder } from "src/shared/user/application/UserFinder";
+import { User } from "src/shared/user/domain/User";
 import { Rank } from "src/shared/value-objects/Rank";
 import { EventEmitter } from "stream";
 

@@ -1,9 +1,9 @@
 import { spawn } from "child_process";
 import net from "net";
 import BanListMemoryRepository from "src/edopro/ban-list/infrastructure/BanListMemoryRepository";
-import { UserFinder } from "src/edopro/user/application/UserFinder";
-import { UserRedisRepository } from "src/edopro/user/infrastructure/UserRedisRepository";
 import { Team } from "src/shared/room/Team";
+import { UserFinder } from "src/shared/user/application/UserFinder";
+import { UserRedisRepository } from "src/shared/user/infrastructure/UserRedisRepository";
 import { EventEmitter } from "stream";
 
 import { PlayerInfoMessage } from "../../../edopro/messages/client-to-server/PlayerInfoMessage";

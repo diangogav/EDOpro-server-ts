@@ -1,6 +1,7 @@
-import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
-import { ServerErrorMessage } from "../../messages/domain/ServerErrorMessage";
-import { ServerErrorClientMessage } from "../../messages/server-to-client/ServerErrorMessageClientMessage";
+import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
+import { ServerErrorMessage } from "@edopro/messages/domain/ServerErrorMessage";
+import { ServerErrorClientMessage } from "@edopro/messages/server-to-client/ServerErrorMessageClientMessage";
+
 import { User } from "../domain/User";
 import { UserRepository } from "../domain/UserRepository";
 

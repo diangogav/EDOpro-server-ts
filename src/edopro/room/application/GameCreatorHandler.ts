@@ -1,3 +1,5 @@
+import { UserFinder } from "src/shared/user/application/UserFinder";
+import { User } from "src/shared/user/domain/User";
 import { EventEmitter } from "stream";
 
 import { config } from "../../../config";
@@ -18,8 +20,6 @@ import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientM
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
 import { PlayerChangeClientMessage } from "../../messages/server-to-client/PlayerChangeClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
-import { UserFinder } from "../../user/application/UserFinder";
-import { User } from "../../user/domain/User";
 import { Room } from "../domain/Room";
 import RoomList from "../infrastructure/RoomList";
 

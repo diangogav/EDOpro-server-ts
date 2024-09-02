@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { randomUUID as uuidv4 } from "crypto";
 import net, { Socket } from "net";
+import { UserFinder } from "src/shared/user/application/UserFinder";
+import { UserRedisRepository } from "src/shared/user/infrastructure/UserRedisRepository";
 import { EventEmitter } from "stream";
 
 import { MessageEmitter } from "../edopro/MessageEmitter";
 import { GameCreatorHandler } from "../edopro/room/application/GameCreatorHandler";
 import { JoinHandler } from "../edopro/room/application/JoinHandler";
 import { BasicStatsCalculator } from "../edopro/stats/basic/application/BasicStatsCalculator";
-import { UserFinder } from "../edopro/user/application/UserFinder";
-import { UserRedisRepository } from "../edopro/user/infrastructure/UserRedisRepository";
 import { container } from "../shared/dependency-injection";
 import { EventBus } from "../shared/event-bus/EventBus";
 import { Logger } from "../shared/logger/domain/Logger";

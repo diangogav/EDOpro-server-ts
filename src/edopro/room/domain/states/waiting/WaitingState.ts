@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
+import { UserFinder } from "src/shared/user/application/UserFinder";
+import { User } from "src/shared/user/domain/User";
 import { EventEmitter } from "stream";
 
 import { Logger } from "../../../../../shared/logger/domain/Logger";
@@ -22,8 +24,6 @@ import { PlayerChangeClientMessage } from "../../../../messages/server-to-client
 import { RPSChooseClientMessage } from "../../../../messages/server-to-client/RPSChooseClientMessage";
 import { ServerErrorClientMessage } from "../../../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { WatchChangeClientMessage } from "../../../../messages/server-to-client/WatchChangeClientMessage";
-import { UserFinder } from "../../../../user/application/UserFinder";
-import { User } from "../../../../user/domain/User";
 import { PlayerRoomState } from "../../PlayerRoomState";
 import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";

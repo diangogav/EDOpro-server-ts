@@ -1,6 +1,7 @@
+import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
+
 import { Redis } from "../../../shared/db/redis/infrastructure/Redis";
 import { Rank } from "../../../shared/value-objects/Rank";
-import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
 import { User } from "../domain/User";
 import { UserRepository } from "../domain/UserRepository";
 
@@ -14,13 +15,13 @@ export class UserRedisRepository implements UserRepository {
 			username: string;
 			password: string;
 		};
-		const banlistNames = BanListMemoryRepository.getOnlyWithName();
+		const banListNames = BanListMemoryRepository.getOnlyWithName();
 
-		const positionRequests = banlistNames.map((name) =>
+		const positionRequests = banListNames.map((name) =>
 			redis.zrevrank(`leaderboard:${name}:points`, username)
 		);
 
-		const scoreRequests = banlistNames.map((name) =>
+		const scoreRequests = banListNames.map((name) =>
 			redis.zscore(`leaderboard:${name}:points`, username)
 		);
 
@@ -46,7 +47,7 @@ export class UserRedisRepository implements UserRepository {
 			return null;
 		}
 
-		const userRanks = banlistNames.map((item, index) => {
+		const userRanks = banListNames.map((item, index) => {
 			if (index === 0) {
 				return new Rank({
 					name: "Global",
@@ -56,7 +57,7 @@ export class UserRedisRepository implements UserRepository {
 			}
 
 			return new Rank({
-				name: banlistNames[index - 1],
+				name: banListNames[index - 1],
 				position: (positions[index] ?? Number.POSITIVE_INFINITY) + 1,
 				points: scores[index] ?? 0,
 			});

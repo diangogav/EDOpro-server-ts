@@ -1,3 +1,6 @@
+import { UserFinder } from "src/shared/user/application/UserFinder";
+import { User } from "src/shared/user/domain/User";
+
 import { PlayerEnterClientMessage } from "../../../shared/messages/server-to-client/PlayerEnterClientMessage";
 import { TypeChangeClientMessage } from "../../../shared/messages/server-to-client/TypeChangeClientMessage";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
@@ -7,8 +10,6 @@ import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMes
 import { ErrorMessages } from "../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientMessage";
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
-import { UserFinder } from "../../user/application/UserFinder";
-import { User } from "../../user/domain/User";
 import { Room } from "../domain/Room";
 
 export class Reconnect {
