@@ -3,7 +3,7 @@ import { Column, Entity, PrimaryColumn } from "typeorm";
 @Entity({
 	name: "users",
 })
-export class UserEntity {
+export class UserProfileEntity {
 	@PrimaryColumn()
 	id: string;
 
@@ -12,6 +12,9 @@ export class UserEntity {
 
 	@Column()
 	password: string;
+
+	@Column()
+	email: string;
 
 	@Column("simple-json", { nullable: true })
 	avatar: string | null;

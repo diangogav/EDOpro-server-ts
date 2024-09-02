@@ -1,7 +1,7 @@
 import { config } from "src/config";
 import { DataSource, DataSourceOptions } from "typeorm";
 
-import { UserEntity } from "../../../user/infrastructure/postgres/UserEntity";
+import { UserProfileEntity } from "../../../user-profile/infrastructure/postgres/UserProfileEntity";
 
 const options: DataSourceOptions = {
 	type: "postgres",
@@ -12,7 +12,7 @@ const options: DataSourceOptions = {
 	database: config.postgres.database,
 	synchronize: true,
 	logging: true,
-	entities: [UserEntity],
+	entities: [UserProfileEntity],
 	subscribers: [],
 	migrations: [],
 };
