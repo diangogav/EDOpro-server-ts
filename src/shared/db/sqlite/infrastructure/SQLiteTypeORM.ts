@@ -2,8 +2,8 @@ import { readdir } from "fs/promises";
 import { join } from "path";
 import { DataSource } from "typeorm";
 
-import { CardEntity } from "../../../../edopro/card/infrastructure/postgres/CardEntity";
-import { CardTextEntity } from "../../../../edopro/card/infrastructure/postgres/CardTextEntity";
+import { CardEntity } from "../../../../edopro/card/infrastructure/sqlite/CardEntity";
+import { CardTextEntity } from "../../../../edopro/card/infrastructure/sqlite/CardTextEntity";
 import { Database } from "../../domain/Database";
 import { dataSource } from "./data-source";
 

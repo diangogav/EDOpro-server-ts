@@ -1,7 +1,7 @@
 import { DataSource, DataSourceOptions } from "typeorm";
 
-import { CardEntity } from "../../../../edopro/card/infrastructure/postgres/CardEntity";
-import { CardTextEntity } from "../../../../edopro/card/infrastructure/postgres/CardTextEntity";
+import { CardEntity } from "../../../../edopro/card/infrastructure/sqlite/CardEntity";
+import { CardTextEntity } from "../../../../edopro/card/infrastructure/sqlite/CardTextEntity";
 
 const options: DataSourceOptions = {
 	type: "sqlite",

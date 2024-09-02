@@ -1,4 +1,4 @@
-import { dataSource } from "../../../../shared/db/postgres/infrastructure/data-source";
+import { dataSource } from "../../../../shared/db/sqlite/infrastructure/data-source";
 import { Card } from "../../domain/Card";
 import { CardRepository } from "../../domain/CardRepository";
 import { CardEntity } from "./CardEntity";

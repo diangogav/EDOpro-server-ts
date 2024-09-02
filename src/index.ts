@@ -3,7 +3,7 @@ import "src/shared/error-handler/error-handler";
 
 import { BanListLoader } from "src/edopro/ban-list/infrastructure/BanListLoader";
 import BanListMemoryRepository from "src/edopro/ban-list/infrastructure/BanListMemoryRepository";
-import { SQLiteTypeORM } from "src/shared/db/postgres/infrastructure/SQLiteTypeORM";
+import { SQLiteTypeORM } from "src/shared/db/sqlite/infrastructure/SQLiteTypeORM";
 import { Pino } from "src/shared/logger/infrastructure/Pino";
 
 import { Server } from "./http-server/Server";
