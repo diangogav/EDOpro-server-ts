@@ -16,14 +16,14 @@ export class UserProfilePostgresRepository implements UserProfileRepository {
 	}
 
 	async create(userProfile: UserProfile): Promise<void> {
-		const userProfileEntity = new UserProfileEntity();
-		userProfileEntity.id = userProfile.id;
-		userProfileEntity.username = userProfile.username;
-		userProfileEntity.password = userProfile.password;
-		userProfileEntity.email = userProfile.email;
-		userProfileEntity.avatar = userProfile.avatar;
-
 		const repository = dataSource.getRepository(UserProfileEntity);
+		const userProfileEntity = repository.create({
+			id: userProfile.id,
+			username: userProfile.username,
+			password: userProfile.password,
+			email: userProfile.email,
+			avatar: userProfile.avatar,
+		});
 		await repository.save(userProfileEntity);
 	}
 }

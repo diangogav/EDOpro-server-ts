@@ -1,4 +1,6 @@
 import { config } from "src/config";
+import { DuelResumeEntity } from "src/shared/stats/match-resume/duel-resume/infrastructure/DuelResumeEntity";
+import { MatchResumeEntity } from "src/shared/stats/match-resume/infrastructure/MatchResumeEntity";
 import { DataSource, DataSourceOptions } from "typeorm";
 
 import { UserProfileEntity } from "../../../user-profile/infrastructure/postgres/UserProfileEntity";
@@ -12,7 +14,7 @@ const options: DataSourceOptions = {
 	database: config.postgres.database,
 	synchronize: true,
 	logging: true,
-	entities: [UserProfileEntity],
+	entities: [UserProfileEntity, MatchResumeEntity, DuelResumeEntity],
 	subscribers: [],
 	migrations: [],
 };

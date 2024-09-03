@@ -16,9 +16,13 @@ export class UserProfileCreator {
 		password: string;
 		email: string;
 		avatar: string | null;
-	}): Promise<void> {
+	}): Promise<{ id: string }> {
 		const id = randomUUID();
 		const userProfile = UserProfile.create({ id, username, password, email, avatar });
 		await this.userProfileRepository.create(userProfile);
+
+		return {
+			id,
+		};
 	}
 }
