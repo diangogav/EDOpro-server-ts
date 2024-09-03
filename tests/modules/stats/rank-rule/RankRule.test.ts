@@ -1,5 +1,5 @@
-import { RankRuleRepository } from "src/edopro/stats/by-rank-rule/rank-rules/domain/RankRuleRepository";
-import { RankRuleMemoryRepository } from "src/edopro/stats/by-rank-rule/rank-rules/infrastructure/RankRuleMemoryRepository";
+import { RankRuleRepository } from "src/shared/stats/by-rank-rule/rank-rules/domain/RankRuleRepository";
+import { RankRuleMemoryRepository } from "src/shared/stats/by-rank-rule/rank-rules/infrastructure/RankRuleMemoryRepository";
 
 describe("Rank Rule", () => {
 	const rankRuleRepository: RankRuleRepository = new RankRuleMemoryRepository();

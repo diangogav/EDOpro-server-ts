@@ -1,10 +1,10 @@
 /* eslint-disable no-await-in-loop */
 
-import { DomainEventSubscriber } from "../../../../shared/event-bus/EventBus";
-import { Player } from "../../../../shared/player/domain/Player";
-import { GameOverDomainEvent } from "../../../../shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
-import BanListMemoryRepository from "../../../ban-list/infrastructure/BanListMemoryRepository";
-import { RoomRepository } from "../../../room/domain/RoomRepository";
+import BanListMemoryRepository from "../../../../edopro/ban-list/infrastructure/BanListMemoryRepository";
+import { RoomRepository } from "../../../../edopro/room/domain/RoomRepository";
+import { DomainEventSubscriber } from "../../../event-bus/EventBus";
+import { Player } from "../../../player/domain/Player";
+import { GameOverDomainEvent } from "../../../room/domain/match/domain/domain-events/GameOverDomainEvent";
 
 export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomainEvent> {
 	static readonly ListenTo = GameOverDomainEvent.DOMAIN_EVENT;

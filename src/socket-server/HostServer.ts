@@ -8,7 +8,6 @@ import { EventEmitter } from "stream";
 import { MessageEmitter } from "../edopro/MessageEmitter";
 import { GameCreatorHandler } from "../edopro/room/application/GameCreatorHandler";
 import { JoinHandler } from "../edopro/room/application/JoinHandler";
-import { BasicStatsCalculator } from "../edopro/stats/basic/application/BasicStatsCalculator";
 import { container } from "../shared/dependency-injection";
 import { EventBus } from "../shared/event-bus/EventBus";
 import { Logger } from "../shared/logger/domain/Logger";
@@ -16,6 +15,7 @@ import { DisconnectHandler } from "../shared/room/application/DisconnectHandler"
 import { RoomFinder } from "../shared/room/application/RoomFinder";
 import { RedisRoomRepository } from "../shared/room/domain/match/infrastructure/RedisRoomRepository";
 import { TCPClientSocket } from "../shared/socket/domain/TCPClientSocket";
+import { BasicStatsCalculator } from "../shared/stats/basic/application/BasicStatsCalculator";
 
 export class HostServer {
 	private readonly server: net.Server;

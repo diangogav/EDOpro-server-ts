@@ -1,8 +1,8 @@
 import { BanList } from "src/edopro/ban-list/domain/BanList";
 import BanListMemoryRepository from "src/edopro/ban-list/infrastructure/BanListMemoryRepository";
-import { BasicStatsCalculator } from "src/edopro/stats/basic/application/BasicStatsCalculator";
 import { Player } from "src/shared/player/domain/Player";
 import { Team } from "src/shared/room/Team";
+import { BasicStatsCalculator } from "src/shared/stats/basic/application/BasicStatsCalculator";
 import { Rank } from "src/shared/value-objects/Rank";
 
 import { GameMother } from "../../shared/mothers/player/GameMother";
