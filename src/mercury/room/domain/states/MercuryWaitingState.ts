@@ -2,8 +2,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { ErrorMessages } from "src/edopro/messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "src/edopro/messages/server-to-client/ErrorClientMessage";
-import { UserFinder } from "src/shared/user/application/UserFinder";
-import { User } from "src/shared/user/domain/User";
+import { UserAuth } from "src/shared/user-auth/application/UserAuth";
+import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 import { Rank } from "src/shared/value-objects/Rank";
 import { EventEmitter } from "stream";
 
@@ -20,7 +20,7 @@ import { MercuryRoom } from "../MercuryRoom";
 
 export class MercuryWaitingState extends RoomState {
 	constructor(
-		private readonly userFinder: UserFinder,
+		private readonly userAuth: UserAuth,
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger
 	) {
@@ -62,8 +62,8 @@ export class MercuryWaitingState extends RoomState {
 			const host = room.clients.length === 0;
 
 			if (room.ranked) {
-				const user = await this.userFinder.run(playerInfoMessage);
-				if (!(user instanceof User)) {
+				const user = await this.userAuth.run(playerInfoMessage);
+				if (!(user instanceof UserProfile)) {
 					socket.send(user as Buffer);
 					socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 
@@ -75,7 +75,7 @@ export class MercuryWaitingState extends RoomState {
 					name: playerInfoMessage.name,
 					room,
 					host,
-					ranks: user.ranks,
+					ranks: [],
 				});
 				room.addClient(client);
 			} else {

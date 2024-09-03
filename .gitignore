@@ -29,3 +29,5 @@ app.log
 .DS_Store
 .idea
 
+# Docker
+postgres_data

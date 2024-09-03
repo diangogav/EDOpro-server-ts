@@ -1,5 +1,5 @@
-import { UserFinder } from "src/shared/user/application/UserFinder";
-import { User } from "src/shared/user/domain/User";
+import { UserAuth } from "src/shared/user-auth/application/UserAuth";
+import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 
 import { PlayerEnterClientMessage } from "../../../shared/messages/server-to-client/PlayerEnterClientMessage";
 import { TypeChangeClientMessage } from "../../../shared/messages/server-to-client/TypeChangeClientMessage";
@@ -13,7 +13,7 @@ import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameC
 import { Room } from "../domain/Room";
 
 export class Reconnect {
-	constructor(private readonly userFinder: UserFinder) {}
+	constructor(private readonly userAuth: UserAuth) {}
 
 	async run(
 		playerInfoMessage: PlayerInfoMessage,
@@ -23,9 +23,9 @@ export class Reconnect {
 		room: Room
 	): Promise<void> {
 		if (room.ranked) {
-			const user = await this.userFinder.run(playerInfoMessage);
+			const user = await this.userAuth.run(playerInfoMessage);
 
-			if (!(user instanceof User)) {
+			if (!(user instanceof UserProfile)) {
 				socket.send(user as Buffer);
 				socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 

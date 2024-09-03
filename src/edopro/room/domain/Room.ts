@@ -1,8 +1,8 @@
 import { ChildProcessWithoutNullStreams } from "child_process";
 import shuffle from "shuffle-array";
 import BanListMemoryRepository from "src/edopro/ban-list/infrastructure/BanListMemoryRepository";
-import { UserFinder } from "src/shared/user/application/UserFinder";
-import { UserRedisRepository } from "src/shared/user/infrastructure/UserRedisRepository";
+import { UserAuth } from "src/shared/user-auth/application/UserAuth";
+import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { EventEmitter } from "stream";
 
 import { config } from "../../../config";
@@ -285,7 +285,7 @@ export class Room extends YgoRoom {
 		this.roomState = new WaitingState(
 			this.emitter,
 			this.logger,
-			new UserFinder(new UserRedisRepository()),
+			new UserAuth(new UserProfilePostgresRepository()),
 			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules)
 		);
 	}
@@ -391,7 +391,7 @@ export class Room extends YgoRoom {
 		this.roomState = new DuelingState(
 			this.emitter,
 			this.logger,
-			new Reconnect(new UserFinder(new UserRedisRepository())),
+			new Reconnect(new UserAuth(new UserProfilePostgresRepository())),
 			new JoinToDuelAsSpectator(),
 			this,
 			new JSONMessageProcessor()
@@ -406,7 +406,7 @@ export class Room extends YgoRoom {
 		this.roomState = new SideDeckingState(
 			this.emitter,
 			this.logger,
-			new Reconnect(new UserFinder(new UserRedisRepository())),
+			new Reconnect(new UserAuth(new UserProfilePostgresRepository())),
 			new JoinToDuelAsSpectator(),
 			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules)
 		);
@@ -418,7 +418,7 @@ export class Room extends YgoRoom {
 		this.roomState = new RockPaperScissorState(
 			this.emitter,
 			this.logger,
-			new Reconnect(new UserFinder(new UserRedisRepository())),
+			new Reconnect(new UserAuth(new UserProfilePostgresRepository())),
 			new JoinToDuelAsSpectator()
 		);
 	}
@@ -429,7 +429,7 @@ export class Room extends YgoRoom {
 		this.roomState = new ChossingOrderState(
 			this.emitter,
 			this.logger,
-			new Reconnect(new UserFinder(new UserRedisRepository())),
+			new Reconnect(new UserAuth(new UserProfilePostgresRepository())),
 			new JoinToDuelAsSpectator()
 		);
 	}

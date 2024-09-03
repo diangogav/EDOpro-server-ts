@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-import { UserFinder } from "src/shared/user/application/UserFinder";
-import { User } from "src/shared/user/domain/User";
+import { UserAuth } from "src/shared/user-auth/application/UserAuth";
+import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 import { EventEmitter } from "stream";
 
 import { Logger } from "../../../../../shared/logger/domain/Logger";
@@ -33,7 +33,7 @@ export class WaitingState extends RoomState {
 	constructor(
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
-		private readonly userFinder: UserFinder,
+		private readonly userAuth: UserAuth,
 		private readonly deckCreator: DeckCreator
 	) {
 		super(eventEmitter);
@@ -300,15 +300,15 @@ export class WaitingState extends RoomState {
 		}
 
 		if (room.ranked) {
-			const user = await this.userFinder.run(playerInfoMessage);
+			const user = await this.userAuth.run(playerInfoMessage);
 
-			if (!(user instanceof User)) {
+			if (!(user instanceof UserProfile)) {
 				socket.send(user as Buffer);
 				socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 
 				return;
 			}
-			this.player(place, joinGameMessage, socket, playerInfoMessage, room, user.ranks);
+			this.player(place, joinGameMessage, socket, playerInfoMessage, room, []);
 
 			return;
 		}
