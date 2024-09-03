@@ -22,10 +22,7 @@ export class RecordMatch implements DomainEventSubscriber<GameOverDomainEvent> {
 	}
 
 	async handle(event: GameOverDomainEvent): Promise<void> {
-		if (!event.data.ranked) {
-			return;
-		}
-		const banList = BanListMemoryRepository.findByHash(event.data.banlistHash);
+		const banList = BanListMemoryRepository.findByHash(event.data.banListHash);
 		const players = event.data.players.map((item) => new Player(item));
 
 		const handleStatsCalculations = new EarnedPointsCalculator(
@@ -53,9 +50,8 @@ export class RecordMatch implements DomainEventSubscriber<GameOverDomainEvent> {
 					bestOf: event.data.bestOf,
 					date: event.data.date,
 					players: players.map((item) => item.toPresentation()),
-					ranked: event.data.ranked,
-					banlistHash: event.data.banlistHash,
-					banlistName: banList?.name ?? "N/A",
+					banListHash: event.data.banListHash,
+					banListName: banList?.name ?? "N/A",
 				});
 			}
 		}

@@ -12,8 +12,7 @@ export class GameOverDomainEventMother {
 			bestOf: faker.number.int({ min: 1, max: 9 }),
 			date: faker.date.past(),
 			players: [PlayerMother.create().toPresentation(), PlayerMother.create().toPresentation()],
-			ranked: faker.datatype.boolean(),
-			banlistHash: faker.number.int(),
+			banListHash: faker.number.int(),
 			...params,
 		});
 	}

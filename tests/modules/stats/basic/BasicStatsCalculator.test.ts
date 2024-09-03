@@ -80,7 +80,6 @@ describe("BasicStatsCalculator", () => {
 		const players = [player, opponent];
 		const event = GameOverDomainEventMother.create({
 			players: players.map((player) => player.toPresentation()),
-			ranked: true,
 		});
 		await basicStatsCalculator.handle(event);
 		expect(roomRepository.mockUpdatePlayerPoints).toHaveBeenCalledTimes(2);
@@ -99,29 +98,26 @@ describe("BasicStatsCalculator", () => {
 			bestOf: event.data.bestOf,
 			date: event.data.date,
 			players: players.map((player) => player.toPresentation()),
-			ranked: event.data.ranked,
-			banlistHash: event.data.banlistHash,
-			banlistName: "N/A",
+			banListHash: event.data.banListHash,
+			banListName: "N/A",
 		});
 		expect(roomRepository.mockSaveMatch).toHaveBeenNthCalledWith(2, opponent.name, {
 			bestOf: event.data.bestOf,
 			date: event.data.date,
 			players: players.map((player) => player.toPresentation()),
-			ranked: event.data.ranked,
-			banlistHash: event.data.banlistHash,
-			banlistName: "N/A",
+			banListHash: event.data.banListHash,
+			banListName: "N/A",
 		});
 	});
 
-	it("Should calculate players points correctly for global and banlist", async () => {
-		const banlist = new BanList();
-		banlist.setName("TCG");
-		BanListMemoryRepository.add(banlist);
+	it("Should calculate players points correctly for global and ban list", async () => {
+		const banList = new BanList();
+		banList.setName("TCG");
+		BanListMemoryRepository.add(banList);
 		const players = [player, opponent];
 		const event = GameOverDomainEventMother.create({
 			players: players.map((player) => player.toPresentation()),
-			ranked: true,
-			banlistHash: banlist.hash,
+			banListHash: banList.hash,
 		});
 		await basicStatsCalculator.handle(event);
 		expect(roomRepository.mockUpdatePlayerPoints).toHaveBeenCalledTimes(2);
@@ -138,18 +134,18 @@ describe("BasicStatsCalculator", () => {
 			1,
 			player.name,
 			3,
-			banlist
+			banList
 		);
 		expect(roomRepository.mockUpdatePlayerPointsByBanList).toHaveBeenNthCalledWith(
 			2,
 			opponent.name,
 			-3,
-			banlist
+			banList
 		);
 		expect(roomRepository.mockIncreaseWinsByBanList).toHaveBeenCalledTimes(1);
-		expect(roomRepository.mockIncreaseWinsByBanList).toHaveBeenCalledWith(player.name, banlist);
+		expect(roomRepository.mockIncreaseWinsByBanList).toHaveBeenCalledWith(player.name, banList);
 		expect(roomRepository.mockIncreaseLosesByBanList).toHaveBeenCalledTimes(1);
-		expect(roomRepository.mockIncreaseLosesByBanList).toHaveBeenCalledWith(opponent.name, banlist);
+		expect(roomRepository.mockIncreaseLosesByBanList).toHaveBeenCalledWith(opponent.name, banList);
 
 		expect(roomRepository.mockSaveMatch).toBeCalledTimes(2);
 
@@ -163,17 +159,15 @@ describe("BasicStatsCalculator", () => {
 			bestOf: event.data.bestOf,
 			date: event.data.date,
 			players: players.map((player) => player.toPresentation()),
-			ranked: event.data.ranked,
-			banlistHash: event.data.banlistHash,
-			banlistName: banlist.name,
+			banListHash: event.data.banListHash,
+			banListName: banList.name,
 		});
 		expect(roomRepository.mockSaveMatch).toHaveBeenNthCalledWith(2, opponent.name, {
 			bestOf: event.data.bestOf,
 			date: event.data.date,
 			players: players.map((player) => player.toPresentation()),
-			ranked: event.data.ranked,
-			banlistHash: event.data.banlistHash,
-			banlistName: banlist.name,
+			banListHash: event.data.banListHash,
+			banListName: banList.name,
 		});
 	});
 
@@ -202,7 +196,6 @@ describe("BasicStatsCalculator", () => {
 		const players = [player, opponent];
 		const event = GameOverDomainEventMother.create({
 			players: players.map((player) => player.toPresentation()),
-			ranked: true,
 		});
 		await basicStatsCalculator.handle(event);
 		expect(roomRepository.mockUpdatePlayerPoints).toHaveBeenCalledTimes(2);
@@ -221,17 +214,15 @@ describe("BasicStatsCalculator", () => {
 			bestOf: event.data.bestOf,
 			date: event.data.date,
 			players: players.map((player) => player.toPresentation()),
-			ranked: event.data.ranked,
-			banlistHash: event.data.banlistHash,
-			banlistName: "N/A",
+			banListHash: event.data.banListHash,
+			banListName: "N/A",
 		});
 		expect(roomRepository.mockSaveMatch).toHaveBeenNthCalledWith(2, opponent.name, {
 			bestOf: event.data.bestOf,
 			date: event.data.date,
 			players: players.map((player) => player.toPresentation()),
-			ranked: event.data.ranked,
-			banlistHash: event.data.banlistHash,
-			banlistName: "N/A",
+			banListHash: event.data.banListHash,
+			banListName: "N/A",
 		});
 	});
 });
