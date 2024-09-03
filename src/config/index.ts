@@ -15,6 +15,8 @@ export const config = {
 		database: process.env.POSTGRES_DB,
 		host: process.env.POSTGRES_HOST ?? "localhost",
 		port: process.env.POSTGRES_PORT ? Number(process.env.POSTGRES_PORT) : 5432,
-		enabled: process.env.POSTGRES_ENABLED === "true",
+	},
+	ranking: {
+		enabled: process.env.RANK_ENABLED,
 	},
 };

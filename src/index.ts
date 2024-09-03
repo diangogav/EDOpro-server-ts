@@ -28,7 +28,7 @@ async function start(): Promise<void> {
 	await MercuryBanListLoader.load("./mercury/lflist.conf");
 	await database.connect();
 	await database.initialize();
-	if (config.postgres.enabled) {
+	if (config.ranking.enabled) {
 		logger.info("Postgres database enabled");
 		const postgresDatabase = new PostgresTypeORM();
 		await postgresDatabase.connect();
