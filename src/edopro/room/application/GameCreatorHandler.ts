@@ -1,5 +1,5 @@
-import { UserFinder } from "src/shared/user/application/UserFinder";
-import { User } from "src/shared/user/domain/User";
+import { UserAuth } from "src/shared/user-auth/application/UserAuth";
+import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 import { EventEmitter } from "stream";
 
 import { config } from "../../../config";
@@ -27,14 +27,14 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 	private readonly eventEmitter: EventEmitter;
 	private readonly logger: Logger;
 	private readonly socket: ISocket;
-	private readonly userFinder: UserFinder;
+	private readonly userAuth: UserAuth;
 	private readonly HOST_CLIENT = 0x10;
 
-	constructor(eventEmitter: EventEmitter, logger: Logger, socket: ISocket, userFinder: UserFinder) {
+	constructor(eventEmitter: EventEmitter, logger: Logger, socket: ISocket, userAuth: UserAuth) {
 		this.eventEmitter = eventEmitter;
 		this.logger = logger;
 		this.socket = socket;
-		this.userFinder = userFinder;
+		this.userAuth = userAuth;
 		this.eventEmitter.on(Commands.CREATE_GAME as unknown as string, (message: ClientMessage) => {
 			void this.handle(message);
 		});
@@ -51,16 +51,15 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 			return;
 		}
 
-		const user = await this.userFinder.run(playerInfoMessage);
-
-		if (!(user instanceof User)) {
+		const user = await this.userAuth.run(playerInfoMessage);
+		if (!(user instanceof UserProfile)) {
 			this.socket.send(user as Buffer);
 			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 
 			return;
 		}
 
-		this.create(createGameMessage, playerInfoMessage, user.ranks);
+		this.create(createGameMessage, playerInfoMessage, []);
 	}
 
 	private create(

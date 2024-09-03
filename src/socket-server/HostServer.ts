@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { randomUUID as uuidv4 } from "crypto";
 import net, { Socket } from "net";
-import { UserFinder } from "src/shared/user/application/UserFinder";
-import { UserRedisRepository } from "src/shared/user/infrastructure/UserRedisRepository";
+import { UserAuth } from "src/shared/user-auth/application/UserAuth";
+import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { EventEmitter } from "stream";
 
 import { MessageEmitter } from "../edopro/MessageEmitter";
@@ -42,7 +42,7 @@ export class HostServer {
 				eventEmitter,
 				this.logger,
 				tcpClientSocket,
-				new UserFinder(new UserRedisRepository())
+				new UserAuth(new UserProfilePostgresRepository())
 			);
 			const joinHandler = new JoinHandler(eventEmitter, this.logger, tcpClientSocket);
 			const messageEmitter = new MessageEmitter(

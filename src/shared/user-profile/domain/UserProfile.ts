@@ -50,4 +50,18 @@ export class UserProfile {
 			avatar,
 		});
 	}
+
+	static from(data: {
+		id: string;
+		username: string;
+		password: string;
+		email: string;
+		avatar: string | null;
+	}): UserProfile {
+		return new UserProfile(data);
+	}
+
+	isValidPassword(password: string): boolean {
+		return bcrypt.compareSync(password, this.password);
+	}
 }

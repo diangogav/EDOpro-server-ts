@@ -5,6 +5,16 @@ import { UserProfileRepository } from "../../domain/UserProfileRepository";
 import { UserProfileEntity } from "./UserProfileEntity";
 
 export class UserProfilePostgresRepository implements UserProfileRepository {
+	async findByUsername(username: string): Promise<UserProfile | null> {
+		const repository = dataSource.getRepository(UserProfileEntity);
+		const userProfileEntity = await repository.findOneBy({ username });
+		if (!userProfileEntity) {
+			return null;
+		}
+
+		return UserProfile.from(userProfileEntity);
+	}
+
 	async create(userProfile: UserProfile): Promise<void> {
 		const userProfileEntity = new UserProfileEntity();
 		userProfileEntity.id = userProfile.id;
