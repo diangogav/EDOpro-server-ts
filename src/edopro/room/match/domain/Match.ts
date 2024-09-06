@@ -1,12 +1,10 @@
 import { PlayerData } from "src/shared/player/domain/PlayerData";
 import { Team } from "src/shared/room/Team";
-import { Rank } from "src/shared/value-objects/Rank";
 
 export type Player = {
 	name: string;
 	// deck: Deck;
 	team: number;
-	ranks: Rank[];
 };
 
 export type MatchHistory = {

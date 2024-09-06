@@ -4,7 +4,6 @@ import { ErrorMessages } from "src/edopro/messages/server-to-client/error-messag
 import { ErrorClientMessage } from "src/edopro/messages/server-to-client/ErrorClientMessage";
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
-import { Rank } from "src/shared/value-objects/Rank";
 import { EventEmitter } from "stream";
 
 import { PlayerInfoMessage } from "../../../../edopro/messages/client-to-server/PlayerInfoMessage";
@@ -75,7 +74,6 @@ export class MercuryWaitingState extends RoomState {
 					name: playerInfoMessage.name,
 					room,
 					host,
-					ranks: [],
 				});
 				room.addClient(client);
 			} else {
@@ -85,7 +83,6 @@ export class MercuryWaitingState extends RoomState {
 					name: playerInfoMessage.name,
 					room,
 					host,
-					ranks: [],
 				});
 				room.addClient(client);
 			}
@@ -105,7 +102,6 @@ export class MercuryWaitingState extends RoomState {
 			position: room.playersCount,
 			room,
 			host: false,
-			ranks: [],
 		});
 
 		room.addSpectator(spectator, false);
@@ -159,14 +155,12 @@ export class MercuryWaitingState extends RoomState {
 		name,
 		room,
 		host,
-		ranks,
 	}: {
 		socket: ISocket;
 		messages: Buffer[];
 		name: string;
 		room: MercuryRoom;
 		host: boolean;
-		ranks: Rank[];
 	}): MercuryClient {
 		return new MercuryClient({
 			socket,
@@ -176,7 +170,6 @@ export class MercuryWaitingState extends RoomState {
 			position: room.playersCount,
 			room,
 			host,
-			ranks,
 		});
 	}
 }

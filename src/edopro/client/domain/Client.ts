@@ -1,7 +1,6 @@
 import { YgoClient } from "../../../shared/client/domain/YgoClient";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
-import { Rank } from "../../../shared/value-objects/Rank";
 import { Deck } from "../../deck/domain/Deck";
 import { ClientMessage, MessageProcessor } from "../../messages/MessageProcessor";
 import { Choose } from "../../rock-paper-scissor/RockPaperScissor";
@@ -32,7 +31,6 @@ export class Client extends YgoClient {
 		isReady = false,
 		team,
 		logger,
-		ranks = [],
 	}: {
 		socket: ISocket;
 		host: boolean;
@@ -42,9 +40,8 @@ export class Client extends YgoClient {
 		isReady?: boolean;
 		team: number;
 		logger: Logger;
-		ranks: Rank[];
 	}) {
-		super({ name, position, team, socket, host, ranks });
+		super({ name, position, team, socket, host });
 		this.roomId = roomId;
 		this._isReady = isReady;
 		this.logger = logger;

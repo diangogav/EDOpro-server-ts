@@ -1,6 +1,5 @@
 import net from "net";
 import { MercuryPlayerInfoToCoreMessage } from "src/mercury/messages/server-to-core";
-import { Rank } from "src/shared/value-objects/Rank";
 
 import { ClientMessage } from "../../../edopro/messages/MessageProcessor";
 import { YgoClient } from "../../../shared/client/domain/YgoClient";
@@ -29,7 +28,6 @@ export class MercuryClient extends YgoClient {
 		position,
 		room,
 		host,
-		ranks = [],
 	}: {
 		name: string;
 		socket: ISocket;
@@ -38,9 +36,8 @@ export class MercuryClient extends YgoClient {
 		position: number;
 		room: MercuryRoom;
 		host: boolean;
-		ranks: Rank[];
 	}) {
-		super({ name, position, team: Team.SPECTATOR, socket, host, ranks });
+		super({ name, position, team: Team.SPECTATOR, socket, host });
 		this._coreClient = new net.Socket();
 		this._logger = logger;
 		this._pendingMessages = messages;

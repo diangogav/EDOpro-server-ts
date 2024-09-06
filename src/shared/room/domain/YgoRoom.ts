@@ -160,7 +160,6 @@ export abstract class YgoRoom {
 		const players = this.clients.map((client: Client) => ({
 			team: client.team,
 			name: client.name,
-			ranks: client.ranks,
 			// deck: client.deck,
 		}));
 		this._match?.initializeHistoricalData(players);

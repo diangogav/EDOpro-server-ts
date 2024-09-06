@@ -9,7 +9,6 @@ import { DuelStartClientMessage } from "../../../../../shared/messages/server-to
 import { PlayerEnterClientMessage } from "../../../../../shared/messages/server-to-client/PlayerEnterClientMessage";
 import { TypeChangeClientMessage } from "../../../../../shared/messages/server-to-client/TypeChangeClientMessage";
 import { ISocket } from "../../../../../shared/socket/domain/ISocket";
-import { Rank } from "../../../../../shared/value-objects/Rank";
 import { Client } from "../../../../client/domain/Client";
 import { DeckCreator } from "../../../../deck/application/DeckCreator";
 import { UpdateDeckMessageSizeCalculator } from "../../../../deck/application/UpdateDeckMessageSizeCalculator";
@@ -308,11 +307,11 @@ export class WaitingState extends RoomState {
 
 				return;
 			}
-			this.player(place, joinGameMessage, socket, playerInfoMessage, room, []);
+			this.player(place, joinGameMessage, socket, playerInfoMessage, room);
 
 			return;
 		}
-		this.player(place, joinGameMessage, socket, playerInfoMessage, room, []);
+		this.player(place, joinGameMessage, socket, playerInfoMessage, room);
 	}
 
 	private spectator(
@@ -363,8 +362,7 @@ export class WaitingState extends RoomState {
 		joinGameMessage: JoinGameMessage,
 		socket: ISocket,
 		playerInfoMessage: PlayerInfoMessage,
-		room: Room,
-		ranks: Rank[]
+		room: Room
 	): void {
 		const host = room.clients.some((client: Client) => client.host);
 
@@ -376,7 +374,6 @@ export class WaitingState extends RoomState {
 			roomId: room.id,
 			team: place.team,
 			logger: this.logger,
-			ranks,
 		});
 
 		if (client.host) {

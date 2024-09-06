@@ -4,12 +4,10 @@ import { PlayerData } from "src/shared/player/domain/PlayerData";
 import { Team } from "src/shared/room/Team";
 
 import { GameMother } from "./GameMother";
-import { RankMother } from "./RankMother";
 
 export class PlayerMother {
 	static create(params?: Partial<PlayerData>): Player {
 		return new Player({
-			ranks: [RankMother.create(), RankMother.create()],
 			name: faker.internet.userName(),
 			team: faker.helpers.enumValue(Team),
 			winner: faker.datatype.boolean(),

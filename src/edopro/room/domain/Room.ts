@@ -10,7 +10,6 @@ import { Logger } from "../../../shared/logger/domain/Logger";
 import { DuelState, YgoRoom } from "../../../shared/room/domain/YgoRoom";
 import { Team } from "../../../shared/room/Team";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
-import { Rank } from "../../../shared/value-objects/Rank";
 import { CardSQLiteTYpeORMRepository } from "../../card/infrastructure/sqlite/CardSQLiteTYpeORMRepository";
 import { Client } from "../../client/domain/Client";
 import { DeckCreator } from "../../deck/application/DeckCreator";
@@ -643,7 +642,7 @@ export class Room extends YgoRoom {
 		this.currentDuel?.finished();
 	}
 
-	createHost(socket: ISocket, name: string, ranks: Rank[]): Client {
+	createHost(socket: ISocket, name: string): Client {
 		const client = new Client({
 			socket,
 			host: true,
@@ -652,7 +651,6 @@ export class Room extends YgoRoom {
 			roomId: this.id,
 			team: Team.PLAYER,
 			logger: this.logger,
-			ranks,
 		});
 
 		this.addClient(client);
@@ -669,7 +667,6 @@ export class Room extends YgoRoom {
 			roomId: this.id,
 			team: Team.SPECTATOR,
 			logger: this.logger,
-			ranks: [],
 		});
 
 		this.addSpectator(client);

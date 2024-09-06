@@ -8,7 +8,6 @@ import { PlayerEnterClientMessage } from "../../../shared/messages/server-to-cli
 import { TypeChangeClientMessage } from "../../../shared/messages/server-to-client/TypeChangeClientMessage";
 import { GameCreatorMessageHandler } from "../../../shared/room/domain/GameCreatorMessageHandler";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
-import { Rank } from "../../../shared/value-objects/Rank";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../messages/domain/Commands";
@@ -46,7 +45,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 		const createGameMessage = new CreateGameMessage(message.data);
 
 		if (!playerInfoMessage.password || !config.redis.use) {
-			this.create(createGameMessage, playerInfoMessage, []);
+			this.create(createGameMessage, playerInfoMessage);
 
 			return;
 		}
@@ -59,14 +58,10 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 			return;
 		}
 
-		this.create(createGameMessage, playerInfoMessage, []);
+		this.create(createGameMessage, playerInfoMessage);
 	}
 
-	private create(
-		message: CreateGameMessage,
-		playerInfoMessage: PlayerInfoMessage,
-		ranks: Rank[]
-	): void {
+	private create(message: CreateGameMessage, playerInfoMessage: PlayerInfoMessage): void {
 		const room = Room.createFromCreateGameMessage(
 			message,
 			playerInfoMessage,
@@ -77,7 +72,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 
 		room.waiting();
 
-		const client = room.createHost(this.socket, playerInfoMessage.name, ranks);
+		const client = room.createHost(this.socket, playerInfoMessage.name);
 		RoomList.addRoom(room);
 		this.socket.send(CreateGameClientMessage.create(room));
 		this.socket.send(JoinGameClientMessage.createFromCreateGameMessage(message));

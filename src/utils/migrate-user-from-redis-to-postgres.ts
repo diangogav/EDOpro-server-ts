@@ -28,7 +28,6 @@ interface Player {
 	name: string;
 	winner: boolean;
 	games: Game[];
-	ranks: Rank[];
 	points: Points;
 	score: number;
 }
