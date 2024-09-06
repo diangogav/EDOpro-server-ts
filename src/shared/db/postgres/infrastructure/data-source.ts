@@ -3,6 +3,7 @@ import { DuelResumeEntity } from "src/shared/stats/match-resume/duel-resume/infr
 import { MatchResumeEntity } from "src/shared/stats/match-resume/infrastructure/MatchResumeEntity";
 import { DataSource, DataSourceOptions } from "typeorm";
 
+import { PlayerStatsEntity } from "../../../stats/player-stats/infrastructure/PlayerStatsEntity";
 import { UserProfileEntity } from "../../../user-profile/infrastructure/postgres/UserProfileEntity";
 
 const options: DataSourceOptions = {
@@ -12,10 +13,10 @@ const options: DataSourceOptions = {
 	username: config.postgres.username,
 	password: config.postgres.password,
 	database: config.postgres.database,
-	synchronize: true,
+	synchronize: false,
 	logging: true,
-	entities: [UserProfileEntity, MatchResumeEntity, DuelResumeEntity],
+	entities: [UserProfileEntity, MatchResumeEntity, DuelResumeEntity, PlayerStatsEntity],
 	subscribers: [],
-	migrations: [],
+	migrations: ["src/shared/db/postgres/infrastructure/migrations/*.ts"],
 };
 export const dataSource = new DataSource(options);
