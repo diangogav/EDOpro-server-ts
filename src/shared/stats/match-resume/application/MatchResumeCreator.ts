@@ -9,8 +9,8 @@ export class MatchResumeCreator {
 	async run(payload: {
 		userId: string;
 		bestOf: number;
-		playerName: string;
-		opponentName: string;
+		playerNames: string[];
+		opponentNames: string[];
 		date: Date;
 		banListName: string;
 		banListHash: string;

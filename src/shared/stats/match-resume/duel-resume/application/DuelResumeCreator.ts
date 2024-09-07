@@ -8,8 +8,8 @@ export class DuelResumeCreator {
 
 	async run(payload: {
 		userId: string;
-		playerName: string;
-		opponentName: string;
+		playerNames: string[];
+		opponentNames: string[];
 		date: Date;
 		banListName: string;
 		banListHash: string;

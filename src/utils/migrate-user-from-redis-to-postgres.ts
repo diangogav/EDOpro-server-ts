@@ -90,6 +90,13 @@ async function run() {
 				const playerName = key.split(":")[1];
 				const player = data.players.find((player) => player.name === playerName);
 				const opponent = data.players.find((player) => player.name !== playerName);
+				const playerNames = data.players
+					.filter((item) => item.team === player?.team)
+					.map((element) => element.name);
+
+				const opponentNames = data.players
+					.filter((item) => item.team !== player?.team)
+					.map((element) => element.name);
 
 				if (!player || !opponent) {
 					continue;
@@ -99,8 +106,8 @@ async function run() {
 				const { id: matchId } = await matchResumeCreator.run({
 					userId,
 					bestOf: data.bestOf,
-					playerName,
-					opponentName: opponent.name,
+					playerNames,
+					opponentNames,
 					date: new Date(data.date),
 					banListName: data.banlistName,
 					banListHash: data.banlistHash,
@@ -115,8 +122,8 @@ async function run() {
 						// eslint-disable-next-line no-await-in-loop
 						await duelResumeCreator.run({
 							userId,
-							playerName,
-							opponentName: opponent.name,
+							playerNames,
+							opponentNames,
 							date: new Date(data.date),
 							banListName: data.banlistName,
 							banListHash: data.banlistHash,

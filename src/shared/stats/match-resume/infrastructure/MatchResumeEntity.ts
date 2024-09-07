@@ -13,11 +13,11 @@ export class MatchResumeEntity {
 	@Column({ name: "best_of" })
 	bestOf: number;
 
-	@Column({ name: "player_name" })
-	playerName: string;
+	@Column({ name: "player_names", type: "simple-array" })
+	playerNames: string[];
 
-	@Column({ name: "opponent_name" })
-	opponentName: string;
+	@Column({ name: "opponent_names", type: "simple-array" })
+	opponentNames: string[];
 
 	@Column()
 	date: Date;

@@ -2,8 +2,8 @@ export class MatchResume {
 	readonly id: string;
 	readonly userId: string;
 	readonly bestOf: number;
-	readonly playerName: string;
-	readonly opponentName: string;
+	readonly playerNames: string[];
+	readonly opponentNames: string[];
 	readonly date: Date;
 	readonly banListName: string;
 	readonly banListHash: string;
@@ -16,8 +16,8 @@ export class MatchResume {
 		id,
 		userId,
 		bestOf,
-		playerName,
-		opponentName,
+		playerNames,
+		opponentNames,
 		date,
 		banListName,
 		banListHash,
@@ -29,8 +29,8 @@ export class MatchResume {
 		id: string;
 		userId: string;
 		bestOf: number;
-		playerName: string;
-		opponentName: string;
+		playerNames: string[];
+		opponentNames: string[];
 		date: Date;
 		banListName: string;
 		banListHash: string;
@@ -42,8 +42,8 @@ export class MatchResume {
 		this.id = id;
 		this.userId = userId;
 		this.bestOf = bestOf;
-		this.playerName = playerName;
-		this.opponentName = opponentName;
+		this.playerNames = playerNames;
+		this.opponentNames = opponentNames;
 		this.date = date;
 		this.banListName = banListName;
 		this.banListHash = banListHash;
@@ -57,8 +57,8 @@ export class MatchResume {
 		id,
 		userId,
 		bestOf,
-		playerName,
-		opponentName,
+		playerNames,
+		opponentNames,
 		date,
 		banListName,
 		banListHash,
@@ -70,8 +70,8 @@ export class MatchResume {
 		id: string;
 		userId: string;
 		bestOf: number;
-		playerName: string;
-		opponentName: string;
+		playerNames: string[];
+		opponentNames: string[];
 		date: Date;
 		banListName: string;
 		banListHash: string;
@@ -84,8 +84,8 @@ export class MatchResume {
 			id,
 			userId,
 			bestOf,
-			playerName,
-			opponentName,
+			playerNames,
+			opponentNames,
 			date,
 			banListName,
 			banListHash,
@@ -100,8 +100,8 @@ export class MatchResume {
 		id: string;
 		userId: string;
 		bestOf: number;
-		playerName: string;
-		opponentName: string;
+		playerNames: string[];
+		opponentNames: string[];
 		date: Date;
 		banListName: string;
 		banListHash: string;

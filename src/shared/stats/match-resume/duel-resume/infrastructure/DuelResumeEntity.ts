@@ -10,11 +10,11 @@ export class DuelResumeEntity {
 	@Column({ name: "user_name" })
 	userId: string;
 
-	@Column({ name: "player_name" })
-	playerName: string;
+	@Column({ name: "player_names", type: "simple-array" })
+	playerNames: string[];
 
-	@Column({ name: "opponent_name" })
-	opponentName: string;
+	@Column({ name: "opponent_names", type: "simple-array" })
+	opponentNames: string[];
 
 	@Column()
 	date: Date;
