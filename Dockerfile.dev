@@ -34,9 +34,9 @@ RUN git clone --depth 1 https://github.com/ProjectIgnis/CardScripts.git ./script
 
 COPY package.json ./
 COPY package-lock.json ./
-COPY .env ./
 RUN npm i
 COPY . .
+COPY .env ./
 COPY --from=core-integrator-builder /app/CoreIntegrator ./core/CoreIntegrator
 
 CMD ["npm", "run", "dev"]
