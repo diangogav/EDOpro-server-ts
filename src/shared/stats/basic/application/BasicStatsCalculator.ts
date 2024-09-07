@@ -49,6 +49,7 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 				);
 				playerStats.addPoints(points);
 				player.winner ? playerStats.increaseWins() : playerStats.increaseLosses();
+				void this.playerStatsRepository.save(playerStats);
 			}
 
 			const globalPlayerStats = await this.playerStatsRepository.findByUserIdAndBanListName(
@@ -57,6 +58,7 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 			);
 			globalPlayerStats.addPoints(points);
 			player.winner ? globalPlayerStats.increaseWins() : globalPlayerStats.increaseLosses();
+			void this.playerStatsRepository.save(globalPlayerStats);
 
 			const { id: matchId } = await this.matchResumeCreator.run({
 				userId: userProfile.id,

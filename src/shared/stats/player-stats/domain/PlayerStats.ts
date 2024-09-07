@@ -1,3 +1,5 @@
+import { randomUUID } from "crypto";
+
 type PlayerStatsProperties = {
 	id: string;
 	banListName: string;
@@ -36,8 +38,8 @@ export class PlayerStats {
 		return this._losses;
 	}
 
-	static initialize(data: { id: string; banListName: string; userId: string }): PlayerStats {
-		return new PlayerStats({ ...data, wins: 0, losses: 0, points: 0 });
+	static initialize(data: { banListName: string; userId: string }): PlayerStats {
+		return new PlayerStats({ ...data, wins: 0, losses: 0, points: 0, id: randomUUID() });
 	}
 
 	static from(data: PlayerStatsProperties): PlayerStats {
