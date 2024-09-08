@@ -72,6 +72,7 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 				opponentScore: player.losses,
 				winner: player.winner,
 				season: 3,
+				points,
 			});
 
 			this.logger.info(

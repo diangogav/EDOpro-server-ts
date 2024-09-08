@@ -11,6 +11,7 @@ export class MatchResume {
 	readonly opponentScore: number;
 	readonly winner: boolean;
 	readonly season: number;
+	readonly points: number;
 
 	private constructor({
 		id,
@@ -25,6 +26,7 @@ export class MatchResume {
 		opponentScore,
 		winner,
 		season,
+		points,
 	}: {
 		id: string;
 		userId: string;
@@ -38,6 +40,7 @@ export class MatchResume {
 		opponentScore: number;
 		winner: boolean;
 		season: number;
+		points: number;
 	}) {
 		this.id = id;
 		this.userId = userId;
@@ -51,6 +54,7 @@ export class MatchResume {
 		this.opponentScore = opponentScore;
 		this.winner = winner;
 		this.season = season;
+		this.points = points;
 	}
 
 	static create({
@@ -66,6 +70,7 @@ export class MatchResume {
 		opponentScore,
 		winner,
 		season,
+		points,
 	}: {
 		id: string;
 		userId: string;
@@ -79,6 +84,7 @@ export class MatchResume {
 		opponentScore: number;
 		winner: boolean;
 		season: number;
+		points: number;
 	}): MatchResume {
 		return new MatchResume({
 			id,
@@ -93,6 +99,7 @@ export class MatchResume {
 			opponentScore,
 			winner,
 			season,
+			points,
 		});
 	}
 
@@ -109,6 +116,7 @@ export class MatchResume {
 		opponentScore: number;
 		winner: boolean;
 		season: number;
+		points: number;
 	}): MatchResume {
 		return new MatchResume(data);
 	}

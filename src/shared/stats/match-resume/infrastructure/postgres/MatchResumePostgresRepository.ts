@@ -22,6 +22,7 @@ export class MatchResumePostgresRepository implements MatchResumeRepository {
 			opponentScore: matchResume.opponentScore,
 			winner: matchResume.winner,
 			season: matchResume.season,
+			points: matchResume.points,
 		});
 		await repository.save(matchResumeEntity);
 	}

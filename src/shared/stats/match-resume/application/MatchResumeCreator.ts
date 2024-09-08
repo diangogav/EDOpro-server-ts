@@ -18,6 +18,7 @@ export class MatchResumeCreator {
 		opponentScore: number;
 		winner: boolean;
 		season: number;
+		points: number;
 	}): Promise<{ id: string }> {
 		const id = randomUUID();
 		const matchResume = MatchResume.create({ id, ...payload });

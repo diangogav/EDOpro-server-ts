@@ -39,4 +39,7 @@ export class MatchResumeEntity {
 
 	@Column()
 	season: number;
+
+	@Column()
+	points: number;
 }
