@@ -6,7 +6,7 @@ dist
 mercury/script
 
 # Evolution
-*scripts
+./scripts
 *dependencies
 *build
 core/Makefile
