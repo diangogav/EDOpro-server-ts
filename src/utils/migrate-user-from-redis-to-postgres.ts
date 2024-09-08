@@ -30,6 +30,7 @@ interface Player {
 	games: Game[];
 	points: Points;
 	score: number;
+	ranks: Rank[];
 }
 
 interface DuelResume {
@@ -89,7 +90,9 @@ async function run() {
 				const data: DuelResume = JSON.parse(match);
 				const playerName = key.split(":")[1];
 				const player = data.players.find((player) => player.name === playerName);
-				const opponent = data.players.find((player) => player.name !== playerName);
+				const opponent = data.players.find(
+					(element) => element.name !== playerName && element.team !== player?.team
+				);
 				const playerNames = data.players
 					.filter((item) => item.team === player?.team)
 					.map((element) => element.name);
@@ -115,6 +118,7 @@ async function run() {
 					opponentScore: opponent.score,
 					winner: player.winner,
 					season: 3,
+					points: player.score - opponent.score,
 				});
 				const games = player.games;
 				for (const game of games) {
