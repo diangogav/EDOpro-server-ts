@@ -1,8 +1,9 @@
-import { Column, Entity, PrimaryColumn } from "typeorm";
+import { Column, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity("player_stats")
+@Index(["userId", "banListName"], { unique: true })
 export class PlayerStatsEntity {
-	@PrimaryColumn()
+	@PrimaryGeneratedColumn("uuid")
 	id: string;
 
 	@Column({ name: "ban_list_name" })
