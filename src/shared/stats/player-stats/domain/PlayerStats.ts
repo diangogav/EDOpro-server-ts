@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 
-type PlayerStatsProperties = {
+export type PlayerStatsProperties = {
 	id: string;
 	banListName: string;
 	wins: number;
