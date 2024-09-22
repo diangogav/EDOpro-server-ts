@@ -4,6 +4,7 @@ import { ErrorMessages } from "src/edopro/messages/server-to-client/error-messag
 import { ErrorClientMessage } from "src/edopro/messages/server-to-client/ErrorClientMessage";
 import { UserFinder } from "src/edopro/user/application/UserFinder";
 import { User } from "src/edopro/user/domain/User";
+import { Team } from "src/shared/room/Team";
 import { Rank } from "src/shared/value-objects/Rank";
 import { EventEmitter } from "stream";
 
@@ -108,7 +109,7 @@ export class MercuryWaitingState extends RoomState {
 			ranks: [],
 		});
 
-		room.addSpectator(spectator, false);
+		room.addSpectator(spectator, false, true);
 	}
 
 	private tryStartHandler(_message: ClientMessage, room: MercuryRoom, _socket: ISocket): void {
@@ -126,8 +127,8 @@ export class MercuryWaitingState extends RoomState {
 		if (type === 7 && room.clients.find((player) => player.socket.id === client.socket.id)) {
 			room.removePlayer(client);
 			client.setHost(isHost);
-
-			room.addSpectator(client, true);
+			client.playerPosition(room.playersCount, Team.SPECTATOR);
+			room.addSpectator(client, false, true);
 
 			return;
 		}

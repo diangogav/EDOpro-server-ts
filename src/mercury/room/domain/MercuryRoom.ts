@@ -160,13 +160,19 @@ export class MercuryRoom extends YgoRoom {
 		this.connectClientToCore(client);
 	}
 
-	addSpectator(spectator: MercuryClient, needSpectatorMessages: boolean): void {
+	addSpectator(spectator: MercuryClient, needSpectatorMessages: boolean, fromLobby = false): void {
 		spectator.setNeedSpectatorMessages(needSpectatorMessages);
 		this._spectators.push(spectator);
-		this.connectClientToCore(spectator);
-		this.spectatorCache.forEach((message) => {
-			spectator.socket.send(message);
-		});
+
+		if (!spectator.connectedToCore) {
+			this.connectClientToCore(spectator);
+		}
+
+		if (!fromLobby) {
+			this.spectatorCache.forEach((message) => {
+				spectator.socket.send(message);
+			});
+		}
 	}
 
 	startCore(): void {
