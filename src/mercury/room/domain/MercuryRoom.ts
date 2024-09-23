@@ -35,6 +35,7 @@ export class MercuryRoom extends YgoRoom {
 	private _coreStarted = false;
 	private _corePort: number | null = null;
 	private _banListHash: number;
+	private _edoBanListHash: number | null;
 	private _joinBuffer: Buffer | null = null;
 	private readonly _hostInfo: HostInfo;
 	private roomState: RoomState | null = null;
@@ -160,13 +161,19 @@ export class MercuryRoom extends YgoRoom {
 		this.connectClientToCore(client);
 	}
 
-	addSpectator(spectator: MercuryClient, needSpectatorMessages: boolean): void {
+	addSpectator(spectator: MercuryClient, needSpectatorMessages: boolean, fromLobby = false): void {
 		spectator.setNeedSpectatorMessages(needSpectatorMessages);
 		this._spectators.push(spectator);
-		this.connectClientToCore(spectator);
-		this.spectatorCache.forEach((message) => {
-			spectator.socket.send(message);
-		});
+
+		if (!spectator.connectedToCore) {
+			this.connectClientToCore(spectator);
+		}
+
+		if (!fromLobby) {
+			this.spectatorCache.forEach((message) => {
+				spectator.socket.send(message);
+			});
+		}
 	}
 
 	startCore(): void {
@@ -306,6 +313,8 @@ export class MercuryRoom extends YgoRoom {
 
 	setBanListHash(banListHash: number): void {
 		this._banListHash = banListHash;
+		this._edoBanListHash =
+			BanListMemoryRepository.findByMercuryHash(this._banListHash)?.hash ?? null;
 	}
 
 	calculatePlayerTeam(client: MercuryClient, position: number): void {
@@ -340,7 +349,7 @@ export class MercuryRoom extends YgoRoom {
 			rule: this._hostInfo.rule,
 			no_check: this._hostInfo.noCheck,
 			no_shuffle: this._hostInfo.noShuffle,
-			banlist_hash: this._banListHash,
+			banlist_hash: this._edoBanListHash ?? this._banListHash,
 			istart: this.isStart,
 			main_min: 40,
 			main_max: 60,

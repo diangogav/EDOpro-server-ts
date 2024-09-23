@@ -47,6 +47,7 @@ export class BanListLoader {
 
 			const [cardId, quantity] = line.split(" ");
 			banList.add(Number(cardId), Number(quantity));
+			banList.addMercury(Number(cardId), Number(quantity));
 		}
 
 		BanListMemoryRepository.add(banList);

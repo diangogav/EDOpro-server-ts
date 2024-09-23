@@ -16,6 +16,10 @@ export default {
 		return banLists.find((list) => list.hash === hash) ?? null;
 	},
 
+	findByMercuryHash(hash: number): BanList | null {
+		return banLists.find((list) => list.mercuryHash === hash) ?? null;
+	},
+
 	findByName(name: string): BanList | null {
 		return banLists.find((list) => list.name === name) ?? null;
 	},

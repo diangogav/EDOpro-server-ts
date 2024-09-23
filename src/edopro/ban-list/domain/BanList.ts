@@ -5,6 +5,7 @@ export class BanList {
 	readonly all: number[] = [];
 	private _name: string | null = null;
 	private _hash = 0x7dfcee6a;
+	private _mercuryHash = 0x7dfcee6a;
 	private _whitelisted = false;
 
 	setName(name: string): void {
@@ -17,6 +18,10 @@ export class BanList {
 
 	get hash(): number {
 		return this._hash;
+	}
+
+	get mercuryHash(): number {
+		return this._mercuryHash;
 	}
 
 	whileListed(): void {
@@ -52,5 +57,21 @@ export class BanList {
 			this._hash ^
 			((((cardId >>> 0) << 18) >> 0) | (cardId >> 14)) ^
 			((((cardId >>> 0) << (27 + quantity)) >>> 0) | (cardId >>> (5 - quantity)));
+	}
+
+	addMercury(cardId: number, quantity: number): void {
+		if (isNaN(cardId) || cardId <= 0 || cardId > 0xfffffff) {
+			return;
+		}
+
+		if (quantity < 0 || quantity > 2) {
+			return;
+		}
+
+		const hCode = cardId >>> 0;
+		this._mercuryHash =
+			this._mercuryHash ^
+			((hCode << 18) | (hCode >>> 14)) ^
+			((hCode << (27 + quantity)) | (hCode >>> (5 - quantity)));
 	}
 }

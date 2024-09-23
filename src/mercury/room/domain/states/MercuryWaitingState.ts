@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { ErrorMessages } from "src/edopro/messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "src/edopro/messages/server-to-client/ErrorClientMessage";
+import { Team } from "src/shared/room/Team";
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 import { EventEmitter } from "stream";
@@ -104,7 +105,7 @@ export class MercuryWaitingState extends RoomState {
 			host: false,
 		});
 
-		room.addSpectator(spectator, false);
+		room.addSpectator(spectator, false, true);
 	}
 
 	private tryStartHandler(_message: ClientMessage, room: MercuryRoom, _socket: ISocket): void {
@@ -122,8 +123,8 @@ export class MercuryWaitingState extends RoomState {
 		if (type === 7 && room.clients.find((player) => player.socket.id === client.socket.id)) {
 			room.removePlayer(client);
 			client.setHost(isHost);
-
-			room.addSpectator(client, true);
+			client.playerPosition(room.playersCount, Team.SPECTATOR);
+			room.addSpectator(client, false, true);
 
 			return;
 		}
