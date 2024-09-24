@@ -328,4 +328,160 @@ export const priorityRuleMappings: RuleMappings = {
 			return value === "tmr";
 		},
 	},
+	edison: {
+		get: () => {
+			return {
+				rule: 4,
+				lflist: 6,
+				duelRule: 1,
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			return value === "edison";
+		},
+	},
+	hat: {
+		get: () => {
+			return {
+				rule: 2,
+				lflist: 7,
+				duelRule: 2,
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			return value === "hat";
+		},
+	},
+	tengu: {
+		get: () => {
+			return {
+				rule: 2,
+				lflist: 10,
+				duelRule: 2,
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			return value === "tengu";
+		},
+	},
+	md: {
+		get: () => {
+			return {
+				rule: 2,
+				lflist: 11,
+				duelRule: 5,
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			return value === "md";
+		},
+	},
+	jtp: {
+		get: () => {
+			return {
+				rule: 4,
+				lflist: 8,
+				duelRule: 2,
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			return value === "jtp";
+		},
+	},
+	gx: {
+		get: () => {
+			return {
+				rule: 4,
+				lflist: 9,
+				duelRule: 1,
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			return value === "gx";
+		},
+	},
+	mdc: {
+		get: () => {
+			return {
+				rule: 4,
+				lflist: 15,
+				duelRule: 2,
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			return value === "mdc";
+		},
+	},
+	goat: {
+		get: () => {
+			return {
+				rule: 4,
+				lflist: 2,
+				duelRule: 4,
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			return value === "goat";
+		},
+	},
+	rush: {
+		get: () => {
+			return {
+				rule: 4,
+				lflist: 3,
+				duelRule: 4,
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			return value === "rush";
+		},
+	},
+	rushpre: {
+		get: () => {
+			return {
+				rule: 4,
+				lflist: 4,
+				duelRule: 4,
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			return value === "rushpre";
+		},
+	},
+	speed: {
+		get: () => {
+			return {
+				rule: 4,
+				lflist: 5,
+				duelRule: 4,
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			return value === "speed";
+		},
+	},
+	world: {
+		get: () => {
+			return {
+				rule: 4,
+				lflist: 6,
+				duelRule: 4,
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			return value === "world";
+		},
+	},
 };
