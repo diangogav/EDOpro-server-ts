@@ -5,6 +5,7 @@ import { DataSource, DataSourceOptions } from "typeorm";
 
 import { PlayerStatsEntity } from "../../../stats/player-stats/infrastructure/PlayerStatsEntity";
 import { UserProfileEntity } from "../../../user-profile/infrastructure/postgres/UserProfileEntity";
+import { TournamentEntity } from "./../../../tournaments/infrastructure/postgres/TournamentEntity";
 
 const options: DataSourceOptions = {
 	type: "postgres",
@@ -15,7 +16,13 @@ const options: DataSourceOptions = {
 	database: config.postgres.database,
 	synchronize: false,
 	logging: true,
-	entities: [UserProfileEntity, MatchResumeEntity, DuelResumeEntity, PlayerStatsEntity],
+	entities: [
+		UserProfileEntity,
+		MatchResumeEntity,
+		DuelResumeEntity,
+		PlayerStatsEntity,
+		TournamentEntity,
+	],
 	subscribers: [],
 	migrations: ["src/shared/db/postgres/infrastructure/migrations/*.ts"],
 };

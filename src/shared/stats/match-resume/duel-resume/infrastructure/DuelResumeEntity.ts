@@ -7,7 +7,7 @@ export class DuelResumeEntity {
 	@PrimaryColumn()
 	id: string;
 
-	@Column({ name: "user_name" })
+	@Column({ name: "user_id" })
 	userId: string;
 
 	@Column({ name: "player_names", type: "simple-array" })
