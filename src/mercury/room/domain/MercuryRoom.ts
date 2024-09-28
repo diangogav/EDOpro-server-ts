@@ -39,6 +39,7 @@ export class MercuryRoom extends YgoRoom {
 	private _joinBuffer: Buffer | null = null;
 	private readonly _hostInfo: HostInfo;
 	private roomState: RoomState | null = null;
+	public route: string = "./ygopro"; 
 
 	private constructor({
 		id,
@@ -147,6 +148,56 @@ export class MercuryRoom extends YgoRoom {
 
 		room._logger = logger;
 		room.emitter = emitter;
+
+		options.forEach((option) => {
+			if (option == 'edison') {
+				room.route = "./lflist-alternativos/ygopro";
+			}
+			
+			if (option == 'hat') {
+				room.route = "./lflist-alternativos/ygopro";
+			}
+
+			if (option == 'goat') {
+				room.route = "./lflist-alternativos/ygopro";
+			}
+
+			if (option == 'tengu') {
+				room.route = "./lflist-alternativos/ygopro";
+			}
+
+			if (option == 'md') {
+				room.route = "./lflist-alternativos/ygopro";
+			}
+
+			if (option == 'jtp') {
+				room.route = "./lflist-alternativos/ygopro";
+			}
+
+			if (option == 'gx') {
+				room.route = "./lflist-alternativos/ygopro";
+			}
+
+			if (option == 'mdc') {
+				room.route = "./lflist-alternativos/ygopro";
+			}
+
+			if (option == 'rush') {
+				room.route = "./lflist-alternativos/ygopro";
+			}
+
+			if (option == 'speed') {
+				room.route = "./lflist-alternativos/ygopro";
+			}
+
+			if (option == 'world') {
+				room.route = "./lflist-alternativos/ygopro";
+			}
+
+			if (option == 'pre') {
+				room.route = "./pre-releases/ygopro";
+			}
+		});
 
 		return room;
 	}

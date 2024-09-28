@@ -332,7 +332,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 4,
-				lflist: 6,
+				lflist: 8,
 				duelRule: 1,
 				mode: Mode.MATCH,
 			};
@@ -345,7 +345,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 2,
-				lflist: 7,
+				lflist: 9,
 				duelRule: 2,
 				mode: Mode.MATCH,
 			};
@@ -358,7 +358,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 2,
-				lflist: 10,
+				lflist: 12,
 				duelRule: 2,
 				mode: Mode.MATCH,
 			};
@@ -371,7 +371,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 2,
-				lflist: 11,
+				lflist: 13,
 				duelRule: 5,
 				mode: Mode.MATCH,
 			};
@@ -384,7 +384,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 4,
-				lflist: 8,
+				lflist: 10,
 				duelRule: 2,
 				mode: Mode.MATCH,
 			};
@@ -397,7 +397,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 4,
-				lflist: 9,
+				lflist: 11,
 				duelRule: 1,
 				mode: Mode.MATCH,
 			};
@@ -410,7 +410,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 4,
-				lflist: 15,
+				lflist: 18,
 				duelRule: 2,
 				mode: Mode.MATCH,
 			};
@@ -423,7 +423,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 4,
-				lflist: 2,
+				lflist: 3,
 				duelRule: 4,
 				mode: Mode.MATCH,
 			};
@@ -436,7 +436,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 4,
-				lflist: 3,
+				lflist: 4,
 				duelRule: 4,
 				mode: Mode.MATCH,
 			};
@@ -475,13 +475,25 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 4,
-				lflist: 6,
+				lflist: 7,
 				duelRule: 4,
 				mode: Mode.MATCH,
 			};
 		},
 		validate: (value) => {
 			return value === "world";
+		},
+	},
+
+	pre: {
+		get: () => {
+			return {
+				duelRule: 2,
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			return value === "pre";
 		},
 	},
 };
