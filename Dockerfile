@@ -6,13 +6,18 @@ RUN apt-get update -y && \
 
 WORKDIR /repositories
 
-RUN git clone --depth 1 https://github.com/ProjectIgnis/CardScripts.git scripts && \
-    git clone --depth 1 https://github.com/ProjectIgnis/BabelCDB.git databases && \
-    git clone --depth 1 https://github.com/ProjectIgnis/LFLists banlists-project-ignis && \
-    git clone --depth 1 https://github.com/termitaklk/lflist banlists-evolution && \
-    git clone --depth 1 https://github.com/mycard/ygopro-scripts.git mercury-scripts && \
-    wget -O mercury-lflist.conf https://raw.githubusercontent.com/fallenstardust/YGOMobile-cn-ko-en/master/mobile/assets/data/conf/lflist.conf && \
-    wget -O mercury-cards.cdb https://github.com/purerosefallen/ygopro/raw/server/cards.cdb
+RUN git clone --depth 1 https://github.com/ProjectIgnis/CardScripts.git ./scripts/evolution/ && \
+    git clone --depth 1 https://github.com/ProjectIgnis/BabelCDB.git ./databases/evolution/ && \
+    git clone --depth 1 https://github.com/ProjectIgnis/LFLists ./banlists/evolution/ && \
+    git clone --depth 1 https://github.com/mycard/ygopro-scripts.git ./mercury/script && \
+    wget -O ./mercury/lflist.conf https://raw.githubusercontent.com/termitaklk/koishi-Iflist/main/lflist.conf && \
+    wget -O ./mercury/cards.cdb https://github.com/purerosefallen/ygopro/raw/server/cards.cdb \
+    git clone --depth 1 https://github.com/mycard/ygopro-scripts.git ./mercury/lflist-alternativos/script && \
+    wget -O ./mercury/lflist-alternativos/lflist.conf https://raw.githubusercontent.com/termitaklk/koishi-Iflist/main/lflist.conf && \
+    wget -O ./mercury/lflist-alternativos/cards.cdb https://github.com/purerosefallen/ygopro/raw/server/cards.cdb \
+    git clone --depth 1 https://github.com/mycard/ygopro-scripts.git ./mercury/pre-releases/script && \
+    wget -O ./mercury/pre-releases/lflist.conf https://raw.githubusercontent.com/termitaklk/koishi-Iflist/main/lflist.conf && \
+    wget -O ./mercury/pre-releases/cards.cdb https://github.com/purerosefallen/ygopro/raw/server/cards.cdb 
 
 RUN mkdir banlists
 RUN mv banlists-project-ignis/* banlists/
@@ -67,6 +72,13 @@ COPY --from=core-integrator-builder /repositories/banlists ./banlists/evolution/
 COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/script
 COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/lflist.conf
 COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/cards.cdb
+COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/lflist-alternativos/script
+COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/lflist-alternativos/lflist.conf
+COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/lflist-alternativos/cards.cdb
+COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/pre-releases/script
+COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/pre-releases/lflist.conf
+COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/pre-releases/cards.cdb
+
 
 EXPOSE 4000 7711 7911 7922
 USER $USER
