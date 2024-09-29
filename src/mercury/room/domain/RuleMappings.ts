@@ -332,7 +332,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 4,
-				lflist: 8,
+				lflist: 7,
 				duelRule: 1,
 				mode: Mode.MATCH,
 			};
@@ -345,7 +345,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 2,
-				lflist: 9,
+				lflist: 8,
 				duelRule: 2,
 				mode: Mode.MATCH,
 			};
@@ -358,7 +358,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 2,
-				lflist: 12,
+				lflist: 11,
 				duelRule: 2,
 				mode: Mode.MATCH,
 			};
@@ -371,7 +371,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 2,
-				lflist: 13,
+				lflist: 12,
 				duelRule: 5,
 				mode: Mode.MATCH,
 			};
@@ -384,7 +384,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 4,
-				lflist: 10,
+				lflist: 9,
 				duelRule: 2,
 				mode: Mode.MATCH,
 			};
@@ -397,7 +397,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 4,
-				lflist: 11,
+				lflist: 10,
 				duelRule: 1,
 				mode: Mode.MATCH,
 			};
@@ -410,7 +410,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 4,
-				lflist: 18,
+				lflist: 17,
 				duelRule: 2,
 				mode: Mode.MATCH,
 			};
@@ -423,7 +423,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 4,
-				lflist: 3,
+				lflist: 2,
 				duelRule: 4,
 				mode: Mode.MATCH,
 			};
@@ -436,7 +436,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 4,
-				lflist: 4,
+				lflist: 3,
 				duelRule: 4,
 				mode: Mode.MATCH,
 			};
@@ -449,7 +449,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 4,
-				lflist: 4,
+				lflist: 3,
 				duelRule: 4,
 				mode: Mode.MATCH,
 			};
@@ -462,7 +462,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 4,
-				lflist: 5,
+				lflist: 4,
 				duelRule: 4,
 				mode: Mode.MATCH,
 			};
@@ -475,7 +475,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 4,
-				lflist: 7,
+				lflist: 6,
 				duelRule: 4,
 				mode: Mode.MATCH,
 			};
