@@ -39,7 +39,7 @@ export class MercuryRoom extends YgoRoom {
 	private _joinBuffer: Buffer | null = null;
 	private readonly _hostInfo: HostInfo;
 	private roomState: RoomState | null = null;
-	public route: string = "./ygopro"; 
+	private route = "mercury";
 
 	private constructor({
 		id,
@@ -150,52 +150,52 @@ export class MercuryRoom extends YgoRoom {
 		room.emitter = emitter;
 
 		options.forEach((option) => {
-			if (option == 'edison') {
-				room.route = "./lflist-alternativos/ygopro";
-			}
-			
-			if (option == 'hat') {
-				room.route = "./lflist-alternativos/ygopro";
+			if (option === "edison") {
+				room.route = "mercury/alternatives";
 			}
 
-			if (option == 'goat') {
-				room.route = "./lflist-alternativos/ygopro";
+			if (option === "hat") {
+				room.route = "mercury/alternatives";
 			}
 
-			if (option == 'tengu') {
-				room.route = "./lflist-alternativos/ygopro";
+			if (option === "goat") {
+				room.route = "mercury/alternatives";
 			}
 
-			if (option == 'md') {
-				room.route = "./lflist-alternativos/ygopro";
+			if (option === "tengu") {
+				room.route = "mercury/alternatives";
 			}
 
-			if (option == 'jtp') {
-				room.route = "./lflist-alternativos/ygopro";
+			if (option === "md") {
+				room.route = "mercury/alternatives";
 			}
 
-			if (option == 'gx') {
-				room.route = "./lflist-alternativos/ygopro";
+			if (option === "jtp") {
+				room.route = "mercury/alternatives";
 			}
 
-			if (option == 'mdc') {
-				room.route = "./lflist-alternativos/ygopro";
+			if (option === "gx") {
+				room.route = "mercury/alternatives";
 			}
 
-			if (option == 'rush') {
-				room.route = "./lflist-alternativos/ygopro";
+			if (option === "mdc") {
+				room.route = "mercury/alternatives";
 			}
 
-			if (option == 'speed') {
-				room.route = "./lflist-alternativos/ygopro";
+			if (option === "rush") {
+				room.route = "mercury/alternatives";
 			}
 
-			if (option == 'world') {
-				room.route = "./lflist-alternativos/ygopro";
+			if (option === "speed") {
+				room.route = "mercury/alternatives";
 			}
 
-			if (option == 'pre') {
-				room.route = "./pre-releases/ygopro";
+			if (option === "world") {
+				room.route = "mercury/alternatives";
+			}
+
+			if (option === "pre") {
+				room.route = "mercury/pre-releases";
 			}
 		});
 
@@ -247,7 +247,7 @@ export class MercuryRoom extends YgoRoom {
 				"2", //REPLAY MODE
 			],
 			{
-				cwd: "mercury",
+				cwd: this.route,
 			}
 		);
 
