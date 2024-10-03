@@ -11,7 +11,7 @@ RUN git clone --depth 1 https://github.com/ProjectIgnis/CardScripts.git scripts 
     git clone --depth 1 https://github.com/ProjectIgnis/LFLists banlists-project-ignis && \
     git clone --depth 1 https://github.com/termitaklk/lflist banlists-evolution && \
     git clone --depth 1 https://github.com/mycard/ygopro-scripts.git mercury-scripts && \
-    wget -O mercury-lflist.conf https://raw.githubusercontent.com/fallenstardust/YGOMobile-cn-ko-en/master/mobile/assets/data/conf/lflist.conf && \
+    wget -O mercury-lflist.conf https://raw.githubusercontent.com/termitaklk/koishi-Iflist/main/lflist.conf && \
     wget -O mercury-cards.cdb https://github.com/purerosefallen/ygopro/raw/server/cards.cdb
 
 RUN mkdir banlists
@@ -64,9 +64,18 @@ COPY --from=core-integrator-builder /app/CoreIntegrator ./core/CoreIntegrator
 COPY --from=core-integrator-builder /repositories/scripts ./scripts/evolution/
 COPY --from=core-integrator-builder /repositories/databases ./databases/evolution/
 COPY --from=core-integrator-builder /repositories/banlists ./banlists/evolution/
+## Mercury
 COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/script
 COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/lflist.conf
 COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/cards.cdb
+## Mercury Pre releases
+COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/pre-releases/script
+COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/pre-releases/lflist.conf
+COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/pre-releases/cards.cdb
+## Mercury Alternatives
+COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/alternatives/script
+COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/alternatives/lflist.conf
+COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/alternatives/cards.cdb
 
 EXPOSE 4000 7711 7911 7922
 USER $USER
