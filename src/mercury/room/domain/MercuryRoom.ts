@@ -149,52 +149,11 @@ export class MercuryRoom extends YgoRoom {
 		room._logger = logger;
 		room.emitter = emitter;
 
+		const alternativesBanlists = ['edison', 'hat', 'goat', 'tengu', 'md', 'jtp', 'gx', 'mdc', 'rush', 'speed', 'world'];
 		options.forEach((option) => {
-			if (option === "edison") {
+			if (alternativesBanlists.includes(option)) {
 				room.route = "mercury/alternatives";
-			}
-
-			if (option === "hat") {
-				room.route = "mercury/alternatives";
-			}
-
-			if (option === "goat") {
-				room.route = "mercury/alternatives";
-			}
-
-			if (option === "tengu") {
-				room.route = "mercury/alternatives";
-			}
-
-			if (option === "md") {
-				room.route = "mercury/alternatives";
-			}
-
-			if (option === "jtp") {
-				room.route = "mercury/alternatives";
-			}
-
-			if (option === "gx") {
-				room.route = "mercury/alternatives";
-			}
-
-			if (option === "mdc") {
-				room.route = "mercury/alternatives";
-			}
-
-			if (option === "rush") {
-				room.route = "mercury/alternatives";
-			}
-
-			if (option === "speed") {
-				room.route = "mercury/alternatives";
-			}
-
-			if (option === "world") {
-				room.route = "mercury/alternatives";
-			}
-
-			if (option === "pre") {
+			} else if (option === 'pre') {
 				room.route = "mercury/pre-releases";
 			}
 		});
