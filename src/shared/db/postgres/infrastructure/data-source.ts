@@ -12,4 +12,15 @@ const options: DataSourceOptions = {
 	subscribers: [],
 	migrations: [],
 };
+
+const mercuryOptions: DataSourceOptions = {
+	type: "sqlite",
+	database: "./mercury/pre-releases/cards.cdb",
+	synchronize: true,
+	logging: false,
+	entities: [CardEntity, CardTextEntity],
+	subscribers: [],
+	migrations: [],
+};
+export const mercuryDataSource = new DataSource(mercuryOptions);
 export const dataSource = new DataSource(options);
