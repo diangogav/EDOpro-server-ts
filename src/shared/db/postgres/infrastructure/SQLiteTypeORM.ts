@@ -46,7 +46,6 @@ export class SQLiteTypeORM implements Database {
 			// eslint-disable-next-line no-await-in-loop
 			await this.mergemercury(filePathmercury);
 		}
-		
 	}
 
 	private async merge(path: string): Promise<void> {
