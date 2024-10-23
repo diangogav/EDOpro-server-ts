@@ -8,6 +8,7 @@ import { Pino } from "src/shared/logger/infrastructure/Pino";
 
 import { Server } from "./http-server/Server";
 import { MercuryBanListLoader } from "./mercury/ban-list/infrastructure/MercuryBanListLoader";
+import { dataSource, mercuryDataSource } from "./shared/db/postgres/infrastructure/data-source";
 import { HostServer } from "./socket-server/HostServer";
 import { MercuryServer } from "./socket-server/MercuryServer";
 import WebSocketSingleton from "./web-socket-server/WebSocketSingleton";
@@ -19,13 +20,16 @@ async function start(): Promise<void> {
 	const server = new Server(logger);
 	const mercuryServer = new MercuryServer(logger);
 	const hostServer = new HostServer(logger);
-	const database = new SQLiteTypeORM();
+	const database = new SQLiteTypeORM(dataSource, "./databases/evolution");
+	const mercuryDatabase = new SQLiteTypeORM(mercuryDataSource, "./databases/mercury");
 	const banListLoader = new BanListLoader();
 	await banListLoader.loadDirectory("./banlists/evolution");
 	await BanListMemoryRepository.backup();
 	await MercuryBanListLoader.load("./mercury/lflist.conf");
 	await database.connect();
 	await database.initialize();
+	await mercuryDatabase.connect();
+	await mercuryDatabase.initialize();
 	await server.initialize();
 	WebSocketSingleton.getInstance();
 	hostServer.initialize();
