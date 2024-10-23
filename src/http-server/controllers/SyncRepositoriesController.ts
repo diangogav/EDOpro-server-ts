@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { SimpleGit, simpleGit, SimpleGitOptions } from "simple-git";
+import { dataSource } from "src/shared/db/postgres/infrastructure/data-source";
 
 import { SQLiteTypeORM } from "../../shared/db/postgres/infrastructure/SQLiteTypeORM";
 import { Logger } from "../../shared/logger/domain/Logger";
@@ -49,7 +50,7 @@ export class SyncRepositoriesController {
 
 		this.logger.info(`Databases difference: ${JSON.stringify(diffSummary)}`);
 
-		const database = new SQLiteTypeORM();
+		const database = new SQLiteTypeORM(dataSource, "./databases/evolution");
 		await database.initialize();
 	}
 }

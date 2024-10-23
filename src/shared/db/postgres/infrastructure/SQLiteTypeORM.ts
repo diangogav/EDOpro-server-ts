@@ -5,15 +5,9 @@ import { DataSource } from "typeorm";
 import { CardEntity } from "../../../../edopro/card/infrastructure/postgres/CardEntity";
 import { CardTextEntity } from "../../../../edopro/card/infrastructure/postgres/CardTextEntity";
 import { Database } from "../../domain/Database";
-import { dataSource } from "./data-source";
 
 export class SQLiteTypeORM implements Database {
-	private readonly dataSource: DataSource;
-	private readonly directoryPath = "./databases/evolution";
-
-	constructor() {
-		this.dataSource = dataSource;
-	}
+	constructor(private readonly dataSource: DataSource, private readonly directoryPath: string) {}
 
 	async connect(): Promise<void> {
 		await this.dataSource.initialize();
@@ -34,7 +28,7 @@ export class SQLiteTypeORM implements Database {
 	}
 
 	private async merge(path: string): Promise<void> {
-		const queryRunner = dataSource.createQueryRunner();
+		const queryRunner = this.dataSource.createQueryRunner();
 		await queryRunner.connect();
 		await queryRunner.startTransaction();
 		try {
@@ -52,8 +46,8 @@ export class SQLiteTypeORM implements Database {
 	}
 
 	private async isLoaded(): Promise<boolean> {
-		const cardRepository = dataSource.getRepository(CardEntity);
-		const cardTextRepository = dataSource.getRepository(CardTextEntity);
+		const cardRepository = this.dataSource.getRepository(CardEntity);
+		const cardTextRepository = this.dataSource.getRepository(CardTextEntity);
 
 		const cardsCount = await cardRepository.count();
 		const cardTextsCount = await cardTextRepository.count();
