@@ -29,8 +29,14 @@ RUN git clone --depth 1 https://github.com/ProjectIgnis/CardScripts.git ./script
     git clone --depth 1 https://github.com/ProjectIgnis/BabelCDB.git ./databases/evolution/ && \
     git clone --depth 1 https://github.com/ProjectIgnis/LFLists ./banlists/evolution/ && \
     git clone --depth 1 https://github.com/mycard/ygopro-scripts.git ./mercury/script && \
-    wget -O ./mercury/lflist.conf https://raw.githubusercontent.com/fallenstardust/YGOMobile-cn-ko-en/master/mobile/assets/data/conf/lflist.conf && \
-    wget -O ./mercury/cards.cdb https://github.com/purerosefallen/ygopro/raw/server/cards.cdb
+    git clone --depth 1 https://github.com/mycard/ygopro-scripts.git ./mercury/pre-releases/script && \
+    git clone --depth 1 https://github.com/mycard/ygopro-scripts.git ./mercury/alternatives/script && \
+    wget -O ./mercury/lflist.conf https://raw.githubusercontent.com/termitaklk/koishi-Iflist/main/lflist.conf && \
+    wget -O ./mercury/pre-releases/lflist.conf https://raw.githubusercontent.com/termitaklk/koishi-Iflist/main/lflist.conf && \
+    wget -O ./mercury/alternatives/lflist.conf https://raw.githubusercontent.com/termitaklk/koishi-Iflist/main/lflist.conf && \
+    wget -O ./mercury/cards.cdb https://github.com/purerosefallen/ygopro/raw/server/cards.cdb && \
+    wget -O ./mercury/pre-releases/cards.cdb https://github.com/purerosefallen/ygopro/raw/server/cards.cdb && \
+    wget -O ./mercury/alternatives/cards.cdb https://github.com/purerosefallen/ygopro/raw/server/cards.cdb
 
 COPY package.json ./
 COPY package-lock.json ./

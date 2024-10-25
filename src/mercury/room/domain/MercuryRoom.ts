@@ -39,6 +39,7 @@ export class MercuryRoom extends YgoRoom {
 	private _joinBuffer: Buffer | null = null;
 	private readonly _hostInfo: HostInfo;
 	private roomState: RoomState | null = null;
+	private route = "mercury";
 
 	private constructor({
 		id,
@@ -148,6 +149,27 @@ export class MercuryRoom extends YgoRoom {
 		room._logger = logger;
 		room.emitter = emitter;
 
+		const alternativesBanlists = [
+			"edison",
+			"hat",
+			"goat",
+			"tengu",
+			"md",
+			"jtp",
+			"gx",
+			"mdc",
+			"rush",
+			"speed",
+			"world",
+		];
+		options.forEach((option) => {
+			if (alternativesBanlists.includes(option)) {
+				room.route = "mercury/alternatives";
+			} else if (option === "pre") {
+				room.route = "mercury/pre-releases";
+			}
+		});
+
 		return room;
 	}
 
@@ -196,7 +218,7 @@ export class MercuryRoom extends YgoRoom {
 				"2", //REPLAY MODE
 			],
 			{
-				cwd: "mercury",
+				cwd: this.route,
 			}
 		);
 

@@ -4,6 +4,9 @@ dist
 
 # Mercury
 mercury/script
+mercury/pre-releases/script
+mercury/alternatives/script
+mercury/alternatives/expansions
 
 # Evolution
 ./scripts
@@ -13,6 +16,8 @@ core/Makefile
 core/src/Makefile
 core/premake5
 core/CoreIntegrator
+core/example.so
+core/libluasocket.so
 *databases
 *.db
 *.env
