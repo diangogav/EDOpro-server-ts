@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.1](https://github.com/diangogav/EDOpro-server-ts/compare/v2.3.0...v2.3.1) (2024-10-26)
+
+
+### Bug Fixes
+
+* :hammer: Fix name in global stats script ([#142](https://github.com/diangogav/EDOpro-server-ts/issues/142)) ([46b571b](https://github.com/diangogav/EDOpro-server-ts/commit/46b571bd1e9e4009c07471bedad285c5d7d92e4b))
+
 ## [2.3.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.2.1...v2.3.0) (2024-10-26)
 
 
