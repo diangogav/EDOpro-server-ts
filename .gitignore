@@ -9,7 +9,7 @@ mercury/alternatives/script
 mercury/alternatives/expansions
 
 # Evolution
-*scripts
+./scripts
 *dependencies
 *build
 core/Makefile

@@ -1,9 +1,9 @@
 import { spawn } from "child_process";
 import net from "net";
 import BanListMemoryRepository from "src/edopro/ban-list/infrastructure/BanListMemoryRepository";
-import { UserFinder } from "src/edopro/user/application/UserFinder";
-import { UserRedisRepository } from "src/edopro/user/infrastructure/UserRedisRepository";
 import { Team } from "src/shared/room/Team";
+import { UserAuth } from "src/shared/user-auth/application/UserAuth";
+import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { EventEmitter } from "stream";
 
 import { PlayerInfoMessage } from "../../../edopro/messages/client-to-server/PlayerInfoMessage";
@@ -299,7 +299,7 @@ export class MercuryRoom extends YgoRoom {
 	waiting(): void {
 		this.roomState?.removeAllListener();
 		this.roomState = new MercuryWaitingState(
-			new UserFinder(new UserRedisRepository()),
+			new UserAuth(new UserProfilePostgresRepository()),
 			this.emitter,
 			this._logger
 		);

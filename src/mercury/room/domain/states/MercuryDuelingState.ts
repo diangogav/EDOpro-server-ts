@@ -100,7 +100,6 @@ export class MercuryDuelingState extends RoomState {
 				position: room.playersCount,
 				room,
 				host: false,
-				ranks: [],
 			});
 			room.addSpectator(spectator, true);
 
@@ -145,8 +144,7 @@ export class MercuryDuelingState extends RoomState {
 						bestOf: room.bestOf,
 						players: room.matchPlayersHistory,
 						date: new Date(),
-						ranked: room.ranked,
-						banlistHash: room.banListHash,
+						banListHash: room.banListHash,
 					})
 				);
 

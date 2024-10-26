@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { SimpleGit, simpleGit, SimpleGitOptions } from "simple-git";
 
-import { SQLiteTypeORM } from "../../shared/db/postgres/infrastructure/SQLiteTypeORM";
+import { SQLiteTypeORM } from "../../shared/db/sqlite/infrastructure/SQLiteTypeORM";
 import { Logger } from "../../shared/logger/domain/Logger";
 
 export class SyncRepositoriesController {

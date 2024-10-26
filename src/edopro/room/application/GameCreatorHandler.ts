@@ -1,3 +1,5 @@
+import { UserAuth } from "src/shared/user-auth/application/UserAuth";
+import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 import { EventEmitter } from "stream";
 
 import { config } from "../../../config";
@@ -6,7 +8,6 @@ import { PlayerEnterClientMessage } from "../../../shared/messages/server-to-cli
 import { TypeChangeClientMessage } from "../../../shared/messages/server-to-client/TypeChangeClientMessage";
 import { GameCreatorMessageHandler } from "../../../shared/room/domain/GameCreatorMessageHandler";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
-import { Rank } from "../../../shared/value-objects/Rank";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../messages/domain/Commands";
@@ -18,8 +19,6 @@ import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientM
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
 import { PlayerChangeClientMessage } from "../../messages/server-to-client/PlayerChangeClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
-import { UserFinder } from "../../user/application/UserFinder";
-import { User } from "../../user/domain/User";
 import { Room } from "../domain/Room";
 import RoomList from "../infrastructure/RoomList";
 
@@ -27,14 +26,14 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 	private readonly eventEmitter: EventEmitter;
 	private readonly logger: Logger;
 	private readonly socket: ISocket;
-	private readonly userFinder: UserFinder;
+	private readonly userAuth: UserAuth;
 	private readonly HOST_CLIENT = 0x10;
 
-	constructor(eventEmitter: EventEmitter, logger: Logger, socket: ISocket, userFinder: UserFinder) {
+	constructor(eventEmitter: EventEmitter, logger: Logger, socket: ISocket, userAuth: UserAuth) {
 		this.eventEmitter = eventEmitter;
 		this.logger = logger;
 		this.socket = socket;
-		this.userFinder = userFinder;
+		this.userAuth = userAuth;
 		this.eventEmitter.on(Commands.CREATE_GAME as unknown as string, (message: ClientMessage) => {
 			void this.handle(message);
 		});
@@ -46,28 +45,23 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 		const createGameMessage = new CreateGameMessage(message.data);
 
 		if (!playerInfoMessage.password || !config.redis.use) {
-			this.create(createGameMessage, playerInfoMessage, []);
+			this.create(createGameMessage, playerInfoMessage);
 
 			return;
 		}
 
-		const user = await this.userFinder.run(playerInfoMessage);
-
-		if (!(user instanceof User)) {
+		const user = await this.userAuth.run(playerInfoMessage);
+		if (!(user instanceof UserProfile)) {
 			this.socket.send(user as Buffer);
 			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 
 			return;
 		}
 
-		this.create(createGameMessage, playerInfoMessage, user.ranks);
+		this.create(createGameMessage, playerInfoMessage);
 	}
 
-	private create(
-		message: CreateGameMessage,
-		playerInfoMessage: PlayerInfoMessage,
-		ranks: Rank[]
-	): void {
+	private create(message: CreateGameMessage, playerInfoMessage: PlayerInfoMessage): void {
 		const room = Room.createFromCreateGameMessage(
 			message,
 			playerInfoMessage,
@@ -78,7 +72,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 
 		room.waiting();
 
-		const client = room.createHost(this.socket, playerInfoMessage.name, ranks);
+		const client = room.createHost(this.socket, playerInfoMessage.name);
 		RoomList.addRoom(room);
 		this.socket.send(CreateGameClientMessage.create(room));
 		this.socket.send(JoinGameClientMessage.createFromCreateGameMessage(message));

@@ -38,10 +38,11 @@ RUN git clone --depth 1 https://github.com/ProjectIgnis/CardScripts.git ./script
     wget -O ./mercury/pre-releases/cards.cdb https://github.com/purerosefallen/ygopro/raw/server/cards.cdb && \
     wget -O ./mercury/alternatives/cards.cdb https://github.com/purerosefallen/ygopro/raw/server/cards.cdb
 
-COPY package.json package-lock.json ./
-COPY .env ./
+COPY package.json ./
+COPY package-lock.json ./
 RUN npm i
 COPY . .
+COPY .env ./
 COPY --from=core-integrator-builder /app/CoreIntegrator ./core/CoreIntegrator
 
 CMD ["npm", "run", "dev"]

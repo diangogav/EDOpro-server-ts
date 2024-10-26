@@ -3,9 +3,11 @@ import "src/shared/error-handler/error-handler";
 
 import { BanListLoader } from "src/edopro/ban-list/infrastructure/BanListLoader";
 import BanListMemoryRepository from "src/edopro/ban-list/infrastructure/BanListMemoryRepository";
-import { SQLiteTypeORM } from "src/shared/db/postgres/infrastructure/SQLiteTypeORM";
+import { PostgresTypeORM } from "src/shared/db/postgres/infrastructure/PostgresTypeORM";
+import { SQLiteTypeORM } from "src/shared/db/sqlite/infrastructure/SQLiteTypeORM";
 import { Pino } from "src/shared/logger/infrastructure/Pino";
 
+import { config } from "./config";
 import { Server } from "./http-server/Server";
 import { MercuryBanListLoader } from "./mercury/ban-list/infrastructure/MercuryBanListLoader";
 import { HostServer } from "./socket-server/HostServer";
@@ -26,6 +28,11 @@ async function start(): Promise<void> {
 	await MercuryBanListLoader.load("./mercury/lflist.conf");
 	await database.connect();
 	await database.initialize();
+	if (config.ranking.enabled) {
+		logger.info("Postgres database enabled");
+		const postgresDatabase = new PostgresTypeORM();
+		await postgresDatabase.connect();
+	}
 	await server.initialize();
 	WebSocketSingleton.getInstance();
 	hostServer.initialize();

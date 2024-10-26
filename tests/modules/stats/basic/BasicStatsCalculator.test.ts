@@ -1,35 +1,60 @@
-import { BanList } from "src/edopro/ban-list/domain/BanList";
-import BanListMemoryRepository from "src/edopro/ban-list/infrastructure/BanListMemoryRepository";
-import { BasicStatsCalculator } from "src/edopro/stats/basic/application/BasicStatsCalculator";
+/* eslint-disable @typescript-eslint/unbound-method */
+import { faker } from "@faker-js/faker";
+import { mock, MockProxy } from "jest-mock-extended";
+import { Logger } from "src/shared/logger/domain/Logger";
 import { Player } from "src/shared/player/domain/Player";
 import { Team } from "src/shared/room/Team";
-import { Rank } from "src/shared/value-objects/Rank";
-
-import { GameMother } from "../../shared/mothers/player/GameMother";
-import { GameOverDomainEventMother } from "../../shared/mothers/player/GameOverDomainEventMother";
-import { PlayerMother } from "../../shared/mothers/player/PlayerMother";
-import { RankMother } from "../../shared/mothers/player/RankMother";
-import { RoomRepositoryMock } from "./__mocks__/RoomRepositoryMock";
+import { BasicStatsCalculator } from "src/shared/stats/basic/application/BasicStatsCalculator";
+import { MatchResumeCreator } from "src/shared/stats/match-resume/application/MatchResumeCreator";
+import { DuelResumeCreator } from "src/shared/stats/match-resume/duel-resume/application/DuelResumeCreator";
+import { PlayerStats } from "src/shared/stats/player-stats/domain/PlayerStats";
+import { PlayerStatsRepository } from "src/shared/stats/player-stats/domain/PlayerStatsRepository";
+import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
+import { UserProfileRepository } from "src/shared/user-profile/domain/UserProfileRepository";
+import { GameMother } from "tests/modules/shared/mothers/player/GameMother";
+import { GameOverDomainEventMother } from "tests/modules/shared/mothers/player/GameOverDomainEventMother";
+import { PlayerMother } from "tests/modules/shared/mothers/player/PlayerMother";
+import { PlayerStatsMother } from "tests/modules/shared/mothers/player/PlayerStatsMother";
+import { UserProfileMother } from "tests/modules/shared/mothers/user-profile/UserProfileMother";
 
 describe("BasicStatsCalculator", () => {
-	let roomRepository: RoomRepositoryMock;
 	let basicStatsCalculator: BasicStatsCalculator;
-	let playerGlobalRank: Rank;
-	let playerBanListRank: Rank;
-	let opponentGlobalRank: Rank;
-	let opponentBanListRank: Rank;
+
 	let player: Player;
 	let opponent: Player;
+	let logger: MockProxy<Logger>;
+	let userProfileRepository: MockProxy<UserProfileRepository>;
+	let playerStatsRepository: MockProxy<PlayerStatsRepository>;
+	let matchResumeCreator: MockProxy<MatchResumeCreator>;
+	let duelResumeCreator: MockProxy<DuelResumeCreator>;
+	let playerUserProfile: UserProfile;
+	let opponentUserProfile: UserProfile;
+	let playerStats: PlayerStats;
+	let opponentStats: PlayerStats;
+	let matchId: string;
 
 	beforeEach(() => {
-		roomRepository = new RoomRepositoryMock();
-		basicStatsCalculator = new BasicStatsCalculator(roomRepository);
-		playerGlobalRank = RankMother.create({ name: "Global", points: 100 });
-		playerBanListRank = RankMother.create({ name: "TCG", points: 100 });
-		opponentGlobalRank = RankMother.create({ name: "Global", points: 50 });
-		opponentBanListRank = RankMother.create({ name: "TCG", points: 50 });
+		logger = mock();
+		userProfileRepository = mock();
+		playerStatsRepository = mock<PlayerStatsRepository>();
+		matchResumeCreator = mock();
+		duelResumeCreator = mock();
+		playerUserProfile = UserProfileMother.create();
+		opponentUserProfile = UserProfileMother.create();
+		playerStats = PlayerStatsMother.create();
+		opponentStats = PlayerStatsMother.create();
+		matchId = faker.string.uuid();
+	});
+
+	beforeEach(() => {
+		basicStatsCalculator = new BasicStatsCalculator(
+			logger,
+			userProfileRepository,
+			playerStatsRepository,
+			matchResumeCreator,
+			duelResumeCreator
+		);
 		player = PlayerMother.create({
-			ranks: [playerGlobalRank, playerBanListRank],
 			team: Team.PLAYER,
 			winner: true,
 			games: [
@@ -39,7 +64,6 @@ describe("BasicStatsCalculator", () => {
 			],
 		});
 		opponent = PlayerMother.create({
-			ranks: [opponentGlobalRank, opponentBanListRank],
 			team: Team.OPPONENT,
 			winner: false,
 			games: [
@@ -48,6 +72,18 @@ describe("BasicStatsCalculator", () => {
 				GameMother.create({ result: "loser" }),
 			],
 		});
+
+		jest
+			.spyOn(userProfileRepository, "findByUsername")
+			.mockResolvedValueOnce(playerUserProfile)
+			.mockResolvedValueOnce(opponentUserProfile);
+
+		jest
+			.spyOn(playerStatsRepository, "findByUserIdAndBanListName")
+			.mockResolvedValueOnce(playerStats)
+			.mockResolvedValueOnce(opponentStats);
+
+		jest.spyOn(matchResumeCreator, "run").mockResolvedValue({ id: matchId });
 	});
 
 	afterEach(() => {
@@ -65,7 +101,6 @@ describe("BasicStatsCalculator", () => {
 				GameMother.create({ result: "winner" }),
 			],
 		});
-
 		opponent = PlayerMother.create({
 			...opponent.toPresentation(),
 			games: [
@@ -76,162 +111,27 @@ describe("BasicStatsCalculator", () => {
 				GameMother.create({ result: "loser" }),
 			],
 		});
-
 		const players = [player, opponent];
 		const event = GameOverDomainEventMother.create({
 			players: players.map((player) => player.toPresentation()),
-			ranked: true,
 		});
+
 		await basicStatsCalculator.handle(event);
-		expect(roomRepository.mockUpdatePlayerPoints).toHaveBeenCalledTimes(2);
-		expect(roomRepository.mockUpdatePlayerPoints).toHaveBeenNthCalledWith(1, player.name, 1);
-		expect(roomRepository.mockUpdatePlayerPoints).toHaveBeenNthCalledWith(2, opponent.name, -1);
-		expect(roomRepository.mockIncreaseWins).toHaveBeenCalledTimes(1);
-		expect(roomRepository.mockIncreaseWins).toHaveBeenCalledWith(player.name);
-		expect(roomRepository.mockIncreaseLoses).toHaveBeenCalledTimes(1);
-		expect(roomRepository.mockIncreaseLoses).toHaveBeenCalledWith(opponent.name);
-		expect(roomRepository.mockSaveMatch).toBeCalledTimes(2);
 
-		players[0].recordPoints("Global", 1);
-		players[1].recordPoints("Global", -1);
+		expect(playerStatsRepository.findByUserIdAndBanListName).toHaveBeenCalledTimes(2);
+		expect(playerStatsRepository.save).toHaveBeenCalledTimes(2);
 
-		expect(roomRepository.mockSaveMatch).toHaveBeenNthCalledWith(1, player.name, {
-			bestOf: event.data.bestOf,
-			date: event.data.date,
-			players: players.map((player) => player.toPresentation()),
-			ranked: event.data.ranked,
-			banlistHash: event.data.banlistHash,
-			banlistName: "N/A",
-		});
-		expect(roomRepository.mockSaveMatch).toHaveBeenNthCalledWith(2, opponent.name, {
-			bestOf: event.data.bestOf,
-			date: event.data.date,
-			players: players.map((player) => player.toPresentation()),
-			ranked: event.data.ranked,
-			banlistHash: event.data.banlistHash,
-			banlistName: "N/A",
-		});
-	});
-
-	it("Should calculate players points correctly for global and banlist", async () => {
-		const banlist = new BanList();
-		banlist.setName("TCG");
-		BanListMemoryRepository.add(banlist);
-		const players = [player, opponent];
-		const event = GameOverDomainEventMother.create({
-			players: players.map((player) => player.toPresentation()),
-			ranked: true,
-			banlistHash: banlist.hash,
-		});
-		await basicStatsCalculator.handle(event);
-		expect(roomRepository.mockUpdatePlayerPoints).toHaveBeenCalledTimes(2);
-		expect(roomRepository.mockUpdatePlayerPointsByBanList).toHaveBeenCalledTimes(2);
-
-		expect(roomRepository.mockUpdatePlayerPoints).toHaveBeenNthCalledWith(1, player.name, 3);
-		expect(roomRepository.mockUpdatePlayerPoints).toHaveBeenNthCalledWith(2, opponent.name, -3);
-		expect(roomRepository.mockIncreaseWins).toHaveBeenCalledTimes(1);
-		expect(roomRepository.mockIncreaseWins).toHaveBeenCalledWith(player.name);
-		expect(roomRepository.mockIncreaseLoses).toHaveBeenCalledTimes(1);
-		expect(roomRepository.mockIncreaseLoses).toHaveBeenCalledWith(opponent.name);
-
-		expect(roomRepository.mockUpdatePlayerPointsByBanList).toHaveBeenNthCalledWith(
+		expect(playerStatsRepository.findByUserIdAndBanListName).toHaveBeenNthCalledWith(
 			1,
-			player.name,
-			3,
-			banlist
+			playerUserProfile.id,
+			"Global"
 		);
-		expect(roomRepository.mockUpdatePlayerPointsByBanList).toHaveBeenNthCalledWith(
+		expect(playerStatsRepository.findByUserIdAndBanListName).toHaveBeenNthCalledWith(
 			2,
-			opponent.name,
-			-3,
-			banlist
+			opponentUserProfile.id,
+			"Global"
 		);
-		expect(roomRepository.mockIncreaseWinsByBanList).toHaveBeenCalledTimes(1);
-		expect(roomRepository.mockIncreaseWinsByBanList).toHaveBeenCalledWith(player.name, banlist);
-		expect(roomRepository.mockIncreaseLosesByBanList).toHaveBeenCalledTimes(1);
-		expect(roomRepository.mockIncreaseLosesByBanList).toHaveBeenCalledWith(opponent.name, banlist);
-
-		expect(roomRepository.mockSaveMatch).toBeCalledTimes(2);
-
-		players[0].recordPoints("Global", 3);
-		players[1].recordPoints("Global", -3);
-
-		players[0].recordPoints("TCG", 3);
-		players[1].recordPoints("TCG", -3);
-
-		expect(roomRepository.mockSaveMatch).toHaveBeenNthCalledWith(1, player.name, {
-			bestOf: event.data.bestOf,
-			date: event.data.date,
-			players: players.map((player) => player.toPresentation()),
-			ranked: event.data.ranked,
-			banlistHash: event.data.banlistHash,
-			banlistName: banlist.name,
-		});
-		expect(roomRepository.mockSaveMatch).toHaveBeenNthCalledWith(2, opponent.name, {
-			bestOf: event.data.bestOf,
-			date: event.data.date,
-			players: players.map((player) => player.toPresentation()),
-			ranked: event.data.ranked,
-			banlistHash: event.data.banlistHash,
-			banlistName: banlist.name,
-		});
-	});
-
-	it("Should calculate players points correctly if loser does not have enough points", async () => {
-		opponentGlobalRank = RankMother.create({ name: "Global", points: 1 });
-
-		player = PlayerMother.create({
-			...player.toPresentation(),
-			games: [
-				GameMother.create({ result: "winner" }),
-				GameMother.create({ result: "winner" }),
-				GameMother.create({ result: "winner" }),
-			],
-		});
-
-		opponent = PlayerMother.create({
-			...opponent.toPresentation(),
-			ranks: [opponentGlobalRank, opponentBanListRank],
-			games: [
-				GameMother.create({ result: "loser" }),
-				GameMother.create({ result: "loser" }),
-				GameMother.create({ result: "loser" }),
-			],
-		});
-
-		const players = [player, opponent];
-		const event = GameOverDomainEventMother.create({
-			players: players.map((player) => player.toPresentation()),
-			ranked: true,
-		});
-		await basicStatsCalculator.handle(event);
-		expect(roomRepository.mockUpdatePlayerPoints).toHaveBeenCalledTimes(2);
-		expect(roomRepository.mockUpdatePlayerPoints).toHaveBeenNthCalledWith(1, player.name, 3);
-		expect(roomRepository.mockUpdatePlayerPoints).toHaveBeenNthCalledWith(2, opponent.name, -1);
-		expect(roomRepository.mockIncreaseWins).toHaveBeenCalledTimes(1);
-		expect(roomRepository.mockIncreaseWins).toHaveBeenCalledWith(player.name);
-		expect(roomRepository.mockIncreaseLoses).toHaveBeenCalledTimes(1);
-		expect(roomRepository.mockIncreaseLoses).toHaveBeenCalledWith(opponent.name);
-		expect(roomRepository.mockSaveMatch).toBeCalledTimes(2);
-
-		players[0].recordPoints("Global", 3);
-		players[1].recordPoints("Global", -1);
-
-		expect(roomRepository.mockSaveMatch).toHaveBeenNthCalledWith(1, player.name, {
-			bestOf: event.data.bestOf,
-			date: event.data.date,
-			players: players.map((player) => player.toPresentation()),
-			ranked: event.data.ranked,
-			banlistHash: event.data.banlistHash,
-			banlistName: "N/A",
-		});
-		expect(roomRepository.mockSaveMatch).toHaveBeenNthCalledWith(2, opponent.name, {
-			bestOf: event.data.bestOf,
-			date: event.data.date,
-			players: players.map((player) => player.toPresentation()),
-			ranked: event.data.ranked,
-			banlistHash: event.data.banlistHash,
-			banlistName: "N/A",
-		});
+		expect(playerStatsRepository.save).toHaveBeenNthCalledWith(1, PlayerStats.from(playerStats));
+		expect(playerStatsRepository.save).toHaveBeenNthCalledWith(2, PlayerStats.from(opponentStats));
 	});
 });

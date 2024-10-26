@@ -1,15 +1,29 @@
+import { config } from "src/config";
+import { DuelResumeEntity } from "src/shared/stats/match-resume/duel-resume/infrastructure/DuelResumeEntity";
+import { MatchResumeEntity } from "src/shared/stats/match-resume/infrastructure/MatchResumeEntity";
 import { DataSource, DataSourceOptions } from "typeorm";
 
-import { CardEntity } from "../../../../edopro/card/infrastructure/postgres/CardEntity";
-import { CardTextEntity } from "../../../../edopro/card/infrastructure/postgres/CardTextEntity";
+import { PlayerStatsEntity } from "../../../stats/player-stats/infrastructure/PlayerStatsEntity";
+import { UserProfileEntity } from "../../../user-profile/infrastructure/postgres/UserProfileEntity";
+import { TournamentEntity } from "./../../../tournaments/infrastructure/postgres/TournamentEntity";
 
 const options: DataSourceOptions = {
-	type: "sqlite",
-	database: "jtp_evolution_cards.db",
-	synchronize: true,
-	logging: false,
-	entities: [CardEntity, CardTextEntity],
+	type: "postgres",
+	host: config.postgres.host,
+	port: config.postgres.port,
+	username: config.postgres.username,
+	password: config.postgres.password,
+	database: config.postgres.database,
+	synchronize: false,
+	logging: true,
+	entities: [
+		UserProfileEntity,
+		MatchResumeEntity,
+		DuelResumeEntity,
+		PlayerStatsEntity,
+		TournamentEntity,
+	],
 	subscribers: [],
-	migrations: [],
+	migrations: ["src/shared/db/postgres/infrastructure/migrations/*.ts"],
 };
 export const dataSource = new DataSource(options);

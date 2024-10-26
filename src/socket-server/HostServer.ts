@@ -1,21 +1,24 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { randomUUID as uuidv4 } from "crypto";
 import net, { Socket } from "net";
+import { MatchResumeCreator } from "src/shared/stats/match-resume/application/MatchResumeCreator";
+import { DuelResumeCreator } from "src/shared/stats/match-resume/duel-resume/application/DuelResumeCreator";
+import { MatchResumePostgresRepository } from "src/shared/stats/match-resume/infrastructure/postgres/MatchResumePostgresRepository";
+import { PlayerStatsPostgresRepository } from "src/shared/stats/player-stats/infrastructure/PlayerStatsPostgresRepository";
+import { UserAuth } from "src/shared/user-auth/application/UserAuth";
+import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { EventEmitter } from "stream";
 
 import { MessageEmitter } from "../edopro/MessageEmitter";
 import { GameCreatorHandler } from "../edopro/room/application/GameCreatorHandler";
 import { JoinHandler } from "../edopro/room/application/JoinHandler";
-import { BasicStatsCalculator } from "../edopro/stats/basic/application/BasicStatsCalculator";
-import { UserFinder } from "../edopro/user/application/UserFinder";
-import { UserRedisRepository } from "../edopro/user/infrastructure/UserRedisRepository";
 import { container } from "../shared/dependency-injection";
 import { EventBus } from "../shared/event-bus/EventBus";
 import { Logger } from "../shared/logger/domain/Logger";
 import { DisconnectHandler } from "../shared/room/application/DisconnectHandler";
 import { RoomFinder } from "../shared/room/application/RoomFinder";
-import { RedisRoomRepository } from "../shared/room/domain/match/infrastructure/RedisRoomRepository";
 import { TCPClientSocket } from "../shared/socket/domain/TCPClientSocket";
+import { BasicStatsCalculator } from "../shared/stats/basic/application/BasicStatsCalculator";
 
 export class HostServer {
 	private readonly server: net.Server;
@@ -42,7 +45,7 @@ export class HostServer {
 				eventEmitter,
 				this.logger,
 				tcpClientSocket,
-				new UserFinder(new UserRedisRepository())
+				new UserAuth(new UserProfilePostgresRepository())
 			);
 			const joinHandler = new JoinHandler(eventEmitter, this.logger, tcpClientSocket);
 			const messageEmitter = new MessageEmitter(
@@ -86,7 +89,14 @@ export class HostServer {
 
 		eventBus.subscribe(
 			BasicStatsCalculator.ListenTo,
-			new BasicStatsCalculator(new RedisRoomRepository())
+			// new BasicStatsCalculator(new RedisRoomRepository())
+			new BasicStatsCalculator(
+				this.logger,
+				new UserProfilePostgresRepository(),
+				new PlayerStatsPostgresRepository(),
+				new MatchResumeCreator(new MatchResumePostgresRepository()),
+				new DuelResumeCreator(new MatchResumePostgresRepository())
+			)
 		);
 	}
 }

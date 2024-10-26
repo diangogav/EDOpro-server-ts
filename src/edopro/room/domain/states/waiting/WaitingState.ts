@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
+import { UserAuth } from "src/shared/user-auth/application/UserAuth";
+import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 import { EventEmitter } from "stream";
 
 import { Logger } from "../../../../../shared/logger/domain/Logger";
@@ -7,7 +9,6 @@ import { DuelStartClientMessage } from "../../../../../shared/messages/server-to
 import { PlayerEnterClientMessage } from "../../../../../shared/messages/server-to-client/PlayerEnterClientMessage";
 import { TypeChangeClientMessage } from "../../../../../shared/messages/server-to-client/TypeChangeClientMessage";
 import { ISocket } from "../../../../../shared/socket/domain/ISocket";
-import { Rank } from "../../../../../shared/value-objects/Rank";
 import { Client } from "../../../../client/domain/Client";
 import { DeckCreator } from "../../../../deck/application/DeckCreator";
 import { UpdateDeckMessageSizeCalculator } from "../../../../deck/application/UpdateDeckMessageSizeCalculator";
@@ -22,8 +23,6 @@ import { PlayerChangeClientMessage } from "../../../../messages/server-to-client
 import { RPSChooseClientMessage } from "../../../../messages/server-to-client/RPSChooseClientMessage";
 import { ServerErrorClientMessage } from "../../../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { WatchChangeClientMessage } from "../../../../messages/server-to-client/WatchChangeClientMessage";
-import { UserFinder } from "../../../../user/application/UserFinder";
-import { User } from "../../../../user/domain/User";
 import { PlayerRoomState } from "../../PlayerRoomState";
 import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";
@@ -33,7 +32,7 @@ export class WaitingState extends RoomState {
 	constructor(
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
-		private readonly userFinder: UserFinder,
+		private readonly userAuth: UserAuth,
 		private readonly deckCreator: DeckCreator
 	) {
 		super(eventEmitter);
@@ -300,19 +299,19 @@ export class WaitingState extends RoomState {
 		}
 
 		if (room.ranked) {
-			const user = await this.userFinder.run(playerInfoMessage);
+			const user = await this.userAuth.run(playerInfoMessage);
 
-			if (!(user instanceof User)) {
+			if (!(user instanceof UserProfile)) {
 				socket.send(user as Buffer);
 				socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 
 				return;
 			}
-			this.player(place, joinGameMessage, socket, playerInfoMessage, room, user.ranks);
+			this.player(place, joinGameMessage, socket, playerInfoMessage, room);
 
 			return;
 		}
-		this.player(place, joinGameMessage, socket, playerInfoMessage, room, []);
+		this.player(place, joinGameMessage, socket, playerInfoMessage, room);
 	}
 
 	private spectator(
@@ -363,8 +362,7 @@ export class WaitingState extends RoomState {
 		joinGameMessage: JoinGameMessage,
 		socket: ISocket,
 		playerInfoMessage: PlayerInfoMessage,
-		room: Room,
-		ranks: Rank[]
+		room: Room
 	): void {
 		const host = room.clients.some((client: Client) => client.host);
 
@@ -376,7 +374,6 @@ export class WaitingState extends RoomState {
 			roomId: room.id,
 			team: place.team,
 			logger: this.logger,
-			ranks,
 		});
 
 		if (client.host) {
