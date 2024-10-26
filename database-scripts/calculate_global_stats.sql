@@ -34,7 +34,7 @@ points AS (
 global_stats AS (
     SELECT
         w.user_id,
-        'global' AS ban_list_name,
+        'Global' AS ban_list_name,
         SUM(w.wins) AS total_wins,
         SUM(l.losses) AS total_losses,
         SUM(p.total_points) AS total_points
