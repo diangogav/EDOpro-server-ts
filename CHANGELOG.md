@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.3.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.2.1...v2.3.0) (2024-10-26)
+
+
+### Features
+
+* :sparkles: Custom commands for mercury rooms ([#131](https://github.com/diangogav/EDOpro-server-ts/issues/131)) ([2ad3534](https://github.com/diangogav/EDOpro-server-ts/commit/2ad3534b6d3630234eaebb3e17889ea26db18b5f))
+
+
+### Bug Fixes
+
+* :adhesive_bandage: Spectators entering from the lobby watched the duel with errors ([62d9853](https://github.com/diangogav/EDOpro-server-ts/commit/62d9853a994a7a7baec3cfe7e5d7fd461889b833))
+* :bug: Fix alternatives commands ([d094240](https://github.com/diangogav/EDOpro-server-ts/commit/d09424078127736f5c6580a995d10c0bb9582b87))
+
 ## [2.2.1](https://github.com/diangogav/EDOpro-server-ts/compare/v2.2.0...v2.2.1) (2024-08-30)
 
 
