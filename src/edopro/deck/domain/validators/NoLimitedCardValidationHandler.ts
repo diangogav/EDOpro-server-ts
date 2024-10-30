@@ -1,10 +1,10 @@
 import { BanList } from "../../../ban-list/domain/BanList";
 import { Deck } from "../Deck";
-import { BanListDeckError } from "../errors/BanListDeckError";
+import { CardMoreThan3Error } from "../errors/CardMoreThan3Error";
 import { DeckError } from "../errors/DeckError";
 import { DeckValidationHandler } from "./DeckValidationHandler";
 
-export class SemiLimitedCardValidationHandler implements DeckValidationHandler {
+export class NoLimitedCardValidationHandler implements DeckValidationHandler {
 	private readonly banList: BanList;
 	private nextHandler: DeckValidationHandler | null = null;
 
@@ -30,10 +30,11 @@ export class SemiLimitedCardValidationHandler implements DeckValidationHandler {
 			cards.set(Number(card.code), count + 1);
 		}
 
-		for (const semiLimitedCard of this.banList.semiLimited) {
-			const count = cards.get(semiLimitedCard) ?? 0;
-			if (count > 2) {
-				return new BanListDeckError(semiLimitedCard);
+		for (const card of this.banList.all) {
+			const count = cards.get(card) ?? 0;
+
+			if (count > 3) {
+				return new CardMoreThan3Error(card);
 			}
 		}
 
