@@ -32,7 +32,7 @@ RUN conan install . --build missing --output-folder=./dependencies --options=lib
     ./premake5 gmake && \
     make config=release
 
-FROM public.ecr.aws/docker/library/node:20.15.0 as server-builder
+FROM public.ecr.aws/docker/library/node:22.11.0 as server-builder
 
 ENV USER node
 
@@ -47,7 +47,7 @@ COPY . .
 RUN npm run build && \
     npm prune --production
 
-FROM public.ecr.aws/docker/library/node:20.15.0-slim
+FROM public.ecr.aws/docker/library/node:22.11.0-slim
 
 RUN apt-get update && apt-get install -y curl git && apt-get install -y liblua5.3-dev libsqlite3-dev libevent-dev dumb-init
 
