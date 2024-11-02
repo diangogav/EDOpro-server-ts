@@ -1,4 +1,11 @@
-import { Column, Entity, PrimaryColumn } from "typeorm";
+import {
+	Column,
+	CreateDateColumn,
+	DeleteDateColumn,
+	Entity,
+	PrimaryColumn,
+	UpdateDateColumn,
+} from "typeorm";
 
 @Entity({ name: "tournaments" })
 export class TournamentEntity {
@@ -31,4 +38,13 @@ export class TournamentEntity {
 
 	@Column()
 	status: string;
+
+	@CreateDateColumn({ name: "created_at" })
+	createdAt: Date;
+
+	@UpdateDateColumn({ name: "updated_at" })
+	updatedAt: Date;
+
+	@DeleteDateColumn({ name: "deleted_at", nullable: true })
+	deletedAt: Date | null;
 }
