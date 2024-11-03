@@ -1,7 +1,7 @@
 import { DataSource } from "typeorm";
 
+import { dataSource } from "../../../../evolution-types/src/data-source";
 import { Database } from "./../../domain/Database";
-import { dataSource } from "./data-source";
 
 export class PostgresTypeORM implements Database {
 	private readonly dataSource: DataSource;

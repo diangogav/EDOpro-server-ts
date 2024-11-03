@@ -1,10 +1,9 @@
-import { dataSource } from "src/shared/db/postgres/infrastructure/data-source";
-
+import { dataSource } from "../../../../../evolution-types/src/data-source";
+import { DuelResumeEntity } from "../../../../../evolution-types/src/entities/DuelResumeEntity";
+import { MatchResumeEntity } from "../../../../../evolution-types/src/entities/MatchResumeEntity";
 import { MatchResume } from "../../domain/MatchResume";
 import { MatchResumeRepository } from "../../domain/MatchResumeRepository";
 import { DuelResume } from "../../duel-resume/domain/DuelResume";
-import { DuelResumeEntity } from "../../duel-resume/infrastructure/DuelResumeEntity";
-import { MatchResumeEntity } from "../MatchResumeEntity";
 
 export class MatchResumePostgresRepository implements MatchResumeRepository {
 	async create(matchResume: MatchResume): Promise<void> {

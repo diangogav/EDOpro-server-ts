@@ -1,8 +1,7 @@
-import { dataSource } from "src/shared/db/postgres/infrastructure/data-source";
-
+import { dataSource } from "../../../../evolution-types/src/data-source";
+import { UserProfileEntity } from "../../../../evolution-types/src/entities/UserProfileEntity";
 import { UserProfile } from "../../domain/UserProfile";
 import { UserProfileRepository } from "../../domain/UserProfileRepository";
-import { UserProfileEntity } from "./UserProfileEntity";
 
 export class UserProfilePostgresRepository implements UserProfileRepository {
 	async findByUsername(username: string): Promise<UserProfile | null> {

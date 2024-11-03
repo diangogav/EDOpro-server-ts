@@ -1,8 +1,7 @@
-import { dataSource } from "src/shared/db/postgres/infrastructure/data-source";
-
+import { dataSource } from "../../../../evolution-types/src/data-source";
+import { PlayerStatsEntity } from "../../../../evolution-types/src/entities/PlayerStatsEntity";
 import { PlayerStats } from "../domain/PlayerStats";
 import { PlayerStatsRepository } from "../domain/PlayerStatsRepository";
-import { PlayerStatsEntity } from "./PlayerStatsEntity";
 
 export class PlayerStatsPostgresRepository implements PlayerStatsRepository {
 	async findByUserIdAndBanListName(userId: string, banListName: string): Promise<PlayerStats> {

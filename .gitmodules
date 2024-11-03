@@ -1,0 +1,3 @@
+[submodule "src/evolution-types"]
+	path = src/evolution-types
+	url = https://github.com/diangogav/evolution-types.git
