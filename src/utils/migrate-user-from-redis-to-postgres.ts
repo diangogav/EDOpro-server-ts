@@ -1,5 +1,4 @@
 import * as fs from "fs";
-import { PostgresTypeORM } from "src/shared/db/postgres/infrastructure/PostgresTypeORM";
 import { Redis } from "src/shared/db/redis/infrastructure/Redis";
 import { Pino } from "src/shared/logger/infrastructure/Pino";
 import { MatchResumeCreator } from "src/shared/stats/match-resume/application/MatchResumeCreator";
@@ -7,6 +6,8 @@ import { DuelResumeCreator } from "src/shared/stats/match-resume/duel-resume/app
 import { MatchResumePostgresRepository } from "src/shared/stats/match-resume/infrastructure/postgres/MatchResumePostgresRepository";
 import { UserProfileCreator } from "src/shared/user-profile/application/UserProfileCreator";
 import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
+
+import { PostgresTypeORM } from "../evolution-types/src/PostgresTypeORM";
 
 interface Game {
 	result: "winner" | "loser";
