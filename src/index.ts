@@ -3,11 +3,11 @@ import "src/shared/error-handler/error-handler";
 
 import { BanListLoader } from "src/edopro/ban-list/infrastructure/BanListLoader";
 import BanListMemoryRepository from "src/edopro/ban-list/infrastructure/BanListMemoryRepository";
-import { PostgresTypeORM } from "src/shared/db/postgres/infrastructure/PostgresTypeORM";
 import { SQLiteTypeORM } from "src/shared/db/sqlite/infrastructure/SQLiteTypeORM";
 import { Pino } from "src/shared/logger/infrastructure/Pino";
 
 import { config } from "./config";
+import { PostgresTypeORM } from "./evolution-types/src/PostgresTypeORM";
 import { Server } from "./http-server/Server";
 import { MercuryBanListLoader } from "./mercury/ban-list/infrastructure/MercuryBanListLoader";
 import { HostServer } from "./socket-server/HostServer";
