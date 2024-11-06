@@ -104,7 +104,8 @@ export class FinishDuelHandler {
 					bestOf: this.room.bestOf,
 					players: this.room.matchPlayersHistory,
 					date: new Date(),
-					banListHash: this.room.banListHash,
+					ranked: this.room.ranked,
+					banlistHash: this.room.banListHash,
 				})
 			);
 

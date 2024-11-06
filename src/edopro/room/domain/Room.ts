@@ -1,8 +1,6 @@
 import { ChildProcessWithoutNullStreams } from "child_process";
 import shuffle from "shuffle-array";
 import BanListMemoryRepository from "src/edopro/ban-list/infrastructure/BanListMemoryRepository";
-import { UserAuth } from "src/shared/user-auth/application/UserAuth";
-import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { EventEmitter } from "stream";
 
 import { config } from "../../../config";
@@ -10,7 +8,8 @@ import { Logger } from "../../../shared/logger/domain/Logger";
 import { DuelState, YgoRoom } from "../../../shared/room/domain/YgoRoom";
 import { Team } from "../../../shared/room/Team";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
-import { CardSQLiteTYpeORMRepository } from "../../card/infrastructure/sqlite/CardSQLiteTYpeORMRepository";
+import { Rank } from "../../../shared/value-objects/Rank";
+import { CardSQLiteTYpeORMRepository } from "../../card/infrastructure/postgres/CardSQLiteTYpeORMRepository";
 import { Client } from "../../client/domain/Client";
 import { DeckCreator } from "../../deck/application/DeckCreator";
 import { Deck } from "../../deck/domain/Deck";
@@ -20,6 +19,8 @@ import { JSONMessageProcessor } from "../../messages/JSONMessageProcessor";
 import { MessageProcessor } from "../../messages/MessageProcessor";
 import { Replay } from "../../replay/Replay";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
+import { UserFinder } from "../../user/application/UserFinder";
+import { UserRedisRepository } from "../../user/infrastructure/UserRedisRepository";
 import { FinishDuelHandler } from "../application/FinishDuelHandler";
 import { JoinToDuelAsSpectator } from "../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../application/Reconnect";
@@ -284,7 +285,7 @@ export class Room extends YgoRoom {
 		this.roomState = new WaitingState(
 			this.emitter,
 			this.logger,
-			new UserAuth(new UserProfilePostgresRepository()),
+			new UserFinder(new UserRedisRepository()),
 			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules)
 		);
 	}
@@ -390,7 +391,7 @@ export class Room extends YgoRoom {
 		this.roomState = new DuelingState(
 			this.emitter,
 			this.logger,
-			new Reconnect(new UserAuth(new UserProfilePostgresRepository())),
+			new Reconnect(new UserFinder(new UserRedisRepository())),
 			new JoinToDuelAsSpectator(),
 			this,
 			new JSONMessageProcessor()
@@ -405,7 +406,7 @@ export class Room extends YgoRoom {
 		this.roomState = new SideDeckingState(
 			this.emitter,
 			this.logger,
-			new Reconnect(new UserAuth(new UserProfilePostgresRepository())),
+			new Reconnect(new UserFinder(new UserRedisRepository())),
 			new JoinToDuelAsSpectator(),
 			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules)
 		);
@@ -417,7 +418,7 @@ export class Room extends YgoRoom {
 		this.roomState = new RockPaperScissorState(
 			this.emitter,
 			this.logger,
-			new Reconnect(new UserAuth(new UserProfilePostgresRepository())),
+			new Reconnect(new UserFinder(new UserRedisRepository())),
 			new JoinToDuelAsSpectator()
 		);
 	}
@@ -428,7 +429,7 @@ export class Room extends YgoRoom {
 		this.roomState = new ChossingOrderState(
 			this.emitter,
 			this.logger,
-			new Reconnect(new UserAuth(new UserProfilePostgresRepository())),
+			new Reconnect(new UserFinder(new UserRedisRepository())),
 			new JoinToDuelAsSpectator()
 		);
 	}
@@ -642,7 +643,7 @@ export class Room extends YgoRoom {
 		this.currentDuel?.finished();
 	}
 
-	createHost(socket: ISocket, name: string): Client {
+	createHost(socket: ISocket, name: string, ranks: Rank[]): Client {
 		const client = new Client({
 			socket,
 			host: true,
@@ -651,6 +652,7 @@ export class Room extends YgoRoom {
 			roomId: this.id,
 			team: Team.PLAYER,
 			logger: this.logger,
+			ranks,
 		});
 
 		this.addClient(client);
@@ -667,6 +669,7 @@ export class Room extends YgoRoom {
 			roomId: this.id,
 			team: Team.SPECTATOR,
 			logger: this.logger,
+			ranks: [],
 		});
 
 		this.addSpectator(client);

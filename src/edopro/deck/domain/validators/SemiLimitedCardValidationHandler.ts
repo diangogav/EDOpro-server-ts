@@ -30,10 +30,10 @@ export class SemiLimitedCardValidationHandler implements DeckValidationHandler {
 			cards.set(Number(card.code), count + 1);
 		}
 
-		for (const semiLimitedCard of this.banList.semiLimited) {
-			const count = cards.get(semiLimitedCard) ?? 0;
+		for (const semilimitedCard of this.banList.semiLimited) {
+			const count = cards.get(semilimitedCard) ?? 0;
 			if (count > 2) {
-				return new BanListDeckError(semiLimitedCard);
+				return new BanListDeckError(semilimitedCard);
 			}
 		}
 

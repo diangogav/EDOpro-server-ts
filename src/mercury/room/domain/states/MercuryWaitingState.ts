@@ -2,9 +2,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { ErrorMessages } from "src/edopro/messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "src/edopro/messages/server-to-client/ErrorClientMessage";
+import { UserFinder } from "src/edopro/user/application/UserFinder";
+import { User } from "src/edopro/user/domain/User";
 import { Team } from "src/shared/room/Team";
-import { UserAuth } from "src/shared/user-auth/application/UserAuth";
-import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
+import { Rank } from "src/shared/value-objects/Rank";
 import { EventEmitter } from "stream";
 
 import { PlayerInfoMessage } from "../../../../edopro/messages/client-to-server/PlayerInfoMessage";
@@ -20,7 +21,7 @@ import { MercuryRoom } from "../MercuryRoom";
 
 export class MercuryWaitingState extends RoomState {
 	constructor(
-		private readonly userAuth: UserAuth,
+		private readonly userFinder: UserFinder,
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger
 	) {
@@ -62,8 +63,8 @@ export class MercuryWaitingState extends RoomState {
 			const host = room.clients.length === 0;
 
 			if (room.ranked) {
-				const user = await this.userAuth.run(playerInfoMessage);
-				if (!(user instanceof UserProfile)) {
+				const user = await this.userFinder.run(playerInfoMessage);
+				if (!(user instanceof User)) {
 					socket.send(user as Buffer);
 					socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 
@@ -75,6 +76,7 @@ export class MercuryWaitingState extends RoomState {
 					name: playerInfoMessage.name,
 					room,
 					host,
+					ranks: user.ranks,
 				});
 				room.addClient(client);
 			} else {
@@ -84,6 +86,7 @@ export class MercuryWaitingState extends RoomState {
 					name: playerInfoMessage.name,
 					room,
 					host,
+					ranks: [],
 				});
 				room.addClient(client);
 			}
@@ -103,6 +106,7 @@ export class MercuryWaitingState extends RoomState {
 			position: room.playersCount,
 			room,
 			host: false,
+			ranks: [],
 		});
 
 		room.addSpectator(spectator, false, true);
@@ -156,12 +160,14 @@ export class MercuryWaitingState extends RoomState {
 		name,
 		room,
 		host,
+		ranks,
 	}: {
 		socket: ISocket;
 		messages: Buffer[];
 		name: string;
 		room: MercuryRoom;
 		host: boolean;
+		ranks: Rank[];
 	}): MercuryClient {
 		return new MercuryClient({
 			socket,
@@ -171,6 +177,7 @@ export class MercuryWaitingState extends RoomState {
 			position: room.playersCount,
 			room,
 			host,
+			ranks,
 		});
 	}
 }

@@ -1,8 +1,8 @@
 import RedisLibrary from "ioredis";
 
 import { config } from "../../../../config";
-import { Database } from "../../../../evolution-types/src/Database";
 import { Pino } from "../../../logger/infrastructure/Pino";
+import { Database } from "../../domain/Database";
 
 export class Redis implements Database {
 	private static readonly logger: Pino = new Pino();

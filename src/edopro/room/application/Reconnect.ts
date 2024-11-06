@@ -1,7 +1,3 @@
-import { ServerErrorClientMessage } from "@edopro/messages/server-to-client/ServerErrorMessageClientMessage";
-import { UserAuth } from "src/shared/user-auth/application/UserAuth";
-import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
-
 import { PlayerEnterClientMessage } from "../../../shared/messages/server-to-client/PlayerEnterClientMessage";
 import { TypeChangeClientMessage } from "../../../shared/messages/server-to-client/TypeChangeClientMessage";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
@@ -11,10 +7,12 @@ import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMes
 import { ErrorMessages } from "../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientMessage";
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
+import { UserFinder } from "../../user/application/UserFinder";
+import { User } from "../../user/domain/User";
 import { Room } from "../domain/Room";
 
 export class Reconnect {
-	constructor(private readonly userAuth: UserAuth) {}
+	constructor(private readonly userFinder: UserFinder) {}
 
 	async run(
 		playerInfoMessage: PlayerInfoMessage,
@@ -24,19 +22,15 @@ export class Reconnect {
 		room: Room
 	): Promise<void> {
 		if (room.ranked) {
-			const user = await this.userAuth.run(playerInfoMessage);
+			const user = await this.userFinder.run(playerInfoMessage);
 
-			if (!(user instanceof UserProfile)) {
+			if (!(user instanceof User)) {
 				socket.send(user as Buffer);
 				socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 
 				return;
 			}
-			if (!player.socket.id || !player.socket.closed) {
-				socket.send(ServerErrorClientMessage.create("Ya el jugador se encuentra en la partida."));
-				socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
-				socket.destroy();
-
+			if (!player.socket.id) {
 				return;
 			}
 
