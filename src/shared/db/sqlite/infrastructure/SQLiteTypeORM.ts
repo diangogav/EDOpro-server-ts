@@ -9,7 +9,7 @@ export class SQLiteTypeORM implements Database {
 	private readonly dataSource: DataSource;
 	private readonly mercuryDataSource: DataSource;
 	private readonly directoryPath = "./databases/evolution";
-	private readonly directoryPathmercury = "./databases/mercury";
+	private readonly mercuryDirectoryPath = "./databases/mercury";
 
 	constructor() {
 		this.dataSource = dataSource;
@@ -23,11 +23,11 @@ export class SQLiteTypeORM implements Database {
 
 	async initialize(): Promise<void> {
 		const files = await readdir(this.directoryPath);
-		const filesmercury = await readdir(this.directoryPathmercury);
+		const mercuryFiles = await readdir(this.mercuryDirectoryPath);
 		const cdbFiles = files.filter((file) => file.endsWith(".cdb"));
-		const cdbFilesmercury = filesmercury.filter((filemercury) => filemercury.endsWith(".cdb"));
+		const cdbMercuryFiles = mercuryFiles.filter((file) => file.endsWith(".cdb"));
 		await this.load(cdbFiles);
-		await this.loadmercury(cdbFilesmercury);
+		await this.loadMercury(cdbMercuryFiles);
 	}
 
 	async load(cdbFiles: string[]): Promise<void> {
@@ -38,11 +38,11 @@ export class SQLiteTypeORM implements Database {
 		}
 	}
 
-	async loadmercury(cdbFilesmercury: string[]): Promise<void> {
-		for (const file of cdbFilesmercury) {
-			const filePathmercury = join(this.directoryPathmercury, file);
+	async loadMercury(cdbMercuryFiles: string[]): Promise<void> {
+		for (const file of cdbMercuryFiles) {
+			const mercuryFilePath = join(this.mercuryDirectoryPath, file);
 			// eslint-disable-next-line no-await-in-loop
-			await this.mergeMercury(filePathmercury);
+			await this.mergeMercury(mercuryFilePath);
 		}
 	}
 
