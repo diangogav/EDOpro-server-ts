@@ -2,9 +2,7 @@ import { readdir } from "fs/promises";
 import { join } from "path";
 import { DataSource } from "typeorm";
 
-import { CardEntity } from "../../../../edopro/card/infrastructure/postgres/CardEntity";
-import { CardTextEntity } from "../../../../edopro/card/infrastructure/postgres/CardTextEntity";
-import { Database } from "../../domain/Database";
+import { Database } from "../../../../evolution-types/src/Database";
 import { dataSource, mercuryDataSource } from "./data-source";
 
 export class SQLiteTypeORM implements Database {
@@ -44,7 +42,7 @@ export class SQLiteTypeORM implements Database {
 		for (const file of cdbFilesmercury) {
 			const filePathmercury = join(this.directoryPathmercury, file);
 			// eslint-disable-next-line no-await-in-loop
-			await this.mergemercury(filePathmercury);
+			await this.mergeMercury(filePathmercury);
 		}
 	}
 
@@ -66,7 +64,7 @@ export class SQLiteTypeORM implements Database {
 		}
 	}
 
-	private async mergemercury(path: string): Promise<void> {
+	private async mergeMercury(path: string): Promise<void> {
 		const queryRunner = mercuryDataSource.createQueryRunner();
 		await queryRunner.connect();
 		await queryRunner.startTransaction();
@@ -82,15 +80,5 @@ export class SQLiteTypeORM implements Database {
 		} finally {
 			await queryRunner.release();
 		}
-	}
-
-	private async isLoaded(): Promise<boolean> {
-		const cardRepository = dataSource.getRepository(CardEntity);
-		const cardTextRepository = dataSource.getRepository(CardTextEntity);
-
-		const cardsCount = await cardRepository.count();
-		const cardTextsCount = await cardTextRepository.count();
-
-		return cardsCount > 0 && cardTextsCount > 0 && cardsCount === cardTextsCount;
 	}
 }
