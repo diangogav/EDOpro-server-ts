@@ -333,6 +333,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 4,
 				lflist: 6,
+				timeLimit: 300,
 				duelRule: 1,
 				mode: Mode.MATCH,
 			};
@@ -346,6 +347,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 2,
 				lflist: 7,
+				timeLimit: 300,
 				duelRule: 2,
 				mode: Mode.MATCH,
 			};
@@ -359,6 +361,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 2,
 				lflist: 10,
+				timeLimit: 300,
 				duelRule: 2,
 				mode: Mode.MATCH,
 			};
@@ -372,6 +375,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 2,
 				lflist: 11,
+				timeLimit: 300,
 				duelRule: 5,
 				mode: Mode.MATCH,
 			};
@@ -385,6 +389,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 4,
 				lflist: 8,
+				timeLimit: 300,
 				duelRule: 2,
 				mode: Mode.MATCH,
 			};
@@ -398,6 +403,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 4,
 				lflist: 9,
+				timeLimit: 300,
 				duelRule: 1,
 				mode: Mode.MATCH,
 			};
@@ -411,6 +417,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 4,
 				lflist: 16,
+				timeLimit: 300,
 				duelRule: 2,
 				mode: Mode.MATCH,
 			};
@@ -424,6 +431,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 4,
 				lflist: 1,
+				timeLimit: 300,
 				duelRule: 4,
 				mode: Mode.MATCH,
 			};
@@ -437,6 +445,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 4,
 				lflist: 2,
+				timeLimit: 300,
 				duelRule: 4,
 				mode: Mode.MATCH,
 			};
@@ -450,6 +459,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 4,
 				lflist: 2,
+				timeLimit: 300,
 				duelRule: 4,
 				mode: Mode.MATCH,
 			};
@@ -463,6 +473,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 4,
 				lflist: 3,
+				timeLimit: 300,
 				duelRule: 4,
 				mode: Mode.MATCH,
 			};
@@ -476,6 +487,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 4,
 				lflist: 5,
+				timeLimit: 300,
 				duelRule: 4,
 				mode: Mode.MATCH,
 			};
@@ -489,11 +501,26 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				duelRule: 2,
+				timeLimit: 300,
 				mode: Mode.MATCH,
 			};
 		},
 		validate: (value) => {
 			return value === "pre";
+		},
+	},
+
+	ocg: {
+		get: () => {
+			return {
+				rule: 0,
+				lflist: 19,
+				timeLimit: 300,
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			return value === "ocg";
 		},
 	},
 };
