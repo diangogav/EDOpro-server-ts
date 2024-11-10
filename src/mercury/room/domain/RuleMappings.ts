@@ -496,7 +496,6 @@ export const priorityRuleMappings: RuleMappings = {
 			return value === "world";
 		},
 	},
-	
 	pre: {
 		get: () => {
 			return {
@@ -509,7 +508,6 @@ export const priorityRuleMappings: RuleMappings = {
 			return value === "pre";
 		},
 	},
-
 	ocg: {
 		get: () => {
 			return {
