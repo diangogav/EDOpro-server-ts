@@ -19,4 +19,5 @@ export const config = {
 	ranking: {
 		enabled: process.env.RANK_ENABLED,
 	},
+	season: 3,
 };

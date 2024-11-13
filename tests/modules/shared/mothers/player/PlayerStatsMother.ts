@@ -13,6 +13,7 @@ export class PlayerStatsMother {
 			losses: faker.number.int(),
 			points: faker.number.int(),
 			userId: faker.string.uuid(),
+			season: faker.number.int({ min: 1, max: 10 }),
 			...params,
 		});
 	}

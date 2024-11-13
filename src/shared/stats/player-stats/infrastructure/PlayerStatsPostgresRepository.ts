@@ -2,6 +2,7 @@ import { dataSource } from "../../../../evolution-types/src/data-source";
 import { PlayerStatsEntity } from "../../../../evolution-types/src/entities/PlayerStatsEntity";
 import { PlayerStats } from "../domain/PlayerStats";
 import { PlayerStatsRepository } from "../domain/PlayerStatsRepository";
+import { config } from "./../../../../config/index";
 
 export class PlayerStatsPostgresRepository implements PlayerStatsRepository {
 	async findByUserIdAndBanListName(userId: string, banListName: string): Promise<PlayerStats> {
@@ -11,6 +12,7 @@ export class PlayerStatsPostgresRepository implements PlayerStatsRepository {
 			return PlayerStats.initialize({
 				banListName,
 				userId,
+				season: config.season,
 			});
 		}
 
