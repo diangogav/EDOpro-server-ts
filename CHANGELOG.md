@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.4.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.3.0...v2.4.0) (2024-11-15)
+
+
+### Features
+
+* added season property to player stats ([416fc32](https://github.com/diangogav/EDOpro-server-ts/commit/416fc32a41e141344450fed7f1136ca7894bf58b))
+
+
+### Bug Fixes
+
+* :bug: Validate max card count in deck validation ([34d520e](https://github.com/diangogav/EDOpro-server-ts/commit/34d520ee656837c7ab03f0d41ba3d7b6e73121ea))
+* :hammer: Fix name in global stats script ([#142](https://github.com/diangogav/EDOpro-server-ts/issues/142)) ([46b571b](https://github.com/diangogav/EDOpro-server-ts/commit/46b571bd1e9e4009c07471bedad285c5d7d92e4b))
+* comment reconnect validation ([59575a0](https://github.com/diangogav/EDOpro-server-ts/commit/59575a03a154d5d1e0fa9c02f321188d156557ea))
+* spectator cache buffer after timeout duel finish ([836a5b3](https://github.com/diangogav/EDOpro-server-ts/commit/836a5b3a1c4b36964fb432318eeac558f011e85d))
+* validate socket state in player reconnection ([e60b55b](https://github.com/diangogav/EDOpro-server-ts/commit/e60b55bac071e219c16b545f137347c47b48a92a))
+
 ## [2.3.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.2.1...v2.3.0) (2024-10-26)
 
 
