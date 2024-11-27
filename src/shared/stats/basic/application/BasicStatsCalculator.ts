@@ -1,5 +1,4 @@
 /* eslint-disable no-await-in-loop */
-
 import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
 import { Logger } from "src/shared/logger/domain/Logger";
 import { Player } from "src/shared/player/domain/Player";
@@ -10,6 +9,7 @@ import { GameOverDomainEvent } from "../../../room/domain/match/domain/domain-ev
 import { MatchResumeCreator } from "../../match-resume/application/MatchResumeCreator";
 import { DuelResumeCreator } from "../../match-resume/duel-resume/application/DuelResumeCreator";
 import { PlayerStatsRepository } from "../../player-stats/domain/PlayerStatsRepository";
+import { config } from "./../../../../config/index";
 
 export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomainEvent> {
 	static readonly ListenTo = GameOverDomainEvent.DOMAIN_EVENT;
@@ -71,7 +71,7 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 				playerScore: player.wins,
 				opponentScore: player.losses,
 				winner: player.winner,
-				season: 3,
+				season: config.season,
 				points,
 			});
 
@@ -90,7 +90,7 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 					result: game.result,
 					turns: game.turns,
 					matchId,
-					season: 3,
+					season: config.season,
 				});
 			}
 		}
