@@ -7,7 +7,11 @@ import { config } from "./../../../../config/index";
 export class PlayerStatsPostgresRepository implements PlayerStatsRepository {
 	async findByUserIdAndBanListName(userId: string, banListName: string): Promise<PlayerStats> {
 		const repository = dataSource.getRepository(PlayerStatsEntity);
-		const playerStatsResponse = await repository.findOneBy({ banListName, userId });
+		const playerStatsResponse = await repository.findOneBy({
+			banListName,
+			userId,
+			season: config.season,
+		});
 		if (!playerStatsResponse) {
 			return PlayerStats.initialize({
 				banListName,
@@ -29,6 +33,7 @@ export class PlayerStatsPostgresRepository implements PlayerStatsRepository {
 			losses: playerStats.losses,
 			points: playerStats.points,
 			userId: playerStats.userId,
+			season: config.season,
 		});
 
 		await repository.save(playerStatsEntity);
