@@ -35,6 +35,7 @@ export class FinishDuelHandler {
 		this.room.stopRoomTimer();
 		this.room.stopTimer(0);
 		this.room.stopTimer(1);
+		this.room.clearSpectatorCache();
 
 		const scoreTitleMessage = ServerMessageClientMessage.create(this.room.score);
 		this.room.clients.forEach((player: Client) => {

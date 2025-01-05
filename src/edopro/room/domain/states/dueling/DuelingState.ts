@@ -436,7 +436,6 @@ export class DuelingState extends RoomState {
 
 	private handleCoreFinish(message: FinishMessage) {
 		this.jsonMessageProcessor.clear();
-		this.room.clearSpectatorCache();
 		const reason = message.reason as DuelFinishReason;
 		const winner = message.winner;
 
@@ -646,7 +645,6 @@ export class DuelingState extends RoomState {
 
 	private handleSurrender(_message: ClientMessage, client: Client): void {
 		this.logger.debug("DUELING: SURRENDER");
-		this.room.clearSpectatorCache();
 		this.jsonMessageProcessor.clear();
 		if (this.room.isFinished()) {
 			return;

@@ -1,4 +1,3 @@
-import { ServerErrorClientMessage } from "@edopro/messages/server-to-client/ServerErrorMessageClientMessage";
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 
@@ -32,15 +31,11 @@ export class Reconnect {
 
 				return;
 			}
-			if (!player.socket.id || !player.socket.closed) {
-				socket.send(ServerErrorClientMessage.create("Ya el jugador se encuentra en la partida."));
-				socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
-				socket.destroy();
-
-				return;
-			}
-
 			// if (!player.socket.id || !player.socket.closed) {
+			// 	socket.send(ServerErrorClientMessage.create("Ya el jugador se encuentra en la partida."));
+			// 	socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
+			// 	socket.destroy();
+
 			// 	return;
 			// }
 		}

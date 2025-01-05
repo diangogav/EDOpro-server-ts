@@ -7,12 +7,14 @@ export type PlayerStatsProperties = {
 	losses: number;
 	points: number;
 	userId: string;
+	season: number;
 };
 
 export class PlayerStats {
 	public readonly id: string;
 	public readonly banListName: string;
 	public readonly userId: string;
+	public readonly season: number;
 	private _points: number;
 	private _wins: number;
 	private _losses: number;
@@ -24,6 +26,7 @@ export class PlayerStats {
 		this._losses = data.losses;
 		this._points = data.points;
 		this.userId = data.userId;
+		this.season = data.season;
 	}
 
 	get points(): number {
@@ -38,7 +41,7 @@ export class PlayerStats {
 		return this._losses;
 	}
 
-	static initialize(data: { banListName: string; userId: string }): PlayerStats {
+	static initialize(data: { banListName: string; userId: string; season: number }): PlayerStats {
 		return new PlayerStats({ ...data, wins: 0, losses: 0, points: 0, id: randomUUID() });
 	}
 
