@@ -44,7 +44,7 @@ conan profile detect
 ### Step 1: Clone the repository
 Clone this repository to your local machine using the following command:
 ```bash
-git clone https://github.com/diangogav/EDOpro-server-ts
+git clone --recursive https://github.com/diangogav/EDOpro-server-ts
 ```
 
 ### Step 2: Clone required repositories
