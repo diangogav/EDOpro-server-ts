@@ -272,7 +272,7 @@ export class Room extends YgoRoom {
 	}
 
 	static isRanked(password: string | null): boolean {
-		if (config.redis.use) {
+		if (config.ranking.enabled) {
 			return Boolean(password);
 		}
 
