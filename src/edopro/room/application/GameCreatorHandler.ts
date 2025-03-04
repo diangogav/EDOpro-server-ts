@@ -44,7 +44,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const createGameMessage = new CreateGameMessage(message.data);
 
-		if (!playerInfoMessage.password || !config.redis.use) {
+		if (!playerInfoMessage.password || !config.ranking.enabled) {
 			this.create(createGameMessage, playerInfoMessage);
 
 			return;
@@ -104,7 +104,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 		this.socket.send(
 			ServerMessageClientMessage.create(ServerInfoMessage.UN_RANKED_ROOM_CREATION_SUCCESS)
 		);
-		if (!config.redis.use) {
+		if (!config.ranking.enabled) {
 			this.socket.send(
 				ServerMessageClientMessage.create(
 					"En este momento, el sistema de clasificación no está disponible."
