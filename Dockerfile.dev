@@ -2,7 +2,7 @@
 FROM public.ecr.aws/ubuntu/ubuntu:22.04_stable as core-integrator-builder
 
 RUN apt-get update -y && \
-    apt-get install -y python3 python3-pip wget tar git autoconf && \
+    apt-get install -y python3 python3-pip wget tar git && \
     pip install conan
 
 RUN conan profile detect
