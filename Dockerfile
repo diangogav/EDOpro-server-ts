@@ -84,7 +84,7 @@ COPY --from=core-integrator-builder /repositories/mercury-prerelases/script/ ./m
 ## Mercury Alternatives
 COPY --from=core-integrator-builder /repositories/alternatives ./mercury/alternatives
 RUN for dir in ./mercury/alternatives/*/; do \
-    cp -r ./mercury/script "$dir"; \
+    cp -r ./mercury/script/* "$dir"/script; \
     cp -r ./mercury/ygopro "$dir"; \
     done
 
