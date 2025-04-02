@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "target": "ES2022",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "module": "commonjs",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": false,
+    "strictNullChecks": true,
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "inlineSources": true,
+    "paths": {
+      "@edopro/*": [
+        "src/edopro/*"
+      ]
+    }
+  },
+  "include": [
+    "src",
+    "tests"
+  ]
+}
