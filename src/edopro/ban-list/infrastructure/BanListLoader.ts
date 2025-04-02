@@ -50,7 +50,6 @@ export class BanListLoader {
 			banList.addMercury(Number(cardId), Number(quantity));
 		}
 
-		console.log(`Loaded banlist: ${banList.name} : ${banList.hash} : ${banList.mercuryHash}`);
 		BanListMemoryRepository.add(banList);
 	}
 }
