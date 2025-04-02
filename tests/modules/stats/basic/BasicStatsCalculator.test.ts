@@ -73,17 +73,15 @@ describe("BasicStatsCalculator", () => {
 			],
 		});
 
-		jest
-			.spyOn(userProfileRepository, "findByUsername")
+		userProfileRepository.findByUsername
 			.mockResolvedValueOnce(playerUserProfile)
 			.mockResolvedValueOnce(opponentUserProfile);
 
-		jest
-			.spyOn(playerStatsRepository, "findByUserIdAndBanListName")
+		playerStatsRepository.findByUserIdAndBanListName
 			.mockResolvedValueOnce(playerStats)
 			.mockResolvedValueOnce(opponentStats);
 
-		jest.spyOn(matchResumeCreator, "run").mockResolvedValue({ id: matchId });
+		matchResumeCreator.run.mockResolvedValue({ id: matchId });
 	});
 
 	afterEach(() => {
