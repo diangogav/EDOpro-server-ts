@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.5.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.4.0...v2.5.0) (2025-04-01)
+
+
+### Features
+
+* season 4 ([1efff33](https://github.com/diangogav/EDOpro-server-ts/commit/1efff336b45c5cd329bcfc54af19da4a17acdd15))
+* update mercury bin ([31f3f67](https://github.com/diangogav/EDOpro-server-ts/commit/31f3f67acc1738a84f8c7023adb1d7e9593abb44))
+
+
+### Bug Fixes
+
+* rank validator ([4d98554](https://github.com/diangogav/EDOpro-server-ts/commit/4d985547427c38f54d222620ba676fdbb4d03b6b))
+* season 4 in matches and duels ([3bc2824](https://github.com/diangogav/EDOpro-server-ts/commit/3bc2824725de704b9f82c2e726f78b10d52dd55d))
+* season in player stats ([3bd898d](https://github.com/diangogav/EDOpro-server-ts/commit/3bd898ddf0c788e82038ae49cabea0c34948d058))
+
 ## [2.4.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.3.0...v2.4.0) (2024-11-15)
 
 
