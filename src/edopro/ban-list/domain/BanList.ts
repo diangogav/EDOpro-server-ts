@@ -60,7 +60,7 @@ export class BanList {
 	}
 
 	addMercury(cardId: number, quantity: number): void {
-		if (isNaN(cardId) || cardId <= 0 || cardId > 0xfffffff) {
+		if (isNaN(cardId) || cardId <= 0 || cardId > 0xffffffffffff) {
 			return;
 		}
 
