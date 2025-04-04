@@ -21,6 +21,24 @@ RUN mv banlists-project-ignis/* banlists/
 RUN mv banlists-evolution/* banlists/
 RUN find mercury-prerelases -name "*.cdb" -exec cp {} mercury-pre-releases-cdbs/ \;
 
+COPY ./mercury/ygopro .
+
+RUN for dir in ./alternatives/*/; do \
+    cp -r ./mercury-scripts/* "$dir"/script; \
+    cp ygopro "$dir"; \
+    done
+
+RUN cp './banlists/2010.03 Edison(PreErrata).lflist.conf' ./alternatives/edison/lflist.conf && \
+    cp './banlists/2014.4 HAT.lflist.conf' ./alternatives/hat/lflist.conf && \
+    cp 'banlists/jtp-oficial.lflist.conf' ./alternatives/jtp/lflist.conf && \
+    cp 'banlists/GOAT.lflist.conf' ./alternatives/goat/lflist.conf && \
+    cp 'banlists/2008.03 GX.lflist.conf' ./alternatives/gx/lflist.conf && \
+    cp 'banlists/mdc.lflist.conf' ./alternatives/mdc/lflist.conf && \
+    cp 'banlists/Rush.lflist.conf' ./alternatives/rush/lflist.conf && \
+    cp 'banlists/Speed.lflist.conf' ./alternatives/speed/lflist.conf && \
+    cp 'banlists/Tengu.Plant.lflist.conf' ./alternatives/tengu/lflist.conf && \
+    cp 'banlists/World.lflist.conf' ./alternatives/world/lflist.conf
+
 RUN conan profile detect
 
 WORKDIR /app
@@ -82,22 +100,7 @@ COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/pre-
 COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/pre-releases/lflist.conf
 COPY --from=core-integrator-builder /repositories/mercury-prerelases/script/ ./mercury/pre-releases/script/
 ## Mercury Alternatives
-COPY --from=core-integrator-builder /repositories/alternatives ./mercury/alternatives
-RUN for dir in ./mercury/alternatives/*/; do \
-    cp -r ./mercury/script/* "$dir"/script; \
-    cp -r ./mercury/ygopro "$dir"; \
-    done
-
-RUN wget -O ./mercury/alternatives/edison/lflist.conf 'https://raw.githubusercontent.com/termitaklk/lflist/refs/heads/main/2010.03%20Edison(PreErrata).lflist.conf'
-RUN wget -O ./mercury/alternatives/hat/lflist.conf 'https://raw.githubusercontent.com/termitaklk/lflist/refs/heads/main/2014.4%20HAT.lflist.conf'
-RUN wget -O ./mercury/alternatives/jtp/lflist.conf 'https://raw.githubusercontent.com/termitaklk/lflist/refs/heads/main/jtp-oficial.lflist.conf'
-RUN wget -O ./mercury/alternatives/goat/lflist.conf 'https://raw.githubusercontent.com/ProjectIgnis/LFLists/refs/heads/master/GOAT.lflist.conf'
-RUN wget -O ./mercury/alternatives/gx/lflist.conf 'https://raw.githubusercontent.com/termitaklk/lflist/refs/heads/main/2008.03%20GX.lflist.conf'
-RUN wget -O ./mercury/alternatives/mdc/lflist.conf 'https://raw.githubusercontent.com/termitaklk/lflist/refs/heads/main/mdc.lflist.conf'
-RUN wget -O ./mercury/alternatives/rush/lflist.conf 'https://raw.githubusercontent.com/ProjectIgnis/LFLists/refs/heads/master/Rush.lflist.conf'
-RUN wget -O ./mercury/alternatives/speed/lflist.conf 'https://raw.githubusercontent.com/ProjectIgnis/LFLists/refs/heads/master/Speed.lflist.conf'
-RUN wget -O ./mercury/alternatives/tengu/lflist.conf 'https://raw.githubusercontent.com/termitaklk/lflist/refs/heads/main/Tengu.Plant.lflist.conf'
-RUN wget -O ./mercury/alternatives/world/lflist.conf 'https://raw.githubusercontent.com/ProjectIgnis/LFLists/refs/heads/master/World.lflist.conf'
+COPY --from=core-integrator-builder /repositories/alternatives ./mercury/alternatives/
 
 EXPOSE 4000 7711 7911 7922
 USER $USER

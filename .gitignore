@@ -5,11 +5,10 @@ dist
 # Mercury
 mercury/script
 mercury/pre-releases/script
-mercury/alternatives/script
-mercury/alternatives/expansions
+mercury/alternatives
 
 # Evolution
-./scripts
+scripts
 *dependencies
 *build
 core/Makefile
