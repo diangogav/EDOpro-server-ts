@@ -24,6 +24,7 @@ RUN find mercury-prerelases -name "*.cdb" -exec cp {} mercury-pre-releases-cdbs/
 COPY ./mercury/ygopro .
 
 RUN for dir in ./alternatives/*/; do \
+    echo "$dir"/script; \
     cp -r ./mercury-scripts/* "$dir"/script; \
     cp ygopro "$dir"; \
     done
@@ -37,7 +38,8 @@ RUN cp './banlists/2010.03 Edison(PreErrata).lflist.conf' ./alternatives/edison/
     cp 'banlists/Rush.lflist.conf' ./alternatives/rush/lflist.conf && \
     cp 'banlists/Speed.lflist.conf' ./alternatives/speed/lflist.conf && \
     cp 'banlists/Tengu.Plant.lflist.conf' ./alternatives/tengu/lflist.conf && \
-    cp 'banlists/World.lflist.conf' ./alternatives/world/lflist.conf
+    cp 'banlists/World.lflist.conf' ./alternatives/world/lflist.conf && \
+    cp 'banlists/MD.2025.03.lflist.conf' ./alternatives/md/lflist.conf
 
 RUN conan profile detect
 
@@ -95,6 +97,7 @@ COPY --from=core-integrator-builder /repositories/banlists ./banlists/evolution/
 COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/script
 COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/lflist.conf
 COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/cards.cdb
+COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/alternatives/md/cards.cdb
 ## Mercury Pre releases
 COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/pre-releases/script
 COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/pre-releases/lflist.conf

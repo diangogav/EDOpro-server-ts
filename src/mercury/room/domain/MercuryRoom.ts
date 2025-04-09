@@ -154,7 +154,7 @@ export class MercuryRoom extends YgoRoom {
 			hat: "mercury/alternatives/hat",
 			goat: "mercury/alternatives/goat",
 			tengu: "mercury/alternatives/tengu",
-			md: "mercury",
+			md: "mercury/alternatives/md",
 			jtp: "mercury/alternatives/jtp",
 			gx: "mercury/alternatives/gx",
 			mdc: "mercury/alternatives/mdc",
