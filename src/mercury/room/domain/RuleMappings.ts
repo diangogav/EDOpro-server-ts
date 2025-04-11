@@ -430,7 +430,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: 1,
+				lflist: 0,
 				timeLimit: 300,
 				duelRule: 4,
 				mode: Mode.MATCH,
