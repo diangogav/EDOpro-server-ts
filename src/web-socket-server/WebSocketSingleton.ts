@@ -3,6 +3,7 @@ import { readFileSync } from "fs";
 import { createServer } from "https";
 import path from "path";
 import MercuryRoomList from "src/mercury/room/infrastructure/MercuryRoomList";
+import { Pino } from "src/shared/logger/infrastructure/Pino";
 import WebSocket, { WebSocketServer } from "ws";
 
 import RoomList from "../edopro/room/infrastructure/RoomList";
@@ -13,6 +14,7 @@ class WebSocketSingleton {
 	private readonly wss: WebSocketServer | null = null;
 
 	private constructor(port: number) {
+		const logger = new Pino();
 		const server = this.buildServer();
 		this.wss = new WebSocketServer({ server });
 		this.wss.on("connection", (ws: WebSocket) => {
@@ -25,7 +27,9 @@ class WebSocketSingleton {
 				})
 			);
 		});
-		server.listen(port);
+		server.listen(port, () => {
+			logger.info(`WebSocket server running on port ${port}`);
+		});
 	}
 
 	public static getInstance(): WebSocketSingleton {
@@ -48,11 +52,10 @@ class WebSocketSingleton {
 
 	private buildServer() {
 		const root = path.resolve(__dirname, "../../");
+		const cert = readFileSync(`${root}/certs/cert.pem`);
+		const key = readFileSync(`${root}/certs/key.pem`);
 
-		return createServer({
-			cert: readFileSync(`${root}/certs/cert.pem`),
-			key: readFileSync(`${root}/certs/key.pem`),
-		});
+		return createServer({ cert, key });
 	}
 }
 
