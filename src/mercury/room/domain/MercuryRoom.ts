@@ -398,7 +398,7 @@ export class MercuryRoom extends YgoRoom {
 	}
 
 	get banListHash(): number {
-		return this._banListHash;
+		return this._edoBanListHash ?? this._banListHash;
 	}
 
 	private connectClientToCore(client: MercuryClient): void {

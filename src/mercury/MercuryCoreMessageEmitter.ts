@@ -27,7 +27,15 @@ export class MercuryCoreMessageEmitter {
 			this.room.emitRoomEvent(command, this.messageProcessor.payload, this.client);
 		}
 
-		this.client.sendMessageToClient(this.messageProcessor.payload.raw);
+		if (command === "JOIN_GAME") {
+			const raw = Buffer.from(this.messageProcessor.payload.raw);
+			const banListHash = this.room.banListHash;
+			const unsignedValue = banListHash >>> 0;
+			raw.writeUInt32LE(unsignedValue, 3);
+			this.client.sendMessageToClient(raw);
+		} else {
+			this.client.sendMessageToClient(this.messageProcessor.payload.raw);
+		}
 
 		this.processMessage();
 	}
