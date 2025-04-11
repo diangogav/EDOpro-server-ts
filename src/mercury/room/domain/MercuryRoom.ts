@@ -354,7 +354,7 @@ export class MercuryRoom extends YgoRoom {
 		return {
 			roomid: this.id,
 			roomname: this.name,
-			roomnotes: "",
+			roomnotes: this.ranked ? "(Ranked)" : "",
 			roommode: this._hostInfo.mode,
 			needpass: this.password.length > 0,
 			team1: this.team0,
