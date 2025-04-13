@@ -238,7 +238,7 @@ export abstract class YgoRoom {
 			id: this.id,
 			turn: this.currentDuel?.turn,
 			bestOf: this.bestOf,
-			banlist: {
+			banList: {
 				name: this.currentDuel?.banListName,
 			},
 			players: this.clients.map((client: Client) => ({
@@ -246,6 +246,7 @@ export abstract class YgoRoom {
 				username: client.name,
 				lps: this.currentDuel?.lps[client.team],
 				score: client.team === Team.PLAYER ? this._match?.score.team0 : this._match?.score.team1,
+				team: client.team,
 			})),
 			notes: this.notes,
 		};

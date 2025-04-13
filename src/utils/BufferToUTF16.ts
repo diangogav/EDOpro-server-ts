@@ -1,4 +1,4 @@
-export function BufferToUTF16(data: ArrayBuffer, maxByteCount: number): string {
+export function BufferToUTF16(data: Buffer, maxByteCount: number): string {
 	const str: string[] = [];
 	if (maxByteCount === 0) {
 		return str.join("");
