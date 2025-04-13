@@ -512,7 +512,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 0,
-				lflist: 19,
+				lflist: 0,
 				timeLimit: 300,
 				mode: Mode.MATCH,
 			};
