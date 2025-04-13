@@ -162,6 +162,7 @@ export class MercuryRoom extends YgoRoom {
 			speed: "mercury/alternatives/speed",
 			world: "mercury/alternatives/world",
 			pre: "mercury/pre-releases",
+			ocg: "mercury/ocg",
 		};
 
 		options.forEach((option) => {

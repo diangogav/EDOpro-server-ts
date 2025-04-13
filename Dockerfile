@@ -102,6 +102,11 @@ COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/al
 COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/pre-releases/script
 COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/pre-releases/lflist.conf
 COPY --from=core-integrator-builder /repositories/mercury-prerelases/script/ ./mercury/pre-releases/script/
+## Mercury OCG
+COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/ocg/script
+COPY --from=core-integrator-builder /repositories/banlists/OCG.lflist.conf ./mercury/ocg/lflist.conf
+COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/ocg/cards.cdb
+COPY --from=core-integrator-builder /repositories/ygopro ./mercury/ocg/ygopro
 ## Mercury Alternatives
 COPY --from=core-integrator-builder /repositories/alternatives ./mercury/alternatives/
 
