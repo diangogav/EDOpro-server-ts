@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
+import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
 import { EventEmitter } from "events";
 import { CoreMessages } from "src/edopro/messages/domain/CoreMessages";
 import { container } from "src/shared/dependency-injection";
@@ -79,6 +80,9 @@ export class MercuryDuelingState extends RoomState {
 	}
 
 	private handle(): void {
+		//TODO: Mercury and EdoPro lists are linked by means of scripts in infrastructure
+		const banList = BanListMemoryRepository.findByHash(this.room.banListHash);
+		this.room.createDuel(banList?.name ?? null);
 		this.notifyDuelStart(this.room);
 	}
 

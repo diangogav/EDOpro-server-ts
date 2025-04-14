@@ -1,6 +1,5 @@
 import { ChildProcessWithoutNullStreams } from "child_process";
 import shuffle from "shuffle-array";
-import BanListMemoryRepository from "src/edopro/ban-list/infrastructure/BanListMemoryRepository";
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { EventEmitter } from "stream";
@@ -395,8 +394,6 @@ export class Room extends YgoRoom {
 			this,
 			new JSONMessageProcessor()
 		);
-		const banList = BanListMemoryRepository.findByHash(this.banListHash);
-		this.createDuel(banList?.name ?? null);
 	}
 
 	sideDecking(): void {

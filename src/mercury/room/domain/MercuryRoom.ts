@@ -322,9 +322,6 @@ export class MercuryRoom extends YgoRoom {
 		this.isStart = "start";
 		this.roomState?.removeAllListener();
 		this.roomState = new MercuryDuelingState(this, this.emitter, this._logger);
-		//TODO: Mercury and EdoPro lists are linked by means of scripts in infrastructure
-		const banList = BanListMemoryRepository.findByHash(this._banListHash);
-		this.createDuel(banList?.name ?? null);
 	}
 
 	sideDecking(): void {

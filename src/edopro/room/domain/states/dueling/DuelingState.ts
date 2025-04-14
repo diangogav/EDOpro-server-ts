@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
+import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
 import { spawn } from "child_process";
 import * as crypto from "crypto";
 import EventEmitter from "events";
@@ -294,6 +295,8 @@ export class DuelingState extends RoomState {
 			}
 		});
 
+		const banList = BanListMemoryRepository.findByHash(this.room.banListHash);
+		this.room.createDuel(banList?.name ?? null);
 		this.notifyDuelStart(this.room);
 	}
 
