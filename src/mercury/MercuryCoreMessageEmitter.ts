@@ -1,3 +1,5 @@
+import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
+
 import { MessageProcessor } from "../edopro/messages/MessageProcessor";
 import { MercuryClient } from "./client/domain/MercuryClient";
 import { MercuryServerToClientMessages } from "./messages/domain/MercuryServerToClientMessages";
@@ -30,9 +32,14 @@ export class MercuryCoreMessageEmitter {
 		if (command === "JOIN_GAME") {
 			const raw = Buffer.from(this.messageProcessor.payload.raw);
 			const banListHash = this.room.banListHash;
-			const unsignedValue = banListHash >>> 0;
-			raw.writeUInt32LE(unsignedValue, 3);
-			this.client.sendMessageToClient(raw);
+			const banList = BanListMemoryRepository.findByHash(banListHash);
+			if (banList) {
+				const unsignedValue = banList.mercuryHash >>> 0;
+				raw.writeUInt32LE(unsignedValue, 3);
+				this.client.sendMessageToClient(raw);
+			} else {
+				this.client.sendMessageToClient(this.messageProcessor.payload.raw);
+			}
 		} else {
 			this.client.sendMessageToClient(this.messageProcessor.payload.raw);
 		}
