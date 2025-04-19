@@ -86,6 +86,7 @@ private:
   void send_core_replay_message(std::vector<uint8_t> data);
   void send_update_card_message(uint8_t team, bool cacheable, bool all, const QuerySingleRequest &query_single_request, const std::vector<uint8_t> buffer);
   void send_update_data_message(uint8_t team, bool cacheable, bool all, const QueryLocationRequest &query_location_request, const std::vector<uint8_t> buffer);
+  void send_update_data_message_to_player(uint8_t team, bool cacheable, bool all, const QueryLocationRequest &query_location_request, const std::vector<uint8_t> buffer, uint8_t position);
   MessageTargets get_message_target(const std::vector<uint8_t> message);
   uint8_t get_team_message_receptor(const std::vector<uint8_t> message);
   bool does_message_required_answer(uint8_t message_type);

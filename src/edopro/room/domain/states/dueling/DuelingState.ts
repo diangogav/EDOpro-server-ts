@@ -42,6 +42,7 @@ type CoreMessage = {
 	all: boolean;
 	except?: number;
 	cacheable: boolean;
+	position?: number;
 };
 
 type RawCoreMessage = {
@@ -386,11 +387,10 @@ export class DuelingState extends RoomState {
 			return;
 		}
 
-		if (!player.cache) {
-			return;
+		if (player.cache) {
+			player.sendMessage(player.cache);
 		}
 
-		player.sendMessage(player.cache);
 		const opponentTimeMessage = TimeLimitClientMessage.create({
 			team: this.room.calculateTimeReceiver(Team.OPPONENT),
 			timeLimit: this.room.getTime(Team.OPPONENT),
@@ -401,6 +401,8 @@ export class DuelingState extends RoomState {
 			timeLimit: this.room.getTime(Team.PLAYER),
 		});
 		player.sendMessage(playerTimeMessage);
+
+		player.sendMessage(Buffer.from("010030", "hex"));
 
 		player.clearReconnecting();
 
@@ -471,7 +473,7 @@ export class DuelingState extends RoomState {
 		this.room.resetTimer(payload.team, payload.time);
 
 		this.room.clients.forEach((client: Client) => {
-			this.room.cacheTeamMessage(client.team, message);
+			this.room.cacheTeamMessage(client.team, message, true, null);
 			client.sendMessage(message);
 		});
 
@@ -483,7 +485,7 @@ export class DuelingState extends RoomState {
 	private handleCoreMessageAll(message: CoreMessage) {
 		const data = Buffer.from(message.data, "hex");
 		const payload = Buffer.concat([decimalToBytesBuffer(data.length, 2), data]);
-		this.room.cacheTeamMessage(3, payload);
+		this.room.cacheTeamMessage(3, payload, true, null);
 		[...this.room.clients, ...this.room.spectators].forEach((client: Client) => {
 			client.sendMessage(payload);
 		});
@@ -500,7 +502,7 @@ export class DuelingState extends RoomState {
 				}
 			});
 
-			this.room.cacheTeamMessage(3, payload);
+			this.room.cacheTeamMessage(3, payload, true, null);
 		}
 	}
 
@@ -509,7 +511,17 @@ export class DuelingState extends RoomState {
 		const payload = Buffer.concat([decimalToBytesBuffer(data.length, 2), data]);
 
 		if (message.cacheable) {
-			this.room.cacheTeamMessage(message.receiver, payload);
+			this.room.cacheTeamMessage(message.receiver, payload, message.all, message.position ?? null);
+		}
+
+		if (message.position) {
+			const player = [...this.room.clients, ...this.room.spectators].find(
+				(player: Client) => player.position === message.position
+			);
+
+			(<Client | undefined>player)?.sendMessage(payload);
+
+			return;
 		}
 
 		if (message.except !== undefined) {
@@ -571,7 +583,7 @@ export class DuelingState extends RoomState {
 		});
 
 		this.room.replay.addMessage(playerGameMessage.subarray(3));
-		this.room.cacheTeamMessage(3, spectatorGameMessage);
+		this.room.cacheTeamMessage(3, spectatorGameMessage, true, null);
 
 		this.room.setPlayerDecksSize(message.playerDeckSize, message.playerExtraDeckSize);
 		this.room.setOpponentDecksSize(message.opponentDeckSize, message.opponentExtraDeckSize);

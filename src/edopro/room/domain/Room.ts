@@ -435,19 +435,35 @@ export class Room extends YgoRoom {
 		this._spectators = filtered;
 	}
 
-	cacheTeamMessage(team: number, message: Buffer): void {
+	cacheTeamMessage(team: number, message: Buffer, all: boolean, position: number | null): void {
 		if (team === 3) {
 			this._spectatorCache.push(message);
 
 			return;
 		}
 
-		if (message[2] === 0x01) {
-			const players = this.clients.filter((client: Client) => client.team === team);
-			players.forEach((player: Client) => {
-				player.setLastMessage(message);
-			});
+		if (message[2] !== 0x01) {
+			return;
 		}
+
+		if (position !== null) {
+			const player = this.clients.find((client: Client) => client.position === position);
+			player?.setLastMessage(message);
+
+			return;
+		}
+
+		if (!all) {
+			const player = this.clients.find((client: Client) => client.team === team && client.inTurn);
+			player?.setLastMessage(message);
+
+			return;
+		}
+
+		const players = this.clients.filter((client: Client) => client.team === team);
+		players.forEach((player: Client) => {
+			player.setLastMessage(message);
+		});
 	}
 
 	setPlayerDecksSize(mainSize: number, extraSize: number): void {

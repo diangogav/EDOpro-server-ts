@@ -210,7 +210,7 @@ void Duel::refresh_board(uint8_t position, uint8_t team)
         0U,
         0U};
 
-    uint8_t team = this->get_swapped_team(query_location_request.con);
+    uint8_t calculated_team = this->get_swapped_team(query_location_request.con);
     const auto buffer = this->api.duelQueryLocation(duel, query);
 
     if (query_location_request.loc == LOCATION_DECK)
@@ -219,11 +219,17 @@ void Duel::refresh_board(uint8_t position, uint8_t team)
     }
 
     const auto queries = this->deserializer.deserializeLocationQuery(buffer);
-    const auto player_buffer = this->serializer.serializeLocationQuery(queries, false);
-    const auto stripped_buffer = this->serializer.serializeLocationQuery(queries, true);
 
-    this->send_update_data_message(team, false, true, query_location_request, player_buffer);
-    this->send_update_data_message(1 - team, false, true, query_location_request, stripped_buffer);
+    if (team == calculated_team)
+    {
+      const auto player_buffer = this->serializer.serializeLocationQuery(queries, false);
+      this->send_update_data_message_to_player(team, false, false, query_location_request, player_buffer, position);
+    }
+    else
+    {
+      const auto stripped_buffer = this->serializer.serializeLocationQuery(queries, true);
+      this->send_update_data_message_to_player(team, false, false, query_location_request, stripped_buffer, position);
+    }
   }
 
   json message;
@@ -758,6 +764,30 @@ void Duel::send_update_data_message(uint8_t team, bool cacheable, bool all, cons
   _message["type"] = "MESSAGE";
   _message["cacheable"] = cacheable;
   _message["all"] = all;
+
+  std::string serialized_message = _message.dump();
+  this->send_message(serialized_message);
+}
+
+void Duel::send_update_data_message_to_player(uint8_t team, bool cacheable, bool all, const QueryLocationRequest &query_location_request, const std::vector<uint8_t> buffer, uint8_t position)
+{
+  const auto data = this->create_update_data_message(query_location_request, buffer);
+
+  std::stringstream hex_representation;
+  for (const auto byte : data)
+  {
+    hex_representation << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte);
+  }
+
+  json _message;
+
+  _message["header"] = 0x01;
+  _message["data"] = hex_representation.str();
+  _message["receiver"] = team;
+  _message["type"] = "MESSAGE";
+  _message["cacheable"] = cacheable;
+  _message["all"] = all;
+  _message["position"] = position;
 
   std::string serialized_message = _message.dump();
   this->send_message(serialized_message);
