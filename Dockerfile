@@ -1,83 +1,111 @@
+# Stage 1: Build CoreIntegrator
 FROM public.ecr.aws/ubuntu/ubuntu:22.04_stable as core-integrator-builder
 
+# Install required dependencies and Conan
 RUN apt-get update -y && \
-    apt-get install -y python3 python3-pip wget tar git autoconf && \
+    apt-get install -y --no-install-recommends \
+        python3 python3-pip wget tar git autoconf ca-certificates g++ \
+        m4 automake libtool pkg-config make && \
+    rm -rf /var/lib/apt/lists/* && \
     pip install conan
 
 WORKDIR /repositories
 
-RUN git clone --depth 1 https://github.com/ProjectIgnis/CardScripts.git scripts && \
-    git clone --depth 1 https://github.com/ProjectIgnis/BabelCDB.git databases && \
-    git clone --depth 1 https://github.com/ProjectIgnis/LFLists banlists-project-ignis && \
+# Clone required repositories
+RUN git clone --depth 1 --branch master https://github.com/ProjectIgnis/CardScripts.git scripts && \
+    git clone --depth 1 --branch master https://github.com/ProjectIgnis/BabelCDB.git databases && \
+    git clone --depth 1 --branch master https://github.com/ProjectIgnis/LFLists banlists-project-ignis && \
+    git clone --depth 1 --branch master https://github.com/mycard/ygopro-scripts.git mercury-scripts && \
+    git clone --depth 1 --branch master https://github.com/evolutionygo/pre-release-database-cdb mercury-prerelases && \
     git clone --depth 1 https://github.com/termitaklk/lflist banlists-evolution && \
-    git clone --depth 1 https://github.com/mycard/ygopro-scripts.git mercury-scripts && \
-    git clone --depth 1 https://code.moenext.com/mycard/pre-release-database-cdb.git mercury-prerelases && \
     git clone --depth 1 https://github.com/evolutionygo/server-formats-cdb.git alternatives && \
     wget -O mercury-lflist.conf https://raw.githubusercontent.com/termitaklk/koishi-Iflist/main/lflist.conf && \
     wget -O mercury-cards.cdb https://github.com/purerosefallen/ygopro/raw/server/cards.cdb
 
-RUN mkdir banlists mercury-pre-releases-cdbs
-RUN mv banlists-project-ignis/* banlists/
-RUN mv banlists-evolution/* banlists/
-RUN find mercury-prerelases -name "*.cdb" -exec cp {} mercury-pre-releases-cdbs/ \;
+# Prepare banlists and pre-releases folder
+RUN mkdir banlists mercury-pre-releases-cdbs && \
+    mv banlists-project-ignis/* banlists/ && \
+    mv banlists-evolution/* banlists/ && \
+    find mercury-prerelases -name "*.cdb" -exec cp {} mercury-pre-releases-cdbs/ \;
 
+# Copy binary and setup directories
 COPY ./mercury/ygopro .
 
+# Copy scripts and binaries into each alternative directory
 RUN for dir in ./alternatives/*/; do \
-    echo "$dir"/script; \
-    cp -r ./mercury-scripts/* "$dir"/script; \
+    echo "$dir/script"; \
+    cp -r ./mercury-scripts/* "$dir/script"; \
     cp ygopro "$dir"; \
     done
 
-RUN cp './banlists/2010.03 Edison(PreErrata).lflist.conf' ./alternatives/edison/lflist.conf && \
-    cp './banlists/2014.4 HAT.lflist.conf' ./alternatives/hat/lflist.conf && \
-    cp 'banlists/jtp-oficial.lflist.conf' ./alternatives/jtp/lflist.conf && \
-    cp 'banlists/GOAT.lflist.conf' ./alternatives/goat/lflist.conf && \
-    cp 'banlists/2008.03 GX.lflist.conf' ./alternatives/gx/lflist.conf && \
-    cp 'banlists/mdc.lflist.conf' ./alternatives/mdc/lflist.conf && \
-    cp 'banlists/Rush.lflist.conf' ./alternatives/rush/lflist.conf && \
-    cp 'banlists/Speed.lflist.conf' ./alternatives/speed/lflist.conf && \
-    cp 'banlists/Tengu.Plant.lflist.conf' ./alternatives/tengu/lflist.conf && \
-    cp 'banlists/World.lflist.conf' ./alternatives/world/lflist.conf && \
-    cp 'banlists/MD.2025.03.lflist.conf' ./alternatives/md/lflist.conf
+# Copy selected banlists into corresponding alternative folders
+RUN bash -c 'set -e; \
+    declare -A MAP=( \
+        ["2010.03 Edison(PreErrata)"]="edison" \
+        ["2014.4 HAT"]="hat" \
+        ["jtp-oficial"]="jtp" \
+        ["GOAT"]="goat" \
+        ["2008.03 GX"]="gx" \
+        ["mdc"]="mdc" \
+        ["Rush"]="rush" \
+        ["Speed"]="speed" \
+        ["Tengu.Plant"]="tengu" \
+        ["World"]="world" \
+        ["MD.2025.03"]="md" \
+    ); \
+    for name in "${!MAP[@]}"; do \
+        cp "./banlists/${name}.lflist.conf" "./alternatives/${MAP[$name]}/lflist.conf"; \
+    done'
 
+# Generate Conan profile
 RUN conan profile detect
 
 WORKDIR /app
 
+# Copy CoreIntegrator source
 COPY ./core .
 
-RUN wget https://github.com/premake/premake-core/releases/download/v5.0.0-beta2/premake-5.0.0-beta2-linux.tar.gz && \
-    tar -zxvf premake-5.0.0-beta2-linux.tar.gz && \
-    rm premake-5.0.0-beta2-linux.tar.gz
+# Download and install premake binary
+ADD https://github.com/premake/premake-core/releases/download/v5.0.0-beta2/premake-5.0.0-beta2-linux.tar.gz /tmp/premake.tar.gz
+RUN tar -zxvf /tmp/premake.tar.gz -C /usr/local/bin && rm /tmp/premake.tar.gz
 
+# Install dependencies and build the application
 RUN conan install . --build missing --output-folder=./dependencies --options=libcurl/8.6.0:shared=True && \
-    ./premake5 gmake && \
+    premake5 gmake && \
     make config=release
 
+
+# Stage 2: Build Node.js server
 FROM public.ecr.aws/docker/library/node:22.11.0 as server-builder
 
 ENV USER node
 
 WORKDIR /server
 
+# Install dependencies
 COPY package.json package-lock.json ./
-
 RUN npm ci
 
+# Clone shared types
 RUN git clone --depth 1 https://github.com/diangogav/evolution-types.git ./src/evolution-types
 
+# Copy server source and build
 COPY . .
-
 RUN npm run build && \
     npm prune --production
 
+
+# Stage 3: Final image
 FROM public.ecr.aws/docker/library/node:22.11.0-slim
 
-RUN apt-get update && apt-get install -y curl git wget && apt-get install -y liblua5.3-dev libsqlite3-dev libevent-dev dumb-init 
+# Install runtime dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl git wget liblua5.3-dev libsqlite3-dev libevent-dev dumb-init && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
+# SSL Certificates
 COPY certs ./certs
 
 # Server
@@ -85,29 +113,36 @@ COPY --from=server-builder /server/dist ./
 COPY --from=server-builder /server/package.json ./package.json
 COPY --from=server-builder /server/node_modules ./node_modules
 COPY --from=server-builder /server/mercury ./mercury
+
+# CoreIntegrator binaries
 COPY --from=core-integrator-builder /app/libocgcore.so ./core/libocgcore.so
 COPY --from=core-integrator-builder /app/CoreIntegrator ./core/CoreIntegrator
+
 # Evolution Resources
 COPY --from=core-integrator-builder /repositories/scripts ./scripts/evolution/
 COPY --from=core-integrator-builder /repositories/databases ./databases/evolution/
 COPY --from=core-integrator-builder /repositories/mercury-pre-releases-cdbs ./databases/mercury/pre-releases
 COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./databases/mercury
 COPY --from=core-integrator-builder /repositories/banlists ./banlists/evolution/
-## Mercury
+
+# Mercury
 COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/script
 COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/lflist.conf
 COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/cards.cdb
 COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/alternatives/md/cards.cdb
-## Mercury Pre releases
+
+# Mercury Pre-releases
 COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/pre-releases/script
 COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/pre-releases/lflist.conf
 COPY --from=core-integrator-builder /repositories/mercury-prerelases/script/ ./mercury/pre-releases/script/
-## Mercury OCG
+
+# Mercury OCG
 COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/ocg/script
 COPY --from=core-integrator-builder /repositories/banlists/OCG.lflist.conf ./mercury/ocg/lflist.conf
 COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/ocg/cards.cdb
 COPY --from=core-integrator-builder /repositories/ygopro ./mercury/ocg/ygopro
-## Mercury Alternatives
+
+# Mercury Alternatives
 COPY --from=core-integrator-builder /repositories/alternatives ./mercury/alternatives/
 
 EXPOSE 4000 7711 7911 7922
