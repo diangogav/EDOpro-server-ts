@@ -14,7 +14,7 @@ const options: DataSourceOptions = {
 
 const mercuryOptions: DataSourceOptions = {
 	type: "sqlite",
-	database: "./mercury/pre-releases/cards.cdb",
+	database: "./mercury/pre-releases/tcg/cards.cdb",
 	synchronize: true,
 	logging: false,
 	entities: [CardEntity, CardTextEntity],

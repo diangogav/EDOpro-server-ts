@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { SimpleGit, simpleGit, SimpleGitOptions } from "simple-git";
 
-import { SQLiteTypeORM } from "../../shared/db/sqlite/infrastructure/SQLiteTypeORM";
+import { EdoProSQLiteTypeORM } from "../../shared/db/sqlite/infrastructure/EdoProSQLiteTypeORM";
 import { Logger } from "../../shared/logger/domain/Logger";
 
 export class SyncRepositoriesController {
@@ -49,7 +49,7 @@ export class SyncRepositoriesController {
 
 		this.logger.info(`Databases difference: ${JSON.stringify(diffSummary)}`);
 
-		const database = new SQLiteTypeORM();
+		const database = new EdoProSQLiteTypeORM();
 		await database.initialize();
 	}
 }

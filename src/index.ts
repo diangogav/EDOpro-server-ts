@@ -3,7 +3,7 @@ import "src/shared/error-handler/error-handler";
 
 import { BanListLoader } from "src/edopro/ban-list/infrastructure/BanListLoader";
 import BanListMemoryRepository from "src/edopro/ban-list/infrastructure/BanListMemoryRepository";
-import { SQLiteTypeORM } from "src/shared/db/sqlite/infrastructure/SQLiteTypeORM";
+import { EdoProSQLiteTypeORM } from "src/shared/db/sqlite/infrastructure/EdoProSQLiteTypeORM";
 import { Pino } from "src/shared/logger/infrastructure/Pino";
 
 import { config } from "./config";
@@ -21,7 +21,7 @@ async function start(): Promise<void> {
 	const server = new Server(logger);
 	const mercuryServer = new MercuryServer(logger);
 	const hostServer = new HostServer(logger);
-	const database = new SQLiteTypeORM();
+	const database = new EdoProSQLiteTypeORM();
 	const banListLoader = new BanListLoader();
 	await banListLoader.loadDirectory("./banlists/evolution");
 	await BanListMemoryRepository.backup();
