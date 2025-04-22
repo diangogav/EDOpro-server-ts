@@ -91,7 +91,8 @@ RUN git clone --depth 1 https://github.com/diangogav/evolution-types.git ./src/e
 
 # Copy server source and build
 COPY . .
-RUN npm run build && \
+RUN npm run generate-mercury-pre-releases-cdb && \
+    npm run build && \
     npm prune --production
 
 
@@ -121,8 +122,8 @@ COPY --from=core-integrator-builder /app/CoreIntegrator ./core/CoreIntegrator
 # Evolution Resources
 COPY --from=core-integrator-builder /repositories/scripts ./scripts/evolution/
 COPY --from=core-integrator-builder /repositories/databases ./databases/evolution/
-COPY --from=core-integrator-builder /repositories/mercury-pre-releases-cdbs ./databases/mercury/pre-releases
-COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./databases/mercury
+COPY --from=core-integrator-builder /repositories/mercury-pre-releases-cdbs ./databases/mercury-pre-releases
+COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./databases/mercury-pre-releases
 COPY --from=core-integrator-builder /repositories/banlists ./banlists/evolution/
 
 # Mercury
@@ -132,9 +133,13 @@ COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/ca
 COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/alternatives/md/cards.cdb
 
 # Mercury Pre-releases
-COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/pre-releases/script
-COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/pre-releases/lflist.conf
-COPY --from=core-integrator-builder /repositories/mercury-prerelases/script/ ./mercury/pre-releases/script/
+COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/pre-releases/tcg/script
+COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/pre-releases/tcg/lflist.conf
+COPY --from=core-integrator-builder /repositories/mercury-prerelases/script/ ./mercury/pre-releases/tcg/script/
+
+COPY --from=server-builder /server/mercury/pre-releases/tcg/cards.cdb ./mercury/pre-releases/ocg/cards.cdb
+COPY --from=core-integrator-builder /repositories/banlists/OCG.lflist.conf ./mercury/pre-releases/ocg/lflist.conf
+COPY --from=core-integrator-builder /repositories/mercury-prerelases/script/ ./mercury/pre-releases/ocg/script/
 
 # Mercury OCG
 COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/ocg/script

@@ -499,7 +499,8 @@ export const priorityRuleMappings: RuleMappings = {
 	pre: {
 		get: () => {
 			return {
-				duelRule: 5,
+				rule: 5,
+				duelRule: 1,
 				timeLimit: 300,
 				mode: Mode.MATCH,
 			};
@@ -519,6 +520,33 @@ export const priorityRuleMappings: RuleMappings = {
 		},
 		validate: (value) => {
 			return value === "ocg";
+		},
+	},
+	tcgpre: {
+		get: () => {
+			return {
+				rule: 5,
+				duelRule: 1,
+				timeLimit: 300,
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			return value === "tcgpre";
+		},
+	},
+	ocgpre: {
+		get: () => {
+			return {
+				rule: 5,
+				duelRule: 1,
+				timeLimit: 300,
+				mode: Mode.MATCH,
+				lflist: 0,
+			};
+		},
+		validate: (value) => {
+			return value === "ocgpre";
 		},
 	},
 };
