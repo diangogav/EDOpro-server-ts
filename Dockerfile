@@ -91,6 +91,9 @@ RUN git clone --depth 1 https://github.com/diangogav/evolution-types.git ./src/e
 
 # Copy server source and build
 COPY . .
+COPY --from=core-integrator-builder /repositories/mercury-pre-releases-cdbs ./databases/mercury-pre-releases
+COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./databases/mercury-pre-releases
+
 RUN npm run generate-mercury-pre-releases-cdb && \
     npm run build && \
     npm prune --production
