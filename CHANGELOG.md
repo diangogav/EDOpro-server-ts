@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.6.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.5.0...v2.6.0) (2025-04-23)
+
+
+### Features
+
+* add support for Rush Ritual monsters ([bf2d69b](https://github.com/diangogav/EDOpro-server-ts/commit/bf2d69b2ecfca8365e557d49d33070b77d8f097d))
+* logs for web socket ([44d66d4](https://github.com/diangogav/EDOpro-server-ts/commit/44d66d42eaa59b268324bec3352665c6fb82946f))
+* **mercury:** :sparkles: Identifie ranked mrcury rooms ([2eb0f1e](https://github.com/diangogav/EDOpro-server-ts/commit/2eb0f1eb09813b88b61b8804be7e3beb13c66933))
+* **mercury:** :zap: added ocg command ([#154](https://github.com/diangogav/EDOpro-server-ts/issues/154)) ([112c854](https://github.com/diangogav/EDOpro-server-ts/commit/112c854233feb58295edaf6eb827f1974451a692))
+* **room:** improve player position handling in waiting state ([9fa926f](https://github.com/diangogav/EDOpro-server-ts/commit/9fa926ff7df0e9836297933585ec42482a938b71))
+
+
+### Bug Fixes
+
+* **duel:** fix reconnection logic for tag duels ([1f830e5](https://github.com/diangogav/EDOpro-server-ts/commit/1f830e54b717d3b49bf2949cff53779d016a449c))
+* md command ([8ae654d](https://github.com/diangogav/EDOpro-server-ts/commit/8ae654d4817d4b1ace48356026aaf162166460c1))
+* **mercury:** :bug: fix goat lflist index ([0e49a07](https://github.com/diangogav/EDOpro-server-ts/commit/0e49a078335ed9b210328e3611721775a4e9aa65))
+* **mercury:** :bug: the join message is intercepted to make the ban list compatible with edo pro ([d6679df](https://github.com/diangogav/EDOpro-server-ts/commit/d6679df2d7f7429ffd46c7af09414455bdbc26ba))
+* **mercury:** prevent duplicate game state updates by processing messages only from first player ([9ef85a9](https://github.com/diangogav/EDOpro-server-ts/commit/9ef85a98c41b9ea2e1abfb18c7eb17e04a30cd9c))
+* show ban list hash in client based on mercury ([9ce0436](https://github.com/diangogav/EDOpro-server-ts/commit/9ce04360482e866c29cd546eaee3fedb38fceb43))
+
 ## [2.5.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.4.0...v2.5.0) (2025-04-02)
 
 
