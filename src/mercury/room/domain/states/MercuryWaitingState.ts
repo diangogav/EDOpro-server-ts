@@ -117,28 +117,29 @@ export class MercuryWaitingState extends RoomState {
 	private handleTypeChange(message: ClientMessage, room: MercuryRoom, client: MercuryClient): void {
 		this.logger.debug(`Mercury TYPE_CHANGE: ${message.data.toString("hex")}`);
 		const value = parseInt(message.data.toString("hex"), 16);
-		const type = value & 0x0f;
-		const isHost = (type & 0x10) !== 0;
+		const position = value & 0x0f;
+		const isHost = (position & 0x10) !== 0;
 
-		if (type === 7 && room.clients.find((player) => player.socket.id === client.socket.id)) {
+		if (position === 7 && room.clients.find((player) => player.socket.id === client.socket.id)) {
 			room.removePlayer(client);
 			client.setHost(isHost);
-			client.playerPosition(room.playersCount, Team.SPECTATOR);
+			client.playerPosition(position, Team.SPECTATOR);
 			room.addSpectator(client, false, true);
 
 			return;
 		}
 
-		if (type !== 7 && room.spectators.find((spectator) => spectator.name === client.name)) {
+		if (position !== 7 && room.spectators.find((spectator) => spectator.name === client.name)) {
 			room.removeSpectator(client);
 			client.setHost(isHost);
+			room.calculatePlayerTeam(client, position);
 			room.addClient(client);
 
 			return;
 		}
 
 		client.setHost(isHost);
-		room.calculatePlayerTeam(client, type);
+		room.calculatePlayerTeam(client, position);
 	}
 
 	private handleJoinGame(message: ClientMessage, room: MercuryRoom, _client: MercuryClient): void {
