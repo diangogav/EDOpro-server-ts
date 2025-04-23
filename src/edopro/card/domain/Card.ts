@@ -53,4 +53,8 @@ export class Card {
 
 		return false;
 	}
+
+	isRitualMonster(): boolean {
+		return (this.type & CardTypes.TYPE_RITUAL) !== 0 && (this.type & CardTypes.TYPE_MONSTER) !== 0;
+	}
 }

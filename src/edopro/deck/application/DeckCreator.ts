@@ -8,10 +8,13 @@ import { Deck } from "../domain/Deck";
 export class DeckCreator {
 	private readonly cardRepository: CardRepository;
 	private readonly deckRules: DeckRules;
+	private readonly duelFlags: bigint;
+	private readonly DUEL_EXTRA_DECK_RITUAL_FLAG = 0x800000000n;
 
-	constructor(cardRepositoy: CardRepository, deckRules: DeckRules) {
+	constructor(cardRepositoy: CardRepository, deckRules: DeckRules, duelFlags: bigint) {
 		this.cardRepository = cardRepositoy;
 		this.deckRules = deckRules;
+		this.duelFlags = duelFlags;
 	}
 
 	async build({
@@ -26,6 +29,7 @@ export class DeckCreator {
 		const mainDeck: Card[] = [];
 		const extraDeck: Card[] = [];
 		const sideDeck: Card[] = [];
+		const placeRitualInExtraDeckEnabled = this.placeRitualInExtraDeckEnabled();
 
 		for (const code of main) {
 			// eslint-disable-next-line no-await-in-loop
@@ -33,7 +37,12 @@ export class DeckCreator {
 			if (!card) {
 				continue;
 			}
-			card.isExtraCard() ? extraDeck.push(card) : mainDeck.push(card);
+
+			if (card.isExtraCard() || (card.isRitualMonster() && placeRitualInExtraDeckEnabled)) {
+				extraDeck.push(card);
+			} else {
+				mainDeck.push(card);
+			}
 		}
 
 		for (const code of side) {
@@ -54,5 +63,9 @@ export class DeckCreator {
 			banList: banList ?? new BanList(),
 			deckRules: this.deckRules,
 		});
+	}
+
+	private placeRitualInExtraDeckEnabled(): boolean {
+		return (this.duelFlags & this.DUEL_EXTRA_DECK_RITUAL_FLAG) !== 0n;
 	}
 }

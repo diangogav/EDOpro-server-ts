@@ -284,7 +284,7 @@ export class Room extends YgoRoom {
 			this.emitter,
 			this.logger,
 			new UserAuth(new UserProfilePostgresRepository()),
-			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules)
+			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules, this.duelFlag)
 		);
 	}
 
@@ -404,7 +404,7 @@ export class Room extends YgoRoom {
 			this.logger,
 			new Reconnect(new UserAuth(new UserProfilePostgresRepository())),
 			new JoinToDuelAsSpectator(),
-			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules)
+			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules, this.duelFlag)
 		);
 	}
 
