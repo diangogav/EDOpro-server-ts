@@ -126,6 +126,11 @@ export class WaitingState extends RoomState {
 
 	private tryStartHandler(_message: ClientMessage, room: Room, _player: Client): void {
 		this.logger.debug("WAITING: TRY_START");
+
+		if (!room.allPlayersReady) {
+			return;
+		}
+
 		const duelStartMessage = DuelStartClientMessage.create();
 		room.clients.forEach((client: Client) => {
 			client.sendMessage(duelStartMessage);

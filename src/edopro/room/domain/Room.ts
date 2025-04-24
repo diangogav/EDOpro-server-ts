@@ -759,6 +759,10 @@ export class Room extends YgoRoom {
 		this.roomTimer.stop();
 	}
 
+	get allPlayersReady(): boolean {
+		return this._clients.every((player) => player.isReady);
+	}
+
 	private writeToCppProcess(messageToCpp: string, retryCount: number): void {
 		if (retryCount <= 0) {
 			this.logger.error("Error: Failed to write to the child process after multiple attempts");
