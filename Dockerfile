@@ -20,7 +20,7 @@ RUN git clone --depth 1 --branch master https://github.com/ProjectIgnis/CardScri
     git clone --depth 1 https://github.com/termitaklk/lflist banlists-evolution && \
     git clone --depth 1 https://github.com/evolutionygo/server-formats-cdb.git alternatives && \
     wget -O mercury-lflist.conf https://raw.githubusercontent.com/termitaklk/koishi-Iflist/main/lflist.conf && \
-    wget -O mercury-cards.cdb https://github.com/purerosefallen/ygopro/raw/server/cards.cdb
+    wget -O mercury-cards.cdb https://github.com/mycard/ygopro/raw/server/cards.cdb
 
 # Prepare banlists and pre-releases folder
 RUN mkdir banlists mercury-pre-releases-cdbs && \
