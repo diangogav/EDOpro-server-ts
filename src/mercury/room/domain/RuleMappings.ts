@@ -500,7 +500,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				duelRule: 1,
+				duelRule: 5,
 				timeLimit: 300,
 				mode: Mode.MATCH,
 			};
@@ -526,7 +526,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				duelRule: 1,
+				duelRule: 5,
 				timeLimit: 300,
 				mode: Mode.MATCH,
 			};
@@ -539,7 +539,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				duelRule: 1,
+				duelRule: 5,
 				timeLimit: 300,
 				mode: Mode.MATCH,
 				lflist: 0,
