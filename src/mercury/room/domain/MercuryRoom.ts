@@ -166,6 +166,7 @@ export class MercuryRoom extends YgoRoom {
 			ocgpre: "mercury/pre-releases/ocg",
 			tcgpre: "mercury/pre-releases/tcg",
 			ot: "mercury/ocg",
+			otto: "mercury/ocg",
 		};
 
 		options.forEach((option) => {

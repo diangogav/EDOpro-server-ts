@@ -116,10 +116,28 @@ export const priorityRuleMappings: RuleMappings = {
 	ot: {
 		get: () => ({ rule: 5 }),
 		validate: (value) => {
-			return value === "ot" || value === "tcg";
+			return value === "ot";
 		},
 	},
-
+	// OCG with TCG and OCG cards allowed
+	otto: {
+		get: () => ({ rule: 5 }),
+		validate: (value) => {
+			return value === "otto";
+		},
+	},
+	// TCG with TCG and OCG cards allowed
+	toot: {
+		get: () => {
+			return {
+				rule: 5,
+				lflist: MercuryBanListMemoryRepository.getLastTCGIndex(),
+			};
+		},
+		validate: (value) => {
+			return value === "toot";
+		},
+	},
 	ns: {
 		get: () => {
 			return {
