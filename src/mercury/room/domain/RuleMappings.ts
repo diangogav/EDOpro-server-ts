@@ -123,7 +123,7 @@ export const priorityRuleMappings: RuleMappings = {
 	otto: {
 		get: () => ({ rule: 5 }),
 		validate: (value) => {
-			return value === "otto"
+			return value === "otto";
 		},
 	},
 	// TCG with TCG and OCG cards allowed
@@ -135,7 +135,7 @@ export const priorityRuleMappings: RuleMappings = {
 			};
 		},
 		validate: (value) => {
-			return value === "toot"
+			return value === "toot";
 		},
 	},
 	ns: {
