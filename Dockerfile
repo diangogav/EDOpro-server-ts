@@ -1,13 +1,22 @@
 # Stage 1: Build CoreIntegrator
-FROM public.ecr.aws/ubuntu/ubuntu:22.04_stable as core-integrator-builder
+FROM public.ecr.aws/ubuntu/ubuntu:22.04_stable AS core-integrator-builder
 
 # Install required dependencies and Conan
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
-        python3 python3-pip wget tar git autoconf ca-certificates g++ \
-        m4 automake libtool pkg-config make && \
-    rm -rf /var/lib/apt/lists/* && \
-    pip install conan
+        autoconf \
+        automake \
+        ca-certificates \
+        git \
+        g++ \
+        libtool \
+        make \
+        m4 \
+        pkg-config \
+        python3 \
+        python3-pip && \
+        rm -rf /var/lib/apt/lists/* && \
+        pip install conan
 
 WORKDIR /repositories
 
@@ -17,10 +26,12 @@ RUN git clone --depth 1 --branch master https://github.com/ProjectIgnis/CardScri
     git clone --depth 1 --branch master https://github.com/ProjectIgnis/LFLists banlists-project-ignis && \
     git clone --depth 1 --branch master https://github.com/mycard/ygopro-scripts.git mercury-scripts && \
     git clone --depth 1 --branch master https://github.com/evolutionygo/pre-release-database-cdb mercury-prerelases && \
-    git clone --depth 1 https://github.com/termitaklk/lflist banlists-evolution && \
-    git clone --depth 1 https://github.com/evolutionygo/server-formats-cdb.git alternatives && \
-    wget -O mercury-lflist.conf https://raw.githubusercontent.com/termitaklk/koishi-Iflist/main/lflist.conf && \
-    wget -O mercury-cards.cdb https://github.com/mycard/ygopro/raw/server/cards.cdb
+    git clone --depth 1 --branch main https://github.com/termitaklk/lflist banlists-evolution && \
+    git clone --depth 1 --branch main https://github.com/evolutionygo/server-formats-cdb.git alternatives
+
+# Download required files
+ADD https://raw.githubusercontent.com/termitaklk/koishi-Iflist/main/lflist.conf mercury-lflist.conf
+ADD https://github.com/mycard/ygopro/raw/server/cards.cdb mercury-cards.cdb
 
 # Prepare banlists and pre-releases folder
 RUN mkdir banlists mercury-pre-releases-cdbs && \
@@ -76,7 +87,7 @@ RUN conan install . --build missing --output-folder=./dependencies --options=lib
 
 
 # Stage 2: Build Node.js server
-FROM public.ecr.aws/docker/library/node:22.11.0 as server-builder
+FROM public.ecr.aws/docker/library/node:22.11.0 AS server-builder
 
 ENV USER node
 
@@ -87,7 +98,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 # Clone shared types
-RUN git clone --depth 1 https://github.com/diangogav/evolution-types.git ./src/evolution-types
+RUN git clone --depth 1 --branch main https://github.com/diangogav/evolution-types.git ./src/evolution-types
 
 # Copy server source and build
 COPY . .
@@ -104,7 +115,11 @@ FROM public.ecr.aws/docker/library/node:22.11.0-slim
 
 # Install runtime dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl git wget liblua5.3-dev libsqlite3-dev libevent-dev dumb-init && \
+    apt-get install -y --no-install-recommends \
+        dumb-init \
+        libevent-dev \
+        liblua5.3-dev \
+        libsqlite3-dev && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
