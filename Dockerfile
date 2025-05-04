@@ -4,19 +4,10 @@ FROM public.ecr.aws/ubuntu/ubuntu:22.04_stable AS core-integrator-builder
 # Install required dependencies and Conan
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
-        autoconf \
-        automake \
-        ca-certificates \
-        git \
-        g++ \
-        libtool \
-        make \
-        m4 \
-        pkg-config \
-        python3 \
-        python3-pip && \
-        rm -rf /var/lib/apt/lists/* && \
-        pip install conan
+        python3 python3-pip wget tar git autoconf ca-certificates g++ \
+        m4 automake libtool pkg-config make && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip install conan
 
 WORKDIR /repositories
 
@@ -27,11 +18,9 @@ RUN git clone --depth 1 --branch master https://github.com/ProjectIgnis/CardScri
     git clone --depth 1 --branch master https://github.com/mycard/ygopro-scripts.git mercury-scripts && \
     git clone --depth 1 --branch master https://github.com/evolutionygo/pre-release-database-cdb mercury-prerelases && \
     git clone --depth 1 --branch main https://github.com/termitaklk/lflist banlists-evolution && \
-    git clone --depth 1 --branch main https://github.com/evolutionygo/server-formats-cdb.git alternatives
-
-# Download required files
-ADD https://raw.githubusercontent.com/termitaklk/koishi-Iflist/main/lflist.conf mercury-lflist.conf
-ADD https://github.com/mycard/ygopro/raw/server/cards.cdb mercury-cards.cdb
+    git clone --depth 1 --branch main https://github.com/evolutionygo/server-formats-cdb.git alternatives && \
+    wget -O mercury-lflist.conf https://raw.githubusercontent.com/termitaklk/koishi-Iflist/main/lflist.conf && \
+    wget -O mercury-cards.cdb https://github.com/purerosefallen/ygopro/raw/server/cards.cdb
 
 # Prepare banlists and pre-releases folder
 RUN mkdir banlists mercury-pre-releases-cdbs && \
@@ -98,7 +87,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 # Clone shared types
-RUN git clone --depth 1 --branch main https://github.com/diangogav/evolution-types.git ./src/evolution-types
+RUN git clone --depth 1 https://github.com/diangogav/evolution-types.git ./src/evolution-types
 
 # Copy server source and build
 COPY . .
@@ -115,11 +104,7 @@ FROM public.ecr.aws/docker/library/node:22.11.0-slim
 
 # Install runtime dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        dumb-init \
-        libevent-dev \
-        liblua5.3-dev \
-        libsqlite3-dev && \
+    apt-get install -y --no-install-recommends curl git wget liblua5.3-dev libsqlite3-dev libevent-dev dumb-init && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
