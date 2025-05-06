@@ -5,6 +5,7 @@ export type GameOverData = {
 	date: Date;
 	players: PlayerMatchSummary[];
 	banListHash: number;
+	ranked: boolean;
 };
 
 export class GameOverDomainEvent {

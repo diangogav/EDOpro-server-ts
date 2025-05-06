@@ -26,6 +26,13 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 		this.logger.info(
 			`Duel finished for ${event.data.players.map((player) => player.name).join(" ")}`
 		);
+
+		if (!event.data.ranked) {
+			this.logger.info(`Match started as *non-ranked*. Players' MMR will not be affected.`);
+
+			return;
+		}
+
 		const banList = BanListMemoryRepository.findByHash(event.data.banListHash);
 		const players = event.data.players.map((item) => new Player(item));
 
