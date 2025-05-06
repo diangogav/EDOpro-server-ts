@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.7.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.6.0...v2.7.0) (2025-05-06)
+
+
+### Features
+
+* add ranked flag to distinguish ranked/unranked duels ([76c86ef](https://github.com/diangogav/EDOpro-server-ts/commit/76c86ef7ca1c7b28d0b7ed845867d761dcf17ab7))
+* added otto and toot ([aa2f685](https://github.com/diangogav/EDOpro-server-ts/commit/aa2f6852c65d49f4d576c2730e86985121a6fce6))
+* added otto and toot ([6e31940](https://github.com/diangogav/EDOpro-server-ts/commit/6e31940c6c132ce1fc48f662da294f956bf566d4))
+* **room:** add players ready validation before starting duel ([af1522d](https://github.com/diangogav/EDOpro-server-ts/commit/af1522db6cbe494490df312409bf7c6a25aee8e4))
+
+
+### Bug Fixes
+
+* **docker:** required packages ([#164](https://github.com/diangogav/EDOpro-server-ts/issues/164)) ([a40fe11](https://github.com/diangogav/EDOpro-server-ts/commit/a40fe11d1a635bd2a67779dbad08b497bcf0ac49))
+
 ## [2.6.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.5.0...v2.6.0) (2025-04-23)
 
 
