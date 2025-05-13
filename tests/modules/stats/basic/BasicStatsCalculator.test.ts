@@ -112,6 +112,7 @@ describe("BasicStatsCalculator", () => {
 		const players = [player, opponent];
 		const event = GameOverDomainEventMother.create({
 			players: players.map((player) => player.toPresentation()),
+			ranked: true,
 		});
 
 		await basicStatsCalculator.handle(event);
