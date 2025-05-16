@@ -1,3 +1,5 @@
+import { ServerInfoMessage } from "@edopro/messages/domain/ServerInfoMessage";
+
 import { DuelStartClientMessage } from "../../../shared/messages/server-to-client/DuelStartClientMessage";
 import { PlayerEnterClientMessage } from "../../../shared/messages/server-to-client/PlayerEnterClientMessage";
 import { TypeChangeClientMessage } from "../../../shared/messages/server-to-client/TypeChangeClientMessage";
@@ -48,7 +50,7 @@ export class JoinToDuelAsSpectator {
 			.map((item) => item.name.replace(/\0/g, "").trim());
 
 		socket.send(
-			ServerMessageClientMessage.create(`Bienvenido ${client.name.replace(/\0/g, "").trim()}`)
+			ServerMessageClientMessage.create(`Welcome ${client.name.replace(/\0/g, "").trim()}`)
 		);
 		socket.send(
 			ServerMessageClientMessage.create(
@@ -60,7 +62,9 @@ export class JoinToDuelAsSpectator {
 
 		[...room.clients, ...room.spectators].forEach((_client: Client) => {
 			_client.sendMessage(
-				ServerMessageClientMessage.create(`${client.name} ha ingresado como espectador`)
+				ServerMessageClientMessage.create(
+					`${client.name} ${ServerInfoMessage.HAS_ENTERED_AS_A_SPECTATOR}`
+				)
 			);
 		});
 	}

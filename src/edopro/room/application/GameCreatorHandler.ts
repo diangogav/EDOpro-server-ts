@@ -106,9 +106,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 		);
 		if (!config.ranking.enabled) {
 			this.socket.send(
-				ServerMessageClientMessage.create(
-					"En este momento, el sistema de clasificación no está disponible."
-				)
+				ServerMessageClientMessage.create(ServerInfoMessage.UNAVAILABLE_RANKING_SYSTEM)
 			);
 		}
 

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
+import { ServerInfoMessage } from "@edopro/messages/domain/ServerInfoMessage";
 import { spawn } from "child_process";
 import * as crypto from "crypto";
 import EventEmitter from "events";
@@ -207,7 +208,7 @@ export class DuelingState extends RoomState {
 
 	private handle(): void {
 		this.room.clients.forEach((item) => {
-			item.socket.send(ServerMessageClientMessage.create("Preparando el duelo"));
+			item.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.PREPARING_DUEL));
 		});
 		this.room.prepareTurnOrder();
 
@@ -224,7 +225,7 @@ export class DuelingState extends RoomState {
 		this.logger.debug(`GAME: ${this.room.playerNames(0)} VS ${this.room.playerNames(1)}`);
 
 		this.room.clients.forEach((item) => {
-			item.socket.send(ServerMessageClientMessage.create("Iniciando duelo"));
+			item.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.STARTING_DUEL));
 		});
 
 		const core = spawn(
@@ -407,12 +408,18 @@ export class DuelingState extends RoomState {
 		player.clearReconnecting();
 
 		this.room.clients.forEach((client: Client) => {
-			client.sendMessage(ServerMessageClientMessage.create(`${player.name} ha ingresado al duelo`));
+			client.sendMessage(
+				ServerMessageClientMessage.create(
+					`${player.name} ${ServerInfoMessage.HAS_ENTERED_TO_THE_DUEL}`
+				)
+			);
 		});
 
 		this.room.spectators.forEach((spectator: Client) => {
 			spectator.sendMessage(
-				ServerMessageClientMessage.create(`${player.name} ha ingresado al duelo`)
+				ServerMessageClientMessage.create(
+					`${player.name} ${ServerInfoMessage.HAS_ENTERED_TO_THE_DUEL}`
+				)
 			);
 		});
 	}
