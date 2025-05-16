@@ -1,3 +1,4 @@
+import { ServerInfoMessage } from "@edopro/messages/domain/ServerInfoMessage";
 import { Client } from "../../../edopro/client/domain/Client";
 import { PlayerChangeClientMessage } from "../../../edopro/messages/server-to-client/PlayerChangeClientMessage";
 import { ServerMessageClientMessage } from "../../../edopro/messages/server-to-client/ServerMessageClientMessage";
@@ -87,7 +88,7 @@ export class DisconnectHandler {
 			room.clients.forEach((client: Client) => {
 				client.sendMessage(
 					ServerMessageClientMessage.create(
-						`${player.name.replace(/\0/g, "").trim()} ha salido del duelo`
+						`${player.name.replace(/\0/g, "").trim()} ${ServerInfoMessage.HAS_LEFT_THE_DUEL}`
 					)
 				);
 			});
@@ -95,7 +96,7 @@ export class DisconnectHandler {
 			room.spectators.forEach((spectator: Client) => {
 				spectator.sendMessage(
 					ServerMessageClientMessage.create(
-						`${player.name.replace(/\0/g, "").trim()} ha salido del duelo`
+						`${player.name.replace(/\0/g, "").trim()} ${ServerInfoMessage.HAS_LEFT_THE_DUEL}`
 					)
 				);
 			});
