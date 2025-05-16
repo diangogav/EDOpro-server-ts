@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
+import { ServerInfoMessage } from "@edopro/messages/domain/ServerInfoMessage";
 import { spawn } from "child_process";
 import * as crypto from "crypto";
 import EventEmitter from "events";
@@ -31,7 +32,6 @@ import { Reconnect } from "../../../application/Reconnect";
 import { DuelFinishReason } from "../../DuelFinishReason";
 import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";
-import { ServerInfoMessage } from "@edopro/messages/domain/ServerInfoMessage";
 
 interface Message {
 	type: string;
@@ -408,12 +408,18 @@ export class DuelingState extends RoomState {
 		player.clearReconnecting();
 
 		this.room.clients.forEach((client: Client) => {
-			client.sendMessage(ServerMessageClientMessage.create(`${player.name} ${ServerInfoMessage.HAS_ENTERED_TO_THE_DUEL}`));
+			client.sendMessage(
+				ServerMessageClientMessage.create(
+					`${player.name} ${ServerInfoMessage.HAS_ENTERED_TO_THE_DUEL}`
+				)
+			);
 		});
 
 		this.room.spectators.forEach((spectator: Client) => {
 			spectator.sendMessage(
-				ServerMessageClientMessage.create(`${player.name} ${ServerInfoMessage.HAS_ENTERED_TO_THE_DUEL}`)
+				ServerMessageClientMessage.create(
+					`${player.name} ${ServerInfoMessage.HAS_ENTERED_TO_THE_DUEL}`
+				)
 			);
 		});
 	}
