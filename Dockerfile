@@ -17,6 +17,7 @@ RUN git clone --depth 1 --branch master https://github.com/ProjectIgnis/CardScri
     git clone --depth 1 --branch master https://github.com/ProjectIgnis/LFLists banlists-project-ignis && \
     git clone --depth 1 --branch master https://github.com/mycard/ygopro-scripts.git mercury-scripts && \
     git clone --depth 1 --branch master https://github.com/evolutionygo/pre-release-database-cdb mercury-prerelases && \
+    git clone --depth 1 --branch main https://github.com/evolutionygo/cards-art-server mercury-arts && \
     git clone --depth 1 --branch main https://github.com/termitaklk/lflist banlists-evolution && \
     git clone --depth 1 --branch main https://github.com/evolutionygo/server-formats-cdb.git alternatives && \
     wget -O mercury-lflist.conf https://raw.githubusercontent.com/termitaklk/koishi-Iflist/main/lflist.conf && \
@@ -26,7 +27,7 @@ RUN git clone --depth 1 --branch master https://github.com/ProjectIgnis/CardScri
 RUN mkdir banlists mercury-pre-releases-cdbs && \
     mv banlists-project-ignis/* banlists/ && \
     mv banlists-evolution/* banlists/ && \
-    find mercury-prerelases -name "*.cdb" -exec cp {} mercury-pre-releases-cdbs/ \;
+    find mercury-prerelases mercury-arts -name "*.cdb" -exec cp {} mercury-pre-releases-cdbs/ \;
 
 # Copy binary and setup directories
 COPY ./mercury/ygopro .
@@ -139,11 +140,13 @@ COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/al
 COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/pre-releases/tcg/script
 COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/pre-releases/tcg/lflist.conf
 COPY --from=core-integrator-builder /repositories/mercury-prerelases/script/ ./mercury/pre-releases/tcg/script/
+COPY --from=core-integrator-builder /repositories/mercury-arts/script/ ./mercury/pre-releases/tcg/script/
 
 COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/pre-releases/ocg/script
 COPY --from=server-builder /server/mercury/pre-releases/tcg/cards.cdb ./mercury/pre-releases/ocg/cards.cdb
 COPY --from=core-integrator-builder /repositories/banlists/OCG.lflist.conf ./mercury/pre-releases/ocg/lflist.conf
 COPY --from=core-integrator-builder /repositories/mercury-prerelases/script/ ./mercury/pre-releases/ocg/script/
+COPY --from=core-integrator-builder /repositories/mercury-arts/script/ ./mercury/pre-releases/ocg/script/
 
 # Mercury OCG
 COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/ocg/script

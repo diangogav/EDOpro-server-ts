@@ -353,7 +353,7 @@ export const priorityRuleMappings: RuleMappings = {
 				lflist: 0,
 				timeLimit: 300,
 				duelRule: 1,
-				mode: Mode.MATCH,
+				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -367,7 +367,7 @@ export const priorityRuleMappings: RuleMappings = {
 				lflist: 0,
 				timeLimit: 300,
 				duelRule: 2,
-				mode: Mode.MATCH,
+				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -381,7 +381,7 @@ export const priorityRuleMappings: RuleMappings = {
 				lflist: 0,
 				timeLimit: 300,
 				duelRule: 2,
-				mode: Mode.MATCH,
+				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -395,7 +395,7 @@ export const priorityRuleMappings: RuleMappings = {
 				lflist: 11,
 				timeLimit: 300,
 				duelRule: 5,
-				mode: Mode.MATCH,
+				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -409,7 +409,7 @@ export const priorityRuleMappings: RuleMappings = {
 				lflist: 0,
 				timeLimit: 300,
 				duelRule: 2,
-				mode: Mode.MATCH,
+				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -423,7 +423,7 @@ export const priorityRuleMappings: RuleMappings = {
 				lflist: 0,
 				timeLimit: 300,
 				duelRule: 1,
-				mode: Mode.MATCH,
+				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -437,7 +437,7 @@ export const priorityRuleMappings: RuleMappings = {
 				lflist: 0,
 				timeLimit: 300,
 				duelRule: 2,
-				mode: Mode.MATCH,
+				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -451,7 +451,7 @@ export const priorityRuleMappings: RuleMappings = {
 				lflist: 0,
 				timeLimit: 300,
 				duelRule: 4,
-				mode: Mode.MATCH,
+				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -465,7 +465,7 @@ export const priorityRuleMappings: RuleMappings = {
 				lflist: 2,
 				timeLimit: 300,
 				duelRule: 4,
-				mode: Mode.MATCH,
+				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -479,7 +479,7 @@ export const priorityRuleMappings: RuleMappings = {
 				lflist: 2,
 				timeLimit: 300,
 				duelRule: 4,
-				mode: Mode.MATCH,
+				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -493,7 +493,7 @@ export const priorityRuleMappings: RuleMappings = {
 				lflist: 3,
 				timeLimit: 300,
 				duelRule: 4,
-				mode: Mode.MATCH,
+				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -507,7 +507,7 @@ export const priorityRuleMappings: RuleMappings = {
 				lflist: 5,
 				timeLimit: 300,
 				duelRule: 4,
-				mode: Mode.MATCH,
+				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -520,7 +520,7 @@ export const priorityRuleMappings: RuleMappings = {
 				rule: 5,
 				duelRule: 5,
 				timeLimit: 300,
-				mode: Mode.MATCH,
+				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -533,7 +533,7 @@ export const priorityRuleMappings: RuleMappings = {
 				rule: 0,
 				lflist: 0,
 				timeLimit: 300,
-				mode: Mode.MATCH,
+				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -546,7 +546,7 @@ export const priorityRuleMappings: RuleMappings = {
 				rule: 5,
 				duelRule: 5,
 				timeLimit: 300,
-				mode: Mode.MATCH,
+				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -559,12 +559,39 @@ export const priorityRuleMappings: RuleMappings = {
 				rule: 5,
 				duelRule: 5,
 				timeLimit: 300,
-				mode: Mode.MATCH,
+				mode: Mode.SINGLE,
 				lflist: 0,
 			};
 		},
 		validate: (value) => {
 			return value === "ocgpre";
+		},
+	},
+	tcgart: {
+		get: () => {
+			return {
+				rule: 5,
+				duelRule: 5,
+				timeLimit: 300,
+				mode: Mode.SINGLE,
+			};
+		},
+		validate: (value) => {
+			return value === "tcgart";
+		},
+	},
+	ocgart: {
+		get: () => {
+			return {
+				rule: 5,
+				duelRule: 5,
+				timeLimit: 300,
+				mode: Mode.SINGLE,
+				lflist: 0,
+			};
+		},
+		validate: (value) => {
+			return value === "ocgart";
 		},
 	},
 };
