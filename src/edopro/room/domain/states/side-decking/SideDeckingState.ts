@@ -16,17 +16,17 @@ import { ChooseOrderClientMessage } from "../../../../messages/server-to-client/
 import { ErrorMessages } from "../../../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../../../messages/server-to-client/ErrorClientMessage";
 import { SideDeckClientMessage } from "../../../../messages/server-to-client/game-messages/SideDeckClientMessage";
+import { FinishDuelHandler } from "../../../application/FinishDuelHandler";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";
+import { DuelFinishReason } from "../../DuelFinishReason";
 import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";
-import { Timer } from '../../Timer';
-import { FinishDuelHandler } from '../../../application/FinishDuelHandler';
-import { DuelFinishReason } from '../../DuelFinishReason';
+import { Timer } from "../../Timer";
 
 export class SideDeckingState extends RoomState {
 	private sideDeckingTimer: Timer | null = null;
-	private sideDeckingTimeoutMs = 60000; // 60 seconds, adjust as needed
+	private readonly sideDeckingTimeoutMs = 60000; // 60 seconds, adjust as needed
 	private sideDeckingTimerPlayer: Client | null = null;
 
 	constructor(
@@ -116,7 +116,7 @@ export class SideDeckingState extends RoomState {
 			// Only one player left, start timer for them
 			if (!this.sideDeckingTimer) {
 				this.sideDeckingTimerPlayer = player;
-				this.sideDeckingTimer = new Timer(this.sideDeckingTimeoutMs, async () => {
+				const timerCallback = () => {
 					// If the other player is still not ready, declare this player as winner
 					const stillNotReady = room.clients.find((c) => !c.isReady);
 					if (stillNotReady) {
@@ -126,9 +126,11 @@ export class SideDeckingState extends RoomState {
 							winner,
 							room,
 						});
-						await finishDuelHandler.run();
+						// eslint-disable-next-line @typescript-eslint/no-floating-promises
+						finishDuelHandler.run();
 					}
-				});
+				};
+				this.sideDeckingTimer = new Timer(this.sideDeckingTimeoutMs, timerCallback);
 				this.sideDeckingTimer.start();
 			}
 		} else if (notReadyPlayers.length === 0) {
