@@ -20,8 +20,15 @@ import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectato
 import { Reconnect } from "../../../application/Reconnect";
 import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";
+import { Timer } from '../../Timer';
+import { FinishDuelHandler } from '../../../application/FinishDuelHandler';
+import { DuelFinishReason } from '../../DuelFinishReason';
 
 export class SideDeckingState extends RoomState {
+	private sideDeckingTimer: Timer | null = null;
+	private sideDeckingTimeoutMs = 60000; // 60 seconds, adjust as needed
+	private sideDeckingTimerPlayer: Client | null = null;
+
 	constructor(
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
@@ -102,6 +109,37 @@ export class SideDeckingState extends RoomState {
 		const duelStartMessage = DuelStartClientMessage.create();
 		player.sendMessage(duelStartMessage);
 		player.ready();
+
+		// --- Side Decking Timer Logic ---
+		const notReadyPlayers = room.clients.filter((c) => !c.isReady);
+		if (notReadyPlayers.length === 1) {
+			// Only one player left, start timer for them
+			if (!this.sideDeckingTimer) {
+				this.sideDeckingTimerPlayer = player;
+				this.sideDeckingTimer = new Timer(this.sideDeckingTimeoutMs, async () => {
+					// If the other player is still not ready, declare this player as winner
+					const stillNotReady = room.clients.find((c) => !c.isReady);
+					if (stillNotReady) {
+						const winner = player.position;
+						const finishDuelHandler = new FinishDuelHandler({
+							reason: DuelFinishReason.TIMEOUT, // or a custom reason
+							winner,
+							room,
+						});
+						await finishDuelHandler.run();
+					}
+				});
+				this.sideDeckingTimer.start();
+			}
+		} else if (notReadyPlayers.length === 0) {
+			// Both players are ready, stop timer if running
+			if (this.sideDeckingTimer) {
+				this.sideDeckingTimer.stop();
+				this.sideDeckingTimer = null;
+				this.sideDeckingTimerPlayer = null;
+			}
+		}
+		// --- End Side Decking Timer Logic ---
 
 		if (player.isReconnecting) {
 			player.sendMessage(DuelStartClientMessage.create());
