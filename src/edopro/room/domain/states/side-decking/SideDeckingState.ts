@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-import EventEmitter from "events";
+import { EventEmitter } from "events";
 
 import { Logger } from "../../../../../shared/logger/domain/Logger";
 import { DuelStartClientMessage } from "../../../../../shared/messages/server-to-client/DuelStartClientMessage";
@@ -26,8 +26,10 @@ import { Timer } from "../../Timer";
 
 export class SideDeckingState extends RoomState {
 	private sideDeckingTimer: Timer | null = null;
+	private sideDeckingWarningTimeout: ReturnType<typeof setTimeout> | null = null;
 	private readonly sideDeckingTimeoutMs = 60000; // 60 seconds, adjust as needed
-	private sideDeckingTimerPlayer: Client | null = null;
+	private readonly sideDeckingWarningMs = 5000; // Warn 5 seconds before timeout
+	private sideDeckingTimerTeam: number | null = null;
 
 	constructor(
 		eventEmitter: EventEmitter,
@@ -110,38 +112,33 @@ export class SideDeckingState extends RoomState {
 		player.sendMessage(duelStartMessage);
 		player.ready();
 
-		// --- Side Decking Timer Logic ---
-		const notReadyPlayers = room.clients.filter((c) => !c.isReady);
-		if (notReadyPlayers.length === 1) {
-			// Only one player left, start timer for them
-			if (!this.sideDeckingTimer) {
-				this.sideDeckingTimerPlayer = player;
-				const timerCallback = () => {
-					// If the other player is still not ready, declare this player as winner
-					const stillNotReady = room.clients.find((c) => !c.isReady);
-					if (stillNotReady) {
-						const winner = player.position;
-						const finishDuelHandler = new FinishDuelHandler({
-							reason: DuelFinishReason.TIMEOUT, // or a custom reason
-							winner,
-							room,
-						});
-						// eslint-disable-next-line @typescript-eslint/no-floating-promises
-						finishDuelHandler.run();
-					}
-				};
-				this.sideDeckingTimer = new Timer(this.sideDeckingTimeoutMs, timerCallback);
-				this.sideDeckingTimer.start();
-			}
-		} else if (notReadyPlayers.length === 0) {
-			// Both players are ready, stop timer if running
-			if (this.sideDeckingTimer) {
-				this.sideDeckingTimer.stop();
-				this.sideDeckingTimer = null;
-				this.sideDeckingTimerPlayer = null;
-			}
+		// --- Team-based Side Decking Timer Logic ---
+		const teams = [0, 1];
+		const teamReady = teams.map(
+			(team) =>
+				room.clients.filter((c) => c.team === team && c.isReady).length ===
+				room.clients.filter((c) => c.team === team).length
+		);
+		const teamNotReady = teams.map(
+			(team) => room.clients.filter((c) => c.team === team && !c.isReady).length > 0
+		);
+
+		if (teamReady[0] && teamNotReady[1]) {
+			this.startSideDeckingTimer(room, 1);
+		} else if (teamReady[1] && teamNotReady[0]) {
+			this.startSideDeckingTimer(room, 0);
+		} else if (teamReady[0] && teamReady[1]) {
+			this.clearSideDeckingTimer();
+			room.spectators.forEach((spectator: Client) => {
+				spectator.sendMessage(duelStartMessage);
+			});
+			this.startDuel(room);
+
+			return;
+		} else {
+			// Both teams not ready, do nothing
+			this.clearSideDeckingTimer();
 		}
-		// --- End Side Decking Timer Logic ---
 
 		if (player.isReconnecting) {
 			player.sendMessage(DuelStartClientMessage.create());
@@ -152,12 +149,47 @@ export class SideDeckingState extends RoomState {
 
 			return;
 		}
+	}
 
-		room.spectators.forEach((spectator: Client) => {
-			spectator.sendMessage(duelStartMessage);
-		});
+	private startSideDeckingTimer(room: Room, team: number): void {
+		if (this.sideDeckingTimer && this.sideDeckingTimerTeam === team) {
+			return; // Timer already running for this team
+		}
+		this.clearSideDeckingTimer();
+		this.sideDeckingTimerTeam = team;
+		this.logger.info("Side decking timer started for opposing team.");
+		const timerCallback = () => {
+			const notReady = room.clients.filter((c) => c.team === team && !c.isReady);
+			if (notReady.length > 0) {
+				this.logger.info(`Side decking timer expired. Team ${team} did not finish in time.`);
+				const finishDuelHandler = new FinishDuelHandler({
+					reason: DuelFinishReason.TIMEOUT,
+					winner: 1 - team, // Opposing team wins
+					room,
+				});
+				// eslint-disable-next-line @typescript-eslint/no-floating-promises
+				finishDuelHandler.run();
+			}
+			this.clearSideDeckingTimer();
+		};
+		this.sideDeckingTimer = new Timer(this.sideDeckingTimeoutMs, timerCallback);
+		this.sideDeckingTimer.start();
+		// Schedule warning
+		this.sideDeckingWarningTimeout = setTimeout(() => {
+			this.logger.info("Side decking timer is about to expire.");
+		}, this.sideDeckingTimeoutMs - this.sideDeckingWarningMs);
+	}
 
-		this.startDuel(room);
+	private clearSideDeckingTimer(): void {
+		if (this.sideDeckingTimer) {
+			this.sideDeckingTimer.stop();
+			this.sideDeckingTimer = null;
+		}
+		if (this.sideDeckingWarningTimeout) {
+			clearTimeout(this.sideDeckingWarningTimeout);
+			this.sideDeckingWarningTimeout = null;
+		}
+		this.sideDeckingTimerTeam = null;
 	}
 
 	private startDuel(room: Room): void {
