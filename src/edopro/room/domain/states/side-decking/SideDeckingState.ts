@@ -113,14 +113,21 @@ export class SideDeckingState extends RoomState {
 		player.ready();
 
 		// --- Team-based Side Decking Timer Logic ---
-		const teams = [0, 1];
-		const teamReady = teams.map(
-			(team) =>
-				room.clients.filter((c) => c.team === team && c.isReady).length ===
-				room.clients.filter((c) => c.team === team).length
+		const teamStatus = { 0: { total: 0, ready: 0 }, 1: { total: 0, ready: 0 } };
+		room.clients.forEach((client) => {
+			if (teamStatus[client.team] !== undefined) {
+				teamStatus[client.team].total += 1;
+				if (client.isReady) {
+					teamStatus[client.team].ready += 1;
+				}
+			}
+		});
+
+		const teamReady = [0, 1].map(
+			(team) => teamStatus[team].ready === teamStatus[team].total
 		);
-		const teamNotReady = teams.map(
-			(team) => room.clients.filter((c) => c.team === team && !c.isReady).length > 0
+		const teamNotReady = [0, 1].map(
+			(team) => teamStatus[team].ready < teamStatus[team].total && teamStatus[team].ready > 0
 		);
 
 		if (teamReady[0] && teamNotReady[1]) {
