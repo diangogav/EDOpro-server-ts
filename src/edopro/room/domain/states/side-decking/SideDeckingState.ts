@@ -23,13 +23,12 @@ import { Room } from "../../Room";
 import { DuelFinishReason } from "../../DuelFinishReason";
 import { RoomState } from "../../RoomState";
 
-const SIDE_DECK_TIMEOUT = 60000; // 60 seconds
-const SIDE_DECK_WARNING = 5000; // warn 5 seconds before timeout
+const SIDE_DECK_TIMEOUT = 60_000; // 60 seconds
+const SIDE_DECK_WARNING = 5_000; // warn 5 seconds before timeout
 
 export class SideDeckingState extends RoomState {
        private sideTimer: NodeJS.Timeout | null = null;
        private warningTimer: NodeJS.Timeout | null = null;
-       private timerWinner: number | null = null;
         constructor(
                 eventEmitter: EventEmitter,
                 private readonly logger: Logger,
@@ -54,7 +53,6 @@ export class SideDeckingState extends RoomState {
 
        private startSideTimer(room: Room, winnerTeam: number): void {
                this.clearSideTimer();
-               this.timerWinner = winnerTeam;
                this.logger.info("Side decking timer started for opposing team.");
                this.warningTimer = setTimeout(() => {
                        this.logger.warn("Side decking timer is about to expire.");
@@ -78,7 +76,6 @@ export class SideDeckingState extends RoomState {
                        clearTimeout(this.warningTimer);
                        this.warningTimer = null;
                }
-               this.timerWinner = null;
        }
 
 	async handle(message: ClientMessage, room: Room, socket: ISocket): Promise<void> {
