@@ -35,7 +35,7 @@ export class JoinHandler implements JoinMessageHandler {
 
 		if (!room) {
 			this.socket.send(
-				ServerErrorClientMessage.create("Sala no encontrada. Intenta recargando la lista")
+				ServerErrorClientMessage.create("Room not found. Try reloading the list")
 			);
 
 			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
@@ -46,7 +46,7 @@ export class JoinHandler implements JoinMessageHandler {
 		}
 
 		if (room.password !== joinMessage.password) {
-			this.socket.send(ServerErrorClientMessage.create("Clave incorrecta"));
+			this.socket.send(ServerErrorClientMessage.create("Wrong password"));
 			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 			this.socket.destroy();
 

@@ -104,7 +104,7 @@ export class WaitingState extends RoomState {
 		room.clients.forEach((_client: Client) => {
 			_client.sendMessage(
 				ServerErrorClientMessage.create(
-					`El Jugador:${playerSelect.name} ha sido Baneado de esta Sala, solo podra ingresar como espectador!!`
+					`The player:${playerSelect.name} has been banned from this room, he can only enter as a spectator!!`
 				)
 			);
 		});
@@ -112,7 +112,7 @@ export class WaitingState extends RoomState {
 		room.spectators.forEach((_client: Client) => {
 			_client.sendMessage(
 				ServerErrorClientMessage.create(
-					`El Jugador:${playerSelect.name} ha sido Baneado de esta Sala, solo podra ingresar como espectador!!`
+					`The player:${playerSelect.name} has been banned from this room, he can only enter as a spectator!!`
 				)
 			);
 		});

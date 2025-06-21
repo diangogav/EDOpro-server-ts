@@ -88,7 +88,7 @@ export abstract class RoomState {
 	): void {
 		socket.send(
 			ServerErrorClientMessage.create(
-				`Ya existe un jugador con el nombre :${playerInfoMessage.name}`
+				`Already exists a player with the name :${playerInfoMessage.name}`
 			)
 		);
 		socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
