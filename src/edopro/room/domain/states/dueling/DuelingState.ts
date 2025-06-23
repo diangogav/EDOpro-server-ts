@@ -658,6 +658,7 @@ export class DuelingState extends RoomState {
 			socket.send(ServerErrorClientMessage.create("Wrong password"));
 			socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 			socket.destroy();
+
 			return;
 		}
 		const reconnectingPlayer = this.playerAlreadyInRoom(playerInfoMessage, room, socket);

@@ -34,9 +34,7 @@ export class JoinHandler implements JoinMessageHandler {
 		const room = this.findRoom(joinMessage);
 
 		if (!room) {
-			this.socket.send(
-				ServerErrorClientMessage.create("Room not found. Try reloading the list")
-			);
+			this.socket.send(ServerErrorClientMessage.create("Room not found. Try reloading the list"));
 
 			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 
