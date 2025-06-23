@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.7.0...v2.8.0) (2025-06-23)
+
+
+### Features
+
+* add password validation for joining duels ([#171](https://github.com/diangogav/EDOpro-server-ts/issues/171)) ([1bf6b4b](https://github.com/diangogav/EDOpro-server-ts/commit/1bf6b4b244b51cc04eceef54a4f13df828f4097d))
+
 ## [2.7.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.6.0...v2.7.0) (2025-05-18)
 
 
