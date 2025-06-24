@@ -8,6 +8,7 @@ export class GameMother {
 		return {
 			result: faker.helpers.arrayElement(GAME_RESULTS) as "winner" | "loser" | "deuce",
 			turns: faker.number.int({ min: 1, max: 100 }),
+			ipAddress: faker.internet.ipv4(),
 			...params,
 		};
 	}
