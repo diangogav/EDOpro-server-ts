@@ -11,6 +11,7 @@ export type MatchHistory = {
 	games: {
 		result: "winner" | "loser" | "deuce";
 		turns: number;
+		ipAddress: string | null;
 		// score: number;
 	}[];
 };
@@ -36,18 +37,26 @@ export class Match {
 		}));
 	}
 
-	duelWinner(winner: number, turns: number): void {
+	duelWinner(
+		winner: number,
+		turns: number,
+		ips: { name: string; ipAddress: string | null }[] = []
+	): void {
 		this._players.forEach((player) => {
+			const ipAddress = ips.find((data) => data.name === player.name)?.ipAddress ?? null;
+
 			if (player.team === winner) {
 				player.games.push({
 					result: "winner",
 					turns,
+					ipAddress,
 					// score: 1,
 				});
 			} else {
 				player.games.push({
 					result: "loser",
 					turns,
+					ipAddress,
 					// score: 0,
 				});
 			}
