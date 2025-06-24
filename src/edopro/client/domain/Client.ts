@@ -56,6 +56,7 @@ export class Client extends YgoClient {
 			messageProcessor.read(data);
 			// this.handleMessage(messageProcessor, clients, room);
 		});
+		this._ipAddress = socket.remoteAddress ?? null;
 	}
 
 	setRpsChosen(choise: Choose): void {

@@ -96,7 +96,13 @@ export abstract class YgoRoom {
 		if (!this._match) {
 			return;
 		}
-		this._match.duelWinner(winner, 0);
+
+		const ips = this._clients.map((client) => ({
+			name: client.name,
+			ipAddress: client.socket.remoteAddress ?? null,
+		}));
+
+		this._match.duelWinner(winner, 0, ips);
 	}
 
 	get matchPlayersHistory(): PlayerData[] {

@@ -106,6 +106,7 @@ export class MercuryClient extends YgoClient {
 			this._roomMessageEmitter.handleMessage(data);
 		});
 		this._socket = socket;
+		this._ipAddress = socket.remoteAddress ?? null;
 	}
 
 	rpsChoose(): void {

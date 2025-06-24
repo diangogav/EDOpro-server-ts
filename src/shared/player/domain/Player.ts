@@ -1,16 +1,20 @@
 import { Team } from "../../room/Team";
 import { PlayerData } from "./PlayerData";
 
+export type Game = {
+	result: "winner" | "loser" | "deuce";
+	turns: number;
+	ipAddress: string | null;
+};
+
 export type PlayerMatchSummary = {
 	team: Team;
 	name: string;
 	winner: boolean;
-	games: { result: "winner" | "loser" | "deuce"; turns: number }[];
+	games: Game[];
 	points?: { [key: string]: number };
 	score: number;
 };
-
-export type Game = { result: "winner" | "loser" | "deuce"; turns: number };
 
 export class Player {
 	public readonly name: string;

@@ -9,6 +9,7 @@ export abstract class YgoClient {
 	protected _lastMessage: Buffer | null = null;
 	protected _reconnecting = false;
 	protected _isReady: boolean;
+	protected _ipAddress: string | null;
 
 	constructor({
 		name,
@@ -28,6 +29,7 @@ export abstract class YgoClient {
 		this._socket = socket;
 		this._team = team;
 		this._host = host;
+		this._ipAddress = socket.remoteAddress ?? null;
 	}
 
 	get position(): number {
