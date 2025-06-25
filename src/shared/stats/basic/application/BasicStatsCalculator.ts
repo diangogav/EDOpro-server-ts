@@ -98,6 +98,7 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 					turns: game.turns,
 					matchId,
 					season: config.season,
+					ipAddress: game.ipAddress,
 				});
 			}
 		}
