@@ -17,6 +17,7 @@ export class DuelResumeCreator {
 		turns: number;
 		matchId: string;
 		season: number;
+		ipAddress: string | null;
 	}): Promise<{ id: string }> {
 		const id = randomUUID();
 		const duelResume = DuelResume.create({ id, ...payload });

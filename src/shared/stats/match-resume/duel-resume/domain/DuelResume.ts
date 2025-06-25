@@ -10,6 +10,7 @@ export class DuelResume {
 	readonly turns: number;
 	readonly matchId: string;
 	readonly season: number;
+	readonly ipAddress: string | null;
 
 	private constructor({
 		id,
@@ -23,6 +24,7 @@ export class DuelResume {
 		turns,
 		matchId,
 		season,
+		ipAddress,
 	}: {
 		id: string;
 		userId: string;
@@ -35,6 +37,7 @@ export class DuelResume {
 		turns: number;
 		matchId: string;
 		season: number;
+		ipAddress: string | null;
 	}) {
 		this.id = id;
 		this.userId = userId;
@@ -47,6 +50,7 @@ export class DuelResume {
 		this.turns = turns;
 		this.matchId = matchId;
 		this.season = season;
+		this.ipAddress = ipAddress;
 	}
 
 	static create({
@@ -61,6 +65,7 @@ export class DuelResume {
 		turns,
 		matchId,
 		season,
+		ipAddress,
 	}: {
 		id: string;
 		userId: string;
@@ -73,6 +78,7 @@ export class DuelResume {
 		turns: number;
 		matchId: string;
 		season: number;
+		ipAddress: string | null;
 	}): DuelResume {
 		return new DuelResume({
 			id,
@@ -86,6 +92,7 @@ export class DuelResume {
 			turns,
 			matchId,
 			season,
+			ipAddress,
 		});
 	}
 
@@ -101,6 +108,7 @@ export class DuelResume {
 		turns: number;
 		matchId: string;
 		season: number;
+		ipAddress: string | null;
 	}): DuelResume {
 		return new DuelResume(data);
 	}
