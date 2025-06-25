@@ -40,6 +40,7 @@ export class MatchResumePostgresRepository implements MatchResumeRepository {
 			turns: duelResume.turns,
 			matchId: duelResume.matchId,
 			season: duelResume.season,
+			ipAddress: duelResume.ipAddress,
 		});
 		await repository.save(duelResumeEntity);
 	}
