@@ -136,6 +136,7 @@ async function run() {
 							turns: game.turns,
 							matchId,
 							season: 3,
+							ipAddress: null,
 						});
 					} catch (error) {
 						fs.appendFileSync(
