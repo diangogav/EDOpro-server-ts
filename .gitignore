@@ -4,8 +4,10 @@ dist
 
 # Mercury
 mercury/script
-mercury/pre-releases/script
+mercury/pre-releases/ocg
+mercury/pre-releases/tcg
 mercury/alternatives
+mercury/ocg
 
 # Evolution
 scripts
