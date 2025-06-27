@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.9.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.8.0...v2.9.0) (2025-06-27)
+
+
+### Features
+
+* add IP address tracking for players and games ([36cde49](https://github.com/diangogav/EDOpro-server-ts/commit/36cde494576b348ff83dcc9c98ecb91c568d1d9f))
+* add ipAddress field to match resume storage ([98f8b51](https://github.com/diangogav/EDOpro-server-ts/commit/98f8b51c84699c873b818fba158594d11aa7cc15))
+* **stats:** add ipAddress parameter to DuelResumeCreator ([e5b3383](https://github.com/diangogav/EDOpro-server-ts/commit/e5b33837a82d9afb0c9c6ea707edfe1cae13377f))
+* **stats:** add ipAddress to basic stats calculation ([fc650cb](https://github.com/diangogav/EDOpro-server-ts/commit/fc650cb701e8dadeb6273691c2b94195d6ee86f4))
+
+
+### Bug Fixes
+
+* add missing ipAddress property to MatchHistory games ([f2cdbb4](https://github.com/diangogav/EDOpro-server-ts/commit/f2cdbb465e02a138a024044b5c07f17830ccb41f))
+* **security:** update brace-expansion to resolve ReDoS vulnerability ([#175](https://github.com/diangogav/EDOpro-server-ts/issues/175)) ([2df4318](https://github.com/diangogav/EDOpro-server-ts/commit/2df4318ae5b486e144a134373098942fc71772f2))
+
 ## [2.8.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.7.0...v2.8.0) (2025-06-23)
 
 
