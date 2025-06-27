@@ -3,89 +3,110 @@
 
 ![Logo](https://raw.githubusercontent.com/diangogav/EDOpro-server-ts/main/assets/1.svg)
 
-Welcome to Evolution Server, a versatile platform for creating Yu-Gi-Oh! matches, fully compatible with EDOPro, Koishi, and YGO Mobile! But this time, we focus on the scalability of the code, allowing for easy implementation of new features related to the data generated during the duels.
+Welcome to **Evolution Server**, a scalable and modern backend server for Yu-Gi-Oh! matches, compatible with **EDOPro**, **Koishi**, and **YGO Mobile** clients. Unlike traditional implementations, Evolution focuses on **code extensibility** and **data collection**, enabling new gameplay features and statistics.
 
-## Features ✨
+---
+
+## ✨ Features
 
 - 🏰 Room creation through the EDOPro lobby.
-- 📱 Duel creation supported through Koishi and YGO Mobile.
-- 🧪 Cross-client duels between different platforms - (Experimental).
-- 🔌 Reconnection to the match in case of closure or disconnection.
-- 📊 Collection of duel data for generating statistics.
-- 🚀 Core isolation for each match.
+- 📱 Duel creation supported via Koishi and YGO Mobile.
+- 🧪 Cross-client duels between different platforms *(experimental)*.
+- 🔌 Automatic reconnection after disconnection or crash.
+- 📊 Match data collection for future analytics.
+- 🚀 Isolated core logic for each match.
 
-## Installation Requirements 📋
+---
 
-- Conan (2.0.6): [conan](https://conan.io/)
-- Node.js (18.16.0): Make sure you have Node.js installed on your system. You can download the latest stable version from [https://nodejs.org](https://nodejs.org). 📥🚀
+## 📋 Requirements
 
-## Conan Installation Guide 🚀
+- [Node.js](https://nodejs.org) (>= 18.16.0)
+- [Conan](https://conan.io/) (>= 2.0.6)
+- [Python 3](https://www.python.org/downloads/) (for Conan)
+- [CMake + Make + g++](https://cmake.org/download/) (for building native CoreIntegrator)
+- `wget`, `git`, `tar`, `liblua5.3-dev`, `libsqlite3-dev`, `libevent-dev`, etc.
 
-1. Install `Python` and `pip`
+---
+
+## 🚀 Conan Installation (Linux)
 
 ```bash
-apt install python3 python3-pip -y
-```
-
-2. Install Conan through pip
-
-```bash
+sudo apt update
+sudo apt install python3 python3-pip -y
 pip install conan
-```
-
-3. Configure the `conan` profile
-
-```bash
 conan profile detect
 ```
 
-## Installation Guide 🚀
+---
 
-### Step 1: Clone the repository
-Clone this repository to your local machine using the following command:
+## 🛠️ Manual Installation (No Docker)
+
+### 1️⃣ Clone the main project
+
 ```bash
 git clone --recursive https://github.com/diangogav/EDOpro-server-ts
+cd EDOpro-server-ts
 ```
 
-### Step 2: Clone required repositories
-Run the `clone_repositories.sh` script to clone all necessary repositories:
+### 2️⃣ Clone external dependencies
+
 ```bash
 bash clone_repositories.sh
 ```
 
-### Step 3: Build the Core Integrator
-Run the `build_core_integrator.sh` script to build the C++ components:
+This will create a `repositories/` folder with all required assets (scripts, databases, banlists, etc).
+
+### 3️⃣ Organize assets into their expected locations
+
+```bash
+bash setup_resources.sh
+```
+
+This mimics the layout used in the Dockerfile (e.g. copying resources to `./mercury`, `./scripts/evolution`, etc.).
+
+### 4️⃣ Build the CoreIntegrator (native C++)
+
 ```bash
 bash build_core_integrator.sh
 ```
 
-### Step 4: Install the project dependencies using `npm`:
+This compiles the duel core used by the backend using Conan and Premake.
+
+### 5️⃣ Install Node.js dependencies
+
 ```bash
 npm install
 ```
 
-### Step 5: Start the project
+### 6️⃣ Launch the server in development mode
+
 ```bash
 npm run dev
 ```
 
-## Running with Docker 🐳
+Server should now be running and listening on the configured ports (default: `7911`, `7922`, `4000`).
 
-If you prefer to use Docker to run the project, you can follow these steps:
+---
 
-1. Make sure you have Docker installed on your system. You can download and install Docker from [https://www.docker.com](https://www.docker.com).
+## 🐳 Running with Docker (Alternative)
 
-2. Build the Docker image with the following command:
-```
-docker build -t <image-name> <path-to-dockerfile>
-```
+If you'd rather use Docker:
 
-3. Run the Docker container:
-```
-docker run -p 7911:7911 -p 7922:7922 <image-name>
+### Build the image
+
+```bash
+docker build -t evolution-server .
 ```
 
-## Notes and thanks
+### Run the container
 
-- This repository is based on https://github.com/DyXel/Multirole
-- Special thanks to @Dyxel
+```bash
+docker run -p 4000:4000 -p 7911:7911 -p 7922:7922 evolution-server
+```
+
+---
+
+## 🙏 Acknowledgments
+
+- Based on [Multirole](https://github.com/DyXel/Multirole) by @Dyxel
+- Inspired by the amazing work of the Project Ignis, MyCard and Evolution communities
