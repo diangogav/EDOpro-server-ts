@@ -1,3 +1,3 @@
 export const mercuryConfig = {
-	version: 4961,
+	version: 4962,
 };
