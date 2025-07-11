@@ -8,6 +8,7 @@ import { GameMother } from "./GameMother";
 export class PlayerMother {
 	static create(params?: Partial<PlayerData>): Player {
 		return new Player({
+			id: faker.string.uuid(),
 			name: faker.internet.userName(),
 			team: faker.helpers.enumValue(Team),
 			winner: faker.datatype.boolean(),
