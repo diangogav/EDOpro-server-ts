@@ -312,11 +312,11 @@ export class WaitingState extends RoomState {
 
 				return;
 			}
-			this.player(place, joinGameMessage, socket, playerInfoMessage, room);
+			this.player(place, joinGameMessage, socket, playerInfoMessage, room, user.id);
 
 			return;
 		}
-		this.player(place, joinGameMessage, socket, playerInfoMessage, room);
+		this.player(place, joinGameMessage, socket, playerInfoMessage, room, null);
 	}
 
 	private spectator(
@@ -367,7 +367,8 @@ export class WaitingState extends RoomState {
 		joinGameMessage: JoinGameMessage,
 		socket: ISocket,
 		playerInfoMessage: PlayerInfoMessage,
-		room: Room
+		room: Room,
+		userId: string | null
 	): void {
 		const host = room.clients.some((client: Client) => client.host);
 
@@ -379,6 +380,7 @@ export class WaitingState extends RoomState {
 			roomId: room.id,
 			team: place.team,
 			logger: this.logger,
+			id: userId,
 		});
 
 		if (client.host) {

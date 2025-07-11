@@ -120,6 +120,8 @@ async function run() {
 					winner: player.winner,
 					season: 3,
 					points: player.score - opponent.score,
+					playerIds: [],
+					opponentIds: [],
 				});
 				const games = player.games;
 				for (const game of games) {

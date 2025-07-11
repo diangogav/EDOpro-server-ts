@@ -2,6 +2,7 @@ import { PlayerData } from "../../../../player/domain/PlayerData";
 import { Team } from "../../../Team";
 
 export type Player = {
+	id: string | null;
 	name: string;
 	// deck: Deck;
 	team: number;

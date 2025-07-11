@@ -4,6 +4,8 @@ export class MatchResume {
 	readonly bestOf: number;
 	readonly playerNames: string[];
 	readonly opponentNames: string[];
+	readonly playerIds: string[];
+	readonly opponentIds: string[];
 	readonly date: Date;
 	readonly banListName: string;
 	readonly banListHash: string;
@@ -27,6 +29,8 @@ export class MatchResume {
 		winner,
 		season,
 		points,
+		playerIds,
+		opponentIds,
 	}: {
 		id: string;
 		userId: string;
@@ -41,6 +45,8 @@ export class MatchResume {
 		winner: boolean;
 		season: number;
 		points: number;
+		playerIds: string[];
+		opponentIds: string[];
 	}) {
 		this.id = id;
 		this.userId = userId;
@@ -55,6 +61,8 @@ export class MatchResume {
 		this.winner = winner;
 		this.season = season;
 		this.points = points;
+		this.playerIds = playerIds;
+		this.opponentIds = opponentIds;
 	}
 
 	static create({
@@ -71,6 +79,8 @@ export class MatchResume {
 		winner,
 		season,
 		points,
+		playerIds,
+		opponentIds,
 	}: {
 		id: string;
 		userId: string;
@@ -85,6 +95,8 @@ export class MatchResume {
 		winner: boolean;
 		season: number;
 		points: number;
+		playerIds: string[];
+		opponentIds: string[];
 	}): MatchResume {
 		return new MatchResume({
 			id,
@@ -100,6 +112,8 @@ export class MatchResume {
 			winner,
 			season,
 			points,
+			playerIds,
+			opponentIds,
 		});
 	}
 
@@ -117,6 +131,8 @@ export class MatchResume {
 		winner: boolean;
 		season: number;
 		points: number;
+		playerIds: string[];
+		opponentIds: string[];
 	}): MatchResume {
 		return new MatchResume(data);
 	}

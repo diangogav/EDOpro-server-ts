@@ -47,6 +47,12 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 			const opponentNames = players
 				.filter((item) => item.team !== player.team)
 				.map((element) => element.name);
+			const playerIds = players
+				.filter((item) => item.team === player.team)
+				.map((element) => element.id);
+			const opponentIds = players
+				.filter((item) => item.team !== player.team)
+				.map((element) => element.id);
 			const points = player.calculateMatchPoints();
 			this.logger.info(`Player ${player.name} and id: ${userProfile.id} gain ${points} points`);
 			if (banList?.name) {
@@ -72,6 +78,8 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 				bestOf: event.data.bestOf,
 				playerNames,
 				opponentNames,
+				playerIds: playerIds.filter((id): id is string => id !== null),
+				opponentIds: opponentIds.filter((id): id is string => id !== null),
 				date: event.data.date,
 				banListName: banList?.name ?? "N/A",
 				banListHash: event.data.banListHash.toString(),

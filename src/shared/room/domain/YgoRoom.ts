@@ -164,6 +164,7 @@ export abstract class YgoRoom {
 
 	initializeHistoricalData(): void {
 		const players = this.clients.map((client: Client) => ({
+			id: client.id,
 			team: client.team,
 			name: client.name,
 			// deck: client.deck,

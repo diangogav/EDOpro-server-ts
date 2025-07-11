@@ -1,6 +1,7 @@
 import { ISocket } from "../../socket/domain/ISocket";
 
 export abstract class YgoClient {
+	public readonly id: string | null;
 	public readonly name: string;
 	protected _host: boolean;
 	protected _position: number;
@@ -17,13 +18,16 @@ export abstract class YgoClient {
 		team,
 		socket,
 		host,
+		id,
 	}: {
 		name: string;
 		position: number;
 		team: number;
 		socket: ISocket;
 		host: boolean;
+		id: string | null;
 	}) {
+		this.id = id;
 		this.name = name;
 		this._position = position;
 		this._socket = socket;

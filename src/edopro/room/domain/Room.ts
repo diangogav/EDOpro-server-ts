@@ -655,8 +655,9 @@ export class Room extends YgoRoom {
 		this.currentDuel?.finished();
 	}
 
-	createHost(socket: ISocket, name: string): Client {
+	createHost(socket: ISocket, name: string, id: string | null): Client {
 		const client = new Client({
+			id,
 			socket,
 			host: true,
 			name,
@@ -673,6 +674,7 @@ export class Room extends YgoRoom {
 
 	createSpectator(socket: ISocket, name: string): Client {
 		const client = new Client({
+			id: null,
 			socket,
 			host: false,
 			name,
