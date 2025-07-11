@@ -1,4 +1,7 @@
+import { IsNull, MoreThan } from "typeorm";
+
 import { dataSource } from "../../../../evolution-types/src/data-source";
+import { UserBanEntity } from "../../../../evolution-types/src/entities/UserBanEntity";
 import { UserProfileEntity } from "../../../../evolution-types/src/entities/UserProfileEntity";
 import { UserProfile } from "../../domain/UserProfile";
 import { UserProfileRepository } from "../../domain/UserProfileRepository";
@@ -24,5 +27,28 @@ export class UserProfilePostgresRepository implements UserProfileRepository {
 			avatar: userProfile.avatar,
 		});
 		await repository.save(userProfileEntity);
+	}
+
+	async isBanned(userId: string): Promise<boolean> {
+		const repository = dataSource.getRepository(UserBanEntity);
+		const now = new Date();
+		const activeBan = await repository.findOne({
+			where: {
+				user: { id: userId },
+				expiresAt: IsNull(),
+			},
+		});
+		if (activeBan) {
+			return true;
+		}
+		// Buscar baneos con expiresAt en el futuro
+		const futureBan = await repository.findOne({
+			where: {
+				user: { id: userId },
+				expiresAt: MoreThan(now),
+			},
+		});
+
+		return !!futureBan;
 	}
 }

@@ -15,6 +15,11 @@ export class UserAuth {
 			return ServerErrorClientMessage.create(ServerErrorMessage.USER_NOT_FOUND);
 		}
 
+		const isBanned = await this.userProfileRepository.isBanned(userProfile.id);
+		if (isBanned) {
+			return ServerErrorClientMessage.create(ServerErrorMessage.USER_BANNED);
+		}
+
 		if (!playerInfo.password || !userProfile.isValidPassword(playerInfo.password)) {
 			return ServerErrorClientMessage.create(ServerErrorMessage.INVALID_PASSWORD);
 		}
