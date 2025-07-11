@@ -8,6 +8,7 @@ export type Game = {
 };
 
 export type PlayerMatchSummary = {
+	id: string | null;
 	team: Team;
 	name: string;
 	winner: boolean;
@@ -17,13 +18,15 @@ export type PlayerMatchSummary = {
 };
 
 export class Player {
+	public readonly id: string | null;
 	public readonly name: string;
 	public readonly team: Team;
 	public readonly winner: boolean;
 	private readonly _games: Game[];
 	private readonly score: number;
 
-	constructor({ name, team, winner, games, score }: PlayerData) {
+	constructor({ id, name, team, winner, games, score }: PlayerData) {
+		this.id = id;
 		this.name = name;
 		this.team = team;
 		this.winner = winner;
@@ -49,6 +52,7 @@ export class Player {
 
 	toPresentation(): PlayerMatchSummary {
 		return {
+			id: this.id,
 			team: this.team,
 			name: this.name,
 			winner: this.winner,

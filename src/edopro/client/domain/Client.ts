@@ -31,6 +31,7 @@ export class Client extends YgoClient {
 		isReady = false,
 		team,
 		logger,
+		id,
 	}: {
 		socket: ISocket;
 		host: boolean;
@@ -40,8 +41,9 @@ export class Client extends YgoClient {
 		isReady?: boolean;
 		team: number;
 		logger: Logger;
+		id: string | null;
 	}) {
-		super({ name, position, team, socket, host });
+		super({ name, position, team, socket, host, id });
 		this.roomId = roomId;
 		this._isReady = isReady;
 		this.logger = logger;

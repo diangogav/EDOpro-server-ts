@@ -11,6 +11,8 @@ export class MatchResumeCreator {
 		bestOf: number;
 		playerNames: string[];
 		opponentNames: string[];
+		playerIds: string[];
+		opponentIds: string[];
 		date: Date;
 		banListName: string;
 		banListHash: string;

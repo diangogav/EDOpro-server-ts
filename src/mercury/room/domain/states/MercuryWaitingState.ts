@@ -70,6 +70,7 @@ export class MercuryWaitingState extends RoomState {
 					return;
 				}
 				const client = this.createPlayer({
+					id: user.id,
 					socket,
 					messages,
 					name: playerInfoMessage.name,
@@ -79,6 +80,7 @@ export class MercuryWaitingState extends RoomState {
 				room.addClient(client);
 			} else {
 				const client = this.createPlayer({
+					id: null,
 					socket,
 					messages,
 					name: playerInfoMessage.name,
@@ -96,6 +98,7 @@ export class MercuryWaitingState extends RoomState {
 		}
 
 		const spectator = new MercuryClient({
+			id: null,
 			socket,
 			logger: this.logger,
 			messages,
@@ -152,12 +155,14 @@ export class MercuryWaitingState extends RoomState {
 	}
 
 	private createPlayer({
+		id,
 		socket,
 		messages,
 		name,
 		room,
 		host,
 	}: {
+		id: string | null;
 		socket: ISocket;
 		messages: Buffer[];
 		name: string;
@@ -165,6 +170,7 @@ export class MercuryWaitingState extends RoomState {
 		host: boolean;
 	}): MercuryClient {
 		return new MercuryClient({
+			id,
 			socket,
 			logger: this.logger,
 			messages,

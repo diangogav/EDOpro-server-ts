@@ -2,6 +2,7 @@ import { PlayerData } from "src/shared/player/domain/PlayerData";
 import { Team } from "src/shared/room/Team";
 
 export type Player = {
+	id: string;
 	name: string;
 	// deck: Deck;
 	team: number;

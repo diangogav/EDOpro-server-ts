@@ -28,6 +28,7 @@ export class MercuryClient extends YgoClient {
 		position,
 		room,
 		host,
+		id,
 	}: {
 		name: string;
 		socket: ISocket;
@@ -36,8 +37,9 @@ export class MercuryClient extends YgoClient {
 		position: number;
 		room: MercuryRoom;
 		host: boolean;
+		id: string | null;
 	}) {
-		super({ name, position, team: Team.SPECTATOR, socket, host });
+		super({ name, position, team: Team.SPECTATOR, socket, host, id });
 		this._coreClient = new net.Socket();
 		this._logger = logger;
 		this._pendingMessages = messages;

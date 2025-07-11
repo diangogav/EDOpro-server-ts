@@ -97,6 +97,7 @@ export class MercuryDuelingState extends RoomState {
 
 		if (!(playerAlreadyInRoom instanceof MercuryClient)) {
 			const spectator = new MercuryClient({
+				id: null,
 				socket,
 				logger: this.logger,
 				messages: [],

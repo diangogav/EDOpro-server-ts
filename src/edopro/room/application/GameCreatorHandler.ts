@@ -45,7 +45,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 		const createGameMessage = new CreateGameMessage(message.data);
 
 		if (!playerInfoMessage.password || !config.ranking.enabled) {
-			this.create(createGameMessage, playerInfoMessage);
+			this.create(createGameMessage, playerInfoMessage, null);
 
 			return;
 		}
@@ -58,10 +58,14 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 			return;
 		}
 
-		this.create(createGameMessage, playerInfoMessage);
+		this.create(createGameMessage, playerInfoMessage, user.id);
 	}
 
-	private create(message: CreateGameMessage, playerInfoMessage: PlayerInfoMessage): void {
+	private create(
+		message: CreateGameMessage,
+		playerInfoMessage: PlayerInfoMessage,
+		userId: string | null
+	): void {
 		const room = Room.createFromCreateGameMessage(
 			message,
 			playerInfoMessage,
@@ -72,7 +76,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 
 		room.waiting();
 
-		const client = room.createHost(this.socket, playerInfoMessage.name);
+		const client = room.createHost(this.socket, playerInfoMessage.name, userId);
 		RoomList.addRoom(room);
 		this.socket.send(CreateGameClientMessage.create(room));
 		this.socket.send(JoinGameClientMessage.createFromCreateGameMessage(message));

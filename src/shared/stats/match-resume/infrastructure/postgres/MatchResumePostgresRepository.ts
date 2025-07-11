@@ -14,6 +14,8 @@ export class MatchResumePostgresRepository implements MatchResumeRepository {
 			bestOf: matchResume.bestOf,
 			playerNames: matchResume.playerNames,
 			opponentNames: matchResume.opponentNames,
+			playerIds: matchResume.playerIds,
+			opponentIds: matchResume.opponentIds,
 			date: matchResume.date,
 			banListName: matchResume.banListName,
 			banListHash: matchResume.banListHash,
