@@ -1,39 +1,25 @@
-version: '3'
+version: '3.8'
+
 services:
-  node-app:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    volumes:
-      - ./src:/app/src
-      - /app/node_modules
-    ports:
-      - "7911:7911"
-      - "7922:7922"
-      - "7711:7711"
-      - "9229:9229"
-    environment:
-      - REDIS_URI=${REDIS_URI}
-    depends_on:
-      - redis
-    env_file:
-      - .env
-
-  redis:
-    image: redis
-    ports:
-      - "6379:6379"
-
   postgres:
-    image: postgres:16.4
+    image: postgres:16.4-alpine
+    container_name: evolution-postgres
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST_AUTH_METHOD: trust
     ports:
       - "5432:5432"
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U evolution -d evolution" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
-  node_modules:
   postgres_data:
