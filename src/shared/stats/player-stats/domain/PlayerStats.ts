@@ -51,9 +51,6 @@ export class PlayerStats {
 
 	addPoints(points: number): void {
 		this._points += points;
-		if (this._points <= 0) {
-			this._points = 0;
-		}
 	}
 
 	increaseWins(): void {
