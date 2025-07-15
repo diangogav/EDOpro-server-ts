@@ -107,7 +107,7 @@ void OCGRepository::getVersion(int *major, int *minor)
   OCG_GetVersion(major, minor);
 };
 
-int OCGRepository::createDuel(OCG_Duel *duel, OCG_DuelOptions options)
+int OCGRepository::createDuel(OCG_Duel *duel, const OCG_DuelOptions* options)
 {
   return OCG_CreateDuel(duel, options);
 };
@@ -117,7 +117,7 @@ int OCGRepository::loadScript(OCG_Duel duel, const char *buffer, uint32_t length
   return OCG_LoadScript(duel, buffer, length, name);
 }
 
-void OCGRepository::addCard(OCG_Duel duel, OCG_NewCardInfo card)
+void OCGRepository::addCard(OCG_Duel duel, const OCG_NewCardInfo* card)
 {
   OCG_DuelNewCard(duel, card);
 }
@@ -132,7 +132,7 @@ uint32_t OCGRepository::duelQueryCount(OCG_Duel duel, uint8_t team, uint32_t loc
   return OCG_DuelQueryCount(duel, team, location);
 }
 
-std::vector<uint8_t> OCGRepository::duelQueryLocation(OCG_Duel duel, OCG_QueryInfo query)
+std::vector<uint8_t> OCGRepository::duelQueryLocation(OCG_Duel duel, const OCG_QueryInfo* query)
 {
   uint32_t length = 0U;
   auto *pointer = OCG_DuelQueryLocation(duel, &length, query);
@@ -183,7 +183,7 @@ void OCGRepository::setResponse(OCG_Duel duel, std::vector<uint8_t> buffer)
   OCG_DuelSetResponse(duel, buffer.data(), buffer.size());
 }
 
-std::vector<uint8_t> OCGRepository::duelQuery(OCG_Duel duel, OCG_QueryInfo query)
+std::vector<uint8_t> OCGRepository::duelQuery(OCG_Duel duel, const OCG_QueryInfo* query)
 {
   uint32_t length = 0U;
   auto *pointer = OCG_DuelQuery(duel, &length, query);

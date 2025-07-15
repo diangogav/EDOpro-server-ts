@@ -262,7 +262,7 @@ export class DuelingState extends RoomState {
 		core.on("exit", (code, signal) => {
 			this.logger.info(
 				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-				`Core closed for room ${this.room.id} with code: ${code} and signal: ${signal} `
+				`Core exited for room ${this.room.id} with code: ${code} and signal: ${signal} `
 			);
 		});
 

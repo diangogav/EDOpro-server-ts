@@ -30,7 +30,7 @@ void Duel::create()
       this->config.starting_draw_count,
       this->config.draw_count};
 
-  OCG_DuelOptions options = {
+  const OCG_DuelOptions options = {
       {this->config.seeds[0],
        this->config.seeds[1],
        this->config.seeds[2],
@@ -49,7 +49,7 @@ void Duel::create()
       0};
 
   this->duel = {nullptr};
-  int duel_creation_result = this->api.createDuel(&this->duel, options);
+  int duel_creation_result = this->api.createDuel(&this->duel, &options);
 }
 
 void Duel::destroy()
@@ -85,7 +85,7 @@ void Duel::load_decks()
     for (const auto &card : player.main_deck)
     {
       card_info.code = card;
-      this->api.addCard(this->duel, card_info);
+      this->api.addCard(this->duel, &card_info);
     }
 
     card_info.loc = LOCATION_EXTRA;
@@ -93,7 +93,7 @@ void Duel::load_decks()
     for (const auto &card : player.extra_deck)
     {
       card_info.code = card;
-      this->api.addCard(this->duel, card_info);
+      this->api.addCard(this->duel, &card_info);
     }
   }
 }
@@ -211,7 +211,7 @@ void Duel::refresh_board(uint8_t position, uint8_t team)
         0U};
 
     uint8_t calculated_team = this->get_swapped_team(query_location_request.con);
-    const auto buffer = this->api.duelQueryLocation(duel, query);
+    const auto buffer = this->api.duelQueryLocation(duel, &query);
 
     if (query_location_request.loc == LOCATION_DECK)
     {
@@ -304,7 +304,7 @@ void Duel::set_main_deck(uint8_t team)
       0U,
       0U};
 
-  const std::vector<uint8_t> buffer = this->api.duelQueryLocation(this->duel, query);
+  const std::vector<uint8_t> buffer = this->api.duelQueryLocation(this->duel, &query);
 
   const auto data = this->create_update_data_message(query, buffer);
   this->send_replay_message(data);
@@ -319,7 +319,7 @@ void Duel::set_extra_deck(uint8_t team)
       0,
       0};
 
-  const std::vector<uint8_t> buffer = this->api.duelQueryLocation(this->duel, query);
+  const std::vector<uint8_t> buffer = this->api.duelQueryLocation(this->duel, &query);
 
   const auto data = this->create_update_data_message(query, buffer);
   this->send_replay_message(data);
@@ -644,7 +644,7 @@ void Duel::process_queries(const std::vector<QueryRequest> &query_requests)
           query_single_request.seq,
           0U};
 
-      const auto buffer = this->api.duelQuery(duel, query);
+      const auto buffer = this->api.duelQuery(duel, &query);
       const auto duel_query = this->deserializer.deserialize(buffer);
       const auto player_buffer = this->serializer.serialize(duel_query, false);
       const auto stripped_buffer = this->serializer.serialize(duel_query, true);
@@ -669,7 +669,7 @@ void Duel::process_queries(const std::vector<QueryRequest> &query_requests)
           0U};
 
       uint8_t team = this->get_swapped_team(query_location_request.con);
-      const auto buffer = this->api.duelQueryLocation(duel, query);
+      const auto buffer = this->api.duelQueryLocation(duel, &query);
 
       const auto replay_data = this->create_update_data_message(query_location_request, buffer);
       this->send_replay_message(replay_data);
