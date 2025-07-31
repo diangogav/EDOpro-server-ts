@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 
+import { ErrorMessages } from "@edopro/messages/server-to-client/error-messages/ErrorMessages";
+import { ErrorClientMessage } from "@edopro/messages/server-to-client/ErrorClientMessage";
+import { UserAuth } from "src/shared/user-auth/application/UserAuth";
+import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 import { EventEmitter } from "stream";
 
 import { PlayerInfoMessage } from "../../../edopro/messages/client-to-server/PlayerInfoMessage";
@@ -17,17 +21,20 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 	private readonly logger: Logger;
 	private readonly socket: ISocket;
 	private readonly eventEmitter: EventEmitter;
+	private readonly userAuth: UserAuth;
 
-	constructor(eventEmitter: EventEmitter, logger: Logger, socket: ISocket) {
+	constructor(eventEmitter: EventEmitter, logger: Logger, socket: ISocket, userAuth: UserAuth) {
 		this.logger = logger;
 		this.socket = socket;
 		this.eventEmitter = eventEmitter;
-		this.eventEmitter.on(Commands.JOIN_GAME as unknown as string, (message: ClientMessage) =>
-			this.handle(message)
+		this.userAuth = userAuth;
+		this.eventEmitter.on(
+			Commands.JOIN_GAME as unknown as string,
+			(message: ClientMessage) => void this.handle(message)
 		);
 	}
 
-	handle(message: ClientMessage): void {
+	async handle(message: ClientMessage): Promise<void> {
 		this.logger.debug(`Join Message: ${message.data.toString("hex")}`);
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		this.logger.debug(`name: ${playerInfoMessage.name}`);
@@ -37,6 +44,19 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 			playerInfoMessage,
 			this.socket.id as string
 		);
+
+		if (room.ranked) {
+			const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
+			const user = await this.userAuth.run(playerInfoMessage);
+
+			if (!(user instanceof UserProfile)) {
+				this.socket.send(user as Buffer);
+				this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
+
+				return;
+			}
+		}
+
 		room.emit("JOIN", message, this.socket);
 	}
 

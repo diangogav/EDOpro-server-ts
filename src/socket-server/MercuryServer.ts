@@ -1,5 +1,7 @@
 import { randomUUID as uuidv4 } from "crypto";
 import net, { Socket } from "net";
+import { UserAuth } from "src/shared/user-auth/application/UserAuth";
+import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { EventEmitter } from "stream";
 
 import { MessageEmitter } from "../edopro/MessageEmitter";
@@ -15,11 +17,13 @@ export class MercuryServer {
 	private readonly logger: Logger;
 	private readonly roomFinder: RoomFinder;
 	private address?: string;
+	private readonly userAuth: UserAuth;
 
 	constructor(logger: Logger) {
 		this.logger = logger;
 		this.roomFinder = new RoomFinder();
 		this.server = net.createServer({ keepAlive: true });
+		this.userAuth = new UserAuth(new UserProfilePostgresRepository());
 	}
 
 	initialize(): void {
@@ -33,7 +37,12 @@ export class MercuryServer {
 			const ygoClientSocket = new TCPClientSocket(socket);
 			const eventEmitter = new EventEmitter();
 			const gameCreatorHandler = new MercuryGameCreatorHandler(eventEmitter, this.logger);
-			const joinHandler = new MercuryJoinHandler(eventEmitter, this.logger, ygoClientSocket);
+			const joinHandler = new MercuryJoinHandler(
+				eventEmitter,
+				this.logger,
+				ygoClientSocket,
+				this.userAuth
+			);
 			const messageEmitter = new MessageEmitter(
 				this.logger,
 				eventEmitter,

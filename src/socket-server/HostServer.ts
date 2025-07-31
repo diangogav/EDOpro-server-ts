@@ -25,12 +25,14 @@ export class HostServer {
 	private readonly logger: Logger;
 	private readonly roomFinder: RoomFinder;
 	private address?: string;
+	private readonly userAuth: UserAuth;
 
 	constructor(logger: Logger) {
 		this.logger = logger;
 		this.server = net.createServer({ keepAlive: true });
 		this.roomFinder = new RoomFinder();
 		this.registerSubscribers();
+		this.userAuth = new UserAuth(new UserProfilePostgresRepository());
 	}
 
 	initialize(): void {
@@ -45,9 +47,14 @@ export class HostServer {
 				eventEmitter,
 				this.logger,
 				tcpClientSocket,
-				new UserAuth(new UserProfilePostgresRepository())
+				this.userAuth
 			);
-			const joinHandler = new JoinHandler(eventEmitter, this.logger, tcpClientSocket);
+			const joinHandler = new JoinHandler(
+				eventEmitter,
+				this.logger,
+				tcpClientSocket,
+				this.userAuth
+			);
 			const messageEmitter = new MessageEmitter(
 				this.logger,
 				eventEmitter,
