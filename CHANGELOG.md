@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.9.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.8.0...v2.9.0) (2025-07-31)
+
+
+### Features
+
+* add IP address tracking for players and games ([36cde49](https://github.com/diangogav/EDOpro-server-ts/commit/36cde494576b348ff83dcc9c98ecb91c568d1d9f))
+* add ipAddress field to match resume storage ([98f8b51](https://github.com/diangogav/EDOpro-server-ts/commit/98f8b51c84699c873b818fba158594d11aa7cc15))
+* integrate user authentication in JoinHandler and MercuryJoinHandler ([7d94334](https://github.com/diangogav/EDOpro-server-ts/commit/7d9433428fc52e5a7b09a68ca6d8cca7c84de9ea))
+* **stats:** add ipAddress parameter to DuelResumeCreator ([e5b3383](https://github.com/diangogav/EDOpro-server-ts/commit/e5b33837a82d9afb0c9c6ea707edfe1cae13377f))
+* **stats:** add ipAddress to basic stats calculation ([fc650cb](https://github.com/diangogav/EDOpro-server-ts/commit/fc650cb701e8dadeb6273691c2b94195d6ee86f4))
+
+
+### Bug Fixes
+
+* add missing ipAddress property to MatchHistory games ([f2cdbb4](https://github.com/diangogav/EDOpro-server-ts/commit/f2cdbb465e02a138a024044b5c07f17830ccb41f))
+* **MercuryRoom:** clear roomname property in toPresentation method ([d7b25e1](https://github.com/diangogav/EDOpro-server-ts/commit/d7b25e1704655513e7720ee4565d7ab822beae57))
+* **security:** update brace-expansion to resolve ReDoS vulnerability ([#175](https://github.com/diangogav/EDOpro-server-ts/issues/175)) ([2df4318](https://github.com/diangogav/EDOpro-server-ts/commit/2df4318ae5b486e144a134373098942fc71772f2))
+* update mercury version to 4962 ([cc91853](https://github.com/diangogav/EDOpro-server-ts/commit/cc91853d7c14e45a867d04f4623abbdc1b4f7faa))
+
 ## [2.8.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.7.0...v2.8.0) (2025-06-23)
 
 
