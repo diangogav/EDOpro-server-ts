@@ -1,5 +1,6 @@
 import { ChildProcessWithoutNullStreams } from "child_process";
 import shuffle from "shuffle-array";
+import { CheckIfUseCanJoin } from "src/shared/user-auth/application/CheckIfUserCanJoin";
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { EventEmitter } from "stream";
@@ -144,6 +145,7 @@ export class Room extends YgoRoom {
 	private readonly roomTimer: Timer;
 	private roomState: RoomState | null = null;
 	private logger: Logger;
+	private readonly checkIfUserCanReconnect: CheckIfUseCanJoin;
 
 	private constructor(attr: RoomAttr) {
 		super({
@@ -208,6 +210,9 @@ export class Room extends YgoRoom {
 			RoomList.deleteRoom(this);
 		});
 		this.resetReplay();
+		this.checkIfUserCanReconnect = new CheckIfUseCanJoin(
+			new UserAuth(new UserProfilePostgresRepository())
+		);
 	}
 
 	static create(payload: RoomAttr, emitter: EventEmitter, logger: Logger): Room {
@@ -389,7 +394,7 @@ export class Room extends YgoRoom {
 		this.roomState = new DuelingState(
 			this.emitter,
 			this.logger,
-			new Reconnect(new UserAuth(new UserProfilePostgresRepository())),
+			new Reconnect(this.checkIfUserCanReconnect),
 			new JoinToDuelAsSpectator(),
 			this,
 			new JSONMessageProcessor()
@@ -402,7 +407,7 @@ export class Room extends YgoRoom {
 		this.roomState = new SideDeckingState(
 			this.emitter,
 			this.logger,
-			new Reconnect(new UserAuth(new UserProfilePostgresRepository())),
+			new Reconnect(this.checkIfUserCanReconnect),
 			new JoinToDuelAsSpectator(),
 			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules, this.duelFlag)
 		);
@@ -414,7 +419,7 @@ export class Room extends YgoRoom {
 		this.roomState = new RockPaperScissorState(
 			this.emitter,
 			this.logger,
-			new Reconnect(new UserAuth(new UserProfilePostgresRepository())),
+			new Reconnect(this.checkIfUserCanReconnect),
 			new JoinToDuelAsSpectator()
 		);
 	}
@@ -425,7 +430,7 @@ export class Room extends YgoRoom {
 		this.roomState = new ChossingOrderState(
 			this.emitter,
 			this.logger,
-			new Reconnect(new UserAuth(new UserProfilePostgresRepository())),
+			new Reconnect(this.checkIfUserCanReconnect),
 			new JoinToDuelAsSpectator()
 		);
 	}

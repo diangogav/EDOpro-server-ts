@@ -5,6 +5,7 @@ import { MatchResumeCreator } from "src/shared/stats/match-resume/application/Ma
 import { DuelResumeCreator } from "src/shared/stats/match-resume/duel-resume/application/DuelResumeCreator";
 import { MatchResumePostgresRepository } from "src/shared/stats/match-resume/infrastructure/postgres/MatchResumePostgresRepository";
 import { PlayerStatsPostgresRepository } from "src/shared/stats/player-stats/infrastructure/PlayerStatsPostgresRepository";
+import { CheckIfUseCanJoin } from "src/shared/user-auth/application/CheckIfUserCanJoin";
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { EventEmitter } from "stream";
@@ -26,6 +27,7 @@ export class HostServer {
 	private readonly roomFinder: RoomFinder;
 	private address?: string;
 	private readonly userAuth: UserAuth;
+	private readonly checkIfUserCanJoin: CheckIfUseCanJoin;
 
 	constructor(logger: Logger) {
 		this.logger = logger;
@@ -33,6 +35,7 @@ export class HostServer {
 		this.roomFinder = new RoomFinder();
 		this.registerSubscribers();
 		this.userAuth = new UserAuth(new UserProfilePostgresRepository());
+		this.checkIfUserCanJoin = new CheckIfUseCanJoin(this.userAuth);
 	}
 
 	initialize(): void {
@@ -53,7 +56,7 @@ export class HostServer {
 				eventEmitter,
 				this.logger,
 				tcpClientSocket,
-				this.userAuth
+				this.checkIfUserCanJoin
 			);
 			const messageEmitter = new MessageEmitter(
 				this.logger,

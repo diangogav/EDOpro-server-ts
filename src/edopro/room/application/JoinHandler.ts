@@ -1,6 +1,5 @@
 import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
-import { UserAuth } from "src/shared/user-auth/application/UserAuth";
-import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
+import { CheckIfUseCanJoin } from "src/shared/user-auth/application/CheckIfUserCanJoin";
 import { EventEmitter } from "stream";
 
 import { MercuryRoom } from "../../../mercury/room/domain/MercuryRoom";
@@ -21,13 +20,18 @@ export class JoinHandler implements JoinMessageHandler {
 	private readonly eventEmitter: EventEmitter;
 	private readonly logger: Logger;
 	private readonly socket: ISocket;
-	private readonly userAuth: UserAuth;
+	private readonly checkIfUseCanJoin: CheckIfUseCanJoin;
 
-	constructor(eventEmitter: EventEmitter, logger: Logger, socket: ISocket, userAuth: UserAuth) {
+	constructor(
+		eventEmitter: EventEmitter,
+		logger: Logger,
+		socket: ISocket,
+		checkIfUseCanJoin: CheckIfUseCanJoin
+	) {
 		this.eventEmitter = eventEmitter;
 		this.logger = logger;
 		this.socket = socket;
-		this.userAuth = userAuth;
+		this.checkIfUseCanJoin = checkIfUseCanJoin;
 		this.eventEmitter.on(
 			Commands.JOIN_GAME as unknown as string,
 			(message: ClientMessage) => void this.handle(message)
@@ -51,12 +55,7 @@ export class JoinHandler implements JoinMessageHandler {
 
 		if (room.ranked) {
 			const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
-			const user = await this.userAuth.run(playerInfoMessage);
-
-			if (!(user instanceof UserProfile)) {
-				this.socket.send(user as Buffer);
-				this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
-
+			if (!(await this.checkIfUseCanJoin.check(playerInfoMessage, this.socket))) {
 				return;
 			}
 		}
