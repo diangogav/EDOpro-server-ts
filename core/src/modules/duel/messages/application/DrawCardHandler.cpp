@@ -67,6 +67,19 @@ std::vector<uint8_t> DrawCardHandler::handle(uint8_t team, std::vector<uint8_t> 
     this->clearNonFaceUpPositions(count, ptr);
   }
 
+  if(message[0U] == MSG_SPSUMMONING)
+  {
+    ptr += 4U;            // Card code
+    const auto current = Read<LocInfo>(ptr);
+    if(current.con == team)
+      return message;
+
+  	if(current.pos & POS_FACEDOWN) {
+      ptr -= 4U + LocInfo::SIZE;
+      Write<uint32_t>(ptr, 0U);
+    }
+  }
+
   if (message[0U] == MSG_MOVE)
   {
     ptr += 4U;            // Card code

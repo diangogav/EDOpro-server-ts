@@ -943,6 +943,7 @@ MessageTargets Duel::get_message_target(const std::vector<uint8_t> message)
   case MSG_SHUFFLE_EXTRA:
   case MSG_SET:
   case MSG_MOVE:
+  case MSG_SPSUMMONING:
   case MSG_DRAW:
   case MSG_TAG_SWAP:
   {
