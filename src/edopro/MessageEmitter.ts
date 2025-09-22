@@ -1,3 +1,4 @@
+import { generateUniqueId } from "src/utils/generateUniqueId";
 import { EventEmitter } from "stream";
 
 import { Logger } from "../shared/logger/domain/Logger";
@@ -9,7 +10,7 @@ export class MessageEmitter {
 	constructor(
 		private readonly logger: Logger,
 		private readonly eventEmitter: EventEmitter,
-		private readonly createGameListener: () => void,
+		private readonly createGameListener: (roomId: number) => void,
 		private readonly joinGameListener: () => void
 	) {
 		this.messageProcessor = new MessageProcessor();
@@ -41,7 +42,8 @@ export class MessageEmitter {
 		}
 
 		if (this.messageProcessor.command === Commands.CREATE_GAME) {
-			this.createGameListener();
+			const roomId = generateUniqueId();
+			this.createGameListener(roomId);
 			this.eventEmitter.emit(
 				this.messageProcessor.command as unknown as string,
 				this.messageProcessor.payload

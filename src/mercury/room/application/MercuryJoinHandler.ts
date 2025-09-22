@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 
 import { CheckIfUseCanJoin } from "src/shared/user-auth/application/CheckIfUserCanJoin";
+import { generateUniqueId } from "src/utils/generateUniqueId";
 import { EventEmitter } from "stream";
 
 import { PlayerInfoMessage } from "../../../edopro/messages/client-to-server/PlayerInfoMessage";
@@ -54,13 +55,6 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 		room.emit("JOIN", message, this.socket);
 	}
 
-	private generateUniqueId(): number {
-		const min = 1000;
-		const max = 9999;
-
-		return Math.floor(Math.random() * (max - min + 1)) + min;
-	}
-
 	private createRoomIfNotExists(
 		name: string,
 		playerInfo: PlayerInfoMessage,
@@ -69,7 +63,7 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 		const existingRoom = MercuryRoomList.findByName(name);
 		if (!existingRoom) {
 			const room = MercuryRoom.create(
-				this.generateUniqueId(),
+				generateUniqueId(),
 				name,
 				this.logger,
 				this.eventEmitter,
