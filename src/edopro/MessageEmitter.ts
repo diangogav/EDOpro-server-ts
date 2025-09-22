@@ -1,8 +1,6 @@
 import { EventEmitter } from "stream";
 
 import { Logger } from "../shared/logger/domain/Logger";
-import { GameCreatorMessageHandler } from "../shared/room/domain/GameCreatorMessageHandler";
-import { JoinMessageHandler } from "../shared/room/domain/JoinMessageHandler";
 import { Commands } from "./messages/domain/Commands";
 import { MessageProcessor } from "./messages/MessageProcessor";
 
@@ -11,8 +9,8 @@ export class MessageEmitter {
 	constructor(
 		private readonly logger: Logger,
 		private readonly eventEmitter: EventEmitter,
-		private readonly gameCreaJoinJoinHandlertorHandler: GameCreatorMessageHandler,
-		private readonly joinHandler: JoinMessageHandler
+		private readonly createGameListener: () => void,
+		private readonly joinGameListener: () => void
 	) {
 		this.messageProcessor = new MessageProcessor();
 	}
@@ -43,6 +41,7 @@ export class MessageEmitter {
 		}
 
 		if (this.messageProcessor.command === Commands.CREATE_GAME) {
+			this.createGameListener();
 			this.eventEmitter.emit(
 				this.messageProcessor.command as unknown as string,
 				this.messageProcessor.payload
@@ -50,6 +49,7 @@ export class MessageEmitter {
 		}
 
 		if (this.messageProcessor.command === Commands.JOIN_GAME) {
+			this.joinGameListener();
 			this.eventEmitter.emit(
 				this.messageProcessor.command as unknown as string,
 				this.messageProcessor.payload

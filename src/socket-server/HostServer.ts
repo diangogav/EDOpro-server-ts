@@ -46,25 +46,22 @@ export class HostServer {
 			this.address = socket.remoteAddress;
 			const tcpClientSocket = new TCPClientSocket(socket);
 			const eventEmitter = new EventEmitter();
-			const gameCreatorHandler = new GameCreatorHandler(
-				eventEmitter,
-				this.logger,
-				tcpClientSocket,
-				this.userAuth
-			);
-			const joinHandler = new JoinHandler(
-				eventEmitter,
-				this.logger,
-				tcpClientSocket,
-				this.checkIfUserCanJoin
-			);
+			tcpClientSocket.id = uuidv4();
+
+			const createGameListener = () => {
+				new GameCreatorHandler(eventEmitter, this.logger, tcpClientSocket, this.userAuth);
+			};
+
+			const joinGameListener = () => {
+				new JoinHandler(eventEmitter, this.logger, tcpClientSocket, this.checkIfUserCanJoin);
+			};
+
 			const messageEmitter = new MessageEmitter(
 				this.logger,
 				eventEmitter,
-				gameCreatorHandler,
-				joinHandler
+				createGameListener,
+				joinGameListener
 			);
-			tcpClientSocket.id = uuidv4();
 
 			socket.on("data", (data: Buffer) => {
 				this.logger.debug(`Incoming message: ${data.toString("hex")}`);
