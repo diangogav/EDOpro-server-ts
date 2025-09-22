@@ -28,12 +28,20 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 	private readonly socket: ISocket;
 	private readonly userAuth: UserAuth;
 	private readonly HOST_CLIENT = 0x10;
+	private readonly roomId: number;
 
-	constructor(eventEmitter: EventEmitter, logger: Logger, socket: ISocket, userAuth: UserAuth) {
+	constructor(
+		eventEmitter: EventEmitter,
+		logger: Logger,
+		socket: ISocket,
+		userAuth: UserAuth,
+		roomId: number
+	) {
 		this.eventEmitter = eventEmitter;
 		this.logger = logger;
 		this.socket = socket;
 		this.userAuth = userAuth;
+		this.roomId = roomId;
 		this.eventEmitter.on(Commands.CREATE_GAME as unknown as string, (message: ClientMessage) => {
 			void this.handle(message);
 		});
@@ -69,7 +77,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 		const room = Room.createFromCreateGameMessage(
 			message,
 			playerInfoMessage,
-			this.generateUniqueId(),
+			this.roomId,
 			this.eventEmitter,
 			this.logger
 		);
@@ -115,12 +123,5 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 		}
 
 		this.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));
-	}
-
-	private generateUniqueId(): number {
-		const min = 1000;
-		const max = 9999;
-
-		return Math.floor(Math.random() * (max - min + 1)) + min;
 	}
 }

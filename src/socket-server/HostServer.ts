@@ -48,8 +48,8 @@ export class HostServer {
 			const eventEmitter = new EventEmitter();
 			tcpClientSocket.id = uuidv4();
 
-			const createGameListener = () => {
-				new GameCreatorHandler(eventEmitter, this.logger, tcpClientSocket, this.userAuth);
+			const createGameListener = (roomId: number) => {
+				new GameCreatorHandler(eventEmitter, this.logger, tcpClientSocket, this.userAuth, roomId);
 			};
 
 			const joinGameListener = () => {
