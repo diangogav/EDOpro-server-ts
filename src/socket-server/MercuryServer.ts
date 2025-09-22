@@ -39,20 +39,22 @@ export class MercuryServer {
 			this.address = socket.remoteAddress;
 			const ygoClientSocket = new TCPClientSocket(socket);
 			const eventEmitter = new EventEmitter();
-			const gameCreatorHandler = new MercuryGameCreatorHandler(eventEmitter, this.logger);
-			const joinHandler = new MercuryJoinHandler(
-				eventEmitter,
-				this.logger,
-				ygoClientSocket,
-				this.checkIfUserCanJoin
-			);
+			ygoClientSocket.id = uuidv4();
+
+			const createGameListener = () => {
+				new MercuryGameCreatorHandler(eventEmitter, this.logger);
+			};
+			const joinGameListener = () => {
+				new MercuryJoinHandler(eventEmitter, this.logger, ygoClientSocket, this.checkIfUserCanJoin);
+			};
+
 			const messageEmitter = new MessageEmitter(
 				this.logger,
 				eventEmitter,
-				gameCreatorHandler,
-				joinHandler
+				createGameListener,
+				joinGameListener
 			);
-			ygoClientSocket.id = uuidv4();
+
 			socket.on("data", (data: Buffer) => {
 				this.logger.debug(`Incoming message handle by Mercury Server: ${data.toString("hex")}`);
 				messageEmitter.handleMessage(data);
