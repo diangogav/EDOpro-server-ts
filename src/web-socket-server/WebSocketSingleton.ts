@@ -3,7 +3,7 @@ import { readFileSync } from "fs";
 import { createServer } from "https";
 import path from "path";
 import MercuryRoomList from "src/mercury/room/infrastructure/MercuryRoomList";
-import { Pino } from "src/shared/logger/infrastructure/Pino";
+import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 import WebSocket, { WebSocketServer } from "ws";
 
 import RoomList from "../edopro/room/infrastructure/RoomList";
@@ -14,7 +14,7 @@ class WebSocketSingleton {
 	private readonly wss: WebSocketServer | null = null;
 
 	private constructor(port: number) {
-		const logger = new Pino();
+		const logger = LoggerFactory.getLogger();
 		const server = this.buildServer();
 		this.wss = new WebSocketServer({ server });
 		this.wss.on("connection", (ws: WebSocket) => {

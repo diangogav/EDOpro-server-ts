@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import { Redis } from "src/shared/db/redis/infrastructure/Redis";
-import { Pino } from "src/shared/logger/infrastructure/Pino";
+import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 import { MatchResumeCreator } from "src/shared/stats/match-resume/application/MatchResumeCreator";
 import { DuelResumeCreator } from "src/shared/stats/match-resume/duel-resume/application/DuelResumeCreator";
 import { MatchResumePostgresRepository } from "src/shared/stats/match-resume/infrastructure/postgres/MatchResumePostgresRepository";
@@ -44,7 +44,7 @@ interface DuelResume {
 }
 
 const redis = Redis.getInstance();
-const logger = new Pino();
+const logger = LoggerFactory.getLogger();
 const postgresDatabase = new PostgresTypeORM();
 
 const migratedUsersFile = "migrated_users.txt";

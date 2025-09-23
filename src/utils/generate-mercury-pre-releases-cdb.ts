@@ -1,8 +1,8 @@
 import { PreReleasesMercurySQLiteTypeORM } from "src/shared/db/sqlite/infrastructure/PreReleasesMercurySQLiteTypeORM";
-import { Pino } from "src/shared/logger/infrastructure/Pino";
+import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 
 const database = new PreReleasesMercurySQLiteTypeORM();
-const logger = new Pino();
+const logger = LoggerFactory.getLogger();
 
 async function run() {
 	logger.info("Initialize SQLite Connection");
