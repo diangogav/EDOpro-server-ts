@@ -74,4 +74,8 @@ export class BanList {
 			((hCode << 18) | (hCode >>> 14)) ^
 			((hCode << (27 + quantity)) | (hCode >>> (5 - quantity)));
 	}
+
+	isGenesys(): boolean {
+		return this.name === "Genesys";
+	}
 }
