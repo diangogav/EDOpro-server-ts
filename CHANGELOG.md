@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.10.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.9.0...v2.10.0) (2025-09-27)
+
+
+### Features
+
+* added genesys  to edopro ([#192](https://github.com/diangogav/EDOpro-server-ts/issues/192)) ([a1503f3](https://github.com/diangogav/EDOpro-server-ts/commit/a1503f373d8ad1be392d469927905ca39a0ebc17))
+* **duel:** add support for MSG_SPSUMMONING in message handling ([28d9601](https://github.com/diangogav/EDOpro-server-ts/commit/28d96014565c4177623b258153ade2a6c3a2949b))
+
 ## [2.9.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.8.0...v2.9.0) (2025-07-31)
 
 
