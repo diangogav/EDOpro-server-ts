@@ -458,6 +458,28 @@ export const priorityRuleMappings: RuleMappings = {
 			return value === "goat";
 		},
 	},
+	genesys: {
+		get: (value: string) => {
+			let maxDeckPoints = extractNumberFromCommand(value);
+
+			if (maxDeckPoints === null) {
+				maxDeckPoints = 100;
+			}
+
+			return {
+				rule: 1,
+				lflist: 0,
+				timeLimit: 300,
+				duelRule: 3,
+				maxDeckPoints,
+			};
+		},
+		validate: (value) => {
+			const regex = /^genesys\d+$/;
+
+			return regex.test(value);
+		},
+	},
 	rush: {
 		get: () => {
 			return {
@@ -583,8 +605,8 @@ export const priorityRuleMappings: RuleMappings = {
 	ocgart: {
 		get: () => {
 			return {
-				rule: 5,
-				duelRule: 5,
+				rule: 4,
+				duelRule: 3,
 				timeLimit: 300,
 				mode: Mode.SINGLE,
 				lflist: 0,

@@ -1,3 +1,4 @@
+import { CardSQLiteTYpeORMRepository } from "@edopro/card/infrastructure/sqlite/CardSQLiteTYpeORMRepository";
 import { spawn } from "child_process";
 import net from "net";
 import BanListMemoryRepository from "src/edopro/ban-list/infrastructure/BanListMemoryRepository";
@@ -31,6 +32,7 @@ export class MercuryRoom extends YgoRoom {
 	readonly name: string;
 	readonly password: string;
 	readonly createdBySocketId: string;
+	readonly cardRepository = new CardSQLiteTYpeORMRepository();
 	private _logger: Logger;
 	private _coreStarted = false;
 	private _corePort: number | null = null;
@@ -93,6 +95,7 @@ export class MercuryRoom extends YgoRoom {
 			noShuffle: false,
 			lflist: MercuryBanListMemoryRepository.getLastTCGIndex(),
 			duelRule: 5,
+			maxDeckPoints: 100,
 		};
 
 		const [configuration, password] = command.split("#");
@@ -169,9 +172,15 @@ export class MercuryRoom extends YgoRoom {
 			tcgart: "mercury/pre-releases/tcg",
 			ot: "mercury/ocg",
 			otto: "mercury/ocg",
+			genesys: "mercury/alternatives/genesys",
 		};
 
 		options.forEach((option) => {
+			if (option.startsWith("genesys")) {
+				room.route = routes["genesys"];
+
+				return;
+			}
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 			room.route = routes[option] ?? room.route;
 		});
@@ -206,7 +215,6 @@ export class MercuryRoom extends YgoRoom {
 
 	startCore(): void {
 		this._logger.debug("Starting Mercury Core");
-
 		const core = spawn(
 			"./ygopro",
 			[
@@ -296,6 +304,10 @@ export class MercuryRoom extends YgoRoom {
 
 	get joinBuffer(): Buffer | null {
 		return this._joinBuffer;
+	}
+
+	get isGenesys(): boolean {
+		return this.route === "mercury/alternatives/genesys";
 	}
 
 	setJoinBuffer(buffer: Buffer): void {
