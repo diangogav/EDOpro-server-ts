@@ -97,7 +97,7 @@ export abstract class RoomState {
 		return;
 	}
 
-	protected sendInfoMessage(room: YgoRoom, socket: ISocket): void {
+	protected sendWelcomeMessage(room: YgoRoom, socket: ISocket): void {
 		if (room.ranked) {
 			socket.send(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
 			socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.WELCOME));
@@ -176,6 +176,11 @@ export abstract class RoomState {
 				data: room.toRealTimePresentation(),
 			});
 		}
+	}
+
+	protected sendSystemErrorMessage(message: string, client: YgoClient): void {
+		client.socket.send(ServerErrorClientMessage.create(message));
+		client.socket.send(MercuryPlayerChatMessage.create(message));
 	}
 
 	private handleChat(message: ClientMessage, room: YgoRoom, client: YgoClient): void {

@@ -104,7 +104,7 @@ export class MercuryWaitingState extends RoomState {
 			if (!room.isCoreStarted) {
 				room.startCore();
 			}
-			this.sendInfoMessage(room, socket);
+			this.sendWelcomeMessage(room, socket);
 
 			return;
 		}
@@ -203,6 +203,10 @@ export class MercuryWaitingState extends RoomState {
 		}
 
 		if (points > room.hostInfo.maxDeckPoints) {
+			this.sendSystemErrorMessage(
+				`Deck points limit exceeded: ${points} of ${room.hostInfo.maxDeckPoints}`,
+				client
+			);
 			client.sendMessageToClient(
 				new MainDeckLimitError(points, 0, room.hostInfo.maxDeckPoints).buffer()
 			);

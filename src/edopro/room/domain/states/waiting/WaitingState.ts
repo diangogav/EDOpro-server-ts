@@ -384,7 +384,7 @@ export class WaitingState extends RoomState {
 			count: spectatorsCount,
 		});
 		socket.send(watchMessage);
-		this.sendInfoMessage(room, socket);
+		this.sendWelcomeMessage(room, socket);
 
 		this.notify(client, room, socket);
 	}
