@@ -178,38 +178,8 @@ export class MercuryWaitingState extends RoomState {
 		const parser = new UpdateDeckMessageParser(message.data);
 		const [mainDeck, sideDeck] = parser.getDeck();
 		const deck = [...mainDeck, ...sideDeck];
-		let points = 0;
-		for (const code of deck) {
-			// eslint-disable-next-line no-await-in-loop
-			const card = await room.cardRepository.findByCode(code.toString());
-			if (!card) {
-				this.logger.info(`Card with code ${code} not found`);
-				continue;
-			}
-
-			if (card.type & (CardTypes.TYPE_PENDULUM | CardTypes.TYPE_LINK)) {
-				client.sendMessageToClient(new BanListDeckError(Number(card.code)).buffer());
-				break;
-			}
-
-			if (card.variant === 8) {
-				client.sendMessageToClient(new BanListDeckError(Number(card.code)).buffer());
-			}
-
-			const cardPoints =
-				this.genesysMap.get(card.code) ?? (card.alias ? this.genesysMap.get(card.alias) : 0) ?? 0;
-
-			points = points + cardPoints;
-		}
-
-		if (points > room.hostInfo.maxDeckPoints) {
-			this.sendSystemErrorMessage(
-				`Deck points limit exceeded: ${points} of ${room.hostInfo.maxDeckPoints}`,
-				client
-			);
-			client.sendMessageToClient(
-				new MainDeckLimitError(points, 0, room.hostInfo.maxDeckPoints).buffer()
-			);
+		const isValid = await this.validateGenesysDeck(deck, client, room);
+		if (!isValid) {
 			client.sendToCore(Buffer.from([0x01, 0x00, Commands.NOT_READY]));
 		}
 	}
@@ -239,5 +209,60 @@ export class MercuryWaitingState extends RoomState {
 			room,
 			host,
 		});
+	}
+
+	private async validateGenesysDeck(
+		deck: number[],
+		client: MercuryClient,
+		room: MercuryRoom
+	): Promise<boolean> {
+		let points = 0;
+		for (const code of deck) {
+			// eslint-disable-next-line no-await-in-loop
+			const card = await room.cardRepository.findByCode(code.toString());
+			if (!card) {
+				this.logger.info(`Card with code ${code} not found`);
+				this.sendSystemErrorMessage(`Card with code ${code} not found`, client);
+				continue;
+			}
+
+			if (card.type & (CardTypes.TYPE_PENDULUM | CardTypes.TYPE_LINK)) {
+				client.sendMessageToClient(new BanListDeckError(Number(card.code)).buffer());
+				this.sendSystemErrorMessage(`Pendulum and link cards not allowed: ${card.code}`, client);
+
+				return false;
+			}
+
+			if (card.variant === 8) {
+				client.sendMessageToClient(new BanListDeckError(Number(card.code)).buffer());
+				this.sendSystemErrorMessage(`Unofficial cards not alloweds: ${card.code}`, client);
+
+				return false;
+			}
+
+			const cardPoints =
+				this.genesysMap.get(card.code) ?? (card.alias ? this.genesysMap.get(card.alias) : 0) ?? 0;
+
+			points = points + cardPoints;
+		}
+
+		if (points > room.hostInfo.maxDeckPoints) {
+			this.sendSystemErrorMessage(
+				`Deck points limit exceeded: ${points} of ${room.hostInfo.maxDeckPoints}`,
+				client
+			);
+			client.sendMessageToClient(
+				new MainDeckLimitError(points, 0, room.hostInfo.maxDeckPoints).buffer()
+			);
+
+			return false;
+		}
+
+		this.sendSystemMessage(
+			`Genesys deck valid: ${points} / ${room.hostInfo.maxDeckPoints}`,
+			client
+		);
+
+		return true;
 	}
 }

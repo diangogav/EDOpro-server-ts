@@ -183,6 +183,11 @@ export abstract class RoomState {
 		client.socket.send(MercuryPlayerChatMessage.create(message));
 	}
 
+	protected sendSystemMessage(message: string, client: YgoClient): void {
+		client.socket.send(ServerMessageClientMessage.create(message));
+		client.socket.send(MercuryPlayerChatMessage.create(message));
+	}
+
 	private handleChat(message: ClientMessage, room: YgoRoom, client: YgoClient): void {
 		const sanitized = BufferToUTF16(message.data, message.data.length);
 		if (sanitized === ":score") {
