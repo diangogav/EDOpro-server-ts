@@ -476,8 +476,9 @@ export const priorityRuleMappings: RuleMappings = {
 		},
 		validate: (value) => {
 			const regex = /^genesys\d+$/;
+			const shorcutRegex = /^g\d+$/;
 
-			return value === "genesys" || regex.test(value);
+			return value === "genesys" || value === "g" || shorcutRegex.test(value) || regex.test(value);
 		},
 	},
 	rush: {

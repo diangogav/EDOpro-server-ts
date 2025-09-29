@@ -176,7 +176,7 @@ export class MercuryRoom extends YgoRoom {
 		};
 
 		options.forEach((option) => {
-			if (option.startsWith("genesys")) {
+			if (option.startsWith("genesys") || option.startsWith("g")) {
 				room.route = routes["genesys"];
 
 				return;
