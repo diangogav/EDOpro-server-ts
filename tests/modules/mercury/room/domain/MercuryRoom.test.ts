@@ -337,4 +337,64 @@ describe("MercuryRoom", () => {
 		expect(room.hostInfo.rule).toBe(0);
 		expect(room.hostInfo.lflist).toBe(0);
 	});
+
+	describe("Genesys Format", () => {
+		it("Should create a room with Genesys format if command contains genesys and the default points should be 100", () => {
+			const room = MercuryRoom.create(
+				id,
+				"genesys#123",
+				logger,
+				emitter,
+				playerInfoMessage,
+				socketId
+			);
+
+			expect(room.isGenesys).toBe(true);
+			expect(room.hostInfo.rule).toBe(1);
+			expect(room.hostInfo.lflist).toBe(0);
+			expect(room.hostInfo.timeLimit).toBe(300);
+			expect(room.hostInfo.duelRule).toBe(3);
+			expect(room.hostInfo.maxDeckPoints).toBe(100);
+		});
+
+		it("Should be create a room with Genesys format if command constains genesys250 with max deck points 250", () => {
+			const room = MercuryRoom.create(
+				id,
+				"genesys250#123",
+				logger,
+				emitter,
+				playerInfoMessage,
+				socketId
+			);
+
+			expect(room.isGenesys).toBe(true);
+			expect(room.hostInfo.rule).toBe(1);
+			expect(room.hostInfo.lflist).toBe(0);
+			expect(room.hostInfo.timeLimit).toBe(300);
+			expect(room.hostInfo.duelRule).toBe(3);
+			expect(room.hostInfo.maxDeckPoints).toBe(250);
+		});
+
+		it("Should create a room with Genesys format if command contains g and the default points should be 100", () => {
+			const room = MercuryRoom.create(id, "g#123", logger, emitter, playerInfoMessage, socketId);
+
+			expect(room.isGenesys).toBe(true);
+			expect(room.hostInfo.rule).toBe(1);
+			expect(room.hostInfo.lflist).toBe(0);
+			expect(room.hostInfo.timeLimit).toBe(300);
+			expect(room.hostInfo.duelRule).toBe(3);
+			expect(room.hostInfo.maxDeckPoints).toBe(100);
+		});
+
+		it("Should be create a room with Genesys format if command constains g300 with max deck points 250", () => {
+			const room = MercuryRoom.create(id, "G300#123", logger, emitter, playerInfoMessage, socketId);
+
+			expect(room.isGenesys).toBe(true);
+			expect(room.hostInfo.rule).toBe(1);
+			expect(room.hostInfo.lflist).toBe(0);
+			expect(room.hostInfo.timeLimit).toBe(300);
+			expect(room.hostInfo.duelRule).toBe(3);
+			expect(room.hostInfo.maxDeckPoints).toBe(300);
+		});
+	});
 });

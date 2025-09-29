@@ -1,5 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
+import { CardTypes } from "@edopro/card/domain/CardTypes";
+import { UpdateDeckMessageParser } from "@edopro/deck/application/UpdateDeckMessageSizeCalculator";
+import { BanListDeckError } from "@edopro/deck/domain/errors/BanListDeckError";
+import { MainDeckLimitError } from "@edopro/deck/domain/errors/MainDeckLimitError";
+import genesys from "genesys.json";
 import { ErrorMessages } from "src/edopro/messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "src/edopro/messages/server-to-client/ErrorClientMessage";
 import { Team } from "src/shared/room/Team";
@@ -19,6 +24,8 @@ import { JoinGameCoreToClientMessage } from "../../../messages/core-to-client/Jo
 import { MercuryRoom } from "../MercuryRoom";
 
 export class MercuryWaitingState extends RoomState {
+	private readonly genesysMap = new Map(genesys.map((item) => [item.code.toString(), item.points]));
+
 	constructor(
 		private readonly userAuth: UserAuth,
 		eventEmitter: EventEmitter,
@@ -44,6 +51,11 @@ export class MercuryWaitingState extends RoomState {
 			"TYPE_CHANGE" as unknown as string,
 			(message: ClientMessage, room: MercuryRoom, client: YgoClient) =>
 				void this.handleTypeChange.bind(this)(message, room, client)
+		);
+		this.eventEmitter.on(
+			Commands.UPDATE_DECK as unknown as string,
+			(message: ClientMessage, room: MercuryRoom, client: YgoClient) =>
+				void this.handleUpdateDeck.bind(this)(message, room, client as MercuryClient)
 		);
 	}
 
@@ -92,7 +104,7 @@ export class MercuryWaitingState extends RoomState {
 			if (!room.isCoreStarted) {
 				room.startCore();
 			}
-			this.sendInfoMessage(room, socket);
+			this.sendWelcomeMessage(room, socket);
 
 			return;
 		}
@@ -154,6 +166,24 @@ export class MercuryWaitingState extends RoomState {
 		}
 	}
 
+	private async handleUpdateDeck(
+		message: ClientMessage,
+		room: MercuryRoom,
+		client: MercuryClient
+	): Promise<void> {
+		this.logger.debug(`Mercury UPDATE_DECK: ${message.data.toString("hex")}`);
+		if (!room.isGenesys) {
+			return;
+		}
+		const parser = new UpdateDeckMessageParser(message.data);
+		const [mainDeck, sideDeck] = parser.getDeck();
+		const deck = [...mainDeck, ...sideDeck];
+		const isValid = await this.validateGenesysDeck(deck, client, room);
+		if (!isValid) {
+			client.sendToCore(Buffer.from([0x01, 0x00, Commands.NOT_READY]));
+		}
+	}
+
 	private createPlayer({
 		id,
 		socket,
@@ -179,5 +209,60 @@ export class MercuryWaitingState extends RoomState {
 			room,
 			host,
 		});
+	}
+
+	private async validateGenesysDeck(
+		deck: number[],
+		client: MercuryClient,
+		room: MercuryRoom
+	): Promise<boolean> {
+		let points = 0;
+		for (const code of deck) {
+			// eslint-disable-next-line no-await-in-loop
+			const card = await room.cardRepository.findByCode(code.toString());
+			if (!card) {
+				this.logger.info(`Card with code ${code} not found`);
+				this.sendSystemErrorMessage(`Card with code ${code} not found`, client);
+				continue;
+			}
+
+			if (card.type & (CardTypes.TYPE_PENDULUM | CardTypes.TYPE_LINK)) {
+				client.sendMessageToClient(new BanListDeckError(Number(card.code)).buffer());
+				this.sendSystemErrorMessage(`Pendulum and link cards not allowed: ${card.code}`, client);
+
+				return false;
+			}
+
+			if (card.variant === 8) {
+				client.sendMessageToClient(new BanListDeckError(Number(card.code)).buffer());
+				this.sendSystemErrorMessage(`Unofficial cards not alloweds: ${card.code}`, client);
+
+				return false;
+			}
+
+			const cardPoints =
+				this.genesysMap.get(card.code) ?? (card.alias ? this.genesysMap.get(card.alias) : 0) ?? 0;
+
+			points = points + cardPoints;
+		}
+
+		if (points > room.hostInfo.maxDeckPoints) {
+			this.sendSystemErrorMessage(
+				`Deck points limit exceeded: ${points} of ${room.hostInfo.maxDeckPoints}`,
+				client
+			);
+			client.sendMessageToClient(
+				new MainDeckLimitError(points, 0, room.hostInfo.maxDeckPoints).buffer()
+			);
+
+			return false;
+		}
+
+		this.sendSystemMessage(
+			`Genesys deck valid: ${points} / ${room.hostInfo.maxDeckPoints}`,
+			client
+		);
+
+		return true;
 	}
 }

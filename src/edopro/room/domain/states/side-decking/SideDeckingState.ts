@@ -7,7 +7,7 @@ import { DuelStartClientMessage } from "../../../../../shared/messages/server-to
 import { ISocket } from "../../../../../shared/socket/domain/ISocket";
 import { Client } from "../../../../client/domain/Client";
 import { DeckCreator } from "../../../../deck/application/DeckCreator";
-import { UpdateDeckMessageSizeCalculator } from "../../../../deck/application/UpdateDeckMessageSizeCalculator";
+import { UpdateDeckMessageParser } from "../../../../deck/application/UpdateDeckMessageSizeCalculator";
 import { JoinGameMessage } from "../../../../messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../../../messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../../messages/domain/Commands";
@@ -65,26 +65,8 @@ export class SideDeckingState extends RoomState {
 		player: Client
 	): Promise<void> {
 		this.logger.debug("SIDE_DECKING: UPDATE_DECK");
-		const messageSize = new UpdateDeckMessageSizeCalculator(message.data).calculate();
-		const body = message.data.subarray(0, messageSize);
-		const mainAndExtraDeckSize = body.readUInt32LE(0);
-		const sizeDeckSize = body.readUint32LE(4);
-		const mainDeck: number[] = [];
-		for (let i = 8; i < mainAndExtraDeckSize * 4 + 8; i += 4) {
-			const code = body.readUint32LE(i);
-			mainDeck.push(code);
-		}
-
-		const sideDeck: number[] = [];
-		for (
-			let i = mainAndExtraDeckSize * 4 + 8;
-			i < (mainAndExtraDeckSize + sizeDeckSize) * 4 + 8;
-			i += 4
-		) {
-			const code = body.readUint32LE(i);
-			sideDeck.push(code);
-		}
-
+		const parser = new UpdateDeckMessageParser(message.data);
+		const [mainDeck, sideDeck] = parser.getDeck();
 		if (!player.deck.isSideDeckValid(mainDeck)) {
 			const message = ErrorClientMessage.create(ErrorMessages.SIDE_ERROR);
 			player.sendMessage(message);
