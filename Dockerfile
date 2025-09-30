@@ -4,8 +4,8 @@ FROM public.ecr.aws/ubuntu/ubuntu:22.04_stable AS core-integrator-builder
 # Install required dependencies and Conan
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
-        python3 python3-pip wget tar git autoconf ca-certificates g++ \
-        m4 automake libtool pkg-config make && \
+    python3 python3-pip wget tar git autoconf ca-certificates g++ \
+    m4 automake libtool pkg-config make && \
     rm -rf /var/lib/apt/lists/* && \
     pip install conan
 
@@ -42,20 +42,21 @@ RUN for dir in ./alternatives/*/; do \
 # Copy selected banlists into corresponding alternative folders
 RUN bash -c 'set -e; \
     declare -A MAP=( \
-        ["2010.03 Edison(PreErrata)"]="edison" \
-        ["2014.4 HAT"]="hat" \
-        ["jtp-oficial"]="jtp" \
-        ["GOAT"]="goat" \
-        ["2008.03 GX"]="gx" \
-        ["mdc"]="mdc" \
-        ["Rush"]="rush" \
-        ["Speed"]="speed" \
-        ["Tengu.Plant"]="tengu" \
-        ["World"]="world" \
-        ["MD.2025.03"]="md" \
+    ["2010.03 Edison(PreErrata)"]="edison" \
+    ["2014.4 HAT"]="hat" \
+    ["jtp-oficial"]="jtp" \
+    ["GOAT"]="goat" \
+    ["2008.03 GX"]="gx" \
+    ["mdc"]="mdc" \
+    ["Rush"]="rush" \
+    ["Speed"]="speed" \
+    ["Tengu.Plant"]="tengu" \
+    ["World"]="world" \
+    ["MD.2025.03"]="md" \
+    ["Genesys"]="genesys" \
     ); \
     for name in "${!MAP[@]}"; do \
-        cp "./banlists/${name}.lflist.conf" "./alternatives/${MAP[$name]}/lflist.conf"; \
+    cp "./banlists/${name}.lflist.conf" "./alternatives/${MAP[$name]}/lflist.conf"; \
     done'
 
 # Generate Conan profile

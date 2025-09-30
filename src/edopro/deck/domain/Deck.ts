@@ -6,6 +6,7 @@ import { AvailableCardValidationHandler } from "./validators/AvailableCardValida
 import { DeckLimitsValidationHandler } from "./validators/DeckLimitsValidationHandler";
 import { DeckRuleValidationHandler } from "./validators/DeckRuleValidationHandler";
 import { ForbiddenCardValidationHandler } from "./validators/ForbbidenCardValidationHandler";
+import { GenesysRulesValidationHandler } from "./validators/GenesysRulesValidationHandler";
 import { LimitedCardValidationHandler } from "./validators/LimitedCardValidationHandler";
 import { NoLimitedCardValidationHandler } from "./validators/NoLimitedCardValidationHandler";
 import { OfficialCardValidationHandler } from "./validators/OfficialCardsValidationHandler";
@@ -37,7 +38,6 @@ export class Deck {
 		this.extra = extra;
 		this.banList = banList;
 		this.deckRules = deckRules;
-		this.validate();
 	}
 
 	isSideDeckValid(mainDeck: number[]): boolean {
@@ -51,16 +51,25 @@ export class Deck {
 	public validate(): DeckError | null {
 		const handleValidations = new DeckLimitsValidationHandler(this.deckRules);
 
-		handleValidations
+		if (!this.banList.isGenesys()) {
+			handleValidations
 
-			.setNextHandler(new ForbiddenCardValidationHandler(this.banList))
-			.setNextHandler(new SemiLimitedCardValidationHandler(this.banList))
-			.setNextHandler(new LimitedCardValidationHandler(this.banList))
-			.setNextHandler(new DeckRuleValidationHandler(this.deckRules))
-			.setNextHandler(new OfficialCardValidationHandler(this.deckRules))
-			.setNextHandler(new PrereleaseValidationHandler(this.deckRules))
-			.setNextHandler(new NoLimitedCardValidationHandler(this.banList))
-			.setNextHandler(new AvailableCardValidationHandler(this.banList));
+				.setNextHandler(new ForbiddenCardValidationHandler(this.banList))
+				.setNextHandler(new SemiLimitedCardValidationHandler(this.banList))
+				.setNextHandler(new LimitedCardValidationHandler(this.banList))
+				.setNextHandler(new DeckRuleValidationHandler(this.deckRules))
+				.setNextHandler(new OfficialCardValidationHandler(this.deckRules))
+				.setNextHandler(new PrereleaseValidationHandler(this.deckRules))
+				.setNextHandler(new NoLimitedCardValidationHandler(this.banList))
+				.setNextHandler(new AvailableCardValidationHandler(this.banList));
+		} else {
+			handleValidations
+				.setNextHandler(new DeckRuleValidationHandler(this.deckRules))
+				.setNextHandler(new OfficialCardValidationHandler(this.deckRules))
+				.setNextHandler(new PrereleaseValidationHandler(this.deckRules))
+				.setNextHandler(new NoLimitedCardValidationHandler(this.banList))
+				.setNextHandler(new GenesysRulesValidationHandler(this.deckRules.maxDeckPoints));
+		}
 
 		return handleValidations.validate(this);
 	}

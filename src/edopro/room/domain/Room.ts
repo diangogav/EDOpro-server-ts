@@ -51,6 +51,7 @@ export class DeckRules {
 	public readonly sideMin: number;
 	public readonly sideMax: number;
 	public readonly rule: Rule;
+	public readonly maxDeckPoints: number;
 
 	constructor({
 		mainMin,
@@ -60,6 +61,7 @@ export class DeckRules {
 		sideMin,
 		sideMax,
 		rule,
+		maxDeckPoints,
 	}: {
 		mainMin: number;
 		mainMax: number;
@@ -68,6 +70,7 @@ export class DeckRules {
 		sideMin: number;
 		sideMax: number;
 		rule: number;
+		maxDeckPoints?: number;
 	}) {
 		this.mainMin = mainMin;
 		this.mainMax = mainMax;
@@ -76,6 +79,7 @@ export class DeckRules {
 		this.sideMin = sideMin;
 		this.sideMax = sideMax;
 		this.rule = rule;
+		this.maxDeckPoints = maxDeckPoints ?? 100;
 	}
 }
 interface RoomAttr {
@@ -169,6 +173,7 @@ export class Room extends YgoRoom {
 		this.noCheck = attr.noCheck;
 		this.noShuffle = attr.noShuffle;
 		this.banListHash = attr.banListHash;
+		const maxDeckPoints = this.extractDeckPoints(attr.notes);
 		this.deckRules = new DeckRules({
 			mainMin: attr.mainMin,
 			mainMax: attr.mainMax,
@@ -177,6 +182,7 @@ export class Room extends YgoRoom {
 			extraMin: attr.extraMin,
 			extraMax: attr.extraMax,
 			rule: attr.rule,
+			maxDeckPoints,
 		});
 		this.duelRule = attr.duelRule;
 		this.handshake = attr.handshake;
@@ -786,5 +792,14 @@ export class Room extends YgoRoom {
 				this.writeToCppProcess(messageToCpp, retryCount - 1);
 			}, 100);
 		}
+	}
+
+	private extractDeckPoints(notes?: string): number | undefined {
+		if (!notes) {
+			return undefined;
+		}
+		const match = notes.match(/points\s*=\s*(\d+)/i);
+
+		return match ? Number(match[1]) : undefined;
 	}
 }
