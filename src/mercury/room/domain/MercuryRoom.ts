@@ -21,7 +21,7 @@ import {
 import MercuryRoomList from "../infrastructure/MercuryRoomList";
 import { HostInfo } from "./host-info/HostInfo";
 import { Mode } from "./host-info/Mode.enum";
-import { priorityRuleMappings, ruleMappings } from "./RuleMappings";
+import { formatRuleMappings, priorityRuleMappings, ruleMappings } from "./RuleMappings";
 import { MercuryChoosingOrderState } from "./states/MercuryChoosingOrderState";
 import { MercuryDuelingState } from "./states/MercuryDuelingState";
 import { MercuryRockPaperScissorState } from "./states/MercuryRockPaperScissorsState";
@@ -105,8 +105,10 @@ export class MercuryRoom extends YgoRoom {
 			.map((_) => _.trim());
 
 		const mappingKeys = Object.keys(ruleMappings);
+		const formatMappingKeys = Object.keys(formatRuleMappings);
 		const priorityMappingKeys = Object.keys(priorityRuleMappings);
 		const mappings = mappingKeys.map((key) => ruleMappings[key]);
+		const formatMappings = formatMappingKeys.map((key) => formatRuleMappings[key]);
 		const priorityMappings = priorityMappingKeys.map((key) => priorityRuleMappings[key]);
 
 		options.forEach((option) => {
@@ -115,6 +117,18 @@ export class MercuryRoom extends YgoRoom {
 				throw new Error(`Error: param match with two rules.`);
 			}
 
+			const mapping = items.shift();
+			if (mapping) {
+				const rule = mapping.get(option);
+				hostInfo = { ...hostInfo, ...rule };
+			}
+		});
+
+		options.forEach((option) => {
+			const items = formatMappings.filter((item) => item.validate(option));
+			if (items.length > 1) {
+				throw new Error(`Error: param match with two rules.`);
+			}
 			const mapping = items.shift();
 			if (mapping) {
 				const rule = mapping.get(option);

@@ -352,8 +352,8 @@ describe("MercuryRoom", () => {
 			expect(room.isGenesys).toBe(true);
 			expect(room.hostInfo.rule).toBe(1);
 			expect(room.hostInfo.lflist).toBe(0);
-			expect(room.hostInfo.timeLimit).toBe(300);
-			expect(room.hostInfo.duelRule).toBe(3);
+			expect(room.hostInfo.timeLimit).toBe(180);
+			expect(room.hostInfo.duelRule).toBe(5);
 			expect(room.hostInfo.maxDeckPoints).toBe(100);
 		});
 
@@ -370,8 +370,8 @@ describe("MercuryRoom", () => {
 			expect(room.isGenesys).toBe(true);
 			expect(room.hostInfo.rule).toBe(1);
 			expect(room.hostInfo.lflist).toBe(0);
-			expect(room.hostInfo.timeLimit).toBe(300);
-			expect(room.hostInfo.duelRule).toBe(3);
+			expect(room.hostInfo.timeLimit).toBe(180);
+			expect(room.hostInfo.duelRule).toBe(5);
 			expect(room.hostInfo.maxDeckPoints).toBe(250);
 		});
 
@@ -381,8 +381,8 @@ describe("MercuryRoom", () => {
 			expect(room.isGenesys).toBe(true);
 			expect(room.hostInfo.rule).toBe(1);
 			expect(room.hostInfo.lflist).toBe(0);
-			expect(room.hostInfo.timeLimit).toBe(300);
-			expect(room.hostInfo.duelRule).toBe(3);
+			expect(room.hostInfo.timeLimit).toBe(180);
+			expect(room.hostInfo.duelRule).toBe(5);
 			expect(room.hostInfo.maxDeckPoints).toBe(100);
 		});
 
@@ -392,9 +392,28 @@ describe("MercuryRoom", () => {
 			expect(room.isGenesys).toBe(true);
 			expect(room.hostInfo.rule).toBe(1);
 			expect(room.hostInfo.lflist).toBe(0);
-			expect(room.hostInfo.timeLimit).toBe(300);
-			expect(room.hostInfo.duelRule).toBe(3);
+			expect(room.hostInfo.timeLimit).toBe(180);
+			expect(room.hostInfo.duelRule).toBe(5);
 			expect(room.hostInfo.maxDeckPoints).toBe(300);
+		});
+	});
+
+	describe("Pre releases", () => {
+		it("Should create a room with pre release format if command contains pr and the default points should be 100", () => {
+			const room = MercuryRoom.create(
+				id,
+				"PRE,NC,M,TM15#KIRITO",
+				logger,
+				emitter,
+				playerInfoMessage,
+				socketId
+			);
+
+			expect(room.hostInfo.rule).toBe(5);
+			expect(room.hostInfo.timeLimit).toBe(900);
+			expect(room.hostInfo.duelRule).toBe(5);
+			expect(room.hostInfo.noCheck).toBe(true);
+			expect(room.hostInfo.mode).toBe(Mode.MATCH);
 		});
 	});
 });
