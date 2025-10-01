@@ -377,7 +377,6 @@ describe("MercuryRoom", () => {
 
 		it("Should create a room with Genesys format if command contains g and the default points should be 100", () => {
 			const room = MercuryRoom.create(id, "g#123", logger, emitter, playerInfoMessage, socketId);
-
 			expect(room.isGenesys).toBe(true);
 			expect(room.hostInfo.rule).toBe(1);
 			expect(room.hostInfo.lflist).toBe(0);
@@ -414,6 +413,17 @@ describe("MercuryRoom", () => {
 			expect(room.hostInfo.duelRule).toBe(5);
 			expect(room.hostInfo.noCheck).toBe(true);
 			expect(room.hostInfo.mode).toBe(Mode.MATCH);
+		});
+	});
+
+	describe("Goat Format", () => {
+		it("Should create a room with Goat format if command contains goat", () => {
+			const room = MercuryRoom.create(id, "goat#123", logger, emitter, playerInfoMessage, socketId);
+			expect(room.folderRoute).toBe("mercury/alternatives/goat");
+			expect(room.hostInfo.rule).toBe(5);
+			expect(room.hostInfo.lflist).toBe(0);
+			expect(room.hostInfo.timeLimit).toBe(180);
+			expect(room.hostInfo.duelRule).toBe(4);
 		});
 	});
 });

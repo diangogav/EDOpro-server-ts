@@ -41,7 +41,7 @@ export class MercuryRoom extends YgoRoom {
 	private _joinBuffer: Buffer | null = null;
 	private readonly _hostInfo: HostInfo;
 	private roomState: RoomState | null = null;
-	private route = "mercury";
+	private _route = "mercury";
 
 	private constructor({
 		id,
@@ -189,14 +189,15 @@ export class MercuryRoom extends YgoRoom {
 			genesys: "mercury/alternatives/genesys",
 		};
 
+		const genesysRegex = /^g\d*$/;
 		options.forEach((option) => {
-			if (option.startsWith("genesys") || option.startsWith("g")) {
-				room.route = routes["genesys"];
+			if (option.startsWith("genesys") || genesysRegex.test(option)) {
+				room._route = routes["genesys"];
 
 				return;
 			}
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-			room.route = routes[option] ?? room.route;
+			room._route = routes[option] ?? room._route;
 		});
 
 		return room;
@@ -246,7 +247,7 @@ export class MercuryRoom extends YgoRoom {
 				"2", //REPLAY MODE
 			],
 			{
-				cwd: this.route,
+				cwd: this._route,
 			}
 		);
 
@@ -321,7 +322,11 @@ export class MercuryRoom extends YgoRoom {
 	}
 
 	get isGenesys(): boolean {
-		return this.route === "mercury/alternatives/genesys";
+		return this._route === "mercury/alternatives/genesys";
+	}
+
+	get folderRoute(): string {
+		return this._route;
 	}
 
 	setJoinBuffer(buffer: Buffer): void {
