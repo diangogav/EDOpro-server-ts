@@ -1,13 +1,13 @@
 import "reflect-metadata";
 
 import { faker } from "@faker-js/faker";
-import { Pino } from "src/shared/logger/infrastructure/Pino";
+import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 import { UserProfileCreator } from "src/shared/user-profile/application/UserProfileCreator";
 import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 
 import { PostgresTypeORM } from "../evolution-types/src/PostgresTypeORM";
 
-const logger = new Pino();
+const logger = LoggerFactory.getLogger();
 const postgresDatabase = new PostgresTypeORM();
 async function run() {
 	await postgresDatabase.connect();

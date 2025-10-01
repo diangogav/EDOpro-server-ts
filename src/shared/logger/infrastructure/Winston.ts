@@ -24,15 +24,21 @@ export class Winston implements Logger {
 		});
 	}
 
-	debug(message: unknown): void {
-		this.debugLogger.debug(message);
+	debug(message: unknown, context?: Record<string, unknown>): void {
+		const meta = context ?? {};
+		const msg = typeof message === "string" ? message : JSON.stringify(message);
+		this.debugLogger.debug(msg, meta);
 	}
 
-	error(error: string | Error): void {
-		this.logger.error(error);
+	error(error: string | Error, context?: Record<string, unknown>): void {
+		const meta = context ?? {};
+		const errObj = error instanceof Error ? error : new Error(String(error));
+		this.logger.error(errObj.message, { ...meta, stack: errObj.stack });
 	}
 
-	info(message: unknown): void {
-		this.logger.info(message);
+	info(message: unknown, context?: Record<string, unknown>): void {
+		const meta = context ?? {};
+		const msg = typeof message === "string" ? message : JSON.stringify(message);
+		this.logger.info(msg, meta);
 	}
 }

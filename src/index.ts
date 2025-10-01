@@ -4,7 +4,7 @@ import "src/shared/error-handler/error-handler";
 import { BanListLoader } from "src/edopro/ban-list/infrastructure/BanListLoader";
 import BanListMemoryRepository from "src/edopro/ban-list/infrastructure/BanListMemoryRepository";
 import { EdoProSQLiteTypeORM } from "src/shared/db/sqlite/infrastructure/EdoProSQLiteTypeORM";
-import { Pino } from "src/shared/logger/infrastructure/Pino";
+import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 
 import { config } from "./config";
 import { PostgresTypeORM } from "./evolution-types/src/PostgresTypeORM";
@@ -17,7 +17,7 @@ import WebSocketSingleton from "./web-socket-server/WebSocketSingleton";
 void start();
 
 async function start(): Promise<void> {
-	const logger = new Pino();
+	const logger = LoggerFactory.getLogger();
 	const server = new Server(logger);
 	const mercuryServer = new MercuryServer(logger);
 	const hostServer = new HostServer(logger);

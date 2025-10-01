@@ -2,10 +2,11 @@ import RedisLibrary from "ioredis";
 
 import { config } from "../../../../config";
 import { Database } from "../../../../evolution-types/src/Database";
-import { Pino } from "../../../logger/infrastructure/Pino";
+import { Logger } from "../../../logger/domain/Logger";
+import LoggerFactory from "../../../logger/infrastructure/LoggerFactory";
 
 export class Redis implements Database {
-	private static readonly logger: Pino = new Pino();
+	private static readonly logger: Logger = LoggerFactory.getLogger();
 	private static instance?: RedisLibrary;
 
 	static getInstance(): RedisLibrary | undefined {
