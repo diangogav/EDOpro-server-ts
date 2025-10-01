@@ -138,6 +138,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return value === "toot";
 		},
 	},
+
 	ns: {
 		get: () => {
 			return {
@@ -225,6 +226,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return regex.test(value);
 		},
 	},
+
 	to: {
 		get: () => {
 			return {
@@ -236,6 +238,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return value === "to" || value === "tcgonly" || value === "tor";
 		},
 	},
+
 	lf: {
 		get: (value: string) => {
 			const lflist = extractNumberFromCommand(value);
@@ -255,6 +258,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return regex.test(value);
 		},
 	},
+
 	nf: {
 		get: () => {
 			return {
@@ -265,6 +269,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return value === "nf" || value === "nolflist";
 		},
 	},
+
 	oor: {
 		get: () => {
 			return {
@@ -276,6 +281,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return value === "oor";
 		},
 	},
+
 	or: {
 		get: () => {
 			return {
@@ -287,6 +293,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return value === "or";
 		},
 	},
+
 	tr: {
 		get: () => {
 			return {
@@ -298,6 +305,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return value === "tr";
 		},
 	},
+
 	oomr: {
 		get: () => {
 			return {
@@ -310,6 +318,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return value === "oomr";
 		},
 	},
+
 	omr: {
 		get: () => {
 			return {
@@ -322,6 +331,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return value === "omr";
 		},
 	},
+
 	tomr: {
 		get: () => {
 			return {
@@ -334,6 +344,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return value === "tomr";
 		},
 	},
+
 	tmr: {
 		get: () => {
 			return {
@@ -346,14 +357,15 @@ export const priorityRuleMappings: RuleMappings = {
 			return value === "tmr";
 		},
 	},
+};
+
+export const formatRuleMappings: RuleMappings = {
 	edison: {
 		get: () => {
 			return {
 				rule: 5,
 				lflist: 0,
-				timeLimit: 300,
 				duelRule: 1,
-				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -365,9 +377,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: 0,
-				timeLimit: 300,
 				duelRule: 2,
-				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -379,9 +389,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: 0,
-				timeLimit: 300,
 				duelRule: 2,
-				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -393,9 +401,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: 11,
-				timeLimit: 300,
 				duelRule: 5,
-				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -407,9 +413,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: 0,
-				timeLimit: 300,
 				duelRule: 2,
-				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -421,9 +425,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: 0,
-				timeLimit: 300,
 				duelRule: 1,
-				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -435,9 +437,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: 0,
-				timeLimit: 300,
 				duelRule: 2,
-				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -449,9 +449,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: 0,
-				timeLimit: 300,
 				duelRule: 4,
-				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -469,8 +467,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 1,
 				lflist: 0,
-				timeLimit: 300,
-				duelRule: 3,
+				duelRule: 5,
 				maxDeckPoints,
 			};
 		},
@@ -486,9 +483,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: 2,
-				timeLimit: 300,
 				duelRule: 4,
-				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -500,9 +495,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: 2,
-				timeLimit: 300,
 				duelRule: 4,
-				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -514,9 +507,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: 3,
-				timeLimit: 300,
 				duelRule: 4,
-				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -528,9 +519,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: 5,
-				timeLimit: 300,
 				duelRule: 4,
-				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -542,8 +531,6 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				duelRule: 5,
-				timeLimit: 300,
-				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -555,8 +542,6 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 0,
 				lflist: 0,
-				timeLimit: 300,
-				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -568,8 +553,6 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				duelRule: 5,
-				timeLimit: 300,
-				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -581,8 +564,6 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				duelRule: 5,
-				timeLimit: 300,
-				mode: Mode.SINGLE,
 				lflist: 0,
 			};
 		},
@@ -595,8 +576,6 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				duelRule: 5,
-				timeLimit: 300,
-				mode: Mode.SINGLE,
 			};
 		},
 		validate: (value) => {
@@ -608,8 +587,6 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 4,
 				duelRule: 3,
-				timeLimit: 300,
-				mode: Mode.SINGLE,
 				lflist: 0,
 			};
 		},
