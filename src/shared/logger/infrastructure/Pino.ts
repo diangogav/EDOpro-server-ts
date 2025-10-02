@@ -1,6 +1,28 @@
 import pino, { Logger as PinoLogger } from "pino";
+import pretty, { type PrettyOptions } from "pino-pretty";
+import type { Transform } from "stream";
 
 import { Logger } from "../domain/Logger";
+
+const color =
+	(number: number) =>
+	(value: unknown): string =>
+		`\x1b[${number}m${String(value)}\x1b[0m`;
+
+function createPrettyStream(opts?: PrettyOptions): Transform {
+	return pretty({
+		...(opts ?? {}),
+		customPrettifiers: {
+			...(opts?.customPrettifiers as Record<string, (v: unknown) => string>),
+			roomId: color(33), // yellow
+			clientId: color(36), // cyan
+			clientName: color(35), // magenta
+			socketId: color(34), // blue
+			remoteAddress: color(90), // gray
+			file: color(34), // blue
+		},
+	});
+}
 
 export class Pino implements Logger {
 	private readonly logger: PinoLogger;
@@ -11,15 +33,7 @@ export class Pino implements Logger {
 			this.logger = logger;
 			this.fileLogger = fileLogger;
 		} else {
-			this.logger = pino({
-				level: "debug",
-				transport: {
-					target: "src/shared/logger/infrastructure/pretty-transport.ts",
-					options: {
-						colorize: true,
-					},
-				},
-			});
+			this.logger = pino({ level: "debug" }, createPrettyStream({ colorize: true }));
 
 			this.fileLogger = pino({
 				level: "debug",
@@ -36,8 +50,8 @@ export class Pino implements Logger {
 
 		if (context && typeof context === "object") {
 			this.logger.debug({ ...context }, msg);
-			// this.fileLogger.debug({ ...context }, msg);
 
+			// this.fileLogger.debug({ ...context }, msg);
 			return;
 		}
 
@@ -49,8 +63,8 @@ export class Pino implements Logger {
 
 		if (context && typeof context === "object") {
 			this.logger.error({ ...context, err: errObj.stack ?? errObj.message }, errObj.message);
-			// this.fileLogger.error({ ...context, err: errObj.stack ?? errObj.message }, errObj.message);
 
+			// this.fileLogger.error({ ...context, err: errObj.stack ?? errObj.message }, errObj.message);
 			return;
 		}
 
@@ -62,8 +76,8 @@ export class Pino implements Logger {
 
 		if (context && typeof context === "object") {
 			this.logger.info({ ...context }, msg);
-			// this.fileLogger.info({ ...context }, msg);
 
+			// this.fileLogger.info({ ...context }, msg);
 			return;
 		}
 
