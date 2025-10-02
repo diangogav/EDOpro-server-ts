@@ -104,6 +104,8 @@ export class DuelingState extends RoomState {
 	) {
 		super(eventEmitter);
 
+		this.logger = logger.child({ file: "DuelingState" });
+
 		this.handle();
 
 		this.eventEmitter.on(
@@ -138,7 +140,7 @@ export class DuelingState extends RoomState {
 	}
 
 	private handleUpdateDeck(message: ClientMessage, room: Room, client: Client): void {
-		this.logger.debug("DUELING: UPDATE_DECK");
+		client.logger.info("DuelingState: UPDATE_DECK");
 
 		const parser = new UpdateDeckMessageParser(message.data);
 		const [mainDeck, sideDeck] = parser.getDeck();
@@ -204,7 +206,8 @@ export class DuelingState extends RoomState {
 
 		const seeds = this.generateSeeds();
 		this.room.replay.setSeed(seeds);
-		this.logger.debug(`GAME: ${this.room.playerNames(0)} VS ${this.room.playerNames(1)}`);
+
+		this.logger.info("Starting Duel");
 
 		this.room.clients.forEach((item) => {
 			item.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.STARTING_DUEL));
@@ -235,28 +238,22 @@ export class DuelingState extends RoomState {
 		this.room.setDuel(core);
 
 		core.stderr.on("data", (data: string) => {
-			this.logger.error(data.toString());
+			this.logger.error(data.toString(), { roomId: this.room.id });
 			this.room.clients.forEach((item) => {
 				item.socket.send(ServerMessageClientMessage.create(data.toString()));
 			});
 		});
 
 		core.on("exit", (code, signal) => {
-			this.logger.info(
-				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-				`Core exited for room ${this.room.id} with code: ${code} and signal: ${signal} `
-			);
+			this.logger.info(`Core exited`, { code, signal });
 		});
 
 		core.on("close", (code, signal) => {
-			this.logger.info(
-				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-				`Core closed for room ${this.room.id} with code: ${code} and signal: ${signal} `
-			);
+			this.logger.info(`Core closed`, { code, signal });
 		});
 
 		core.on("error", (error) => {
-			this.logger.info(`Core error in room ${this.room.id}`);
+			this.logger.info(`Core error`);
 			this.logger.error(error.toString());
 		});
 
@@ -602,7 +599,7 @@ export class DuelingState extends RoomState {
 	}
 
 	private handleReady(message: ClientMessage, room: Room, player: Client): void {
-		this.logger.debug("DUELING: READY");
+		player.logger.info("DUELING_STATE: READY");
 		if (!player.isReconnecting || !player.canReconnect) {
 			return;
 		}
@@ -633,7 +630,7 @@ export class DuelingState extends RoomState {
 	}
 
 	private async handleJoin(message: ClientMessage, room: Room, socket: ISocket): Promise<void> {
-		this.logger.debug("DUELING: JOIN");
+		this.logger.info("DUELING_STATE: JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const joinMessage = new JoinGameMessage(message.data);
 		if (room.password !== joinMessage.password) {
@@ -654,8 +651,8 @@ export class DuelingState extends RoomState {
 		await this.reconnect.run(playerInfoMessage, reconnectingPlayer, joinMessage, socket, room);
 	}
 
-	private handleSurrender(_message: ClientMessage, client: Client): void {
-		this.logger.debug("DUELING: SURRENDER");
+	private handleSurrender(_message: ClientMessage, player: Client): void {
+		player.logger.info("DUELING_STATE: SURRENDER");
 		this.jsonMessageProcessor.clear();
 		if (this.room.isFinished()) {
 			return;
@@ -672,15 +669,15 @@ export class DuelingState extends RoomState {
 
 		const finishDuelHandler = new FinishDuelHandler({
 			reason: DuelFinishReason.SURRENDERED,
-			winner: Number(!client.team),
+			winner: Number(!player.team),
 			room: this.room,
 		});
 
 		void finishDuelHandler.run();
 	}
 
-	private handleResponse(message: ClientMessage, client: Client): void {
-		this.logger.debug("DUELING: RESPONSE");
+	private handleResponse(message: ClientMessage, player: Client): void {
+		player.logger.info("DUELING_STATE: RESPONSE");
 
 		const data = message.data
 			.toString("hex")
@@ -692,13 +689,13 @@ export class DuelingState extends RoomState {
 		}
 
 		this.room.replay.addResponse(data);
-		this.room.stopTimer(client.team);
+		this.room.stopTimer(player.team);
 
 		this.room.sendMessageToCpp(
 			JSON.stringify({
 				command: "RESPONSE",
 				data: {
-					replier: client.team,
+					replier: player.team,
 					message: data,
 				},
 			})

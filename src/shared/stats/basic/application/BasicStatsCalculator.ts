@@ -20,7 +20,9 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 		private readonly playerStatsRepository: PlayerStatsRepository,
 		private readonly matchResumeCreator: MatchResumeCreator,
 		private readonly duelResumeCreator: DuelResumeCreator
-	) {}
+	) {
+		this.logger = logger.child({ file: "BasicStatsCalculator" });
+	}
 
 	async handle(event: GameOverDomainEvent): Promise<void> {
 		this.logger.info(

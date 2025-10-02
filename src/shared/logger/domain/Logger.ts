@@ -12,4 +12,5 @@ export interface Logger {
 	 * Log an info message with optional structured context.
 	 */
 	info(message: unknown, context?: Record<string, unknown>): void;
+	child(bindings: Record<string, unknown>): Logger;
 }

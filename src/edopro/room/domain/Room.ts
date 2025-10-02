@@ -225,7 +225,7 @@ export class Room extends YgoRoom {
 		payload.notes = payload.ranked ? `(Ranked) ${payload.notes}` : payload.notes;
 		const room = new Room(payload);
 		room.emitter = emitter;
-		room.logger = logger;
+		room.logger = logger.child({ roomId: payload.id });
 
 		return room;
 	}
@@ -276,7 +276,7 @@ export class Room extends YgoRoom {
 		});
 
 		room.emitter = emitter;
-		room.logger = logger;
+		room.logger = logger.child({ roomId: id });
 
 		return room;
 	}

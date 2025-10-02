@@ -18,6 +18,9 @@ import { MercuryRoom } from "../MercuryRoom";
 export class MercuryChoosingOrderState extends RoomState {
 	constructor(eventEmitter: EventEmitter, private readonly logger: Logger) {
 		super(eventEmitter);
+
+		this.logger = logger.child({ file: "MercuryChoosingOrderState" });
+
 		this.eventEmitter.on(
 			"GAME_MSG",
 			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
@@ -41,7 +44,7 @@ export class MercuryChoosingOrderState extends RoomState {
 	}
 
 	private handle(message: ClientMessage, room: MercuryRoom, player: MercuryClient): void {
-		this.logger.info("MERCURY: CHOOSING_ORDER");
+		player.logger.info("MercuryChoosingOrderState: CHOOSING_ORDER");
 		const turn = message.data.readInt8();
 		const team = (<MercuryClient | undefined>room.clients.find((client) => client === player))
 			?.team;
@@ -58,18 +61,18 @@ export class MercuryChoosingOrderState extends RoomState {
 	private gameMessageHandler(
 		message: ClientMessage,
 		_room: MercuryRoom,
-		_player: MercuryClient
+		player: MercuryClient
 	): void {
-		this.logger.info("MERCURY_CHOOSING_ORDER: GAME_MSG");
+		player.logger.info("MercuryChoosingOrderState: GAME_MSG");
 		const gameMessage = message.data[0];
 		if (gameMessage === CoreMessages.MSG_START) {
-			this.logger.info("MERCURY_CHOOSING_ORDER CORE: MSG_START");
+			this.logger.info("MercuryChoosingOrderState CORE: MSG_START");
 			_room.dueling();
 		}
 	}
 
 	private handleJoin(message: ClientMessage, room: MercuryRoom, socket: ISocket): void {
-		this.logger.info("MERCURY: JOIN");
+		this.logger.info("JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const playerAlreadyInRoom = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
 
@@ -93,7 +96,7 @@ export class MercuryChoosingOrderState extends RoomState {
 	}
 
 	private handleReady(_message: ClientMessage, room: MercuryRoom, player: MercuryClient): void {
-		this.logger.debug("CHOOSING_ORDER: READY");
+		player.logger.debug("MercuryChoosingOrderState: READY");
 		if (!player.isReconnecting) {
 			return;
 		}

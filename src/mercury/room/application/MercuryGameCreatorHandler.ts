@@ -11,7 +11,7 @@ export class MercuryGameCreatorHandler implements GameCreatorMessageHandler {
 
 	constructor(eventEmitter: EventEmitter, logger: Logger) {
 		this.eventEmitter = eventEmitter;
-		this.logger = logger;
+		this.logger = logger.child({ file: "MercuryGameCreatorHandler" });
 		this.eventEmitter.on(Commands.CREATE_GAME as unknown as string, (message: ClientMessage) => {
 			void this.handle(message);
 		});
@@ -19,6 +19,7 @@ export class MercuryGameCreatorHandler implements GameCreatorMessageHandler {
 
 	// eslint-disable-next-line @typescript-eslint/require-await
 	async handle(message: ClientMessage): Promise<void> {
+		this.logger.info("CREATE_GAME");
 		this.logger.debug(`Game Creator Message: ${message.data.toString("hex")}`);
 	}
 }

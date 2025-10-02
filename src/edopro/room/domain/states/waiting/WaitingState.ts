@@ -36,6 +36,7 @@ export class WaitingState extends RoomState {
 		private readonly deckCreator: DeckCreator
 	) {
 		super(eventEmitter);
+		this.logger = this.logger.child({ file: "WaitingState" });
 		this.eventEmitter.on(
 			"JOIN",
 			(message: ClientMessage, room: Room, socket: ISocket) =>
@@ -85,8 +86,9 @@ export class WaitingState extends RoomState {
 		);
 	}
 
-	private handleKick(message: ClientMessage, room: Room, _player: Client): void {
-		this.logger.debug("WAITING: KICK");
+	private handleKick(message: ClientMessage, room: Room, player: Client): void {
+		player.logger.info("WaitingState: KICK");
+
 		const positionKick = message.data.readInt8();
 		const playerSelect = room.clients.find((_client) => _client.position === positionKick);
 
@@ -119,13 +121,14 @@ export class WaitingState extends RoomState {
 	}
 
 	private handleToDuel(_message: ClientMessage, room: Room, player: Client): void {
-		this.logger.debug("WAITING: TO_DUEL");
+		player.logger.info("WaitingState: TO_DUEL");
+
 		const changeToDuel = new ChangeToDuel();
 		changeToDuel.execute(room, player);
 	}
 
-	private tryStartHandler(_message: ClientMessage, room: Room, _player: Client): void {
-		this.logger.debug("WAITING: TRY_START");
+	private tryStartHandler(_message: ClientMessage, room: Room, player: Client): void {
+		player.logger.info("WaitingState: TRY_START");
 
 		if (!room.allPlayersReady) {
 			return;
@@ -156,15 +159,16 @@ export class WaitingState extends RoomState {
 	}
 
 	private handleReady(_message: ClientMessage, room: Room, player: Client): void {
-		this.logger.debug("WAITING: READY");
+		player.logger.info("WaitingState: READY");
+
 		if (player.isUpdatingDeck) {
-			this.logger.debug("WAITING: SAVING READY COMMAND");
+			// this.logger.debug("WAITING: SAVING READY COMMAND");
 			player.saveReadyCommand(_message);
 
 			return;
 		}
 
-		this.logger.debug("WAITING: EXECUTE READY COMMAND");
+		// this.logger.debug("WAITING: EXECUTE READY COMMAND");
 		const status = (player.position << 4) | 0x09;
 		const message = PlayerChangeClientMessage.create({ status });
 
@@ -176,7 +180,7 @@ export class WaitingState extends RoomState {
 	}
 
 	private handleChangeToObserver(_message: ClientMessage, room: Room, player: Client): void {
-		this.logger.debug("WAITING: TO_OBSERVER");
+		player.logger.info("WaitingState: OBSERVER");
 
 		if (player.isSpectator) {
 			return;
@@ -226,7 +230,8 @@ export class WaitingState extends RoomState {
 		room: Room,
 		player: Client
 	): Promise<void> {
-		this.logger.debug("WAITING: UPDATE_DECK");
+		player.logger.info("WaitingState: UPDATE_DECK");
+
 		player.updatingDeck();
 		const parser = new UpdateDeckMessageParser(message.data);
 		const [mainDeck, sideDeck] = parser.getDeck();
@@ -250,14 +255,14 @@ export class WaitingState extends RoomState {
 		player.deckUpdated();
 
 		if (player.haveReadyCommand) {
-			this.logger.debug("WAITING: UPDATE_DECK: CALLING READY COMMAND");
+			// this.logger.debug("WAITING: UPDATE_DECK: CALLING READY COMMAND");
 			player.clearReadyCommand();
 			this.handleReady(player.readyMessage, room, player);
 		}
 	}
 
 	private handleNotReady(_message: ClientMessage, room: Room, player: Client): void {
-		this.logger.debug("WAITING: NOT_READY");
+		player.logger.info("WaitingState: NOT_READY");
 
 		const status = (player.position << 4) | 0x0a;
 		const playerChangeMessage = PlayerChangeClientMessage.create({ status });
@@ -269,7 +274,7 @@ export class WaitingState extends RoomState {
 	}
 
 	private async handle(message: ClientMessage, room: Room, socket: ISocket): Promise<void> {
-		this.logger.debug("WAITING: JOIN");
+		this.logger.info("JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		if (this.playerAlreadyInRoom(playerInfoMessage, room, socket)) {
 			this.sendExistingPlayerErrorMessage(playerInfoMessage, socket);

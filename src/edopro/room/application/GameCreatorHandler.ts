@@ -38,7 +38,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 		roomId: number
 	) {
 		this.eventEmitter = eventEmitter;
-		this.logger = logger;
+		this.logger = logger.child({ file: "GameCreatorHandler", roomId });
 		this.socket = socket;
 		this.userAuth = userAuth;
 		this.roomId = roomId;
@@ -48,7 +48,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 	}
 
 	async handle(message: ClientMessage): Promise<void> {
-		this.logger.info("GameCreatorHandler");
+		this.logger.info("handle");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const createGameMessage = new CreateGameMessage(message.data);
 

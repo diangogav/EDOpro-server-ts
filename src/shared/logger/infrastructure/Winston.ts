@@ -24,6 +24,10 @@ export class Winston implements Logger {
 		});
 	}
 
+	child(bindings: Record<string, unknown>): Logger {
+		throw new Error("Method not implemented.");
+	}
+
 	debug(message: unknown, context?: Record<string, unknown>): void {
 		const meta = context ?? {};
 		const msg = typeof message === "string" ? message : JSON.stringify(message);

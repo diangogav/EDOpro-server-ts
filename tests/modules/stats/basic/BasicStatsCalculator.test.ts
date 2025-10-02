@@ -34,7 +34,8 @@ describe("BasicStatsCalculator", () => {
 	let matchId: string;
 
 	beforeEach(() => {
-		logger = mock();
+		logger = mock<Logger>();
+		logger.child.mockReturnValue(logger);
 		userProfileRepository = mock();
 		playerStatsRepository = mock<PlayerStatsRepository>();
 		matchResumeCreator = mock();

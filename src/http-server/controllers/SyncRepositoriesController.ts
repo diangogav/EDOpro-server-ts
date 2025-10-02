@@ -5,7 +5,9 @@ import { EdoProSQLiteTypeORM } from "../../shared/db/sqlite/infrastructure/EdoPr
 import { Logger } from "../../shared/logger/domain/Logger";
 
 export class SyncRepositoriesController {
-	constructor(private readonly logger: Logger) {}
+	constructor(private readonly logger: Logger) {
+		this.logger = this.logger.child({ file: "SyncRepositoriesController" });
+	}
 
 	async run(_req: Request, response: Response): Promise<void> {
 		this.logger.info("Init sync database and scripts");

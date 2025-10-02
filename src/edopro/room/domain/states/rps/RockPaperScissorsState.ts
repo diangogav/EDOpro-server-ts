@@ -26,6 +26,8 @@ export class RockPaperScissorState extends RoomState {
 	) {
 		super(eventEmitter);
 
+		this.logger = logger.child({ file: "RockPaperScissorState" });
+
 		this.eventEmitter.on(
 			"JOIN" as unknown as string,
 			(message: ClientMessage, room: Room, socket: ISocket) =>
@@ -46,14 +48,14 @@ export class RockPaperScissorState extends RoomState {
 	}
 
 	private handle(message: ClientMessage, room: Room, player: Client): void {
-		this.logger.debug("RPS: RPS");
+		player.logger.info("RockPaperScissorState: RPS_CHOICE");
 
 		const rpsChoice = new RpsChoiceCommandStrategy();
 		rpsChoice.execute(message, room, player);
 	}
 
 	private handleReady(message: ClientMessage, room: Room, player: Client): void {
-		this.logger.debug("RPS: READY");
+		player.logger.info("RockPaperScissorState: READY");
 
 		if (!player.isReconnecting) {
 			return;
@@ -70,7 +72,7 @@ export class RockPaperScissorState extends RoomState {
 	}
 
 	private async handleJoin(message: ClientMessage, room: Room, socket: ISocket): Promise<void> {
-		this.logger.debug("RPS: JOIN");
+		this.logger.info("JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const joinMessage = new JoinGameMessage(message.data);
 		const reconnectingPlayer = this.playerAlreadyInRoom(playerInfoMessage, room, socket);

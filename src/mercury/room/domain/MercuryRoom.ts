@@ -163,7 +163,7 @@ export class MercuryRoom extends YgoRoom {
 			startLp: hostInfo.startLp,
 		});
 
-		room._logger = logger;
+		room._logger = logger.child({ file: "MercuryRoom" });
 		room.emitter = emitter;
 
 		const routes = {

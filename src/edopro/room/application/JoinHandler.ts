@@ -29,7 +29,7 @@ export class JoinHandler implements JoinMessageHandler {
 		checkIfUseCanJoin: CheckIfUseCanJoin
 	) {
 		this.eventEmitter = eventEmitter;
-		this.logger = logger;
+		this.logger = logger.child({ file: "JoinHandler" });
 		this.socket = socket;
 		this.checkIfUseCanJoin = checkIfUseCanJoin;
 		this.eventEmitter.on(
@@ -39,8 +39,12 @@ export class JoinHandler implements JoinMessageHandler {
 	}
 
 	async handle(message: ClientMessage): Promise<void> {
-		this.logger.info("JoinHandler");
+		this.logger.info("handle");
 		const joinMessage = new JoinGameMessage(message.data);
+		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
+		this.logger.info(
+			`player: ${playerInfoMessage.name} trying to join to room: ${joinMessage.id} with room pass: ${joinMessage.password}`
+		);
 		const room = this.findRoom(joinMessage);
 
 		if (!room) {
@@ -54,7 +58,6 @@ export class JoinHandler implements JoinMessageHandler {
 		}
 
 		if (room.ranked) {
-			const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 			if (!(await this.checkIfUseCanJoin.check(playerInfoMessage, this.socket))) {
 				return;
 			}

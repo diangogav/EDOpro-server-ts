@@ -25,6 +25,8 @@ export class ChossingOrderState extends RoomState {
 	) {
 		super(eventEmitter);
 
+		this.logger = logger.child({ file: "ChossingOrderState" });
+
 		this.eventEmitter.on(
 			"JOIN" as unknown as string,
 			(message: ClientMessage, room: Room, socket: ISocket) =>
@@ -45,7 +47,7 @@ export class ChossingOrderState extends RoomState {
 	}
 
 	private handle(message: ClientMessage, room: Room, player: Client): void {
-		this.logger.debug("CHOSSING_ORDER");
+		player.logger.info("CHOSSING_ORDER: TURN_CHOICE");
 
 		const turn = message.data.readInt8();
 		const team = (<Client | undefined>room.clients.find((client) => client === player))?.team;
@@ -62,7 +64,7 @@ export class ChossingOrderState extends RoomState {
 	}
 
 	private handleReady(message: ClientMessage, room: Room, player: Client): void {
-		this.logger.debug("CHOSSING_ORDER: READY");
+		player.logger.info("CHOSSING_ORDER: READY");
 
 		if (!player.isReconnecting) {
 			return;
@@ -79,7 +81,7 @@ export class ChossingOrderState extends RoomState {
 	}
 
 	private async handleJoin(message: ClientMessage, room: Room, socket: ISocket): Promise<void> {
-		this.logger.debug("CHOSSING_ORDER: JOIN");
+		this.logger.info("CHOSSING_ORDER: JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const joinMessage = new JoinGameMessage(message.data);
 		const reconnectingPlayer = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
