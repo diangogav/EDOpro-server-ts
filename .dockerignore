@@ -10,3 +10,4 @@ core/databases
 databases
 mercury/scripts
 src/evolution-types
+postgres_data

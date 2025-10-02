@@ -9,4 +9,4 @@ class CoreIntegrator(ConanFile):
     self.requires("sqlite3/3.42.0")
     self.requires("jsoncpp/1.9.5")
     self.requires("nlohmann_json/3.11.2")
-    self.requires("libcurl/8.6.0")
+    self.requires("libcurl/8.15.0")
