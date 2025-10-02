@@ -18,7 +18,7 @@ import { MercuryRoom } from "../MercuryRoom";
 export class MercurySideDeckingState extends RoomState {
 	constructor(eventEmitter: EventEmitter, private readonly logger: Logger) {
 		super(eventEmitter);
-
+		this.logger = logger.child({ file: "MercurySideDeckingState" });
 		this.eventEmitter.on(
 			"JOIN",
 			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
@@ -39,7 +39,7 @@ export class MercurySideDeckingState extends RoomState {
 	}
 
 	private handleJoin(message: ClientMessage, room: MercuryRoom, socket: ISocket): void {
-		this.logger.info("MERCURY_SIDE_DECKING: JOIN");
+		this.logger.info("JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const playerAlreadyInRoom = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
 
@@ -63,7 +63,7 @@ export class MercurySideDeckingState extends RoomState {
 	}
 
 	private handleReady(_message: ClientMessage, room: MercuryRoom, player: MercuryClient): void {
-		this.logger.debug("MERCURY_SIDE_DECKING: READY");
+		player.logger.info("MercurySideDeckingState: READY");
 		if (!player.isReconnecting) {
 			return;
 		}
@@ -77,12 +77,12 @@ export class MercurySideDeckingState extends RoomState {
 	}
 
 	private handleUpdateDeck(message: ClientMessage, room: MercuryRoom, player: MercuryClient): void {
+		player.logger.info("MercurySideDeckingState: UPDATE_DECK");
 		player.ready();
 		const allClientsNotReady = room.clients.some((client: MercuryClient) => !client.isReady);
 		if (allClientsNotReady) {
 			return;
 		}
-		this.logger.info("SIDE_DECKING: READY");
 		room.choosingOrder();
 	}
 }

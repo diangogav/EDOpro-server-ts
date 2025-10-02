@@ -31,6 +31,8 @@ export class SideDeckingState extends RoomState {
 	) {
 		super(eventEmitter);
 
+		this.logger = logger.child({ file: "SideDeckingState" });
+
 		this.eventEmitter.on(
 			Commands.UPDATE_DECK as unknown as string,
 			(message: ClientMessage, room: Room, client: Client) =>
@@ -45,7 +47,7 @@ export class SideDeckingState extends RoomState {
 	}
 
 	async handle(message: ClientMessage, room: Room, socket: ISocket): Promise<void> {
-		this.logger.debug("SIDE_DECKING: JOIN");
+		this.logger.info("JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const joinMessage = new JoinGameMessage(message.data);
 		const reconnectingPlayer = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
@@ -64,7 +66,7 @@ export class SideDeckingState extends RoomState {
 		room: Room,
 		player: Client
 	): Promise<void> {
-		this.logger.debug("SIDE_DECKING: UPDATE_DECK");
+		player.logger.info("SIDE_DECKING: UPDATE_DECK");
 		const parser = new UpdateDeckMessageParser(message.data);
 		const [mainDeck, sideDeck] = parser.getDeck();
 		if (!player.deck.isSideDeckValid(mainDeck)) {
@@ -103,7 +105,7 @@ export class SideDeckingState extends RoomState {
 	}
 
 	private startDuel(room: Room): void {
-		this.logger.debug("SIDE_DECKING: START_DUEL");
+		this.logger.debug("START_DUEL");
 
 		const allClientsNotReady = room.clients.some((client: Client) => !client.isReady);
 		if (allClientsNotReady) {

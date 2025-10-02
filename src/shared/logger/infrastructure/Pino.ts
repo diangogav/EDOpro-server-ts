@@ -1,25 +1,35 @@
-import pino from "pino";
+import pino, { Logger as PinoLogger } from "pino";
 
 import { Logger } from "../domain/Logger";
 
 export class Pino implements Logger {
-	private readonly logger = pino({
-		level: "debug",
-		transport: {
-			target: "pino-pretty",
-			options: {
-				colorize: true,
-			},
-		},
-	});
+	private readonly logger: PinoLogger;
+	private readonly fileLogger: PinoLogger;
 
-	private readonly fileLogger = pino({
-		level: "debug",
-		transport: {
-			target: "pino/file",
-			options: { destination: "app.log" },
-		},
-	});
+	constructor(logger?: PinoLogger, fileLogger?: PinoLogger) {
+		if (logger && fileLogger) {
+			this.logger = logger;
+			this.fileLogger = fileLogger;
+		} else {
+			this.logger = pino({
+				level: "debug",
+				transport: {
+					target: "src/shared/logger/infrastructure/pretty-transport.ts",
+					options: {
+						colorize: true,
+					},
+				},
+			});
+
+			this.fileLogger = pino({
+				level: "debug",
+				transport: {
+					target: "pino/file",
+					options: { destination: "app.log" },
+				},
+			});
+		}
+	}
 
 	debug(message: unknown, context?: Record<string, unknown>): void {
 		const msg = typeof message === "string" ? message : JSON.stringify(message);
@@ -58,5 +68,12 @@ export class Pino implements Logger {
 		}
 
 		this.logger.info(msg);
+	}
+
+	child(bindings: Record<string, unknown>): Logger {
+		const childLogger = this.logger.child(bindings);
+		const childFileLogger = this.fileLogger.child(bindings);
+
+		return new Pino(childLogger, childFileLogger);
 	}
 }

@@ -35,48 +35,62 @@ export class MercuryServer {
 		});
 
 		this.server.on("connection", (socket: Socket) => {
-			this.logger.info("Client connected to Mercury server!!!");
 			this.address = socket.remoteAddress;
 			const ygoClientSocket = new TCPClientSocket(socket);
 			const eventEmitter = new EventEmitter();
 			ygoClientSocket.id = uuidv4();
 
+			const connectionLogger = this.logger.child({
+				file: "	MercuryServer",
+				socketId: ygoClientSocket.id,
+				remoteAddress: this.address,
+			});
+
+			connectionLogger.info("Client connected");
+
 			const createGameListener = () => {
-				new MercuryGameCreatorHandler(eventEmitter, this.logger);
+				new MercuryGameCreatorHandler(eventEmitter, connectionLogger);
 			};
 			const joinGameListener = () => {
-				new MercuryJoinHandler(eventEmitter, this.logger, ygoClientSocket, this.checkIfUserCanJoin);
+				new MercuryJoinHandler(
+					eventEmitter,
+					connectionLogger,
+					ygoClientSocket,
+					this.checkIfUserCanJoin
+				);
 			};
 
 			const messageEmitter = new MessageEmitter(
-				this.logger,
+				connectionLogger,
 				eventEmitter,
 				createGameListener,
 				joinGameListener
 			);
 
 			socket.on("data", (data: Buffer) => {
-				this.logger.debug(`Incoming message handle by Mercury Server: ${data.toString("hex")}`);
+				connectionLogger.debug(
+					`Incoming message handle by Mercury Server: ${data.toString("hex")}`
+				);
 				messageEmitter.handleMessage(data);
 			});
 
 			socket.on("end", () => {
 				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-				this.logger.info(`${socket.remoteAddress} left in end event`);
+				connectionLogger.info(`${socket.remoteAddress} left in end event`);
 				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
 			});
 
 			socket.on("close", () => {
 				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-				this.logger.info(`${socket.remoteAddress} left in close event`);
+				connectionLogger.info(`${socket.remoteAddress} left in close event`);
 				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
 			});
 
 			socket.on("error", (_error) => {
 				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-				this.logger.info(`${socket.remoteAddress} left in error event`);
+				connectionLogger.info(`${socket.remoteAddress} left in error event`);
 				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
 			});

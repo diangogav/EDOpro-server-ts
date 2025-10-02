@@ -32,6 +32,7 @@ export class MercuryWaitingState extends RoomState {
 		private readonly logger: Logger
 	) {
 		super(eventEmitter);
+		this.logger = logger.child({ file: "MercuryWaitingState" });
 		this.eventEmitter.on(
 			"JOIN",
 			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
@@ -124,13 +125,13 @@ export class MercuryWaitingState extends RoomState {
 	}
 
 	private tryStartHandler(_message: ClientMessage, room: MercuryRoom, _socket: ISocket): void {
-		this.logger.info("MERCURY: TRY_START");
+		this.logger.info("TRY_START");
 		room.createMatch();
 		room.rps();
 	}
 
 	private handleTypeChange(message: ClientMessage, room: MercuryRoom, client: MercuryClient): void {
-		this.logger.debug(`Mercury TYPE_CHANGE: ${message.data.toString("hex")}`);
+		client.logger.info(`MercuryWaitingState: TYPE_CHANGE: ${message.data.toString("hex")}`);
 		const value = parseInt(message.data.toString("hex"), 16);
 		const position = value & 0x0f;
 		const isHost = (position & 0x10) !== 0;
@@ -157,8 +158,8 @@ export class MercuryWaitingState extends RoomState {
 		room.calculatePlayerTeam(client, position);
 	}
 
-	private handleJoinGame(message: ClientMessage, room: MercuryRoom, _client: MercuryClient): void {
-		this.logger.debug("MERCURY: JOIN_GAME");
+	private handleJoinGame(message: ClientMessage, room: MercuryRoom, client: MercuryClient): void {
+		client.logger.info("MercuryWaitingState: JOIN_GAME");
 		const joinGameMessage = new JoinGameCoreToClientMessage(message.data);
 		room.setBanListHash(joinGameMessage.banList);
 		if (!room.joinBuffer) {
@@ -171,7 +172,7 @@ export class MercuryWaitingState extends RoomState {
 		room: MercuryRoom,
 		client: MercuryClient
 	): Promise<void> {
-		this.logger.debug(`Mercury UPDATE_DECK: ${message.data.toString("hex")}`);
+		client.logger.info(`MercuryWaitingState UPDATE_DECK: ${message.data.toString("hex")}`);
 		if (!room.isGenesys) {
 			return;
 		}

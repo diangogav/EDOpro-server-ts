@@ -12,6 +12,7 @@ export class Listener {}
 export class Client extends YgoClient {
 	public readonly listener: Listener;
 	public readonly roomId: number;
+	public readonly logger: Logger;
 	private _rpsChosen: Choose | null = null;
 	private _deck: Deck;
 	private _duelPosition: number;
@@ -20,7 +21,6 @@ export class Client extends YgoClient {
 	private _updatingDeck: boolean;
 	private _readyCommand: boolean;
 	private _readyMessage: ClientMessage;
-	private readonly logger: Logger;
 
 	constructor({
 		socket,
@@ -46,7 +46,7 @@ export class Client extends YgoClient {
 		super({ name, position, team, socket, host, id });
 		this.roomId = roomId;
 		this._isReady = isReady;
-		this.logger = logger;
+		this.logger = logger.child({ clientName: name, roomId, file: "Client" });
 	}
 
 	setSocket(socket: ISocket, clients: Client[], room: Room): void {

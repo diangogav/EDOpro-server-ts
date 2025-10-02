@@ -28,6 +28,7 @@ export class MercuryDuelingState extends RoomState {
 		private readonly logger: Logger
 	) {
 		super(eventEmitter);
+		this.logger = logger.child({ file: "MercuryDuelingState" });
 		this.handle();
 		this.eventBus = container.get(EventBus);
 		this.eventEmitter.on(
@@ -86,12 +87,12 @@ export class MercuryDuelingState extends RoomState {
 		this.notifyDuelStart(this.room);
 	}
 
-	private handleDuelEnd(_message: ClientMessage, _room: MercuryRoom, _player: MercuryClient): void {
-		this.logger.info("MERCURY: DUEL_END");
+	private handleDuelEnd(_message: ClientMessage, _room: MercuryRoom, player: MercuryClient): void {
+		player.logger.info("MercuryDuelingState: DUEL_END");
 	}
 
 	private handleJoin(message: ClientMessage, room: MercuryRoom, socket: ISocket): void {
-		this.logger.info("MERCURY: JOIN");
+		this.logger.info("JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const playerAlreadyInRoom = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
 
@@ -119,14 +120,14 @@ export class MercuryDuelingState extends RoomState {
 		room: MercuryRoom,
 		player: MercuryClient
 	): void {
-		this.logger.info(`MERCURY: GAME_MSG: ${message.raw.toString("hex")}`);
+		player.logger.info(`MercuryDuelingState: GAME_MSG: ${message.raw.toString("hex")}`);
 		if (player.isReconnecting) {
 			return;
 		}
 		const coreMessageType = message.raw.readInt8(3);
 
 		if (coreMessageType !== 1) {
-			this.logger.debug(`last message ${player.name} ${message.raw.toString("hex")}`);
+			player.logger.debug(`last message ${player.name} ${message.raw.toString("hex")}`);
 			player.setLastMessage(message.raw);
 		}
 
@@ -180,32 +181,32 @@ export class MercuryDuelingState extends RoomState {
 		_room: MercuryRoom,
 		player: MercuryClient
 	): void {
-		this.logger.info("MERCURY: UPDATE_DECK");
+		player.logger.info("MercuryDuelingState: UPDATE_DECK");
 		player.sendToCore(Buffer.from([0x01, 0x00, 0x30]));
 	}
 
 	private handleTimeConfirm(
 		_message: ClientMessage,
 		_room: MercuryRoom,
-		_player: MercuryClient
+		player: MercuryClient
 	): void {
-		this.logger.info("MERCURY: TIME_CONFIRM");
+		player.logger.info("MercuryDuelingState: TIME_CONFIRM");
 	}
 
 	private handleTimeLimit(
 		_message: ClientMessage,
 		_room: MercuryRoom,
-		_player: MercuryClient
+		player: MercuryClient
 	): void {
-		this.logger.info("MERCURY: TIME_LIMIT");
+		player.logger.info("MercuryDuelingState: TIME_LIMIT");
 	}
 
 	private handleChangeSide(
 		_message: ClientMessage,
 		room: MercuryRoom,
-		_player: MercuryClient
+		player: MercuryClient
 	): void {
-		this.logger.info("MERCURY: CHANGE_SIDE");
+		player.logger.info("MercuryDuelingState: CHANGE_SIDE");
 
 		if (room.duelState === DuelState.DUELING) {
 			room.sideDecking();

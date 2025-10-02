@@ -18,6 +18,7 @@ import { MercuryRoom } from "../MercuryRoom";
 export class MercuryRockPaperScissorState extends RoomState {
 	constructor(eventEmitter: EventEmitter, private readonly logger: Logger) {
 		super(eventEmitter);
+		this.logger = logger.child({ file: "MercuryRockPaperScissorState" });
 		this.eventEmitter.on(
 			"SELECT_TP",
 			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
@@ -46,13 +47,13 @@ export class MercuryRockPaperScissorState extends RoomState {
 	}
 
 	private handle(_message: ClientMessage, room: MercuryRoom, player: MercuryClient): void {
-		this.logger.info("MERCURY: SELECT_TP");
+		player.logger.info("MercuryRockPaperScissorState: SELECT_TP");
 		room.setClientWhoChoosesTurn(player);
 		room.choosingOrder();
 	}
 
 	private handleJoin(message: ClientMessage, room: MercuryRoom, socket: ISocket): void {
-		this.logger.info("MERCURY: JOIN");
+		this.logger.info("JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const playerAlreadyInRoom = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
 
@@ -76,7 +77,8 @@ export class MercuryRockPaperScissorState extends RoomState {
 	}
 
 	private handleReady(_message: ClientMessage, _room: Room, player: MercuryClient): void {
-		this.logger.debug("MERCURY RPS: READY");
+		player.logger.info("MercuryRockPaperScissorState: READY");
+
 		if (!player.isReconnecting) {
 			return;
 		}
@@ -92,7 +94,7 @@ export class MercuryRockPaperScissorState extends RoomState {
 	}
 
 	private handleRPSChoice(message: ClientMessage, _room: MercuryRoom, player: MercuryClient): void {
-		this.logger.debug(`MERCURY RPS: RPS_CHOICE: ${message.raw.toString("hex")}`);
+		player.logger.info(`MercuryRockPaperScissorState: RPS_CHOICE: ${message.raw.toString("hex")}`);
 		player.rpsChoose();
 	}
 
@@ -101,7 +103,7 @@ export class MercuryRockPaperScissorState extends RoomState {
 		_room: MercuryRoom,
 		player: MercuryClient
 	): void {
-		this.logger.debug(`MERCURY RPS: HAND_RESULT: ${message.raw.toString("hex")}`);
+		this.logger.info(`MercuryRockPaperScissorState: HAND_RESULT: ${message.raw.toString("hex")}`);
 		player.rpsRpsChoose();
 	}
 }

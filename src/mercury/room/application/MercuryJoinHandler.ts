@@ -27,7 +27,7 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 		socket: ISocket,
 		checkIfUserCanJoin: CheckIfUseCanJoin
 	) {
-		this.logger = logger;
+		this.logger = logger.child({ file: "MercuryJoinHandler" });
 		this.socket = socket;
 		this.eventEmitter = eventEmitter;
 		this.checkIfUserCanJoin = checkIfUserCanJoin;
@@ -38,9 +38,8 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 	}
 
 	async handle(message: ClientMessage): Promise<void> {
-		this.logger.debug(`Join Message: ${message.data.toString("hex")}`);
+		this.logger.info("JOIN_GAME");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
-		this.logger.debug(`name: ${playerInfoMessage.name}`);
 		const joinMessage = new MercuryJoinGameMessage(message.data);
 		const room = this.createRoomIfNotExists(
 			joinMessage.pass,

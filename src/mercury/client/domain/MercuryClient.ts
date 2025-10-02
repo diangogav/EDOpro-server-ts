@@ -11,8 +11,8 @@ import { SimpleRoomMessageEmitter } from "../../MercuryRoomMessageEmitter";
 import { MercuryRoom } from "../../room/domain/MercuryRoom";
 
 export class MercuryClient extends YgoClient {
+	public readonly logger: Logger;
 	private readonly _coreClient: net.Socket;
-	private readonly _logger: Logger;
 	private _pendingMessages: Buffer[];
 	private readonly _mercuryRoomMessageEmitter: MercuryCoreMessageEmitter;
 	private _connectedToCore = false;
@@ -41,12 +41,12 @@ export class MercuryClient extends YgoClient {
 	}) {
 		super({ name, position, team: Team.SPECTATOR, socket, host, id });
 		this._coreClient = new net.Socket();
-		this._logger = logger;
+		this.logger = logger.child({ clientName: name, roomId: room.id, file: "MercuryClient" });
 		this._pendingMessages = messages;
 		this._mercuryRoomMessageEmitter = new MercuryCoreMessageEmitter(this, room);
 
 		this._coreClient.on("data", (data: Buffer) => {
-			this._logger.debug(`Data incoming from mercury core ${data.toString("hex")}`);
+			this.logger.debug(`Data incoming from mercury core ${data.toString("hex")}`);
 			this._mercuryRoomMessageEmitter.handleMessage(data);
 		});
 
@@ -66,18 +66,18 @@ export class MercuryClient extends YgoClient {
 			return;
 		}
 		this._coreClient.connect(port, url, () => {
-			this._logger.info(`Connected to Mercury Core at port: ${port}`);
+			this.logger.debug(`Connected to Mercury Core at port: ${port}`);
 			this.sendPendingMessages();
 		});
 	}
 
 	sendMessageToCore(message: ClientMessage): void {
-		this._logger.info(`SENDING TO CORE: ${message.raw.toString("hex")} `);
+		this.logger.debug(`SENDING TO CORE: ${message.raw.toString("hex")} `);
 		this._coreClient.write(message.raw);
 	}
 
 	sendToCore(message: Buffer): void {
-		this._logger.info(`SENDING TO CORE: ${message.toString("hex")} `);
+		this.logger.debug(`SENDING TO CORE: ${message.toString("hex")} `);
 		this._coreClient.write(message);
 	}
 
@@ -86,7 +86,7 @@ export class MercuryClient extends YgoClient {
 	}
 
 	destroy(): void {
-		this._logger.debug("DESTROY");
+		this.logger.debug("DESTROY");
 		this._coreClient.destroy();
 		this._socket.destroy();
 	}
@@ -121,7 +121,7 @@ export class MercuryClient extends YgoClient {
 
 	private sendPendingMessages(): void {
 		this._pendingMessages.forEach((message) => {
-			this._logger.debug(`Message: ${message.toString("hex")}`);
+			this.logger.debug(`Message: ${message.toString("hex")}`);
 			const messageType = message.readInt8(2);
 			if (messageType === 0x10) {
 				const playerInfoMessage = MercuryPlayerInfoToCoreMessage.create(this.name);
