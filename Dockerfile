@@ -136,6 +136,7 @@ COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/scri
 COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/lflist.conf
 COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/cards.cdb
 COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/alternatives/md/cards.cdb
+COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/alternatives/genesys/cards.cdb
 
 # Mercury Pre-releases
 COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/pre-releases/tcg/script
