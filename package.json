@@ -16,6 +16,7 @@
     "lint:fix": "npm run lint -- --fix",
     "prepare": "husky",
     "create-user": "ts-node-dev -r tsconfig-paths/register --respawn --poll src/utils/create-user.ts",
+    "genesys": "ts-node-dev -r tsconfig-paths/register --respawn --poll src/utils/generate-genesys-format-json.ts",
     "generate-mercury-pre-releases-cdb": "ts-node -r tsconfig-paths/register src/utils/generate-mercury-pre-releases-cdb.ts",
     "migrate-users": "ts-node-dev -r tsconfig-paths/register --respawn --poll src/utils/migrate-user-from-redis-to-postgres.ts",
     "migration:generate": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d ./src/evolution-types/src/data-source.ts ./src/evolution-types/src/migrations/$npm_config_name",
