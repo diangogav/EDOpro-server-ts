@@ -1,5 +1,45 @@
 [
   {
+    "code": 100444219,
+    "name": "The Fallen & The Virtuous",
+    "points": 15
+  },
+  {
+    "code": 47611119,
+    "name": "Gem-Knight Lapis Lazuli",
+    "points": 51
+  },
+  {
+    "code": 90303227,
+    "name": "K9-X Werewolf",
+    "points": 10
+  },
+  {
+    "code": 9627299,
+    "name": "Ichika Sayori-Hime",
+    "points": 5
+  },
+  {
+    "code": 42741437,
+    "name": "Exosister Mikalis",
+    "points": 10
+  },
+  {
+    "code": 85442146,
+    "name": "Dragon’s Mind",
+    "points": 7
+  },
+  {
+    "code": 80978111,
+    "name": "Flying C",
+    "points": 7
+  },
+  {
+    "code": 46502744,
+    "name": "Retaliating C",
+    "points": 5
+  },
+  {
     "code": 21044178,
     "points": 100,
     "name": "Abyss Dweller"
@@ -58,11 +98,6 @@
     "code": 43262273,
     "points": 50,
     "name": "Appointer of the Red Lotus"
-  },
-  {
-    "code": 75771170,
-    "points": 0,
-    "name": "Arahime the Manifested Mikanko"
   },
   {
     "code": 23846921,
@@ -151,7 +186,7 @@
   },
   {
     "code": 46145256,
-    "points": 60,
+    "points": 70,
     "name": "Barrier Statue of the Heavens"
   },
   {
@@ -183,11 +218,6 @@
     "code": 10602628,
     "points": 20,
     "name": "Blackwing - Boreastorm the Wicked Wind"
-  },
-  {
-    "code": 34976176,
-    "points": 0,
-    "name": "Blackwing - Chinook the Snow Blast"
   },
   {
     "code": 14785765,
@@ -821,7 +851,7 @@
   },
   {
     "code": 57103969,
-    "points": 40,
+    "points": 35,
     "name": "Fire Formation - Tenki"
   },
   {
@@ -960,11 +990,6 @@
     "name": "Give and Take"
   },
   {
-    "code": 48156348,
-    "points": 0,
-    "name": "Gladiator Beast Gyzarus"
-  },
-  {
     "code": 30864377,
     "points": 33,
     "name": "Gladiator Beast Tamer Editor"
@@ -1015,11 +1040,6 @@
     "name": "Grapha, Dragon Overlord of Dark World"
   },
   {
-    "code": 24215921,
-    "points": 0,
-    "name": "Gruesome Grave Squirmer"
-  },
-  {
     "code": 11321089,
     "points": 33,
     "name": "Guardian Chimera"
@@ -1031,7 +1051,7 @@
   },
   {
     "code": 18144506,
-    "points": 30,
+    "points": 15,
     "name": "Harpie's Feather Duster"
   },
   {
@@ -1473,11 +1493,6 @@
     "code": 96782886,
     "points": 1,
     "name": "Mind Master"
-  },
-  {
-    "code": 41482598,
-    "points": 0,
-    "name": "Mirage of Nightmare"
   },
   {
     "code": 44146295,
@@ -1923,11 +1938,6 @@
     "code": 31443476,
     "points": 33,
     "name": "Quick Launch"
-  },
-  {
-    "code": 53251824,
-    "points": 5,
-    "name": "Raidraptor - Vanishing Lanius"
   },
   {
     "code": 12580477,
@@ -2426,7 +2436,7 @@
   },
   {
     "code": 87052196,
-    "points": 33,
+    "points": 13,
     "name": "Tenyi Spirit - Ashuna"
   },
   {
@@ -2581,8 +2591,8 @@
   },
   {
     "code": 66399653,
-    "points": 33,
-    "name": "Union Hangar"
+    "points": 25,
+    "name": "Union Hanger"
   },
   {
     "code": 5851097,
