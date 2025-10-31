@@ -7,7 +7,7 @@ RUN apt-get update -y && \
     python3 python3-pip wget tar git autoconf ca-certificates g++ \
     m4 automake libtool pkg-config make && \
     rm -rf /var/lib/apt/lists/* && \
-    pip install conan
+    pip install "conan==2.21.0"
 
 WORKDIR /repositories
 
@@ -102,7 +102,7 @@ RUN npm run generate-mercury-pre-releases-cdb && \
 
 
 # Stage 3: Final image
-FROM public.ecr.aws/docker/library/node:22.11.0-slim
+FROM public.ecr.aws/docker/library/node:24.11.0-slim
 
 # Install runtime dependencies
 RUN apt-get update && \
