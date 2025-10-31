@@ -13,6 +13,7 @@ mercury/ocg
 scripts
 *dependencies
 *build
+*repositories
 core/Makefile
 core/src/Makefile
 core/premake5
