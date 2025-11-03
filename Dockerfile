@@ -43,11 +43,9 @@ RUN for dir in ./alternatives/*/; do \
 RUN bash -c 'set -e; \
     declare -A MAP=( \
     ["2010.03 Edison(PreErrata)"]="edison" \
-    ["2014.4 HAT"]="hat" \
+    ["2014.04 HAT (Pre-Errata)"]="hat" \
     ["jtp-oficial"]="jtp" \
     ["GOAT"]="goat" \
-    ["2008.03 GX"]="gx" \
-    ["mdc"]="mdc" \
     ["Rush"]="rush" \
     ["Speed"]="speed" \
     ["Tengu.Plant"]="tengu" \
