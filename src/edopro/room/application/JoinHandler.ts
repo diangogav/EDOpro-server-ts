@@ -64,6 +64,7 @@ export class JoinHandler implements JoinMessageHandler {
 		}
 
 		if (room.password !== joinMessage.password) {
+			this.logger.info(`player: ${playerInfoMessage.name} tried to join to room: ${room.id} with wrong password: ${joinMessage.password}`);
 			this.socket.send(ServerErrorClientMessage.create("Wrong password"));
 			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 			this.socket.destroy();
@@ -71,6 +72,7 @@ export class JoinHandler implements JoinMessageHandler {
 			return;
 		}
 
+		this.logger.info(`player: ${playerInfoMessage.name} joined to room: ${room.id} with password: ${joinMessage.password}`);
 		room.emit("JOIN", message, this.socket);
 	}
 
