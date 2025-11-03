@@ -59,8 +59,9 @@ export class JoinHandler implements JoinMessageHandler {
 
 		const redis = Redis.getInstance();
 		const ip = this.socket.remoteAddress;
+		const rateLimit = config.rateLimit.enabled && redis && ip;
 
-		if (config.rateLimit.enabled && redis && ip) {
+		if (rateLimit) {
 			const key = `rate-limit:join-room:${ip}:${room.id}`;
 			const attempts = Number(await redis.get(key));
 
@@ -85,7 +86,7 @@ export class JoinHandler implements JoinMessageHandler {
 		}
 
 		if (room.password !== joinMessage.password) {
-			if (config.rateLimit.enabled && redis && ip) {
+			if (rateLimit) {
 				const key = `rate-limit:join-room:${ip}:${room.id}`;
 				const attempts = await redis.incr(key);
 
@@ -103,7 +104,7 @@ export class JoinHandler implements JoinMessageHandler {
 			return;
 		}
 
-		if (config.rateLimit.enabled && redis && ip) {
+		if (rateLimit) {
 			const key = `rate-limit:join-room:${ip}:${room.id}`;
 			await redis.del(key);
 		}
