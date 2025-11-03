@@ -157,6 +157,5 @@ COPY --from=core-integrator-builder /repositories/ygopro ./mercury/ocg/ygopro
 # Mercury Alternatives
 COPY --from=core-integrator-builder /repositories/alternatives ./mercury/alternatives/
 
-EXPOSE 4000 7711 7911 7922
 USER $USER
 CMD ["dumb-init", "node", "./src/index.js"]

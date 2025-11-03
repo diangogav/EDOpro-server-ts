@@ -25,4 +25,18 @@ export const config = {
 		limit: Number(process.env.RATE_LIMIT),
 		window: Number(process.env.RATE_LIMIT_WINDOW),
 	},
+	servers: {
+		host: {
+			port: Number(process.env.HOST_PORT),
+		},
+		mercury: {
+			port: Number(process.env.MERCURY_PORT),
+		},
+		http: {
+			port: Number(process.env.HTTP_PORT),
+		},
+		websocket: {
+			port: Number(process.env.WEBSOCKET_PORT),
+		},
+	},
 };

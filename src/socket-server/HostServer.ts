@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { randomUUID as uuidv4 } from "crypto";
 import net, { Socket } from "net";
+import { config } from "src/config";
 import { MatchResumeCreator } from "src/shared/stats/match-resume/application/MatchResumeCreator";
 import { DuelResumeCreator } from "src/shared/stats/match-resume/duel-resume/application/DuelResumeCreator";
 import { MatchResumePostgresRepository } from "src/shared/stats/match-resume/infrastructure/postgres/MatchResumePostgresRepository";
@@ -39,8 +40,8 @@ export class HostServer {
 	}
 
 	initialize(): void {
-		this.server.listen(7911, () => {
-			this.logger.info("Server listen in port 7911");
+		this.server.listen(config.servers.host.port, () => {
+			this.logger.info(`Server listen in port ${config.servers.host.port}`);
 		});
 		this.server.on("connection", (socket: Socket) => {
 			this.address = socket.remoteAddress;

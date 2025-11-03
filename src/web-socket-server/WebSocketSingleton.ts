@@ -2,6 +2,7 @@
 import { readFileSync } from "fs";
 import { createServer } from "https";
 import path from "path";
+import { config } from "src/config";
 import MercuryRoomList from "src/mercury/room/infrastructure/MercuryRoomList";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 import WebSocket, { WebSocketServer } from "ws";
@@ -34,7 +35,7 @@ class WebSocketSingleton {
 
 	public static getInstance(): WebSocketSingleton {
 		if (!WebSocketSingleton.instance) {
-			WebSocketSingleton.instance = new WebSocketSingleton(4000);
+			WebSocketSingleton.instance = new WebSocketSingleton(config.servers.websocket.port);
 		}
 
 		return WebSocketSingleton.instance;

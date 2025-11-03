@@ -1,5 +1,6 @@
 import { randomUUID as uuidv4 } from "crypto";
 import net, { Socket } from "net";
+import { config } from "src/config";
 import { CheckIfUseCanJoin } from "src/shared/user-auth/application/CheckIfUserCanJoin";
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
@@ -30,8 +31,8 @@ export class MercuryServer {
 	}
 
 	initialize(): void {
-		this.server.listen(7711, () => {
-			this.logger.info("Mercury server listen in port 7711");
+		this.server.listen(config.servers.mercury.port, () => {
+			this.logger.info(`Mercury server listen in port ${config.servers.mercury.port}`);
 		});
 
 		this.server.on("connection", (socket: Socket) => {

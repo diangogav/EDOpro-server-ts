@@ -1,4 +1,5 @@
 import express, { Express } from "express";
+import { config } from "src/config";
 
 import { Logger } from "../shared/logger/domain/Logger";
 import { createDirectoryIfNotExists } from "../utils";
@@ -17,8 +18,8 @@ export class Server {
 
 	async initialize(): Promise<void> {
 		await createDirectoryIfNotExists("./config");
-		this.app.listen(7922, () => {
-			this.logger.info("Server listen in port 7922");
+		this.app.listen(config.servers.http.port, () => {
+			this.logger.info(`Server listen in port ${config.servers.http.port}`);
 		});
 	}
 }
