@@ -1,14 +1,14 @@
 import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
-import { CheckIfUseCanJoin } from "src/shared/user-auth/application/CheckIfUserCanJoin";
 import { EventEmitter } from "stream";
-import { config } from "../../../config";
 
+import { config } from "../../../config";
 import { MercuryRoom } from "../../../mercury/room/domain/MercuryRoom";
 import MercuryRoomList from "../../../mercury/room/infrastructure/MercuryRoomList";
 import { Redis } from "../../../shared/db/redis/infrastructure/Redis";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { JoinMessageHandler } from "../../../shared/room/domain/JoinMessageHandler";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
+import { CheckIfUseCanJoin } from "../../../shared/user-auth/application/CheckIfUserCanJoin";
 import { JoinGameMessage } from "../../messages/client-to-server/JoinGameMessage";
 import { Commands } from "../../messages/domain/Commands";
 import { ClientMessage } from "../../messages/MessageProcessor";
@@ -58,9 +58,9 @@ export class JoinHandler implements JoinMessageHandler {
 		}
 
 		const redis = Redis.getInstance();
+		const ip = this.socket.remoteAddress;
 
-		if (config.rateLimit.enabled && redis) {
-			const ip = this.socket.remoteAddress;
+		if (config.rateLimit.enabled && redis && ip) {
 			const key = `rate-limit:join-room:${ip}:${room.id}`;
 			const attempts = Number(await redis.get(key));
 
@@ -85,8 +85,7 @@ export class JoinHandler implements JoinMessageHandler {
 		}
 
 		if (room.password !== joinMessage.password) {
-			if (config.rateLimit.enabled && redis) {
-				const ip = this.socket.remoteAddress;
+			if (config.rateLimit.enabled && redis && ip) {
 				const key = `rate-limit:join-room:${ip}:${room.id}`;
 				const attempts = await redis.incr(key);
 
@@ -104,8 +103,7 @@ export class JoinHandler implements JoinMessageHandler {
 			return;
 		}
 
-		if (config.rateLimit.enabled && redis) {
-			const ip = this.socket.remoteAddress;
+		if (config.rateLimit.enabled && redis && ip) {
 			const key = `rate-limit:join-room:${ip}:${room.id}`;
 			await redis.del(key);
 		}
