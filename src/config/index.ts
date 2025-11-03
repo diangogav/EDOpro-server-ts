@@ -20,4 +20,9 @@ export const config = {
 		enabled: process.env.RANK_ENABLED === "true",
 	},
 	season: Number(process.env.SEASON),
+	rateLimit: {
+		enabled: process.env.RATE_LIMIT_ENABLED === "true",
+		limit: Number(process.env.RATE_LIMIT),
+		window: Number(process.env.RATE_LIMIT_WINDOW),
+	},
 };

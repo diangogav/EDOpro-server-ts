@@ -1,9 +1,11 @@
 import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
 import { CheckIfUseCanJoin } from "src/shared/user-auth/application/CheckIfUserCanJoin";
 import { EventEmitter } from "stream";
+import { config } from "../../../config";
 
 import { MercuryRoom } from "../../../mercury/room/domain/MercuryRoom";
 import MercuryRoomList from "../../../mercury/room/infrastructure/MercuryRoomList";
+import { Redis } from "../../../shared/db/redis/infrastructure/Redis";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { JoinMessageHandler } from "../../../shared/room/domain/JoinMessageHandler";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
@@ -49,12 +51,31 @@ export class JoinHandler implements JoinMessageHandler {
 
 		if (!room) {
 			this.socket.send(ServerErrorClientMessage.create("Room not found. Try reloading the list"));
-
 			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
-
 			this.socket.destroy();
 
 			return;
+		}
+
+		const redis = Redis.getInstance();
+
+		if (config.rateLimit.enabled && redis) {
+			const ip = this.socket.remoteAddress;
+			const key = `rate-limit:join-room:${ip}:${room.id}`;
+			const attempts = Number(await redis.get(key));
+
+			if (attempts >= config.rateLimit.limit) {
+				this.logger.info(
+					`player: ${playerInfoMessage.name} with ip: ${ip} tried to join to room: ${room.id} and was already rate limited`
+				);
+				this.socket.send(
+					ServerErrorClientMessage.create("Too many attempts. Please try again in a few minutes.")
+				);
+				this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
+				this.socket.destroy();
+
+				return;
+			}
 		}
 
 		if (room.ranked) {
@@ -64,7 +85,18 @@ export class JoinHandler implements JoinMessageHandler {
 		}
 
 		if (room.password !== joinMessage.password) {
-			this.logger.info(`player: ${playerInfoMessage.name} tried to join to room: ${room.id} with wrong password: ${joinMessage.password}`);
+			if (config.rateLimit.enabled && redis) {
+				const ip = this.socket.remoteAddress;
+				const key = `rate-limit:join-room:${ip}:${room.id}`;
+				const attempts = await redis.incr(key);
+
+				if (attempts === 1) {
+					await redis.expire(key, config.rateLimit.window);
+				}
+			}
+			this.logger.info(
+				`player: ${playerInfoMessage.name} tried to join to room: ${room.id} with wrong password: ${joinMessage.password}`
+			);
 			this.socket.send(ServerErrorClientMessage.create("Wrong password"));
 			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 			this.socket.destroy();
@@ -72,7 +104,15 @@ export class JoinHandler implements JoinMessageHandler {
 			return;
 		}
 
-		this.logger.info(`player: ${playerInfoMessage.name} joined to room: ${room.id} with password: ${joinMessage.password}`);
+		if (config.rateLimit.enabled && redis) {
+			const ip = this.socket.remoteAddress;
+			const key = `rate-limit:join-room:${ip}:${room.id}`;
+			await redis.del(key);
+		}
+
+		this.logger.info(
+			`player: ${playerInfoMessage.name} joined to room: ${room.id} with password: ${joinMessage.password}`
+		);
 		room.emit("JOIN", message, this.socket);
 	}
 
