@@ -42,8 +42,8 @@ RUN for dir in ./alternatives/*/; do \
 # Copy selected banlists into corresponding alternative folders
 RUN bash -c 'set -e; \
     declare -A MAP=( \
-    ["2010.03 Edison(PreErrata)"]="edison" \
-    ["2014.04 HAT (Pre-Errata)"]="hat" \
+    ["2010.03 Edison(Pre Errata)"]="edison" \
+    ["2014.04 HAT (Pre Errata)"]="hat" \
     ["jtp-oficial"]="jtp" \
     ["GOAT"]="goat" \
     ["Rush"]="rush" \
