@@ -7,7 +7,7 @@ import MercuryBanListMemoryRepository from "../../../../../src/mercury/ban-list/
 import { Mode } from "../../../../../src/mercury/room/domain/host-info/Mode.enum";
 import { MercuryRoom } from "../../../../../src/mercury/room/domain/MercuryRoom";
 import { Pino } from "../../../../../src/shared/logger/infrastructure/Pino";
-import { PlayerInfoMessageMother } from "../../../../shared/mothers/PlayerInfoMessageMother";
+import { PlayerInfoMessageMother } from "../../../shared/mothers/PlayerInfoMessageMother";
 
 describe("MercuryRoom", () => {
 	const logger = new Pino();
