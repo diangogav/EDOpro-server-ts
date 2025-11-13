@@ -759,12 +759,14 @@ export class Room extends YgoRoom {
 	}
 
 	async createSpectator(socket: ISocket, name: string): Promise<Client> {
+		const position = await this.nextSpectatorPosition();
+
 		const client = new Client({
 			id: null,
 			socket,
 			host: false,
 			name,
-			position: await this.nextSpectatorPosition(),
+			position,
 			roomId: this.id,
 			team: Team.SPECTATOR,
 			logger: this.logger,
