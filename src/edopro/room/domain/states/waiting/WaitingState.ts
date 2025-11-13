@@ -26,7 +26,6 @@ import { WatchChangeClientMessage } from "../../../../messages/server-to-client/
 import { PlayerRoomState } from "../../PlayerRoomState";
 import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";
-import { ChangeToDuel } from "./ChangeToDuel";
 
 export class WaitingState extends RoomState {
 	constructor(
@@ -86,7 +85,7 @@ export class WaitingState extends RoomState {
 		);
 	}
 
-	private async handleKick(message: ClientMessage, room: Room, player: Client): Promise<void> {
+	private handleKick(message: ClientMessage, room: Room, player: Client): void {
 		player.logger.info("WaitingState: KICK");
 
 		const positionKick = message.data.readInt8();
@@ -100,7 +99,7 @@ export class WaitingState extends RoomState {
 			return;
 		}
 
-		await this.handleChangeToObserver(message, room, playerSelect);
+		this.handleChangeToObserver(message, room, playerSelect);
 		room.addKick(playerSelect);
 
 		room.clients.forEach((_client: Client) => {
@@ -120,11 +119,18 @@ export class WaitingState extends RoomState {
 		});
 	}
 
-	private async handleToDuel(_message: ClientMessage, room: Room, player: Client): Promise<void> {
+	private handleToDuel(_message: ClientMessage, room: Room, player: Client): void {
 		player.logger.info("WaitingState: TO_DUEL");
+		const ips = player.socket.remoteAddress;
+		if (player.isSpectator && !room.kick.find((kick) => kick.socket.remoteAddress === ips)) {
+			room.spectatorToPlayer(player);
 
-		const changeToDuel = new ChangeToDuel();
-		await changeToDuel.execute(room, player);
+			return;
+		}
+
+		if (!room.kick.find((kick) => kick.socket.remoteAddress === ips)) {
+			room.movePlayerToAnotherCell(player);
+		}
 	}
 
 	private tryStartHandler(_message: ClientMessage, room: Room, player: Client): void {
@@ -179,11 +185,7 @@ export class WaitingState extends RoomState {
 		player.ready();
 	}
 
-	private async handleChangeToObserver(
-		_message: ClientMessage,
-		room: Room,
-		player: Client
-	): Promise<void> {
+	private handleChangeToObserver(_message: ClientMessage, room: Room, player: Client): void {
 		player.logger.info("WaitingState: OBSERVER");
 
 		if (player.isSpectator) {
@@ -191,41 +193,7 @@ export class WaitingState extends RoomState {
 		}
 
 		if (!player.host) {
-			const place = await room.nextSpectatorPosition();
-			room.removePlayer(player);
-
-			room.spectators.push(player);
-
-			room.clients.forEach((_client: Client) => {
-				const status = (player.position << 4) | PlayerRoomState.SPECTATE;
-
-				_client.sendMessage(PlayerChangeClientMessage.create({ status }));
-			});
-
-			room.spectators.forEach((_client: Client) => {
-				const status = (player.position << 4) | PlayerRoomState.SPECTATE;
-
-				_client.sendMessage(PlayerChangeClientMessage.create({ status }));
-			});
-
-			player.spectatorPosition(place);
-			player.notReady();
-
-			const type = (Number(player.host) << 4) | player.position;
-			player.sendMessage(TypeChangeClientMessage.create({ type }));
-
-			const spectatorsCount = room.spectators.length;
-			const watchMessage = WatchChangeClientMessage.create({
-				count: spectatorsCount,
-			});
-
-			room.clients.forEach((_client: Client) => {
-				_client.sendMessage(watchMessage);
-			});
-
-			room.spectators.forEach((_client: Client) => {
-				_client.sendMessage(watchMessage);
-			});
+			room.playerToSpectator(player);
 		}
 	}
 

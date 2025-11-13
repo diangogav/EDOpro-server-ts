@@ -1,5 +1,9 @@
+import { PlayerChangeClientMessage } from "@edopro/messages/server-to-client/PlayerChangeClientMessage";
+import { WatchChangeClientMessage } from "@edopro/messages/server-to-client/WatchChangeClientMessage";
 import { ChildProcessWithoutNullStreams } from "child_process";
 import shuffle from "shuffle-array";
+import { PlayerEnterClientMessage } from "src/shared/messages/server-to-client/PlayerEnterClientMessage";
+import { TypeChangeClientMessage } from "src/shared/messages/server-to-client/TypeChangeClientMessage";
 import { CheckIfUseCanJoin } from "src/shared/user-auth/application/CheckIfUserCanJoin";
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
@@ -25,6 +29,7 @@ import { JoinToDuelAsSpectator } from "../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../application/Reconnect";
 import RoomList from "../infrastructure/RoomList";
 import { DuelFinishReason } from "./DuelFinishReason";
+import { PlayerRoomState } from "./PlayerRoomState";
 import { RoomState } from "./RoomState";
 import { ChossingOrderState } from "./states/chossing-order/ChossingOrderState";
 import { DuelingState } from "./states/dueling/DuelingState";
@@ -82,7 +87,7 @@ export class DeckRules {
 		this.maxDeckPoints = maxDeckPoints ?? 100;
 	}
 }
-interface RoomAttr {
+export interface RoomAttr {
 	id: number;
 	name: string;
 	notes: string;
@@ -351,6 +356,55 @@ export class Room extends YgoRoom {
 		client.socket.onMessage((data) => {
 			roomMessageEmitter.handleMessage(data);
 			messageProcessor.read(data);
+		});
+	}
+
+	playerToSpectator(player: Client): void {
+		this.actionQueue.enqueue(() => {
+			const place = this.nextSpectatorPositionUnsafe();
+			this.removePlayerUnsafe(player);
+			this._spectators.push(player);
+			this.sendPlayerChangeMessage(player, PlayerRoomState.SPECTATE);
+			player.spectatorPosition(place);
+			player.notReady();
+
+			const type = (Number(player.host) << 4) | player.position;
+			player.sendMessage(TypeChangeClientMessage.create({ type }));
+
+			this.sendWatchMessage();
+		});
+	}
+
+	spectatorToPlayer(player: Client): void {
+		this.actionQueue.enqueue(() => {
+			const place = this.calculatePlaceUnsafe();
+			if (!place) {
+				return;
+			}
+			this.removeSpectatorUnsafe(player);
+			this._clients.push(player);
+			this.sendPlayerEnterMessage(player, place);
+			this.sendPlayerChangeMessage(player, PlayerRoomState.NOT_READY);
+			this.sendWatchMessage();
+			player.playerPosition(place.position, place.team);
+			player.notReady();
+			const type = (Number(player.host) << 4) | player.position;
+			player.sendMessage(TypeChangeClientMessage.create({ type }));
+		});
+	}
+
+	movePlayerToAnotherCell(player: Client): void {
+		this.actionQueue.enqueue(() => {
+			const nextPlace = this.nextAvailablePosition(player.position);
+			if (!nextPlace) {
+				return;
+			}
+			player.notReady();
+			this.sendPlayerCellChange(player, nextPlace);
+			this.sendPlayerChangeMessage(player, PlayerRoomState.NOT_READY);
+			player.playerPosition(nextPlace.position, nextPlace.team);
+			const type = (Number(player.host) << 4) | player.position;
+			player.sendMessage(TypeChangeClientMessage.create({ type }));
 		});
 	}
 
@@ -663,7 +717,6 @@ export class Room extends YgoRoom {
 		if (this._spectators.length === 0) {
 			return 8;
 		}
-
 		const sorted = [...this._spectators].sort((a, b) => b.position - a.position);
 
 		return sorted[0].position + 1;
@@ -826,5 +879,61 @@ export class Room extends YgoRoom {
 		const match = notes.match(/points\s*=\s*(\d+)/i);
 
 		return match ? Number(match[1]) : undefined;
+	}
+
+	private removeSpectatorUnsafe(spectator: Client): void {
+		const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
+		this._spectators = filtered;
+	}
+
+	private sendPlayerEnterMessage(client: Client, place: { position: number; team: number }): void {
+		this._clients.forEach((_client: Client) => {
+			_client.sendMessage(PlayerEnterClientMessage.create(client.name, place.position));
+		});
+
+		this._spectators.forEach((_client: Client) => {
+			_client.sendMessage(PlayerEnterClientMessage.create(client.name, place.position));
+		});
+	}
+
+	private sendPlayerChangeMessage(client: Client, playerRoomState: PlayerRoomState): void {
+		this._clients.forEach((_client: Client) => {
+			const status = (client.position << 4) | playerRoomState;
+
+			_client.sendMessage(PlayerChangeClientMessage.create({ status }));
+		});
+
+		this._spectators.forEach((_client: Client) => {
+			const status = (client.position << 4) | playerRoomState;
+
+			_client.sendMessage(PlayerChangeClientMessage.create({ status }));
+		});
+	}
+
+	private sendWatchMessage(): void {
+		const spectatorsCount = this._spectators.length;
+		const watchMessage = WatchChangeClientMessage.create({ count: spectatorsCount });
+
+		this._clients.forEach((_client: Client) => {
+			_client.sendMessage(watchMessage);
+		});
+
+		this._spectators.forEach((_client: Client) => {
+			_client.sendMessage(watchMessage);
+		});
+	}
+
+	private sendPlayerCellChange(client: Client, place: { position: number; team: number }): void {
+		this._clients.forEach((_client: Client) => {
+			const status = (client.position << 4) | place.position;
+
+			_client.sendMessage(PlayerChangeClientMessage.create({ status }));
+		});
+
+		this._spectators.forEach((_client: Client) => {
+			const status = (client.position << 4) | place.position;
+
+			_client.sendMessage(PlayerChangeClientMessage.create({ status }));
+		});
 	}
 }

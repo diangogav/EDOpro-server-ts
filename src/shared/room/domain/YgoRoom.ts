@@ -27,6 +27,7 @@ export abstract class YgoRoom {
 	public readonly bestOf: number;
 	public readonly startLp: number;
 	public readonly STARTING_TURN = 0;
+	public readonly actionQueue = new RoomActionQueue();
 	protected readonly t0Positions: number[] = [];
 	protected readonly t1Positions: number[] = [];
 	protected emitter: EventEmitter;
@@ -39,7 +40,6 @@ export abstract class YgoRoom {
 	protected _firstToPlay: number;
 	protected isStart: string;
 	protected currentDuel: Duel | null = null;
-	protected readonly actionQueue = new RoomActionQueue();
 
 	protected constructor({
 		team0,
@@ -305,5 +305,9 @@ export abstract class YgoRoom {
 
 	protected getDifference(a: number[], b: number[]): number[] {
 		return a.filter((item) => !b.includes(item));
+	}
+
+	protected removePlayerUnsafe(player: Client): void {
+		this._clients = this._clients.filter((item) => item.socket.id !== player.socket.id);
 	}
 }
