@@ -1,8 +1,8 @@
 import { faker } from "@faker-js/faker";
-import { Player } from "src/shared/player/domain/Player";
-import { PlayerData } from "src/shared/player/domain/PlayerData";
-import { Team } from "src/shared/room/Team";
 
+import { Player } from "../../../../../src/shared/player/domain/Player";
+import { PlayerData } from "../../../../../src/shared/player/domain/PlayerData";
+import { Team } from "../../../../../src/shared/room/Team";
 import { GameMother } from "./GameMother";
 
 export class PlayerMother {

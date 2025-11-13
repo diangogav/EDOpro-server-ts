@@ -87,7 +87,7 @@ export class ChossingOrderState extends RoomState {
 		const reconnectingPlayer = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
 
 		if (!(reconnectingPlayer instanceof Client)) {
-			this.joinToDuelAsSpectator.run(joinMessage, playerInfoMessage, socket, room);
+			await this.joinToDuelAsSpectator.run(joinMessage, playerInfoMessage, socket, room);
 
 			return;
 		}

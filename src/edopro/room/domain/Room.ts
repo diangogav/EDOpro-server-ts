@@ -1,5 +1,9 @@
+import { PlayerChangeClientMessage } from "@edopro/messages/server-to-client/PlayerChangeClientMessage";
+import { WatchChangeClientMessage } from "@edopro/messages/server-to-client/WatchChangeClientMessage";
 import { ChildProcessWithoutNullStreams } from "child_process";
 import shuffle from "shuffle-array";
+import { PlayerEnterClientMessage } from "src/shared/messages/server-to-client/PlayerEnterClientMessage";
+import { TypeChangeClientMessage } from "src/shared/messages/server-to-client/TypeChangeClientMessage";
 import { CheckIfUseCanJoin } from "src/shared/user-auth/application/CheckIfUserCanJoin";
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
@@ -25,6 +29,7 @@ import { JoinToDuelAsSpectator } from "../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../application/Reconnect";
 import RoomList from "../infrastructure/RoomList";
 import { DuelFinishReason } from "./DuelFinishReason";
+import { PlayerRoomState } from "./PlayerRoomState";
 import { RoomState } from "./RoomState";
 import { ChossingOrderState } from "./states/chossing-order/ChossingOrderState";
 import { DuelingState } from "./states/dueling/DuelingState";
@@ -82,7 +87,7 @@ export class DeckRules {
 		this.maxDeckPoints = maxDeckPoints ?? 100;
 	}
 }
-interface RoomAttr {
+export interface RoomAttr {
 	id: number;
 	name: string;
 	notes: string;
@@ -325,8 +330,11 @@ export class Room extends YgoRoom {
 	}
 
 	addClient(client: Client): void {
-		this._clients.push(client);
-		client.socket.roomId = this.id;
+		this.actionQueue.enqueue(() => {
+			this._clients.push(client);
+			client.socket.roomId = this.id;
+		});
+
 		const messageProcessor = new MessageProcessor();
 		const roomMessageEmitter = new RoomMessageEmitter(client, this);
 
@@ -337,14 +345,66 @@ export class Room extends YgoRoom {
 	}
 
 	addSpectator(client: Client): void {
-		client.socket.roomId = this.id;
-		this._spectators.push(client);
+		this.actionQueue.enqueue(() => {
+			client.socket.roomId = this.id;
+			this._spectators.push(client);
+		});
+
 		const messageProcessor = new MessageProcessor();
 		const roomMessageEmitter = new RoomMessageEmitter(client, this);
 
 		client.socket.onMessage((data) => {
 			roomMessageEmitter.handleMessage(data);
 			messageProcessor.read(data);
+		});
+	}
+
+	playerToSpectator(player: Client): void {
+		this.actionQueue.enqueue(() => {
+			const place = this.nextSpectatorPositionUnsafe();
+			this.removePlayerUnsafe(player);
+			this._spectators.push(player);
+			this.sendPlayerChangeMessage(player, PlayerRoomState.SPECTATE);
+			player.spectatorPosition(place);
+			player.notReady();
+
+			const type = (Number(player.host) << 4) | player.position;
+			player.sendMessage(TypeChangeClientMessage.create({ type }));
+
+			this.sendWatchMessage();
+		});
+	}
+
+	spectatorToPlayer(player: Client): void {
+		this.actionQueue.enqueue(() => {
+			const place = this.calculatePlaceUnsafe();
+			if (!place) {
+				return;
+			}
+			this.removeSpectatorUnsafe(player);
+			this._clients.push(player);
+			this.sendPlayerEnterMessage(player, place);
+			this.sendPlayerChangeMessage(player, PlayerRoomState.NOT_READY);
+			this.sendWatchMessage();
+			player.playerPosition(place.position, place.team);
+			player.notReady();
+			const type = (Number(player.host) << 4) | player.position;
+			player.sendMessage(TypeChangeClientMessage.create({ type }));
+		});
+	}
+
+	movePlayerToAnotherCell(player: Client): void {
+		this.actionQueue.enqueue(() => {
+			const nextPlace = this.nextAvailablePosition(player.position);
+			if (!nextPlace) {
+				return;
+			}
+			player.notReady();
+			this.sendPlayerCellChange(player, nextPlace);
+			this.sendPlayerChangeMessage(player, PlayerRoomState.NOT_READY);
+			player.playerPosition(nextPlace.position, nextPlace.team);
+			const type = (Number(player.host) << 4) | player.position;
+			player.sendMessage(TypeChangeClientMessage.create({ type }));
 		});
 	}
 
@@ -361,20 +421,21 @@ export class Room extends YgoRoom {
 	}
 
 	setDecksToPlayer(position: number, deck: Deck): void {
-		const client = this._clients.find((client) => client.position === position);
-		if (!client || !(client instanceof Client)) {
-			return;
-		}
+		this.actionQueue.enqueue(() => {
+			const client = this._clients.find((client) => client.position === position);
+			if (!client || !(client instanceof Client)) {
+				return;
+			}
+			if (this.noShuffle) {
+				deck.main.reverse();
+				client.setDeck(deck);
 
-		if (this.noShuffle) {
-			deck.main.reverse();
+				return;
+			}
+
+			shuffle(deck.main);
 			client.setDeck(deck);
-
-			return;
-		}
-
-		shuffle(deck.main);
-		client.setDeck(deck);
+		});
 	}
 
 	setDuel(duel: ChildProcessWithoutNullStreams): void {
@@ -442,8 +503,10 @@ export class Room extends YgoRoom {
 	}
 
 	removeSpectator(spectator: Client): void {
-		const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
-		this._spectators = filtered;
+		this.actionQueue.enqueue(() => {
+			const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
+			this._spectators = filtered;
+		});
 	}
 
 	cacheTeamMessage(team: number, message: Buffer, all: boolean, position: number | null): void {
@@ -642,16 +705,19 @@ export class Room extends YgoRoom {
 		this.roomTimer.stop();
 	}
 
-	nextSpectatorPosition(): number {
-		const sorted = [...this.spectators].sort((a, b) => b.position - a.position);
-
-		return (sorted[0]?.position ?? 7) + 1;
+	async nextSpectatorPosition(): Promise<number> {
+		return new Promise((resolve) => {
+			this.actionQueue.enqueue(() => {
+				resolve(this.nextSpectatorPositionUnsafe());
+			});
+		});
 	}
 
 	public sendMessageToCpp(message: string): void {
 		this.writeToCppProcess(message, CHILD_PROCESS_RETRY_MAX);
 	}
 
+	//TODO: Remove this function
 	get side(): string {
 		return `Side: ${this.playerNames(0)}: ${this.matchSide().team0} - ${
 			this.matchSide().team1
@@ -683,13 +749,15 @@ export class Room extends YgoRoom {
 		return client;
 	}
 
-	createSpectator(socket: ISocket, name: string): Client {
+	async createSpectator(socket: ISocket, name: string): Promise<Client> {
+		const position = await this.nextSpectatorPosition();
+
 		const client = new Client({
 			id: null,
 			socket,
 			host: false,
 			name,
-			position: this.nextSpectatorPosition(),
+			position,
 			roomId: this.id,
 			team: Team.SPECTATOR,
 			logger: this.logger,
@@ -744,32 +812,35 @@ export class Room extends YgoRoom {
 	}
 
 	destroy(): void {
-		this.emitter.removeAllListeners();
-		this.roomState?.removeAllListener();
-		this.timers.forEach((timer) => {
-			timer.stop();
+		this.actionQueue.enqueue(() => {
+			this.emitter.removeAllListeners();
+			this.roomState?.removeAllListener();
+			this.timers.forEach((timer) => {
+				timer.stop();
+			});
+			this.roomTimer.stop();
+			if (this._duel) {
+				this.sendMessageToCpp(
+					JSON.stringify({
+						command: "DESTROY_DUEL",
+						data: {},
+					})
+				);
+			}
+
+			this._clients.forEach((client: Client) => {
+				client.socket.destroy();
+			});
+			this._spectators.forEach((client) => {
+				client.socket.destroy();
+			});
+			this.clearSpectatorCache();
+			// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+			if (this._replay) {
+				this._replay.destroy();
+			}
+			this.roomTimer.stop();
 		});
-		this.roomTimer.stop();
-		if (this._duel) {
-			this.sendMessageToCpp(
-				JSON.stringify({
-					command: "DESTROY_DUEL",
-					data: {},
-				})
-			);
-		}
-		this._clients.forEach((client: Client) => {
-			client.socket.destroy();
-		});
-		this._spectators.forEach((client) => {
-			client.socket.destroy();
-		});
-		this.clearSpectatorCache();
-		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-		if (this._replay) {
-			this._replay.destroy();
-		}
-		this.roomTimer.stop();
 	}
 
 	get allPlayersReady(): boolean {
@@ -801,5 +872,70 @@ export class Room extends YgoRoom {
 		const match = notes.match(/points\s*=\s*(\d+)/i);
 
 		return match ? Number(match[1]) : undefined;
+	}
+
+	private removeSpectatorUnsafe(spectator: Client): void {
+		const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
+		this._spectators = filtered;
+	}
+
+	private sendPlayerEnterMessage(client: Client, place: { position: number; team: number }): void {
+		this._clients.forEach((_client: Client) => {
+			_client.sendMessage(PlayerEnterClientMessage.create(client.name, place.position));
+		});
+
+		this._spectators.forEach((_client: Client) => {
+			_client.sendMessage(PlayerEnterClientMessage.create(client.name, place.position));
+		});
+	}
+
+	private sendPlayerChangeMessage(client: Client, playerRoomState: PlayerRoomState): void {
+		this._clients.forEach((_client: Client) => {
+			const status = (client.position << 4) | playerRoomState;
+
+			_client.sendMessage(PlayerChangeClientMessage.create({ status }));
+		});
+
+		this._spectators.forEach((_client: Client) => {
+			const status = (client.position << 4) | playerRoomState;
+
+			_client.sendMessage(PlayerChangeClientMessage.create({ status }));
+		});
+	}
+
+	private sendWatchMessage(): void {
+		const spectatorsCount = this._spectators.length;
+		const watchMessage = WatchChangeClientMessage.create({ count: spectatorsCount });
+
+		this._clients.forEach((_client: Client) => {
+			_client.sendMessage(watchMessage);
+		});
+
+		this._spectators.forEach((_client: Client) => {
+			_client.sendMessage(watchMessage);
+		});
+	}
+
+	private sendPlayerCellChange(client: Client, place: { position: number; team: number }): void {
+		this._clients.forEach((_client: Client) => {
+			const status = (client.position << 4) | place.position;
+
+			_client.sendMessage(PlayerChangeClientMessage.create({ status }));
+		});
+
+		this._spectators.forEach((_client: Client) => {
+			const status = (client.position << 4) | place.position;
+
+			_client.sendMessage(PlayerChangeClientMessage.create({ status }));
+		});
+	}
+
+	private nextSpectatorPositionUnsafe(): number {
+		if (this._spectators.length === 0) {
+			return 8;
+		}
+		const sorted = [...this._spectators].sort((a, b) => b.position - a.position);
+
+		return sorted[0].position + 1;
 	}
 }

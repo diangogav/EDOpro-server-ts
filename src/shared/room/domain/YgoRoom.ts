@@ -7,6 +7,7 @@ import { Client } from "../../../edopro/client/domain/Client";
 import { MercuryClient } from "../../../mercury/client/domain/MercuryClient";
 import { YgoClient } from "../../client/domain/YgoClient";
 import { ISocket } from "../../socket/domain/ISocket";
+import { RoomActionQueue } from "../RoomActionQueue";
 import { Match } from "./match/domain/Match";
 
 export enum DuelState {
@@ -26,6 +27,7 @@ export abstract class YgoRoom {
 	public readonly bestOf: number;
 	public readonly startLp: number;
 	public readonly STARTING_TURN = 0;
+	public readonly actionQueue = new RoomActionQueue();
 	protected readonly t0Positions: number[] = [];
 	protected readonly t1Positions: number[] = [];
 	protected emitter: EventEmitter;
@@ -85,24 +87,30 @@ export abstract class YgoRoom {
 	}
 
 	clearSpectatorCache(): void {
-		this._spectatorCache = [];
+		this.actionQueue.enqueue(() => {
+			this._spectatorCache = [];
+		});
 	}
 
 	removePlayer(player: YgoClient): void {
-		this._clients = this._clients.filter((item) => item.socket.id !== player.socket.id);
+		this.actionQueue.enqueue(() => {
+			this._clients = this._clients.filter((item) => item.socket.id !== player.socket.id);
+		});
 	}
 
 	duelWinner(winner: number): void {
-		if (!this._match) {
-			return;
-		}
+		this.actionQueue.enqueue(() => {
+			if (!this._match) {
+				return;
+			}
 
-		const ips = this._clients.map((client) => ({
-			name: client.name,
-			ipAddress: client.socket.remoteAddress ?? null,
-		}));
+			const ips = this._clients.map((client) => ({
+				name: client.name,
+				ipAddress: client.socket.remoteAddress ?? null,
+			}));
 
-		this._match.duelWinner(winner, 0, ips);
+			this._match.duelWinner(winner, 0, ips);
+		});
 	}
 
 	get matchPlayersHistory(): PlayerData[] {
@@ -117,7 +125,15 @@ export abstract class YgoRoom {
 		return this._spectators;
 	}
 
-	calculatePlace(startPosition?: number): { position: number; team: number } | null {
+	async calculatePlace(startPosition?: number): Promise<{ position: number; team: number } | null> {
+		return new Promise((resolve) => {
+			this.actionQueue.enqueue(() => {
+				resolve(this.calculatePlaceUnsafe(startPosition));
+			});
+		});
+	}
+
+	calculatePlaceUnsafe(startPosition?: number): { position: number; team: number } | null {
 		const team0 = this.clients
 			.filter((client: Client) => client.team === 0)
 			.map((client) => client.position);
@@ -154,22 +170,28 @@ export abstract class YgoRoom {
 	}
 
 	setClientWhoChoosesTurn(client: YgoClient): void {
-		this._clientWhoChoosesTurn = client;
+		this.actionQueue.enqueue(() => {
+			this._clientWhoChoosesTurn = client;
+		});
 	}
 
 	createMatch(): void {
-		this._match = new Match({ bestOf: this.bestOf });
-		this.initializeHistoricalData();
+		this.actionQueue.enqueue(() => {
+			this._match = new Match({ bestOf: this.bestOf });
+			this.initializeHistoricalData();
+		});
 	}
 
 	initializeHistoricalData(): void {
-		const players = this.clients.map((client: Client) => ({
-			id: client.id,
-			team: client.team,
-			name: client.name,
-			// deck: client.deck,
-		}));
-		this._match?.initializeHistoricalData(players);
+		this.actionQueue.enqueue(() => {
+			const players = this._clients.map((client: Client) => ({
+				id: client.id,
+				team: client.team,
+				name: client.name,
+			}));
+
+			this._match?.initializeHistoricalData(players);
+		});
 	}
 
 	isMatchFinished(): boolean {
@@ -181,7 +203,9 @@ export abstract class YgoRoom {
 	}
 
 	setFirstToPlay(team: number): void {
-		this._firstToPlay = team;
+		this.actionQueue.enqueue(() => {
+			this._firstToPlay = team;
+		});
 	}
 
 	matchScore(): { team0: number; team1: number } {
@@ -203,19 +227,27 @@ export abstract class YgoRoom {
 	}
 
 	createDuel(banListName: string | null): void {
-		this.currentDuel = new Duel(this.STARTING_TURN, [this.startLp, this.startLp], banListName);
+		this.actionQueue.enqueue(() => {
+			this.currentDuel = new Duel(this.STARTING_TURN, [this.startLp, this.startLp], banListName);
+		});
 	}
 
 	decreaseLps(team: Team, value: number): void {
-		this.currentDuel?.decreaseLps(team, value);
+		this.actionQueue.enqueue(() => {
+			this.currentDuel?.decreaseLps(team, value);
+		});
 	}
 
 	increaseLps(team: Team, value: number): void {
-		this.currentDuel?.increaseLps(team, value);
+		this.actionQueue.enqueue(() => {
+			this.currentDuel?.increaseLps(team, value);
+		});
 	}
 
 	increaseTurn(): void {
-		this.currentDuel?.increaseTurn();
+		this.actionQueue.enqueue(() => {
+			this.currentDuel?.increaseTurn();
+		});
 	}
 
 	get turn(): number {
@@ -273,5 +305,9 @@ export abstract class YgoRoom {
 
 	protected getDifference(a: number[], b: number[]): number[] {
 		return a.filter((item) => !b.includes(item));
+	}
+
+	protected removePlayerUnsafe(player: Client): void {
+		this._clients = this._clients.filter((item) => item.socket.id !== player.socket.id);
 	}
 }
