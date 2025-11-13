@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.10.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.9.0...v2.10.0) (2025-11-13)
+
+
+### Features
+
+* added genesys  to edopro ([#192](https://github.com/diangogav/EDOpro-server-ts/issues/192)) ([a1503f3](https://github.com/diangogav/EDOpro-server-ts/commit/a1503f373d8ad1be392d469927905ca39a0ebc17))
+* added message emitter logs ([#204](https://github.com/diangogav/EDOpro-server-ts/issues/204)) ([1d58692](https://github.com/diangogav/EDOpro-server-ts/commit/1d58692aee275cecd3fa61260c03a45a4ba0d991))
+* configure server ports using environment variables ([1b6d1a7](https://github.com/diangogav/EDOpro-server-ts/commit/1b6d1a77989df010e946f2f4c6a9867750b4c3ca))
+* **duel:** add support for MSG_SPSUMMONING in message handling ([28d9601](https://github.com/diangogav/EDOpro-server-ts/commit/28d96014565c4177623b258153ade2a6c3a2949b))
+
+
+### Bug Fixes
+
+* **build:** :building_construction: remove pretty-transport file by errors in docker execution ([#202](https://github.com/diangogav/EDOpro-server-ts/issues/202)) ([474d808](https://github.com/diangogav/EDOpro-server-ts/commit/474d808a0ec5d33c7968f6ad1fabe8b76a100a8e))
+* correct spacing in banlist mappings in Dockerfile ([a68923f](https://github.com/diangogav/EDOpro-server-ts/commit/a68923f5a87c9cbd0c370320dccd0bb9cd94480b))
+* mercury goat command collision with genesys command ([#198](https://github.com/diangogav/EDOpro-server-ts/issues/198)) ([46e7eb2](https://github.com/diangogav/EDOpro-server-ts/commit/46e7eb2861613f5d20c8c4b96abde25421829e19))
+* rename TCP_PORT and MERCURY_TCP_PORT to HOST_PORT and MERCURY_PORT in .env.example ([e9c1abd](https://github.com/diangogav/EDOpro-server-ts/commit/e9c1abd236c810472b04d66eb544fb2c9e88c235))
+* rule mappings mode and tm apply , genesys duelRule 5([#195](https://github.com/diangogav/EDOpro-server-ts/issues/195)) ([5799af9](https://github.com/diangogav/EDOpro-server-ts/commit/5799af91d378c9528eaf790708ea8f0654985f67))
+* update Dockerfile to copy cards.cdb into alternatives/genesys folder ([260abb2](https://github.com/diangogav/EDOpro-server-ts/commit/260abb266c4f3243e505168b12799ad729d69b79))
+* update Dockerfile to copy cards.cdb into alternatives/genesys folder ([#205](https://github.com/diangogav/EDOpro-server-ts/issues/205)) ([74f03de](https://github.com/diangogav/EDOpro-server-ts/commit/74f03dea503847115db5eb7485cbc5108263b538))
+* update environment variable name for WebSocket port ([86f0f3f](https://github.com/diangogav/EDOpro-server-ts/commit/86f0f3f975046d5bf3bbe002c1076fa6dfe3206b))
+
 ## [2.9.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.8.0...v2.9.0) (2025-07-31)
 
 
