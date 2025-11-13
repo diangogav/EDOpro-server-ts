@@ -14,13 +14,13 @@ import { ServerMessageClientMessage } from "../../messages/server-to-client/Serv
 import { Room } from "../domain/Room";
 
 export class JoinToDuelAsSpectator {
-	run(
+	async run(
 		joinMessage: JoinGameMessage,
 		playerInfoMessage: PlayerInfoMessage,
 		socket: ISocket,
 		room: Room
-	): void {
-		const client = room.createSpectator(socket, playerInfoMessage.name);
+	): Promise<void> {
+		const client = await room.createSpectator(socket, playerInfoMessage.name);
 
 		socket.send(JoinGameClientMessage.createFromRoom(joinMessage, room));
 		socket.send(TypeChangeClientMessage.create({ type: 0x07 }));

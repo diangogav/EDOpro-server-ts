@@ -86,7 +86,7 @@ export class WaitingState extends RoomState {
 		);
 	}
 
-	private handleKick(message: ClientMessage, room: Room, player: Client): void {
+	private async handleKick(message: ClientMessage, room: Room, player: Client): Promise<void> {
 		player.logger.info("WaitingState: KICK");
 
 		const positionKick = message.data.readInt8();
@@ -100,7 +100,7 @@ export class WaitingState extends RoomState {
 			return;
 		}
 
-		this.handleChangeToObserver(message, room, playerSelect);
+		await this.handleChangeToObserver(message, room, playerSelect);
 		room.addKick(playerSelect);
 
 		room.clients.forEach((_client: Client) => {
@@ -120,11 +120,11 @@ export class WaitingState extends RoomState {
 		});
 	}
 
-	private handleToDuel(_message: ClientMessage, room: Room, player: Client): void {
+	private async handleToDuel(_message: ClientMessage, room: Room, player: Client): Promise<void> {
 		player.logger.info("WaitingState: TO_DUEL");
 
 		const changeToDuel = new ChangeToDuel();
-		changeToDuel.execute(room, player);
+		await changeToDuel.execute(room, player);
 	}
 
 	private tryStartHandler(_message: ClientMessage, room: Room, player: Client): void {
@@ -179,7 +179,11 @@ export class WaitingState extends RoomState {
 		player.ready();
 	}
 
-	private handleChangeToObserver(_message: ClientMessage, room: Room, player: Client): void {
+	private async handleChangeToObserver(
+		_message: ClientMessage,
+		room: Room,
+		player: Client
+	): Promise<void> {
 		player.logger.info("WaitingState: OBSERVER");
 
 		if (player.isSpectator) {
@@ -187,7 +191,7 @@ export class WaitingState extends RoomState {
 		}
 
 		if (!player.host) {
-			const place = room.nextSpectatorPosition();
+			const place = await room.nextSpectatorPosition();
 			room.removePlayer(player);
 
 			room.spectators.push(player);
@@ -282,10 +286,10 @@ export class WaitingState extends RoomState {
 			return;
 		}
 
-		const place = room.calculatePlace();
+		const place = await room.calculatePlace();
 		const joinGameMessage = new JoinGameMessage(message.data);
 		if (!place) {
-			this.spectator(joinGameMessage, socket, playerInfoMessage, room);
+			await this.spectator(joinGameMessage, socket, playerInfoMessage, room);
 
 			return;
 		}
@@ -306,13 +310,13 @@ export class WaitingState extends RoomState {
 		this.player(place, joinGameMessage, socket, playerInfoMessage, room, null);
 	}
 
-	private spectator(
+	private async spectator(
 		joinGameMessage: JoinGameMessage,
 		socket: ISocket,
 		playerInfoMessage: PlayerInfoMessage,
 		room: Room
-	): void {
-		const client = room.createSpectator(socket, playerInfoMessage.name);
+	): Promise<void> {
+		const client = await room.createSpectator(socket, playerInfoMessage.name);
 
 		socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
 		const type = (Number(client.host) << 4) | client.position;

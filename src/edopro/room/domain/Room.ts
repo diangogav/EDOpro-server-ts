@@ -325,8 +325,11 @@ export class Room extends YgoRoom {
 	}
 
 	addClient(client: Client): void {
-		this._clients.push(client);
-		client.socket.roomId = this.id;
+		this.actionQueue.enqueue(() => {
+			this._clients.push(client);
+			client.socket.roomId = this.id;
+		});
+
 		const messageProcessor = new MessageProcessor();
 		const roomMessageEmitter = new RoomMessageEmitter(client, this);
 
@@ -337,8 +340,11 @@ export class Room extends YgoRoom {
 	}
 
 	addSpectator(client: Client): void {
-		client.socket.roomId = this.id;
-		this._spectators.push(client);
+		this.actionQueue.enqueue(() => {
+			client.socket.roomId = this.id;
+			this._spectators.push(client);
+		});
+
 		const messageProcessor = new MessageProcessor();
 		const roomMessageEmitter = new RoomMessageEmitter(client, this);
 
@@ -361,20 +367,21 @@ export class Room extends YgoRoom {
 	}
 
 	setDecksToPlayer(position: number, deck: Deck): void {
-		const client = this._clients.find((client) => client.position === position);
-		if (!client || !(client instanceof Client)) {
-			return;
-		}
+		this.actionQueue.enqueue(() => {
+			const client = this._clients.find((client) => client.position === position);
+			if (!client || !(client instanceof Client)) {
+				return;
+			}
+			if (this.noShuffle) {
+				deck.main.reverse();
+				client.setDeck(deck);
 
-		if (this.noShuffle) {
-			deck.main.reverse();
+				return;
+			}
+
+			shuffle(deck.main);
 			client.setDeck(deck);
-
-			return;
-		}
-
-		shuffle(deck.main);
-		client.setDeck(deck);
+		});
 	}
 
 	setDuel(duel: ChildProcessWithoutNullStreams): void {
@@ -442,8 +449,10 @@ export class Room extends YgoRoom {
 	}
 
 	removeSpectator(spectator: Client): void {
-		const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
-		this._spectators = filtered;
+		this.actionQueue.enqueue(() => {
+			const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
+			this._spectators = filtered;
+		});
 	}
 
 	cacheTeamMessage(team: number, message: Buffer, all: boolean, position: number | null): void {
@@ -642,16 +651,29 @@ export class Room extends YgoRoom {
 		this.roomTimer.stop();
 	}
 
-	nextSpectatorPosition(): number {
-		const sorted = [...this.spectators].sort((a, b) => b.position - a.position);
+	async nextSpectatorPosition(): Promise<number> {
+		return new Promise((resolve) => {
+			this.actionQueue.enqueue(() => {
+				resolve(this.nextSpectatorPositionUnsafe());
+			});
+		});
+	}
 
-		return (sorted[0]?.position ?? 7) + 1;
+	nextSpectatorPositionUnsafe(): number {
+		if (this._spectators.length === 0) {
+			return 8;
+		}
+
+		const sorted = [...this._spectators].sort((a, b) => b.position - a.position);
+
+		return sorted[0].position + 1;
 	}
 
 	public sendMessageToCpp(message: string): void {
 		this.writeToCppProcess(message, CHILD_PROCESS_RETRY_MAX);
 	}
 
+	//TODO: Remove this function
 	get side(): string {
 		return `Side: ${this.playerNames(0)}: ${this.matchSide().team0} - ${
 			this.matchSide().team1
@@ -683,13 +705,13 @@ export class Room extends YgoRoom {
 		return client;
 	}
 
-	createSpectator(socket: ISocket, name: string): Client {
+	async createSpectator(socket: ISocket, name: string): Promise<Client> {
 		const client = new Client({
 			id: null,
 			socket,
 			host: false,
 			name,
-			position: this.nextSpectatorPosition(),
+			position: await this.nextSpectatorPosition(),
 			roomId: this.id,
 			team: Team.SPECTATOR,
 			logger: this.logger,
@@ -744,32 +766,35 @@ export class Room extends YgoRoom {
 	}
 
 	destroy(): void {
-		this.emitter.removeAllListeners();
-		this.roomState?.removeAllListener();
-		this.timers.forEach((timer) => {
-			timer.stop();
+		this.actionQueue.enqueue(() => {
+			this.emitter.removeAllListeners();
+			this.roomState?.removeAllListener();
+			this.timers.forEach((timer) => {
+				timer.stop();
+			});
+			this.roomTimer.stop();
+			if (this._duel) {
+				this.sendMessageToCpp(
+					JSON.stringify({
+						command: "DESTROY_DUEL",
+						data: {},
+					})
+				);
+			}
+
+			this._clients.forEach((client: Client) => {
+				client.socket.destroy();
+			});
+			this._spectators.forEach((client) => {
+				client.socket.destroy();
+			});
+			this.clearSpectatorCache();
+			// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+			if (this._replay) {
+				this._replay.destroy();
+			}
+			this.roomTimer.stop();
 		});
-		this.roomTimer.stop();
-		if (this._duel) {
-			this.sendMessageToCpp(
-				JSON.stringify({
-					command: "DESTROY_DUEL",
-					data: {},
-				})
-			);
-		}
-		this._clients.forEach((client: Client) => {
-			client.socket.destroy();
-		});
-		this._spectators.forEach((client) => {
-			client.socket.destroy();
-		});
-		this.clearSpectatorCache();
-		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-		if (this._replay) {
-			this._replay.destroy();
-		}
-		this.roomTimer.stop();
 	}
 
 	get allPlayersReady(): boolean {

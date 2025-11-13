@@ -7,8 +7,8 @@ import { PlayerRoomState } from "../../PlayerRoomState";
 import { Room } from "../../Room";
 
 export class ChangeToDuel {
-	execute(room: Room, player: Client): void {
-		const place = room.calculatePlace();
+	async execute(room: Room, player: Client): Promise<void> {
+		const place = await room.calculatePlace();
 		const ips = player.socket.remoteAddress;
 
 		if (place === null) {
