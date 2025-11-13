@@ -713,15 +713,6 @@ export class Room extends YgoRoom {
 		});
 	}
 
-	nextSpectatorPositionUnsafe(): number {
-		if (this._spectators.length === 0) {
-			return 8;
-		}
-		const sorted = [...this._spectators].sort((a, b) => b.position - a.position);
-
-		return sorted[0].position + 1;
-	}
-
 	public sendMessageToCpp(message: string): void {
 		this.writeToCppProcess(message, CHILD_PROCESS_RETRY_MAX);
 	}
@@ -937,5 +928,14 @@ export class Room extends YgoRoom {
 
 			_client.sendMessage(PlayerChangeClientMessage.create({ status }));
 		});
+	}
+
+	private nextSpectatorPositionUnsafe(): number {
+		if (this._spectators.length === 0) {
+			return 8;
+		}
+		const sorted = [...this._spectators].sort((a, b) => b.position - a.position);
+
+		return sorted[0].position + 1;
 	}
 }
