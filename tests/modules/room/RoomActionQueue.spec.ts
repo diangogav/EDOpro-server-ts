@@ -61,4 +61,33 @@ describe("RoomActionQueue (Lock-Free Queue)", () => {
 
 		expect(result).toEqual([1, 2]);
 	});
+
+	describe("RoomActionQueue Stress Test", () => {
+		it("maneja 1000 acciones mezcladas sin inconsistencia", async () => {
+			const queue = new RoomActionQueue();
+			let counter = 0;
+
+			for (let i = 0; i < 1000; i++) {
+				if (i % 2 === 0) {
+					queue.enqueue(() => {
+						counter++;
+					});
+				} else {
+					queue.enqueue(async () => {
+						await new Promise((r) => {
+							setTimeout(r, 1);
+						});
+						counter++;
+					});
+				}
+			}
+
+			await new Promise((resolve) => {
+				setTimeout(resolve, 200);
+			});
+
+			await queue.drain();
+			expect(counter).toBe(1000);
+		});
+	});
 });
