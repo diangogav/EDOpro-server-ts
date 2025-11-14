@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.10.1](https://github.com/diangogav/EDOpro-server-ts/compare/v2.10.0...v2.10.1) (2025-11-14)
+
+
+### Bug Fixes
+
+* remove unused side getter method from Room class ([8b541b8](https://github.com/diangogav/EDOpro-server-ts/commit/8b541b8a504fb27c9b157f205ce75b7107d6ba9f))
+
 ## [2.10.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.9.0...v2.10.0) (2025-11-13)
 
 
