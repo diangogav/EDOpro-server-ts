@@ -717,13 +717,6 @@ export class Room extends YgoRoom {
 		this.writeToCppProcess(message, CHILD_PROCESS_RETRY_MAX);
 	}
 
-	//TODO: Remove this function
-	get side(): string {
-		return `Side: ${this.playerNames(0)}: ${this.matchSide().team0} - ${
-			this.matchSide().team1
-		} ${this.playerNames(1)}`;
-	}
-
 	isFinished(): boolean {
 		return this.currentDuel?.isFinished ?? false;
 	}
