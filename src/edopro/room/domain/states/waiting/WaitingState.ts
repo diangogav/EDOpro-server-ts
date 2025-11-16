@@ -254,10 +254,13 @@ export class WaitingState extends RoomState {
 			return;
 		}
 
-		const place = await room.calculatePlace();
 		const joinGameMessage = new JoinGameMessage(message.data);
+
+		const place = await room.calculatePlace();
 		if (!place) {
-			await this.spectator(joinGameMessage, socket, playerInfoMessage, room);
+			const spectator = await room.createSpectator(socket, playerInfoMessage.name);
+			socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
+			room.addSpectator(spectator);
 
 			return;
 		}
@@ -276,46 +279,6 @@ export class WaitingState extends RoomState {
 			return;
 		}
 		this.player(place, joinGameMessage, socket, playerInfoMessage, room, null);
-	}
-
-	private async spectator(
-		joinGameMessage: JoinGameMessage,
-		socket: ISocket,
-		playerInfoMessage: PlayerInfoMessage,
-		room: Room
-	): Promise<void> {
-		const client = await room.createSpectator(socket, playerInfoMessage.name);
-
-		socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
-		const type = (Number(client.host) << 4) | client.position;
-		socket.send(TypeChangeClientMessage.create({ type }));
-
-		room.clients.forEach((_client) => {
-			if (_client.socket.id !== client.socket.id) {
-				const status = (<Client | undefined>(
-					room.clients.find((item: Client) => item.position === _client.position)
-				))?.isReady
-					? (_client.position << 4) | PlayerRoomState.READY
-					: (_client.position << 4) | PlayerRoomState.NOT_READY;
-
-				socket.send(PlayerEnterClientMessage.create(_client.name, _client.position));
-				socket.send(PlayerChangeClientMessage.create({ status }));
-			}
-		});
-
-		const spectatorsCount = room.spectators.length;
-
-		const watchMessage = WatchChangeClientMessage.create({
-			count: spectatorsCount,
-		});
-
-		room.clients.forEach((_client: Client) => {
-			_client.sendMessage(watchMessage);
-		});
-
-		room.spectators.forEach((_client: Client) => {
-			_client.sendMessage(watchMessage);
-		});
 	}
 
 	private player(

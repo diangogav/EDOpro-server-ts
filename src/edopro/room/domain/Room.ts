@@ -348,14 +348,31 @@ export class Room extends YgoRoom {
 		this.actionQueue.enqueue(() => {
 			client.socket.roomId = this.id;
 			this._spectators.push(client);
-		});
 
-		const messageProcessor = new MessageProcessor();
-		const roomMessageEmitter = new RoomMessageEmitter(client, this);
+			const messageProcessor = new MessageProcessor();
+			const roomMessageEmitter = new RoomMessageEmitter(client, this);
 
-		client.socket.onMessage((data) => {
-			roomMessageEmitter.handleMessage(data);
-			messageProcessor.read(data);
+			client.socket.onMessage((data) => {
+				roomMessageEmitter.handleMessage(data);
+				messageProcessor.read(data);
+			});
+
+			this.sendTypeChangeMessage(client);
+
+			this._clients.forEach((_client) => {
+				if (_client.socket.id !== client.socket.id) {
+					const status = (<Client | undefined>(
+						this._clients.find((item: Client) => item.position === _client.position)
+					))?.isReady
+						? (_client.position << 4) | PlayerRoomState.READY
+						: (_client.position << 4) | PlayerRoomState.NOT_READY;
+
+					client.sendMessage(PlayerEnterClientMessage.create(_client.name, _client.position));
+					client.sendMessage(PlayerChangeClientMessage.create({ status }));
+				}
+			});
+
+			this.sendWatchMessage();
 		});
 	}
 
@@ -367,10 +384,7 @@ export class Room extends YgoRoom {
 			this.sendPlayerChangeMessage(player, PlayerRoomState.SPECTATE);
 			player.spectatorPosition(place);
 			player.notReady();
-
-			const type = (Number(player.host) << 4) | player.position;
-			player.sendMessage(TypeChangeClientMessage.create({ type }));
-
+			this.sendTypeChangeMessage(player);
 			this.sendWatchMessage();
 		});
 	}
@@ -388,8 +402,7 @@ export class Room extends YgoRoom {
 			this.sendWatchMessage();
 			player.playerPosition(place.position, place.team);
 			player.notReady();
-			const type = (Number(player.host) << 4) | player.position;
-			player.sendMessage(TypeChangeClientMessage.create({ type }));
+			this.sendTypeChangeMessage(player);
 		});
 	}
 
@@ -403,8 +416,7 @@ export class Room extends YgoRoom {
 			this.sendPlayerCellChange(player, nextPlace);
 			this.sendPlayerChangeMessage(player, PlayerRoomState.NOT_READY);
 			player.playerPosition(nextPlace.position, nextPlace.team);
-			const type = (Number(player.host) << 4) | player.position;
-			player.sendMessage(TypeChangeClientMessage.create({ type }));
+			this.sendTypeChangeMessage(player);
 		});
 	}
 
@@ -756,8 +768,6 @@ export class Room extends YgoRoom {
 			logger: this.logger,
 		});
 
-		this.addSpectator(client);
-
 		return client;
 	}
 
@@ -930,5 +940,10 @@ export class Room extends YgoRoom {
 		const sorted = [...this._spectators].sort((a, b) => b.position - a.position);
 
 		return sorted[0].position + 1;
+	}
+
+	private sendTypeChangeMessage(player: Client): void {
+		const type = (Number(player.host) << 4) | player.position;
+		player.sendMessage(TypeChangeClientMessage.create({ type }));
 	}
 }
