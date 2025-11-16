@@ -29,7 +29,7 @@ async function start(): Promise<void> {
 	await database.connect();
 	await database.initialize();
 	if (config.ranking.enabled) {
-		logger.info("Postgres database enabled");
+		logger.info("Postgres database enabled!");
 		const postgresDatabase = new PostgresTypeORM();
 		await postgresDatabase.connect();
 	}
