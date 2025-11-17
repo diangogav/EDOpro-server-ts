@@ -329,19 +329,67 @@ export class Room extends YgoRoom {
 		return this._match.score;
 	}
 
-	addClient(client: Client): void {
+	async createPlayer(socket: ISocket, name: string, userId: string | null): Promise<Client | null> {
+		const host = this._clients.some((client: Client) => client.host);
+		const place = await this.calculatePlace();
+
+		if (!place) {
+			return null;
+		}
+
+		const client = new Client({
+			socket,
+			host: !host,
+			name,
+			position: place.position,
+			roomId: this.id,
+			team: place.team,
+			logger: this.logger,
+			id: userId,
+		});
+
+		return client;
+	}
+
+	addPlayer(client: Client): void {
 		this.actionQueue.enqueue(() => {
 			this._clients.push(client);
 			client.socket.roomId = this.id;
+
+			this.sendPlayerEnterMessage(client, { position: client.position, team: client.team });
+			this.sendNotReadyMessage(client);
+			this.sendTypeChangeMessage(client);
+
+			if (!client.host) {
+				this.sendWatchMessage();
+				this.notifyToAllClients(client);
+			}
+
+			const messageProcessor = new MessageProcessor();
+			const roomMessageEmitter = new RoomMessageEmitter(client, this);
+
+			client.socket.onMessage((data) => {
+				roomMessageEmitter.handleMessage(data);
+				messageProcessor.read(data);
+			});
+		});
+	}
+
+	async createSpectator(socket: ISocket, name: string): Promise<Client> {
+		const position = await this.nextSpectatorPosition();
+
+		const client = new Client({
+			id: null,
+			socket,
+			host: false,
+			name,
+			position,
+			roomId: this.id,
+			team: Team.SPECTATOR,
+			logger: this.logger,
 		});
 
-		const messageProcessor = new MessageProcessor();
-		const roomMessageEmitter = new RoomMessageEmitter(client, this);
-
-		client.socket.onMessage((data) => {
-			roomMessageEmitter.handleMessage(data);
-			messageProcessor.read(data);
-		});
+		return client;
 	}
 
 	addSpectator(client: Client): void {
@@ -358,20 +406,7 @@ export class Room extends YgoRoom {
 			});
 
 			this.sendTypeChangeMessage(client);
-
-			this._clients.forEach((_client) => {
-				if (_client.socket.id !== client.socket.id) {
-					const status = (<Client | undefined>(
-						this._clients.find((item: Client) => item.position === _client.position)
-					))?.isReady
-						? (_client.position << 4) | PlayerRoomState.READY
-						: (_client.position << 4) | PlayerRoomState.NOT_READY;
-
-					client.sendMessage(PlayerEnterClientMessage.create(_client.name, _client.position));
-					client.sendMessage(PlayerChangeClientMessage.create({ status }));
-				}
-			});
-
+			this.notifyToAllClients(client);
 			this.sendWatchMessage();
 		});
 	}
@@ -749,24 +784,7 @@ export class Room extends YgoRoom {
 			logger: this.logger,
 		});
 
-		this.addClient(client);
-
-		return client;
-	}
-
-	async createSpectator(socket: ISocket, name: string): Promise<Client> {
-		const position = await this.nextSpectatorPosition();
-
-		const client = new Client({
-			id: null,
-			socket,
-			host: false,
-			name,
-			position,
-			roomId: this.id,
-			team: Team.SPECTATOR,
-			logger: this.logger,
-		});
+		this.addPlayer(client);
 
 		return client;
 	}
@@ -945,5 +963,31 @@ export class Room extends YgoRoom {
 	private sendTypeChangeMessage(player: Client): void {
 		const type = (Number(player.host) << 4) | player.position;
 		player.sendMessage(TypeChangeClientMessage.create({ type }));
+	}
+
+	private sendNotReadyMessage(client: Client): void {
+		const notReady = (client.position << 4) | PlayerRoomState.NOT_READY;
+		this._clients.forEach((_client: Client) => {
+			_client.sendMessage(PlayerChangeClientMessage.create({ status: notReady }));
+		});
+
+		this._spectators.forEach((_client: Client) => {
+			_client.sendMessage(PlayerChangeClientMessage.create({ status: notReady }));
+		});
+	}
+
+	private notifyToAllClients(client: Client): void {
+		this._clients.forEach((_client) => {
+			if (_client.socket.id !== client.socket.id) {
+				const status = (<Client | undefined>(
+					this._clients.find((item: Client) => item.position === _client.position)
+				))?.isReady
+					? (_client.position << 4) | PlayerRoomState.READY
+					: (_client.position << 4) | PlayerRoomState.NOT_READY;
+
+				client.sendMessage(PlayerEnterClientMessage.create(_client.name, _client.position));
+				client.sendMessage(PlayerChangeClientMessage.create({ status }));
+			}
+		});
 	}
 }

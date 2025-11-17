@@ -4,8 +4,6 @@ import { EventEmitter } from "stream";
 
 import { config } from "../../../config";
 import { Logger } from "../../../shared/logger/domain/Logger";
-import { PlayerEnterClientMessage } from "../../../shared/messages/server-to-client/PlayerEnterClientMessage";
-import { TypeChangeClientMessage } from "../../../shared/messages/server-to-client/TypeChangeClientMessage";
 import { GameCreatorMessageHandler } from "../../../shared/room/domain/GameCreatorMessageHandler";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
@@ -17,7 +15,6 @@ import { CreateGameClientMessage } from "../../messages/server-to-client/CreateG
 import { ErrorMessages } from "../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientMessage";
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
-import { PlayerChangeClientMessage } from "../../messages/server-to-client/PlayerChangeClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { Room } from "../domain/Room";
 import RoomList from "../infrastructure/RoomList";
@@ -27,7 +24,6 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 	private readonly logger: Logger;
 	private readonly socket: ISocket;
 	private readonly userAuth: UserAuth;
-	private readonly HOST_CLIENT = 0x10;
 	private readonly roomId: number;
 
 	constructor(
@@ -48,12 +44,13 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 	}
 
 	async handle(message: ClientMessage): Promise<void> {
-		this.logger.info("handle");
+		this.logger.info("Handle");
+
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const createGameMessage = new CreateGameMessage(message.data);
 
 		if (!playerInfoMessage.password || !config.ranking.enabled) {
-			this.create(createGameMessage, playerInfoMessage, null);
+			await this.create(createGameMessage, playerInfoMessage, null);
 
 			return;
 		}
@@ -66,14 +63,14 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 			return;
 		}
 
-		this.create(createGameMessage, playerInfoMessage, user.id);
+		await this.create(createGameMessage, playerInfoMessage, user.id);
 	}
 
-	private create(
+	private async create(
 		message: CreateGameMessage,
 		playerInfoMessage: PlayerInfoMessage,
 		userId: string | null
-	): void {
+	): Promise<void> {
 		const room = Room.createFromCreateGameMessage(
 			message,
 			playerInfoMessage,
@@ -84,13 +81,13 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 
 		room.waiting();
 
-		const client = room.createHost(this.socket, playerInfoMessage.name, userId);
-		RoomList.addRoom(room);
-		this.socket.send(CreateGameClientMessage.create(room));
-		this.socket.send(JoinGameClientMessage.createFromCreateGameMessage(message));
-		this.socket.send(PlayerEnterClientMessage.create(playerInfoMessage.name, client.position));
-		this.socket.send(PlayerChangeClientMessage.create({}));
-		this.socket.send(TypeChangeClientMessage.create({ type: this.HOST_CLIENT }));
+		const host = await room.createPlayer(this.socket, playerInfoMessage.name, userId);
+		if (host?.host) {
+			host.sendMessage(CreateGameClientMessage.create(room));
+			host.sendMessage(JoinGameClientMessage.createFromCreateGameMessage(message));
+			room.addPlayer(host);
+			RoomList.addRoom(room);
+		}
 
 		if (room.ranked) {
 			this.sendRankedMessage();

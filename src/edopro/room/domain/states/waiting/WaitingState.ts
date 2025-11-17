@@ -6,8 +6,6 @@ import { EventEmitter } from "stream";
 
 import { Logger } from "../../../../../shared/logger/domain/Logger";
 import { DuelStartClientMessage } from "../../../../../shared/messages/server-to-client/DuelStartClientMessage";
-import { PlayerEnterClientMessage } from "../../../../../shared/messages/server-to-client/PlayerEnterClientMessage";
-import { TypeChangeClientMessage } from "../../../../../shared/messages/server-to-client/TypeChangeClientMessage";
 import { ISocket } from "../../../../../shared/socket/domain/ISocket";
 import { Client } from "../../../../client/domain/Client";
 import { DeckCreator } from "../../../../deck/application/DeckCreator";
@@ -22,8 +20,6 @@ import { JoinGameClientMessage } from "../../../../messages/server-to-client/Joi
 import { PlayerChangeClientMessage } from "../../../../messages/server-to-client/PlayerChangeClientMessage";
 import { RPSChooseClientMessage } from "../../../../messages/server-to-client/RPSChooseClientMessage";
 import { ServerErrorClientMessage } from "../../../../messages/server-to-client/ServerErrorMessageClientMessage";
-import { WatchChangeClientMessage } from "../../../../messages/server-to-client/WatchChangeClientMessage";
-import { PlayerRoomState } from "../../PlayerRoomState";
 import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";
 
@@ -247,6 +243,7 @@ export class WaitingState extends RoomState {
 
 	private async handle(message: ClientMessage, room: Room, socket: ISocket): Promise<void> {
 		this.logger.info("JOIN");
+
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		if (this.playerAlreadyInRoom(playerInfoMessage, room, socket)) {
 			this.sendExistingPlayerErrorMessage(playerInfoMessage, socket);
@@ -257,6 +254,7 @@ export class WaitingState extends RoomState {
 		const joinGameMessage = new JoinGameMessage(message.data);
 
 		const place = await room.calculatePlace();
+
 		if (!place) {
 			const spectator = await room.createSpectator(socket, playerInfoMessage.name);
 			socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
@@ -264,6 +262,8 @@ export class WaitingState extends RoomState {
 
 			return;
 		}
+
+		let userId: string | null = null;
 
 		if (room.ranked) {
 			const user = await this.userAuth.run(playerInfoMessage);
@@ -274,106 +274,19 @@ export class WaitingState extends RoomState {
 
 				return;
 			}
-			this.player(place, joinGameMessage, socket, playerInfoMessage, room, user.id);
 
-			return;
+			userId = user.id;
 		}
-		this.player(place, joinGameMessage, socket, playerInfoMessage, room, null);
-	}
-
-	private player(
-		place: {
-			position: number;
-			team: number;
-		},
-		joinGameMessage: JoinGameMessage,
-		socket: ISocket,
-		playerInfoMessage: PlayerInfoMessage,
-		room: Room,
-		userId: string | null
-	): void {
-		const host = room.clients.some((client: Client) => client.host);
-
-		const client = new Client({
-			socket,
-			host: !host,
-			name: playerInfoMessage.name,
-			position: place.position,
-			roomId: room.id,
-			team: place.team,
-			logger: this.logger,
-			id: userId,
-		});
-
-		if (client.host) {
-			this.sendJoinMessage(playerInfoMessage, joinGameMessage, socket, room, client);
-			client.sendMessage(PlayerEnterClientMessage.create(playerInfoMessage.name, client.position));
-			this.sendNotReadyMessage(client, room);
-			this.sendTypeChangeMessage(client, socket);
-			room.addClient(client);
+		const player = await room.createPlayer(socket, playerInfoMessage.name, userId);
+		if (!player) {
+			const spectator = await room.createSpectator(socket, playerInfoMessage.name);
+			socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
+			room.addSpectator(spectator);
 
 			return;
 		}
 
-		room.addClient(client);
-		this.sendJoinMessage(playerInfoMessage, joinGameMessage, socket, room, client);
-		this.sendNotReadyMessage(client, room);
-		this.sendTypeChangeMessage(client, socket);
-		const spectatorsCount = room.spectators.length;
-		const watchMessage = WatchChangeClientMessage.create({
-			count: spectatorsCount,
-		});
-		socket.send(watchMessage);
-		this.sendWelcomeMessage(room, socket);
-
-		this.notify(client, room, socket);
-	}
-
-	private sendJoinMessage(
-		playerInfoMessage: PlayerInfoMessage,
-		message: JoinGameMessage,
-		socket: ISocket,
-		room: Room,
-		client: Client
-	): void {
-		socket.send(JoinGameClientMessage.createFromRoom(message, room));
-		room.clients.forEach((_client: Client) => {
-			_client.sendMessage(PlayerEnterClientMessage.create(playerInfoMessage.name, client.position));
-		});
-
-		room.spectators.forEach((_client: Client) => {
-			_client.sendMessage(PlayerEnterClientMessage.create(playerInfoMessage.name, client.position));
-		});
-	}
-
-	private sendNotReadyMessage(client: Client, room: Room): void {
-		const notReady = (client.position << 4) | PlayerRoomState.NOT_READY;
-		room.clients.forEach((_client: Client) => {
-			_client.sendMessage(PlayerChangeClientMessage.create({ status: notReady }));
-		});
-
-		room.spectators.forEach((_client: Client) => {
-			_client.sendMessage(PlayerChangeClientMessage.create({ status: notReady }));
-		});
-	}
-
-	private sendTypeChangeMessage(client: Client, socket: ISocket): void {
-		const type = (Number(client.host) << 4) | client.position;
-		socket.send(TypeChangeClientMessage.create({ type }));
-	}
-
-	private notify(client: Client, room: Room, socket: ISocket): void {
-		room.clients.forEach((_client) => {
-			if (_client.socket.id !== client.socket.id) {
-				const status = (<Client | undefined>(
-					room.clients.find((item) => item.position === _client.position)
-				))?.isReady
-					? (_client.position << 4) | PlayerRoomState.READY
-					: (_client.position << 4) | PlayerRoomState.NOT_READY;
-
-				socket.send(PlayerEnterClientMessage.create(_client.name, _client.position));
-				socket.send(PlayerChangeClientMessage.create({ status }));
-			}
-		});
+		socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
+		room.addPlayer(player);
 	}
 }
