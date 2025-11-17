@@ -345,7 +345,7 @@ export class Room extends YgoRoom {
 
 			if (!client.host) {
 				this.sendWatchMessage();
-				this.notifyToAllClients(client);
+				this.notifyToAllLobbyClients(client);
 			}
 
 			const messageProcessor = new MessageProcessor();
@@ -388,9 +388,7 @@ export class Room extends YgoRoom {
 				messageProcessor.read(data);
 			});
 
-			this.sendTypeChangeMessage(client);
-			this.notifyToAllClients(client);
-			this.sendWatchMessage();
+			this.sendTypeChangeMessage(client, 0x07);
 		});
 	}
 
@@ -836,6 +834,48 @@ export class Room extends YgoRoom {
 		});
 	}
 
+	notifyToAllLobbyClients(client: Client): void {
+		this.actionQueue.enqueue(() => {
+			this._clients.forEach((_client) => {
+				if (_client.socket.id !== client.socket.id) {
+					const status = (<Client | undefined>(
+						this._clients.find((item: Client) => item.position === _client.position)
+					))?.isReady
+						? (_client.position << 4) | PlayerRoomState.READY
+						: (_client.position << 4) | PlayerRoomState.NOT_READY;
+
+					client.sendMessage(PlayerEnterClientMessage.create(_client.name, _client.position));
+					client.sendMessage(PlayerChangeClientMessage.create({ status }));
+				}
+			});
+		});
+	}
+
+	notifyToAllPlayers(client: Client): void {
+		this.actionQueue.enqueue(() => {
+			this._clients.forEach((item) => {
+				const status = (item.position << 4) | 0x09;
+				client.sendMessage(PlayerEnterClientMessage.create(item.name, item.position));
+				client.sendMessage(PlayerChangeClientMessage.create({ status }));
+			});
+		});
+	}
+
+	sendWatchMessage(): void {
+		this.actionQueue.enqueue(() => {
+			const spectatorsCount = this._spectators.length;
+			const watchMessage = WatchChangeClientMessage.create({ count: spectatorsCount });
+
+			this._clients.forEach((_client: Client) => {
+				_client.sendMessage(watchMessage);
+			});
+
+			this._spectators.forEach((_client: Client) => {
+				_client.sendMessage(watchMessage);
+			});
+		});
+	}
+
 	async nextSpectatorPosition(): Promise<number> {
 		return new Promise((resolve) => {
 			this.actionQueue.enqueue(() => {
@@ -951,19 +991,6 @@ export class Room extends YgoRoom {
 		});
 	}
 
-	private sendWatchMessage(): void {
-		const spectatorsCount = this._spectators.length;
-		const watchMessage = WatchChangeClientMessage.create({ count: spectatorsCount });
-
-		this._clients.forEach((_client: Client) => {
-			_client.sendMessage(watchMessage);
-		});
-
-		this._spectators.forEach((_client: Client) => {
-			_client.sendMessage(watchMessage);
-		});
-	}
-
 	private sendPlayerCellChange(client: Client, place: { position: number; team: number }): void {
 		this._clients.forEach((_client: Client) => {
 			const status = (client.position << 4) | place.position;
@@ -978,8 +1005,8 @@ export class Room extends YgoRoom {
 		});
 	}
 
-	private sendTypeChangeMessage(player: Client): void {
-		const type = (Number(player.host) << 4) | player.position;
+	private sendTypeChangeMessage(player: Client, value?: number): void {
+		const type = value ? value : (Number(player.host) << 4) | player.position;
 		player.sendMessage(TypeChangeClientMessage.create({ type }));
 	}
 
@@ -1002,21 +1029,6 @@ export class Room extends YgoRoom {
 
 		this._spectators.forEach((_client: Client) => {
 			_client.sendMessage(PlayerChangeClientMessage.create({ status: notReady }));
-		});
-	}
-
-	private notifyToAllClients(client: Client): void {
-		this._clients.forEach((_client) => {
-			if (_client.socket.id !== client.socket.id) {
-				const status = (<Client | undefined>(
-					this._clients.find((item: Client) => item.position === _client.position)
-				))?.isReady
-					? (_client.position << 4) | PlayerRoomState.READY
-					: (_client.position << 4) | PlayerRoomState.NOT_READY;
-
-				client.sendMessage(PlayerEnterClientMessage.create(_client.name, _client.position));
-				client.sendMessage(PlayerChangeClientMessage.create({ status }));
-			}
 		});
 	}
 }

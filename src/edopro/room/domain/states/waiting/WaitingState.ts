@@ -242,6 +242,8 @@ export class WaitingState extends RoomState {
 			const spectator = await room.createSpectator(socket, playerInfoMessage.name);
 			socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
 			room.addSpectator(spectator);
+			room.notifyToAllLobbyClients(spectator);
+			room.sendWatchMessage();
 
 			return;
 		}
@@ -265,6 +267,8 @@ export class WaitingState extends RoomState {
 			const spectator = await room.createSpectator(socket, playerInfoMessage.name);
 			socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
 			room.addSpectator(spectator);
+			room.notifyToAllLobbyClients(spectator);
+			room.sendWatchMessage();
 
 			return;
 		}
