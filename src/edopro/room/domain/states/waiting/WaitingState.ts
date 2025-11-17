@@ -243,7 +243,7 @@ export class WaitingState extends RoomState {
 			socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
 			room.addSpectator(spectator);
 			room.notifyToAllLobbyClients(spectator);
-			room.sendWatchMessage();
+			room.sendSpectatorCount({ enqueue: true });
 
 			return;
 		}
@@ -268,7 +268,7 @@ export class WaitingState extends RoomState {
 			socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
 			room.addSpectator(spectator);
 			room.notifyToAllLobbyClients(spectator);
-			room.sendWatchMessage();
+			room.sendSpectatorCount({ enqueue: true });
 
 			return;
 		}
