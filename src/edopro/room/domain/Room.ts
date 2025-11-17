@@ -836,7 +836,7 @@ export class Room extends YgoRoom {
 		});
 	}
 
-	private async nextSpectatorPosition(): Promise<number> {
+	async nextSpectatorPosition(): Promise<number> {
 		return new Promise((resolve) => {
 			this.actionQueue.enqueue(() => {
 				resolve(this.nextSpectatorPositionUnsafe());
