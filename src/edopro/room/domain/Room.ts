@@ -294,16 +294,6 @@ export class Room extends YgoRoom {
 		return false;
 	}
 
-	waiting(): void {
-		this.roomState?.removeAllListener();
-		this.roomState = new WaitingState(
-			this.emitter,
-			this.logger,
-			new UserAuth(new UserProfilePostgresRepository()),
-			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules, this.duelFlag)
-		);
-	}
-
 	resetReplay(): void {
 		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 		if (this._replay) {
@@ -318,16 +308,9 @@ export class Room extends YgoRoom {
 		});
 	}
 
-	matchSide(): { team0: number; team1: number } {
-		if (!this._match) {
-			return {
-				team0: 0,
-				team1: 0,
-			};
-		}
-
-		return this._match.score;
-	}
+	//********************************************************************************************* */
+	//**************************************CLIENTS CRUD******************************************* */
+	//********************************************************************************************* */
 
 	async createPlayer(socket: ISocket, name: string, userId: string | null): Promise<Client | null> {
 		const host = this._clients.some((client: Client) => client.host);
@@ -455,16 +438,51 @@ export class Room extends YgoRoom {
 		});
 	}
 
-	get replay(): Replay {
-		return this._replay;
+	removeSpectator(spectator: Client): void {
+		this.actionQueue.enqueue(() => {
+			const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
+			this._spectators = filtered;
+		});
+	}
+	//********************************************************************************************* */
+	//**********************************END CLIENTS CRUD******************************************* */
+	//********************************************************************************************* */
+
+	//********************************************************************************************* */
+	//**************************************PLAYER STATES****************************************** */
+	//********************************************************************************************* */
+
+	ready(player: Client): void {
+		this.actionQueue.enqueue(() => {
+			player.ready();
+			this.sendReadyMessage(player);
+		});
+	}
+
+	notReady(player: Client): void {
+		this.actionQueue.enqueue(() => {
+			player.notReady();
+			this.sendNotReadyMessage(player);
+		});
 	}
 
 	addKick(client: Client): void {
 		this._kick.push(client);
 	}
 
+	get allPlayersReady(): boolean {
+		return this._clients.every((player) => player.isReady);
+	}
+
 	get kick(): Client[] {
 		return this._kick;
+	}
+	//********************************************************************************************* */
+	//**********************************END PLAYER STATES****************************************** */
+	//********************************************************************************************* */
+
+	get replay(): Replay {
+		return this._replay;
 	}
 
 	setDecksToPlayer(position: number, deck: Deck): void {
@@ -493,12 +511,25 @@ export class Room extends YgoRoom {
 		});
 	}
 
-	get duel(): ChildProcessWithoutNullStreams | null {
+	private get duel(): ChildProcessWithoutNullStreams | null {
 		if (!this._duel) {
 			return null;
 		}
 
 		return this._duel;
+	}
+
+	//********************************************************************************************* */
+	//*****************************************ROOM STATES***************************************** */
+	//********************************************************************************************* */
+	waiting(): void {
+		this.roomState?.removeAllListener();
+		this.roomState = new WaitingState(
+			this.emitter,
+			this.logger,
+			new UserAuth(new UserProfilePostgresRepository()),
+			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules, this.duelFlag)
+		);
 	}
 
 	dueling(): void {
@@ -549,12 +580,9 @@ export class Room extends YgoRoom {
 		);
 	}
 
-	removeSpectator(spectator: Client): void {
-		this.actionQueue.enqueue(() => {
-			const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
-			this._spectators = filtered;
-		});
-	}
+	//********************************************************************************************* */
+	//*************************************END ROOM STATES***************************************** */
+	//********************************************************************************************* */
 
 	cacheTeamMessage(team: number, message: Buffer, all: boolean, position: number | null): void {
 		if (team === 3) {
@@ -597,7 +625,7 @@ export class Room extends YgoRoom {
 		this._opponentMainDeckSize = mainSize;
 	}
 
-	get isRelay(): boolean {
+	private get isRelay(): boolean {
 		return (this.duelFlagsLow & 0x80) !== 0;
 	}
 
@@ -615,45 +643,6 @@ export class Room extends YgoRoom {
 
 	get opponentExtraDeckSize(): number {
 		return this._opponentExtraDeckSize;
-	}
-
-	nextAvailablePosition(position: number): { position: number; team: number } | null {
-		const positions = [...this.t1Positions, ...this.t0Positions].sort((a, b) => a - b);
-		const occupiedPositions = this.clients.map((client) => client.position);
-		const difference = this.getDifference(positions, occupiedPositions);
-		if (difference.length === 0) {
-			return null;
-		}
-
-		const nextPositions = difference.filter((item) => item > position);
-
-		if (nextPositions.length > 0) {
-			const isTeam0 = this.t0Positions.find((pos) => pos === nextPositions[0]);
-			if (isTeam0 !== undefined) {
-				return {
-					position: nextPositions[0],
-					team: 0,
-				};
-			}
-
-			return {
-				position: nextPositions[0],
-				team: 1,
-			};
-		}
-
-		const isTeam0 = this.t0Positions.find((pos) => pos === positions[0]);
-		if (isTeam0 !== undefined) {
-			return {
-				position: difference[0],
-				team: 0,
-			};
-		}
-
-		return {
-			position: difference[0],
-			team: 1,
-		};
 	}
 
 	prepareTurnOrder(): void {
@@ -724,6 +713,10 @@ export class Room extends YgoRoom {
 		return Number(!team);
 	}
 
+	//********************************************************************************************* */
+	//**********************************************TIMERS***************************************** */
+	//********************************************************************************************* */
+
 	stopTimer(team: number): void {
 		this.timers[team].stop();
 	}
@@ -752,13 +745,9 @@ export class Room extends YgoRoom {
 		this.roomTimer.stop();
 	}
 
-	async nextSpectatorPosition(): Promise<number> {
-		return new Promise((resolve) => {
-			this.actionQueue.enqueue(() => {
-				resolve(this.nextSpectatorPositionUnsafe());
-			});
-		});
-	}
+	//********************************************************************************************* */
+	//******************************************END TIMERS***************************************** */
+	//********************************************************************************************* */
 
 	public sendMessageToCpp(message: string): void {
 		this.writeToCppProcess(message, CHILD_PROCESS_RETRY_MAX);
@@ -770,23 +759,6 @@ export class Room extends YgoRoom {
 
 	finished(): void {
 		this.currentDuel?.finished();
-	}
-
-	createHost(socket: ISocket, name: string, id: string | null): Client {
-		const client = new Client({
-			id,
-			socket,
-			host: true,
-			name,
-			position: 0,
-			roomId: this.id,
-			team: Team.PLAYER,
-			logger: this.logger,
-		});
-
-		this.addPlayer(client);
-
-		return client;
 	}
 
 	setLastPhaseMessage(message: Buffer): void {
@@ -864,8 +836,51 @@ export class Room extends YgoRoom {
 		});
 	}
 
-	get allPlayersReady(): boolean {
-		return this._clients.every((player) => player.isReady);
+	private async nextSpectatorPosition(): Promise<number> {
+		return new Promise((resolve) => {
+			this.actionQueue.enqueue(() => {
+				resolve(this.nextSpectatorPositionUnsafe());
+			});
+		});
+	}
+
+	private nextAvailablePosition(position: number): { position: number; team: number } | null {
+		const positions = [...this.t1Positions, ...this.t0Positions].sort((a, b) => a - b);
+		const occupiedPositions = this.clients.map((client) => client.position);
+		const difference = this.getDifference(positions, occupiedPositions);
+		if (difference.length === 0) {
+			return null;
+		}
+
+		const nextPositions = difference.filter((item) => item > position);
+
+		if (nextPositions.length > 0) {
+			const isTeam0 = this.t0Positions.find((pos) => pos === nextPositions[0]);
+			if (isTeam0 !== undefined) {
+				return {
+					position: nextPositions[0],
+					team: 0,
+				};
+			}
+
+			return {
+				position: nextPositions[0],
+				team: 1,
+			};
+		}
+
+		const isTeam0 = this.t0Positions.find((pos) => pos === positions[0]);
+		if (isTeam0 !== undefined) {
+			return {
+				position: difference[0],
+				team: 0,
+			};
+		}
+
+		return {
+			position: difference[0],
+			team: 1,
+		};
 	}
 
 	private writeToCppProcess(messageToCpp: string, retryCount: number): void {
@@ -899,6 +914,18 @@ export class Room extends YgoRoom {
 		const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
 		this._spectators = filtered;
 	}
+
+	private nextSpectatorPositionUnsafe(): number {
+		if (this._spectators.length === 0) {
+			return 8;
+		}
+		const sorted = [...this._spectators].sort((a, b) => b.position - a.position);
+
+		return sorted[0].position + 1;
+	}
+	//********************************************************************************************* */
+	//**********************************MESSAGES TO CLIENT***************************************** */
+	//********************************************************************************************* */
 
 	private sendPlayerEnterMessage(client: Client, place: { position: number; team: number }): void {
 		this._clients.forEach((_client: Client) => {
@@ -951,18 +978,20 @@ export class Room extends YgoRoom {
 		});
 	}
 
-	private nextSpectatorPositionUnsafe(): number {
-		if (this._spectators.length === 0) {
-			return 8;
-		}
-		const sorted = [...this._spectators].sort((a, b) => b.position - a.position);
-
-		return sorted[0].position + 1;
-	}
-
 	private sendTypeChangeMessage(player: Client): void {
 		const type = (Number(player.host) << 4) | player.position;
 		player.sendMessage(TypeChangeClientMessage.create({ type }));
+	}
+
+	private sendReadyMessage(client: Client): void {
+		const ready = (client.position << 4) | PlayerRoomState.READY;
+		this._clients.forEach((_client: Client) => {
+			_client.sendMessage(PlayerChangeClientMessage.create({ status: ready }));
+		});
+
+		this._spectators.forEach((_client: Client) => {
+			_client.sendMessage(PlayerChangeClientMessage.create({ status: ready }));
+		});
 	}
 
 	private sendNotReadyMessage(client: Client): void {

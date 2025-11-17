@@ -17,7 +17,6 @@ import { ClientMessage } from "../../../../messages/MessageProcessor";
 import { ErrorMessages } from "../../../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../../../messages/server-to-client/ErrorClientMessage";
 import { JoinGameClientMessage } from "../../../../messages/server-to-client/JoinGameClientMessage";
-import { PlayerChangeClientMessage } from "../../../../messages/server-to-client/PlayerChangeClientMessage";
 import { RPSChooseClientMessage } from "../../../../messages/server-to-client/RPSChooseClientMessage";
 import { ServerErrorClientMessage } from "../../../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { Room } from "../../Room";
@@ -164,21 +163,12 @@ export class WaitingState extends RoomState {
 		player.logger.info("WaitingState: READY");
 
 		if (player.isUpdatingDeck) {
-			// this.logger.debug("WAITING: SAVING READY COMMAND");
 			player.saveReadyCommand(_message);
 
 			return;
 		}
 
-		// this.logger.debug("WAITING: EXECUTE READY COMMAND");
-		const status = (player.position << 4) | 0x09;
-		const message = PlayerChangeClientMessage.create({ status });
-
-		[...room.spectators, ...room.clients].forEach((client: Client) => {
-			client.sendMessage(message);
-		});
-
-		player.ready();
+		room.ready(player);
 	}
 
 	private handleChangeToObserver(_message: ClientMessage, room: Room, player: Client): void {
@@ -223,7 +213,6 @@ export class WaitingState extends RoomState {
 		player.deckUpdated();
 
 		if (player.haveReadyCommand) {
-			// this.logger.debug("WAITING: UPDATE_DECK: CALLING READY COMMAND");
 			player.clearReadyCommand();
 			this.handleReady(player.readyMessage, room, player);
 		}
@@ -232,13 +221,7 @@ export class WaitingState extends RoomState {
 	private handleNotReady(_message: ClientMessage, room: Room, player: Client): void {
 		player.logger.info("WaitingState: NOT_READY");
 
-		const status = (player.position << 4) | 0x0a;
-		const playerChangeMessage = PlayerChangeClientMessage.create({ status });
-		[...room.spectators, ...room.clients].forEach((client: Client) => {
-			client.sendMessage(playerChangeMessage);
-		});
-
-		player.notReady();
+		room.notReady(player);
 	}
 
 	private async handle(message: ClientMessage, room: Room, socket: ISocket): Promise<void> {
