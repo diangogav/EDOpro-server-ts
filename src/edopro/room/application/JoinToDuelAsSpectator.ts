@@ -20,6 +20,7 @@ export class JoinToDuelAsSpectator {
 		const spectator = await room.createSpectator(socket, playerInfoMessage.name);
 		spectator.sendMessage(JoinGameClientMessage.createFromRoom(joinMessage, room));
 		room.addSpectator(spectator);
+		room.notifyToAllPlayers(spectator);
 
 		spectator.sendMessage(DuelStartClientMessage.create());
 		spectator.sendMessage(CatchUpClientMessage.create({ catchingUp: true }));
