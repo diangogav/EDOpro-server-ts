@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.11.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.10.0...v2.11.0) (2025-11-21)
+
+
+### Features
+
+* notify all players when a new spectator joins the duel ([1c71643](https://github.com/diangogav/EDOpro-server-ts/commit/1c71643fb0a6f9b0aa3f00011c760528193cf894))
+
+
+### Bug Fixes
+
+* remove unused side getter method from Room class ([8b541b8](https://github.com/diangogav/EDOpro-server-ts/commit/8b541b8a504fb27c9b157f205ce75b7107d6ba9f))
+* update log message to include exclamation mark for emphasis ([e2aa0b8](https://github.com/diangogav/EDOpro-server-ts/commit/e2aa0b82bb0469431db105f879771f48e5bea68f))
+
 ## [2.10.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.9.0...v2.10.0) (2025-11-13)
 
 
