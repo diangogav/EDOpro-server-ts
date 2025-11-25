@@ -19,11 +19,24 @@ Welcome to **Evolution Server**, a scalable and modern backend server for Yu-Gi-
 
 ## 📋 Requirements
 
-- [Node.js](https://nodejs.org) (>= 18.16.0)
-- [Conan](https://conan.io/) (>= 2.0.6)
+- [Node.js](https://nodejs.org) (>= 24.11.0)
+- [Conan](https://conan.io/) (2.21.0)
 - [Python 3](https://www.python.org/downloads/) (for Conan)
 - [CMake + Make + g++](https://cmake.org/download/) (for building native CoreIntegrator)
-- `wget`, `git`, `tar`, `liblua5.3-dev`, `libsqlite3-dev`, `libevent-dev`, etc.
+- System dependencies: `wget`, `git`, `tar`, `curl`, `liblua5.3-dev`, `libsqlite3-dev`, `libevent-dev`, `pkg-config`, `automake`, `libtool`, `m4`
+
+---
+
+## ⚙️ Configuration
+
+Before running the server, you must configure the environment variables.
+
+1. Copy the example configuration file:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Edit `.env` with your settings (ports, database credentials, etc.).
 
 ---
 
@@ -32,7 +45,7 @@ Welcome to **Evolution Server**, a scalable and modern backend server for Yu-Gi-
 ```bash
 sudo apt update
 sudo apt install python3 python3-pip -y
-pip install conan
+pip install "conan==2.21.0"
 conan profile detect
 ```
 
@@ -45,6 +58,14 @@ conan profile detect
 ```bash
 git clone --recursive https://github.com/diangogav/EDOpro-server-ts
 cd EDOpro-server-ts
+```
+
+### 📝 Install System Dependencies (Optional helper)
+
+You can use the provided script to install system dependencies on Ubuntu/Debian:
+
+```bash
+sudo bash install_dependencies.sh
 ```
 
 ### 2️⃣ Clone external dependencies
