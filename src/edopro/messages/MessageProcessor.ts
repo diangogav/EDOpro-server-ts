@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
+ 
 import { Commands } from "./domain/Commands";
 
 export interface ClientMessage {

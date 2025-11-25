@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-floating-promises */
+ 
 import { randomUUID as uuidv4 } from "crypto";
 import net, { Socket } from "net";
 import { config } from "src/config";
@@ -84,21 +84,21 @@ export class HostServer {
 			});
 
 			socket.on("end", () => {
-				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+				 
 				connectionLogger.info(`${socket.remoteAddress} left in end event`);
 				const disconnectHandler = new DisconnectHandler(tcpClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
 			});
 
 			socket.on("close", () => {
-				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+				 
 				connectionLogger.info(`${socket.remoteAddress} left in close event`);
 				const disconnectHandler = new DisconnectHandler(tcpClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
 			});
 
 			socket.on("error", (_error) => {
-				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+				 
 				connectionLogger.error(`${socket.remoteAddress} left in error event`, { err: _error });
 				const disconnectHandler = new DisconnectHandler(tcpClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);

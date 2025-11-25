@@ -1,4 +1,4 @@
-/* eslint-disable no-await-in-loop */
+ 
 import { Room } from "../../../../src/edopro/room/domain/Room";
 import { ClientMother } from "../../shared/mothers/client/ClientMother";
 import { RoomMother } from "../../shared/mothers/room/RoomMother";

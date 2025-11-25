@@ -1,4 +1,4 @@
-/* eslint-disable no-use-before-define */
+ 
 import { readFileSync } from "fs";
 import { createServer } from "https";
 import path from "path";

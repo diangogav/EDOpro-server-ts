@@ -13,7 +13,7 @@ export class CreateMessageRequest {
 export class ServerMessagesController {
 	constructor(private readonly logger: Logger) {}
 
-	// eslint-disable-next-line @typescript-eslint/require-await
+	 
 	async run(req: Request, response: Response): Promise<void> {
 		const payload = req.body as CreateMessageRequest;
 		const rooms = [...RoomList.getRooms(), ...MercuryRoomList.getRooms()];

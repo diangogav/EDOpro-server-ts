@@ -1,13 +1,13 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+ 
+ 
+ 
 import * as lzma from "lzma-native";
 import { promisify } from "util";
 
 import { UTF8ToUTF16 } from "../../utils/UTF8ToUTF16";
 import { Client } from "../client/domain/Client";
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+ 
 const lzmaCompress = promisify(lzma.compress);
 
 enum ReplayTypes {
@@ -176,9 +176,9 @@ export class Replay {
 		return size;
 	}
 
-	// eslint-disable-next-line @typescript-eslint/require-await
+	 
 	async compressData(data: Buffer): Promise<Buffer> {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-return
+		 
 		return lzmaCompress(data, {
 			preset: 5,
 			dictSize: 1 << 24,

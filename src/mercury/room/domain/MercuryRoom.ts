@@ -196,7 +196,7 @@ export class MercuryRoom extends YgoRoom {
 
 				return;
 			}
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+			 
 			room._route = routes[option] ?? room._route;
 		});
 
@@ -258,7 +258,7 @@ export class MercuryRoom extends YgoRoom {
 
 		core.on("exit", (code, signal) => {
 			this._logger.debug(
-				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+				 
 				`Core closed for room ${this.id} with code: ${code} and signal: ${signal} `
 			);
 

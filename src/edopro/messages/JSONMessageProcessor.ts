@@ -1,5 +1,5 @@
 /* eslint-disable no-control-regex */
-/* eslint-disable @typescript-eslint/no-misused-promises */
+ 
 
 export interface JSONClientMessage {
 	data: string;

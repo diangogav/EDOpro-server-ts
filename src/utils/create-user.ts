@@ -14,7 +14,7 @@ async function run() {
 	const userProfileCreator = new UserProfileCreator(new UserProfilePostgresRepository());
 
 	const password = faker.internet.password();
-	const username = faker.internet.userName();
+	const username = faker.internet.username();
 	const email = faker.internet.email();
 
 	await userProfileCreator.run({

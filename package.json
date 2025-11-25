@@ -1,6 +1,6 @@
 {
   "engines": {
-    "node": ">=22.11.0"
+    "node": ">=24.11.0"
   },
   "name": "edopro",
   "version": "2.10.0",
@@ -9,19 +9,19 @@
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
-    "dev": "ts-node-dev --inspect=0.0.0.0:9229 -r tsconfig-paths/register --respawn --poll src/index.ts ",
+    "dev": "ts-node-dev --inspect=0.0.0.0:9229 -r tsconfig-paths/register --respawn --poll --require dotenv/config src/index.ts ",
     "build": "tsc && tsc-alias -p tsconfig.json",
-    "start": "npm run build && node ./dist/src/index.js",
+    "start": "npm run build && node --env-file=.env ./dist/src/index.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "prepare": "husky",
-    "create-user": "ts-node-dev -r tsconfig-paths/register --respawn --poll src/utils/create-user.ts",
-    "genesys": "ts-node-dev -r tsconfig-paths/register --respawn --poll src/utils/generate-genesys-format-json.ts",
-    "generate-mercury-pre-releases-cdb": "ts-node -r tsconfig-paths/register src/utils/generate-mercury-pre-releases-cdb.ts",
-    "migrate-users": "ts-node-dev -r tsconfig-paths/register --respawn --poll src/utils/migrate-user-from-redis-to-postgres.ts",
-    "migration:generate": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d ./src/evolution-types/src/data-source.ts ./src/evolution-types/src/migrations/$npm_config_name",
-    "migration:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/evolution-types/src/data-source.ts",
-    "migration:revert": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d ./src/evolution-types/src/data-source.ts"
+    "create-user": "ts-node-dev -r tsconfig-paths/register --respawn --poll --require dotenv/config src/utils/create-user.ts",
+    "genesys": "ts-node-dev -r tsconfig-paths/register --respawn --poll --require dotenv/config src/utils/generate-genesys-format-json.ts",
+    "generate-mercury-pre-releases-cdb": "ts-node -r tsconfig-paths/register --require dotenv/config src/utils/generate-mercury-pre-releases-cdb.ts",
+    "migrate-users": "ts-node-dev -r tsconfig-paths/register --respawn --poll --require dotenv/config src/utils/migrate-user-from-redis-to-postgres.ts",
+    "migration:generate": "ts-node -r tsconfig-paths/register --require dotenv/config ./node_modules/typeorm/cli.js migration:generate -d ./src/evolution-types/src/data-source.ts ./src/evolution-types/src/migrations/$npm_config_name",
+    "migration:run": "ts-node -r tsconfig-paths/register --require dotenv/config ./node_modules/typeorm/cli.js migration:run -d ./src/evolution-types/src/data-source.ts",
+    "migration:revert": "ts-node -r tsconfig-paths/register --require dotenv/config ./node_modules/typeorm/cli.js migration:revert -d ./src/evolution-types/src/data-source.ts"
   },
   "keywords": [],
   "author": "",
@@ -32,6 +32,7 @@
     "@eslint/compat": "^2.0.0",
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.39.1",
+    "@faker-js/faker": "^9.2.0",
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.5",
     "@types/jest": "^30.0.0",
@@ -55,17 +56,16 @@
     "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.48.0"
+    "typescript-eslint": "^8.48.0",
+    "dotenv": "^17.2.3"
   },
   "dependencies": {
-    "@faker-js/faker": "^10.1.0",
     "@types/shuffle-array": "^1.0.5",
     "array-shuffle": "^4.0.0",
     "async-mutex": "^0.5.0",
     "bcrypt": "^6.0.0",
     "cheerio": "^1.1.2",
     "diod": "^3.0.0",
-    "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "ioredis": "^5.8.2",
     "load-json-file": "^7.0.1",

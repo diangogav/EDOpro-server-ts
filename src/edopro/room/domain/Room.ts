@@ -299,7 +299,7 @@ export class Room extends YgoRoom {
 	}
 
 	resetReplay(): void {
-		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+		 
 		if (this._replay) {
 			this._replay.reset();
 		}
@@ -830,7 +830,7 @@ export class Room extends YgoRoom {
 				client.socket.destroy();
 			});
 			this.clearSpectatorCache();
-			// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+			 
 			if (this._replay) {
 				this._replay.destroy();
 			}

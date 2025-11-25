@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
+ 
+ 
 import { CardTypes } from "@edopro/card/domain/CardTypes";
 import { UpdateDeckMessageParser } from "@edopro/deck/application/UpdateDeckMessageSizeCalculator";
 import { BanListDeckError } from "@edopro/deck/domain/errors/BanListDeckError";
@@ -219,7 +219,7 @@ export class MercuryWaitingState extends RoomState {
 	): Promise<boolean> {
 		let points = 0;
 		for (const code of deck) {
-			// eslint-disable-next-line no-await-in-loop
+			 
 			const card = await room.cardRepository.findByCode(code.toString());
 			if (!card) {
 				this.logger.info(`Card with code ${code} not found`);

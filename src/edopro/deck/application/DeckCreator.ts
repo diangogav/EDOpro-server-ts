@@ -32,7 +32,7 @@ export class DeckCreator {
 		const placeRitualInExtraDeckEnabled = this.placeRitualInExtraDeckEnabled();
 
 		for (const code of main) {
-			// eslint-disable-next-line no-await-in-loop
+			 
 			const card = await this.cardRepository.findByCode(code.toString());
 			if (!card) {
 				continue;
@@ -46,7 +46,7 @@ export class DeckCreator {
 		}
 
 		for (const code of side) {
-			// eslint-disable-next-line no-await-in-loop
+			 
 			const card = await this.cardRepository.findByCode(code.toString());
 			if (!card) {
 				continue;

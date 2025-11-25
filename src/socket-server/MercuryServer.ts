@@ -76,21 +76,21 @@ export class MercuryServer {
 			});
 
 			socket.on("end", () => {
-				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+				 
 				connectionLogger.info(`${socket.remoteAddress} left in end event`);
 				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
 			});
 
 			socket.on("close", () => {
-				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+				 
 				connectionLogger.info(`${socket.remoteAddress} left in close event`);
 				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
 			});
 
 			socket.on("error", (_error) => {
-				// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+				 
 				connectionLogger.info(`${socket.remoteAddress} left in error event`);
 				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);

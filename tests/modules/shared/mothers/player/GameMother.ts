@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { Game } from "src/shared/player/domain/Player";
+import { Game } from "../../../../../src/shared/player/domain/Player";
 
 const GAME_RESULTS = ["winner", "losser", "deuce"];
 

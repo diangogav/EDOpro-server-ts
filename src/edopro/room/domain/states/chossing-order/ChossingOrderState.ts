@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
+ 
+ 
 import EventEmitter from "events";
 
 import { Logger } from "../../../../../shared/logger/domain/Logger";

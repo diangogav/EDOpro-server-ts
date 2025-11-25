@@ -2,7 +2,7 @@ import { faker } from "@faker-js/faker";
 import {
 	GameOverData,
 	GameOverDomainEvent,
-} from "src/shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
+} from "../../../../../src/shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
 
 import { PlayerMother } from "./PlayerMother";
 

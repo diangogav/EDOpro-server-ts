@@ -64,7 +64,7 @@ async function run() {
 	const filteredKeys = userKeys.filter((key) => !key.includes(":duels"));
 
 	for (const key of filteredKeys) {
-		// eslint-disable-next-line no-await-in-loop
+		 
 		const userInfo: Record<string, string> = await redis.hgetall(key);
 
 		if (!userInfo.username || !userInfo.password) {
@@ -73,21 +73,21 @@ async function run() {
 			continue;
 		}
 
-		// eslint-disable-next-line no-await-in-loop
+		 
 		const { id: userId } = await userProfileCreator.run({
 			username: userInfo.username,
 			email: userInfo.email,
 			password: userInfo.password,
-			// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+			 
 			avatar: userInfo?.avatar ?? null,
 		});
 		logger.info(`Obtaining duels for ${key}:duels`);
-		// eslint-disable-next-line no-await-in-loop
+		 
 		const matches = await redis.lrange(`${key}:duels`, 0, -1);
 
 		for (const match of matches) {
 			try {
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+				 
 				const data: DuelResume = JSON.parse(match);
 				const playerName = key.split(":")[1];
 				const player = data.players.find((player) => player.name === playerName);
@@ -106,7 +106,7 @@ async function run() {
 					continue;
 				}
 
-				// eslint-disable-next-line no-await-in-loop
+				 
 				const { id: matchId } = await matchResumeCreator.run({
 					userId,
 					bestOf: data.bestOf,
@@ -126,7 +126,7 @@ async function run() {
 				const games = player.games;
 				for (const game of games) {
 					try {
-						// eslint-disable-next-line no-await-in-loop
+						 
 						await duelResumeCreator.run({
 							userId,
 							playerNames,

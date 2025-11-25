@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable no-await-in-loop */
+ 
+ 
 import * as cheerio from "cheerio";
 import { writeFile } from "fs/promises";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";

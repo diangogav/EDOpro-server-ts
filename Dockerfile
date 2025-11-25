@@ -76,7 +76,7 @@ RUN conan install . --build missing --output-folder=./dependencies --options=lib
 
 
 # Stage 2: Build Node.js server
-FROM public.ecr.aws/docker/library/node:22.11.0 AS server-builder
+FROM public.ecr.aws/docker/library/node:24.11.0 AS server-builder
 
 ENV USER node
 

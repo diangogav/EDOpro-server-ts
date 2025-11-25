@@ -26,7 +26,7 @@ export class PreReleasesMercurySQLiteTypeORM implements Database {
 	async load(cdbFiles: string[]): Promise<void> {
 		for (const file of cdbFiles) {
 			const filePath = join(this.mercuryPreReleasesDirectoryPath, file);
-			// eslint-disable-next-line no-await-in-loop
+			 
 			await this.merge(filePath);
 		}
 	}

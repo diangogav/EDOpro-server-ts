@@ -1,4 +1,4 @@
-/* eslint-disable no-await-in-loop */
+ 
 export class RoomActionQueue {
 	private readonly queue: Array<() => void | Promise<void>> = [];
 	private processing = false;
