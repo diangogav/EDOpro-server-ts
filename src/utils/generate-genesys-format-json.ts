@@ -13,7 +13,7 @@ interface YgoResponse {
 interface CardInfo {
 	name: string;
 	points: number;
-	id: number;
+	code: number;
 }
 
 const url = "https://www.yugioh-card.com/en/genesys/";
@@ -51,7 +51,7 @@ async function scrapeGenesys(): Promise<void> {
 			cards.push({
 				name,
 				points,
-				id: Number(cardInfo.id),
+				code: Number(cardInfo.id),
 			});
 		}
 
