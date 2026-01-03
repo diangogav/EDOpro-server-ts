@@ -5,7 +5,7 @@ export class UserProfileMother {
 	static create(params?: Partial<UserProfileProperties>): UserProfile {
 		return UserProfile.from({
 			id: faker.string.uuid(),
-			username: faker.internet.username(),
+			username: faker.internet.userName(),
 			password: faker.internet.password(),
 			email: faker.internet.email(),
 			avatar: null,
