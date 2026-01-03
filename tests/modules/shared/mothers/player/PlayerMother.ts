@@ -9,7 +9,7 @@ export class PlayerMother {
 	static create(params?: Partial<PlayerData>): Player {
 		return new Player({
 			id: faker.string.uuid(),
-			name: faker.internet.userName(),
+			name: faker.internet.username(),
 			team: faker.helpers.enumValue(Team),
 			winner: faker.datatype.boolean(),
 			games: [GameMother.create(), GameMother.create(), GameMother.create()],

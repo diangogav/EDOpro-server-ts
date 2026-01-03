@@ -76,9 +76,9 @@ RUN conan install . --build missing --output-folder=./dependencies --options=lib
 
 
 # Stage 2: Build Node.js server
-FROM public.ecr.aws/docker/library/node:24.11.0 AS server-builder
+FROM public.ecr.aws/docker/library/node:24.12.0 AS server-builder
 
-ENV USER node
+ENV USER=node
 
 WORKDIR /server
 
@@ -100,7 +100,7 @@ RUN npm run generate-mercury-pre-releases-cdb && \
 
 
 # Stage 3: Final image
-FROM public.ecr.aws/docker/library/node:24.11.0-slim
+FROM public.ecr.aws/docker/library/node:24.12.0-slim
 
 # Install runtime dependencies
 RUN apt-get update && \
@@ -157,5 +157,5 @@ COPY --from=core-integrator-builder /repositories/ygopro ./mercury/ocg/ygopro
 # Mercury Alternatives
 COPY --from=core-integrator-builder /repositories/alternatives ./mercury/alternatives/
 
-USER $USER
+USER node
 CMD ["dumb-init", "node", "./src/index.js"]
