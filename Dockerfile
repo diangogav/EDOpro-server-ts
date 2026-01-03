@@ -1,13 +1,13 @@
 # Stage 1: Build CoreIntegrator
-FROM public.ecr.aws/ubuntu/ubuntu:22.04_stable AS core-integrator-builder
+FROM public.ecr.aws/ubuntu/ubuntu:24.04_stable AS core-integrator-builder
 
 # Install required dependencies and Conan
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
     python3 python3-pip wget tar git autoconf ca-certificates g++ \
-    m4 automake libtool pkg-config make && \
+    m4 automake libtool pkg-config make cmake && \
     rm -rf /var/lib/apt/lists/* && \
-    pip install "conan==2.21.0"
+    pip install --break-system-packages "conan==2.21.0"
 
 WORKDIR /repositories
 
