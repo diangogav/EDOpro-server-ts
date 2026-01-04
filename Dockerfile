@@ -1,16 +1,13 @@
 # Stage 1: Build CoreIntegrator
 FROM public.ecr.aws/docker/library/node:24.11.0-bullseye-slim AS core-integrator-builder
 
-# Install required dependencies and Conan
+# Install required dependencies
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
-    python3 python3-pip python3-venv \
     wget tar git autoconf ca-certificates g++ \
     m4 automake libtool pkg-config make tzdata \
-    cmake ninja-build unzip && \
-    rm -rf /var/lib/apt/lists/* && \
-    python3 -m pip install --no-cache-dir -U pip setuptools wheel && \
-    python3 -m pip install --no-cache-dir "conan==2.21.0"
+    cmake ninja-build unzip zip curl linux-libc-dev && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /repositories
 
@@ -60,27 +57,22 @@ RUN bash -c 'set -e; \
     cp "./banlists/${name}.lflist.conf" "./alternatives/${MAP[$name]}/lflist.conf"; \
     done'
 
-# Generate Conan profile
-RUN conan profile detect
-
 WORKDIR /app
+
+# Clone and bootstrap Vcpkg
+RUN git clone https://github.com/microsoft/vcpkg.git && \
+    ./vcpkg/bootstrap-vcpkg.sh
 
 # Copy CoreIntegrator source
 COPY ./core .
 
-# Download and install premake binary
-ADD https://github.com/premake/premake-core/releases/download/v5.0.0-beta2/premake-5.0.0-beta2-linux.tar.gz /tmp/premake.tar.gz
-RUN tar -zxvf /tmp/premake.tar.gz -C /usr/local/bin && rm /tmp/premake.tar.gz
-
 # Install dependencies and build the application
-RUN conan install . \
-    --output-folder=./dependencies \
-    --build=missing \
-    --build=b2/* \
-    --build=boost/* \
-    -o "libcurl/*:shared=True" && \
-    premake5 gmake && \
-    make config=release
+# Note: we disable the internal vcpkg build of the build script to rely on the docker environment's vcpkg if needed, 
+# but the build script effectively does the same. ideally we can just run the cmake commands directly here
+# to avoid re-cloning vcpkg or issues with the script's path logic.
+RUN ./vcpkg/vcpkg install --triplet x64-linux && \
+    cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build build
 
 # Stage 2: Build Node.js server
 FROM public.ecr.aws/docker/library/node:24.11.0-bullseye AS server-builder

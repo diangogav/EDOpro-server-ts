@@ -1,0 +1,13 @@
+{
+    "name": "core-integrator",
+    "version-string": "1.0.0",
+    "dependencies": [
+        "boost-asio",
+        "boost-beast",
+        "boost-system",
+        "sqlite3",
+        "jsoncpp",
+        "nlohmann-json",
+        "curl"
+    ]
+}

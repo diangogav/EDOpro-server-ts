@@ -4,12 +4,19 @@ set -e
 
 cd core
 
-# Download and install premake
-wget https://github.com/premake/premake-core/releases/download/v5.0.0-beta2/premake-5.0.0-beta2-linux.tar.gz
-tar -zxvf premake-5.0.0-beta2-linux.tar.gz
-rm premake-5.0.0-beta2-linux.tar.gz
+# Check if vcpkg exists, if not clone it
+if [ ! -d "vcpkg" ]; then
+    echo "Cloning vcpkg..."
+    git clone https://github.com/microsoft/vcpkg.git
+    ./vcpkg/bootstrap-vcpkg.sh
+fi
 
-# Install dependencies and build
-conan install . --build missing --output-folder=./dependencies --options=libcurl/8.6.0:shared=True
-./premake5 gmake
-make config=release
+# Configure and install dependencies
+echo "Configuring project with CMake and Vcpkg..."
+cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release
+
+# Build
+echo "Building project..."
+cmake --build build
+
+echo "Build complete."

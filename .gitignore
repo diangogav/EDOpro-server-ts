@@ -20,6 +20,8 @@ core/premake5
 core/CoreIntegrator
 core/example.so
 core/libluasocket.so
+core/vcpkg
+core/vcpkg_installed
 *databases
 *.db
 *.env

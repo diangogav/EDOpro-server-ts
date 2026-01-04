@@ -1,3 +1,4 @@
+.git
 node_modules
 dist
 scripts
@@ -7,6 +8,8 @@ core/Makefile
 core/src/Makefile
 core/premake5
 core/databases
+core/vcpkg
+core/vcpkg_installed
 databases
 mercury/scripts
 src/evolution-types
