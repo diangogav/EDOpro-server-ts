@@ -1,13 +1,16 @@
 # Stage 1: Build CoreIntegrator
-FROM public.ecr.aws/ubuntu/ubuntu:24.04_stable AS core-integrator-builder
+FROM public.ecr.aws/docker/library/node:24.11.0-bullseye-slim AS core-integrator-builder
 
 # Install required dependencies and Conan
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
-    python3 python3-pip wget tar git autoconf ca-certificates g++ \
-    m4 automake libtool pkg-config make cmake && \
+    python3 python3-pip python3-venv \
+    wget tar git autoconf ca-certificates g++ \
+    m4 automake libtool pkg-config make tzdata \
+    cmake ninja-build unzip && \
     rm -rf /var/lib/apt/lists/* && \
-    pip install --break-system-packages "conan==2.21.0"
+    python3 -m pip install --no-cache-dir -U pip setuptools wheel && \
+    python3 -m pip install --no-cache-dir "conan==2.21.0"
 
 WORKDIR /repositories
 
@@ -70,13 +73,17 @@ ADD https://github.com/premake/premake-core/releases/download/v5.0.0-beta2/prema
 RUN tar -zxvf /tmp/premake.tar.gz -C /usr/local/bin && rm /tmp/premake.tar.gz
 
 # Install dependencies and build the application
-RUN conan install . --build missing --output-folder=./dependencies --options=libcurl/8.6.0:shared=True && \
+RUN conan install . \
+    --output-folder=./dependencies \
+    --build=missing \
+    --build=b2/* \
+    --build=boost/* \
+    -o "libcurl/*:shared=True" && \
     premake5 gmake && \
     make config=release
 
-
 # Stage 2: Build Node.js server
-FROM public.ecr.aws/docker/library/node:24.12.0 AS server-builder
+FROM public.ecr.aws/docker/library/node:24.11.0-bullseye AS server-builder
 
 ENV USER=node
 
@@ -100,7 +107,7 @@ RUN npm run generate-mercury-pre-releases-cdb && \
 
 
 # Stage 3: Final image
-FROM public.ecr.aws/docker/library/node:24.12.0-slim
+FROM public.ecr.aws/docker/library/node:24.11.0-bullseye-slim
 
 # Install runtime dependencies
 RUN apt-get update && \
