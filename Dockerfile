@@ -99,7 +99,7 @@ RUN npm run generate-mercury-pre-releases-cdb && \
 
 
 # Stage 3: Final image
-FROM public.ecr.aws/docker/library/node:24.11.0-bullseye-slim
+FROM public.ecr.aws/docker/library/node:24.11.0-slim
 
 # Install runtime dependencies
 RUN apt-get update && \
