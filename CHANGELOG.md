@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.11.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.10.0...v2.11.0) (2026-01-04)
+
+
+### Features
+
+* notify all players when a new spectator joins the duel ([1c71643](https://github.com/diangogav/EDOpro-server-ts/commit/1c71643fb0a6f9b0aa3f00011c760528193cf894))
+
+
+### Bug Fixes
+
+* dockerfile conan compilation ([0e2f8e2](https://github.com/diangogav/EDOpro-server-ts/commit/0e2f8e28dbf9436b1f83e59b98c7a465e545a4ff))
+* remove unused side getter method from Room class ([8b541b8](https://github.com/diangogav/EDOpro-server-ts/commit/8b541b8a504fb27c9b157f205ce75b7107d6ba9f))
+* rename 'id' to 'code' in CardInfo interface for clarity ([28fbae3](https://github.com/diangogav/EDOpro-server-ts/commit/28fbae3572d2cd2f427acc90329d815c6d4520f4))
+* update log message to include exclamation mark for emphasis ([e2aa0b8](https://github.com/diangogav/EDOpro-server-ts/commit/e2aa0b82bb0469431db105f879771f48e5bea68f))
+* update points value for 'Change of Heart' in genesys.json ([828ee46](https://github.com/diangogav/EDOpro-server-ts/commit/828ee46509df574f1a59df3fc3e68fc8cbc99fb2))
+* user node at dockerfile ([22724f3](https://github.com/diangogav/EDOpro-server-ts/commit/22724f332e48b1b338711e5ea05c5aaaf6e87801))
+
 ## [2.10.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.9.0...v2.10.0) (2025-11-13)
 
 
