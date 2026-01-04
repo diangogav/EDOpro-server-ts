@@ -20,10 +20,10 @@ Welcome to **Evolution Server**, a scalable and modern backend server for Yu-Gi-
 ## 📋 Requirements
 
 - [Node.js](https://nodejs.org) (>= 24.11.0)
-- [Conan](https://conan.io/) (2.21.0)
-- [Python 3](https://www.python.org/downloads/) (for Conan)
-- [CMake + Make + g++](https://cmake.org/download/) (for building native CoreIntegrator)
-- System dependencies: `wget`, `git`, `tar`, `curl`, `liblua5.3-dev`, `libsqlite3-dev`, `libevent-dev`, `pkg-config`, `automake`, `libtool`, `m4`
+- [Node.js](https://nodejs.org) (>= 24.11.0)
+- [CMake](https://cmake.org/download/) (>= 3.18)
+- [Vcpkg](https://github.com/microsoft/vcpkg) (handled automatically by build script)
+- System dependencies (Ubuntu/Debian): `wget`, `git`, `tar`, `curl`, `zip`, `unzip`, `pkg-config`, `g++`, `make`
 
 ---
 
@@ -40,13 +40,14 @@ Before running the server, you must configure the environment variables.
 
 ---
 
-## 🚀 Conan Installation (Linux)
+## 🚀 Vcpkg Setup (Linux)
 
+Vcpkg is used to manage C++ dependencies. The `build_core_integrator.sh` script handles the bootstrapping and installation of Vcpkg automatically.
+
+If you want to manually set it up:
 ```bash
-sudo apt update
-sudo apt install python3 python3-pip -y
-pip install "conan==2.21.0"
-conan profile detect
+git clone https://github.com/microsoft/vcpkg.git
+./vcpkg/bootstrap-vcpkg.sh
 ```
 
 ---
@@ -90,7 +91,7 @@ This mimics the layout used in the Dockerfile (e.g. copying resources to `./merc
 bash build_core_integrator.sh
 ```
 
-This compiles the duel core used by the backend using Conan and Premake.
+This compiles the duel core used by the backend using Vcpkg and CMake.
 
 ### 5️⃣ Install Node.js dependencies
 
