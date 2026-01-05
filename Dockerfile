@@ -108,9 +108,6 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-# SSL Certificates
-COPY certs ./certs
-
 # Server
 COPY --from=server-builder /server/dist ./
 COPY --from=server-builder /server/package.json ./package.json

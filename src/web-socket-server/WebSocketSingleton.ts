@@ -1,7 +1,5 @@
  
-import { readFileSync } from "fs";
-import { createServer } from "https";
-import path from "path";
+import { createServer } from "http";
 import { config } from "src/config";
 import MercuryRoomList from "src/mercury/room/infrastructure/MercuryRoomList";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
@@ -16,7 +14,7 @@ class WebSocketSingleton {
 
 	private constructor(port: number) {
 		const logger = LoggerFactory.getLogger();
-		const server = this.buildServer();
+		const server = createServer();
 		this.wss = new WebSocketServer({ server });
 		this.wss.on("connection", (ws: WebSocket) => {
 			ws.send(
@@ -49,14 +47,6 @@ class WebSocketSingleton {
 				}
 			});
 		}
-	}
-
-	private buildServer() {
-		const root = path.resolve(__dirname, "../../");
-		const cert = readFileSync(`${root}/certs/cert.pem`);
-		const key = readFileSync(`${root}/certs/key.pem`);
-
-		return createServer({ cert, key });
 	}
 }
 
