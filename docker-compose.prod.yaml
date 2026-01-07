@@ -1,0 +1,81 @@
+services:
+  postgres:
+    image: postgres:16.11-alpine
+    container_name: evolutionygo-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-evolution}
+      POSTGRES_USER: ${POSTGRES_USER:-evolution}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-evolution} -d ${POSTGRES_DB:-evolution}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - evolutionygo-network
+
+  valkey:
+    image: valkey/valkey:9.0-alpine
+    container_name: evolutionygo-valkey
+    volumes:
+      - valkey_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: valkey-server --appendonly yes
+    networks:
+      - evolutionygo-network
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: evolutionygo-server
+    environment:
+      NODE_ENV: production
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-evolution}
+      POSTGRES_USER: ${POSTGRES_USER:-evolution}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      USE_REDIS: ${USE_REDIS:-true}
+      REDIS_URI: redis://valkey:6379
+      ADMIN_API_KEY: ${ADMIN_API_KEY:-changeme}
+      RANK_ENABLED: ${RANK_ENABLED:-true}
+      SEASON: ${SEASON:-1}
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
+      RATE_LIMIT: ${RATE_LIMIT:-100}
+      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-60000}
+      HOST_PORT: ${HOST_PORT:-7911}
+      MERCURY_PORT: ${MERCURY_PORT:-7711}
+      HTTP_PORT: ${HTTP_PORT:-7922}
+      WEBSOCKET_PORT: ${WEBSOCKET_PORT:-4000}
+    ports:
+      - "${HOST_PORT:-7911}:${HOST_PORT:-7911}"
+      - "${MERCURY_PORT:-7711}:${MERCURY_PORT:-7711}"
+      - "${HTTP_PORT:-7922}:${HTTP_PORT:-7922}"
+      - "${WEBSOCKET_PORT:-4000}:${WEBSOCKET_PORT:-4000}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - evolutionygo-network
+
+volumes:
+  postgres_data:
+  valkey_data:
+
+networks:
+  evolutionygo-network:
+    driver: bridge
+
