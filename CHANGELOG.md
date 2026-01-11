@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.12.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.11.0...v2.12.0) (2026-01-11)
+
+
+### Features
+
+* add production Docker Compose file ([a10c27f](https://github.com/diangogav/EDOpro-server-ts/commit/a10c27fd0c25b81aea3cbe81d18ba0390bbe4641))
+
 ## [2.11.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.10.0...v2.11.0) (2026-01-04)
 
 
