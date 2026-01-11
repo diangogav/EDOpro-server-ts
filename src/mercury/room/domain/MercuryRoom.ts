@@ -388,7 +388,7 @@ export class MercuryRoom extends YgoRoom {
 	toPresentation(): { [key: string]: unknown } {
 		return {
 			roomid: this.id,
-			roomname: "",
+			roomname: this.name,
 			roomnotes: this.ranked ? "(Mercury-Ranked)" : "(Mercury)",
 			roommode: this._hostInfo.mode,
 			needpass: this.password.length > 0,
