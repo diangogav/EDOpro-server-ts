@@ -299,7 +299,7 @@ export class Room extends YgoRoom {
 	}
 
 	resetReplay(): void {
-		 
+
 		if (this._replay) {
 			this._replay.reset();
 		}
@@ -317,8 +317,14 @@ export class Room extends YgoRoom {
 	//********************************************************************************************* */
 
 	async createPlayer(socket: ISocket, name: string, userId: string | null): Promise<Client | null> {
+		return this.mutex.runExclusive(() => {
+			return this.createPlayerUnsafe(socket, name, userId);
+		});
+	}
+
+	createPlayerUnsafe(socket: ISocket, name: string, userId: string | null): Client | null {
 		const host = this._clients.some((client: Client) => client.host);
-		const place = await this.calculatePlace();
+		const place = this.calculatePlaceUnsafe();
 
 		if (!place) {
 			return null;
@@ -339,31 +345,41 @@ export class Room extends YgoRoom {
 	}
 
 	addPlayer(client: Client): void {
-		this.actionQueue.enqueue(() => {
-			this._clients.push(client);
-			client.socket.roomId = this.id;
+		this.mutex.runExclusive(() => {
+			this.addPlayerUnsafe(client);
+		});
+	}
 
-			this.notifier.sendPlayerEnter(client, { position: client.position, team: client.team });
-			this.notifier.sendPlayerChange(client, PlayerRoomState.NOT_READY);
-			this.notifier.sendTypeChange(client);
+	addPlayerUnsafe(client: Client): void {
+		this._clients.push(client);
+		client.socket.roomId = this.id;
 
-			if (!client.host) {
-				this.sendSpectatorCount({ enqueue: false });
-				this.notifyToAllLobbyClients(client);
-			}
+		this.notifier.sendPlayerEnter(client, { position: client.position, team: client.team });
+		this.notifier.sendPlayerChange(client, PlayerRoomState.NOT_READY);
+		this.notifier.sendTypeChange(client);
 
-			const messageProcessor = new MessageProcessor();
-			const roomMessageEmitter = new RoomMessageEmitter(client, this);
+		if (!client.host) {
+			this.sendSpectatorCount({ enqueue: false });
+			this.notifyToAllLobbyClients(client);
+		}
 
-			client.socket.onMessage((data) => {
-				roomMessageEmitter.handleMessage(data);
-				messageProcessor.read(data);
-			});
+		const messageProcessor = new MessageProcessor();
+		const roomMessageEmitter = new RoomMessageEmitter(client, this);
+
+		client.socket.onMessage((data) => {
+			roomMessageEmitter.handleMessage(data);
+			messageProcessor.read(data);
 		});
 	}
 
 	async createSpectator(socket: ISocket, name: string): Promise<Client> {
-		const position = await this.nextSpectatorPosition();
+		return this.mutex.runExclusive(() => {
+			return this.createSpectatorUnsafe(socket, name);
+		});
+	}
+
+	createSpectatorUnsafe(socket: ISocket, name: string): Client {
+		const position = this.nextSpectatorPositionUnsafe();
 
 		const client = new Client({
 			id: null,
@@ -380,71 +396,91 @@ export class Room extends YgoRoom {
 	}
 
 	addSpectator(client: Client): void {
-		this.actionQueue.enqueue(() => {
-			client.socket.roomId = this.id;
-			this._spectators.push(client);
-
-			const messageProcessor = new MessageProcessor();
-			const roomMessageEmitter = new RoomMessageEmitter(client, this);
-
-			client.socket.onMessage((data) => {
-				roomMessageEmitter.handleMessage(data);
-				messageProcessor.read(data);
-			});
-
-			this.notifier.sendTypeChange(client, 0x07);
+		this.mutex.runExclusive(() => {
+			this.addSpectatorUnsafe(client);
 		});
+	}
+
+	addSpectatorUnsafe(client: Client): void {
+		client.socket.roomId = this.id;
+		this._spectators.push(client);
+
+		const messageProcessor = new MessageProcessor();
+		const roomMessageEmitter = new RoomMessageEmitter(client, this);
+
+		client.socket.onMessage((data) => {
+			roomMessageEmitter.handleMessage(data);
+			messageProcessor.read(data);
+		});
+
+		this.notifier.sendTypeChange(client, 0x07);
 	}
 
 	playerToSpectator(player: Client): void {
-		this.actionQueue.enqueue(() => {
-			const place = this.nextSpectatorPositionUnsafe();
-			this.removePlayerUnsafe(player);
-			this._spectators.push(player);
-			this.notifier.sendPlayerChange(player, PlayerRoomState.SPECTATE);
-			player.spectatorPosition(place);
-			player.notReady();
-			this.notifier.sendTypeChange(player);
-			this.sendSpectatorCount({ enqueue: false });
+		this.mutex.runExclusive(() => {
+			this.playerToSpectatorUnsafe(player);
 		});
+	}
+
+	playerToSpectatorUnsafe(player: Client): void {
+		const place = this.nextSpectatorPositionUnsafe();
+		this.removePlayerUnsafe(player);
+		this._spectators.push(player);
+		this.notifier.sendPlayerChange(player, PlayerRoomState.SPECTATE);
+		player.spectatorPosition(place);
+		player.notReady();
+		this.notifier.sendTypeChange(player);
+		this.sendSpectatorCount({ enqueue: false });
 	}
 
 	spectatorToPlayer(player: Client): void {
-		this.actionQueue.enqueue(() => {
-			const place = this.calculatePlaceUnsafe();
-			if (!place) {
-				return;
-			}
-			this.removeSpectatorUnsafe(player);
-			this._clients.push(player);
-			this.notifier.sendPlayerEnter(player, place);
-			this.notifier.sendPlayerChange(player, PlayerRoomState.NOT_READY);
-			this.sendSpectatorCount({ enqueue: false });
-			player.playerPosition(place.position, place.team);
-			player.notReady();
-			this.notifier.sendTypeChange(player);
+		this.mutex.runExclusive(() => {
+			this.spectatorToPlayerUnsafe(player);
 		});
+	}
+
+	spectatorToPlayerUnsafe(player: Client): void {
+		const place = this.calculatePlaceUnsafe();
+		if (!place) {
+			return;
+		}
+		this.removeSpectatorUnsafe(player);
+		this._clients.push(player);
+		this.notifier.sendPlayerEnter(player, place);
+		this.notifier.sendPlayerChange(player, PlayerRoomState.NOT_READY);
+		this.sendSpectatorCount({ enqueue: false });
+		player.playerPosition(place.position, place.team);
+		player.notReady();
+		this.notifier.sendTypeChange(player);
 	}
 
 	movePlayerToAnotherCell(player: Client): void {
-		this.actionQueue.enqueue(() => {
-			const nextPlace = this.nextAvailablePosition(player.position);
-			if (!nextPlace) {
-				return;
-			}
-			player.notReady();
-			this.notifier.sendPlayerCellChange(player, nextPlace);
-			this.notifier.sendPlayerChange(player, PlayerRoomState.NOT_READY);
-			player.playerPosition(nextPlace.position, nextPlace.team);
-			this.notifier.sendTypeChange(player);
+		this.mutex.runExclusive(() => {
+			this.movePlayerToAnotherCellUnsafe(player);
 		});
 	}
 
+	movePlayerToAnotherCellUnsafe(player: Client): void {
+		const nextPlace = this.nextAvailablePosition(player.position);
+		if (!nextPlace) {
+			return;
+		}
+		player.notReady();
+		this.notifier.sendPlayerCellChange(player, nextPlace);
+		this.notifier.sendPlayerChange(player, PlayerRoomState.NOT_READY);
+		player.playerPosition(nextPlace.position, nextPlace.team);
+		this.notifier.sendTypeChange(player);
+	}
+
 	removeSpectator(spectator: Client): void {
-		this.actionQueue.enqueue(() => {
-			const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
-			this._spectators = filtered;
+		this.mutex.runExclusive(() => {
+			this.removeSpectatorUnsafe(spectator);
 		});
+	}
+
+	removeSpectatorUnsafe(spectator: Client): void {
+		const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
+		this._spectators = filtered;
 	}
 	//********************************************************************************************* */
 	//**********************************END CLIENTS CRUD******************************************* */
@@ -455,17 +491,25 @@ export class Room extends YgoRoom {
 	//********************************************************************************************* */
 
 	ready(player: Client): void {
-		this.actionQueue.enqueue(() => {
-			player.ready();
-			this.notifier.sendPlayerChange(player, PlayerRoomState.READY);
+		this.mutex.runExclusive(() => {
+			this.readyUnsafe(player);
 		});
 	}
 
+	readyUnsafe(player: Client): void {
+		player.ready();
+		this.notifier.sendPlayerChange(player, PlayerRoomState.READY);
+	}
+
 	notReady(player: Client): void {
-		this.actionQueue.enqueue(() => {
-			player.notReady();
-			this.notifier.sendPlayerChange(player, PlayerRoomState.NOT_READY);
+		this.mutex.runExclusive(() => {
+			this.notReadyUnsafe(player);
 		});
+	}
+
+	notReadyUnsafe(player: Client): void {
+		player.notReady();
+		this.notifier.sendPlayerChange(player, PlayerRoomState.NOT_READY);
 	}
 
 	addKick(client: Client): void {
@@ -488,21 +532,25 @@ export class Room extends YgoRoom {
 	}
 
 	setDecksToPlayer(position: number, deck: Deck): void {
-		this.actionQueue.enqueue(() => {
-			const client = this._clients.find((client) => client.position === position);
-			if (!client || !(client instanceof Client)) {
-				return;
-			}
-			if (this.noShuffle) {
-				deck.main.reverse();
-				client.setDeck(deck);
-
-				return;
-			}
-
-			shuffle(deck.main);
-			client.setDeck(deck);
+		this.mutex.runExclusive(() => {
+			this.setDecksToPlayerUnsafe(position, deck);
 		});
+	}
+
+	setDecksToPlayerUnsafe(position: number, deck: Deck): void {
+		const client = this._clients.find((client) => client.position === position);
+		if (!client || !(client instanceof Client)) {
+			return;
+		}
+		if (this.noShuffle) {
+			deck.main.reverse();
+			client.setDeck(deck);
+
+			return;
+		}
+
+		shuffle(deck.main);
+		client.setDeck(deck);
 	}
 
 	setDuel(duel: ChildProcessWithoutNullStreams): void {
@@ -561,6 +609,12 @@ export class Room extends YgoRoom {
 	}
 
 	rps(): void {
+		this.mutex.runExclusive(() => {
+			this.rpsUnsafe();
+		});
+	}
+
+	rpsUnsafe(): void {
 		this._state = DuelState.RPS;
 		this.roomState?.removeAllListener();
 		this.roomState = new RockPaperScissorState(
@@ -807,7 +861,7 @@ export class Room extends YgoRoom {
 	}
 
 	destroy(): void {
-		this.actionQueue.enqueue(() => {
+		this.mutex.runExclusive(() => {
 			this.emitter.removeAllListeners();
 			this.roomState?.removeAllListener();
 			this.timers.forEach((timer) => {
@@ -830,7 +884,7 @@ export class Room extends YgoRoom {
 				client.socket.destroy();
 			});
 			this.clearSpectatorCache();
-			 
+
 			if (this._replay) {
 				this._replay.destroy();
 			}
@@ -839,24 +893,22 @@ export class Room extends YgoRoom {
 	}
 
 	notifyToAllLobbyClients(client: Client): void {
-		this.actionQueue.enqueue(() => {
-			this._clients.forEach((_client) => {
-				if (_client.socket.id !== client.socket.id) {
-					const status = (<Client | undefined>(
-						this._clients.find((item: Client) => item.position === _client.position)
-					))?.isReady
-						? (_client.position << 4) | PlayerRoomState.READY
-						: (_client.position << 4) | PlayerRoomState.NOT_READY;
+		this._clients.forEach((_client) => {
+			if (_client.socket.id !== client.socket.id) {
+				const status = (<Client | undefined>(
+					this._clients.find((item: Client) => item.position === _client.position)
+				))?.isReady
+					? (_client.position << 4) | PlayerRoomState.READY
+					: (_client.position << 4) | PlayerRoomState.NOT_READY;
 
-					client.sendMessage(PlayerEnterClientMessage.create(_client.name, _client.position));
-					client.sendMessage(PlayerChangeClientMessage.create({ status }));
-				}
-			});
+				client.sendMessage(PlayerEnterClientMessage.create(_client.name, _client.position));
+				client.sendMessage(PlayerChangeClientMessage.create({ status }));
+			}
 		});
 	}
 
 	notifyToAllPlayers(client: Client): void {
-		this.actionQueue.enqueue(() => {
+		this.mutex.runExclusive(() => {
 			this._clients.forEach((item) => {
 				const status = (item.position << 4) | 0x09;
 				client.sendMessage(PlayerEnterClientMessage.create(item.name, item.position));
@@ -871,16 +923,14 @@ export class Room extends YgoRoom {
 
 			return;
 		}
-		this.actionQueue.enqueue(() => {
+		this.mutex.runExclusive(() => {
 			this.notifier.sendSpectatorCount(this._spectators.length);
 		});
 	}
 
 	async nextSpectatorPosition(): Promise<number> {
-		return new Promise((resolve) => {
-			this.actionQueue.enqueue(() => {
-				resolve(this.nextSpectatorPositionUnsafe());
-			});
+		return this.mutex.runExclusive(() => {
+			return this.nextSpectatorPositionUnsafe();
 		});
 	}
 
@@ -950,10 +1000,7 @@ export class Room extends YgoRoom {
 		return match ? Number(match[1]) : undefined;
 	}
 
-	private removeSpectatorUnsafe(spectator: Client): void {
-		const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
-		this._spectators = filtered;
-	}
+
 
 	private nextSpectatorPositionUnsafe(): number {
 		if (this._spectators.length === 0) {

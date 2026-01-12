@@ -7,7 +7,7 @@ import { Client } from "../../../edopro/client/domain/Client";
 import { MercuryClient } from "../../../mercury/client/domain/MercuryClient";
 import { YgoClient } from "../../client/domain/YgoClient";
 import { ISocket } from "../../socket/domain/ISocket";
-import { RoomActionQueue } from "../RoomActionQueue";
+import { Mutex } from "async-mutex";
 import { Match } from "./match/domain/Match";
 
 export enum DuelState {
@@ -27,7 +27,8 @@ export abstract class YgoRoom {
 	public readonly bestOf: number;
 	public readonly startLp: number;
 	public readonly STARTING_TURN = 0;
-	public readonly actionQueue = new RoomActionQueue();
+	// public readonly actionQueue = new RoomActionQueue();
+	public readonly mutex = new Mutex();
 	protected readonly t0Positions: number[] = [];
 	protected readonly t1Positions: number[] = [];
 	protected emitter: EventEmitter;
@@ -87,19 +88,19 @@ export abstract class YgoRoom {
 	}
 
 	clearSpectatorCache(): void {
-		this.actionQueue.enqueue(() => {
+		this.mutex.runExclusive(() => {
 			this._spectatorCache = [];
 		});
 	}
 
 	removePlayer(player: YgoClient): void {
-		this.actionQueue.enqueue(() => {
+		this.mutex.runExclusive(() => {
 			this._clients = this._clients.filter((item) => item.socket.id !== player.socket.id);
 		});
 	}
 
 	duelWinner(winner: number): void {
-		this.actionQueue.enqueue(() => {
+		this.mutex.runExclusive(() => {
 			if (!this._match) {
 				return;
 			}
@@ -126,10 +127,8 @@ export abstract class YgoRoom {
 	}
 
 	async calculatePlace(startPosition?: number): Promise<{ position: number; team: number } | null> {
-		return new Promise((resolve) => {
-			this.actionQueue.enqueue(() => {
-				resolve(this.calculatePlaceUnsafe(startPosition));
-			});
+		return this.mutex.runExclusive(() => {
+			return this.calculatePlaceUnsafe(startPosition);
 		});
 	}
 
@@ -170,28 +169,30 @@ export abstract class YgoRoom {
 	}
 
 	setClientWhoChoosesTurn(client: YgoClient): void {
-		this.actionQueue.enqueue(() => {
+		this.mutex.runExclusive(() => {
 			this._clientWhoChoosesTurn = client;
 		});
 	}
 
 	createMatch(): void {
-		this.actionQueue.enqueue(() => {
-			this._match = new Match({ bestOf: this.bestOf });
-			this.initializeHistoricalData();
+		this.mutex.runExclusive(() => {
+			this.createMatchUnsafe();
 		});
 	}
 
-	initializeHistoricalData(): void {
-		this.actionQueue.enqueue(() => {
-			const players = this._clients.map((client: Client) => ({
-				id: client.id,
-				team: client.team,
-				name: client.name,
-			}));
+	createMatchUnsafe(): void {
+		this._match = new Match({ bestOf: this.bestOf });
+		this.initializeHistoricalData();
+	}
 
-			this._match?.initializeHistoricalData(players);
-		});
+	initializeHistoricalData(): void {
+		const players = this._clients.map((client: Client) => ({
+			id: client.id,
+			team: client.team,
+			name: client.name,
+		}));
+
+		this._match?.initializeHistoricalData(players);
 	}
 
 	isMatchFinished(): boolean {
@@ -203,9 +204,7 @@ export abstract class YgoRoom {
 	}
 
 	setFirstToPlay(team: number): void {
-		this.actionQueue.enqueue(() => {
-			this._firstToPlay = team;
-		});
+		this._firstToPlay = team;
 	}
 
 	matchScore(): { team0: number; team1: number } {
@@ -227,25 +226,25 @@ export abstract class YgoRoom {
 	}
 
 	createDuel(banListName: string | null): void {
-		this.actionQueue.enqueue(() => {
+		this.mutex.runExclusive(() => {
 			this.currentDuel = new Duel(this.STARTING_TURN, [this.startLp, this.startLp], banListName);
 		});
 	}
 
 	decreaseLps(team: Team, value: number): void {
-		this.actionQueue.enqueue(() => {
+		this.mutex.runExclusive(() => {
 			this.currentDuel?.decreaseLps(team, value);
 		});
 	}
 
 	increaseLps(team: Team, value: number): void {
-		this.actionQueue.enqueue(() => {
+		this.mutex.runExclusive(() => {
 			this.currentDuel?.increaseLps(team, value);
 		});
 	}
 
 	increaseTurn(): void {
-		this.actionQueue.enqueue(() => {
+		this.mutex.runExclusive(() => {
 			this.currentDuel?.increaseTurn();
 		});
 	}
@@ -263,9 +262,8 @@ export abstract class YgoRoom {
 	}
 
 	get score(): string {
-		return `Score: ${this.playerNames(0)}: ${this.matchScore().team0} - ${
-			this.matchScore().team1
-		} ${this.playerNames(1)}`;
+		return `Score: ${this.playerNames(0)}: ${this.matchScore().team0} - ${this.matchScore().team1
+			} ${this.playerNames(1)}`;
 	}
 
 	isFirstDuel(): boolean {
