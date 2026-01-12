@@ -702,65 +702,51 @@ export class Room extends YgoRoom {
 	}
 
 	prepareTurnOrder(): void {
-		const team0Players = this.clients.filter((player: Client) => player.team === 0);
-		const team1Players = this.clients.filter((player: Client) => player.team === 1);
+		const team0Players = this.clients
+			.filter(p => p.team === 0)
+			.sort((a, b) => a.position - b.position) as Client[];
 
-		if (this.isRelay) {
-			team0Players.forEach((item: Client) => {
-				item.setDuelPosition(item.position % this.team0);
-				item.clearTurn();
-			});
+		const team1Players = this.clients
+			.filter(p => p.team === 1)
+			.sort((a, b) => a.position - b.position) as Client[];
 
-			team1Players.forEach((item: Client) => {
-				item.setDuelPosition(item.position % this.team1);
-				item.clearTurn();
-			});
-		} else if (this.firstToPlay === 0) {
-			team0Players.forEach((item: Client) => {
-				item.setDuelPosition(item.position % this.team0);
-				item.clearTurn();
-			});
+		// 0 = team0 empieza, 1 = team1 empieza
+		const offset0 = this.isRelay ? 0 : (this.firstToPlay === 1 ? 1 : 0);
+		const offset1 = this.isRelay ? 0 : (this.firstToPlay === 0 ? 1 : 0);
 
-			team1Players.forEach((item: Client) => {
-				item.setDuelPosition((item.position + 1) % this.team1);
-				item.clearTurn();
-			});
-		} else {
-			team0Players.forEach((item: Client) => {
-				item.setDuelPosition((item.position + 1) % this.team0);
-				item.clearTurn();
-			});
+		team0Players.forEach((p, idx) => {
+			p.clearTurn();
+			p.setDuelPosition((idx + offset0) % this.team0);
+		});
 
-			team1Players.forEach((item: Client) => {
-				item.setDuelPosition(item.position % this.team1);
-				item.clearTurn();
-			});
-		}
+		team1Players.forEach((p, idx) => {
+			p.clearTurn();
+			p.setDuelPosition((idx + offset1) % this.team1);
+		});
 
-		const team0Player = team0Players.find((player: Client) => player.duelPosition === 0);
-		(<Client | undefined>team0Player)?.turn();
+		team0Players.find(p => p.duelPosition === 0)?.turn();
+		team1Players.find(p => p.duelPosition === 0)?.turn();
 
-		const team1Player = team1Players.find((player: Client) => player.duelPosition === 0);
-		(<Client | undefined>team1Player)?.turn();
+
+		this.clients.forEach((element: Client) => {
+		})
 	}
 
 	nextTurn(team: number): void {
-		const player = this.clients.find((player: Client) => player.inTurn && player.team === team);
-		if (!player || !(player instanceof Client)) {
-			return;
-		}
-		const teamCount = team === 0 ? this.team0 : this.team1;
-		const duelPLayerPositionTurn = (player.duelPosition + 1) % teamCount;
-		const nextPlayer = this.clients.find(
-			(player: Client) => player.duelPosition === duelPLayerPositionTurn && player.team === team
-		);
-		if (!nextPlayer || !(nextPlayer instanceof Client)) {
-			return;
-		}
-		player.clearTurn();
-		nextPlayer.turn();
-	}
+		const teamPlayers = (this.clients as Client[])
+			.filter(p => p.team === team)
+			.sort((a: Client, b: Client) => a.duelPosition - b.duelPosition);
 
+		if (teamPlayers.length === 0) return;
+
+		const currentIdx = teamPlayers.findIndex(p => p.inTurn);
+		if (currentIdx === -1) return;
+
+		const nextIdx = (currentIdx + 1) % teamPlayers.length;
+
+		teamPlayers[currentIdx].clearTurn();
+		teamPlayers[nextIdx].turn();
+	}
 	calculateTimeReceiver(team: number): number {
 		if (this.firstToPlay === 0) {
 			return team;
