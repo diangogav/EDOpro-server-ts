@@ -43,9 +43,9 @@ export class MercuryCoreMessageEmitter {
 			// } else {
 			// 	this.client.sendMessageToClient(this.messageProcessor.payload.raw);
 			// }
-			this.client.sendMessageToClient(this.messageProcessor.payload.raw);
-
-			this.processMessage();
 		}
+		this.client.sendMessageToClient(this.messageProcessor.payload.raw);
+
+		this.processMessage();
 	}
 }
