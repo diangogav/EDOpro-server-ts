@@ -30,20 +30,22 @@ export class MercuryCoreMessageEmitter {
 		}
 
 		if (command === "JOIN_GAME") {
-			const raw = Buffer.from(this.messageProcessor.payload.raw);
-			const banListHash = this.room.banListHash;
-			const banList = BanListMemoryRepository.findByHash(banListHash);
-			if (banList) {
-				const unsignedValue = banList.mercuryHash >>> 0;
-				raw.writeUInt32LE(unsignedValue, 3);
-				this.client.sendMessageToClient(raw);
-			} else {
-				this.client.sendMessageToClient(this.messageProcessor.payload.raw);
-			}
-		} else {
+			// const raw = Buffer.from(this.messageProcessor.payload.raw);
+			// const banListHash = this.room.banListHash;
+			// const banList = BanListMemoryRepository.findByHash(banListHash);
+			// if (banList) {
+			// 	const unsignedValue = this.room.banListHash! >>> 0;
+			// 	raw.writeUInt32LE(unsignedValue, 3);
+			// 	this.client.sendMessageToClient(raw);
+			// } else {
+			// 	this.client.sendMessageToClient(this.messageProcessor.payload.raw);
+			// }
+			// } else {
+			// 	this.client.sendMessageToClient(this.messageProcessor.payload.raw);
+			// }
 			this.client.sendMessageToClient(this.messageProcessor.payload.raw);
-		}
 
-		this.processMessage();
+			this.processMessage();
+		}
 	}
 }

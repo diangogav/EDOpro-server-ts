@@ -8,6 +8,7 @@ import { Mode } from "../../../../../src/mercury/room/domain/host-info/Mode.enum
 import { MercuryRoom } from "../../../../../src/mercury/room/domain/MercuryRoom";
 import { Pino } from "../../../../../src/shared/logger/infrastructure/Pino";
 import { PlayerInfoMessageMother } from "../../../shared/mothers/PlayerInfoMessageMother";
+import { MercuryBanList } from "../../../../../src/mercury/ban-list/domain/MercuryBanList";
 
 describe("MercuryRoom", () => {
 	const logger = new Pino();
@@ -300,8 +301,16 @@ describe("MercuryRoom", () => {
 	});
 
 	it("Should create a single match room, with the last tcg list if lf command is bad", () => {
-		MercuryBanListMemoryRepository.add({ date: "2024.01", tcg: false });
-		MercuryBanListMemoryRepository.add({ date: "2024.4", tcg: true });
+		const mercury202401BanList = new MercuryBanList()
+		mercury202401BanList.setTCG(false)
+		mercury202401BanList.setDate("2024.01")
+		mercury202401BanList.setName("2024.01")
+		const mercury20244BanList = new MercuryBanList()
+		mercury20244BanList.setTCG(true)
+		mercury20244BanList.setDate("2024.4")
+		mercury20244BanList.setName("2024.4")
+		MercuryBanListMemoryRepository.add(mercury202401BanList);
+		MercuryBanListMemoryRepository.add(mercury20244BanList);
 		const room1 = MercuryRoom.create(id, "lfbad#123", logger, emitter, playerInfoMessage, socketId);
 		expect(room1.hostInfo.lflist).toBe(1);
 		const room2 = MercuryRoom.create(id, "lf#123", logger, emitter, playerInfoMessage, socketId);

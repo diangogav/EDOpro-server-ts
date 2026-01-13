@@ -1,4 +1,4 @@
-import { BanList } from "../../ban-list/domain/BanList";
+import { EdoproBanList } from "../../ban-list/domain/BanList";
 import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
 import { Card } from "../../card/domain/Card";
 import { CardRepository } from "../../card/domain/CardRepository";
@@ -60,7 +60,7 @@ export class DeckCreator {
 			main: mainDeck,
 			extra: extraDeck,
 			side: sideDeck,
-			banList: banList ?? new BanList(),
+			banList: banList ?? new EdoproBanList(),
 			deckRules: this.deckRules,
 		});
 	}

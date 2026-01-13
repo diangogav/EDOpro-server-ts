@@ -41,6 +41,7 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 		this.logger.info("JOIN_GAME");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const joinMessage = new MercuryJoinGameMessage(message.data);
+
 		const room = this.createRoomIfNotExists(
 			joinMessage.pass,
 			playerInfoMessage,

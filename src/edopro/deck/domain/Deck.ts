@@ -1,4 +1,4 @@
-import { BanList } from "../../ban-list/domain/BanList";
+import { EdoproBanList } from "../../ban-list/domain/BanList";
 import { Card } from "../../card/domain/Card";
 import { DeckRules } from "../../room/domain/Room";
 import { DeckError } from "./errors/DeckError";
@@ -17,7 +17,7 @@ export class Deck {
 	readonly main: Card[];
 	readonly side: Card[];
 	readonly extra: Card[];
-	private readonly banList: BanList;
+	private readonly banList: EdoproBanList;
 	private readonly deckRules: DeckRules;
 
 	constructor({
@@ -30,7 +30,7 @@ export class Deck {
 		main?: Card[];
 		side?: Card[];
 		extra?: Card[];
-		banList: BanList;
+		banList: EdoproBanList;
 		deckRules: DeckRules;
 	}) {
 		this.main = main;

@@ -1,4 +1,4 @@
-type MercuryBanList = { date: string; tcg: boolean };
+import { MercuryBanList } from "../domain/MercuryBanList";
 
 const banLists: MercuryBanList[] = [];
 
@@ -14,4 +14,12 @@ export default {
 	getLastTCGIndex(): number {
 		return banLists.findIndex((item: MercuryBanList) => item.tcg);
 	},
+
+	findByHash(hash: number): MercuryBanList | null {
+		return banLists.find((list) => list.hash === hash) ?? null;
+	},
+
+	findByName(name: string): MercuryBanList | null {
+		return banLists.find((list) => list.name === name) ?? null;
+	}
 };

@@ -24,8 +24,9 @@ async function start(): Promise<void> {
 	const database = new EdoProSQLiteTypeORM();
 	const banListLoader = new BanListLoader();
 	await banListLoader.loadDirectory("./banlists/evolution");
+	const mercuryBanListLoader = new MercuryBanListLoader();
 	await BanListMemoryRepository.backup();
-	await MercuryBanListLoader.load("./mercury/lflist.conf");
+	await mercuryBanListLoader.loadDirectory("./mercury");
 	await database.connect();
 	await database.initialize();
 	if (config.ranking.enabled) {

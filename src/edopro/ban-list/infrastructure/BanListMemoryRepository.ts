@@ -1,26 +1,22 @@
 import { Redis } from "../../../shared/db/redis/infrastructure/Redis";
-import { BanList } from "../domain/BanList";
+import { EdoproBanList } from "../domain/BanList";
 
-const banLists: BanList[] = [];
+const banLists: EdoproBanList[] = [];
 
 export default {
-	add(banList: BanList): void {
+	add(banList: EdoproBanList): void {
 		banLists.push(banList);
 	},
 
-	get(): BanList[] {
+	get(): EdoproBanList[] {
 		return banLists;
 	},
 
-	findByHash(hash: number): BanList | null {
+	findByHash(hash: number): EdoproBanList | null {
 		return banLists.find((list) => list.hash === hash) ?? null;
 	},
 
-	findByMercuryHash(hash: number): BanList | null {
-		return banLists.find((list) => list.mercuryHash === hash) ?? null;
-	},
-
-	findByName(name: string): BanList | null {
+	findByName(name: string): EdoproBanList | null {
 		return banLists.find((list) => list.name === name) ?? null;
 	},
 

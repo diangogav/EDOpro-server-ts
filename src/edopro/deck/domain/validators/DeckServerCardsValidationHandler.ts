@@ -1,14 +1,14 @@
-import { BanList } from "../../../ban-list/domain/BanList";
+import { EdoproBanList } from "../../../ban-list/domain/BanList";
 import { Deck } from "../Deck";
 import { BanListDeckError } from "../errors/BanListDeckError";
 import { DeckError } from "../errors/DeckError";
 import { DeckValidationHandler } from "./DeckValidationHandler";
 
 export class DeckServerCardsValidationHandler implements DeckValidationHandler {
-	private readonly banList: BanList;
+	private readonly banList: EdoproBanList;
 	private nextHandler: DeckValidationHandler | null = null;
 
-	constructor(banList: BanList) {
+	constructor(banList: EdoproBanList) {
 		this.banList = banList;
 	}
 

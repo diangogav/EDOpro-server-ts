@@ -369,8 +369,18 @@ export class MercuryRoom extends YgoRoom {
 
 	setBanListHash(banListHash: number): void {
 		this._banListHash = banListHash;
-		this._edoBanListHash =
-			BanListMemoryRepository.findByMercuryHash(this._banListHash)?.hash ?? null;
+
+		const mercuryBanList = MercuryBanListMemoryRepository.findByHash(banListHash)
+		if(!mercuryBanList?.name) {
+			return
+		}
+
+		const edoBanList = BanListMemoryRepository.findByName(mercuryBanList.name)
+
+		if(!edoBanList?.hash) {
+			return
+		}
+		this._edoBanListHash = edoBanList?.hash
 	}
 
 	calculatePlayerTeam(client: MercuryClient, position: number): void {
@@ -433,7 +443,11 @@ export class MercuryRoom extends YgoRoom {
 	}
 
 	get banListHash(): number {
-		return this._edoBanListHash ?? this._banListHash;
+		return this._banListHash;
+	}
+
+	get edoBanListHash(): number | null {
+		return this._edoBanListHash
 	}
 
 	private connectClientToCore(client: MercuryClient): void {

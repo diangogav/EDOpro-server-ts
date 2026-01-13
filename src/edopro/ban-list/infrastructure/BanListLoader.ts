@@ -2,7 +2,7 @@ import fs from "fs";
 import { readdir } from "fs/promises";
 import { join } from "path";
 
-import { BanList } from "../domain/BanList";
+import { EdoproBanList } from "../domain/BanList";
 import BanListMemoryRepository from "./BanListMemoryRepository";
 
 export class BanListLoader {
@@ -17,7 +17,7 @@ export class BanListLoader {
 	}
 
 	private load(path: string): void {
-		const banList = new BanList();
+		const banList = new EdoproBanList();
 
 		const lines = fs.readFileSync(path, "utf-8").split("\n");
 		for (const line of lines) {
@@ -47,7 +47,6 @@ export class BanListLoader {
 
 			const [cardId, quantity] = line.split(" ");
 			banList.add(Number(cardId), Number(quantity));
-			banList.addMercury(Number(cardId), Number(quantity));
 		}
 
 		BanListMemoryRepository.add(banList);
