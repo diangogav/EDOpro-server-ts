@@ -30,20 +30,20 @@ export class JSONMessageProcessor {
 		if (this._data.length) {
 			// this._previousMessage = this._data;
 		}
-		this._size = this.buffer.readUInt32LE(0);
+		this._size = this.buffer.readUInt16LE(0);
 		this._data = this.buffer
-			.subarray(4, this._size + 4)
+			.subarray(2, this._size + 4)
 			.toString("utf-8")
 			.replace(/^\u0000+/, "");
 		this.buffer = this.buffer.subarray(this._size + 4);
 	}
 
 	isMessageReady(): boolean {
-		if (this.buffer.length < 4) {
+		if (this.buffer.length < 2) {
 			return false;
 		}
-		const messageSize = this.buffer.readUInt32LE(0);
-		const length = this.buffer.length - 4;
+		const messageSize = this.buffer.readUInt16LE(0);
+		const length = this.buffer.length - 2;
 
 		return length >= messageSize;
 	}
