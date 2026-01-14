@@ -88,9 +88,7 @@ export abstract class YgoRoom {
 	}
 
 	clearSpectatorCache(): void {
-		this.mutex.runExclusive(() => {
-			this._spectatorCache = [];
-		});
+		this._spectatorCache = [];
 	}
 
 	removePlayer(player: YgoClient): void {
@@ -100,18 +98,16 @@ export abstract class YgoRoom {
 	}
 
 	duelWinner(winner: number): void {
-		this.mutex.runExclusive(() => {
-			if (!this._match) {
-				return;
-			}
+		if (!this._match) {
+			return;
+		}
 
-			const ips = this._clients.map((client) => ({
-				name: client.name,
-				ipAddress: client.socket.remoteAddress ?? null,
-			}));
+		const ips = this._clients.map((client) => ({
+			name: client.name,
+			ipAddress: client.socket.remoteAddress ?? null,
+		}));
 
-			this._match.duelWinner(winner, 0, ips);
-		});
+		this._match.duelWinner(winner, 0, ips);
 	}
 
 	get matchPlayersHistory(): PlayerData[] {
@@ -169,15 +165,11 @@ export abstract class YgoRoom {
 	}
 
 	setClientWhoChoosesTurn(client: YgoClient): void {
-		this.mutex.runExclusive(() => {
-			this._clientWhoChoosesTurn = client;
-		});
+		this._clientWhoChoosesTurn = client;
 	}
 
 	createMatch(): void {
-		this.mutex.runExclusive(() => {
-			this.createMatchUnsafe();
-		});
+		this.createMatchUnsafe();
 	}
 
 	createMatchUnsafe(): void {
@@ -232,21 +224,15 @@ export abstract class YgoRoom {
 	}
 
 	decreaseLps(team: Team, value: number): void {
-		this.mutex.runExclusive(() => {
-			this.currentDuel?.decreaseLps(team, value);
-		});
+		this.currentDuel?.decreaseLps(team, value);
 	}
 
 	increaseLps(team: Team, value: number): void {
-		this.mutex.runExclusive(() => {
-			this.currentDuel?.increaseLps(team, value);
-		});
+		this.currentDuel?.increaseLps(team, value);
 	}
 
 	increaseTurn(): void {
-		this.mutex.runExclusive(() => {
-			this.currentDuel?.increaseTurn();
-		});
+		this.currentDuel?.increaseTurn();
 	}
 
 	get turn(): number {
