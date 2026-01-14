@@ -79,27 +79,26 @@ export class HostServer {
 			);
 
 			socket.on("data", (data: Buffer) => {
-				connectionLogger.debug(`Incoming message: ${data.toString("hex")}`);
+				connectionLogger.debug(`roomId: ${tcpClientSocket.roomId} - Incoming message: ${data.toString("hex")}`);
 				messageEmitter.handleMessage(data);
 			});
 
 			socket.on("end", () => {
-				 
-				connectionLogger.info(`${socket.remoteAddress} left in end event`);
+				connectionLogger.info(`roomId: ${tcpClientSocket.roomId} - left in end event`);
 				const disconnectHandler = new DisconnectHandler(tcpClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
 			});
 
 			socket.on("close", () => {
 				 
-				connectionLogger.info(`${socket.remoteAddress} left in close event`);
+				connectionLogger.info(`roomId: ${tcpClientSocket.roomId} - left in close event`);
 				const disconnectHandler = new DisconnectHandler(tcpClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
 			});
 
 			socket.on("error", (_error) => {
 				 
-				connectionLogger.error(`${socket.remoteAddress} left in error event`, { err: _error });
+				connectionLogger.error(`roomId: ${tcpClientSocket.roomId} - left in error event`, { err: _error });
 				const disconnectHandler = new DisconnectHandler(tcpClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
 			});
