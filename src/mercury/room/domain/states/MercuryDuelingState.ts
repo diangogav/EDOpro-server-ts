@@ -18,6 +18,7 @@ import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { MercuryReconnect } from "../../application/MercuryReconnect";
 import { MercuryRoom } from "../MercuryRoom";
+import MercuryBanListMemoryRepository from "src/mercury/ban-list/infrastructure/MercuryBanListMemoryRepository";
 
 export class MercuryDuelingState extends RoomState {
 	private readonly eventBus: EventBus;
@@ -82,7 +83,7 @@ export class MercuryDuelingState extends RoomState {
 
 	private handle(): void {
 		//TODO: Mercury and EdoPro lists are linked by means of scripts in infrastructure
-		const banList = BanListMemoryRepository.findByHash(this.room.banListHash);
+		const banList = MercuryBanListMemoryRepository.findByHash(this.room.banListHash);
 		this.room.createDuel(banList?.name ?? null);
 		this.notifyDuelStart(this.room);
 	}
