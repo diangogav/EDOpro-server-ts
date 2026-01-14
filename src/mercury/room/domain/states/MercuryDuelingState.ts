@@ -152,7 +152,7 @@ export class MercuryDuelingState extends RoomState {
 						bestOf: room.bestOf,
 						players: room.matchPlayersHistory,
 						date: new Date(),
-						banListHash: room.banListHash,
+						banListHash: room.edoBanListHash,
 						ranked: room.ranked,
 					})
 				);
