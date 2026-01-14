@@ -30,7 +30,7 @@ export class JSONMessageProcessor {
 		if (this._data.length) {
 			// this._previousMessage = this._data;
 		}
-		this._size = this.buffer.readUInt16LE(0);
+		this._size = this.buffer.readUint16LE(0);
 		this._data = this.buffer
 			.subarray(2, this._size + 4)
 			.toString("utf-8")
@@ -39,10 +39,10 @@ export class JSONMessageProcessor {
 	}
 
 	isMessageReady(): boolean {
-		if (this.buffer.length < 2) {
+		if (this.buffer.length === 0) {
 			return false;
 		}
-		const messageSize = this.buffer.readUInt16LE(0);
+		const messageSize = this.buffer.readUint16LE(0);
 		const length = this.buffer.length - 2;
 
 		return length >= messageSize;
