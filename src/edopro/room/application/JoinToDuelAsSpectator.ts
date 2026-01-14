@@ -17,9 +17,9 @@ export class JoinToDuelAsSpectator {
 		socket: ISocket,
 		room: Room
 	): Promise<void> {
-		const spectator = await room.createSpectator(socket, playerInfoMessage.name);
+		const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name);
 		spectator.sendMessage(JoinGameClientMessage.createFromRoom(joinMessage, room));
-		room.addSpectator(spectator);
+		room.addSpectatorUnsafe(spectator);
 		room.notifyToAllPlayers(spectator);
 
 		spectator.sendMessage(DuelStartClientMessage.create());
