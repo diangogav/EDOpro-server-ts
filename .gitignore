@@ -30,6 +30,7 @@ core/vcpkg_installed
 *banlists
 certs
 app.log
+coverage
 
 # VSCode
 *.vscode
