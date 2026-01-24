@@ -24,6 +24,19 @@ export const ruleMappings: RuleMappings = {
 		get: () => ({ mode: Mode.TAG, startLp: 16000 }),
 		validate: (value) => value === "t" || value === "tag",
 	},
+<<<<<<< Updated upstream
+=======
+	bo5: {
+		get: () => ({ mode: Mode.MODE_MATCH_BO5, startLp: 8000 }),
+		validate: (value) => value === "bo5" || value === "bo5",
+	},
+	bo7: {
+		get: () => ({ mode: Mode.MODE_MATCH_BO7, startLp: 16000 }),
+		validate: (value) => value === "bo7" || value === "bo7",
+	},
+
+
+>>>>>>> Stashed changes
 };
 
 export const priorityRuleMappings: RuleMappings = {

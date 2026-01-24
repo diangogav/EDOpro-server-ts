@@ -230,6 +230,16 @@ export class MercuryRoom extends YgoRoom {
 
 	startCore(): void {
 		this._logger.debug("Starting Mercury Core");
+<<<<<<< Updated upstream
+=======
+
+		const modeRaw = this._hostInfo.mode;
+		const modeArg = this._hostInfo.mode.toString();
+
+		console.log("[MercuryRoom:startCore] mode (raw) =", modeRaw);
+		console.log("[MercuryRoom:startCore] modeArg (toString) =", modeArg);
+
+>>>>>>> Stashed changes
 		const core = spawn(
 			"./ygopro",
 			[
