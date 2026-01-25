@@ -12,4 +12,5 @@ export type HostInfo = {
 	lflist: number;
 	duelRule: number;
 	maxDeckPoints: number;
+	bestOf: number;
 };

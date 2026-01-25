@@ -24,22 +24,38 @@ export const ruleMappings: RuleMappings = {
 		get: () => ({ mode: Mode.TAG, startLp: 16000 }),
 		validate: (value) => value === "t" || value === "tag",
 	},
-<<<<<<< Updated upstream
-=======
-	bo5: {
-		get: () => ({ mode: Mode.MODE_MATCH_BO5, startLp: 8000 }),
-		validate: (value) => value === "bo5" || value === "bo5",
-	},
-	bo7: {
-		get: () => ({ mode: Mode.MODE_MATCH_BO7, startLp: 16000 }),
-		validate: (value) => value === "bo7" || value === "bo7",
-	},
-
-
->>>>>>> Stashed changes
 };
 
 export const priorityRuleMappings: RuleMappings = {
+	bo: {
+		get: (value: string) => {
+			const bestOf = extractNumberFromCommand(value.toString());
+
+			if (bestOf === null || bestOf < 1) {
+				return {
+					mode: Mode.MATCH,
+					bestOf: 3,
+				};
+			}
+
+			if (bestOf % 2 === 0) {
+				return {
+					mode: Mode.MATCH,
+					bestOf: bestOf + 1,
+				};
+			}
+
+			return {
+				bestOf,
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			const regex = /^bo\d+$/;
+
+			return regex.test(value);
+		},
+	},
 	lp: {
 		get: (value: string) => {
 			const lps = extractNumberFromCommand(value);
