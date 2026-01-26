@@ -36,6 +36,7 @@ import { RockPaperScissorState } from "./states/rps/RockPaperScissorsState";
 import { SideDeckingState } from "./states/side-decking/SideDeckingState";
 import { WaitingState } from "./states/waiting/WaitingState";
 import { Timer } from "./Timer";
+import { RoomType } from "src/shared/room/domain/RoomType";
 
 export enum Rule {
 	ONLY_OCG,
@@ -165,6 +166,7 @@ export class Room extends YgoRoom {
 			bestOf: attr.bestOf,
 			startLp: attr.startLp,
 			notes: attr.notes,
+			roomType: RoomType.EDO,
 		});
 		this.name = attr.name;
 		this.mode = attr.mode;

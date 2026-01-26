@@ -22,6 +22,7 @@ import { PlayerMessageClientMessage } from "../../messages/server-to-client/Play
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { SpectatorMessageClientMessage } from "../../messages/server-to-client/SpectatorMessageClientMessage";
 import { VersionErrorClientMessage } from "../../messages/server-to-client/VersionErrorClientMessage";
+import { RoomType } from "src/shared/room/domain/RoomType";
 
 export abstract class RoomState {
 	protected readonly eventEmitter: EventEmitter;
@@ -99,29 +100,15 @@ export abstract class RoomState {
 
 	protected sendWelcomeMessage(room: YgoRoom, socket: ISocket): void {
 		if (room.ranked) {
-			socket.send(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
-			socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.WELCOME));
-			socket.send(
-				ServerMessageClientMessage.create(ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS)
-			);
-			socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS));
-
-			socket.send(ServerMessageClientMessage.create(ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION));
-			socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION));
-
+			socket.send(MercuryPlayerChatMessage.create(
+				`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS} - ${ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION}`
+			));
 			return;
 		}
 
-		socket.send(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
-		socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.WELCOME));
-
-		socket.send(
-			ServerMessageClientMessage.create(ServerInfoMessage.UN_RANKED_ROOM_CREATION_SUCCESS)
-		);
-		socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.UN_RANKED_ROOM_CREATION_SUCCESS));
-
-		socket.send(ServerMessageClientMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));
-		socket.send(MercuryPlayerChatMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));
+		socket.send(MercuryPlayerChatMessage.create(
+			`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.UN_RANKED_ROOM_CREATION_SUCCESS}`
+		));
 	}
 
 	protected processDuelMessage(messageType: CoreMessages, data: Buffer, room: YgoRoom): void {
@@ -179,21 +166,22 @@ export abstract class RoomState {
 	}
 
 	protected sendSystemErrorMessage(message: string, client: YgoClient): void {
-		client.socket.send(ServerErrorClientMessage.create(message));
 		client.socket.send(MercuryPlayerChatMessage.create(message));
 	}
 
 	protected sendSystemMessage(message: string, client: YgoClient): void {
-		client.socket.send(ServerMessageClientMessage.create(message));
 		client.socket.send(MercuryPlayerChatMessage.create(message));
 	}
 
 	private handleChat(message: ClientMessage, room: YgoRoom, client: YgoClient): void {
 		const sanitized = BufferToUTF16(message.data, message.data.length);
 		if (sanitized === ":score") {
-			client.socket.send(ServerMessageClientMessage.create(room.score));
 			client.socket.send(MercuryPlayerChatMessage.create(room.score));
 
+			return;
+		}
+
+		if (room.roomType === RoomType.MERCURY) {
 			return;
 		}
 

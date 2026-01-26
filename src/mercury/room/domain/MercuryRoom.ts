@@ -27,6 +27,7 @@ import { MercuryDuelingState } from "./states/MercuryDuelingState";
 import { MercuryRockPaperScissorState } from "./states/MercuryRockPaperScissorsState";
 import { MercurySideDeckingState } from "./states/MercurySideDeckingState";
 import { MercuryWaitingState } from "./states/MercuryWaitingState";
+import { RoomType } from "src/shared/room/domain/RoomType";
 
 const BEST_OF = {
 	[Mode.SINGLE]: 1,
@@ -72,7 +73,7 @@ export class MercuryRoom extends YgoRoom {
 		bestOf: number;
 		startLp: number;
 	}) {
-		super({ team0, team1, ranked, bestOf, startLp, id, notes: "" });
+		super({ team0, team1, ranked, bestOf, startLp, id, notes: "", roomType: RoomType.MERCURY });
 		this.name = name;
 		this.password = password;
 		this._clients = [];

@@ -9,6 +9,7 @@ import { YgoClient } from "../../client/domain/YgoClient";
 import { ISocket } from "../../socket/domain/ISocket";
 import { Mutex } from "async-mutex";
 import { Match } from "./match/domain/Match";
+import { RoomType } from "./RoomType";
 
 export enum DuelState {
 	WAITING = "waiting",
@@ -27,8 +28,8 @@ export abstract class YgoRoom {
 	public readonly bestOf: number;
 	public readonly startLp: number;
 	public readonly STARTING_TURN = 0;
-	// public readonly actionQueue = new RoomActionQueue();
 	public readonly mutex = new Mutex();
+	public readonly roomType: RoomType;
 	protected readonly t0Positions: number[] = [];
 	protected readonly t1Positions: number[] = [];
 	protected emitter: EventEmitter;
@@ -50,6 +51,7 @@ export abstract class YgoRoom {
 		startLp,
 		id,
 		notes,
+		roomType,
 	}: {
 		team0: number;
 		team1: number;
@@ -58,6 +60,7 @@ export abstract class YgoRoom {
 		startLp: number;
 		id: number;
 		notes: string;
+		roomType: RoomType;
 	}) {
 		this.team0 = team0;
 		this.team1 = team1;
@@ -69,6 +72,7 @@ export abstract class YgoRoom {
 		this.startLp = startLp;
 		this.id = id;
 		this.notes = notes;
+		this.roomType = roomType;
 	}
 
 	emit(event: string, message: unknown, socket: ISocket): void {
