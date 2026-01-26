@@ -27,6 +27,13 @@ import { MercuryDuelingState } from "./states/MercuryDuelingState";
 import { MercuryRockPaperScissorState } from "./states/MercuryRockPaperScissorsState";
 import { MercurySideDeckingState } from "./states/MercurySideDeckingState";
 import { MercuryWaitingState } from "./states/MercuryWaitingState";
+import { RoomType } from "src/shared/room/domain/RoomType";
+
+const BEST_OF = {
+	[Mode.SINGLE]: 1,
+	[Mode.MATCH]: 3,
+	[Mode.TAG]: 1,
+}
 
 export class MercuryRoom extends YgoRoom {
 	readonly name: string;
@@ -66,7 +73,7 @@ export class MercuryRoom extends YgoRoom {
 		bestOf: number;
 		startLp: number;
 	}) {
-		super({ team0, team1, ranked, bestOf, startLp, id, notes: "" });
+		super({ team0, team1, ranked, bestOf, startLp, id, notes: "", roomType: RoomType.MERCURY });
 		this.name = name;
 		this.password = password;
 		this._clients = [];
@@ -96,6 +103,7 @@ export class MercuryRoom extends YgoRoom {
 			lflist: MercuryBanListMemoryRepository.getLastTCGIndex(),
 			duelRule: 5,
 			maxDeckPoints: 100,
+			bestOf: BEST_OF[Mode.SINGLE],
 		};
 
 		const [configuration, password] = command.split("#");
@@ -159,7 +167,7 @@ export class MercuryRoom extends YgoRoom {
 			team1: teamCount,
 			ranked,
 			createdBySocketId,
-			bestOf: hostInfo.mode === Mode.MATCH ? 3 : 1,
+			bestOf: hostInfo.bestOf,
 			startLp: hostInfo.startLp,
 		});
 
@@ -196,7 +204,7 @@ export class MercuryRoom extends YgoRoom {
 
 				return;
 			}
-			 
+
 			room._route = routes[option] ?? room._route;
 		});
 
@@ -245,6 +253,7 @@ export class MercuryRoom extends YgoRoom {
 				this._hostInfo.drawCount.toString(),
 				this._hostInfo.timeLimit.toString(),
 				"2", //REPLAY MODE
+				this.bestOf.toString(),
 			],
 			{
 				cwd: this._route,
@@ -258,7 +267,7 @@ export class MercuryRoom extends YgoRoom {
 
 		core.on("exit", (code, signal) => {
 			this._logger.debug(
-				 
+
 				`Core closed for room ${this.id} with code: ${code} and signal: ${signal} `
 			);
 
@@ -371,7 +380,7 @@ export class MercuryRoom extends YgoRoom {
 		this._banListHash = banListHash;
 
 		const mercuryBanList = MercuryBanListMemoryRepository.findByHash(banListHash)
-		if(!mercuryBanList?.name) {
+		if (!mercuryBanList?.name) {
 			return
 		}
 

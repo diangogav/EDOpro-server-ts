@@ -435,4 +435,149 @@ describe("MercuryRoom", () => {
 			expect(room.hostInfo.duelRule).toBe(4);
 		});
 	});
+
+	describe("Mode Match Best of X", () => {
+		it("Should create a room with Match mode Best of 3 if command contains bo0", () => {
+			const room = MercuryRoom.create(
+				id,
+				"bo0#123",
+				logger,
+				emitter,
+				playerInfoMessage,
+				socketId
+			);
+			expect(room.hostInfo.mode).toBe(Mode.MATCH);
+			expect(room.hostInfo.bestOf).toBe(3);
+		});
+
+		it("Should create a room with Single mode if command contains bo with a letter instead a number", () => {
+			const room = MercuryRoom.create(
+				id,
+				"boabc#123",
+				logger,
+				emitter,
+				playerInfoMessage,
+				socketId
+			);
+			expect(room.hostInfo.mode).toBe(Mode.SINGLE);
+			expect(room.hostInfo.bestOf).toBe(1);
+		});
+
+		it("Should create a room with Match mode Best of 3 if command contains bo3", () => {
+			const room = MercuryRoom.create(
+				id,
+				"bo3#123",
+				logger,
+				emitter,
+				playerInfoMessage,
+				socketId
+			);
+			expect(room.hostInfo.mode).toBe(Mode.MATCH);
+			expect(room.hostInfo.bestOf).toBe(3);
+		});
+
+		it("Should create a room with Match mode Best of 5 if command contains bo5", () => {
+			const room = MercuryRoom.create(
+				id,
+				"bo5#123",
+				logger,
+				emitter,
+				playerInfoMessage,
+				socketId
+			);
+			expect(room.hostInfo.mode).toBe(Mode.MATCH);
+			expect(room.hostInfo.bestOf).toBe(5);
+		});
+
+		it("Should create a room with Match mode Best of 7 if command contains bo7", () => {
+			const room = MercuryRoom.create(
+				id,
+				"bo7#123",
+				logger,
+				emitter,
+				playerInfoMessage,
+				socketId
+			);
+			expect(room.hostInfo.mode).toBe(Mode.MATCH);
+			expect(room.hostInfo.bestOf).toBe(7);
+		});
+
+		it("Should create a room with Match mode Best of 1 if command contains bo1", () => {
+			const room = MercuryRoom.create(
+				id,
+				"bo1#123",
+				logger,
+				emitter,
+				playerInfoMessage,
+				socketId
+			);
+			expect(room.hostInfo.mode).toBe(Mode.MATCH);
+			expect(room.hostInfo.bestOf).toBe(1);
+		});
+
+		it("Should create a room with Single mode if command not contains number", () => {
+			const room = MercuryRoom.create(
+				id,
+				"bo#123",
+				logger,
+				emitter,
+				playerInfoMessage,
+				socketId
+			);
+			expect(room.hostInfo.mode).toBe(Mode.SINGLE);
+			expect(room.hostInfo.bestOf).toBe(1);
+		});
+
+		it("Should create a room with Match mode Best of 3 if command contains bo2", () => {
+			const room = MercuryRoom.create(
+				id,
+				"bo2#123",
+				logger,
+				emitter,
+				playerInfoMessage,
+				socketId
+			);
+			expect(room.hostInfo.mode).toBe(Mode.MATCH);
+			expect(room.hostInfo.bestOf).toBe(3);
+		});
+
+		it("Should create a room with Match mode Best of 5 if command contains bo4", () => {
+			const room = MercuryRoom.create(
+				id,
+				"bo4#123",
+				logger,
+				emitter,
+				playerInfoMessage,
+				socketId
+			);
+			expect(room.hostInfo.mode).toBe(Mode.MATCH);
+			expect(room.hostInfo.bestOf).toBe(5);
+		});
+
+		it("Should create a room with Match mode Best of 7 if command contains bo6", () => {
+			const room = MercuryRoom.create(
+				id,
+				"bo6#123",
+				logger,
+				emitter,
+				playerInfoMessage,
+				socketId
+			);
+			expect(room.hostInfo.mode).toBe(Mode.MATCH);
+			expect(room.hostInfo.bestOf).toBe(7);
+		});
+
+		it("Should create a room with Match mode Best of 9 if command contains bo9", () => {
+			const room = MercuryRoom.create(
+				id,
+				"bo9#123",
+				logger,
+				emitter,
+				playerInfoMessage,
+				socketId
+			);
+			expect(room.hostInfo.mode).toBe(Mode.MATCH);
+			expect(room.hostInfo.bestOf).toBe(9);
+		});
+	});
 });

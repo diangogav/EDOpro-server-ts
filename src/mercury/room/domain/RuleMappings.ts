@@ -27,6 +27,35 @@ export const ruleMappings: RuleMappings = {
 };
 
 export const priorityRuleMappings: RuleMappings = {
+	bo: {
+		get: (value: string) => {
+			const bestOf = extractNumberFromCommand(value.toString());
+
+			if (bestOf === null || bestOf < 1) {
+				return {
+					mode: Mode.MATCH,
+					bestOf: 3,
+				};
+			}
+
+			if (bestOf % 2 === 0) {
+				return {
+					mode: Mode.MATCH,
+					bestOf: bestOf + 1,
+				};
+			}
+
+			return {
+				bestOf,
+				mode: Mode.MATCH,
+			};
+		},
+		validate: (value) => {
+			const regex = /^bo\d+$/;
+
+			return regex.test(value);
+		},
+	},
 	lp: {
 		get: (value: string) => {
 			const lps = extractNumberFromCommand(value);

@@ -99,26 +99,20 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 	}
 
 	private sendRankedMessage(): void {
-		this.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
-		this.socket.send(
-			ServerMessageClientMessage.create(ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS)
-		);
-		this.socket.send(
-			ServerMessageClientMessage.create(ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION)
-		);
+		this.socket.send(ServerMessageClientMessage.create(
+			`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS} - ${ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION}`
+		));
 	}
 
 	private sendUnrankedMessage(): void {
-		this.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.WELCOME));
-		this.socket.send(
-			ServerMessageClientMessage.create(ServerInfoMessage.UN_RANKED_ROOM_CREATION_SUCCESS)
-		);
+		this.socket.send(ServerMessageClientMessage.create(
+			`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.UN_RANKED_ROOM_CREATION_SUCCESS}`
+		));
+
 		if (!config.ranking.enabled) {
 			this.socket.send(
 				ServerMessageClientMessage.create(ServerInfoMessage.UNAVAILABLE_RANKING_SYSTEM)
 			);
 		}
-
-		this.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.NOT_GAIN_POINTS));
 	}
 }

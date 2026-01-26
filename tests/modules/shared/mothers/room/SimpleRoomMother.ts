@@ -3,6 +3,7 @@ import { EventEmitter } from "events";
 
 import { YgoRoom } from "../../../../../src/shared/room/domain/YgoRoom";
 import { RoomActionQueue } from "../../../../../src/shared/room/RoomActionQueue";
+import { RoomType } from "../../../../../src/shared/room/domain/RoomType";
 
 class SimpleRoom extends YgoRoom {
 	public actionQueue = new RoomActionQueue();
@@ -15,6 +16,7 @@ class SimpleRoom extends YgoRoom {
 		startLp: number;
 		id: number;
 		notes: string;
+		roomType: RoomType;
 	}) {
 		super(params);
 		this.emitter = new EventEmitter();
@@ -31,6 +33,7 @@ export class SimpleRoomMother {
 			startLp: params?.startLp ?? 8000,
 			id: params?.id ?? faker.number.int({ min: 1, max: 9999 }),
 			notes: params?.notes ?? faker.lorem.sentence(),
+			roomType: params?.roomType ?? RoomType.EDO,
 		});
 	}
 }
