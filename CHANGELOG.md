@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.12.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.11.0...v2.12.0) (2026-01-26)
+
+
+### Features
+
+* add production Docker Compose file ([a10c27f](https://github.com/diangogav/EDOpro-server-ts/commit/a10c27fd0c25b81aea3cbe81d18ba0390bbe4641))
+* update JSON message processor to use 4-byte size headers ([c05a11b](https://github.com/diangogav/EDOpro-server-ts/commit/c05a11b7f628f1d35d1a1e0a2f502312e532fbd3))
+
+
+### Bug Fixes
+
+* get banlist for websocket in mercury ([b7785ef](https://github.com/diangogav/EDOpro-server-ts/commit/b7785efd682d514f00782142744debcb35b836fe))
+* handle large messages in JSONMessageProcessor by using 4-byte size header ([bae67f1](https://github.com/diangogav/EDOpro-server-ts/commit/bae67f1207e6df2e4fc7251f3dd52f98f12c5cbe))
+* json message procesor comparison ([5cead59](https://github.com/diangogav/EDOpro-server-ts/commit/5cead5908f647b2575fccfc1aeb289714d1d6981))
+* mercury message handler ([4d81811](https://github.com/diangogav/EDOpro-server-ts/commit/4d818110a986af9b56638502249dad9cc8ec33d0))
+* read correct field size length in JSONMessageProcessor ([9ab803a](https://github.com/diangogav/EDOpro-server-ts/commit/9ab803a9591a1f76c1e8108d0a71ff269c0ca9f0))
+
 ## [2.11.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.10.0...v2.11.0) (2026-01-04)
 
 
