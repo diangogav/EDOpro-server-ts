@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.12.1](https://github.com/diangogav/EDOpro-server-ts/compare/v2.12.0...v2.12.1) (2026-01-28)
+
+
+### Bug Fixes
+
+* command match m ([#216](https://github.com/diangogav/EDOpro-server-ts/issues/216)) ([8e09840](https://github.com/diangogav/EDOpro-server-ts/commit/8e098404f7703d1d55229655529f476a5c3319d9))
+
 ## [2.12.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.11.0...v2.12.0) (2026-01-26)
 
 
