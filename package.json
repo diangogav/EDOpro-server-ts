@@ -34,6 +34,7 @@
     "@eslint/js": "^9.39.1",
     "@faker-js/faker": "^9.2.0",
     "@types/bcrypt": "^6.0.0",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/express": "^5.0.5",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.10.1",
@@ -63,6 +64,7 @@
     "array-shuffle": "^4.0.0",
     "async-mutex": "^0.5.0",
     "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.6.2",
     "cheerio": "^1.1.2",
     "diod": "^3.0.0",
     "dotenv": "^17.2.3",
@@ -76,7 +78,6 @@
     "reflect-metadata": "^0.2.2",
     "shuffle-array": "^1.0.1",
     "simple-git": "^3.30.0",
-    "sqlite3": "^5.1.7",
     "typeorm": "^0.3.27",
     "winston": "^3.18.3",
     "ws": "^8.18.3"
