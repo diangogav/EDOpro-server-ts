@@ -3,7 +3,7 @@ import { CardTextEntity } from "@edopro/card/infrastructure/sqlite/CardTextEntit
 import { DataSource, DataSourceOptions } from "typeorm";
 
 const options: DataSourceOptions = {
-	type: "sqlite",
+	type: "better-sqlite3",
 	database: "jtp_evolution_cards.db",
 	synchronize: true,
 	logging: false,
@@ -13,7 +13,7 @@ const options: DataSourceOptions = {
 };
 
 const mercuryOptions: DataSourceOptions = {
-	type: "sqlite",
+	type: "better-sqlite3",
 	database: "./mercury/pre-releases/tcg/cards.cdb",
 	synchronize: true,
 	logging: false,
