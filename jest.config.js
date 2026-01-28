@@ -7,4 +7,8 @@ module.exports = {
 	modulePaths: [compilerOptions.baseUrl],
 	moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths),
 	roots: ["<rootDir>/src", "<rootDir>/tests"],
+	maxWorkers: "50%",
+	transform: {
+		"^.+\\.tsx?$": "ts-jest",
+	},
 };
