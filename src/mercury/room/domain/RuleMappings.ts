@@ -17,11 +17,11 @@ function extractNumberFromCommand(input: string): number | null {
 
 export const ruleMappings: RuleMappings = {
 	m: {
-		get: () => ({ mode: Mode.MATCH, startLp: 8000 }),
+		get: () => ({ mode: Mode.MATCH, startLp: 8000, bestOf: 3 }),
 		validate: (value) => value === "m" || value === "match",
 	},
 	t: {
-		get: () => ({ mode: Mode.TAG, startLp: 16000 }),
+		get: () => ({ mode: Mode.TAG, startLp: 16000, bestOf: 1 }),
 		validate: (value) => value === "t" || value === "tag",
 	},
 };

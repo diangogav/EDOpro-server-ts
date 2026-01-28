@@ -579,5 +579,45 @@ describe("MercuryRoom", () => {
 			expect(room.hostInfo.mode).toBe(Mode.MATCH);
 			expect(room.hostInfo.bestOf).toBe(9);
 		});
+
+		it("Should create a room with Match mode Best of 3 if command contains m#123", () => {
+			const room = MercuryRoom.create(
+				id,
+				"m#123",
+				logger,
+				emitter,
+				playerInfoMessage,
+				socketId
+			);
+			expect(room.hostInfo.mode).toBe(Mode.MATCH);
+			expect(room.hostInfo.bestOf).toBe(3);
+		});
+
+		it("Should create a room with Match mode Best of 5 if command contains m,bo5#123", () => {
+			const room = MercuryRoom.create(
+				id,
+				"m,bo5#123",
+				logger,
+				emitter,
+				playerInfoMessage,
+				socketId
+			);
+			expect(room.hostInfo.mode).toBe(Mode.MATCH);
+			expect(room.hostInfo.bestOf).toBe(5);
+		});
+
+		it("Should create a room with Match mode Best of 5 if command contains bo5,m#123", () => {
+			const room = MercuryRoom.create(
+				id,
+				"bo5,m#123",
+				logger,
+				emitter,
+				playerInfoMessage,
+				socketId
+			);
+			expect(room.hostInfo.mode).toBe(Mode.MATCH);
+			expect(room.hostInfo.bestOf).toBe(5);
+		});
+
 	});
 });
