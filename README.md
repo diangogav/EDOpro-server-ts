@@ -23,7 +23,7 @@ Welcome to **Evolution Server**, a scalable and modern backend server for Yu-Gi-
 - [Node.js](https://nodejs.org) (>= 24.11.0)
 - [CMake](https://cmake.org/download/) (>= 3.18)
 - [Vcpkg](https://github.com/microsoft/vcpkg) (handled automatically by build script)
-- System dependencies (Ubuntu/Debian): `wget`, `git`, `tar`, `curl`, `zip`, `unzip`, `pkg-config`, `g++`, `make`
+- System dependencies (Ubuntu/Debian): `wget`, `git`, `tar`, `curl`, `zip`, `unzip`, `pkg-config`, `g++`, `make` , `cmake`, `ninja-build`
 
 ---
 
