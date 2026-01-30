@@ -100,6 +100,11 @@
     "code": 20292186
   },
   {
+    "name": "Artmage Non-Finito",
+    "points": 15,
+    "code": 74631897
+  },
+  {
     "name": "Ash Blossom & Joyous Spring",
     "points": 15,
     "code": 14558127
@@ -366,7 +371,7 @@
   },
   {
     "name": "Change of Heart",
-    "points": 7,
+    "points": 10,
     "code": 4031928
   },
   {
@@ -780,6 +785,11 @@
     "code": 10875327
   },
   {
+    "name": "Ecclesia and the Dark Dragon",
+    "points": 3,
+    "code": 78397661
+  },
+  {
     "name": "Eclipse Wyvern",
     "points": 33,
     "code": 51858306
@@ -813,6 +823,11 @@
     "name": "Elemental HERO Stratos",
     "points": 3,
     "code": 40044918
+  },
+  {
+    "name": "Elfnote Power Patron",
+    "points": 15,
+    "code": 12375297
   },
   {
     "name": "Elzette, Azamina of the White Forest",
@@ -890,6 +905,11 @@
     "code": 55623480
   },
   {
+    "name": "Fallen of the White Dragon",
+    "points": 30,
+    "code": 73819701
+  },
+  {
     "name": "Fiber Jar",
     "points": 30,
     "code": 78706415
@@ -958,6 +978,11 @@
     "name": "Forbidden Chalice",
     "points": 5,
     "code": 25789292
+  },
+  {
+    "name": "Forbidden Crown",
+    "points": 10,
+    "code": 98829635
   },
   {
     "name": "Forbidden Droplet",
@@ -1305,6 +1330,16 @@
     "code": 28642461
   },
   {
+    "name": "K9-ØØ Lupis",
+    "points": 5,
+    "code": 91025875
+  },
+  {
+    "name": "K9-X \"Ripper/M\"",
+    "points": 10,
+    "code": 31286915
+  },
+  {
     "name": "K9-X \"Werewolf\"",
     "points": 10,
     "code": 90303227
@@ -1613,6 +1648,11 @@
     "name": "Mementotlan Twin Dragon",
     "points": 33,
     "code": 19181420
+  },
+  {
+    "name": "Mercurium the Living Quicksilver",
+    "points": 10,
+    "code": 101303084
   },
   {
     "name": "Metamorphosis",
@@ -2440,6 +2480,11 @@
     "code": 54031490
   },
   {
+    "name": "Shiina, Twin Tempests of Celestial Thunder",
+    "points": 10,
+    "code": 12197223
+  },
+  {
     "name": "Shooting Riser Dragon",
     "points": 33,
     "code": 68431965
@@ -2960,6 +3005,11 @@
     "code": 87602890
   },
   {
+    "name": "Zalen the Shackled Dragon",
+    "points": 10,
+    "code": 4891376
+  },
+  {
     "name": "Zoodiac Barrage",
     "points": 33,
     "code": 46060017
@@ -2980,8 +3030,8 @@
     "code": 78872731
   },
   {
-    "code": 91025875,
-    "points": 5,
-    "name": "K9-ØØ Lupis"
+    "name": "Spenta, the Magistus Sealer",
+    "points": 15,
+    "code": 42544773
   }
 ]
