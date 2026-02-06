@@ -1,5 +1,31 @@
 <h1 align="center">Evolution Server 🎮</h1>
 
+## Development Experience Improvements
+
+### Building Production Image (Split Build)
+We use a split build process to speed up deployment.
+
+1.  **Build the Base Image** (Only when core/submodules change):
+    ```bash
+    docker build -f Dockerfile.base -t evolution-core:latest .
+    ```
+
+2.  **Build the Application Image** (Every deploy):
+    ```bash
+    docker build -t evolution-server:latest .
+    ```
+
+### Using DevContainer
+This project includes a VS Code DevContainer for a consistent environment.
+
+1.  Open the project in VS Code.
+2.  Click "Reopen in Container" when prompted.
+3.  Once inside, you can run:
+    *   `npm run dev`: Starts the server.
+    *   `./build_core_integrator.sh`: Rebuilds the C++ core manually.
+    
+    > **Note**: The DevContainer does not start a database automatically. Ensure your `.env` points to a valid Postgres instance (e.g. `localhost` on host, or a remote DB).
+
 [![PR Pipeline](https://github.com/diangogav/EDOpro-server-ts/actions/workflows/pipeline.yaml/badge.svg)](https://github.com/diangogav/EDOpro-server-ts/actions/workflows/pipeline.yaml)
 
 Welcome to **Evolution Server**, a scalable and modern backend server for Yu-Gi-Oh! matches, compatible with **EDOPro**, **Koishi**, and **YGO Mobile** clients. Unlike traditional implementations, Evolution focuses on **code extensibility** and **data collection**, enabling new gameplay features and statistics.
