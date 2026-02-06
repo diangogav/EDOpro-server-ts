@@ -1,0 +1,23 @@
+{
+    "name": "Evolution Server Dev",
+    "dockerComposeFile": [
+        "docker-compose.dev.yml"
+    ],
+    "service": "app",
+    "workspaceFolder": "/workspace",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode",
+                "ms-vscode.cmake-tools",
+                "ms-vscode.cpptools",
+                "donjayamanne.githistory",
+                "mhutchie.git-graph"
+            ],
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "bash"
+            }
+        }
+    }
+}
