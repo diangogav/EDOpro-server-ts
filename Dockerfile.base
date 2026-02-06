@@ -68,8 +68,9 @@ COPY ./mercury/ygopro .
 # Copy scripts and binaries into each alternative directory
 RUN for dir in ./alternatives/*/; do \
     echo "$dir/script"; \
-    cp -r ./mercury-scripts/* "$dir/script"; \
-    cp ygopro "$dir"; \
+    rm -rf "$dir/script"; \
+    ln -s "$(pwd)/mercury-scripts" "$dir/script"; \
+    ln -sf "$(pwd)/ygopro" "$dir/ygopro"; \
     done
 
 # Copy selected banlists into corresponding alternative folders
