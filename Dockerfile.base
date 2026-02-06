@@ -65,12 +65,15 @@ RUN mkdir banlists mercury-pre-releases-cdbs && \
 # This requires the context to have mercury/ygopro.
 COPY ./mercury/ygopro .
 
+# Rename mercury-scripts to script to match final image structure for symlinks
+RUN mv mercury-scripts script
+
 # Copy scripts and binaries into each alternative directory
 RUN for dir in ./alternatives/*/; do \
     echo "$dir/script"; \
     rm -rf "$dir/script"; \
-    ln -s "$(pwd)/mercury-scripts" "$dir/script"; \
-    ln -sf "$(pwd)/ygopro" "$dir/ygopro"; \
+    ln -s ../../script "$dir/script"; \
+    cp ygopro "$dir"; \
     done
 
 # Copy selected banlists into corresponding alternative folders

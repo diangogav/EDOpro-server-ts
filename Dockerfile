@@ -53,26 +53,29 @@ COPY --from=evolution-core:latest /repositories/mercury-cards.cdb ./databases/me
 COPY --from=evolution-core:latest /repositories/banlists ./banlists/evolution/
 
 # Mercury (From Base Image)
-COPY --from=evolution-core:latest /repositories/mercury-scripts ./mercury/script
+COPY --from=evolution-core:latest /repositories/script ./mercury/script
 COPY --from=evolution-core:latest /repositories/mercury-lflist.conf ./mercury/lflist.conf
 COPY --from=evolution-core:latest /repositories/mercury-cards.cdb ./mercury/cards.cdb
 COPY --from=evolution-core:latest /repositories/mercury-cards.cdb ./mercury/alternatives/md/cards.cdb
 COPY --from=evolution-core:latest /repositories/mercury-cards.cdb ./mercury/alternatives/genesys/cards.cdb
 
 # Mercury Pre-releases (From Base Image)
-COPY --from=evolution-core:latest /repositories/mercury-scripts ./mercury/pre-releases/tcg/script
+# We use physical copies here because we merge extra scripts into them, 
+# and we don't want to pollute the main script folder.
+COPY --from=evolution-core:latest /repositories/script ./mercury/pre-releases/tcg/script
 COPY --from=evolution-core:latest /repositories/mercury-lflist.conf ./mercury/pre-releases/tcg/lflist.conf
 COPY --from=evolution-core:latest /repositories/mercury-prerelases/script/ ./mercury/pre-releases/tcg/script/
 COPY --from=evolution-core:latest /repositories/mercury-arts/script/ ./mercury/pre-releases/tcg/script/
 
-COPY --from=evolution-core:latest /repositories/mercury-scripts ./mercury/pre-releases/ocg/script
+COPY --from=evolution-core:latest /repositories/script ./mercury/pre-releases/ocg/script
 COPY --from=server-builder /server/mercury/pre-releases/tcg/cards.cdb ./mercury/pre-releases/ocg/cards.cdb
 COPY --from=evolution-core:latest /repositories/banlists/OCG.lflist.conf ./mercury/pre-releases/ocg/lflist.conf
 COPY --from=evolution-core:latest /repositories/mercury-prerelases/script/ ./mercury/pre-releases/ocg/script/
 COPY --from=evolution-core:latest /repositories/mercury-arts/script/ ./mercury/pre-releases/ocg/script/
 
 # Mercury OCG (From Base Image)
-COPY --from=evolution-core:latest /repositories/mercury-scripts ./mercury/ocg/script
+# OCG is identical to main script, so we use a symlink to save space.
+RUN mkdir -p ./mercury/ocg && ln -s ../script ./mercury/ocg/script
 COPY --from=evolution-core:latest /repositories/banlists/OCG.lflist.conf ./mercury/ocg/lflist.conf
 COPY --from=evolution-core:latest /repositories/mercury-cards.cdb ./mercury/ocg/cards.cdb
 COPY --from=evolution-core:latest /repositories/ygopro ./mercury/ocg/ygopro
