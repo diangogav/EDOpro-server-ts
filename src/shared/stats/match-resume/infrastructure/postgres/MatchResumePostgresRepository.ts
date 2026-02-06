@@ -11,6 +11,7 @@ export class MatchResumePostgresRepository implements MatchResumeRepository {
 		const matchResumeEntity = repository.create({
 			id: matchResume.id,
 			userId: matchResume.userId,
+			gameId: matchResume.gameId,
 			bestOf: matchResume.bestOf,
 			playerNames: matchResume.playerNames,
 			opponentNames: matchResume.opponentNames,
@@ -33,6 +34,7 @@ export class MatchResumePostgresRepository implements MatchResumeRepository {
 		const duelResumeEntity = repository.create({
 			id: duelResume.id,
 			userId: duelResume.userId,
+			gameId: duelResume.gameId,
 			playerNames: duelResume.playerNames,
 			opponentNames: duelResume.opponentNames,
 			date: duelResume.date,
