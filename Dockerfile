@@ -1,80 +1,4 @@
-# Stage 1: Build CoreIntegrator
-FROM public.ecr.aws/docker/library/node:24.11.0-bullseye-slim AS core-integrator-builder
-
-# Install required dependencies
-RUN apt-get update -y && \
-    apt-get install -y --no-install-recommends \
-    wget tar git autoconf ca-certificates g++ \
-    m4 automake libtool pkg-config make tzdata \
-    cmake ninja-build unzip zip curl linux-libc-dev && \
-    rm -rf /var/lib/apt/lists/*
-
-WORKDIR /repositories
-
-# Clone required repositories
-RUN git clone --depth 1 --branch master https://github.com/ProjectIgnis/CardScripts.git scripts && \
-    git clone --depth 1 --branch master https://github.com/ProjectIgnis/BabelCDB.git databases && \
-    git clone --depth 1 --branch master https://github.com/ProjectIgnis/LFLists banlists-project-ignis && \
-    git clone --depth 1 --branch master https://github.com/mycard/ygopro-scripts.git mercury-scripts && \
-    git clone --depth 1 --branch master https://github.com/evolutionygo/pre-release-database-cdb mercury-prerelases && \
-    git clone --depth 1 --branch main https://github.com/evolutionygo/cards-art-server mercury-arts && \
-    git clone --depth 1 --branch main https://github.com/termitaklk/lflist banlists-evolution && \
-    git clone --depth 1 --branch main https://github.com/evolutionygo/server-formats-cdb.git alternatives && \
-    wget -O mercury-lflist.conf https://raw.githubusercontent.com/termitaklk/koishi-Iflist/main/lflist.conf && \
-    wget -O mercury-cards.cdb https://github.com/purerosefallen/ygopro/raw/server/cards.cdb
-
-# Prepare banlists and pre-releases folder
-RUN mkdir banlists mercury-pre-releases-cdbs && \
-    mv banlists-project-ignis/* banlists/ && \
-    mv banlists-evolution/* banlists/ && \
-    find mercury-prerelases mercury-arts -name "*.cdb" -exec cp {} mercury-pre-releases-cdbs/ \;
-
-# Copy binary and setup directories
-COPY ./mercury/ygopro .
-
-# Copy scripts and binaries into each alternative directory
-RUN for dir in ./alternatives/*/; do \
-    echo "$dir/script"; \
-    cp -r ./mercury-scripts/* "$dir/script"; \
-    cp ygopro "$dir"; \
-    done
-
-# Copy selected banlists into corresponding alternative folders
-RUN bash -c 'set -e; \
-    declare -A MAP=( \
-    ["2010.03 Edison(Pre Errata)"]="edison" \
-    ["2014.04 HAT (Pre Errata)"]="hat" \
-    ["jtp-oficial"]="jtp" \
-    ["GOAT"]="goat" \
-    ["Rush"]="rush" \
-    ["Speed"]="speed" \
-    ["Tengu.Plant"]="tengu" \
-    ["World"]="world" \
-    ["MD.2025.03"]="md" \
-    ["Genesys"]="genesys" \
-    ); \
-    for name in "${!MAP[@]}"; do \
-    cp "./banlists/${name}.lflist.conf" "./alternatives/${MAP[$name]}/lflist.conf"; \
-    done'
-
-WORKDIR /app
-
-# Clone and bootstrap Vcpkg
-RUN git clone https://github.com/microsoft/vcpkg.git && \
-    ./vcpkg/bootstrap-vcpkg.sh
-
-# Copy CoreIntegrator source
-COPY ./core .
-
-# Install dependencies and build the application
-# Note: we disable the internal vcpkg build of the build script to rely on the docker environment's vcpkg if needed, 
-# but the build script effectively does the same. ideally we can just run the cmake commands directly here
-# to avoid re-cloning vcpkg or issues with the script's path logic.
-RUN ./vcpkg/vcpkg install --triplet x64-linux && \
-    cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release && \
-    cmake --build build
-
-# Stage 2: Build Node.js server
+# Stage 1: Build Node.js server
 FROM public.ecr.aws/docker/library/node:24.11.0-bullseye AS server-builder
 
 ENV USER=node
@@ -90,15 +14,18 @@ RUN git clone --depth 1 https://github.com/diangogav/evolution-types.git ./src/e
 
 # Copy server source and build
 COPY . .
-COPY --from=core-integrator-builder /repositories/mercury-pre-releases-cdbs ./databases/mercury-pre-releases
-COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./databases/mercury-pre-releases
+
+# Copy assets from the base image (pre-built)
+# This assumes you have built 'evolution-core:latest' previously
+COPY --from=evolution-core:latest /repositories/mercury-pre-releases-cdbs ./databases/mercury-pre-releases
+COPY --from=evolution-core:latest /repositories/mercury-cards.cdb ./databases/mercury-pre-releases
 
 RUN npm run generate-mercury-pre-releases-cdb && \
     npm run build && \
     npm prune --production
 
 
-# Stage 3: Final image
+# Stage 2: Final image
 FROM public.ecr.aws/docker/library/node:24.11.0-slim
 
 # Install runtime dependencies
@@ -114,44 +41,44 @@ COPY --from=server-builder /server/package.json ./package.json
 COPY --from=server-builder /server/node_modules ./node_modules
 COPY --from=server-builder /server/mercury ./mercury
 
-# CoreIntegrator binaries
-COPY --from=core-integrator-builder /app/libocgcore.so ./core/libocgcore.so
-COPY --from=core-integrator-builder /app/CoreIntegrator ./core/CoreIntegrator
+# CoreIntegrator binaries (From Base Image)
+COPY --from=evolution-core:latest /app/libocgcore.so ./core/libocgcore.so
+COPY --from=evolution-core:latest /app/CoreIntegrator ./core/CoreIntegrator
 
-# Evolution Resources
-COPY --from=core-integrator-builder /repositories/scripts ./scripts/evolution/
-COPY --from=core-integrator-builder /repositories/databases ./databases/evolution/
-COPY --from=core-integrator-builder /repositories/mercury-pre-releases-cdbs ./databases/mercury-pre-releases
-COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./databases/mercury-pre-releases
-COPY --from=core-integrator-builder /repositories/banlists ./banlists/evolution/
+# Evolution Resources (From Base Image)
+COPY --from=evolution-core:latest /repositories/scripts ./scripts/evolution/
+COPY --from=evolution-core:latest /repositories/databases ./databases/evolution/
+COPY --from=evolution-core:latest /repositories/mercury-pre-releases-cdbs ./databases/mercury-pre-releases
+COPY --from=evolution-core:latest /repositories/mercury-cards.cdb ./databases/mercury-pre-releases
+COPY --from=evolution-core:latest /repositories/banlists ./banlists/evolution/
 
-# Mercury
-COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/script
-COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/lflist.conf
-COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/cards.cdb
-COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/alternatives/md/cards.cdb
-COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/alternatives/genesys/cards.cdb
+# Mercury (From Base Image)
+COPY --from=evolution-core:latest /repositories/mercury-scripts ./mercury/script
+COPY --from=evolution-core:latest /repositories/mercury-lflist.conf ./mercury/lflist.conf
+COPY --from=evolution-core:latest /repositories/mercury-cards.cdb ./mercury/cards.cdb
+COPY --from=evolution-core:latest /repositories/mercury-cards.cdb ./mercury/alternatives/md/cards.cdb
+COPY --from=evolution-core:latest /repositories/mercury-cards.cdb ./mercury/alternatives/genesys/cards.cdb
 
-# Mercury Pre-releases
-COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/pre-releases/tcg/script
-COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/pre-releases/tcg/lflist.conf
-COPY --from=core-integrator-builder /repositories/mercury-prerelases/script/ ./mercury/pre-releases/tcg/script/
-COPY --from=core-integrator-builder /repositories/mercury-arts/script/ ./mercury/pre-releases/tcg/script/
+# Mercury Pre-releases (From Base Image)
+COPY --from=evolution-core:latest /repositories/mercury-scripts ./mercury/pre-releases/tcg/script
+COPY --from=evolution-core:latest /repositories/mercury-lflist.conf ./mercury/pre-releases/tcg/lflist.conf
+COPY --from=evolution-core:latest /repositories/mercury-prerelases/script/ ./mercury/pre-releases/tcg/script/
+COPY --from=evolution-core:latest /repositories/mercury-arts/script/ ./mercury/pre-releases/tcg/script/
 
-COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/pre-releases/ocg/script
+COPY --from=evolution-core:latest /repositories/mercury-scripts ./mercury/pre-releases/ocg/script
 COPY --from=server-builder /server/mercury/pre-releases/tcg/cards.cdb ./mercury/pre-releases/ocg/cards.cdb
-COPY --from=core-integrator-builder /repositories/banlists/OCG.lflist.conf ./mercury/pre-releases/ocg/lflist.conf
-COPY --from=core-integrator-builder /repositories/mercury-prerelases/script/ ./mercury/pre-releases/ocg/script/
-COPY --from=core-integrator-builder /repositories/mercury-arts/script/ ./mercury/pre-releases/ocg/script/
+COPY --from=evolution-core:latest /repositories/banlists/OCG.lflist.conf ./mercury/pre-releases/ocg/lflist.conf
+COPY --from=evolution-core:latest /repositories/mercury-prerelases/script/ ./mercury/pre-releases/ocg/script/
+COPY --from=evolution-core:latest /repositories/mercury-arts/script/ ./mercury/pre-releases/ocg/script/
 
-# Mercury OCG
-COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/ocg/script
-COPY --from=core-integrator-builder /repositories/banlists/OCG.lflist.conf ./mercury/ocg/lflist.conf
-COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/ocg/cards.cdb
-COPY --from=core-integrator-builder /repositories/ygopro ./mercury/ocg/ygopro
+# Mercury OCG (From Base Image)
+COPY --from=evolution-core:latest /repositories/mercury-scripts ./mercury/ocg/script
+COPY --from=evolution-core:latest /repositories/banlists/OCG.lflist.conf ./mercury/ocg/lflist.conf
+COPY --from=evolution-core:latest /repositories/mercury-cards.cdb ./mercury/ocg/cards.cdb
+COPY --from=evolution-core:latest /repositories/ygopro ./mercury/ocg/ygopro
 
-# Mercury Alternatives
-COPY --from=core-integrator-builder /repositories/alternatives ./mercury/alternatives/
+# Mercury Alternatives (From Base Image)
+COPY --from=evolution-core:latest /repositories/alternatives ./mercury/alternatives/
 
 # USER node
 CMD ["dumb-init", "node", "./src/index.js"]

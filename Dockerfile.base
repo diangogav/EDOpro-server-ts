@@ -1,0 +1,94 @@
+FROM public.ecr.aws/docker/library/node:24.11.0-bullseye-slim AS core-builder
+
+# Install CoreIntegrator dependencies via system packages
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libboost-all-dev \
+    libsqlite3-dev \
+    libjsoncpp-dev \
+    nlohmann-json3-dev \
+    libcurl4-openssl-dev \
+    git \
+    wget \
+    ca-certificates \
+    unzip \
+    zip \
+    linux-libc-dev \
+    cmake \
+    ninja-build \
+    g++ \
+    make
+
+WORKDIR /app
+
+# ---------------------------------------------------------
+# STEP 1: Build CoreIntegrator (Rarely changes, Heavy)
+# ---------------------------------------------------------
+# Copy CoreIntegrator source
+COPY ./core .
+
+# Build the application using system dependencies
+RUN cmake -B build -S . -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build build
+
+# ---------------------------------------------------------
+# STEP 2: Clone Repositories (Changes Daily, Light)
+# ---------------------------------------------------------
+WORKDIR /repositories
+
+# Add a build argument to invalidate cache for git clones if needed
+ARG CACHEBUST=1
+
+# Clone required repositories
+RUN echo "Cache bust: $CACHEBUST" && \
+    git clone --depth 1 --branch master https://github.com/ProjectIgnis/CardScripts.git scripts && \
+    git clone --depth 1 --branch master https://github.com/ProjectIgnis/BabelCDB.git databases && \
+    git clone --depth 1 --branch master https://github.com/ProjectIgnis/LFLists banlists-project-ignis && \
+    git clone --depth 1 --branch master https://github.com/mycard/ygopro-scripts.git mercury-scripts && \
+    git clone --depth 1 --branch master https://github.com/evolutionygo/pre-release-database-cdb mercury-prerelases && \
+    git clone --depth 1 --branch main https://github.com/evolutionygo/cards-art-server mercury-arts && \
+    git clone --depth 1 --branch main https://github.com/termitaklk/lflist banlists-evolution && \
+    git clone --depth 1 --branch main https://github.com/evolutionygo/server-formats-cdb.git alternatives && \
+    wget -O mercury-lflist.conf https://raw.githubusercontent.com/termitaklk/koishi-Iflist/main/lflist.conf && \
+    wget -O mercury-cards.cdb https://github.com/purerosefallen/ygopro/raw/server/cards.cdb
+
+# Prepare banlists and pre-releases folder
+RUN mkdir banlists mercury-pre-releases-cdbs && \
+    mv banlists-project-ignis/* banlists/ && \
+    mv banlists-evolution/* banlists/ && \
+    find mercury-prerelases mercury-arts -name "*.cdb" -exec cp {} mercury-pre-releases-cdbs/ \;
+
+# Copy binary and setup directories
+# This requires the context to have mercury/ygopro.
+COPY ./mercury/ygopro .
+
+# Copy scripts and binaries into each alternative directory
+RUN for dir in ./alternatives/*/; do \
+    echo "$dir/script"; \
+    cp -r ./mercury-scripts/* "$dir/script"; \
+    cp ygopro "$dir"; \
+    done
+
+# Copy selected banlists into corresponding alternative folders
+RUN bash -c 'set -e; \
+    declare -A MAP=( \
+    ["2010.03 Edison(Pre Errata)"]="edison" \
+    ["2014.04 HAT (Pre Errata)"]="hat" \
+    ["jtp-oficial"]="jtp" \
+    ["GOAT"]="goat" \
+    ["Rush"]="rush" \
+    ["Speed"]="speed" \
+    ["Tengu.Plant"]="tengu" \
+    ["World"]="world" \
+    ["MD.2025.03"]="md" \
+    ["Genesys"]="genesys" \
+    ); \
+    for name in "${!MAP[@]}"; do \
+    cp "./banlists/${name}.lflist.conf" "./alternatives/${MAP[$name]}/lflist.conf"; \
+    done'
+
+WORKDIR /app
+# We could do a multi-stage to slim it down, but the point is to have 
+# all these artifacts available for the final image copy step.
