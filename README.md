@@ -139,16 +139,32 @@ Server should now be running and listening on the configured ports (default: `79
 
 If you'd rather use Docker:
 
-### Build the image
+### Build the images (Split Process)
 
-```bash
-docker build -t evolution-server .
-```
+Because we split the build to optimize caching, you must run two commands:
+
+1.  **Build Base Image** (Heavy dependencies, run mainly when core updates):
+    ```bash
+    docker build -f Dockerfile.base -t evolution-core:latest .
+    ```
+
+2.  **Build Application Image** (Lightweight, run on every code change):
+    ```bash
+    docker build -t evolutionygo/server:latest .
+    ```
 
 ### Run the container
 
 ```bash
-docker run -p 4000:4000 -p 7911:7911 -p 7922:7922 evolution-server
+docker run --env-file .env -p 4000:4000 -p 7911:7911 -p 7922:7922 evolutionygo/server:latest
+```
+
+### Using Docker Compose
+
+Ensure you have built `evolution-core` at least once, then:
+
+```bash
+docker-compose -f docker-compose.prod.yaml up -d --build
 ```
 
 ---
