@@ -144,7 +144,6 @@ export abstract class RoomState {
 
 		if (messageType === CoreMessages.MSG_NEW_TURN) {
 			room.increaseTurn();
-			console.log("turn increased", room.turn);
 			WebSocketSingleton.getInstance().broadcast({
 				action: "UPDATE-ROOM",
 				data: room.toRealTimePresentation(),
