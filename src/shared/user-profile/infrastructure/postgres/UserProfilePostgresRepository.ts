@@ -35,7 +35,7 @@ export class UserProfilePostgresRepository implements UserProfileRepository {
 		const activeBan = await repository.findOne({
 			where: {
 				user: { id: userId },
-				expiresAt: IsNull(),
+				expiresAt: IsNull() as any,
 			},
 		});
 		if (activeBan) {
@@ -45,7 +45,7 @@ export class UserProfilePostgresRepository implements UserProfileRepository {
 		const futureBan = await repository.findOne({
 			where: {
 				user: { id: userId },
-				expiresAt: MoreThan(now),
+				expiresAt: MoreThan(now) as any,
 			},
 		});
 

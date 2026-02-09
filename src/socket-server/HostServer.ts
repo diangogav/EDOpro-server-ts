@@ -1,4 +1,4 @@
- 
+
 import { randomUUID as uuidv4 } from "crypto";
 import net, { Socket } from "net";
 import { config } from "src/config";
@@ -21,6 +21,9 @@ import { DisconnectHandler } from "../shared/room/application/DisconnectHandler"
 import { RoomFinder } from "../shared/room/application/RoomFinder";
 import { TCPClientSocket } from "../shared/socket/domain/TCPClientSocket";
 import { BasicStatsCalculator } from "../shared/stats/basic/application/BasicStatsCalculator";
+
+import { UnrankedMatchSaver } from "src/shared/stats/unranked-match/application/UnrankedMatchSaver";
+import { UnrankedMatchPostgresRepository } from "src/shared/stats/unranked-match/infrastructure/postgres/UnrankedMatchPostgresRepository";
 
 export class HostServer {
 	private readonly server: net.Server;
@@ -90,14 +93,14 @@ export class HostServer {
 			});
 
 			socket.on("close", () => {
-				 
+
 				connectionLogger.info(`roomId: ${tcpClientSocket.roomId} - left in close event`);
 				const disconnectHandler = new DisconnectHandler(tcpClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
 			});
 
 			socket.on("error", (_error) => {
-				 
+
 				connectionLogger.error(`roomId: ${tcpClientSocket.roomId} - left in error event`, { err: _error });
 				const disconnectHandler = new DisconnectHandler(tcpClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
@@ -117,6 +120,14 @@ export class HostServer {
 				new PlayerStatsPostgresRepository(),
 				new MatchResumeCreator(new MatchResumePostgresRepository()),
 				new DuelResumeCreator(new MatchResumePostgresRepository())
+			)
+		);
+
+		eventBus.subscribe(
+			UnrankedMatchSaver.ListenTo,
+			new UnrankedMatchSaver(
+				this.logger,
+				new UnrankedMatchPostgresRepository()
 			)
 		);
 	}
