@@ -24,8 +24,6 @@ export class UnrankedMatchSaver implements DomainEventSubscriber<GameOverDomainE
             return;
         }
 
-        console.log("UnrankedMatchSaver handling GameOverDomainEvent", event.data);
-
         const team0Players = event.data.players.filter((p) => p.team === Team.PLAYER);
         const team1Players = event.data.players.filter((p) => p.team === Team.OPPONENT);
 
