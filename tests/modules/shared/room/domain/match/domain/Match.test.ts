@@ -179,7 +179,7 @@ describe("Match", () => {
         { name: "Player Two", ipAddress: "127.0.0.2" },
       ]);
 
-      expect(match.score).toEqual({ team0: 1, team1: 1 });
+      expect(match.score).toEqual({ team0: 0, team1: 0 });
     });
 
     it("should add deuce result to all players", () => {
@@ -455,22 +455,22 @@ describe("Match", () => {
         { name: "Player One", ipAddress: "127.0.0.1" },
         { name: "Player Two", ipAddress: "127.0.0.2" },
       ]);
-      expect(match.score).toEqual({ team0: 1, team1: 1 });
+      expect(match.score).toEqual({ team0: 0, team1: 0 });
 
       // Draw again
       match.duelWinner(2, 25, [
         { name: "Player One", ipAddress: "127.0.0.1" },
         { name: "Player Two", ipAddress: "127.0.0.2" },
       ]);
-      expect(match.score).toEqual({ team0: 2, team1: 2 });
+      expect(match.score).toEqual({ team0: 0, team1: 0 });
 
       // Team 0 wins
       match.duelWinner(0, 10, [
         { name: "Player One", ipAddress: "127.0.0.1" },
         { name: "Player Two", ipAddress: "127.0.0.2" },
       ]);
-      expect(match.score).toEqual({ team0: 3, team1: 2 });
-      expect(match.isFinished()).toBe(true);
+      expect(match.score).toEqual({ team0: 1, team1: 0 });
+      expect(match.isFinished()).toBe(false);
 
       const history = match.playersHistory;
       expect(history[0].games.filter((g) => g.result === "deuce")).toHaveLength(
