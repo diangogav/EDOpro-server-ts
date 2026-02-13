@@ -1,4 +1,5 @@
 #include "DuelTurnTimer.h"
+#include <iostream>
 
 DuelTurnTimer &DuelTurnTimer::getInstance()
 {
@@ -25,7 +26,7 @@ void DuelTurnTimer::expiresAfter(uint8_t team, const AsioTimer::duration &expiry
       strand,
       [team](boost::system::error_code error)
       {
-        std::cout << "Timer expired for team: " << static_cast<int>(team) << std::endl;
+        std::cerr << "Timer expired for team: " << static_cast<int>(team) << std::endl;
       }
 
       ));
