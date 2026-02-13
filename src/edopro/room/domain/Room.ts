@@ -46,8 +46,6 @@ export enum Rule {
 	ALL,
 }
 
-const CHILD_PROCESS_RETRY_MAX = 3;
-
 export class DeckRules {
 	public readonly mainMin: number;
 	public readonly mainMax: number;
@@ -156,6 +154,8 @@ export class Room extends YgoRoom {
 	private logger: Logger;
 	private readonly checkIfUserCanReconnect: CheckIfUseCanJoin;
 	private readonly notifier: RoomClientNotifier;
+	private readonly pendingCppMessages: string[] = [];
+	private isWaitingCppDrain = false;
 
 	private constructor(attr: RoomAttr) {
 		super({
@@ -557,6 +557,8 @@ export class Room extends YgoRoom {
 
 	setDuel(duel: ChildProcessWithoutNullStreams): void {
 		this._duel = duel;
+		this.isWaitingCppDrain = false;
+		this.pendingCppMessages.length = 0;
 		this._duel.stdin.on("error", (error) => {
 			this.logger.error("Error writing to the child process");
 			this.logger.error(error);
@@ -794,7 +796,8 @@ export class Room extends YgoRoom {
 	//********************************************************************************************* */
 
 	public sendMessageToCpp(message: string): void {
-		this.writeToCppProcess(message, CHILD_PROCESS_RETRY_MAX);
+		this.pendingCppMessages.push(`${message}\n`);
+		this.flushCppMessageQueue();
 	}
 
 	isFinished(): boolean {
@@ -961,21 +964,34 @@ export class Room extends YgoRoom {
 		};
 	}
 
-	private writeToCppProcess(messageToCpp: string, retryCount: number): void {
-		if (retryCount <= 0) {
-			this.logger.error("Error: Failed to write to the child process after multiple attempts");
+	private flushCppMessageQueue(): void {
+		if (this.isWaitingCppDrain) {
+			return;
+		}
+
+		const duel = this.duel;
+
+		if (!duel) {
+			this.pendingCppMessages.length = 0;
 
 			return;
 		}
 
-		const message = `${messageToCpp}\n`;
-		const success = this.duel?.stdin.write(message);
+		while (this.pendingCppMessages.length > 0) {
+			const message = this.pendingCppMessages[0];
+			const writeSuccess = duel.stdin.write(message);
 
-		if (!success) {
-			this.logger.error(`Warning: Write was unsuccessful, retrying...`);
-			setTimeout(() => {
-				this.writeToCppProcess(messageToCpp, retryCount - 1);
-			}, 100);
+			if (!writeSuccess) {
+				this.isWaitingCppDrain = true;
+				duel.stdin.once("drain", () => {
+					this.isWaitingCppDrain = false;
+					this.flushCppMessageQueue();
+				});
+
+				return;
+			}
+
+			this.pendingCppMessages.shift();
 		}
 	}
 

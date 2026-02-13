@@ -282,69 +282,65 @@ export class DuelingState extends RoomState {
 	}
 
 	private processMessage(): void {
-		if (!this.jsonMessageProcessor.isMessageReady()) {
-			return;
-		}
+		while (this.jsonMessageProcessor.isMessageReady()) {
+			this.jsonMessageProcessor.process();
+			const payload = this.jsonMessageProcessor.payload;
+			const message = JSON.parse(payload.data) as Message;
 
-		this.jsonMessageProcessor.process();
-		const payload = this.jsonMessageProcessor.payload;
-		const message = JSON.parse(payload.data) as Message;
-
-		if (message.type === "START") {
-			this.handleCoreStart(message as unknown as StartDuelMessage);
-		}
-
-		if (message.type === "TIME") {
-			this.handleCoreTime(message as unknown as TimeMessage);
-		}
-
-		if (message.type === "FIELD") {
-			this.handleCoreField(message as unknown as FieldMessage);
-		}
-
-		if (message.type === "RECONNECT") {
-			this.handleCoreReconnect(message as unknown as ReconnectMessage);
-		}
-
-		if (message.type === "MESSAGE") {
-			this.handleCoreMessage(message as unknown as CoreMessage);
-		}
-
-		if (message.type === "MESSAGE_ALL") {
-			this.handleCoreMessageAll(message as unknown as CoreMessage);
-		}
-
-		if (message.type === "MESSAGE_ALL_EXCEPT") {
-			this.handleCoreMessageAllExcept(message as unknown as CoreMessage);
-		}
-
-		if (message.type === "CORE") {
-			const _coreMessage = message as unknown as RawCoreMessage;
-
-			if (_coreMessage.message === CoreMessages.MSG_NEW_PHASE) {
-				this.room.setLastPhaseMessage(Buffer.from(_coreMessage.data, "hex"));
+			if (message.type === "START") {
+				this.handleCoreStart(message as unknown as StartDuelMessage);
 			}
 
-			this.processDuelMessage(
-				_coreMessage.message,
-				Buffer.from(_coreMessage.data, "hex"),
-				this.room
-			);
-		}
+			if (message.type === "TIME") {
+				this.handleCoreTime(message as unknown as TimeMessage);
+			}
 
-		if (message.type === "REPLAY") {
-			this.handleCoreReplay(message as unknown as ReplayMessage);
-		}
+			if (message.type === "FIELD") {
+				this.handleCoreField(message as unknown as FieldMessage);
+			}
 
-		if (message.type === "FINISH") {
-			this.handleCoreFinish(message as unknown as FinishMessage);
-		}
+			if (message.type === "RECONNECT") {
+				this.handleCoreReconnect(message as unknown as ReconnectMessage);
+			}
 
-		if (message.type === "SWAP") {
-			this.handleCoreSwap(message as unknown as SwapMessage);
-		}
+			if (message.type === "MESSAGE") {
+				this.handleCoreMessage(message as unknown as CoreMessage);
+			}
 
-		this.processMessage();
+			if (message.type === "MESSAGE_ALL") {
+				this.handleCoreMessageAll(message as unknown as CoreMessage);
+			}
+
+			if (message.type === "MESSAGE_ALL_EXCEPT") {
+				this.handleCoreMessageAllExcept(message as unknown as CoreMessage);
+			}
+
+			if (message.type === "CORE") {
+				const _coreMessage = message as unknown as RawCoreMessage;
+
+				if (_coreMessage.message === CoreMessages.MSG_NEW_PHASE) {
+					this.room.setLastPhaseMessage(Buffer.from(_coreMessage.data, "hex"));
+				}
+
+				this.processDuelMessage(
+					_coreMessage.message,
+					Buffer.from(_coreMessage.data, "hex"),
+					this.room
+				);
+			}
+
+			if (message.type === "REPLAY") {
+				this.handleCoreReplay(message as unknown as ReplayMessage);
+			}
+
+			if (message.type === "FINISH") {
+				this.handleCoreFinish(message as unknown as FinishMessage);
+			}
+
+			if (message.type === "SWAP") {
+				this.handleCoreSwap(message as unknown as SwapMessage);
+			}
+		}
 	}
 
 	private handleCoreReplay(message: ReplayMessage) {
