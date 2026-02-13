@@ -53,6 +53,12 @@ int main(int argc, char *argv[])
 {
   std::set_terminate(global_exception_handler);
 
+  if (argc < 2)
+  {
+    std::cerr << "Missing duel init payload in argv[1]" << std::endl;
+    return 1;
+  }
+
   std::string json_str = argv[1];
   json data = json::parse(json_str);
 
@@ -76,7 +82,10 @@ int main(int argc, char *argv[])
   while (!should_exit)
   {
     std::string message;
-    std::getline(std::cin, message);
+    if (!std::getline(std::cin, message))
+    {
+      break;
+    }
 
     if (!message.empty())
     {
