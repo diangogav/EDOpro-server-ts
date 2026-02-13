@@ -1,6 +1,7 @@
 export class DuelResume {
 	readonly id: string;
 	readonly userId: string;
+	readonly gameId: string;
 	readonly playerNames: string[];
 	readonly opponentNames: string[];
 	readonly date: Date;
@@ -15,6 +16,7 @@ export class DuelResume {
 	private constructor({
 		id,
 		userId,
+		gameId,
 		playerNames,
 		opponentNames,
 		date,
@@ -28,6 +30,7 @@ export class DuelResume {
 	}: {
 		id: string;
 		userId: string;
+		gameId: string;
 		playerNames: string[];
 		opponentNames: string[];
 		date: Date;
@@ -41,6 +44,7 @@ export class DuelResume {
 	}) {
 		this.id = id;
 		this.userId = userId;
+		this.gameId = gameId;
 		this.playerNames = playerNames;
 		this.opponentNames = opponentNames;
 		this.date = date;
@@ -56,6 +60,7 @@ export class DuelResume {
 	static create({
 		id,
 		userId,
+		gameId,
 		playerNames,
 		opponentNames,
 		date,
@@ -69,6 +74,7 @@ export class DuelResume {
 	}: {
 		id: string;
 		userId: string;
+		gameId: string;
 		playerNames: string[];
 		opponentNames: string[];
 		date: Date;
@@ -83,6 +89,7 @@ export class DuelResume {
 		return new DuelResume({
 			id,
 			userId,
+			gameId,
 			playerNames,
 			opponentNames,
 			date,
@@ -99,6 +106,7 @@ export class DuelResume {
 	static from(data: {
 		id: string;
 		userId: string;
+		gameId: string;
 		playerNames: string[];
 		opponentNames: string[];
 		date: Date;

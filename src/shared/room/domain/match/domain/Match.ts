@@ -76,9 +76,6 @@ export class Match {
 		}
 
 		if (winner === this.DRAW) {
-			this.playerScore++;
-			this.opponentScore++;
-
 			return;
 		}
 

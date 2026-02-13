@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import { randomUUID } from "node:crypto";
 import { Redis } from "src/shared/db/redis/infrastructure/Redis";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 import { MatchResumeCreator } from "src/shared/stats/match-resume/application/MatchResumeCreator";
@@ -64,7 +65,7 @@ async function run() {
 	const filteredKeys = userKeys.filter((key) => !key.includes(":duels"));
 
 	for (const key of filteredKeys) {
-		 
+
 		const userInfo: Record<string, string> = await redis.hgetall(key);
 
 		if (!userInfo.username || !userInfo.password) {
@@ -73,21 +74,21 @@ async function run() {
 			continue;
 		}
 
-		 
+
 		const { id: userId } = await userProfileCreator.run({
 			username: userInfo.username,
 			email: userInfo.email,
 			password: userInfo.password,
-			 
+
 			avatar: userInfo?.avatar ?? null,
 		});
 		logger.info(`Obtaining duels for ${key}:duels`);
-		 
+
 		const matches = await redis.lrange(`${key}:duels`, 0, -1);
 
 		for (const match of matches) {
 			try {
-				 
+
 				const data: DuelResume = JSON.parse(match);
 				const playerName = key.split(":")[1];
 				const player = data.players.find((player) => player.name === playerName);
@@ -105,10 +106,11 @@ async function run() {
 				if (!player || !opponent) {
 					continue;
 				}
+				const gameId = randomUUID();
 
-				 
 				const { id: matchId } = await matchResumeCreator.run({
 					userId,
+					gameId,
 					bestOf: data.bestOf,
 					playerNames,
 					opponentNames,
@@ -126,9 +128,10 @@ async function run() {
 				const games = player.games;
 				for (const game of games) {
 					try {
-						 
+
 						await duelResumeCreator.run({
 							userId,
+							gameId,
 							playerNames,
 							opponentNames,
 							date: new Date(data.date),

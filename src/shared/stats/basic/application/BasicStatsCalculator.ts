@@ -1,4 +1,4 @@
-
+import { randomUUID } from "node:crypto";
 import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
 import { Logger } from "src/shared/logger/domain/Logger";
 import { Player } from "src/shared/player/domain/Player";
@@ -37,6 +37,9 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 
 		const banList = BanListMemoryRepository.findByHash(event.data.banListHash);
 		const players = event.data.players.map((item) => new Player(item));
+
+
+		const gameId = randomUUID();
 
 		for (const player of players) {
 			const userProfile = await this.userProfileRepository.findByUsername(player.name);
@@ -77,6 +80,7 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 
 			const { id: matchId } = await this.matchResumeCreator.run({
 				userId: userProfile.id,
+				gameId,
 				bestOf: event.data.bestOf,
 				playerNames,
 				opponentNames,
@@ -99,6 +103,7 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 			for (const game of player.games) {
 				void this.duelResumeCreator.run({
 					userId: userProfile.id,
+					gameId,
 					playerNames,
 					opponentNames,
 					date: event.data.date,

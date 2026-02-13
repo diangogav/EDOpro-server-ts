@@ -111,7 +111,7 @@ export abstract class YgoRoom {
 			ipAddress: client.socket.remoteAddress ?? null,
 		}));
 
-		this._match.duelWinner(winner, 0, ips);
+		this._match.duelWinner(winner, this.turn, ips);
 	}
 
 	get matchPlayersHistory(): PlayerData[] {

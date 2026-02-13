@@ -1,6 +1,7 @@
 export class MatchResume {
 	readonly id: string;
 	readonly userId: string;
+	readonly gameId: string;
 	readonly bestOf: number;
 	readonly playerNames: string[];
 	readonly opponentNames: string[];
@@ -18,6 +19,7 @@ export class MatchResume {
 	private constructor({
 		id,
 		userId,
+		gameId,
 		bestOf,
 		playerNames,
 		opponentNames,
@@ -34,6 +36,7 @@ export class MatchResume {
 	}: {
 		id: string;
 		userId: string;
+		gameId: string;
 		bestOf: number;
 		playerNames: string[];
 		opponentNames: string[];
@@ -50,6 +53,7 @@ export class MatchResume {
 	}) {
 		this.id = id;
 		this.userId = userId;
+		this.gameId = gameId;
 		this.bestOf = bestOf;
 		this.playerNames = playerNames;
 		this.opponentNames = opponentNames;
@@ -68,6 +72,7 @@ export class MatchResume {
 	static create({
 		id,
 		userId,
+		gameId,
 		bestOf,
 		playerNames,
 		opponentNames,
@@ -84,6 +89,7 @@ export class MatchResume {
 	}: {
 		id: string;
 		userId: string;
+		gameId: string;
 		bestOf: number;
 		playerNames: string[];
 		opponentNames: string[];
@@ -101,6 +107,7 @@ export class MatchResume {
 		return new MatchResume({
 			id,
 			userId,
+			gameId,
 			bestOf,
 			playerNames,
 			opponentNames,
@@ -120,6 +127,7 @@ export class MatchResume {
 	static from(data: {
 		id: string;
 		userId: string;
+		gameId: string;
 		bestOf: number;
 		playerNames: string[];
 		opponentNames: string[];
