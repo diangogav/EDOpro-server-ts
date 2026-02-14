@@ -1,234 +1,185 @@
 # AGENTS.md - Evolution Server Development Guide
 
-## Development Commands
+## How to Use This Guide
 
-### Core Development
+- **Start here**: This file defines the rules, patterns, and workflows for the `EDOpro-server-ts` project.
+- **Strict Adherence**: You must follow the "Prime Directives" and "Auto-invoke Skills" without exception.
+- **Context**: This is a high-performance Hexagonal/DDD architecture.
 
-- `npm run dev` - Start development server with hot-reload and debugging on port 9229
-- `npm run build` - Compile TypeScript to JavaScript in `dist/` directory
-- `npm run start` - Build and run production server
+## Project Overview
 
-### Testing
+| Component       | Location                                | Tech Stack       | Description                                      |
+| --------------- | --------------------------------------- | ---------------- | ------------------------------------------------ |
+| **Core Domain** | `src/edopro/`, `src/shared/`            | TypeScript, DDD  | Business logic, Entities, Value Objects          |
+| **API**         | `src/http-server/`                      | Express, Diod    | REST endpoints for management                    |
+| **Realtime**    | `src/socket-server/`                    | WS, Net          | WebSocket & TCP socket handling                  |
+| **Persistence** | `src/shared/infrastructure/persistence` | TypeORM, Redis   | PostgreSQL (Users), SQLite (Game), Redis (Cache) |
+| **Clients**     | `src/edopro/`, `src/mercury/`           | Custom Protocols | Implementations for EDOPro and Koishi clients    |
 
-- `npm run test` - Run all Jest tests
-- `npm run test:watch` - Run tests in watch mode
-- **Single test**: `npm test -- --testNamePattern="test name"` or `npm test -- path/to/test.test.ts`
+---
 
-### Code Quality
+## Prime Directives (Rules)
 
-- `npm run lint` - Run ESLint on all files
-- `npm run lint:fix` - Auto-fix linting issues
-- Pre-commit hooks automatically run linting on staged files
+As an AI agent, you must strictly adhere to these rules. **Violation of these rules will result in rejected code.**
 
-### Database Operations
+### 1. Architecture & Patterns
 
-- `npm run migration:generate --name=migration_name` - Generate new TypeORM migration
-- `npm run migration:run` - Run pending migrations
-- `npm run migration:revert` - Revert last migration
+- **DDD is Mandatory**: Business logic lives in `domain/`. Never import `infrastructure/` or `application/`. Dependencies point inward.
+- **Hexagonal Architecture**: Dependencies point inward. The core doesn't know about the database or sockets.
+- **Mother Pattern**: ALWAYS use `*Mother` classes (Object Factories) for test data. Never manually instantiate complex entities in tests.
+- **Chain of Responsibility**: Use this pattern for complex validations (e.g., Deck Rules).
+- **Dependency Injection**: Use `diod` or constructor injection to manage dependencies.
 
-## Project Architecture
+### 2. Coding Standards
 
-Domain-Driven Design structure:
+- **Explicit Visibility**: `public`, `private`, `protected` must be explicit.
+- **No Console Logs**: Use `Logger` domain service.
+- **Naming**: `PascalCase` for classes, `camelCase` for vars, `UPPER_SNAKE_CASE` for constants.
+- **Conventional Commits**: Commit messages must follow the [Conventional Commits](https://www.conventionalcommits.org/) specification (e.g., `feat: add user login`, `fix: resolve room crash`).
+- **Path Aliases**: Always use `@edopro/*` for imports from `src/edopro/` when possible.
 
-```
-src/
-├── edopro/           # EDOPro client implementation
-│   └── room/
-│       ├── domain/       # Core business logic
-│       ├── application/  # Use cases and handlers
-│       └── infrastructure/ # External dependencies
-├── mercury/          # Koishi client implementation
-├── shared/           # Common utilities and domain logic
-├── http-server/      # REST API endpoints
-└── socket-server/    # WebSocket and TCP socket handling
-```
+### 3. Operational Safety
 
-Path aliases: `@edopro/*` maps to `src/edopro/*`
+- **Absolute Paths**: Always use absolute paths for file operations.
+- **Database**: Never alter `migrations/` manually after they are applied. Use `npm run migration:generate` for schema changes.
+- **Verify**: Run `npm run lint` and `npm run test` before finishing.
 
-## Code Style Guidelines
+---
 
-### TypeScript Configuration
+## Available Skills
 
-- Target: ES2022 with CommonJS modules
-- Decorators enabled (for TypeORM entities)
-- Strict null checks enabled, but overall strict mode disabled
-- Source maps enabled for debugging
+Use these skills for detailed patterns on-demand:
 
-### Import Organization
+| Skill                  | Description                                                                                 | Location                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `typescript-expert`    | Deep knowledge of type-level programming, performance, and tooling                          | `.agents/skills/typescript-expert/SKILL.md`    |
+| `systematic-debugging` | Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes | `.agents/skills/systematic-debugging/SKILL.md` |
 
-```typescript
-// External libraries first
-import { EventEmitter } from "stream";
-import shuffle from "shuffle-array";
+## Auto-invoke Skills
 
-// Internal imports with relative paths
-import { Logger } from "../../../shared/logger/domain/Logger";
-import { Client } from "../../client/domain/Client";
+When performing these actions, **ALWAYS** follow the corresponding Standard Operating Procedure (SOP) below:
 
-// Use @edopro/* alias when available
-import { Room } from "@edopro/room/domain/Room";
-```
+| Action                                              | Skill / SOP                                     |
+| --------------------------------------------------- | ----------------------------------------------- |
+| "Implement feature...", "Create use case..."        | **[SOP-001] Feature Implementation (DDD)**      |
+| "Write tests...", "Fix bug...", "Add unit test"     | **[SOP-002] Testing Strategy (Mother Pattern)** |
+| "Add field to DB", "Update schema", "New entity"    | **[SOP-003] Database Migration**                |
+| "Create new module", "New architecture component"   | **[SOP-004] Module Creation**                   |
+| "Fix complex type error", "Optimize TS build"       | **typescript-expert**                           |
+| "Debug an issue", "Fix bug", "Why is this failing?" | **systematic-debugging**                        |
 
-### Class and Interface Patterns
+---
 
-```typescript
-// Constructor injection pattern
-export class Room {
-  constructor({
-    socket,
-    host,
-    name,
-    position,
-  }: {
-    socket: ISocket;
-    host: boolean;
-    name: string;
-    position: number;
-  }) {}
+## Standard Operating Procedures (Skills)
 
-  public readonly name: string;
-  private readonly _replay: Replay;
-}
+### [SOP-001] Feature Implementation (DDD)
 
-// Enum definitions
-export enum Rule {
-  ONLY_OCG,
-  ONLY_TCG,
-  OCG_TCG,
-  PRE_RELEASE,
-  ALL,
-}
-```
+**Goal**: Implement a new feature following strict DDD/Hexagonal patterns.
 
-### Error Handling Pattern
+1.  **Domain Layer** (`src/[module]/domain/`):
+    - Define the Entity/Aggregate Root.
+    - Define Value Objects if needed.
+    - Define the `Repository` interface (port).
+    - _Output_: `.ts` files with pure business logic.
+2.  **Application Layer** (`src/[module]/application/`):
+    - Create the Use Case (Service/Handler).
+    - Inject the Repository interface via constructor.
+    - _Output_: Service class implementing specific business action.
+3.  **Infrastructure Layer** (`src/[module]/infrastructure/`):
+    - Implement the Repository using TypeORM.
+    - _Output_: Repository implementation file.
+4.  **Interface Layer**:
+    - Expose via Controller (HTTP) or Event Handler (Socket).
 
-Use chain of responsibility for validation:
+### [SOP-002] Testing Strategy (Mother Pattern)
 
-```typescript
-const handleValidations = new DeckLimitsValidationHandler(this.deckRules);
-handleValidations
-  .setNextHandler(new ForbiddenCardValidationHandler(this.banList))
-  .setNextHandler(new SemiLimitedCardValidationHandler(this.banList))
-  .setNextHandler(new LimitedCardValidationHandler(this.banList));
-```
+**Goal**: Ensure robust testing using consistent data factories.
 
-### Testing Patterns (Mother Pattern)
+1.  **Locate/Create Mother**:
+    - Check `tests/modules/[module]/domain/[Entity]Mother.ts`.
+    - If missing, create it using `@faker-js/faker`.
+    - _Template_:
+      ```typescript
+      export class UserMother {
+        static create(overrides?: Partial<UserPrimitives>): User {
+          const primitives = {
+            id: UuidMother.create(),
+            name: faker.person.firstName(),
+            ...overrides,
+          };
+          return User.fromPrimitives(primitives);
+        }
+      }
+      ```
+2.  **Write Test Spec**:
+    - Create `[UseCase].test.ts` in `tests/modules/[module]/application/`.
+    - **Rule**: Describe the test case in **Spanish**.
+    - _Template_:
+      ```typescript
+      describe("CrearSala", () => {
+        it("debe permitir crear una sala pública correctamente", async () => {
+          const user = UserMother.create();
+          // ...
+        });
+      });
+      ```
 
-Use test data factories for consistent test data:
+### [SOP-003] Database Migration
 
-```typescript
-export class RoomMother {
-  static create(params?: Partial<RoomAttr>): Room {
-    return Room.create({
-      id: params?.id ?? faker.number.int({ min: 1, max: 9999 }),
-      name: params?.name ?? faker.lorem.words(2),
-      // ... other properties with faker defaults
-    });
-  }
-}
+**Goal**: Safely modify the database schema.
 
-// Test structure
-describe("Room", () => {
-  let room: Room;
-  beforeEach(() => {
-    room = RoomMother.create();
-  });
-  it("should handle scenario", () => {
-    /* test implementation */
-  });
-});
-```
+1.  **Update Entity**: Modify the TypeORM entity class in `src/evolution-types/src/`.
+2.  **Generate Migration**:
+    ```bash
+    npm run migration:generate --name=NameOfChange
+    ```
+3.  **Verify**: Inspect the generated file in `src/shared/infrastructure/persistence/typeorm/migrations/`.
+4.  **Apply**:
+    ```bash
+    npm run migration:run
+    ```
 
-## Linting Rules
+### [SOP-004] Module Creation
 
-### Permissive Style Approach
+**Goal**: Create a new domain module from scratch.
 
-- No explicit return types required
-- `any` type allowed
-- No unused variables warnings
-- Most TypeScript strictness rules disabled
+1.  **Structure**:
+    ```bash
+    mkdir -p src/new-module/{domain,application,infrastructure}
+    mkdir -p tests/modules/new-module
+    ```
+2.  **Registration**:
+    - Register new entities in TypeORM config.
+    - Register new controllers/handlers in the dependency injection container (`diod`).
 
-### Important Rules Enforced
+---
 
-- `no-console`: allowed
-- `no-debugger`: error
-- `prefer-const`: error
-- `no-var`: error
-- Import resolution with TypeScript paths
+## Technical Reference
 
-## Environment Setup
+### Key Commands
 
-### Requirements
+| Command                    | Description                          |
+| -------------------------- | ------------------------------------ |
+| `npm run dev`              | Start development server (Port 9229) |
+| `npm run build`            | Build for production                 |
+| `npm run test`             | Run all tests                        |
+| `npm test -- path/to/file` | Run specific test file               |
+| `npm run lint`             | Check code style                     |
+| `npm run lint:fix`         | Fix code style                       |
 
-- Node.js >= 24.11.0
-- PostgreSQL for user data
-- SQLite for game data
-- Redis (optional, for legacy features)
+### Path Aliases
 
-### Configuration
-
-- Environment variables in `.env` (use `.env.example` as template)
-- Centralized config in `src/config/index.ts`
-- TypeScript path aliases configured in both `tsconfig.json` and Jest
-
-### Database
-
-- TypeORM entities in `src/evolution-types/src/`
-- Separate databases: SQLite for card/game data, PostgreSQL for user profiles
-
-## Development Workflow
-
-### Adding New Features
-
-1. Follow DDD structure: domain → application → infrastructure
-2. Create corresponding tests in `tests/modules/`
-3. Use Mother pattern for test data
-4. Run linting and tests before committing
-
-### Testing Guidelines
-
-- Tests located in `tests/modules/` mirroring `src/` structure
-- Use descriptive test names in Spanish (matching existing tests)
-- Mock external dependencies (Logger, Socket, etc.)
-- Use beforeEach for clean test setup
-
-## Key Dependencies
-
-### Core
-
-- Express.js for HTTP API
-- WebSocket (ws) for real-time communication
-- TypeORM with PostgreSQL/SQLite
-- Redis for caching
-- Diod for dependency injection
-
-### Development
-
-- TypeScript with modern ESLint flat config
-- Jest for testing with ts-jest preset
-- Husky for git hooks
-- Pino/Winston for logging
-
-## Special Considerations
+- `@edopro/*` → `src/edopro/*`
+- `@shared/*` → `src/shared/*`
+- `@http/*` → `src/http-server/*`
 
 ### Multi-Client Architecture
 
-The server handles multiple Yu-Gi-Oh! client types:
+The server acts as a bridge between different client protocols and the C++ Duel Engine:
 
-- EDOPro (Windows/Linux)
-- Mercury/Koishi (Web-based)
-- YGO Mobile
+- **EDOPro**: Binary TCP protocol.
+- **Mercury**: WebSocket (JSON/Protobuf).
+- **YGO Mobile**: Custom TCP.
+- **Engine**: C++ child process interaction.
 
-### Game Engine Integration
-
-- C++ duel engine via child processes
-- Custom message protocols for each client type
-- State management for game rooms and duels
-
-### Performance
-
-- Lock-free concurrent operations where possible
-- Async/await patterns throughout
-- Event-driven architecture with EventEmitter
-
-When working on this codebase, prioritize type safety where it adds value, maintain clean architecture boundaries, and ensure all changes include appropriate tests.
+Ensure changes in `shared/` do not break protocol-specific implementations in `edopro/` or `mercury/`.
