@@ -21,7 +21,9 @@
     "migrate-users": "ts-node-dev -r tsconfig-paths/register --respawn --poll --require dotenv/config src/utils/migrate-user-from-redis-to-postgres.ts",
     "migration:generate": "ts-node -r tsconfig-paths/register --require dotenv/config ./node_modules/typeorm/cli.js migration:generate -d ./src/evolution-types/src/data-source.ts ./src/evolution-types/src/migrations/$npm_config_name",
     "migration:run": "ts-node -r tsconfig-paths/register --require dotenv/config ./node_modules/typeorm/cli.js migration:run -d ./src/evolution-types/src/data-source.ts",
-    "migration:revert": "ts-node -r tsconfig-paths/register --require dotenv/config ./node_modules/typeorm/cli.js migration:revert -d ./src/evolution-types/src/data-source.ts"
+    "migration:revert": "ts-node -r tsconfig-paths/register --require dotenv/config ./node_modules/typeorm/cli.js migration:revert -d ./src/evolution-types/src/data-source.ts",
+    "perf:protocol": "ts-node -r tsconfig-paths/register src/utils/perf/benchmark-protocol.ts",
+    "perf:ipc": "ts-node -r tsconfig-paths/register src/utils/perf/benchmark-node-cpp-ipc.ts"
   },
   "keywords": [],
   "author": "",

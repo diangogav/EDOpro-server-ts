@@ -279,4 +279,51 @@ describe("DuelingState", () => {
     expect(mockSocket.send).toHaveBeenCalled();
     expect(mockSocket.destroy).toHaveBeenCalled();
   });
+
+  it("should process all ready core messages in the same tick when under limit", () => {
+    Object.defineProperty(mockJsonMessageProcessor, "payload", {
+      value: {
+        data: JSON.stringify({ type: "UNKNOWN" }),
+        size: 0,
+      },
+    });
+    mockJsonMessageProcessor.isMessageReady
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(false)
+      .mockReturnValueOnce(false);
+
+    (state as any).processMessage();
+
+    expect(mockJsonMessageProcessor.process).toHaveBeenCalledTimes(2);
+  });
+
+  it("should defer remaining core messages to next tick when limit is reached", () => {
+    Object.defineProperty(mockJsonMessageProcessor, "payload", {
+      value: {
+        data: JSON.stringify({ type: "UNKNOWN" }),
+        size: 0,
+      },
+    });
+
+    let readyCalls = 0;
+    mockJsonMessageProcessor.isMessageReady.mockImplementation(() => {
+      readyCalls += 1;
+      return readyCalls <= 1001;
+    });
+
+    const setImmediateSpy = jest
+      .spyOn(global, "setImmediate")
+      .mockImplementation(() => {
+        return 0 as unknown as NodeJS.Immediate;
+      });
+
+    (state as any).processMessage();
+
+    expect(mockJsonMessageProcessor.process).toHaveBeenCalledTimes(1000);
+    expect(setImmediateSpy).toHaveBeenCalledTimes(1);
+
+    setImmediateSpy.mockRestore();
+  });
+
 });
