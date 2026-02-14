@@ -46,6 +46,22 @@ export enum Rule {
 	ALL,
 }
 
+type IpcMetricsSnapshot = {
+	uptimeMs: number;
+	queueDepth: number;
+	maxQueueDepth: number;
+	commandsEnqueued: number;
+	commandsWritten: number;
+	stdinWriteErrors: number;
+	drainCount: number;
+	totalDrainWaitMs: number;
+	stdoutChunks: number;
+	stdoutBytes: number;
+	framesProcessed: number;
+	parseErrors: number;
+	deferredProcessTicks: number;
+};
+
 export class DeckRules {
 	public readonly mainMin: number;
 	public readonly mainMax: number;
@@ -156,6 +172,22 @@ export class Room extends YgoRoom {
 	private readonly notifier: RoomClientNotifier;
 	private readonly pendingCppMessages: string[] = [];
 	private isWaitingCppDrain = false;
+	private ipcMetricsStartedAt = Date.now();
+	private ipcMetricsLogInterval: NodeJS.Timeout | null = null;
+	private lastDrainStartAt: bigint | null = null;
+	private ipcMetrics = {
+		maxQueueDepth: 0,
+		commandsEnqueued: 0,
+		commandsWritten: 0,
+		stdinWriteErrors: 0,
+		drainCount: 0,
+		totalDrainWaitNs: 0n,
+		stdoutChunks: 0,
+		stdoutBytes: 0,
+		framesProcessed: 0,
+		parseErrors: 0,
+		deferredProcessTicks: 0,
+	};
 
 	private constructor(attr: RoomAttr) {
 		super({
@@ -560,9 +592,12 @@ export class Room extends YgoRoom {
 		this.isWaitingCppDrain = false;
 		this.pendingCppMessages.length = 0;
 		this._duel.stdin.on("error", (error) => {
+			this.ipcMetrics.stdinWriteErrors += 1;
 			this.logger.error("Error writing to the child process");
 			this.logger.error(error);
 		});
+
+		this.startIpcMetricsReporting();
 	}
 
 	private get duel(): ChildProcessWithoutNullStreams | null {
@@ -797,7 +832,28 @@ export class Room extends YgoRoom {
 
 	public sendMessageToCpp(message: string): void {
 		this.pendingCppMessages.push(`${message}\n`);
+		this.ipcMetrics.commandsEnqueued += 1;
+		if (this.pendingCppMessages.length > this.ipcMetrics.maxQueueDepth) {
+			this.ipcMetrics.maxQueueDepth = this.pendingCppMessages.length;
+		}
 		this.flushCppMessageQueue();
+	}
+
+	public recordCppStdoutChunk(byteLength: number): void {
+		this.ipcMetrics.stdoutChunks += 1;
+		this.ipcMetrics.stdoutBytes += byteLength;
+	}
+
+	public recordCppFrameProcessed(): void {
+		this.ipcMetrics.framesProcessed += 1;
+	}
+
+	public recordCppParseError(): void {
+		this.ipcMetrics.parseErrors += 1;
+	}
+
+	public recordCppDeferredProcessTick(): void {
+		this.ipcMetrics.deferredProcessTicks += 1;
 	}
 
 	isFinished(): boolean {
@@ -880,6 +936,7 @@ export class Room extends YgoRoom {
 				this._replay.destroy();
 			}
 			this.roomTimer.stop();
+			this.stopIpcMetricsReporting();
 		});
 	}
 
@@ -983,7 +1040,13 @@ export class Room extends YgoRoom {
 
 			if (!writeSuccess) {
 				this.isWaitingCppDrain = true;
+				this.ipcMetrics.drainCount += 1;
+				this.lastDrainStartAt = process.hrtime.bigint();
 				duel.stdin.once("drain", () => {
+					if (this.lastDrainStartAt !== null) {
+						this.ipcMetrics.totalDrainWaitNs += process.hrtime.bigint() - this.lastDrainStartAt;
+						this.lastDrainStartAt = null;
+					}
 					this.isWaitingCppDrain = false;
 					this.flushCppMessageQueue();
 				});
@@ -991,8 +1054,53 @@ export class Room extends YgoRoom {
 				return;
 			}
 
+			this.ipcMetrics.commandsWritten += 1;
 			this.pendingCppMessages.shift();
 		}
+	}
+
+
+	private startIpcMetricsReporting(): void {
+		if (process.env.IPC_METRICS_ENABLED !== "true") {
+			return;
+		}
+
+		if (this.ipcMetricsLogInterval) {
+			return;
+		}
+
+		this.ipcMetricsStartedAt = Date.now();
+		this.ipcMetricsLogInterval = setInterval(() => {
+			const snapshot = this.getIpcMetricsSnapshot();
+			this.logger.info("IPC_METRICS", snapshot);
+		}, 60_000);
+	}
+
+	private stopIpcMetricsReporting(): void {
+		if (!this.ipcMetricsLogInterval) {
+			return;
+		}
+
+		clearInterval(this.ipcMetricsLogInterval);
+		this.ipcMetricsLogInterval = null;
+	}
+
+	private getIpcMetricsSnapshot(): IpcMetricsSnapshot {
+		return {
+			uptimeMs: Date.now() - this.ipcMetricsStartedAt,
+			queueDepth: this.pendingCppMessages.length,
+			maxQueueDepth: this.ipcMetrics.maxQueueDepth,
+			commandsEnqueued: this.ipcMetrics.commandsEnqueued,
+			commandsWritten: this.ipcMetrics.commandsWritten,
+			stdinWriteErrors: this.ipcMetrics.stdinWriteErrors,
+			drainCount: this.ipcMetrics.drainCount,
+			totalDrainWaitMs: Number(this.ipcMetrics.totalDrainWaitNs) / 1e6,
+			stdoutChunks: this.ipcMetrics.stdoutChunks,
+			stdoutBytes: this.ipcMetrics.stdoutBytes,
+			framesProcessed: this.ipcMetrics.framesProcessed,
+			parseErrors: this.ipcMetrics.parseErrors,
+			deferredProcessTicks: this.ipcMetrics.deferredProcessTicks,
+		};
 	}
 
 	private extractDeckPoints(notes?: string): number | undefined {

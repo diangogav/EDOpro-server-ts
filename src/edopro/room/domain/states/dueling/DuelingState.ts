@@ -94,6 +94,8 @@ type SwapMessage = {
 	team: number;
 };
 export class DuelingState extends RoomState {
+	private static readonly MAX_MESSAGES_PER_TICK = 1000;
+
 	constructor(
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
@@ -258,10 +260,12 @@ export class DuelingState extends RoomState {
 		});
 
 		core.stdout.on("data", (data: Buffer) => {
+			this.room.recordCppStdoutChunk(data.length);
 			try {
 				this.jsonMessageProcessor.read(data);
 				this.processMessage();
 			} catch (error) {
+				this.room.recordCppParseError();
 				const payload = this.jsonMessageProcessor.payload;
 				this.logger.error(error as Error);
 				this.logger.info(`data: ${data.toString("hex")}`);
@@ -282,8 +286,15 @@ export class DuelingState extends RoomState {
 	}
 
 	private processMessage(): void {
-		while (this.jsonMessageProcessor.isMessageReady()) {
+		let processedMessages = 0;
+
+		while (
+			processedMessages < DuelingState.MAX_MESSAGES_PER_TICK &&
+			this.jsonMessageProcessor.isMessageReady()
+		) {
+			processedMessages++;
 			this.jsonMessageProcessor.process();
+			this.room.recordCppFrameProcessed();
 			const payload = this.jsonMessageProcessor.payload;
 			const message = JSON.parse(payload.data) as Message;
 
@@ -340,6 +351,15 @@ export class DuelingState extends RoomState {
 			if (message.type === "SWAP") {
 				this.handleCoreSwap(message as unknown as SwapMessage);
 			}
+		}
+
+		if (this.jsonMessageProcessor.isMessageReady()) {
+			this.room.recordCppDeferredProcessTick();
+			this.logger.info("Processing remaining core messages in next tick", {
+				roomId: this.room.id,
+				maxMessagesPerTick: DuelingState.MAX_MESSAGES_PER_TICK,
+			});
+			setImmediate(() => this.processMessage());
 		}
 	}
 
