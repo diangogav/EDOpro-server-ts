@@ -395,6 +395,7 @@ export const formatRuleMappings: RuleMappings = {
 				rule: 5,
 				lflist: 0,
 				duelRule: 1,
+				timeLimit: 450,
 			};
 		},
 		validate: (value) => {
@@ -407,6 +408,7 @@ export const formatRuleMappings: RuleMappings = {
 				rule: 5,
 				lflist: 0,
 				duelRule: 2,
+				timeLimit: 450,
 			};
 		},
 		validate: (value) => {
@@ -419,6 +421,7 @@ export const formatRuleMappings: RuleMappings = {
 				rule: 5,
 				lflist: 0,
 				duelRule: 2,
+				timeLimit: 450,
 			};
 		},
 		validate: (value) => {
@@ -431,6 +434,7 @@ export const formatRuleMappings: RuleMappings = {
 				rule: 5,
 				lflist: 11,
 				duelRule: 5,
+				timeLimit: 450,
 			};
 		},
 		validate: (value) => {
@@ -498,6 +502,7 @@ export const formatRuleMappings: RuleMappings = {
 				lflist: 0,
 				duelRule: 5,
 				maxDeckPoints,
+				timeLimit: 450,
 			};
 		},
 		validate: (value) => {
@@ -560,6 +565,7 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				duelRule: 5,
+				timeLimit: 450,
 			};
 		},
 		validate: (value) => {
@@ -571,6 +577,7 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 0,
 				lflist: 0,
+				timeLimit: 450,
 			};
 		},
 		validate: (value) => {
@@ -582,6 +589,7 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				duelRule: 5,
+				timeLimit: 450,
 			};
 		},
 		validate: (value) => {
@@ -594,6 +602,7 @@ export const formatRuleMappings: RuleMappings = {
 				rule: 5,
 				duelRule: 5,
 				lflist: 0,
+				timeLimit: 450,
 			};
 		},
 		validate: (value) => {
@@ -605,6 +614,7 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				duelRule: 5,
+				timeLimit: 450,
 			};
 		},
 		validate: (value) => {
@@ -617,6 +627,7 @@ export const formatRuleMappings: RuleMappings = {
 				rule: 4,
 				duelRule: 3,
 				lflist: 0,
+				timeLimit: 450,
 			};
 		},
 		validate: (value) => {
