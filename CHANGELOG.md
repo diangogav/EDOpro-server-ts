@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.13.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.12.0...v2.13.0) (2026-02-16)
+
+
+### Features
+
+* add new cards and update points in genesys.json ([54afff1](https://github.com/diangogav/EDOpro-server-ts/commit/54afff1450984ebfcc2c0a873c620530a275019b))
+* add new cards and update points in genesys.json ([0242b13](https://github.com/diangogav/EDOpro-server-ts/commit/0242b13f2c556951b579bf13c81508e7b316c747))
+* harden Node↔C++ IPC flow (backpressure queue, frame draining, safer core IO) ([#220](https://github.com/diangogav/EDOpro-server-ts/issues/220)) ([c307e23](https://github.com/diangogav/EDOpro-server-ts/commit/c307e231be3576ddb846d3b5d852c98110315720))
+* implement game_id logic for statistics module ([a731260](https://github.com/diangogav/EDOpro-server-ts/commit/a73126005348b85ee95699d5af1ea8a1a04961dd))
+* implement simplified saving of unranked matches and duels ([#219](https://github.com/diangogav/EDOpro-server-ts/issues/219)) ([ad8bbab](https://github.com/diangogav/EDOpro-server-ts/commit/ad8bbabb51f68bc28350d6dc1099cf1b9fd11641))
+* instrument Node↔C++ IPC metrics in EDOPro and add reproducible performance benchmarks ([b535617](https://github.com/diangogav/EDOpro-server-ts/commit/b5356172f7e69e07954cf6b02190fc327626ec5d))
+
+
+### Bug Fixes
+
+* command match m ([#216](https://github.com/diangogav/EDOpro-server-ts/issues/216)) ([8e09840](https://github.com/diangogav/EDOpro-server-ts/commit/8e098404f7703d1d55229655529f476a5c3319d9))
+* prevent match scores from incrementing on a draw and add tests for duel winner logic ([10551e3](https://github.com/diangogav/EDOpro-server-ts/commit/10551e3c0e8a883fffd8d44e379e8ed339e10ec0))
+
 ## [2.12.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.11.0...v2.12.0) (2026-01-26)
 
 
