@@ -15,4 +15,6 @@ export enum Commands {
 	KICK = 36,
 	TRY_START = 37,
 	TO_DUEL = 32,
+	PING = 0xff,
+	RECONNECT = 0xfd,
 }

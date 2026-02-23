@@ -11,7 +11,9 @@ import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { EventEmitter } from "stream";
 
+import { Commands } from "../edopro/messages/domain/Commands";
 import { MessageEmitter } from "../edopro/MessageEmitter";
+import { ExpressReconnectHandler } from "../edopro/room/application/ExpressReconnectHandler";
 import { GameCreatorHandler } from "../edopro/room/application/GameCreatorHandler";
 import { JoinHandler } from "../edopro/room/application/JoinHandler";
 import { container } from "../shared/dependency-injection";
@@ -74,6 +76,8 @@ export class HostServer {
 				new JoinHandler(eventEmitter, connectionLogger, tcpClientSocket, this.checkIfUserCanJoin);
 			};
 
+			new ExpressReconnectHandler(eventEmitter, connectionLogger, tcpClientSocket);
+
 			const messageEmitter = new MessageEmitter(
 				connectionLogger,
 				eventEmitter,
@@ -83,6 +87,18 @@ export class HostServer {
 
 			socket.on("data", (data: Buffer) => {
 				connectionLogger.debug(`roomId: ${tcpClientSocket.roomId} - Incoming message: ${data.toString("hex")}`);
+				
+				if (data.length >= 3) {
+					const command = data.readUInt8(2);
+					if (command === Commands.PING) {
+						const pongResponse = Buffer.alloc(data.length);
+						data.copy(pongResponse);
+						pongResponse.writeUInt8(0xfe, 2);
+						socket.write(pongResponse);
+						return;
+					}
+				}
+				
 				messageEmitter.handleMessage(data);
 			});
 

@@ -298,4 +298,8 @@ export abstract class YgoRoom {
 	protected removePlayerUnsafe(player: Client): void {
 		this._clients = this._clients.filter((item) => item.socket.id !== player.socket.id);
 	}
+
+	findPlayerByToken(token: string): YgoClient | undefined {
+		return this._clients.find((client) => client.reconnectionToken === token);
+	}
 }

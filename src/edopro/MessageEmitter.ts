@@ -60,6 +60,14 @@ export class MessageEmitter {
 			);
 		}
 
+		if (this.messageProcessor.command === Commands.RECONNECT) {
+			this.logger.info(`Emitting RECONNECT event for command ${Commands.RECONNECT}`);
+			this.eventEmitter.emit(
+				this.messageProcessor.command as unknown as string,
+				this.messageProcessor.payload
+			);
+		}
+
 		this.processMessage();
 	}
 }

@@ -88,6 +88,8 @@ describe("DuelingState", () => {
       sendMessage: jest.fn(),
       socket: mockSocket,
       setCanReconnect: jest.fn(),
+      setReconnectionToken: jest.fn(),
+      reconnectionToken: null,
       deck: { main: [], side: [], extra: [] },
       position: 0,
       team: 0,

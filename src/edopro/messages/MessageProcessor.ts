@@ -37,7 +37,7 @@ export class MessageProcessor {
     }
 
     this._size = this.buffer.subarray(0, 2).readUint16LE();
-    this._command = this.buffer.subarray(2).readInt8();
+    this._command = this.buffer.subarray(2).readUint8();
     this._data = this.buffer.subarray(3, this._size + 2);
     this._raw = this.buffer.subarray(0, this._size + 2);
     this.buffer = this.buffer.subarray(this._size + 2);
