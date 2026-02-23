@@ -11,6 +11,7 @@ export abstract class YgoClient {
 	protected _reconnecting = false;
 	protected _isReady: boolean;
 	protected _ipAddress: string | null;
+	protected _reconnectionToken: string | null = null;
 
 	constructor({
 		name,
@@ -92,5 +93,17 @@ export abstract class YgoClient {
 
 	get isReconnecting(): boolean {
 		return this._reconnecting;
+	}
+
+	get reconnectionToken(): string | null {
+		return this._reconnectionToken;
+	}
+
+	setReconnectionToken(token: string): void {
+		this._reconnectionToken = token;
+	}
+
+	clearReconnectionToken(): void {
+		this._reconnectionToken = null;
 	}
 }

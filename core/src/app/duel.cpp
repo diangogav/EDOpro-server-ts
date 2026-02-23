@@ -213,11 +213,6 @@ void Duel::refresh_board(uint8_t position, uint8_t team)
     uint8_t calculated_team = this->get_swapped_team(query_location_request.con);
     const auto buffer = this->api.duelQueryLocation(duel, &query);
 
-    if (query_location_request.loc == LOCATION_DECK)
-    {
-      continue;
-    }
-
     const auto queries = this->deserializer.deserializeLocationQuery(buffer);
 
     if (team == calculated_team)

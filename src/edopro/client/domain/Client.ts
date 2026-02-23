@@ -50,13 +50,15 @@ export class Client extends YgoClient {
 	}
 
 	setSocket(socket: ISocket, clients: Client[], room: Room): void {
+		if (this._socket && this._socket !== socket) {
+			this._socket.destroy();
+		}
 		this._socket = socket;
 		const messageProcessor = new MessageProcessor();
 		const roomMessageEmitter = new RoomMessageEmitter(this, room);
 		this._socket.onMessage((data) => {
 			roomMessageEmitter.handleMessage(data);
 			messageProcessor.read(data);
-			// this.handleMessage(messageProcessor, clients, room);
 		});
 		this._ipAddress = socket.remoteAddress ?? null;
 	}

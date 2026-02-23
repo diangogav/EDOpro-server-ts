@@ -45,6 +45,7 @@ void ZonesRefresher::refreshAllRemoved(std::vector<QueryRequest> &queryRequests)
 
 void ZonesRefresher::refreshAll(std::vector<QueryRequest> &queryRequests)
 {
+  refreshAllDecks(queryRequests);
   refreshAllMZones(queryRequests);
   refreshAllSZones(queryRequests);
   refreshAllHands(queryRequests);

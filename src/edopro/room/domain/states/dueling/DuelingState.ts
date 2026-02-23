@@ -23,12 +23,15 @@ import { ErrorMessages } from "../../../../messages/server-to-client/error-messa
 import { ErrorClientMessage } from "../../../../messages/server-to-client/ErrorClientMessage";
 import { StartDuelClientMessage } from "../../../../messages/server-to-client/game-messages/StartDuelClientMessage";
 import { TimeLimitClientMessage } from "../../../../messages/server-to-client/game-messages/TimeLimitClientMessage";
+import { CatchUpClientMessage } from "../../../../messages/server-to-client/CatchUpClientMessage";
 import { PlayerChangeClientMessage } from "../../../../messages/server-to-client/PlayerChangeClientMessage";
+import { ReconnectionTokenClientMessage } from "../../../../messages/server-to-client/ReconnectionTokenClientMessage";
 import { ServerErrorClientMessage } from "../../../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { ServerMessageClientMessage } from "../../../../messages/server-to-client/ServerMessageClientMessage";
 import { FinishDuelHandler } from "../../../application/FinishDuelHandler";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";
+import { TokenIndex } from "../../../../../shared/room/domain/TokenIndex";
 import { DuelFinishReason } from "../../DuelFinishReason";
 import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";
@@ -114,6 +117,12 @@ export class DuelingState extends RoomState {
 			"JOIN" as unknown as string,
 			(message: ClientMessage, room: Room, socket: ISocket) =>
 				this.handleJoin.bind(this)(message, room, socket)
+		);
+
+		this.eventEmitter.on(
+			"EXPRESS_RECONNECT" as unknown as string,
+			(message: ClientMessage, room: Room, socket: ISocket) =>
+				this.handleExpressReconnect.bind(this)(message, room, socket)
 		);
 
 		this.eventEmitter.on(
@@ -213,6 +222,10 @@ export class DuelingState extends RoomState {
 
 		this.room.clients.forEach((item) => {
 			item.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.STARTING_DUEL));
+			const reconnectionToken = crypto.randomBytes(16).toString("hex");
+			item.setReconnectionToken(reconnectionToken);
+			TokenIndex.getInstance().register(reconnectionToken, item, this.room.id);
+			item.socket.send(ReconnectionTokenClientMessage.create(reconnectionToken));
 		});
 
 		const core = spawn(
@@ -383,9 +396,13 @@ export class DuelingState extends RoomState {
 			return;
 		}
 
+		// Skip sending historical cache to avoid card duplication. 
+		// REFRESH_FIELD (called during express reconnect) provides the current state.
+		/*
 		if (player.cache) {
 			player.sendMessage(player.cache);
 		}
+		*/
 
 		const opponentTimeMessage = TimeLimitClientMessage.create({
 			team: this.room.calculateTimeReceiver(Team.OPPONENT),
@@ -400,7 +417,25 @@ export class DuelingState extends RoomState {
 
 		player.sendMessage(Buffer.from("010030", "hex"));
 
+		player.sendMessage(CatchUpClientMessage.create({ catchingUp: false }));
+
+		const oldToken = player.reconnectionToken;
 		player.clearReconnecting();
+		player.clearReconnectionToken();
+		if (oldToken) {
+			TokenIndex.getInstance().unregister(oldToken);
+		}
+
+		// Generate new token for future reconnections
+		const newToken = crypto.randomBytes(16).toString("hex");
+		player.setReconnectionToken(newToken);
+		TokenIndex.getInstance().register(newToken, player, this.room.id);
+		player.sendMessage(ReconnectionTokenClientMessage.create(newToken));
+
+		if (player.cache) {
+			this.logger.info(`Sending last cached message to ${player.name} after reconnection`);
+			player.sendMessage(player.cache);
+		}
 
 		this.room.clients.forEach((client: Client) => {
 			client.sendMessage(
@@ -612,6 +647,76 @@ export class DuelingState extends RoomState {
 				data: {},
 			})
 		);
+	}
+
+	private async handleExpressReconnect(
+		message: ClientMessage,
+		room: Room,
+		socket: ISocket
+	): Promise<void> {
+		this.logger.info("DUELING_STATE: EXPRESS_RECONNECT - START");
+		const token = message.data.toString("utf8");
+		this.logger.info(`DUELING_STATE: Token received: ${token}`);
+		
+		const entry = TokenIndex.getInstance().find(token);
+		if (!entry || !(entry.client instanceof Client) || entry.roomId !== room.id) {
+			this.logger.info(`DUELING_STATE: Player not found for token ${token} or room mismatch`);
+			const type = Buffer.from([0xfd]);
+			const status = Buffer.from([0x01]);
+			const dataStatus = Buffer.concat([type, status]);
+			const size = Buffer.alloc(2);
+			size.writeUint16LE(dataStatus.length);
+			socket.send(Buffer.concat([size, dataStatus]));
+			socket.destroy();
+			return;
+		}
+
+		const player = entry.client as Client;
+
+		this.logger.info(`DUELING_STATE: Match found for player ${player.name}. Restoring session.`);
+
+		// 1. Send success status
+		const type = Buffer.from([0xfd]);
+		const status = Buffer.from([0x00]);
+		const dataStatus = Buffer.concat([type, status]);
+		const size = Buffer.alloc(2);
+		size.writeUint16LE(dataStatus.length);
+		socket.send(Buffer.concat([size, dataStatus]));
+
+		// 2. Perform the reconnection logic (similar to handleReady but without waiting for READY)
+		player.setSocket(socket, room.clients as Client[], room);
+		player.reconnecting();
+		player.setCanReconnect(true);
+
+		player.sendMessage(CatchUpClientMessage.create({ catchingUp: true }));
+
+		player.sendMessage(DuelStartClientMessage.create());
+		player.sendMessage(
+			StartDuelClientMessage.create({
+				lp: room.startLp,
+				team: room.firstToPlay === player.team ? 0 : 1,
+				playerMainDeckSize: room.playerMainDeckSize,
+				playerExtraDeckSize: room.playerExtraDeckSize,
+				opponentMainDeckSize: room.opponentMainDeckSize,
+				opponentExtraDeckSize: room.opponentExtraDeckSize,
+			})
+		);
+		player.sendMessage(Buffer.from("0300012800", "hex")); // MSG_NEW_TURN (0)
+		if (room.lastPhaseMessage) {
+			player.sendMessage(Buffer.from(`040001${room.lastPhaseMessage.toString("hex")}`, "hex"));
+		}
+
+		this.room.sendMessageToCpp(
+			JSON.stringify({
+				command: "REFRESH_FIELD",
+				data: {
+					position: player.position,
+					team: player.team,
+				},
+			})
+		);
+
+		this.logger.info("DUELING_STATE: EXPRESS_RECONNECT - COMPLETED");
 	}
 
 	private handleReady(message: ClientMessage, room: Room, player: Client): void {
