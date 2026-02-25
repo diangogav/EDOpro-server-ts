@@ -11,6 +11,7 @@ import { PostgresTypeORM } from "./evolution-types/src/PostgresTypeORM";
 import { Server } from "./http-server/Server";
 import { MercuryBanListLoader } from "./mercury/ban-list/infrastructure/MercuryBanListLoader";
 import { HostServer } from "./socket-server/HostServer";
+import { WSHostServer } from "./socket-server/WSHostServer";
 import { MercuryServer } from "./socket-server/MercuryServer";
 import WebSocketSingleton from "./web-socket-server/WebSocketSingleton";
 
@@ -21,6 +22,7 @@ async function start(): Promise<void> {
 	const server = new Server(logger);
 	const mercuryServer = new MercuryServer(logger);
 	const hostServer = new HostServer(logger);
+	const wsHostServer = new WSHostServer(logger);
 	const database = new EdoProSQLiteTypeORM();
 	const banListLoader = new BanListLoader();
 	await banListLoader.loadDirectory("./banlists/evolution");
@@ -37,5 +39,6 @@ async function start(): Promise<void> {
 	await server.initialize();
 	WebSocketSingleton.getInstance();
 	hostServer.initialize();
+	wsHostServer.initialize();
 	mercuryServer.initialize();
 }

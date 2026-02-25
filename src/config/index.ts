@@ -33,6 +33,7 @@ export const config = {
 		},
 		websocket: {
 			port: Number(process.env.WEBSOCKET_PORT),
+			duelPort: Number(process.env.WEBSOCKET_DUEL_PORT) || 4001,
 		},
 	},
 };

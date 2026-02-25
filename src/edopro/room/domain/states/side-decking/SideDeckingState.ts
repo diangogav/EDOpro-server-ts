@@ -80,7 +80,7 @@ export class SideDeckingState extends RoomState {
 		const player = entry.client as Client;
 		this.logger.info(`SIDE_DECKING: MATCH! Reconnecting player ${player.name}`);
 
-		player.setSocket(socket, room.clients, room);
+		player.setSocket(socket, room.clients as Client[], room);
 		player.reconnecting();
 
 		// Send success status
