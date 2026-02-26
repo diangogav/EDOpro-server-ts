@@ -99,7 +99,9 @@ describe("SideDeckingState", () => {
       getDeck: jest.fn().mockReturnValue([[1], [2]]),
     };
     (UpdateDeckMessageParser as jest.Mock).mockReturnValue(mockParser);
-    mockDeckCreator.build.mockResolvedValue({} as any);
+    mockDeckCreator.build.mockResolvedValue({
+      validate: jest.fn().mockReturnValue(null),
+    } as any);
 
     mockEmitter.emit(
       Commands.UPDATE_DECK as unknown as string,
@@ -141,7 +143,9 @@ describe("SideDeckingState", () => {
       getDeck: jest.fn().mockReturnValue([[1], [2]]),
     };
     (UpdateDeckMessageParser as jest.Mock).mockReturnValue(mockParser);
-    mockDeckCreator.build.mockResolvedValue({} as any);
+    mockDeckCreator.build.mockResolvedValue({
+      validate: jest.fn().mockReturnValue(null),
+    } as any);
     Object.defineProperty(mockClient, "isReconnecting", { value: true });
 
     mockEmitter.emit(
@@ -162,7 +166,9 @@ describe("SideDeckingState", () => {
       getDeck: jest.fn().mockReturnValue([[1], [2]]),
     };
     (UpdateDeckMessageParser as jest.Mock).mockReturnValue(mockParser);
-    mockDeckCreator.build.mockResolvedValue({} as any);
+    mockDeckCreator.build.mockResolvedValue({
+      validate: jest.fn().mockReturnValue(null),
+    } as any);
     Object.defineProperty(mockClient, "isReady", { value: true }); // Assume this update happens after ready() call
 
     // We need to simulate ready state change.

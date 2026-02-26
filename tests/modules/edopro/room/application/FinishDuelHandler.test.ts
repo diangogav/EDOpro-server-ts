@@ -85,6 +85,7 @@ describe("FinishDuelHandler", () => {
       isMatchFinished: jest.fn().mockReturnValue(false),
       sideDecking: jest.fn(),
       setClientWhoChoosesTurn: jest.fn(),
+      destroy: jest.fn(),
       team0: 1,
       team1: 1,
     } as unknown as jest.Mocked<Room>;
