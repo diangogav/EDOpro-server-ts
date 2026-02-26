@@ -6,24 +6,33 @@ import { UserProfile } from "../../user-profile/domain/UserProfile";
 import { UserProfileRepository } from "../../user-profile/domain/UserProfileRepository";
 
 export class UserAuth {
-	constructor(private readonly userProfileRepository: UserProfileRepository) {}
+  constructor(private readonly userProfileRepository: UserProfileRepository) {}
 
-	async run(playerInfo: PlayerInfoMessage): Promise<UserProfile | ServerErrorClientMessage> {
-		const userProfile = await this.userProfileRepository.findByUsername(playerInfo.name);
+  async run(
+    playerInfo: PlayerInfoMessage,
+  ): Promise<UserProfile | ServerErrorClientMessage> {
+    const userProfile = await this.userProfileRepository.findByUsername(
+      playerInfo.name,
+    );
 
-		if (!userProfile) {
-			return ServerErrorClientMessage.create(ServerErrorMessage.USER_NOT_FOUND);
-		}
+    if (!userProfile) {
+      return ServerErrorClientMessage.create(ServerErrorMessage.USER_NOT_FOUND);
+    }
 
-		const isBanned = await this.userProfileRepository.isBanned(userProfile.id);
-		if (isBanned) {
-			return ServerErrorClientMessage.create(ServerErrorMessage.USER_BANNED);
-		}
+    const isBanned = await this.userProfileRepository.isBanned(userProfile.id);
+    if (isBanned) {
+      return ServerErrorClientMessage.create(ServerErrorMessage.USER_BANNED);
+    }
 
-		if (!playerInfo.password || !userProfile.isValidPassword(playerInfo.password)) {
-			return ServerErrorClientMessage.create(ServerErrorMessage.INVALID_PASSWORD);
-		}
+    if (
+      !playerInfo.password ||
+      !(await userProfile.isValidPassword(playerInfo.password))
+    ) {
+      return ServerErrorClientMessage.create(
+        ServerErrorMessage.INVALID_PASSWORD,
+      );
+    }
 
-		return userProfile;
-	}
+    return userProfile;
+  }
 }
