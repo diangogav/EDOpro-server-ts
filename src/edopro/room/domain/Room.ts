@@ -282,8 +282,6 @@ export class Room extends YgoRoom {
 	): Room {
 		const ranked = Room.isRanked(playerInfo.password);
 
-		console.log("password", message.password);
-
 		const room = new Room({
 			id,
 			name: message.name,

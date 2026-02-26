@@ -145,6 +145,16 @@ export class SideDeckingState extends RoomState {
 			banListHash: room.banListHash,
 		});
 
+		const hasError = deck.validate();
+
+		if (hasError) {
+			player.sendMessage(hasError.buffer());
+			const message = SideDeckClientMessage.create();
+			player.sendMessage(message);
+
+			return;
+		}
+
 		room.setDecksToPlayer(player.position, deck);
 		const duelStartMessage = DuelStartClientMessage.create();
 		player.sendMessage(duelStartMessage);

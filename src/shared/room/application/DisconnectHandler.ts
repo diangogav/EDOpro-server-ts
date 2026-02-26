@@ -148,6 +148,14 @@ export class DisconnectHandler {
 		room.spectators.forEach((_client: Client) => {
 			_client.sendMessage(message);
 		});
+
+		if (room.clients.every((client) => client.socket.closed) && room.spectators.length === 0) {
+			RoomList.deleteRoom(room);
+			WebSocketSingleton.getInstance().broadcast({
+				action: "REMOVE-ROOM",
+				data: room.toRealTimePresentation(),
+			});
+		}
 	}
 
 	private removeMercurySpectator(room: MercuryRoom): void {

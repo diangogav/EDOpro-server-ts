@@ -12,6 +12,7 @@ import { ReplayPromptMessage } from "../../messages/server-to-client/ReplayPromp
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { DuelFinishReason } from "../domain/DuelFinishReason";
 import { Room } from "../domain/Room";
+import RoomList from "../infrastructure/RoomList";
 
 export class FinishDuelHandler {
 	private readonly reason: DuelFinishReason;
@@ -95,9 +96,7 @@ export class FinishDuelHandler {
 				player.sendMessage(DuelEndMessage.create());
 			});
 
-			// this.room.duel?.kill("SIGTERM");
-
-			// RoomList.deleteRoom(this.room);
+			RoomList.deleteRoom(this.room);
 
 			this.eventBus.publish(
 				GameOverDomainEvent.DOMAIN_EVENT,
