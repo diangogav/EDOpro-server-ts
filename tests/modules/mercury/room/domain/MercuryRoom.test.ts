@@ -361,7 +361,7 @@ describe("MercuryRoom", () => {
 			expect(room.isGenesys).toBe(true);
 			expect(room.hostInfo.rule).toBe(1);
 			expect(room.hostInfo.lflist).toBe(0);
-			expect(room.hostInfo.timeLimit).toBe(180);
+			expect(room.hostInfo.timeLimit).toBe(450);
 			expect(room.hostInfo.duelRule).toBe(5);
 			expect(room.hostInfo.maxDeckPoints).toBe(100);
 		});
@@ -379,7 +379,7 @@ describe("MercuryRoom", () => {
 			expect(room.isGenesys).toBe(true);
 			expect(room.hostInfo.rule).toBe(1);
 			expect(room.hostInfo.lflist).toBe(0);
-			expect(room.hostInfo.timeLimit).toBe(180);
+			expect(room.hostInfo.timeLimit).toBe(450);
 			expect(room.hostInfo.duelRule).toBe(5);
 			expect(room.hostInfo.maxDeckPoints).toBe(250);
 		});
@@ -389,7 +389,7 @@ describe("MercuryRoom", () => {
 			expect(room.isGenesys).toBe(true);
 			expect(room.hostInfo.rule).toBe(1);
 			expect(room.hostInfo.lflist).toBe(0);
-			expect(room.hostInfo.timeLimit).toBe(180);
+			expect(room.hostInfo.timeLimit).toBe(450);
 			expect(room.hostInfo.duelRule).toBe(5);
 			expect(room.hostInfo.maxDeckPoints).toBe(100);
 		});
@@ -400,7 +400,7 @@ describe("MercuryRoom", () => {
 			expect(room.isGenesys).toBe(true);
 			expect(room.hostInfo.rule).toBe(1);
 			expect(room.hostInfo.lflist).toBe(0);
-			expect(room.hostInfo.timeLimit).toBe(180);
+			expect(room.hostInfo.timeLimit).toBe(450);
 			expect(room.hostInfo.duelRule).toBe(5);
 			expect(room.hostInfo.maxDeckPoints).toBe(300);
 		});
