@@ -82,7 +82,8 @@
     "simple-git": "^3.30.0",
     "typeorm": "^0.3.27",
     "winston": "^3.18.3",
-    "ws": "^8.18.3"
+    "ws": "^8.18.3",
+    "zod": "^4.3.6"
   },
   "lint-staged": {
     "*.(js|ts)": "npm run lint:fix"
