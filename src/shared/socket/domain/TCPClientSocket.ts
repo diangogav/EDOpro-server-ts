@@ -3,53 +3,72 @@ import { Socket } from "net";
 import { ISocket } from "./ISocket";
 
 export class TCPClientSocket implements ISocket {
-	id?: string;
-	roomId?: number;
-	private readonly socket: Socket;
+  id?: string;
+  roomId?: number;
+  private readonly socket: Socket;
 
-	constructor(socket: Socket) {
-		this.socket = socket;
-		this.socket.setKeepAlive(true, 1000);
-	}
+  private isClosed = false;
+  private messageCallback?: (data: Buffer) => void;
+  private closeCallback?: () => void;
 
-	removeAllListeners(): void {
-		this.socket.removeAllListeners();
-	}
+  constructor(socket: Socket) {
+    this.socket = socket;
+    this.socket.setKeepAlive(true, 1000);
+    this.socket.on("close", () => {
+      this.isClosed = true;
+    });
+    this.socket.on("error", () => {
+      this.isClosed = true;
+    });
+  }
 
-	send(message: Buffer): void {
-		this.socket.write(message);
-	}
+  removeAllListeners(): void {
+    if (this.messageCallback) {
+      this.socket.off("data", this.messageCallback);
+      this.messageCallback = undefined;
+    }
+    if (this.closeCallback) {
+      this.socket.off("close", this.closeCallback);
+      this.closeCallback = undefined;
+    }
+  }
 
-	onMessage(callback: (message: Buffer) => void): void {
-		this.socket.on("data", (data) => callback(data));
-	}
+  send(message: Buffer): void {
+    this.socket.write(message);
+  }
 
-	onClose(callback: () => void): void {
-		this.socket.on("end", callback);
-	}
+  onMessage(callback: (message: Buffer) => void): void {
+    this.messageCallback = (data: Buffer) => callback(data);
+    this.socket.on("data", this.messageCallback);
+  }
 
-	close(): void {
-		this.socket.end();
-	}
+  onClose(callback: () => void): void {
+    this.closeCallback = callback;
+    this.socket.on("close", this.closeCallback);
+  }
 
-	destroy(): void {
-		this.socket.removeAllListeners();
-		this.socket.destroy();
-	}
+  close(): void {
+    this.socket.end();
+  }
 
-	setRoomId(roomId: number): void {
-		this.roomId = roomId;
-	}
+  destroy(): void {
+    this.removeAllListeners();
+    this.socket.destroy();
+  }
 
-	setId(id: string): void {
-		this.id = id;
-	}
+  setRoomId(roomId: number): void {
+    this.roomId = roomId;
+  }
 
-	get remoteAddress(): string | undefined {
-		return this.socket.remoteAddress;
-	}
+  setId(id: string): void {
+    this.id = id;
+  }
 
-	get closed(): boolean {
-		return this.socket.closed;
-	}
+  get remoteAddress(): string | undefined {
+    return this.socket.remoteAddress;
+  }
+
+  get closed(): boolean {
+    return this.isClosed || this.socket.closed;
+  }
 }
