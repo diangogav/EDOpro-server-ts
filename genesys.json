@@ -105,8 +105,18 @@
     "code": 74631897
   },
   {
+    "name": "Artmage Vandalism -Assault-",
+    "points": 3,
+    "code": 1122030
+  },
+  {
+    "name": "Artmage Varnish -Alteration-",
+    "points": 3,
+    "code": 74011784
+  },
+  {
     "name": "Ash Blossom & Joyous Spring",
-    "points": 15,
+    "points": 20,
     "code": 14558127
   },
   {
@@ -151,13 +161,8 @@
   },
   {
     "name": "Barrier of the Voiceless Voice",
-    "points": 20,
+    "points": 15,
     "code": 98477480
-  },
-  {
-    "name": "Barrier Statue of the Abyss",
-    "points": 70,
-    "code": 84478195
   },
   {
     "name": "Barrier Statue of the Abyss",
@@ -226,7 +231,7 @@
   },
   {
     "name": "Blaster, Dragon Ruler of Infernos",
-    "points": 7,
+    "points": 5,
     "code": 53804307
   },
   {
@@ -251,12 +256,12 @@
   },
   {
     "name": "Book of Eclipse",
-    "points": 5,
+    "points": 3,
     "code": 35480699
   },
   {
     "name": "Book of Moon",
-    "points": 7,
+    "points": 4,
     "code": 14087893
   },
   {
@@ -350,6 +355,11 @@
     "code": 95727991
   },
   {
+    "name": "Celestial Observatory",
+    "points": 5,
+    "code": 67378104
+  },
+  {
     "name": "Centur-Ion Auxila",
     "points": 33,
     "code": 71858682
@@ -371,7 +381,7 @@
   },
   {
     "name": "Change of Heart",
-    "points": 10,
+    "points": 6,
     "code": 4031928
   },
   {
@@ -430,6 +440,11 @@
     "code": 21123811
   },
   {
+    "name": "Cosmic Cyclone",
+    "points": 1,
+    "code": 8267140
+  },
+  {
     "name": "Creature Swap",
     "points": 1,
     "code": 31036355
@@ -455,6 +470,11 @@
     "code": 25865565
   },
   {
+    "name": "CXyz Gimmick Puppet Fanatix Machinix",
+    "points": 100,
+    "code": 3685372
+  },
+  {
     "name": "Cyber Angel Benten",
     "points": 40,
     "code": 77235086
@@ -473,6 +493,11 @@
     "name": "Cyber-Stein",
     "points": 27,
     "code": 69015963
+  },
+  {
+    "name": "D.D. Crow",
+    "points": 1,
+    "code": 24508238
   },
   {
     "name": "D.D. Dynamite",
@@ -545,9 +570,24 @@
     "code": 62002838
   },
   {
+    "name": "Dark Eradicator Warlock",
+    "points": 100,
+    "code": 29436665
+  },
+  {
     "name": "Dark Hole",
-    "points": 3,
+    "points": 1,
     "code": 53129443
+  },
+  {
+    "name": "Dark Magician of Destruction",
+    "points": 15,
+    "code": 59400890
+  },
+  {
+    "name": "Dark Ruler No More",
+    "points": 2,
+    "code": 54693926
   },
   {
     "name": "Dark World Archives",
@@ -558,6 +598,11 @@
     "name": "Dark World Dealings",
     "points": 5,
     "code": 74117290
+  },
+  {
+    "name": "Darklord Ixchel",
+    "points": 5,
+    "code": 52840267
   },
   {
     "name": "Deception of the Sinful Spoils",
@@ -606,7 +651,7 @@
   },
   {
     "name": "Destructive Daruma Karma Cannon",
-    "points": 3,
+    "points": 1,
     "code": 30748475
   },
   {
@@ -661,7 +706,7 @@
   },
   {
     "name": "Dinowrestler Pankratops",
-    "points": 10,
+    "points": 5,
     "code": 82385847
   },
   {
@@ -721,7 +766,7 @@
   },
   {
     "name": "Dracotail Mululu",
-    "points": 5,
+    "points": 7,
     "code": 7375867
   },
   {
@@ -731,7 +776,7 @@
   },
   {
     "name": "Dragonic Diagram",
-    "points": 33,
+    "points": 15,
     "code": 13035077
   },
   {
@@ -761,7 +806,7 @@
   },
   {
     "name": "Droll & Lock Bird",
-    "points": 25,
+    "points": 20,
     "code": 94145021
   },
   {
@@ -796,7 +841,7 @@
   },
   {
     "name": "Effect Veiler",
-    "points": 7,
+    "points": 8,
     "code": 97268402
   },
   {
@@ -818,11 +863,6 @@
     "name": "Elder Entity N'tss",
     "points": 7,
     "code": 80532587
-  },
-  {
-    "name": "Elemental HERO Stratos",
-    "points": 3,
-    "code": 40044918
   },
   {
     "name": "Elfnote Power Patron",
@@ -851,7 +891,7 @@
   },
   {
     "name": "Evenly Matched",
-    "points": 10,
+    "points": 7,
     "code": 15693423
   },
   {
@@ -875,13 +915,18 @@
     "code": 35103106
   },
   {
+    "name": "Exosister Betrayal",
+    "points": 7,
+    "code": 52335937
+  },
+  {
     "name": "Exosister Mikailis",
     "points": 10,
     "code": 42741437
   },
   {
     "name": "Exosister Pax",
-    "points": 10,
+    "points": 5,
     "code": 77913594
   },
   {
@@ -931,12 +976,12 @@
   },
   {
     "name": "Fire King Courtier Ulcanix",
-    "points": 20,
+    "points": 18,
     "code": 44455560
   },
   {
     "name": "Fire King High Avatar Kirin",
-    "points": 10,
+    "points": 7,
     "code": 2526224
   },
   {
@@ -996,7 +1041,7 @@
   },
   {
     "name": "Fossil Dig",
-    "points": 35,
+    "points": 33,
     "code": 47325505
   },
   {
@@ -1030,6 +1075,11 @@
     "code": 32530043
   },
   {
+    "name": "Garura, Wings of Resonant Life",
+    "points": 4,
+    "code": 11765832
+  },
+  {
     "name": "Gateway of the Six",
     "points": 100,
     "code": 27970830
@@ -1046,7 +1096,7 @@
   },
   {
     "name": "Ghost Belle & Haunted Mansion",
-    "points": 5,
+    "points": 6,
     "code": 73642296
   },
   {
@@ -1056,12 +1106,12 @@
   },
   {
     "name": "Ghost Mourner & Moonlit Chill",
-    "points": 3,
+    "points": 5,
     "code": 52038441
   },
   {
     "name": "Ghost Ogre & Snow Rabbit",
-    "points": 3,
+    "points": 4,
     "code": 59438930
   },
   {
@@ -1076,7 +1126,7 @@
   },
   {
     "name": "Gigantic Spright",
-    "points": 20,
+    "points": 15,
     "code": 54498517
   },
   {
@@ -1130,6 +1180,11 @@
     "code": 75500286
   },
   {
+    "name": "Golden Cloud Beast - Malong",
+    "points": 4,
+    "code": 93125329
+  },
+  {
     "name": "Gozen Match",
     "points": 100,
     "code": 53334471
@@ -1166,7 +1221,7 @@
   },
   {
     "name": "Harpie's Feather Duster",
-    "points": 15,
+    "points": 9,
     "code": 18144507
   },
   {
@@ -1186,18 +1241,8 @@
   },
   {
     "name": "Heavy Storm",
-    "points": 10,
+    "points": 6,
     "code": 19613556
-  },
-  {
-    "name": "Hecahands Gaigas",
-    "points": 5,
-    "code": 95132593
-  },
-  {
-    "name": "Hecahands Xeno",
-    "points": 10,
-    "code": 94410955
   },
   {
     "name": "Herald of the Arc Light",
@@ -1261,7 +1306,7 @@
   },
   {
     "name": "Infinite Impermanence",
-    "points": 13,
+    "points": 12,
     "code": 10045474
   },
   {
@@ -1276,12 +1321,12 @@
   },
   {
     "name": "Interrupted Kaiju Slumber",
-    "points": 33,
+    "points": 10,
     "code": 99330325
   },
   {
     "name": "Into the Void",
-    "points": 3,
+    "points": 7,
     "code": 93946239
   },
   {
@@ -1330,11 +1375,6 @@
     "code": 28642461
   },
   {
-    "name": "K9-ØØ Lupis",
-    "points": 5,
-    "code": 91025875
-  },
-  {
     "name": "K9-X \"Ripper/M\"",
     "points": 10,
     "code": 31286915
@@ -1381,13 +1421,18 @@
   },
   {
     "name": "Kewl Tune Clip",
-    "points": 5,
+    "points": 6,
     "code": 43904702
   },
   {
     "name": "Kewl Tune Cue",
-    "points": 5,
+    "points": 6,
     "code": 16387555
+  },
+  {
+    "name": "Kewl Tune Synchro",
+    "points": 10,
+    "code": 78058681
   },
   {
     "name": "King of the Feral Imps",
@@ -1511,7 +1556,7 @@
   },
   {
     "name": "Lightning Storm",
-    "points": 20,
+    "points": 12,
     "code": 14532163
   },
   {
@@ -1630,6 +1675,11 @@
     "code": 23434538
   },
   {
+    "name": "Medius the Pure",
+    "points": 5,
+    "code": 97556336
+  },
+  {
     "name": "Megalith Anastasis",
     "points": 33,
     "code": 29876299
@@ -1655,6 +1705,11 @@
     "code": 101303084
   },
   {
+    "name": "Mereologic Aggregator",
+    "points": 4,
+    "code": 9940036
+  },
+  {
     "name": "Metamorphosis",
     "points": 5,
     "code": 46411259
@@ -1663,6 +1718,11 @@
     "name": "Metaverse",
     "points": 3,
     "code": 89208725
+  },
+  {
+    "name": "Mikanko Shinbu - Noble Twins",
+    "points": 18,
+    "code": 84550369
   },
   {
     "name": "Mikanko Water Arabesque",
@@ -1691,13 +1751,18 @@
   },
   {
     "name": "Miscellaneousaurus",
-    "points": 75,
+    "points": 67,
     "code": 38572779
   },
   {
     "name": "Mistake",
     "points": 100,
     "code": 59305593
+  },
+  {
+    "name": "Mistaken Arrest",
+    "points": 10,
+    "code": 4227096
   },
   {
     "name": "Mitsurugi Prayers",
@@ -1716,7 +1781,7 @@
   },
   {
     "name": "Monster Reborn",
-    "points": 5,
+    "points": 4,
     "code": 83764719
   },
   {
@@ -1746,12 +1811,12 @@
   },
   {
     "name": "Mulcharmy Meowls",
-    "points": 3,
+    "points": 2,
     "code": 87126721
   },
   {
     "name": "Mulcharmy Purulia",
-    "points": 10,
+    "points": 9,
     "code": 84192580
   },
   {
@@ -1826,8 +1891,13 @@
   },
   {
     "name": "Noh-P.U.N.K. Foxy Tune",
-    "points": 5,
+    "points": 7,
     "code": 55920742
+  },
+  {
+    "name": "Noh-P.U.N.K. Rising Scale",
+    "points": 3,
+    "code": 75046994
   },
   {
     "name": "Number 1: Infection Buzzking",
@@ -1868,6 +1938,11 @@
     "name": "Number 38: Hope Harbinger Dragon Titanic Galaxy",
     "points": 20,
     "code": 63767246
+  },
+  {
+    "name": "Number 39: Utopia Double",
+    "points": 80,
+    "code": 62517849
   },
   {
     "name": "Number 4: Numeron Gate Catvari",
@@ -2200,8 +2275,23 @@
     "code": 54143349
   },
   {
+    "name": "Radiant Typhoon Vision",
+    "points": 10,
+    "code": 20508881
+  },
+  {
+    "name": "Rahu Dracotail",
+    "points": 10,
+    "code": 32548318
+  },
+  {
+    "name": "Raider's Knight",
+    "points": 80,
+    "code": 28781003
+  },
+  {
     "name": "Raigeki",
-    "points": 7,
+    "points": 4,
     "code": 12580477
   },
   {
@@ -2321,17 +2411,37 @@
   },
   {
     "name": "Redox, Dragon Ruler of Boulders",
-    "points": 7,
+    "points": 5,
     "code": 90411554
   },
   {
     "name": "Regenesis",
-    "points": 33,
+    "points": 10,
     "code": 31786838
   },
   {
+    "name": "Regenesis Archfiend",
+    "points": 10,
+    "code": 95718355
+  },
+  {
+    "name": "Regenesis Code",
+    "points": 10,
+    "code": 67171933
+  },
+  {
+    "name": "Regenesis Sage",
+    "points": 7,
+    "code": 22938501
+  },
+  {
+    "name": "Regenesis Warrior",
+    "points": 3,
+    "code": 96540807
+  },
+  {
     "name": "Reinforcement of the Army",
-    "points": 35,
+    "points": 33,
     "code": 32807846
   },
   {
@@ -2425,6 +2535,11 @@
     "code": 64964750
   },
   {
+    "name": "Sandwich Day",
+    "points": 3,
+    "code": 83838727
+  },
+  {
     "name": "Sangen Kaimen",
     "points": 50,
     "code": 66730191
@@ -2495,6 +2610,11 @@
     "code": 32619583
   },
   {
+    "name": "Silvy of the White Forest",
+    "points": 5,
+    "code": 98385955
+  },
+  {
     "name": "Sixth Sense",
     "points": 65,
     "code": 3280747
@@ -2505,13 +2625,18 @@
     "code": 82732705
   },
   {
+    "name": "Sky Striker Mobilize - Engage!",
+    "points": 7,
+    "code": 63166095
+  },
+  {
     "name": "Smoke Grenade of the Thief",
     "points": 87,
     "code": 63789924
   },
   {
     "name": "Snatch Steal",
-    "points": 5,
+    "points": 4,
     "code": 45986603
   },
   {
@@ -2565,6 +2690,16 @@
     "code": 84636823
   },
   {
+    "name": "Spell Card \"Soul Exchange\"",
+    "points": 3,
+    "code": 15735108
+  },
+  {
+    "name": "Spenta, the Magistus Sealer",
+    "points": 15,
+    "code": 42544773
+  },
+  {
     "name": "Spiritual Beast Tamer Lara",
     "points": 10,
     "code": 23623653
@@ -2598,6 +2733,11 @@
     "name": "Starliege Seyfert",
     "points": 33,
     "code": 15381421
+  },
+  {
+    "name": "Steel-Stringed Sacrifice",
+    "points": 3,
+    "code": 7166709
   },
   {
     "name": "Stray Purrely Street",
@@ -2656,7 +2796,7 @@
   },
   {
     "name": "Swordsoul Grandmaster - Chixiao",
-    "points": 33,
+    "points": 20,
     "code": 69248256
   },
   {
@@ -2706,7 +2846,7 @@
   },
   {
     "name": "Tempest, Dragon Ruler of Storms",
-    "points": 7,
+    "points": 5,
     "code": 89399912
   },
   {
@@ -2765,13 +2905,18 @@
     "code": 33017655
   },
   {
+    "name": "The Gaze of Timaeus",
+    "points": 1,
+    "code": 22283204
+  },
+  {
     "name": "The Last Warrior from Another Planet",
     "points": 100,
     "code": 86099788
   },
   {
     "name": "The Melody of Awakening Dragon",
-    "points": 33,
+    "points": 25,
     "code": 48800175
   },
   {
@@ -2800,6 +2945,11 @@
     "code": 73082255
   },
   {
+    "name": "Theorealize",
+    "points": 5,
+    "code": 48739627
+  },
+  {
     "name": "There Can Be Only One",
     "points": 100,
     "code": 24207889
@@ -2821,13 +2971,18 @@
   },
   {
     "name": "Tidal, Dragon Ruler of Waterfalls",
-    "points": 7,
+    "points": 5,
     "code": 26400609
   },
   {
     "name": "Toadally Awesome",
     "points": 20,
     "code": 90809975
+  },
+  {
+    "name": "Toon Table of Contents",
+    "points": 7,
+    "code": 89997728
   },
   {
     "name": "Totem Bird",
@@ -2838,6 +2993,11 @@
     "name": "Tour Guide From the Underworld",
     "points": 3,
     "code": 10802915
+  },
+  {
+    "name": "Trade-In",
+    "points": 5,
+    "code": 38120068
   },
   {
     "name": "Transaction Rollback",
@@ -2900,19 +3060,29 @@
     "code": 76721030
   },
   {
+    "name": "Ultimate Slayer",
+    "points": 1,
+    "code": 2263869
+  },
+  {
     "name": "Ultimaya Tzolkin",
     "points": 100,
     "code": 1686814
   },
   {
     "name": "Union Hangar",
-    "points": 25,
+    "points": 15,
     "code": 66399653
   },
   {
     "name": "Upstart Goblin",
-    "points": 3,
+    "points": 7,
     "code": 70368879
+  },
+  {
+    "name": "Uzuhime the Manifested Mikanko",
+    "points": 18,
+    "code": 57566760
   },
   {
     "name": "Vanity's Emptiness",
@@ -3001,7 +3171,7 @@
   },
   {
     "name": "Zaborg the Mega Monarch",
-    "points": 80,
+    "points": 100,
     "code": 87602890
   },
   {
@@ -3030,8 +3200,8 @@
     "code": 78872731
   },
   {
-    "name": "Spenta, the Magistus Sealer",
-    "points": 15,
-    "code": 42544773
+    "name": "K9-ØØ Lupis",
+    "points": 5,
+    "code": 91025875
   }
 ]
