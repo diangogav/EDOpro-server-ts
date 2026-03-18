@@ -67,7 +67,7 @@ RUN git clone https://github.com/microsoft/vcpkg.git && \
 COPY ./core .
 
 # Install dependencies and build the application
-# Note: we disable the internal vcpkg build of the build script to rely on the docker environment's vcpkg if needed, 
+# Note: we disable the internal vcpkg build of the build script to rely on the docker environment's vcpkg if needed,
 # but the build script effectively does the same. ideally we can just run the cmake commands directly here
 # to avoid re-cloning vcpkg or issues with the script's path logic.
 RUN ./vcpkg/vcpkg install --triplet x64-linux && \

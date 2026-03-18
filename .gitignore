@@ -1,43 +1,63 @@
-# NodeJS
-node_modules
-dist
+# ==========================================
+# .gitignore
+# ==========================================
 
-# Mercury
-mercury/script
-mercury/pre-releases/ocg
-mercury/pre-releases/tcg
-mercury/alternatives
-mercury/ocg
+# Environments & Secrets
+.env
+.env.*
+!.env.example
+certs/
 
-# Evolution
-scripts
-*dependencies
-*build
-*repositories
+# Dependencies & Build
+node_modules/
+dist/
+coverage/
+*.log
+app.log
+
+# Databases & Data
+postgres_data/
+*databases/
+*.db
+*.cdb
+*banlists/
+
+# Project configuration
+*.conf
+
+# VS Code & IDEs
+.vscode/
+.idea/
+.DS_Store
+
+# Core (C++)
 core/Makefile
 core/src/Makefile
 core/premake5
 core/CoreIntegrator
 core/example.so
 core/libluasocket.so
-core/vcpkg
-core/vcpkg_installed
-*databases
-*.db
-*.env
-*.cdb
-*.conf
-*banlists
-certs
-app.log
-coverage
+core/vcpkg/
+core/vcpkg_installed/
 
-# VSCode
-*.vscode
+# Mercury
+mercury/script/
+mercury/scripts/
+mercury/alternatives/
+mercury/ocg/
+mercury/pre-releases/ocg/*
+!mercury/pre-releases/ocg/ygopro
+mercury/pre-releases/tcg/*
+!mercury/pre-releases/tcg/ygopro
 
-# IntellJ
-.DS_Store
-.idea
+# Git Submodules & Repositories
+*repositories/
 
-postgres_data
-ANALISIS_PROYECTO.md
+# Scripts
+scripts/
+
+# Miscellaneous Directories
+core/dependencies/
+core/build/
+dependencies/
+build/

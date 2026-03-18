@@ -1,16 +1,79 @@
-.git
-node_modules
-dist
-scripts
-core/dependencies
-core/build
+# ==========================================
+# .dockerignore
+# ==========================================
+
+# Git
+.git/
+.gitignore
+.gitmodules
+
+# Environments & Secrets
+.env
+.env.*
+!.env.example
+certs/
+
+# Dependencies & Build
+node_modules/
+dist/
+coverage/
+*.log
+app.log
+
+# Databases & Data
+postgres_data/
+*databases/
+*.db
+*.cdb
+*banlists/
+
+# Project configuration
+*.conf
+
+# VS Code & IDEs
+.vscode/
+.idea/
+.DS_Store
+
+# Core (C++)
 core/Makefile
 core/src/Makefile
 core/premake5
-core/databases
-core/vcpkg
-core/vcpkg_installed
-databases
-mercury/scripts
-src/evolution-types
-postgres_data
+core/CoreIntegrator
+core/example.so
+core/libluasocket.so
+core/vcpkg/
+core/vcpkg_installed/
+
+# Evolution Source
+src/evolution-types/
+
+# Mercury
+mercury/script/
+mercury/scripts/
+mercury/alternatives/
+mercury/ocg/
+mercury/pre-releases/ocg/*
+!mercury/pre-releases/ocg/ygopro
+mercury/pre-releases/tcg/*
+!mercury/pre-releases/tcg/ygopro
+
+# Git Submodules & Repositories
+*repositories/
+
+# Scripts
+scripts/
+
+# Miscellaneous Directories
+core/dependencies/
+core/build/
+dependencies/
+build/
+
+# Miscellaneous Files
+Dockerfile
+docker-compose*.yaml
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
