@@ -15,7 +15,7 @@ WORKDIR /repositories
 RUN git clone --depth 1 --branch master https://github.com/ProjectIgnis/CardScripts.git scripts && \
     git clone --depth 1 --branch master https://github.com/ProjectIgnis/BabelCDB.git databases && \
     git clone --depth 1 --branch master https://github.com/ProjectIgnis/LFLists banlists-project-ignis && \
-    git clone --depth 1 --branch master https://github.com/mycard/ygopro-scripts.git mercury-scripts && \
+    git clone --depth 1 --branch master https://github.com/Fluorohydride/ygopro-scripts mercury-scripts && \
     git clone --depth 1 --branch master https://github.com/evolutionygo/pre-release-database-cdb mercury-prerelases && \
     git clone --depth 1 --branch main https://github.com/evolutionygo/cards-art-server mercury-arts && \
     git clone --depth 1 --branch main https://github.com/termitaklk/lflist banlists-evolution && \
