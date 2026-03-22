@@ -18,9 +18,9 @@ export class YGOProResourceLoader {
     this.registerReloadTimer();
   }
 
-  ygoproPaths = ["mycard"];
+  ygoproPaths = ["./ygopro"];
 
-  extraScriptPaths = "mycard/scripts";
+  extraScriptPaths = ["./ygopro/scripts"];
 
   private loadingLock = new BetterLock();
   private loadingCardStorage?: Promise<CardStorage>;
