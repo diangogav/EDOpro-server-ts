@@ -4,14 +4,12 @@ import { YGOProLFList } from "ygopro-lflist-encode";
 import path from "node:path";
 import { runInWorker } from "yuzuthread";
 import BetterLock from "better-lock";
-import { Service } from "diod";
 import { CardStorage } from "./card-storage";
 import { CardLoadWorker } from "./card-load-worker";
 import { Logger } from "src/shared/logger/domain/Logger";
 
 const CARD_STORAGE_RELOAD_INTERVAL_MS = 10 * 60 * 1000;
 
-@Service()
 export class YGOProResourceLoader {
   private readonly logger: Logger;
 
@@ -20,7 +18,7 @@ export class YGOProResourceLoader {
     this.registerReloadTimer();
   }
 
-  ygoproPaths = ["./ygopro"];
+  ygoproPaths = ["mycard"];
 
   extraScriptPaths = "mycard/scripts";
 
