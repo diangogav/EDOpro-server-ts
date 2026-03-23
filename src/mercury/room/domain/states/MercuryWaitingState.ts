@@ -25,10 +25,14 @@ import {
 	OcgcoreCommonConstants,
 	PlayerChangeState,
 	YGOProCtosUpdateDeck,
+	YGOProStocDeckCount,
+	YGOProStocDeckCount_DeckInfo,
+	YGOProStocDuelStart,
 	YGOProStocHsPlayerChange,
 	YGOProStocHsPlayerEnter,
 	YGOProStocHsWatchChange,
 	YGOProStocJoinGame,
+	YGOProStocSelectHand,
 	YGOProStocTypeChange,
 } from "ygopro-msg-encode";
 import YGOProDeck from "ygopro-deck-encode";
@@ -52,8 +56,8 @@ export class MercuryWaitingState extends RoomState {
 		);
 		this.eventEmitter.on(
 			Commands.TRY_START as unknown as string,
-			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
-				void this.tryStartHandler.bind(this)(message, room, socket),
+			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
+				void this.tryStartHandler.bind(this)(message, room, client),
 		);
 		this.eventEmitter.on(
 			"JOIN_GAME" as unknown as string,
@@ -204,9 +208,26 @@ export class MercuryWaitingState extends RoomState {
 	private tryStartHandler(
 		_message: ClientMessage,
 		room: MercuryRoom,
-		_socket: ISocket,
+		client: MercuryClient,
 	): void {
 		this.logger.info("TRY_START");
+
+		if (!client.host) {
+			return;
+		}
+
+		if (!room.allPlayersReady) {
+			return
+		}
+
+		const duelStartMessage = new YGOProStocDuelStart()
+
+		for (const player of room.clients) {
+			(player as MercuryClient).sendMessageToClient(Buffer.from(duelStartMessage.toFullPayload()));
+			this.sendDeckCountMessage(player as MercuryClient, room);
+		}
+
+		this.toRPS(room);
 		room.createMatch();
 		room.rps();
 	}
@@ -474,6 +495,38 @@ export class MercuryWaitingState extends RoomState {
 			playerPosition: client.position,
 			playerState,
 		});
+	}
+
+	private sendDeckCountMessage(client: MercuryClient, room: MercuryRoom): void {
+		const toDeckCount = (deck: YGOProDeck | null) => {
+			const message = new YGOProStocDeckCount_DeckInfo();
+			if (!deck) {
+				message.main = 0;
+				message.extra = 0;
+				message.side = 0;
+			} else {
+				message.main = deck.main.length;
+				message.extra = deck.extra.length;
+				message.side = deck.side.length;
+			}
+			return message;
+		};
+
+		const displayCountDecks: (YGOProDeck | null)[] = [0, 1].map((team) => {
+			const player = room.getTeamPlayers(team)[0];
+			return player.deck;
+		});
+
+		const team = room.getTeam(client.position);
+		const deck = displayCountDecks[team];
+		const otherDeck = displayCountDecks[1 - team];
+
+		const message = new YGOProStocDeckCount().fromPartial({
+			player0DeckCount: toDeckCount(deck),
+			player1DeckCount: toDeckCount(otherDeck)
+		})
+
+		client.sendMessageToClient(Buffer.from(message.toFullPayload()))
 	}
 
 	private async buildDeck(message: YGOProCtosUpdateDeck, room: MercuryRoom): Promise<YGOProDeck> {
