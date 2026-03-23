@@ -1,16 +1,6 @@
-import { Mode } from "./Mode.enum";
+import { GameMode, HostInfo as YGOCoreHostInfo } from "ygopro-msg-encode";
 
-export type HostInfo = {
-	mode: Mode;
-	startLp: number;
-	startHand: number;
-	drawCount: number;
-	timeLimit: number;
-	rule: number;
-	noCheck: boolean;
-	noShuffle: boolean;
-	lflist: number;
-	duelRule: number;
-	maxDeckPoints: number;
-	bestOf: number;
-};
+export interface HostInfo extends YGOCoreHostInfo {
+	best_of: number;
+	max_deck_points: number;
+}

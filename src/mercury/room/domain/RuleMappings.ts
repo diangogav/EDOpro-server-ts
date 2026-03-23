@@ -1,6 +1,6 @@
 import MercuryBanListMemoryRepository from "../../ban-list/infrastructure/MercuryBanListMemoryRepository";
+import { GameMode } from "ygopro-msg-encode";
 import { HostInfo } from "./host-info/HostInfo";
-import { Mode } from "./host-info/Mode.enum";
 
 interface RuleMappings {
 	[key: string]: {
@@ -17,11 +17,11 @@ function extractNumberFromCommand(input: string): number | null {
 
 export const ruleMappings: RuleMappings = {
 	m: {
-		get: () => ({ mode: Mode.MATCH, startLp: 8000, bestOf: 3 }),
+		get: () => ({ mode: GameMode.MATCH, startLp: 8000, bestOf: 3 }),
 		validate: (value) => value === "m" || value === "match",
 	},
 	t: {
-		get: () => ({ mode: Mode.TAG, startLp: 16000, bestOf: 1 }),
+		get: () => ({ mode: GameMode.TAG, startLp: 16000, bestOf: 1 }),
 		validate: (value) => value === "t" || value === "tag",
 	},
 };
@@ -33,21 +33,21 @@ export const priorityRuleMappings: RuleMappings = {
 
 			if (bestOf === null || bestOf < 1) {
 				return {
-					mode: Mode.MATCH,
+					mode: GameMode.MATCH,
 					bestOf: 3,
 				};
 			}
 
 			if (bestOf % 2 === 0) {
 				return {
-					mode: Mode.MATCH,
+					mode: GameMode.MATCH,
 					bestOf: bestOf + 1,
 				};
 			}
 
 			return {
 				bestOf,
-				mode: Mode.MATCH,
+				mode: GameMode.MATCH,
 			};
 		},
 		validate: (value) => {
@@ -62,7 +62,7 @@ export const priorityRuleMappings: RuleMappings = {
 
 			if (lps === null) {
 				return {
-					startLp: 8000,
+					start_lp: 8000,
 				};
 			}
 
@@ -96,24 +96,24 @@ export const priorityRuleMappings: RuleMappings = {
 			const time = extractNumberFromCommand(value);
 			if (time === null) {
 				return {
-					timeLimit: 180,
+					time_limit: 180,
 				};
 			}
 
 			if (time >= 1 && time <= 60) {
 				return {
-					timeLimit: time * 60,
+					time_limit: time * 60,
 				};
 			}
 
 			if (time >= 999) {
 				return {
-					timeLimit: 999,
+					time_limit: 999,
 				};
 			}
 
 			return {
-				timeLimit: time,
+				time_limit: time,
 			};
 		},
 		validate: (value) => {
@@ -125,11 +125,11 @@ export const priorityRuleMappings: RuleMappings = {
 
 	mr: {
 		get: (value: string) => {
-			const duelRule = extractNumberFromCommand(value);
+			const duel_rule = extractNumberFromCommand(value);
 
-			if (duelRule && duelRule > 0 && duelRule <= 5) {
+			if (duel_rule && duel_rule > 0 && duel_rule <= 5) {
 				return {
-					duelRule,
+					duel_rule,
 				};
 			}
 
@@ -171,7 +171,7 @@ export const priorityRuleMappings: RuleMappings = {
 	ns: {
 		get: () => {
 			return {
-				noShuffle: true,
+				no_shuffle_deck: 1,
 			};
 		},
 		validate: (value) => {
@@ -182,7 +182,7 @@ export const priorityRuleMappings: RuleMappings = {
 	nc: {
 		get: () => {
 			return {
-				noCheck: true,
+				no_check_deck: 1,
 			};
 		},
 		validate: (value) => {
@@ -196,24 +196,24 @@ export const priorityRuleMappings: RuleMappings = {
 
 			if (count === null) {
 				return {
-					drawCount: 1,
+					draw_count: 1,
 				};
 			}
 
 			if (count > 35) {
 				return {
-					drawCount: 35,
+					draw_count: 35,
 				};
 			}
 
 			if (count <= 0) {
 				return {
-					drawCount: 1,
+					draw_count: 1,
 				};
 			}
 
 			return {
-				drawCount: count,
+				draw_count: count,
 			};
 		},
 		validate: (value) => {
@@ -229,24 +229,24 @@ export const priorityRuleMappings: RuleMappings = {
 
 			if (count === null) {
 				return {
-					startHand: 5,
+					start_hand: 5,
 				};
 			}
 
 			if (count > 40) {
 				return {
-					startHand: 40,
+					start_hand: 40,
 				};
 			}
 
 			if (count <= 0) {
 				return {
-					startHand: 5,
+					start_hand: 5,
 				};
 			}
 
 			return {
-				startHand: count,
+				start_hand: count,
 			};
 		},
 		validate: (value) => {
@@ -340,7 +340,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 0,
 				lflist: 0,
-				mode: Mode.MATCH,
+				mode: GameMode.MATCH,
 			};
 		},
 		validate: (value) => {
@@ -353,7 +353,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: 0,
-				mode: Mode.MATCH,
+				mode: GameMode.MATCH,
 			};
 		},
 		validate: (value) => {
@@ -366,7 +366,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 1,
 				lflist: MercuryBanListMemoryRepository.getLastTCGIndex(),
-				mode: Mode.MATCH,
+				mode: GameMode.MATCH,
 			};
 		},
 		validate: (value) => {
@@ -379,7 +379,7 @@ export const priorityRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: MercuryBanListMemoryRepository.getLastTCGIndex(),
-				mode: Mode.MATCH,
+				mode: GameMode.MATCH,
 			};
 		},
 		validate: (value) => {

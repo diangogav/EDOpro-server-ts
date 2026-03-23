@@ -14,14 +14,16 @@ import { DuelState, YgoRoom } from "../../../shared/room/domain/YgoRoom";
 import MercuryBanListMemoryRepository from "../../ban-list/infrastructure/MercuryBanListMemoryRepository";
 import { MercuryClient } from "../../client/domain/MercuryClient";
 import {
-	MercuryJointGameToCoreMessage,
-	MercuryPlayerInfoToCoreMessage,
-	MercuryToObserverToCoreMessage,
+  MercuryJointGameToCoreMessage,
+  MercuryPlayerInfoToCoreMessage,
+  MercuryToObserverToCoreMessage,
 } from "../../messages/server-to-core";
 import MercuryRoomList from "../infrastructure/MercuryRoomList";
-import { HostInfo } from "./host-info/HostInfo";
-import { Mode } from "./host-info/Mode.enum";
-import { formatRuleMappings, priorityRuleMappings, ruleMappings } from "./RuleMappings";
+import {
+  formatRuleMappings,
+  priorityRuleMappings,
+  ruleMappings,
+} from "./RuleMappings";
 import { MercuryChoosingOrderState } from "./states/MercuryChoosingOrderState";
 import { MercuryDuelingState } from "./states/MercuryDuelingState";
 import { MercuryRockPaperScissorState } from "./states/MercuryRockPaperScissorsState";
@@ -29,454 +31,616 @@ import { MercurySideDeckingState } from "./states/MercurySideDeckingState";
 import { MercuryWaitingState } from "./states/MercuryWaitingState";
 import { RoomType } from "src/shared/room/domain/RoomType";
 
+// OCG Core WASM imports
+import { initWorker } from "yuzuthread";
+import { OcgcoreWorker, OcgcoreWorkerOptions } from "../../ocgcore-worker";
+import YGOProDeck from "ygopro-deck-encode";
+import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
+import { YGOProResourceLoader } from "../../ygopro/ygopro-resource-loader";
+import { GameMode } from "ygopro-msg-encode";
+import { HostInfo } from "./host-info/HostInfo";
+
 const BEST_OF = {
-	[Mode.SINGLE]: 1,
-	[Mode.MATCH]: 3,
-	[Mode.TAG]: 1,
-}
+  [GameMode.SINGLE]: 1,
+  [GameMode.MATCH]: 3,
+  [GameMode.TAG]: 1,
+};
 
 export class MercuryRoom extends YgoRoom {
-	readonly name: string;
-	readonly password: string;
-	readonly createdBySocketId: string;
-	readonly cardRepository = new CardSQLiteTYpeORMRepository();
-	private _logger: Logger;
-	private _coreStarted = false;
-	private _corePort: number | null = null;
-	private _banListHash: number;
-	private _edoBanListHash: number;
-	private _joinBuffer: Buffer | null = null;
-	private readonly _hostInfo: HostInfo;
-	private roomState: RoomState | null = null;
-	private _route = "mercury";
+  readonly name: string;
+  readonly password: string;
+  readonly createdBySocketId: string;
+  readonly cardRepository = new CardSQLiteTYpeORMRepository();
+  private _logger: Logger;
+  private _coreStarted = false;
+  private _corePort: number | null = null;
+  private _banListHash: number;
+  private _edoBanListHash: number;
+  private _joinBuffer: Buffer | null = null;
+  private readonly _hostInfo: HostInfo;
+  private roomState: RoomState | null = null;
+  private _route = "mercury";
 
-	private constructor({
-		id,
-		name,
-		password = "",
-		hostInfo,
-		team0,
-		team1,
-		ranked,
-		createdBySocketId,
-		bestOf,
-		startLp,
-	}: {
-		id: number;
-		password: string;
-		name: string;
-		hostInfo: HostInfo;
-		team0: number;
-		team1: number;
-		ranked: boolean;
-		createdBySocketId: string;
-		bestOf: number;
-		startLp: number;
-	}) {
-		super({ team0, team1, ranked, bestOf, startLp, id, notes: "", roomType: RoomType.MERCURY });
-		this.name = name;
-		this.password = password;
-		this._clients = [];
-		this._hostInfo = hostInfo;
-		this._state = DuelState.WAITING;
-		this._banListHash = 0;
-		this.createdBySocketId = createdBySocketId;
-	}
+  // OCG Core WASM
+  private _ocgcore?: OcgcoreWorker;
+  private readonly _resourceLoader: YGOProResourceLoader;
 
-	static create(
-		id: number,
-		command: string,
-		logger: Logger,
-		emitter: EventEmitter,
-		playerInfo: PlayerInfoMessage,
-		createdBySocketId: string
-	): MercuryRoom {
-		let hostInfo: HostInfo = {
-			mode: Mode.SINGLE,
-			startLp: 8000,
-			startHand: 5,
-			drawCount: 1,
-			timeLimit: 180,
-			rule: 1,
-			noCheck: false,
-			noShuffle: false,
-			lflist: MercuryBanListMemoryRepository.getLastTCGIndex(),
-			duelRule: 5,
-			maxDeckPoints: 100,
-			bestOf: BEST_OF[Mode.SINGLE],
-		};
+  private constructor({
+    id,
+    name,
+    password = "",
+    hostInfo,
+    team0,
+    team1,
+    ranked,
+    createdBySocketId,
+    bestOf,
+    startLp,
+  }: {
+    id: number;
+    password: string;
+    name: string;
+    hostInfo: HostInfo;
+    team0: number;
+    team1: number;
+    ranked: boolean;
+    createdBySocketId: string;
+    bestOf: number;
+    startLp: number;
+  }) {
+    super({
+      team0,
+      team1,
+      ranked,
+      bestOf,
+      startLp,
+      id,
+      notes: "",
+      roomType: RoomType.MERCURY,
+    });
+    this.name = name;
+    this.password = password;
+    this._clients = [];
+    this._hostInfo = hostInfo;
+    this._state = DuelState.WAITING;
+    this._banListHash = 0;
+    this.createdBySocketId = createdBySocketId;
+    this._resourceLoader = YGOProResourceLoader.getShared();
+  }
 
-		const [configuration, password] = command.split("#");
-		const options = configuration
-			.toLowerCase()
-			.split(",")
-			.map((_) => _.trim());
+  static create(
+    id: number,
+    command: string,
+    logger: Logger,
+    emitter: EventEmitter,
+    playerInfo: PlayerInfoMessage,
+    createdBySocketId: string,
+  ): MercuryRoom {
+    let hostInfo: HostInfo = {
+      lflist: MercuryBanListMemoryRepository.getLastTCGIndex(),
+      rule: 1,
+      mode: GameMode.SINGLE,
+      duel_rule: 5,
+      no_check_deck: 0,
+      no_shuffle_deck: 0,
+      start_lp: 8000,
+      start_hand: 5,
+      draw_count: 1,
+      time_limit: 180,
+      max_deck_points: 100,
+      best_of: BEST_OF[GameMode.SINGLE],
+    };
 
-		const mappingKeys = Object.keys(ruleMappings);
-		const formatMappingKeys = Object.keys(formatRuleMappings);
-		const priorityMappingKeys = Object.keys(priorityRuleMappings);
-		const mappings = mappingKeys.map((key) => ruleMappings[key]);
-		const formatMappings = formatMappingKeys.map((key) => formatRuleMappings[key]);
-		const priorityMappings = priorityMappingKeys.map((key) => priorityRuleMappings[key]);
+    const [configuration, password] = command.split("#");
+    const options = configuration
+      .toLowerCase()
+      .split(",")
+      .map((_) => _.trim());
 
-		options.forEach((option) => {
-			const items = mappings.filter((item) => item.validate(option));
-			if (items.length > 1) {
-				throw new Error(`Error: param match with two rules.`);
-			}
+    const mappingKeys = Object.keys(ruleMappings);
+    const formatMappingKeys = Object.keys(formatRuleMappings);
+    const priorityMappingKeys = Object.keys(priorityRuleMappings);
+    const mappings = mappingKeys.map((key) => ruleMappings[key]);
+    const formatMappings = formatMappingKeys.map(
+      (key) => formatRuleMappings[key],
+    );
+    const priorityMappings = priorityMappingKeys.map(
+      (key) => priorityRuleMappings[key],
+    );
 
-			const mapping = items.shift();
-			if (mapping) {
-				const rule = mapping.get(option);
-				hostInfo = { ...hostInfo, ...rule };
-			}
-		});
+    options.forEach((option) => {
+      const items = mappings.filter((item) => item.validate(option));
+      if (items.length > 1) {
+        throw new Error(`Error: param match with two rules.`);
+      }
 
-		options.forEach((option) => {
-			const items = formatMappings.filter((item) => item.validate(option));
-			if (items.length > 1) {
-				throw new Error(`Error: param match with two rules.`);
-			}
-			const mapping = items.shift();
-			if (mapping) {
-				const rule = mapping.get(option);
-				hostInfo = { ...hostInfo, ...rule };
-			}
-		});
+      const mapping = items.shift();
+      if (mapping) {
+        const rule = mapping.get(option);
+        hostInfo = { ...hostInfo, ...rule };
+      }
+    });
 
-		options.forEach((option) => {
-			const items = priorityMappings.filter((item) => item.validate(option));
-			if (items.length > 1) {
-				throw new Error(`Error: param match with two rules.`);
-			}
-			const mapping = items.shift();
-			if (mapping) {
-				const rule = mapping.get(option);
-				hostInfo = { ...hostInfo, ...rule };
-			}
-		});
+    options.forEach((option) => {
+      const items = formatMappings.filter((item) => item.validate(option));
+      if (items.length > 1) {
+        throw new Error(`Error: param match with two rules.`);
+      }
+      const mapping = items.shift();
+      if (mapping) {
+        const rule = mapping.get(option);
+        hostInfo = { ...hostInfo, ...rule };
+      }
+    });
 
-		const teamCount = hostInfo.mode === Mode.TAG ? 2 : 1;
-		const ranked = Boolean(playerInfo.password);
-		const room = new MercuryRoom({
-			id,
-			hostInfo,
-			name: command,
-			password,
-			team0: teamCount,
-			team1: teamCount,
-			ranked,
-			createdBySocketId,
-			bestOf: hostInfo.bestOf,
-			startLp: hostInfo.startLp,
-		});
+    options.forEach((option) => {
+      const items = priorityMappings.filter((item) => item.validate(option));
+      if (items.length > 1) {
+        throw new Error(`Error: param match with two rules.`);
+      }
+      const mapping = items.shift();
+      if (mapping) {
+        const rule = mapping.get(option);
+        hostInfo = { ...hostInfo, ...rule };
+      }
+    });
 
-		room._logger = logger.child({ file: "MercuryRoom" });
-		room.emitter = emitter;
+    const teamCount = hostInfo.mode === GameMode.TAG ? 2 : 1;
+    const ranked = Boolean(playerInfo.password);
+    const room = new MercuryRoom({
+      id,
+      hostInfo,
+      name: command,
+      password,
+      team0: teamCount,
+      team1: teamCount,
+      ranked,
+      createdBySocketId,
+      bestOf: hostInfo.best_of,
+      startLp: hostInfo.start_lp,
+    });
 
-		const routes = {
-			edison: "mercury/alternatives/edison",
-			hat: "mercury/alternatives/hat",
-			goat: "mercury/alternatives/goat",
-			tengu: "mercury/alternatives/tengu",
-			md: "mercury/alternatives/md",
-			jtp: "mercury/alternatives/jtp",
-			gx: "mercury/alternatives/gx",
-			mdc: "mercury/alternatives/mdc",
-			rush: "mercury/alternatives/rush",
-			speed: "mercury/alternatives/speed",
-			world: "mercury/alternatives/world",
-			pre: "mercury/pre-releases/tcg",
-			ocg: "mercury/ocg",
-			ocgpre: "mercury/pre-releases/ocg",
-			tcgpre: "mercury/pre-releases/tcg",
-			ocgart: "mercury/pre-releases/ocg",
-			tcgart: "mercury/pre-releases/tcg",
-			ot: "mercury/ocg",
-			otto: "mercury/ocg",
-			genesys: "mercury/alternatives/genesys",
-		};
+    room._logger = logger.child({ file: "MercuryRoom" });
+    room.emitter = emitter;
 
-		const genesysRegex = /^g\d*$/;
-		options.forEach((option) => {
-			if (option.startsWith("genesys") || genesysRegex.test(option)) {
-				room._route = routes["genesys"];
+    const routes = {
+      edison: "mercury/alternatives/edison",
+      hat: "mercury/alternatives/hat",
+      goat: "mercury/alternatives/goat",
+      tengu: "mercury/alternatives/tengu",
+      md: "mercury/alternatives/md",
+      jtp: "mercury/alternatives/jtp",
+      gx: "mercury/alternatives/gx",
+      mdc: "mercury/alternatives/mdc",
+      rush: "mercury/alternatives/rush",
+      speed: "mercury/alternatives/speed",
+      world: "mercury/alternatives/world",
+      pre: "mercury/pre-releases/tcg",
+      ocg: "mercury/ocg",
+      ocgpre: "mercury/pre-releases/ocg",
+      tcgpre: "mercury/pre-releases/tcg",
+      ocgart: "mercury/pre-releases/ocg",
+      tcgart: "mercury/pre-releases/tcg",
+      ot: "mercury/ocg",
+      otto: "mercury/ocg",
+      genesys: "mercury/alternatives/genesys",
+    };
 
-				return;
-			}
+    const genesysRegex = /^g\d*$/;
+    options.forEach((option) => {
+      if (option.startsWith("genesys") || genesysRegex.test(option)) {
+        room._route = routes["genesys"];
 
-			room._route = routes[option] ?? room._route;
-		});
+        return;
+      }
 
-		return room;
-	}
+      room._route = routes[option] ?? room._route;
+    });
 
-	addClient(client: MercuryClient): void {
-		client.setNeedSpectatorMessages(false);
-		this._clients.push(client);
-		if (client.connectedToCore) {
-			return;
-		}
+    return room;
+  }
 
-		this.connectClientToCore(client);
-	}
+  addClient(client: MercuryClient): void {
+    // client.setNeedSpectatorMessages(false);
+    this._clients.push(client);
+    // if (client.connectedToCore) {
+    //   return;
+    // }
 
-	addSpectator(spectator: MercuryClient, needSpectatorMessages: boolean, fromLobby = false): void {
-		spectator.setNeedSpectatorMessages(needSpectatorMessages);
-		this._spectators.push(spectator);
+    // this.connectClientToCore(client);
+  }
 
-		if (!spectator.connectedToCore) {
-			this.connectClientToCore(spectator);
-		}
+  addSpectator(
+    spectator: MercuryClient,
+    needSpectatorMessages: boolean,
+    fromLobby = false,
+  ): void {
+    spectator.setNeedSpectatorMessages(needSpectatorMessages);
+    this._spectators.push(spectator);
 
-		if (!fromLobby) {
-			this.spectatorCache.forEach((message) => {
-				spectator.socket.send(message);
-			});
-		}
-	}
+    if (!spectator.connectedToCore) {
+      this.connectClientToCore(spectator);
+    }
 
-	startCore(): void {
-		this._logger.debug("Starting Mercury Core");
-		const core = spawn(
-			"./ygopro",
-			[
-				"0",
-				this._hostInfo.lflist.toString(),
-				this._hostInfo.rule.toString(),
-				this._hostInfo.mode.toString(),
-				this._hostInfo.duelRule.toString(),
-				this._hostInfo.noCheck ? "T" : "F",
-				this._hostInfo.noShuffle ? "T" : "F",
-				this._hostInfo.startLp.toString(),
-				this._hostInfo.startHand.toString(),
-				this._hostInfo.drawCount.toString(),
-				this._hostInfo.timeLimit.toString(),
-				"2", //REPLAY MODE
-				this.bestOf.toString(),
-			],
-			{
-				cwd: this._route,
-			}
-		);
+    if (!fromLobby) {
+      this.spectatorCache.forEach((message) => {
+        spectator.socket.send(message);
+      });
+    }
+  }
 
-		core.on("error", (error) => {
-			this._logger.error("Error running mercury core");
-			this._logger.error(error);
-		});
+  get isTag() {
+    return (this.hostInfo.mode & 0x2) !== 0;
+  }
 
-		core.on("exit", (code, signal) => {
-			this._logger.debug(
+  get mode() {
+    return this.hostInfo.mode > 2 ? (this.isTag ? 2 : 1) : this.hostInfo.mode
+  }
 
-				`Core closed for room ${this.id} with code: ${code} and signal: ${signal} `
-			);
+  startCore(): void {
+    this._logger.debug("Starting Mercury Core");
+    const core = spawn(
+      "./ygopro",
+      [
+        "0",
+        this._hostInfo.lflist.toString(),
+        this._hostInfo.rule.toString(),
+        this._hostInfo.mode.toString(),
+        this._hostInfo.duel_rule.toString(),
+        this._hostInfo.no_check_deck ? "T" : "F",
+        this._hostInfo.no_shuffle_deck ? "T" : "F",
+        this._hostInfo.start_lp.toString(),
+        this._hostInfo.start_hand.toString(),
+        this._hostInfo.draw_count.toString(),
+        this._hostInfo.time_limit.toString(),
+        "2", //REPLAY MODE
+        this.bestOf.toString(),
+      ],
+      {
+        cwd: this._route,
+      },
+    );
 
-			MercuryRoomList.deleteRoom(this);
-		});
+    core.on("error", (error) => {
+      this._logger.error("Error running mercury core");
+      this._logger.error(error);
+    });
 
-		core.stdout.setEncoding("utf8");
-		core.stdout.once("data", (data: Buffer) => {
-			this._logger.debug(`Started Mercury Core at port: ${data.toString()}`);
-			this._coreStarted = true;
-			this._corePort = +data.toString();
-			this._clients.forEach((client: MercuryClient) => {
-				client.connectToCore({
-					url: "127.0.0.1",
-					port: +data.toString(),
-				});
-			});
+    core.on("exit", (code, signal) => {
+      this._logger.debug(
+        `Core closed for room ${this.id} with code: ${code} and signal: ${signal} `,
+      );
 
-			const watch = net.connect(this._corePort, "127.0.0.1", () => {
-				this._logger.debug("Connected to watch");
-				watch.write(MercuryPlayerInfoToCoreMessage.create("the Big Brother"));
-				watch.write(MercuryJointGameToCoreMessage.create("the Big Brother"));
-				watch.write(MercuryToObserverToCoreMessage.create());
-			});
+      MercuryRoomList.deleteRoom(this);
+    });
 
-			watch.on("data", (data: Buffer) => {
-				this._logger.debug(`Incoming data for spectators: ${data.toString("hex")}`);
-				this.spectatorCache.push(data);
-				this._spectators.forEach((spectator: MercuryClient) => {
-					if (spectator.needSpectatorMessages) {
-						spectator.socket.send(data);
-					}
-				});
-			});
+    core.stdout.setEncoding("utf8");
+    core.stdout.once("data", (data: Buffer) => {
+      this._logger.debug(`Started Mercury Core at port: ${data.toString()}`);
+      this._coreStarted = true;
+      this._corePort = +data.toString();
+      this._clients.forEach((client: MercuryClient) => {
+        client.connectToCore({
+          url: "127.0.0.1",
+          port: +data.toString(),
+        });
+      });
 
-			watch.on("error", (error) => {
-				this._logger.error("Error connecting watch at mercury room");
-				this._logger.error(error);
-			});
-		});
+      const watch = net.connect(this._corePort, "127.0.0.1", () => {
+        this._logger.debug("Connected to watch");
+        watch.write(MercuryPlayerInfoToCoreMessage.create("the Big Brother"));
+        watch.write(MercuryJointGameToCoreMessage.create("the Big Brother"));
+        watch.write(MercuryToObserverToCoreMessage.create());
+      });
 
-		core.stderr.on("data", (data: Buffer) => {
-			this._logger.error(`Error data at mercury core: ${data.toString()}`);
-		});
-	}
+      watch.on("data", (data: Buffer) => {
+        this._logger.debug(
+          `Incoming data for spectators: ${data.toString("hex")}`,
+        );
+        this.spectatorCache.push(data);
+        this._spectators.forEach((spectator: MercuryClient) => {
+          if (spectator.needSpectatorMessages) {
+            spectator.socket.send(data);
+          }
+        });
+      });
 
-	get isCoreStarted(): boolean {
-		return this._coreStarted;
-	}
+      watch.on("error", (error) => {
+        this._logger.error("Error connecting watch at mercury room");
+        this._logger.error(error);
+      });
+    });
 
-	get hostInfo(): HostInfo {
-		return this._hostInfo;
-	}
+    core.stderr.on("data", (data: Buffer) => {
+      this._logger.error(`Error data at mercury core: ${data.toString()}`);
+    });
+  }
 
-	get playersCount(): number {
-		return this._clients.length;
-	}
+  // ============================================
+  // OCG Core WASM Methods (Fase 3 - srvpro2 migration)
+  // ============================================
 
-	get joinBuffer(): Buffer | null {
-		return this._joinBuffer;
-	}
+  /**
+   * Build registry values for OCGCore
+   */
+  private buildRegistry(): Record<string, string> {
+    const duelMode = this._hostInfo.mode === GameMode.TAG ? "tag" : "single";
+    const registry: Record<string, string> = {
+      duel_mode: duelMode,
+      start_lp: String(this._hostInfo.start_lp),
+      start_hand: String(this._hostInfo.start_hand),
+      draw_count: String(this._hostInfo.draw_count),
+    };
 
-	get isGenesys(): boolean {
-		return this._route === "mercury/alternatives/genesys";
-	}
+    // Add player names if available
+    this._clients.forEach((client, index) => {
+      if (client.name) {
+        registry[`player_name_${index}`] = client.name
+          .replace(/\0/g, "")
+          .trim();
+      }
+    });
 
-	get folderRoute(): string {
-		return this._route;
-	}
+    return registry;
+  }
 
-	setJoinBuffer(buffer: Buffer): void {
-		this._joinBuffer = buffer;
-	}
+  /**
+   * Build decks array for OCGCore from clients
+   * Note: In Mercury, deck is passed via messages and stored in client state
+   * For now returning empty decks - needs integration with deck submission flow
+   */
+  private buildDecks(): YGOProDeck[] {
+    // TODO: Integrate with MercuryWaitingState deck submission
+    // For now, return placeholder empty decks using factory method
+    const emptyDeck = YGOProDeck.fromEncodedString("");
+    return [emptyDeck, emptyDeck];
+  }
 
-	waiting(): void {
-		this.roomState?.removeAllListener();
-		this.roomState = new MercuryWaitingState(
-			new UserAuth(new UserProfilePostgresRepository()),
-			this.emitter,
-			this._logger
-		);
-	}
+  /**
+   * Start OCG Core using WASM (replaces startCore() which uses spawn)
+   */
+  async startCoreWasm(seed: number[]): Promise<boolean> {
+    this._logger.debug("Starting Mercury Core (WASM)");
 
-	rps(): void {
-		this._state = DuelState.RPS;
-		this.roomState?.removeAllListener();
-		this.roomState = new MercuryRockPaperScissorState(this.emitter, this._logger);
-	}
+    try {
+      // Get resources from loader
+      const cardStorage = await this._resourceLoader.getCardStorage();
+      const ocgcoreWasmBinary =
+        await this._resourceLoader.getOcgcoreWasmBinary();
+      const decks = this.buildDecks();
 
-	choosingOrder(): void {
-		this._state = DuelState.CHOOSING_ORDER;
-		this.roomState?.removeAllListener();
-		this.roomState = new MercuryChoosingOrderState(this.emitter, this._logger);
-	}
+      // Build extra script paths (similar to srvpro2)
+      const extraScriptPaths = [
+        "./script/patches/entry.lua",
+        "./script/special.lua",
+        "./script/init.lua",
+        ...this._resourceLoader.extraScriptPaths,
+      ];
 
-	dueling(): void {
-		this._state = DuelState.DUELING;
-		this.isStart = "start";
-		this.roomState?.removeAllListener();
-		this.roomState = new MercuryDuelingState(this, this.emitter, this._logger);
-	}
+      // Create worker with options - using type assertion for HostInfo
+      const options: OcgcoreWorkerOptions = {
+        seed,
+        hostinfo: {
+          mode: this._hostInfo
+            .mode as unknown as import("ygopro-msg-encode").HostInfo["mode"],
+          start_lp: this._hostInfo.start_lp,
+          start_hand: this._hostInfo.start_hand,
+          draw_count: this._hostInfo.draw_count,
+          time_limit: this._hostInfo.time_limit,
+          rule: this._hostInfo.rule,
+          no_check_deck: this._hostInfo.no_check_deck ? 1 : 0,
+          no_shuffle_deck: this._hostInfo.no_shuffle_deck ? 1 : 0,
+          lflist: this._hostInfo.lflist,
+          duel_rule: this._hostInfo.duel_rule,
+        } as import("ygopro-msg-encode").HostInfo,
+        ygoproPaths: this._resourceLoader.ygoproPaths,
+        extraScriptPaths,
+        cardStorage,
+        ocgcoreWasmBinary: ocgcoreWasmBinary ?? undefined,
+        registry: this.buildRegistry(),
+        decks,
+      };
 
-	sideDecking(): void {
-		this._state = DuelState.SIDE_DECKING;
-		this.roomState?.removeAllListener();
-		this.roomState = new MercurySideDeckingState(this.emitter, this._logger);
-	}
+      this._ocgcore = await initWorker(OcgcoreWorker, options);
 
-	setBanListHash(banListHash: number): void {
-		this._banListHash = banListHash;
+      this._coreStarted = true;
+      this._logger.debug("OCGCore WASM started successfully");
 
-		const mercuryBanList = MercuryBanListMemoryRepository.findByHash(banListHash)
-		if (!mercuryBanList?.name) {
-			return
-		}
+      return true;
+    } catch (error) {
+      this._logger.error("Failed to start OCGCore WASM", error);
+      return false;
+    }
+  }
 
-		const edoBanList = BanListMemoryRepository.findByName(mercuryBanList.name)
+  /**
+   * Get OCGCore worker instance
+   */
+  get ocgcore(): OcgcoreWorker | undefined {
+    return this._ocgcore;
+  }
 
-		this._edoBanListHash = edoBanList?.hash ?? 0
-	}
+  /**
+   * Check if OCGCore is using WASM
+   */
+  get isOcgcoreWasm(): boolean {
+    return this._ocgcore !== undefined;
+  }
 
-	calculatePlayerTeam(client: MercuryClient, position: number): void {
-		const team = this.determineTeam(position);
-		client.playerPosition(position, team);
-	}
+  // ============================================
+  // End OCG Core WASM Methods
+  // ====================================
 
-	get isPlayersFull(): boolean {
-		return (
-			(this._hostInfo.mode === Mode.SINGLE || this._hostInfo.mode === Mode.MATCH) &&
-			this.playersCount === 2
-		);
-	}
+  get isCoreStarted(): boolean {
+    return this._coreStarted;
+  }
 
-	toPresentation(): { [key: string]: unknown } {
-		return {
-			roomid: this.id,
-			roomname: this.name,
-			roomnotes: this.ranked ? "(Mercury-Ranked)" : "(Mercury)",
-			roommode: this._hostInfo.mode,
-			needpass: this.password.length > 0,
-			team1: this.team0,
-			team2: this.team1,
-			best_of: this.bestOf,
-			duel_flag: 0,
-			forbidden_types: 0,
-			extra_rules: 0,
-			start_lp: this._hostInfo.startLp,
-			start_hand: this._hostInfo.startHand,
-			draw_count: this._hostInfo.drawCount,
-			time_limit: this._hostInfo.timeLimit,
-			rule: this._hostInfo.rule,
-			no_check: this._hostInfo.noCheck,
-			no_shuffle: this._hostInfo.noShuffle,
-			banlist_hash: this._edoBanListHash ?? this._banListHash,
-			istart: this.isStart,
-			main_min: 40,
-			main_max: 60,
-			extra_min: 0,
-			extra_max: 15,
-			side_min: 0,
-			side_max: 15,
-			users: this._clients.map((player) => ({
-				name: player.name.replace(/\0/g, "").trim(),
-				pos: player.position,
-			})),
-		};
-	}
+  get hostInfo(): HostInfo {
+    return this._hostInfo;
+  }
 
-	destroy(): void {
-		this.emitter.removeAllListeners();
-		this.roomState?.removeAllListener();
-		this._clients.forEach((client: MercuryClient) => {
-			client.destroy();
-		});
-	}
+  get playersCount(): number {
+    return this._clients.length;
+  }
 
-	removeSpectator(spectator: MercuryClient): void {
-		this._spectators = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
-	}
+  get joinBuffer(): Buffer | null {
+    return this._joinBuffer;
+  }
 
-	get banListHash(): number {
-		return this._banListHash;
-	}
+  get isGenesys(): boolean {
+    return this._route === "mercury/alternatives/genesys";
+  }
 
-	get edoBanListHash(): number {
-		return this._edoBanListHash
-	}
+  get folderRoute(): string {
+    return this._route;
+  }
 
-	private connectClientToCore(client: MercuryClient): void {
-		if (this._coreStarted && this._corePort) {
-			client.connectToCore({
-				url: "127.0.0.1",
-				port: this._corePort,
-			});
-		}
-	}
+  setJoinBuffer(buffer: Buffer): void {
+    this._joinBuffer = buffer;
+  }
 
-	private determineTeam(position: number): Team {
-		if (this._hostInfo.mode === Mode.TAG) {
-			if (position >= 0 && position < 2) {
-				return Team.PLAYER;
-			}
-			if (position >= 7) {
-				return Team.SPECTATOR;
-			}
+  waiting(): void {
+    this.roomState?.removeAllListener();
+    this.roomState = new MercuryWaitingState(
+      new UserAuth(new UserProfilePostgresRepository()),
+      this.emitter,
+      this._logger,
+    );
+  }
 
-			return Team.OPPONENT;
-		}
+  rps(): void {
+    this._state = DuelState.RPS;
+    this.roomState?.removeAllListener();
+    this.roomState = new MercuryRockPaperScissorState(
+      this.emitter,
+      this._logger,
+    );
+  }
 
-		return position === 0 ? Team.PLAYER : Team.OPPONENT;
-	}
+  choosingOrder(): void {
+    this._state = DuelState.CHOOSING_ORDER;
+    this.roomState?.removeAllListener();
+    this.roomState = new MercuryChoosingOrderState(this.emitter, this._logger);
+  }
+
+  dueling(): void {
+    this._state = DuelState.DUELING;
+    this.isStart = "start";
+    this.roomState?.removeAllListener();
+    this.roomState = new MercuryDuelingState(this, this.emitter, this._logger);
+  }
+
+  sideDecking(): void {
+    this._state = DuelState.SIDE_DECKING;
+    this.roomState?.removeAllListener();
+    this.roomState = new MercurySideDeckingState(this.emitter, this._logger);
+  }
+
+  setBanListHash(banListHash: number): void {
+    this._banListHash = banListHash;
+
+    const mercuryBanList =
+      MercuryBanListMemoryRepository.findByHash(banListHash);
+    if (!mercuryBanList?.name) {
+      return;
+    }
+
+    const edoBanList = BanListMemoryRepository.findByName(mercuryBanList.name);
+
+    this._edoBanListHash = edoBanList?.hash ?? 0;
+  }
+
+  calculatePlayerTeam(client: MercuryClient, position: number): void {
+    const team = this.determineTeam(position);
+    client.playerPosition(position, team);
+  }
+
+  get isPlayersFull(): boolean {
+    return (
+      (this._hostInfo.mode === GameMode.SINGLE ||
+        this._hostInfo.mode === GameMode.MATCH) &&
+      this.playersCount === 2
+    );
+  }
+
+  toPresentation(): { [key: string]: unknown } {
+    return {
+      roomid: this.id,
+      roomname: this.name,
+      roomnotes: this.ranked ? "(Mercury-Ranked)" : "(Mercury)",
+      roommode: this._hostInfo.mode,
+      needpass: this.password.length > 0,
+      team1: this.team0,
+      team2: this.team1,
+      best_of: this.bestOf,
+      duel_flag: 0,
+      forbidden_types: 0,
+      extra_rules: 0,
+      start_lp: this._hostInfo.start_lp,
+      start_hand: this._hostInfo.start_hand,
+      draw_count: this._hostInfo.draw_count,
+      time_limit: this._hostInfo.time_limit,
+      rule: this._hostInfo.rule,
+      no_check: this._hostInfo.no_check_deck,
+      no_shuffle: this._hostInfo.no_shuffle_deck,
+      banlist_hash: this._edoBanListHash ?? this._banListHash,
+      istart: this.isStart,
+      main_min: 40,
+      main_max: 60,
+      extra_min: 0,
+      extra_max: 15,
+      side_min: 0,
+      side_max: 15,
+      users: this._clients.map((player) => ({
+        name: player.name.replace(/\0/g, "").trim(),
+        pos: player.position,
+      })),
+    };
+  }
+
+  destroy(): void {
+    this.emitter.removeAllListeners();
+    this.roomState?.removeAllListener();
+    this._clients.forEach((client: MercuryClient) => {
+      client.destroy();
+    });
+  }
+
+  removeSpectator(spectator: MercuryClient): void {
+    this._spectators = this._spectators.filter(
+      (item) => item.socket.id !== spectator.socket.id,
+    );
+  }
+
+  get banListHash(): number {
+    return this._banListHash;
+  }
+
+  get edoBanListHash(): number {
+    return this._edoBanListHash;
+  }
+
+  private connectClientToCore(client: MercuryClient): void {
+    if (this._coreStarted && this._corePort) {
+      client.connectToCore({
+        url: "127.0.0.1",
+        port: this._corePort,
+      });
+    }
+  }
+
+  private determineTeam(position: number): Team {
+    if (this._hostInfo.mode === GameMode.TAG) {
+      if (position >= 0 && position < 2) {
+        return Team.PLAYER;
+      }
+      if (position >= 7) {
+        return Team.SPECTATOR;
+      }
+
+      return Team.OPPONENT;
+    }
+
+    return position === 0 ? Team.PLAYER : Team.OPPONENT;
+  }
 }
