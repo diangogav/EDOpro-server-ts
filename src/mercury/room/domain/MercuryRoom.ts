@@ -277,6 +277,11 @@ export class MercuryRoom extends YgoRoom {
     return this.hostInfo.mode > 2 ? (this.isTag ? 2 : 1) : this.hostInfo.mode
   }
 
+  async getCard(cardId: number) {
+    const cardReader = await this._resourceLoader.getCardReader();
+    return cardReader(cardId)
+  }
+
   startCore(): void {
     this._logger.debug("Starting Mercury Core");
     const core = spawn(
