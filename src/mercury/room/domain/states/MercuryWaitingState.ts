@@ -22,13 +22,16 @@ import { JoinGameCoreToClientMessage } from "../../../messages/core-to-client/Jo
 import { MercuryRoom } from "../MercuryRoom";
 import {
 	NetPlayerType,
+	OcgcoreCommonConstants,
 	PlayerChangeState,
+	YGOProCtosUpdateDeck,
 	YGOProStocHsPlayerChange,
 	YGOProStocHsPlayerEnter,
 	YGOProStocHsWatchChange,
 	YGOProStocJoinGame,
 	YGOProStocTypeChange,
 } from "ygopro-msg-encode";
+import YGOProDeck from "ygopro-deck-encode";
 
 export class MercuryWaitingState extends RoomState {
 	private readonly genesysMap = new Map(
@@ -260,16 +263,34 @@ export class MercuryWaitingState extends RoomState {
 		client.logger.info(
 			`MercuryWaitingState UPDATE_DECK: ${message.data.toString("hex")}`,
 		);
-		if (!room.isGenesys) {
+
+		if (client.position === NetPlayerType.OBSERVER) {
 			return;
 		}
-		const parser = new UpdateDeckMessageParser(message.data);
-		const [mainDeck, sideDeck] = parser.getDeck();
-		const deck = [...mainDeck, ...sideDeck];
-		const isValid = await this.validateGenesysDeck(deck, client, room);
-		if (!isValid) {
-			client.sendToCore(Buffer.from([0x01, 0x00, Commands.NOT_READY]));
+
+		const updateDeckMessage = new YGOProCtosUpdateDeck().fromPayload(message.data)
+		const deck = await this.buildDeck(updateDeckMessage, room);
+
+		//TODO: Validate Deck
+		client.saveDeck(deck);
+		client.ready();
+
+		const playerChangeMessage = this.preparePlayerChangeMessage(client);
+
+		for (const _client of room.clients) {
+			(_client as MercuryClient).sendMessageToClient(Buffer.from(playerChangeMessage.toFullPayload()))
 		}
+
+		// if (!room.isGenesys) {
+		// 	return;
+		// }
+		// const parser = new UpdateDeckMessageParser(message.data);
+		// const [mainDeck, sideDeck] = parser.getDeck();
+		// const deck = [...mainDeck, ...sideDeck];
+		// const isValid = await this.validateGenesysDeck(deck, client, room);
+		// if (!isValid) {
+		// 	client.sendToCore(Buffer.from([0x01, 0x00, Commands.NOT_READY]));
+		// }
 	}
 
 	private createPlayer({
@@ -420,5 +441,24 @@ export class MercuryWaitingState extends RoomState {
 			playerPosition: client.position,
 			playerState,
 		});
+	}
+
+	private async buildDeck(message: YGOProCtosUpdateDeck, room: MercuryRoom): Promise<YGOProDeck> {
+		const deck = new YGOProDeck({
+			main: [],
+			extra: [],
+			side: message.deck.side
+		})
+
+		for (const cardId of message.deck.main) {
+			const card = await room.getCard(cardId);
+			if (card?.type && card?.type & OcgcoreCommonConstants.TYPES_EXTRA_DECK) {
+				deck.extra.push(cardId);
+			} else {
+				deck.main.push(cardId);
+			}
+		}
+
+		return deck;
 	}
 }
