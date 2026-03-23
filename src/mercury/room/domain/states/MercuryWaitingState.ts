@@ -1,5 +1,3 @@
- 
- 
 import { CardTypes } from "@edopro/card/domain/CardTypes";
 import { UpdateDeckMessageParser } from "@edopro/deck/application/UpdateDeckMessageSizeCalculator";
 import { BanListDeckError } from "@edopro/deck/domain/errors/BanListDeckError";
@@ -22,121 +20,201 @@ import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { JoinGameCoreToClientMessage } from "../../../messages/core-to-client/JoinGameCoreToClientMessage";
 import { MercuryRoom } from "../MercuryRoom";
+import {
+	NetPlayerType,
+	PlayerChangeState,
+	YGOProStocHsPlayerChange,
+	YGOProStocHsPlayerEnter,
+	YGOProStocHsWatchChange,
+	YGOProStocJoinGame,
+	YGOProStocTypeChange,
+} from "ygopro-msg-encode";
 
 export class MercuryWaitingState extends RoomState {
-	private readonly genesysMap = new Map(genesys.map((item) => [item.code.toString(), item.points]));
+	private readonly genesysMap = new Map(
+		genesys.map((item) => [item.code.toString(), item.points]),
+	);
 
 	constructor(
 		private readonly userAuth: UserAuth,
 		eventEmitter: EventEmitter,
-		private readonly logger: Logger
+		private readonly logger: Logger,
 	) {
 		super(eventEmitter);
 		this.logger = logger.child({ file: "MercuryWaitingState" });
 		this.eventEmitter.on(
 			"JOIN",
 			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
-				void this.handle.bind(this)(message, room, socket)
+				void this.handle.bind(this)(message, room, socket),
 		);
 		this.eventEmitter.on(
 			Commands.TRY_START as unknown as string,
 			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
-				void this.tryStartHandler.bind(this)(message, room, socket)
+				void this.tryStartHandler.bind(this)(message, room, socket),
 		);
 		this.eventEmitter.on(
 			"JOIN_GAME" as unknown as string,
 			(message: ClientMessage, room: MercuryRoom, client: YgoClient) =>
-				void this.handleJoinGame.bind(this)(message, room, client)
+				void this.handleJoinGame.bind(this)(message, room, client),
 		);
 		this.eventEmitter.on(
 			"TYPE_CHANGE" as unknown as string,
 			(message: ClientMessage, room: MercuryRoom, client: YgoClient) =>
-				void this.handleTypeChange.bind(this)(message, room, client)
+				void this.handleTypeChange.bind(this)(message, room, client),
 		);
 		this.eventEmitter.on(
 			Commands.UPDATE_DECK as unknown as string,
 			(message: ClientMessage, room: MercuryRoom, client: YgoClient) =>
-				void this.handleUpdateDeck.bind(this)(message, room, client as MercuryClient)
+				void this.handleUpdateDeck.bind(this)(
+					message,
+					room,
+					client as MercuryClient,
+				),
 		);
 	}
 
-	private async handle(message: ClientMessage, room: MercuryRoom, socket: ISocket): Promise<void> {
+	private async handle(
+		message: ClientMessage,
+		room: MercuryRoom,
+		socket: ISocket,
+	): Promise<void> {
 		this.validateVersion(message.data, socket);
-		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
+		const playerInfoMessage = new PlayerInfoMessage(
+			message.previousMessage,
+			message.data.length,
+		);
+
 		if (this.playerAlreadyInRoom(playerInfoMessage, room, socket)) {
 			this.sendExistingPlayerErrorMessage(playerInfoMessage, socket);
-
 			return;
 		}
 
 		const messages = [message.previousRawMessage, message.raw];
 
 		if (!room.isPlayersFull) {
-			const host = room.clients.length === 0;
+			const client = await this.handlePlayerJoin(
+				room,
+				socket,
+				playerInfoMessage,
+				messages,
+			);
+			if (!client) return;
 
-			if (room.ranked) {
-				const user = await this.userAuth.run(playerInfoMessage);
-				if (!(user instanceof UserProfile)) {
-					socket.send(user as Buffer);
-					socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
+			room.addClient(client);
+			this.sendJoinGameMessage(room, client);
+			this.sendTypeChangeMessage(client);
 
-					return;
-				}
-				const client = this.createPlayer({
-					id: user.id,
-					socket,
-					messages,
-					name: playerInfoMessage.name,
-					room,
-					host,
-				});
-				room.addClient(client);
-			} else {
-				const client = this.createPlayer({
-					id: null,
-					socket,
-					messages,
-					name: playerInfoMessage.name,
-					room,
-					host,
-				});
-				room.addClient(client);
+			for (const _client of room.clients) {
+				const playerEnterMessage = this.preparePlayerEnterMessage(
+					_client as MercuryClient,
+				);
+				client.sendMessageToClient(Buffer.from(playerEnterMessage.toFullPayload()));
+
+				const playerChangeMessage = this.preparePlayerChangeMessage(_client as MercuryClient);
+				client.sendMessageToClient(Buffer.from(playerChangeMessage.toFullPayload()))
 			}
-			if (!room.isCoreStarted) {
-				room.startCore();
-			}
-			this.sendWelcomeMessage(room, socket);
 
+			this.sendWatchChangeMessage(client, room.spectators.length);
+
+			const otherPlayers = room.clients.filter((item) => item !== client);
+			const playerEnterMessage = this.preparePlayerEnterMessage(client)
+			for (const _client of otherPlayers) {
+				(_client as MercuryClient).sendMessageToClient(Buffer.from(playerEnterMessage.toFullPayload()))
+			}
 			return;
 		}
 
+		this.handleSpectatorJoin(room, socket, playerInfoMessage, messages);
+	}
+
+	private async handlePlayerJoin(
+		room: MercuryRoom,
+		socket: ISocket,
+		playerInfoMessage: PlayerInfoMessage,
+		messages: Buffer[],
+	): Promise<MercuryClient | null> {
+		const host = room.clients.length === 0;
+		let id: string | null = null;
+
+		if (room.ranked) {
+			const user = await this.userAuth.run(playerInfoMessage);
+			if (!(user instanceof UserProfile)) {
+				socket.send(user as Buffer);
+				socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
+				return null;
+			}
+			id = user.id;
+		}
+
+		return this.createPlayer({
+			id,
+			socket,
+			messages,
+			name: playerInfoMessage.name,
+			room,
+			host,
+		});
+	}
+
+	private handleSpectatorJoin(
+		room: MercuryRoom,
+		socket: ISocket,
+		playerInfoMessage: PlayerInfoMessage,
+		messages: Buffer[],
+	): void {
 		const spectator = new MercuryClient({
 			id: null,
 			socket,
 			logger: this.logger,
 			messages,
 			name: playerInfoMessage.name,
-			position: room.playersCount,
+			position: NetPlayerType.OBSERVER,
 			room,
 			host: false,
 		});
 
 		room.addSpectator(spectator, false, true);
+		this.sendJoinGameMessage(room, spectator);
+		this.sendTypeChangeMessage(spectator);
+
+		for (const _client of [...room.clients, ...room.spectators]) {
+			const playerEnterMessage = this.preparePlayerEnterMessage(
+				_client as MercuryClient,
+			);
+			spectator.sendMessageToClient(Buffer.from(playerEnterMessage.toFullPayload()));
+
+			const playerChangeMessage = this.preparePlayerChangeMessage(_client as MercuryClient);
+			spectator.sendMessageToClient(Buffer.from(playerChangeMessage.toFullPayload()))
+			this.sendWatchChangeMessage(_client as MercuryClient, room.spectators.length);
+		}
 	}
 
-	private tryStartHandler(_message: ClientMessage, room: MercuryRoom, _socket: ISocket): void {
+	private tryStartHandler(
+		_message: ClientMessage,
+		room: MercuryRoom,
+		_socket: ISocket,
+	): void {
 		this.logger.info("TRY_START");
 		room.createMatch();
 		room.rps();
 	}
 
-	private handleTypeChange(message: ClientMessage, room: MercuryRoom, client: MercuryClient): void {
-		client.logger.info(`MercuryWaitingState: TYPE_CHANGE: ${message.data.toString("hex")}`);
+	private handleTypeChange(
+		message: ClientMessage,
+		room: MercuryRoom,
+		client: MercuryClient,
+	): void {
+		client.logger.info(
+			`MercuryWaitingState: TYPE_CHANGE: ${message.data.toString("hex")}`,
+		);
 		const value = parseInt(message.data.toString("hex"), 16);
 		const position = value & 0x0f;
 		const isHost = (position & 0x10) !== 0;
 
-		if (position === 7 && room.clients.find((player) => player.socket.id === client.socket.id)) {
+		if (
+			position === 7 &&
+			room.clients.find((player) => player.socket.id === client.socket.id)
+		) {
 			room.removePlayer(client);
 			client.setHost(isHost);
 			client.playerPosition(position, Team.SPECTATOR);
@@ -145,7 +223,10 @@ export class MercuryWaitingState extends RoomState {
 			return;
 		}
 
-		if (position !== 7 && room.spectators.find((spectator) => spectator.name === client.name)) {
+		if (
+			position !== 7 &&
+			room.spectators.find((spectator) => spectator.name === client.name)
+		) {
 			room.removeSpectator(client);
 			client.setHost(isHost);
 			room.calculatePlayerTeam(client, position);
@@ -158,7 +239,11 @@ export class MercuryWaitingState extends RoomState {
 		room.calculatePlayerTeam(client, position);
 	}
 
-	private handleJoinGame(message: ClientMessage, room: MercuryRoom, client: MercuryClient): void {
+	private handleJoinGame(
+		message: ClientMessage,
+		room: MercuryRoom,
+		client: MercuryClient,
+	): void {
 		client.logger.info("MercuryWaitingState: JOIN_GAME");
 		const joinGameMessage = new JoinGameCoreToClientMessage(message.data);
 		room.setBanListHash(joinGameMessage.banList);
@@ -170,9 +255,11 @@ export class MercuryWaitingState extends RoomState {
 	private async handleUpdateDeck(
 		message: ClientMessage,
 		room: MercuryRoom,
-		client: MercuryClient
+		client: MercuryClient,
 	): Promise<void> {
-		client.logger.info(`MercuryWaitingState UPDATE_DECK: ${message.data.toString("hex")}`);
+		client.logger.info(
+			`MercuryWaitingState UPDATE_DECK: ${message.data.toString("hex")}`,
+		);
 		if (!room.isGenesys) {
 			return;
 		}
@@ -215,11 +302,10 @@ export class MercuryWaitingState extends RoomState {
 	private async validateGenesysDeck(
 		deck: number[],
 		client: MercuryClient,
-		room: MercuryRoom
+		room: MercuryRoom,
 	): Promise<boolean> {
 		let points = 0;
 		for (const code of deck) {
-			 
 			const card = await room.cardRepository.findByCode(code.toString());
 			if (!card) {
 				this.logger.info(`Card with code ${code} not found`);
@@ -228,42 +314,111 @@ export class MercuryWaitingState extends RoomState {
 			}
 
 			if (card.type & (CardTypes.TYPE_PENDULUM | CardTypes.TYPE_LINK)) {
-				client.sendMessageToClient(new BanListDeckError(Number(card.code)).buffer());
-				this.sendSystemErrorMessage(`Pendulum and link cards not allowed: ${card.code}`, client);
+				client.sendMessageToClient(
+					new BanListDeckError(Number(card.code)).buffer(),
+				);
+				this.sendSystemErrorMessage(
+					`Pendulum and link cards not allowed: ${card.code}`,
+					client,
+				);
 
 				return false;
 			}
 
 			if (card.variant === 8) {
-				client.sendMessageToClient(new BanListDeckError(Number(card.code)).buffer());
-				this.sendSystemErrorMessage(`Unofficial cards not alloweds: ${card.code}`, client);
+				client.sendMessageToClient(
+					new BanListDeckError(Number(card.code)).buffer(),
+				);
+				this.sendSystemErrorMessage(
+					`Unofficial cards not alloweds: ${card.code}`,
+					client,
+				);
 
 				return false;
 			}
 
 			const cardPoints =
-				this.genesysMap.get(card.code) ?? (card.alias ? this.genesysMap.get(card.alias) : 0) ?? 0;
+				this.genesysMap.get(card.code) ??
+				(card.alias ? this.genesysMap.get(card.alias) : 0) ??
+				0;
 
 			points = points + cardPoints;
 		}
 
-		if (points > room.hostInfo.maxDeckPoints) {
+		if (points > room.hostInfo.max_deck_points) {
 			this.sendSystemErrorMessage(
-				`Deck points limit exceeded: ${points} of ${room.hostInfo.maxDeckPoints}`,
-				client
+				`Deck points limit exceeded: ${points} of ${room.hostInfo.max_deck_points}`,
+				client,
 			);
 			client.sendMessageToClient(
-				new MainDeckLimitError(points, 0, room.hostInfo.maxDeckPoints).buffer()
+				new MainDeckLimitError(
+					points,
+					0,
+					room.hostInfo.max_deck_points,
+				).buffer(),
 			);
 
 			return false;
 		}
 
 		this.sendSystemMessage(
-			`Genesys deck valid: ${points} / ${room.hostInfo.maxDeckPoints}`,
-			client
+			`Genesys deck valid: ${points} / ${room.hostInfo.max_deck_points}`,
+			client,
 		);
 
 		return true;
+	}
+
+	//=========================================================================
+	//=========================================================================
+	//=========================================================================
+	//=========================================================================
+	private sendJoinGameMessage(room: MercuryRoom, client: MercuryClient): void {
+		const message = new YGOProStocJoinGame().fromPartial({
+			info: {
+				...room.hostInfo,
+				lflist: 0,
+				mode: room.mode,
+			},
+		});
+
+		client.sendMessageToClient(Buffer.from(message.toFullPayload()));
+	}
+
+	private sendTypeChangeMessage(client: MercuryClient): void {
+		const message = new YGOProStocTypeChange().fromPartial({
+			playerPosition: client.position,
+			isHost: client.host
+		})
+		client.sendMessageToClient(Buffer.from(message.toFullPayload()));
+	}
+
+	private sendWatchChangeMessage(client: MercuryClient, watchCount: number): void {
+		const message = new YGOProStocHsWatchChange().fromPartial({
+			watch_count: watchCount
+		})
+		client.sendMessageToClient(Buffer.from(message.toFullPayload()));
+	}
+
+	private preparePlayerEnterMessage(
+		client: MercuryClient,
+	): YGOProStocHsPlayerEnter {
+		return new YGOProStocHsPlayerEnter().fromPartial({
+			name: client.name,
+			pos: client.position,
+		});
+	}
+
+	private preparePlayerChangeMessage(
+		client: MercuryClient,
+	): YGOProStocHsPlayerChange {
+		const playerState = client.isReady
+			? PlayerChangeState.READY
+			: PlayerChangeState.NOTREADY;
+
+		return new YGOProStocHsPlayerChange().fromPartial({
+			playerPosition: client.position,
+			playerState,
+		});
 	}
 }
