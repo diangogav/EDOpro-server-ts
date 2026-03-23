@@ -54,7 +54,7 @@ export class YGOProResourceLoader {
 
   ygoproPaths = ["mycard"];
 
-  extraScriptPaths = "mycard/scripts";
+  extraScriptPaths = ["mycard/script"];
 
   private loadingLock = new BetterLock();
   private loadingCardStorage?: Promise<CardStorage>;

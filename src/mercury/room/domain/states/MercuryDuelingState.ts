@@ -19,6 +19,11 @@ import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { MercuryReconnect } from "../../application/MercuryReconnect";
 import { MercuryRoom } from "../MercuryRoom";
 import MercuryBanListMemoryRepository from "src/mercury/ban-list/infrastructure/MercuryBanListMemoryRepository";
+import { initWorker, WorkerInstance } from "yuzuthread";
+import { OcgcoreWorker } from "src/mercury/ocgcore-worker";
+import { generateSeed } from "src/mercury/utils/generate-seed";
+import { calculateOcgcoreDeck } from "src/mercury/utils/calculate-ocgcore-deck";
+import { OcgcoreScriptConstants, YGOProMsgStart, YGOProStocGameMsg } from "ygopro-msg-encode";
 
 export class MercuryDuelingState extends RoomState {
 	private readonly eventBus: EventBus;
@@ -81,8 +86,73 @@ export class MercuryDuelingState extends RoomState {
 		);
 	}
 
-	private handle(): void {
+	private async handle(): Promise<void> {
 		this.logger.info("MercuryDuelingState:handle")
+
+		const ocgcore = await this.createCoreWorker(this.room);
+
+		ocgcore.message$.subscribe((msg) => {
+			this.logger.info('Received message from OCGCoreWorker');
+			this.logger.info({ message: msg.message, type: msg.type });
+		})
+
+		const [
+			player0DeckCount,
+			player0ExtraCount,
+			player1DeckCount,
+			player1ExtraCount,
+		] = await Promise.all([
+			ocgcore.queryFieldCount({
+				player: 0,
+				location: OcgcoreScriptConstants.LOCATION_DECK,
+			}),
+			ocgcore.queryFieldCount({
+				player: 0,
+				location: OcgcoreScriptConstants.LOCATION_EXTRA,
+			}),
+			ocgcore.queryFieldCount({
+				player: 1,
+				location: OcgcoreScriptConstants.LOCATION_DECK,
+			}),
+			ocgcore.queryFieldCount({
+				player: 1,
+				location: OcgcoreScriptConstants.LOCATION_EXTRA,
+			}),
+		]);
+
+		const createStartMsg = (playerType: number) =>
+			new YGOProStocGameMsg().fromPartial({
+				msg: new YGOProMsgStart().fromPartial({
+					playerType,
+					duelRule: this.room.hostInfo.duel_rule,
+					startLp0: this.room.hostInfo.start_lp,
+					startLp1: this.room.hostInfo.start_lp,
+					player0: {
+						deckCount: player0DeckCount,
+						extraCount: player0ExtraCount,
+					},
+					player1: {
+						deckCount: player1DeckCount,
+						extraCount: player1ExtraCount,
+					},
+				}),
+			});
+
+		const team0Players = this.room.getTeamPlayers(0)
+		const team1Players = this.room.getTeamPlayers(1)
+
+		const team0StartMessage = createStartMsg(0)
+		const team1StartMessage = createStartMsg(1)
+
+		team0Players.forEach((_player) => {
+			_player.sendMessageToClient(Buffer.from(team0StartMessage.toFullPayload()))
+		})
+
+		team1Players.forEach((_player) => {
+			_player.sendMessageToClient(Buffer.from(team1StartMessage.toFullPayload()))
+		})
+
+
 		//TODO: Mercury and EdoPro lists are linked by means of scripts in infrastructure
 		// const banList = MercuryBanListMemoryRepository.findByHash(this.room.banListHash);
 		// this.room.createDuel(banList?.name ?? null);
@@ -214,6 +284,51 @@ export class MercuryDuelingState extends RoomState {
 			room.sideDecking();
 
 			return;
+		}
+	}
+
+	private async createCoreWorker(room: MercuryRoom): Promise<WorkerInstance<OcgcoreWorker>> {
+		const extraScriptPaths = [
+			'./script/patches/entry.lua',
+			'./script/special.lua',
+			'./script/init.lua',
+			...room.getScriptPaths(),
+		];
+		const cardStorage = await room.getCardStorage();
+		const cardReader = await room.getCardReader();
+		const ocgcoreWasmBinary = await room.ocgCoreBinary();
+
+		const registry: Record<string, string> = {
+			duel_mode: room.duelMode,
+			start_lp: String(room.hostInfo.start_lp),
+			start_hand: String(room.hostInfo.start_hand),
+			draw_count: String(room.hostInfo.draw_count),
+			player_type_0: '0',
+			player_type_1: '1',
+		}
+
+		room.clients.forEach((player, index) => {
+			registry[`player_name_${index}`] = player.name
+		})
+
+		const decks = room.clients.map((player: MercuryClient) => calculateOcgcoreDeck(player.deck!, room.hostInfo, cardReader))
+
+		try {
+			const ocgcore = await initWorker(OcgcoreWorker, {
+				seed: generateSeed(),
+				hostinfo: room.hostInfo,
+				ygoproPaths: room.getYGOProPaths(),
+				extraScriptPaths,
+				cardStorage,
+				ocgcoreWasmBinary,
+				registry,
+				decks
+			})
+
+			return ocgcore;
+		} catch (error) {
+			this.logger.error(error);
+			throw error;
 		}
 	}
 }

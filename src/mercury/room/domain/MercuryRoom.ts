@@ -289,6 +289,14 @@ export class MercuryRoom extends YgoRoom {
     return this.clients.filter((client) => this.getTeam(client.position) === team) as MercuryClient[]
   }
 
+  get isMatch(): boolean {
+    return this.bestOf > 1;
+  }
+
+  get duelMode(): string {
+    return this.isTag ? "tag" : this.isMatch ? 'match' : 'single';
+  }
+
   private get teamOffsetBit() {
     return this.isTag ? 1 : 0;
   }
@@ -296,6 +304,26 @@ export class MercuryRoom extends YgoRoom {
   async getCard(cardId: number) {
     const cardReader = await this._resourceLoader.getCardReader();
     return cardReader(cardId)
+  }
+
+  async getCardReader() {
+    return this._resourceLoader.getCardReader();
+  }
+
+  async getCardStorage() {
+    return this._resourceLoader.getCardStorage();
+  }
+
+  async ocgCoreBinary() {
+    return this._resourceLoader.getOcgcoreWasmBinary();
+  }
+
+  getYGOProPaths(): string[] {
+    return this._resourceLoader.ygoproPaths;
+  }
+
+  getScriptPaths(): string[] {
+    return this._resourceLoader.extraScriptPaths;
   }
 
   startCore(): void {
@@ -376,121 +404,6 @@ export class MercuryRoom extends YgoRoom {
       this._logger.error(`Error data at mercury core: ${data.toString()}`);
     });
   }
-
-  // ============================================
-  // OCG Core WASM Methods (Fase 3 - srvpro2 migration)
-  // ============================================
-
-  /**
-   * Build registry values for OCGCore
-   */
-  private buildRegistry(): Record<string, string> {
-    const duelMode = this._hostInfo.mode === GameMode.TAG ? "tag" : "single";
-    const registry: Record<string, string> = {
-      duel_mode: duelMode,
-      start_lp: String(this._hostInfo.start_lp),
-      start_hand: String(this._hostInfo.start_hand),
-      draw_count: String(this._hostInfo.draw_count),
-    };
-
-    // Add player names if available
-    this._clients.forEach((client, index) => {
-      if (client.name) {
-        registry[`player_name_${index}`] = client.name
-          .replace(/\0/g, "")
-          .trim();
-      }
-    });
-
-    return registry;
-  }
-
-  /**
-   * Build decks array for OCGCore from clients
-   * Note: In Mercury, deck is passed via messages and stored in client state
-   * For now returning empty decks - needs integration with deck submission flow
-   */
-  private buildDecks(): YGOProDeck[] {
-    // TODO: Integrate with MercuryWaitingState deck submission
-    // For now, return placeholder empty decks using factory method
-    const emptyDeck = YGOProDeck.fromEncodedString("");
-    return [emptyDeck, emptyDeck];
-  }
-
-  /**
-   * Start OCG Core using WASM (replaces startCore() which uses spawn)
-   */
-  async startCoreWasm(seed: number[]): Promise<boolean> {
-    this._logger.debug("Starting Mercury Core (WASM)");
-
-    try {
-      // Get resources from loader
-      const cardStorage = await this._resourceLoader.getCardStorage();
-      const ocgcoreWasmBinary =
-        await this._resourceLoader.getOcgcoreWasmBinary();
-      const decks = this.buildDecks();
-
-      // Build extra script paths (similar to srvpro2)
-      const extraScriptPaths = [
-        "./script/patches/entry.lua",
-        "./script/special.lua",
-        "./script/init.lua",
-        ...this._resourceLoader.extraScriptPaths,
-      ];
-
-      // Create worker with options - using type assertion for HostInfo
-      const options: OcgcoreWorkerOptions = {
-        seed,
-        hostinfo: {
-          mode: this._hostInfo
-            .mode as unknown as import("ygopro-msg-encode").HostInfo["mode"],
-          start_lp: this._hostInfo.start_lp,
-          start_hand: this._hostInfo.start_hand,
-          draw_count: this._hostInfo.draw_count,
-          time_limit: this._hostInfo.time_limit,
-          rule: this._hostInfo.rule,
-          no_check_deck: this._hostInfo.no_check_deck ? 1 : 0,
-          no_shuffle_deck: this._hostInfo.no_shuffle_deck ? 1 : 0,
-          lflist: this._hostInfo.lflist,
-          duel_rule: this._hostInfo.duel_rule,
-        } as import("ygopro-msg-encode").HostInfo,
-        ygoproPaths: this._resourceLoader.ygoproPaths,
-        extraScriptPaths,
-        cardStorage,
-        ocgcoreWasmBinary: ocgcoreWasmBinary ?? undefined,
-        registry: this.buildRegistry(),
-        decks,
-      };
-
-      this._ocgcore = await initWorker(OcgcoreWorker, options);
-
-      this._coreStarted = true;
-      this._logger.debug("OCGCore WASM started successfully");
-
-      return true;
-    } catch (error) {
-      this._logger.error("Failed to start OCGCore WASM", error);
-      return false;
-    }
-  }
-
-  /**
-   * Get OCGCore worker instance
-   */
-  get ocgcore(): OcgcoreWorker | undefined {
-    return this._ocgcore;
-  }
-
-  /**
-   * Check if OCGCore is using WASM
-   */
-  get isOcgcoreWasm(): boolean {
-    return this._ocgcore !== undefined;
-  }
-
-  // ============================================
-  // End OCG Core WASM Methods
-  // ====================================
 
   get isCoreStarted(): boolean {
     return this._coreStarted;
