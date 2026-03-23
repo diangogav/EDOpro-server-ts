@@ -256,6 +256,10 @@ export abstract class YgoRoom {
 			} ${this.playerNames(1)}`;
 	}
 
+	get allPlayersReady(): boolean {
+		return !this._clients.some((client) => !client.isReady)
+	}
+
 	isFirstDuel(): boolean {
 		return this._match?.isFirstDuel() ?? true;
 	}

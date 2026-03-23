@@ -7,7 +7,7 @@ import { Choose } from "../../rock-paper-scissor/RockPaperScissor";
 import { Room } from "../../room/domain/Room";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
 
-export class Listener {}
+export class Listener { }
 
 export class Client extends YgoClient {
 	public readonly listener: Listener;
@@ -73,10 +73,6 @@ export class Client extends YgoClient {
 
 	get rpsChoise(): Choose | null {
 		return this._rpsChosen;
-	}
-
-	notReady(): void {
-		this._isReady = false;
 	}
 
 	setDeck(deck: Deck): void {

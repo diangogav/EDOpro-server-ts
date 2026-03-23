@@ -1,5 +1,5 @@
- 
- 
+
+
 import EventEmitter from "events";
 
 import { PlayerInfoMessage } from "../../../../edopro/messages/client-to-server/PlayerInfoMessage";
@@ -14,6 +14,7 @@ import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { MercuryReconnect } from "../../application/MercuryReconnect";
 import { MercuryRoom } from "../MercuryRoom";
+import { YGOProCtosTpResult } from "ygopro-msg-encode";
 
 export class MercuryChoosingOrderState extends RoomState {
 	constructor(eventEmitter: EventEmitter, private readonly logger: Logger) {
@@ -45,10 +46,11 @@ export class MercuryChoosingOrderState extends RoomState {
 
 	private handle(message: ClientMessage, room: MercuryRoom, player: MercuryClient): void {
 		player.logger.info("MercuryChoosingOrderState: CHOOSING_ORDER");
-		const turn = message.data.readInt8();
-		const team = (<MercuryClient | undefined>room.clients.find((client) => client === player))
-			?.team;
 
+		const data = new YGOProCtosTpResult().fromPayload(message.data);
+		const turn = data.res;
+
+		const team = room.getTeam(player.position);
 		if ((team === 0 && turn === 0) || (team === 1 && turn === 1)) {
 			room.setFirstToPlay(1);
 
@@ -56,6 +58,7 @@ export class MercuryChoosingOrderState extends RoomState {
 		}
 
 		room.setFirstToPlay(0);
+		room.dueling();
 	}
 
 	private gameMessageHandler(

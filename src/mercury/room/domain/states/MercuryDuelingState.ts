@@ -1,5 +1,5 @@
- 
- 
+
+
 import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
 import { EventEmitter } from "events";
 import { CoreMessages } from "src/edopro/messages/domain/CoreMessages";
@@ -82,10 +82,11 @@ export class MercuryDuelingState extends RoomState {
 	}
 
 	private handle(): void {
+		this.logger.info("MercuryDuelingState:handle")
 		//TODO: Mercury and EdoPro lists are linked by means of scripts in infrastructure
-		const banList = MercuryBanListMemoryRepository.findByHash(this.room.banListHash);
-		this.room.createDuel(banList?.name ?? null);
-		this.notifyDuelStart(this.room);
+		// const banList = MercuryBanListMemoryRepository.findByHash(this.room.banListHash);
+		// this.room.createDuel(banList?.name ?? null);
+		// this.notifyDuelStart(this.room);
 	}
 
 	private handleDuelEnd(_message: ClientMessage, _room: MercuryRoom, player: MercuryClient): void {

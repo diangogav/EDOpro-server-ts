@@ -23,6 +23,8 @@ import { ServerMessageClientMessage } from "../../messages/server-to-client/Serv
 import { SpectatorMessageClientMessage } from "../../messages/server-to-client/SpectatorMessageClientMessage";
 import { VersionErrorClientMessage } from "../../messages/server-to-client/VersionErrorClientMessage";
 import { RoomType } from "src/shared/room/domain/RoomType";
+import { MercuryRoom } from "src/mercury/room/domain/MercuryRoom";
+import { YGOProStocSelectHand } from "ygopro-msg-encode";
 
 export abstract class RoomState {
 	protected readonly eventEmitter: EventEmitter;
@@ -220,5 +222,18 @@ export abstract class RoomState {
 		room.spectators.forEach((spectator) => {
 			spectator.socket.send(opponentMessage);
 		});
+	}
+
+
+	protected toRPS(room: MercuryRoom): void {
+		const team0Player = room.getTeamPlayers(0)[0];
+		const team1Player = room.getTeamPlayers(1)[0];
+		if (!team0Player || !team1Player) {
+			return;
+		}
+
+		const message = new YGOProStocSelectHand()
+		team0Player.sendMessageToClient(Buffer.from(message.toFullPayload()))
+		team1Player.sendMessageToClient(Buffer.from(message.toFullPayload()))
 	}
 }

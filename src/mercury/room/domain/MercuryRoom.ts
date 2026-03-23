@@ -37,7 +37,7 @@ import { OcgcoreWorker, OcgcoreWorkerOptions } from "../../ocgcore-worker";
 import YGOProDeck from "ygopro-deck-encode";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 import { YGOProResourceLoader } from "../../ygopro/ygopro-resource-loader";
-import { GameMode } from "ygopro-msg-encode";
+import { GameMode, NetPlayerType } from "ygopro-msg-encode";
 import { HostInfo } from "./host-info/HostInfo";
 
 const BEST_OF = {
@@ -275,6 +275,22 @@ export class MercuryRoom extends YgoRoom {
 
   get mode() {
     return this.hostInfo.mode > 2 ? (this.isTag ? 2 : 1) : this.hostInfo.mode
+  }
+
+  getTeam(position: number): number {
+    if (position === NetPlayerType.OBSERVER) {
+      return -1
+    }
+
+    return (position & (0x1 << this.teamOffsetBit)) >>> this.teamOffsetBit;
+  }
+
+  getTeamPlayers(team: number): MercuryClient[] {
+    return this.clients.filter((client) => this.getTeam(client.position) === team) as MercuryClient[]
+  }
+
+  private get teamOffsetBit() {
+    return this.isTag ? 1 : 0;
   }
 
   async getCard(cardId: number) {
