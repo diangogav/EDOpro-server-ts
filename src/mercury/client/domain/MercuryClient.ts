@@ -9,6 +9,7 @@ import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { MercuryCoreMessageEmitter } from "../../MercuryCoreMessageEmitter";
 import { SimpleRoomMessageEmitter } from "../../MercuryRoomMessageEmitter";
 import { MercuryRoom } from "../../room/domain/MercuryRoom";
+import YGOProDeck from "ygopro-deck-encode";
 
 export class MercuryClient extends YgoClient {
 	public readonly logger: Logger;
@@ -19,6 +20,7 @@ export class MercuryClient extends YgoClient {
 	private _needSpectatorMessages = false;
 	private readonly _roomMessageEmitter: SimpleRoomMessageEmitter;
 	private _rpsChosen: boolean;
+	private _deck: YGOProDeck;
 
 	constructor({
 		name,
@@ -59,6 +61,8 @@ export class MercuryClient extends YgoClient {
 		this._socket.onMessage((data: Buffer) => {
 			this._roomMessageEmitter.handleMessage(data);
 		});
+
+		this._isReady = false;
 	}
 
 	connectToCore({ url, port }: { url: string; port: number }): void {
@@ -148,5 +152,13 @@ export class MercuryClient extends YgoClient {
 
 	get rpsChosen(): boolean {
 		return this._rpsChosen;
+	}
+
+	saveDeck(deck: YGOProDeck): void {
+		this._deck = deck;
+	}
+
+	get deck(): YGOProDeck {
+		return this._deck;
 	}
 }
