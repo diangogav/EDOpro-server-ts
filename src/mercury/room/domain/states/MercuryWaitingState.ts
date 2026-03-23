@@ -74,6 +74,15 @@ export class MercuryWaitingState extends RoomState {
 					client as MercuryClient,
 				),
 		);
+		this.eventEmitter.on(
+			Commands.NOT_READY as unknown as string,
+			(message: ClientMessage, room: MercuryRoom, client: YgoClient) =>
+				void this.handleNotReady.bind(this)(
+					message,
+					room,
+					client as MercuryClient,
+				),
+		);
 	}
 
 	private async handle(
@@ -291,6 +300,30 @@ export class MercuryWaitingState extends RoomState {
 		// if (!isValid) {
 		// 	client.sendToCore(Buffer.from([0x01, 0x00, Commands.NOT_READY]));
 		// }
+	}
+
+	private async handleNotReady(
+		message: ClientMessage,
+		room: MercuryRoom,
+		client: MercuryClient,
+	) {
+		client.logger.info(
+			`MercuryWaitingState NOT_READY: ${message.data.toString("hex")}`,
+		);
+
+		if (client.position === NetPlayerType.OBSERVER) {
+			return;
+		}
+
+		client.clearDeck();
+		client.notReady()
+
+		const playerChangeMessage = this.preparePlayerChangeMessage(client);
+
+		for (const _client of room.clients) {
+			(_client as MercuryClient).sendMessageToClient(Buffer.from(playerChangeMessage.toFullPayload()))
+		}
+
 	}
 
 	private createPlayer({

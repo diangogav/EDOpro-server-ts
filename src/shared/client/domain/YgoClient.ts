@@ -87,6 +87,10 @@ export abstract class YgoClient {
 		this._isReady = true;
 	}
 
+	notReady(): void {
+		this._isReady = false;
+	}
+
 	get isReady(): boolean {
 		return this._isReady;
 	}
