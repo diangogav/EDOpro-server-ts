@@ -60,9 +60,6 @@ export class MercuryRoom extends YgoRoom {
   private readonly _hostInfo: HostInfo;
   private roomState: RoomState | null = null;
   private _route = "mercury";
-
-  // OCG Core WASM
-  private _ocgcore?: OcgcoreWorker;
   private readonly _resourceLoader: YGOProResourceLoader;
 
   private constructor({

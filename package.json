@@ -76,6 +76,7 @@
     "koishipro-core.js": "^1.4.3",
     "load-json-file": "^7.0.1",
     "lzma-native": "^8.0.6",
+    "nfkit": "^1.0.37",
     "pg": "^8.16.3",
     "pino": "^10.1.0",
     "pino-pretty": "^13.1.2",

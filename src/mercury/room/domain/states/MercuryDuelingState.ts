@@ -23,10 +23,13 @@ import { initWorker, WorkerInstance } from "yuzuthread";
 import { OcgcoreWorker } from "src/mercury/ocgcore-worker";
 import { generateSeed } from "src/mercury/utils/generate-seed";
 import { calculateOcgcoreDeck } from "src/mercury/utils/calculate-ocgcore-deck";
-import { OcgcoreScriptConstants, YGOProMsgStart, YGOProStocGameMsg } from "ygopro-msg-encode";
+import { OcgcoreScriptConstants, RequireQueryCardLocation, YGOProMsgStart, YGOProMsgUpdateCard, YGOProStocGameMsg } from "ygopro-msg-encode";
+import { MayBeArray } from "nfkit";
+import { OCGCore } from "src/mercury/ocgcore-worker/ocgcore";
 
 export class MercuryDuelingState extends RoomState {
 	private readonly eventBus: EventBus;
+	private readonly ocgCore: OCGCore;
 
 	constructor(
 		private readonly room: MercuryRoom,
@@ -35,6 +38,7 @@ export class MercuryDuelingState extends RoomState {
 	) {
 		super(eventEmitter);
 		this.logger = logger.child({ file: "MercuryDuelingState" });
+		this.ocgCore = new OCGCore(this.room, this.logger);
 		this.handle();
 		this.eventBus = container.get(EventBus);
 		this.eventEmitter.on(
@@ -88,13 +92,7 @@ export class MercuryDuelingState extends RoomState {
 
 	private async handle(): Promise<void> {
 		this.logger.info("MercuryDuelingState:handle")
-
-		const ocgcore = await this.createCoreWorker(this.room);
-
-		ocgcore.message$.subscribe((msg) => {
-			this.logger.info('Received message from OCGCoreWorker');
-			this.logger.info({ message: msg.message, type: msg.type });
-		})
+		await this.ocgCore.init()
 
 		const [
 			player0DeckCount,
@@ -102,20 +100,20 @@ export class MercuryDuelingState extends RoomState {
 			player1DeckCount,
 			player1ExtraCount,
 		] = await Promise.all([
-			ocgcore.queryFieldCount({
-				player: 0,
+			this.ocgCore.queryFieldCount({
+				team: 0,
 				location: OcgcoreScriptConstants.LOCATION_DECK,
 			}),
-			ocgcore.queryFieldCount({
-				player: 0,
+			this.ocgCore.queryFieldCount({
+				team: 0,
 				location: OcgcoreScriptConstants.LOCATION_EXTRA,
 			}),
-			ocgcore.queryFieldCount({
-				player: 1,
+			this.ocgCore.queryFieldCount({
+				team: 1,
 				location: OcgcoreScriptConstants.LOCATION_DECK,
 			}),
-			ocgcore.queryFieldCount({
-				player: 1,
+			this.ocgCore.queryFieldCount({
+				team: 1,
 				location: OcgcoreScriptConstants.LOCATION_EXTRA,
 			}),
 		]);
@@ -284,51 +282,6 @@ export class MercuryDuelingState extends RoomState {
 			room.sideDecking();
 
 			return;
-		}
-	}
-
-	private async createCoreWorker(room: MercuryRoom): Promise<WorkerInstance<OcgcoreWorker>> {
-		const extraScriptPaths = [
-			'./script/patches/entry.lua',
-			'./script/special.lua',
-			'./script/init.lua',
-			...room.getScriptPaths(),
-		];
-		const cardStorage = await room.getCardStorage();
-		const cardReader = await room.getCardReader();
-		const ocgcoreWasmBinary = await room.ocgCoreBinary();
-
-		const registry: Record<string, string> = {
-			duel_mode: room.duelMode,
-			start_lp: String(room.hostInfo.start_lp),
-			start_hand: String(room.hostInfo.start_hand),
-			draw_count: String(room.hostInfo.draw_count),
-			player_type_0: '0',
-			player_type_1: '1',
-		}
-
-		room.clients.forEach((player, index) => {
-			registry[`player_name_${index}`] = player.name
-		})
-
-		const decks = room.clients.map((player: MercuryClient) => calculateOcgcoreDeck(player.deck!, room.hostInfo, cardReader))
-
-		try {
-			const ocgcore = await initWorker(OcgcoreWorker, {
-				seed: generateSeed(),
-				hostinfo: room.hostInfo,
-				ygoproPaths: room.getYGOProPaths(),
-				extraScriptPaths,
-				cardStorage,
-				ocgcoreWasmBinary,
-				registry,
-				decks
-			})
-
-			return ocgcore;
-		} catch (error) {
-			this.logger.error(error);
-			throw error;
 		}
 	}
 }
