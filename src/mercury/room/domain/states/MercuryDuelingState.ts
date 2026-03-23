@@ -150,6 +150,8 @@ export class MercuryDuelingState extends RoomState {
 			_player.sendMessageToClient(Buffer.from(team1StartMessage.toFullPayload()))
 		})
 
+		this.ocgCore.advance();
+
 
 		//TODO: Mercury and EdoPro lists are linked by means of scripts in infrastructure
 		// const banList = MercuryBanListMemoryRepository.findByHash(this.room.banListHash);

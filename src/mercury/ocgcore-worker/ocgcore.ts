@@ -7,6 +7,8 @@ import {
   YGOProStocGameMsg,
   YGOProMsgUpdateCard,
   YGOProMsgUpdateData,
+  YGOProMsgWin,
+  YGOProMsgWaiting,
 } from "ygopro-msg-encode";
 import { MayBeArray } from "nfkit";
 
@@ -25,9 +27,10 @@ type Client = MercuryClient;
 
 export class OCGCore {
   private ocgcore: WorkerInstance<OcgcoreWorker> | null;
-  private responsePos: number | null = null;
+  private responsePosition: number | null = null;
   private lastResponseRequestMsg: YGOProMsgBase | null = null;
   private isRetrying = false;
+  private isPositionSwapped = false;
 
   constructor(
     private readonly room: MercuryRoom,
@@ -97,10 +100,109 @@ export class OCGCore {
     return this.ocgcore!.queryFieldCount({ player: team, location });
   }
 
-  async advance(): Promise<void> {}
+  // ============================================================
+  // Advance - Process duel loop
+  // ============================================================
+
+  async advance(): Promise<void> {
+    if (!this.canAdvance()) {
+      return;
+    }
+
+    try {
+      for await (const advanceResult of this.ocgcore!.advance()) {
+        if (!this.canAdvance()) {
+          // Duel ended, stop processing
+          return;
+        }
+
+        await this.handleAdvanceResult(advanceResult);
+      }
+    } catch (error) {
+      await this.handleAdvanceError(error);
+    }
+  }
+
+  private canAdvance(): boolean {
+    // TODO: Check if room is in Dueling state
+    return true;
+  }
+
+  private async handleAdvanceResult(advanceResult: {
+    status?: number;
+    message?: YGOProMsgBase;
+    encodeError?: unknown;
+  }): Promise<void> {
+    const { status, message, encodeError } = advanceResult;
+
+    if (encodeError) {
+      this.logger.error("Failed to decode game message in worker transport", {
+        encodeError,
+        status,
+      });
+    }
+
+    if (!message) {
+      this.logger.info("Received empty message from ocgcore", { status });
+      if (status) {
+        throw new Error(
+          "Cannot continue ocgcore because received empty message with non-advancing status " +
+            status,
+        );
+      }
+      return;
+    }
+
+    if (message instanceof YGOProMsgUpdateCard) {
+      await this.refreshSingleCard({
+        player: message.controller,
+        location: message.location,
+        sequence: message.sequence,
+      });
+      return;
+    }
+
+    const handledMessage = await this.dispatchGameMessage(message);
+    if (!handledMessage) {
+      // Message blocked by middleware, do not route
+      return;
+    }
+
+    if (handledMessage instanceof YGOProMsgWin) {
+      await this.handleWinCondition(handledMessage);
+      return;
+    }
+
+    await this.routeGameMsg(handledMessage);
+  }
+
+  private async dispatchGameMessage(
+    message: YGOProMsgBase,
+  ): Promise<YGOProMsgBase | null> {
+    // TODO: Implement message dispatch through middleware
+    return message;
+  }
+
+  private async handleWinCondition(winMessage: YGOProMsgWin): Promise<void> {
+    // TODO: Implement win condition handling
+    this.logger.debug("handleWinCondition", { winMessage });
+  }
+
+  private async handleAdvanceError(error: unknown): Promise<void> {
+    // TODO: Check if timeout error using OcgcoreProcessTimeoutError.is(error)
+    this.logger.info("Error while advancing ocgcore", { error });
+
+    const drawGame = new YGOProMsgWin().fromPartial({
+      type: 0x11,
+      player: 2,
+    });
+
+    // TODO: Send chat message "#draw_due_to_error" with error color
+    await this.routeGameMsg(drawGame);
+  }
 
   // ============================================================
-  // Route Game Msg - Parte 1: Entry point y refresh logic
+  // Route Game Msg - Entry point
   // ============================================================
 
   async routeGameMsg(
@@ -125,7 +227,7 @@ export class OCGCore {
         )
       : undefined;
 
-    await this.sendToTargets(message, sendToClients);
+    await this.deliverToTargets(message, sendToClients);
 
     if (!isUpdateMessage(message) && !shouldRefreshFirst) {
       await this.refreshForMessage(message);
@@ -134,51 +236,174 @@ export class OCGCore {
     await this.handleResponseOrRetry(message);
   }
 
-  private async refreshForMessage(_message: YGOProMsgBase): Promise<void> {
-    // TODO: Implementar refresh de estado del campo
-    this.logger.debug({
-      msg: "refreshForMessage",
-      type: _message.constructor.name,
-    });
+  // ============================================================
+  // Refresh - Field state updates
+  // ============================================================
+
+  private async refreshForMessage(message: YGOProMsgBase): Promise<void> {
+    // Refresh cards that need updating based on message type
+    const cardsToRefresh = message.getRequireRefreshCards?.() ?? [];
+    const zonesToRefresh = message.getRequireRefreshZones?.() ?? [];
+
+    const refreshCardPromises = cardsToRefresh.map((location) =>
+      this.refreshSingleCard({
+        player: location.player,
+        location: location.location,
+        sequence: location.sequence,
+      }),
+    );
+
+    const refreshZonePromises = zonesToRefresh.map((location) =>
+      this.refreshZone(location),
+    );
+
+    await Promise.all([...refreshCardPromises, ...refreshZonePromises]);
   }
 
-  private async sendToTargets(
+  private async refreshSingleCard(request: {
+    player: number;
+    location: number;
+    sequence: number;
+  }): Promise<void> {
+    if (!this.ocgcore) {
+      return;
+    }
+
+    const locations = this.splitRefreshLocations(request.location);
+    for (const location of locations) {
+      const queryResult = await this.ocgcore.queryCard({
+        player: request.player,
+        location,
+        sequence: request.sequence,
+        queryFlag: 0xf81fff,
+        useCache: 0,
+      });
+
+      const cardData = queryResult.card;
+
+      await this.routeGameMsg(
+        new YGOProMsgUpdateCard().fromPartial({
+          controller: request.player,
+          location,
+          sequence: request.sequence,
+          card: cardData as never,
+        }),
+      );
+    }
+  }
+
+  private async refreshZone(_location: {
+    player: number;
+    location: number;
+  }): Promise<void> {
+    // TODO: Implement zone refresh
+    this.logger.debug("refreshZone not implemented yet");
+  }
+
+  private splitRefreshLocations(location: number): number[] {
+    // Split location flags into individual locations
+    const locationFlags = [
+      0x0080, // MZONE
+      0x0100, // SZONE
+      0x0200, // HAND
+      0x0400, // GRAVE
+      0x0800, // REMOVED
+      0x1000, // EXTRA
+      0x2000, // DECK
+      0x4000, // OVERLAY
+      0x8000, // FZONE
+      0x10000, // PZONE
+    ];
+
+    const locations = locationFlags.filter((flag) => (location & flag) !== 0);
+    return locations.length > 0 ? locations : [location];
+  }
+
+  private createEmptyCardData() {
+    const emptyCard = {
+      flags: 0,
+      empty: true,
+    };
+    return emptyCard;
+  }
+
+  // ============================================================
+  // Response Timer - Handle player response timeouts
+  // ============================================================
+
+  private async sendWaitingToNonOperator(
+    ingamePosition: number,
+  ): Promise<void> {
+    const operatingPlayer = this.getActivePlayer(ingamePosition);
+    const nonOperatingPlayers = (this.room.clients as MercuryClient[]).filter(
+      (client) => client !== operatingPlayer,
+    );
+
+    const waitingMessage = new YGOProStocGameMsg().fromPartial({
+      msg: new YGOProMsgWaiting(),
+    });
+
+    await Promise.all(
+      nonOperatingPlayers.map((client) =>
+        client.sendMessageToClient(Buffer.from(waitingMessage.toFullPayload())),
+      ),
+    );
+  }
+
+  private async setResponseTimer(position: number): Promise<void> {
+    // TODO: Implement response timer with timeout handling
+    // - Check if room has time limit enabled
+    // - Get remaining time from timer state
+    // - Send time limit message to player
+    // - Schedule timeout callback
+    this.logger.debug("setResponseTimer not fully implemented", { position });
+  }
+
+  // ============================================================
+  // Delivery - Send messages to clients
+  // ============================================================
+
+  private async deliverToTargets(
     message: YGOProMsgBase,
     sendToClients?: Set<Client>,
   ): Promise<void> {
-    const sendTargets = message.getSendTargets();
-    const sendGameMsg = (c: Client, msg: YGOProMsgBase) =>
-      c.sendMessageToClient(
+    const targetPositions = message.getSendTargets();
+    const sendGameMessage = (client: Client, msg: YGOProMsgBase) =>
+      client.sendMessageToClient(
         Buffer.from(
           new YGOProStocGameMsg().fromPartial({ msg }).toFullPayload(),
         ),
       );
 
     await Promise.all(
-      sendTargets.map(async (pos) => {
-        if (pos === NetPlayerType.OBSERVER) {
+      targetPositions.map(async (position) => {
+        if (position === NetPlayerType.OBSERVER) {
           const observerView = message.observerView();
           const watchers = this.room.spectators as MercuryClient[];
-          await Promise.all(watchers.map((w) => sendGameMsg(w, observerView)));
-        } else {
-          const players = this.getIngameDuelPosPlayers(pos);
           await Promise.all(
-            players.map(async (c) => {
-              if (sendToClients && !sendToClients.has(c)) {
+            watchers.map((watcher) => sendGameMessage(watcher, observerView)),
+          );
+        } else {
+          const players = this.getPlayersAtIngamePosition(position);
+          await Promise.all(
+            players.map(async (client) => {
+              if (sendToClients && !sendToClients.has(client)) {
                 return;
               }
-              const duelPos = this.getIngameDuelPos(c);
-              const playerView = message.playerView(duelPos);
-              const operatingPlayer = this.getIngameOperatingPlayer(duelPos);
+              const ingamePosition = this.getIngamePosition(client);
+              const playerView = message.playerView(ingamePosition);
+              const activePlayer = this.getActivePlayer(ingamePosition);
               if (
                 message instanceof YGOProMsgResponseBase &&
-                c !== operatingPlayer
+                client !== activePlayer
               ) {
                 return;
               }
-              return sendGameMsg(
-                c,
-                c === operatingPlayer ? playerView : playerView.teammateView(),
+              return sendGameMessage(
+                client,
+                client === activePlayer
+                  ? playerView
+                  : playerView.teammateView(),
               );
             }),
           );
@@ -187,70 +412,80 @@ export class OCGCore {
     );
   }
 
+  // ============================================================
+  // Response handling - Response messages and retry logic
+  // ============================================================
+
   private async handleResponseOrRetry(message: YGOProMsgBase): Promise<void> {
     if (message instanceof YGOProMsgResponseBase) {
       this.setLastResponseRequestMsg(message);
       await this.sendWaitingToNonOperator(message.responsePlayer());
-      await this.setResponseTimer(this.responsePos!);
+      await this.setResponseTimer(this.responsePosition!);
       return;
     }
-    if (message instanceof YGOProMsgRetry && this.responsePos != null) {
+    if (message instanceof YGOProMsgRetry && this.responsePosition != null) {
       this.isRetrying = true;
       await this.sendWaitingToNonOperator(
-        this.getIngameDuelPosByDuelPos(this.responsePos),
+        this.toIngamePosition(this.responsePosition),
       );
-      await this.setResponseTimer(this.responsePos);
+      await this.setResponseTimer(this.responsePosition);
       return;
     }
     if (
-      this.responsePos != null &&
+      this.responsePosition != null &&
       !this.lastResponseRequestMsg &&
       !(message instanceof YGOProMsgResponseBase)
     ) {
-      this.responsePos = null;
+      this.responsePosition = null;
     }
-  }
-
-  // ============================================================
-  // Route Game Msg - Parte 2: Helpers de routing
-  // ============================================================
-
-  private getIngameDuelPosPlayers(pos: number): Client[] {
-    // Retorna los clientes en una posición de duelo específica
-    const clients = this.room.clients as MercuryClient[];
-    return clients.filter((c) => {
-      const cPos = this.getIngameDuelPos(c);
-      return cPos === pos;
-    });
-  }
-
-  private getIngameDuelPos(client: Client): number {
-    // Retorna la posición de duelo del cliente (0 o 1)
-    return client.position;
-  }
-
-  private getIngameOperatingPlayer(duelPos: number): Client | null {
-    // Retorna el cliente que debe responder en esta posición
-    const players = this.getIngameDuelPosPlayers(duelPos);
-    return players[0] ?? null;
-  }
-
-  private getIngameDuelPosByDuelPos(duelPos: number): number {
-    // Convierte posición de duelo a posición ingame
-    return duelPos;
   }
 
   private setLastResponseRequestMsg(message: YGOProMsgBase): void {
     this.lastResponseRequestMsg = message;
   }
 
-  private async sendWaitingToNonOperator(_player: number): Promise<void> {
-    // TODO: Implementar envío de mensaje de espera
-    this.logger.debug("sendWaitingToNonOperator", { player: _player });
+  // ============================================================
+  // Position helpers - Convert between duel and ingame positions
+  // ============================================================
+
+  /**
+   * Converts a duel position (0 or 1) to an ingame position.
+   * Applies swap logic when positions are swapped (first to play becomes player 2).
+   */
+  private toIngamePosition(duelPosition: number): number {
+    if (!this.isValidDuelPosition(duelPosition)) {
+      return duelPosition;
+    }
+    return this.room.isPositionSwapped ? 1 - duelPosition : duelPosition;
   }
 
-  private async setResponseTimer(_pos: number): Promise<void> {
-    // TODO: Implementar timer de respuesta
-    this.logger.debug("setResponseTimer", { pos: _pos });
+  private isValidDuelPosition(position: number): boolean {
+    return position === 0 || position === 1;
+  }
+  // ============================================================
+  // Player queries - Get players at specific positions
+  // ============================================================
+
+  /**
+   * Returns players at the given ingame position (considering swap).
+   */
+  private getPlayersAtIngamePosition(ingamePosition: number): Client[] {
+    const duelPosition = this.toIngamePosition(ingamePosition);
+    return this.room.getTeamPlayers(duelPosition);
+  }
+
+  /**
+   * Returns the ingame position for a client (applies swap if needed).
+   */
+  private getIngamePosition(client: Client): number {
+    return this.toIngamePosition(client.position);
+  }
+
+  /**
+   * Returns the active player (who must respond) at the given position.
+   */
+  private getActivePlayer(ingamePosition: number): Client | null {
+    const players = this.getPlayersAtIngamePosition(ingamePosition);
+    return players[0] ?? null;
   }
 }

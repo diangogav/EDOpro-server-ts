@@ -14,7 +14,7 @@ import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { MercuryReconnect } from "../../application/MercuryReconnect";
 import { MercuryRoom } from "../MercuryRoom";
-import { YGOProCtosTpResult } from "ygopro-msg-encode";
+import { TurnPlayerResult, YGOProCtosTpResult } from "ygopro-msg-encode";
 
 export class MercuryChoosingOrderState extends RoomState {
 	constructor(eventEmitter: EventEmitter, private readonly logger: Logger) {
@@ -50,14 +50,7 @@ export class MercuryChoosingOrderState extends RoomState {
 		const data = new YGOProCtosTpResult().fromPayload(message.data);
 		const turn = data.res;
 
-		const team = room.getTeam(player.position);
-		if ((team === 0 && turn === 0) || (team === 1 && turn === 1)) {
-			room.setFirstToPlay(1);
-
-			return;
-		}
-
-		room.setFirstToPlay(0);
+		room.setPositionSwapped((turn === TurnPlayerResult.FIRST) !== (room.getTeam(player.position) === 0))
 		room.dueling();
 	}
 

@@ -30,12 +30,6 @@ import { MercuryRockPaperScissorState } from "./states/MercuryRockPaperScissorsS
 import { MercurySideDeckingState } from "./states/MercurySideDeckingState";
 import { MercuryWaitingState } from "./states/MercuryWaitingState";
 import { RoomType } from "src/shared/room/domain/RoomType";
-
-// OCG Core WASM imports
-import { initWorker } from "yuzuthread";
-import { OcgcoreWorker, OcgcoreWorkerOptions } from "../../ocgcore-worker";
-import YGOProDeck from "ygopro-deck-encode";
-import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 import { YGOProResourceLoader } from "../../ygopro/ygopro-resource-loader";
 import { GameMode, NetPlayerType } from "ygopro-msg-encode";
 import { HostInfo } from "./host-info/HostInfo";
@@ -61,6 +55,7 @@ export class MercuryRoom extends YgoRoom {
   private roomState: RoomState | null = null;
   private _route = "mercury";
   private readonly _resourceLoader: YGOProResourceLoader;
+  private _isPositionSwapped: boolean = false;
 
   private constructor({
     id,
@@ -321,6 +316,14 @@ export class MercuryRoom extends YgoRoom {
 
   getScriptPaths(): string[] {
     return this._resourceLoader.extraScriptPaths;
+  }
+
+  setPositionSwapped(value: boolean): void {
+    this._isPositionSwapped = value;
+  }
+
+  get isPositionSwapped(): boolean {
+    return this._isPositionSwapped;
   }
 
   startCore(): void {
