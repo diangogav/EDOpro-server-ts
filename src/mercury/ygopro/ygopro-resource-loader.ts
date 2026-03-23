@@ -10,12 +10,46 @@ import { Logger } from "src/shared/logger/domain/Logger";
 
 const CARD_STORAGE_RELOAD_INTERVAL_MS = 10 * 60 * 1000;
 
+// Singleton instance - initialized in src/index.ts
+let _sharedInstance: YGOProResourceLoader | null = null;
+
 export class YGOProResourceLoader {
   private readonly logger: Logger;
 
   constructor(logger: Logger) {
     this.logger = logger;
     this.registerReloadTimer();
+  }
+
+  /**
+   * Get or create shared singleton instance
+   * Must be initialized first via initShared() in index.ts
+   */
+  static getShared(): YGOProResourceLoader {
+    if (!_sharedInstance) {
+      throw new Error(
+        "YGOProResourceLoader not initialized. Call initShared() in index.ts first.",
+      );
+    }
+    return _sharedInstance;
+  }
+
+  /**
+   * Initialize shared singleton (call in index.ts)
+   */
+  static initShared(logger: Logger): YGOProResourceLoader {
+    if (_sharedInstance) {
+      return _sharedInstance;
+    }
+    _sharedInstance = new YGOProResourceLoader(logger);
+    return _sharedInstance;
+  }
+
+  /**
+   * Check if shared instance is initialized
+   */
+  static get isInitialized(): boolean {
+    return _sharedInstance !== null;
   }
 
   ygoproPaths = ["mycard"];

@@ -27,12 +27,12 @@ async function start(): Promise<void> {
   const database = new EdoProSQLiteTypeORM();
   const banListLoader = new BanListLoader();
   await banListLoader.loadDirectory("./banlists/evolution");
-  const mercuryBanListLoader = new MercuryBanListLoader();
-  await BanListMemoryRepository.backup();
-  await mercuryBanListLoader.loadDirectory("./mercury");
+  // const mercuryBanListLoader = new MercuryBanListLoader();
+  // await BanListMemoryRepository.backup();
+  // await mercuryBanListLoader.loadDirectory("./mercury");
 
   // Pre-load card data at startup (singleton, shared across all rooms)
-  const resourceLoader = new YGOProResourceLoader(logger);
+  const resourceLoader = YGOProResourceLoader.initShared(logger);
   logger.info("Loading card data...");
   await resourceLoader.getCardStorage();
   logger.info("Card data loaded successfully");
