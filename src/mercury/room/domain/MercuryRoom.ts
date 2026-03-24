@@ -31,8 +31,11 @@ import { MercurySideDeckingState } from "./states/MercurySideDeckingState";
 import { MercuryWaitingState } from "./states/MercuryWaitingState";
 import { RoomType } from "src/shared/room/domain/RoomType";
 import { YGOProResourceLoader } from "../../ygopro/ygopro-resource-loader";
-import { GameMode, NetPlayerType } from "ygopro-msg-encode";
+import { GameMode, NetPlayerType, PlayerChangeState, YGOProStocDeckCount, YGOProStocDeckCount_DeckInfo, YGOProStocHsPlayerChange, YGOProStocHsPlayerEnter, YGOProStocHsWatchChange, YGOProStocJoinGame, YGOProStocTypeChange } from "ygopro-msg-encode";
 import { HostInfo } from "./host-info/HostInfo";
+import { ISocket } from "src/shared/socket/domain/ISocket";
+import YGOProDeck from "ygopro-deck-encode";
+import { DuelRecord } from "./DuelRecord";
 
 const BEST_OF = {
   [GameMode.SINGLE]: 1,
@@ -51,11 +54,12 @@ export class MercuryRoom extends YgoRoom {
   private _banListHash: number;
   private _edoBanListHash: number;
   private _joinBuffer: Buffer | null = null;
-  private readonly _hostInfo: HostInfo;
   private roomState: RoomState | null = null;
   private _route = "mercury";
-  private readonly _resourceLoader: YGOProResourceLoader;
   private _isPositionSwapped: boolean = false;
+  private _duelRecords: DuelRecord[] = [];
+  private readonly _hostInfo: HostInfo;
+  private readonly _resourceLoader: YGOProResourceLoader;
 
   private constructor({
     id,
@@ -232,35 +236,6 @@ export class MercuryRoom extends YgoRoom {
     return room;
   }
 
-  addClient(client: MercuryClient): void {
-    // client.setNeedSpectatorMessages(false);
-    this._clients.push(client);
-    // if (client.connectedToCore) {
-    //   return;
-    // }
-
-    // this.connectClientToCore(client);
-  }
-
-  addSpectator(
-    spectator: MercuryClient,
-    needSpectatorMessages: boolean,
-    fromLobby = false,
-  ): void {
-    spectator.setNeedSpectatorMessages(needSpectatorMessages);
-    this._spectators.push(spectator);
-
-    if (!spectator.connectedToCore) {
-      this.connectClientToCore(spectator);
-    }
-
-    if (!fromLobby) {
-      this.spectatorCache.forEach((message) => {
-        spectator.socket.send(message);
-      });
-    }
-  }
-
   get isTag() {
     return (this.hostInfo.mode & 0x2) !== 0;
   }
@@ -291,8 +266,276 @@ export class MercuryRoom extends YgoRoom {
     return this.isTag ? "tag" : this.isMatch ? "match" : "single";
   }
 
-  private get teamOffsetBit() {
-    return this.isTag ? 1 : 0;
+  get shuffleDeckEnabled(): boolean {
+    return !this.hostInfo.no_shuffle_deck
+  }
+
+  getYGOProPaths(): string[] {
+    return this._resourceLoader.ygoproPaths;
+  }
+
+  getScriptPaths(): string[] {
+    return this._resourceLoader.extraScriptPaths;
+  }
+
+  setPositionSwapped(value: boolean): void {
+    this._isPositionSwapped = value;
+  }
+
+  get isPositionSwapped(): boolean {
+    return this._isPositionSwapped;
+  }
+
+  get hostInfo(): HostInfo {
+    return this._hostInfo;
+  }
+
+  get playersCount(): number {
+    return this._clients.length;
+  }
+
+  get isPlayersFull(): boolean {
+    return (
+      (this._hostInfo.mode === GameMode.SINGLE ||
+        this._hostInfo.mode === GameMode.MATCH) &&
+      this.playersCount === 2
+    );
+  }
+
+  waiting(): void {
+    this.roomState?.removeAllListener();
+    this.roomState = new MercuryWaitingState(
+      new UserAuth(new UserProfilePostgresRepository()),
+      this.emitter,
+      this._logger,
+    );
+  }
+
+  rps(): void {
+    this._state = DuelState.RPS;
+    this.roomState?.removeAllListener();
+    this.roomState = new MercuryRockPaperScissorState(
+      this.emitter,
+      this._logger,
+    );
+  }
+
+  choosingOrder(): void {
+    this._state = DuelState.CHOOSING_ORDER;
+    this.roomState?.removeAllListener();
+    this.roomState = new MercuryChoosingOrderState(this.emitter, this._logger);
+  }
+
+  dueling(): void {
+    this._state = DuelState.DUELING;
+    this.isStart = "start";
+    this.roomState?.removeAllListener();
+    this.roomState = new MercuryDuelingState(this, this.emitter, this._logger);
+  }
+
+  sideDecking(): void {
+    this._state = DuelState.SIDE_DECKING;
+    this.roomState?.removeAllListener();
+    this.roomState = new MercurySideDeckingState(this.emitter, this._logger);
+  }
+
+  createSpectatorUnsafe(socket: ISocket, name: string): MercuryClient {
+    const position = NetPlayerType.OBSERVER;
+
+    const client = new MercuryClient({
+      name,
+      socket,
+      logger: this._logger,
+      position,
+      host: false,
+      id: null,
+      team: Team.SPECTATOR,
+      room: this,
+    });
+
+    return client;
+  }
+
+  createPlayerUnsafe(socket: ISocket, name: string, userId: string | null): MercuryClient | null {
+    const host = this._clients.some((client: MercuryClient) => client.host);
+    const place = this.calculatePlaceUnsafe();
+    if (!place) {
+      return null;
+    }
+
+    const client = new MercuryClient({
+      name,
+      socket,
+      logger: this._logger,
+      position: place.position,
+      host: !host,
+      id: userId,
+      team: place.team,
+      room: this,
+    });
+
+    return client;
+  }
+
+  addPlayerUnsafe(client: MercuryClient): void {
+    this.sendJoinGameMessage(client);
+    this._clients.push(client);
+    client.socket.roomId = this.id;
+
+    this.sendTypeChangeMessage(client);
+
+    [...this._clients, ...this.spectators].forEach((_client: MercuryClient) => {
+      const playerEnterMessage = this.preparePlayerEnterMessage(_client);
+      client.sendMessageToClient(Buffer.from(playerEnterMessage.toFullPayload()));
+      if (_client.deck) {
+        const playerChangeMessage = this.preparePlayerChangeMessage(_client);
+        client.sendMessageToClient(Buffer.from(playerChangeMessage.toFullPayload()));
+      }
+    })
+
+    const playerEnterMessage = this.preparePlayerEnterMessage(client);
+    [...this._clients, ...this.spectators].forEach((_client: MercuryClient) => {
+      if (_client !== client) {
+        _client.sendMessageToClient(Buffer.from(playerEnterMessage.toFullPayload()));
+      }
+    })
+
+    this.sendSpectatorCount({ enqueue: false });
+  }
+
+  addSpectatorUnsafe(
+    spectator: MercuryClient,
+  ): void {
+    this.sendJoinGameMessage(spectator);
+    this._spectators.push(spectator);
+    this.sendTypeChangeMessage(spectator);
+
+    [...this._clients, ...this.spectators].forEach((_client: MercuryClient) => {
+      const playerEnterMessage = this.preparePlayerEnterMessage(_client);
+      spectator.sendMessageToClient(Buffer.from(playerEnterMessage.toFullPayload()));
+      if (_client.deck) {
+        const playerChangeMessage = this.preparePlayerChangeMessage(_client);
+        spectator.sendMessageToClient(Buffer.from(playerChangeMessage.toFullPayload()));
+      }
+    })
+
+    this.sendSpectatorCount({ enqueue: false });
+  }
+
+  playerToSpectatorUnsafe(player: MercuryClient): void {
+    this.removePlayerUnsafe(player);
+    this._spectators.push(player);
+
+    const playerChangeMessage = this.preparePlayerChangeMessage(player, PlayerChangeState.OBSERVE);
+    this.broadcastToAll(Buffer.from(playerChangeMessage.toFullPayload()));
+    player.spectatorPosition(NetPlayerType.OBSERVER);
+    player.notReady();
+    this.sendTypeChangeMessage(player);
+    this.sendSpectatorCount({ enqueue: false });
+  }
+
+  spectatorToPlayerUnsafe(player: MercuryClient): void {
+    const place = this.calculatePlaceUnsafe();
+    if (!place) {
+      return;
+    }
+    this.removeSpectatorUnsafe(player);
+    this._clients.push(player);
+
+    player.playerPosition(place.position, place.team);
+    player.notReady();
+
+    const playerEnterMessage = this.preparePlayerEnterMessage(player);
+    this.broadcastToAll(Buffer.from(playerEnterMessage.toFullPayload()))
+
+
+    this.sendTypeChangeMessage(player);
+    this.sendSpectatorCount({ enqueue: false });
+  }
+
+  movePlayerToAnotherCellUnsafe(player: MercuryClient): void {
+    const nextPlace = this.nextAvailablePosition(player.position);
+    if (!nextPlace) {
+      return;
+    }
+    player.notReady();
+    this.sendPlayerChangeMessage(player, nextPlace.position);
+    this.sendPlayerChangeMessage(player, PlayerChangeState.NOTREADY);
+    player.playerPosition(nextPlace.position, nextPlace.team);
+    this.sendTypeChangeMessage(player);
+  }
+
+  setDecksToPlayer(position: number, deck: YGOProDeck): void {
+    this.mutex.runExclusive(() => {
+      this.setDecksToPlayerUnsafe(position, deck);
+    });
+  }
+
+  setDecksToPlayerUnsafe(position: number, deck: YGOProDeck): void {
+    const client = this._clients.find((client) => client.position === position);
+
+    if (!client || !(client instanceof MercuryClient)) {
+      return;
+    }
+
+    client.ready();
+    client.saveDeck(deck);
+    const message = this.preparePlayerChangeMessage(client);
+    this.broadcastToAll(Buffer.from(message.toFullPayload()));
+  }
+
+  notReadyUnsafe(player: MercuryClient): void {
+    if (player.position === NetPlayerType.OBSERVER) {
+      return;
+    }
+    player.clearDeck();
+    player.notReady();
+    this.sendPlayerChangeMessage(player);
+  }
+
+  sendMatchHistoricalMessages(spectator: MercuryClient): void {
+    if (!this._duelRecords.length) {
+      return
+    }
+
+    for (const record of this._duelRecords) {
+      for (const message of record.toPlayback((msg) => msg.observerView())) {
+        spectator.sendMessageToClient(Buffer.from(message.toFullPayload()));
+      }
+    }
+
+  }
+
+  sendDeckCountMessage(client: MercuryClient): void {
+    const toDeckCount = (deck: YGOProDeck | null) => {
+      const message = new YGOProStocDeckCount_DeckInfo();
+      if (!deck) {
+        message.main = 0;
+        message.extra = 0;
+        message.side = 0;
+      } else {
+        message.main = deck.main.length;
+        message.extra = deck.extra.length;
+        message.side = deck.side.length;
+      }
+      return message;
+    };
+
+    const displayCountDecks: (YGOProDeck | null)[] = [0, 1].map((team) => {
+      const player = this.getTeamPlayers(team)[0];
+      return player.deck;
+    });
+
+    const team = this.getTeam(client.position);
+    const deck = displayCountDecks[team];
+    const otherDeck = displayCountDecks[1 - team];
+
+    const message = new YGOProStocDeckCount().fromPartial({
+      player0DeckCount: toDeckCount(deck),
+      player1DeckCount: toDeckCount(otherDeck)
+    })
+
+    client.sendMessageToClient(Buffer.from(message.toFullPayload()))
   }
 
   async getCard(cardId: number) {
@@ -312,21 +555,10 @@ export class MercuryRoom extends YgoRoom {
     return this._resourceLoader.getOcgcoreWasmBinary();
   }
 
-  getYGOProPaths(): string[] {
-    return this._resourceLoader.ygoproPaths;
+  private get teamOffsetBit() {
+    return this.isTag ? 1 : 0;
   }
 
-  getScriptPaths(): string[] {
-    return this._resourceLoader.extraScriptPaths;
-  }
-
-  setPositionSwapped(value: boolean): void {
-    this._isPositionSwapped = value;
-  }
-
-  get isPositionSwapped(): boolean {
-    return this._isPositionSwapped;
-  }
 
   startCore(): void {
     this._logger.debug("Starting Mercury Core");
@@ -407,17 +639,6 @@ export class MercuryRoom extends YgoRoom {
     });
   }
 
-  get isCoreStarted(): boolean {
-    return this._coreStarted;
-  }
-
-  get hostInfo(): HostInfo {
-    return this._hostInfo;
-  }
-
-  get playersCount(): number {
-    return this._clients.length;
-  }
 
   get joinBuffer(): Buffer | null {
     return this._joinBuffer;
@@ -435,43 +656,6 @@ export class MercuryRoom extends YgoRoom {
     this._joinBuffer = buffer;
   }
 
-  waiting(): void {
-    this.roomState?.removeAllListener();
-    this.roomState = new MercuryWaitingState(
-      new UserAuth(new UserProfilePostgresRepository()),
-      this.emitter,
-      this._logger,
-    );
-  }
-
-  rps(): void {
-    this._state = DuelState.RPS;
-    this.roomState?.removeAllListener();
-    this.roomState = new MercuryRockPaperScissorState(
-      this.emitter,
-      this._logger,
-    );
-  }
-
-  choosingOrder(): void {
-    this._state = DuelState.CHOOSING_ORDER;
-    this.roomState?.removeAllListener();
-    this.roomState = new MercuryChoosingOrderState(this.emitter, this._logger);
-  }
-
-  dueling(): void {
-    this._state = DuelState.DUELING;
-    this.isStart = "start";
-    this.roomState?.removeAllListener();
-    this.roomState = new MercuryDuelingState(this, this.emitter, this._logger);
-  }
-
-  sideDecking(): void {
-    this._state = DuelState.SIDE_DECKING;
-    this.roomState?.removeAllListener();
-    this.roomState = new MercurySideDeckingState(this.emitter, this._logger);
-  }
-
   setBanListHash(banListHash: number): void {
     this._banListHash = banListHash;
 
@@ -484,19 +668,6 @@ export class MercuryRoom extends YgoRoom {
     const edoBanList = BanListMemoryRepository.findByName(mercuryBanList.name);
 
     this._edoBanListHash = edoBanList?.hash ?? 0;
-  }
-
-  calculatePlayerTeam(client: MercuryClient, position: number): void {
-    const team = this.determineTeam(position);
-    client.playerPosition(position, team);
-  }
-
-  get isPlayersFull(): boolean {
-    return (
-      (this._hostInfo.mode === GameMode.SINGLE ||
-        this._hostInfo.mode === GameMode.MATCH) &&
-      this.playersCount === 2
-    );
   }
 
   toPresentation(): { [key: string]: unknown } {
@@ -556,30 +727,6 @@ export class MercuryRoom extends YgoRoom {
     return this._edoBanListHash;
   }
 
-  private connectClientToCore(client: MercuryClient): void {
-    if (this._coreStarted && this._corePort) {
-      client.connectToCore({
-        url: "127.0.0.1",
-        port: this._corePort,
-      });
-    }
-  }
-
-  private determineTeam(position: number): Team {
-    if (this._hostInfo.mode === GameMode.TAG) {
-      if (position >= 0 && position < 2) {
-        return Team.PLAYER;
-      }
-      if (position >= 7) {
-        return Team.SPECTATOR;
-      }
-
-      return Team.OPPONENT;
-    }
-
-    return position === 0 ? Team.PLAYER : Team.OPPONENT;
-  }
-
   // Response handling for duel
   addResponse(_responseBuffer: Buffer): void {
     // TODO: Implement response recording for duel replay
@@ -587,5 +734,86 @@ export class MercuryRoom extends YgoRoom {
 
   setDuelFinished(): void {
     this._state = DuelState.WAITING;
+  }
+
+  sendSpectatorCount({ enqueue = false }: { enqueue: boolean }): void {
+    const message = new YGOProStocHsWatchChange().fromPartial({
+      watch_count: this.spectators.length
+    })
+
+    if (!enqueue) {
+      this.broadcastToAll(Buffer.from(message.toFullPayload()));
+
+      return;
+    }
+    this.mutex.runExclusive(() => {
+      this.broadcastToAll(Buffer.from(message.toFullPayload()));
+    });
+  }
+
+  private sendTypeChangeMessage(client: MercuryClient): void {
+    const message = new YGOProStocTypeChange().fromPartial({
+      playerPosition: client.position,
+      isHost: client.host
+    })
+    client.sendMessageToClient(Buffer.from(message.toFullPayload()));
+  }
+
+  private sendPlayerChangeMessage(client: MercuryClient, playerState?: PlayerChangeState | number): void {
+    const message = this.preparePlayerChangeMessage(client, playerState)
+    client.sendMessageToClient(Buffer.from(message.toFullPayload()));
+  }
+
+  private sendJoinGameMessage(client: MercuryClient): void {
+    const message = new YGOProStocJoinGame().fromPartial({
+      info: {
+        ...this.hostInfo,
+        lflist: 0,
+        mode: this.mode,
+      },
+    });
+
+    client.sendMessageToClient(Buffer.from(message.toFullPayload()));
+  }
+
+  private broadcastToAll(message: Buffer): void {
+    this._clients.forEach((client: MercuryClient) => {
+      client.sendMessageToClient(message);
+    });
+    this._spectators.forEach((client: MercuryClient) => {
+      client.sendMessageToClient(message);
+    });
+  }
+
+
+  private preparePlayerEnterMessage(
+    client: MercuryClient,
+  ): YGOProStocHsPlayerEnter {
+    return new YGOProStocHsPlayerEnter().fromPartial({
+      name: client.name,
+      pos: client.position,
+    });
+  }
+
+  private preparePlayerChangeMessage(
+    client: MercuryClient,
+    playerState?: PlayerChangeState | number
+  ): YGOProStocHsPlayerChange {
+
+    if (!playerState) {
+      const playerState = client.isReady
+        ? PlayerChangeState.READY
+        : PlayerChangeState.NOTREADY;
+
+      return new YGOProStocHsPlayerChange().fromPartial({
+        playerPosition: client.position,
+        playerState,
+      });
+    }
+
+    return new YGOProStocHsPlayerChange().fromPartial({
+      playerPosition: client.position,
+      playerState,
+    });
   }
 }

@@ -1,5 +1,5 @@
- 
- 
+
+
 
 import { CheckIfUseCanJoin } from "src/shared/user-auth/application/CheckIfUserCanJoin";
 import { generateUniqueId } from "src/utils/generateUniqueId";
@@ -33,12 +33,13 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 		this.checkIfUserCanJoin = checkIfUserCanJoin;
 		this.eventEmitter.on(
 			Commands.JOIN_GAME as unknown as string,
-			(message: ClientMessage) => void this.handle(message)
+			(message: ClientMessage) => void this.handleJoinGame(message)
 		);
 	}
 
-	async handle(message: ClientMessage): Promise<void> {
+	async handleJoinGame(message: ClientMessage): Promise<void> {
 		this.logger.info("JOIN_GAME");
+
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const joinMessage = new MercuryJoinGameMessage(message.data);
 

@@ -1,5 +1,5 @@
- 
- 
+
+
 import { EventEmitter } from "stream";
 
 import { PlayerInfoMessage } from "../../../../edopro/messages/client-to-server/PlayerInfoMessage";
@@ -40,26 +40,26 @@ export class MercurySideDeckingState extends RoomState {
 
 	private handleJoin(message: ClientMessage, room: MercuryRoom, socket: ISocket): void {
 		this.logger.info("JOIN");
-		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
-		const playerAlreadyInRoom = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
+		// const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
+		// const playerAlreadyInRoom = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
 
-		if (!(playerAlreadyInRoom instanceof MercuryClient)) {
-			const spectator = new MercuryClient({
-				id: null,
-				socket,
-				logger: this.logger,
-				messages: [],
-				name: playerInfoMessage.name,
-				position: room.playersCount,
-				room,
-				host: false,
-			});
-			room.addSpectator(spectator, true);
+		// if (!(playerAlreadyInRoom instanceof MercuryClient)) {
+		// 	const spectator = new MercuryClient({
+		// 		id: null,
+		// 		socket,
+		// 		logger: this.logger,
+		// 		messages: [],
+		// 		name: playerInfoMessage.name,
+		// 		position: room.playersCount,
+		// 		room,
+		// 		host: false,
+		// 	});
+		// 	room.addSpectator(spectator, true);
 
-			return;
-		}
+		// 	return;
+		// }
 
-		MercuryReconnect.run(playerAlreadyInRoom, room, socket);
+		// MercuryReconnect.run(playerAlreadyInRoom, room, socket);
 	}
 
 	private handleReady(_message: ClientMessage, room: MercuryRoom, player: MercuryClient): void {

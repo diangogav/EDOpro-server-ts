@@ -20,6 +20,7 @@ import { calculateOcgcoreDeck } from "../utils/calculate-ocgcore-deck";
 import { generateSeed } from "../utils/generate-seed";
 import { OcgcoreWorker } from "./ocgcore-worker";
 import { Logger } from "src/shared/logger/domain/Logger";
+import { DuelRecord } from "../room/domain/DuelRecord";
 
 const isUpdateMessage = (message: YGOProMsgBase) =>
   message instanceof YGOProMsgUpdateData ||
@@ -47,7 +48,7 @@ export class OCGCore {
     this.ocgcore = null;
   }
 
-  async init(): Promise<void> {
+  async init(duelRecord: DuelRecord): Promise<void> {
     const extraScriptPaths = [
       "./script/patches/entry.lua",
       "./script/special.lua",
@@ -68,7 +69,7 @@ export class OCGCore {
       player_type_1: this.room.isPositionSwapped ? "0" : "1",
     };
 
-    this.room.clients.forEach((player, index) => {
+    duelRecord.players.forEach((player, index) => {
       registry[`player_name_${index}`] = player.name;
     });
 
@@ -78,14 +79,16 @@ export class OCGCore {
 
     try {
       this.ocgcore = await initWorker(OcgcoreWorker, {
-        seed: generateSeed(),
+        seed: duelRecord.seed,
         hostinfo: this.room.hostInfo,
         ygoproPaths: this.room.getYGOProPaths(),
         extraScriptPaths,
         cardStorage,
         ocgcoreWasmBinary,
         registry,
-        decks,
+        decks: duelRecord
+          .toSwappedPlayers()
+          .map((player) => calculateOcgcoreDeck(player.deck, this.room.hostInfo, cardReader))
       });
 
       this.ocgcore.message$.subscribe((msg) => {

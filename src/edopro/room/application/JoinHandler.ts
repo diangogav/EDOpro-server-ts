@@ -36,11 +36,11 @@ export class JoinHandler implements JoinMessageHandler {
 		this.checkIfUseCanJoin = checkIfUseCanJoin;
 		this.eventEmitter.on(
 			Commands.JOIN_GAME as unknown as string,
-			(message: ClientMessage) => void this.handle(message)
+			(message: ClientMessage) => void this.handleJoinGame(message)
 		);
 	}
 
-	async handle(message: ClientMessage): Promise<void> {
+	async handleJoinGame(message: ClientMessage): Promise<void> {
 		this.logger.info("handle");
 		const joinMessage = new JoinGameMessage(message.data);
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);

@@ -14,7 +14,7 @@ import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { MercuryReconnect } from "../../application/MercuryReconnect";
 import { MercuryRoom } from "../MercuryRoom";
-import { HandResult, YGOProCtosHandResult, YGOProStocHandResult, YGOProStocSelectHand, YGOProStocSelectTp } from "ygopro-msg-encode";
+import { HandResult, YGOProCtosHandResult, YGOProStocDuelStart, YGOProStocHandResult, YGOProStocSelectHand, YGOProStocSelectTp } from "ygopro-msg-encode";
 
 export class MercuryRockPaperScissorState extends RoomState {
 	private handResult = [0, 0]
@@ -46,22 +46,14 @@ export class MercuryRockPaperScissorState extends RoomState {
 		const playerAlreadyInRoom = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
 
 		if (!(playerAlreadyInRoom instanceof MercuryClient)) {
-			const spectator = new MercuryClient({
-				id: null,
-				socket,
-				logger: this.logger,
-				messages: [],
-				name: playerInfoMessage.name,
-				position: room.playersCount,
-				room,
-				host: false,
-			});
-			room.addSpectator(spectator, true);
-
+			const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name);
+			room.addSpectatorUnsafe(spectator);
+			spectator.sendMessageToClient(Buffer.from(new YGOProStocDuelStart().toFullPayload()));
+			room.sendDeckCountMessage(spectator);
 			return;
 		}
 
-		MercuryReconnect.run(playerAlreadyInRoom, room, socket);
+		// MercuryReconnect.run(playerAlreadyInRoom, room, socket);
 	}
 
 	private handleReady(_message: ClientMessage, _room: Room, player: MercuryClient): void {

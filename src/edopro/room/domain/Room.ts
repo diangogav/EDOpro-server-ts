@@ -505,17 +505,6 @@ export class Room extends YgoRoom {
 		player.playerPosition(nextPlace.position, nextPlace.team);
 		this.notifier.sendTypeChange(player);
 	}
-
-	removeSpectator(spectator: Client): void {
-		this.mutex.runExclusive(() => {
-			this.removeSpectatorUnsafe(spectator);
-		});
-	}
-
-	removeSpectatorUnsafe(spectator: Client): void {
-		const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
-		this._spectators = filtered;
-	}
 	//********************************************************************************************* */
 	//**********************************END CLIENTS CRUD******************************************* */
 	//********************************************************************************************* */
@@ -980,45 +969,6 @@ export class Room extends YgoRoom {
 		return this.mutex.runExclusive(() => {
 			return this.nextSpectatorPositionUnsafe();
 		});
-	}
-
-	private nextAvailablePosition(position: number): { position: number; team: number } | null {
-		const positions = [...this.t1Positions, ...this.t0Positions].sort((a, b) => a - b);
-		const occupiedPositions = this.clients.map((client) => client.position);
-		const difference = this.getDifference(positions, occupiedPositions);
-		if (difference.length === 0) {
-			return null;
-		}
-
-		const nextPositions = difference.filter((item) => item > position);
-
-		if (nextPositions.length > 0) {
-			const isTeam0 = this.t0Positions.find((pos) => pos === nextPositions[0]);
-			if (isTeam0 !== undefined) {
-				return {
-					position: nextPositions[0],
-					team: 0,
-				};
-			}
-
-			return {
-				position: nextPositions[0],
-				team: 1,
-			};
-		}
-
-		const isTeam0 = this.t0Positions.find((pos) => pos === positions[0]);
-		if (isTeam0 !== undefined) {
-			return {
-				position: difference[0],
-				team: 0,
-			};
-		}
-
-		return {
-			position: difference[0],
-			team: 1,
-		};
 	}
 
 	private flushCppMessageQueue(): void {

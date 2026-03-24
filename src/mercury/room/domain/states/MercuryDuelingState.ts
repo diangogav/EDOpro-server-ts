@@ -30,6 +30,8 @@ import {
 } from "ygopro-msg-encode";
 import { MayBeArray } from "nfkit";
 import { OCGCore } from "src/mercury/ocgcore-worker/ocgcore";
+import { DuelRecord } from "../DuelRecord";
+import { shuffleDecksBySeed } from "src/mercury/utils/shuffle-decks-by-seed";
 
 export class MercuryDuelingState extends RoomState {
 	private readonly eventBus: EventBus;
@@ -102,7 +104,20 @@ export class MercuryDuelingState extends RoomState {
 
 	private async handle(): Promise<void> {
 		this.logger.info("MercuryDuelingState:handle");
-		await this.ocgCore.init();
+
+		const seed = generateSeed();
+		const decks = this.room.shuffleDeckEnabled
+			? this.room.clients.map((_client: MercuryClient) => _client.deck)
+			: shuffleDecksBySeed(this.room.clients.map((_client: MercuryClient) => _client.deck!), seed)
+
+		const players = this.room.clients.map((_client: MercuryClient, index: number) => ({
+			name: _client.name,
+			deck: decks[index]!
+		}))
+
+		const duelRecord = new DuelRecord(seed, players, this.room.isPositionSwapped);
+
+		await this.ocgCore.init(duelRecord);
 
 		const [
 			player0DeckCount,
@@ -185,33 +200,33 @@ export class MercuryDuelingState extends RoomState {
 		socket: ISocket,
 	): void {
 		this.logger.info("JOIN");
-		const playerInfoMessage = new PlayerInfoMessage(
-			message.previousMessage,
-			message.data.length,
-		);
-		const playerAlreadyInRoom = this.playerAlreadyInRoom(
-			playerInfoMessage,
-			room,
-			socket,
-		);
+		// const playerInfoMessage = new PlayerInfoMessage(
+		// 	message.previousMessage,
+		// 	message.data.length,
+		// );
+		// const playerAlreadyInRoom = this.playerAlreadyInRoom(
+		// 	playerInfoMessage,
+		// 	room,
+		// 	socket,
+		// );
 
-		if (!(playerAlreadyInRoom instanceof MercuryClient)) {
-			const spectator = new MercuryClient({
-				id: null,
-				socket,
-				logger: this.logger,
-				messages: [],
-				name: playerInfoMessage.name,
-				position: room.playersCount,
-				room,
-				host: false,
-			});
-			room.addSpectator(spectator, true);
+		// if (!(playerAlreadyInRoom instanceof MercuryClient)) {
+		// 	const spectator = new MercuryClient({
+		// 		id: null,
+		// 		socket,
+		// 		logger: this.logger,
+		// 		messages: [],
+		// 		name: playerInfoMessage.name,
+		// 		position: room.playersCount,
+		// 		room,
+		// 		host: false,
+		// 	});
+		// 	room.addSpectator(spectator, true);
 
-			return;
-		}
+		// 	return;
+		// }
 
-		MercuryReconnect.run(playerAlreadyInRoom, room, socket);
+		// MercuryReconnect.run(playerAlreadyInRoom, room, socket);
 	}
 
 	private handleGameMessage(

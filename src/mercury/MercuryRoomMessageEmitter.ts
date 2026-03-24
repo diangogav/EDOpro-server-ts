@@ -25,7 +25,7 @@ export class SimpleRoomMessageEmitter {
 			this.messageProcessor.payload,
 			this.client
 		);
-		this.client.sendMessageToCore(this.messageProcessor.payload);
+		// this.client.sendMessageToCore(this.messageProcessor.payload);
 		this.processMessage();
 	}
 }

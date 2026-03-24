@@ -26,26 +26,28 @@ export class MercuryClient extends YgoClient {
 		name,
 		socket,
 		logger,
-		messages,
+		// messages,
 		position,
 		room,
 		host,
 		id,
+		team,
 	}: {
 		name: string;
 		socket: ISocket;
 		logger: Logger;
-		messages: Buffer[];
+		// messages: Buffer[];
 		position: number;
 		room: MercuryRoom;
 		host: boolean;
 		id: string | null;
+		team: Team
 	}) {
-		super({ name, position, team: Team.SPECTATOR, socket, host, id });
+		super({ name, position, team, socket, host, id });
 		this._coreClient = new net.Socket();
 		this.logger = logger.child({ clientName: name, roomId: room.id, file: "MercuryClient" });
-		this._pendingMessages = messages;
-		this._mercuryRoomMessageEmitter = new MercuryCoreMessageEmitter(this, room);
+		// this._pendingMessages = messages;
+		// this._mercuryRoomMessageEmitter = new MercuryCoreMessageEmitter(this, room);
 
 		this._coreClient.on("data", (data: Buffer) => {
 			this.logger.debug(`Data incoming from mercury core ${data.toString("hex")}`);
