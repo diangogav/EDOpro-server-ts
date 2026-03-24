@@ -1,5 +1,3 @@
-
-
 import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
 import { EventEmitter } from "events";
 import { CoreMessages } from "src/edopro/messages/domain/CoreMessages";
@@ -23,7 +21,13 @@ import { initWorker, WorkerInstance } from "yuzuthread";
 import { OcgcoreWorker } from "src/mercury/ocgcore-worker";
 import { generateSeed } from "src/mercury/utils/generate-seed";
 import { calculateOcgcoreDeck } from "src/mercury/utils/calculate-ocgcore-deck";
-import { OcgcoreScriptConstants, RequireQueryCardLocation, YGOProMsgStart, YGOProMsgUpdateCard, YGOProStocGameMsg } from "ygopro-msg-encode";
+import {
+	OcgcoreScriptConstants,
+	RequireQueryCardLocation,
+	YGOProMsgStart,
+	YGOProMsgUpdateCard,
+	YGOProStocGameMsg,
+} from "ygopro-msg-encode";
 import { MayBeArray } from "nfkit";
 import { OCGCore } from "src/mercury/ocgcore-worker/ocgcore";
 
@@ -34,7 +38,7 @@ export class MercuryDuelingState extends RoomState {
 	constructor(
 		private readonly room: MercuryRoom,
 		eventEmitter: EventEmitter,
-		private readonly logger: Logger
+		private readonly logger: Logger,
 	) {
 		super(eventEmitter);
 		this.logger = logger.child({ file: "MercuryDuelingState" });
@@ -44,55 +48,61 @@ export class MercuryDuelingState extends RoomState {
 		this.eventEmitter.on(
 			"DUEL_END",
 			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
-				this.handleDuelEnd.bind(this)(message, room, client)
+				this.handleDuelEnd.bind(this)(message, room, client),
 		);
 
 		this.eventEmitter.on(
 			"JOIN",
 			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
-				void this.handleJoin.bind(this)(message, room, socket)
+				void this.handleJoin.bind(this)(message, room, socket),
 		);
 
 		this.eventEmitter.on(
 			"GAME_MSG",
 			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
-				void this.handleGameMessage.bind(this)(message, room, socket)
+				void this.handleGameMessage.bind(this)(message, room, socket),
 		);
 
 		this.eventEmitter.on(
 			"FIELD_FINISH",
 			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
-				void this.handleFieldFinish.bind(this)(message, room, socket)
+				void this.handleFieldFinish.bind(this)(message, room, socket),
 		);
 
 		this.eventEmitter.on(
 			"TIME_LIMIT",
 			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
-				void this.handleTimeLimit.bind(this)(message, room, socket)
+				void this.handleTimeLimit.bind(this)(message, room, socket),
 		);
 
 		this.eventEmitter.on(
 			"CHANGE_SIDE",
 			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
-				void this.handleChangeSide.bind(this)(message, room, socket)
+				void this.handleChangeSide.bind(this)(message, room, socket),
 		);
 
 		this.eventEmitter.on(
 			Commands.UPDATE_DECK as unknown as string,
 			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
-				void this.handleUpdateDeck.bind(this)(message, room, socket)
+				void this.handleUpdateDeck.bind(this)(message, room, socket),
 		);
 
 		this.eventEmitter.on(
 			Commands.TIME_CONFIRM as unknown as string,
 			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
-				void this.handleTimeConfirm.bind(this)(message, room, socket)
+				void this.handleTimeConfirm.bind(this)(message, room, socket),
+		);
+
+		this.eventEmitter.on(
+			Commands.RESPONSE as unknown as string,
+			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
+				void this.handleResponse.bind(this)(message, room, client),
 		);
 	}
 
 	private async handle(): Promise<void> {
-		this.logger.info("MercuryDuelingState:handle")
-		await this.ocgCore.init()
+		this.logger.info("MercuryDuelingState:handle");
+		await this.ocgCore.init();
 
 		const [
 			player0DeckCount,
@@ -136,37 +146,54 @@ export class MercuryDuelingState extends RoomState {
 				}),
 			});
 
-		const team0Players = this.room.getTeamPlayers(0)
-		const team1Players = this.room.getTeamPlayers(1)
+		const team0Players = this.room.getTeamPlayers(0);
+		const team1Players = this.room.getTeamPlayers(1);
 
-		const team0StartMessage = createStartMsg(0)
-		const team1StartMessage = createStartMsg(1)
+		const team0StartMessage = createStartMsg(0);
+		const team1StartMessage = createStartMsg(1);
 
 		team0Players.forEach((_player) => {
-			_player.sendMessageToClient(Buffer.from(team0StartMessage.toFullPayload()))
-		})
+			_player.sendMessageToClient(
+				Buffer.from(team0StartMessage.toFullPayload()),
+			);
+		});
 
 		team1Players.forEach((_player) => {
-			_player.sendMessageToClient(Buffer.from(team1StartMessage.toFullPayload()))
-		})
+			_player.sendMessageToClient(
+				Buffer.from(team1StartMessage.toFullPayload()),
+			);
+		});
+
+		this.ocgCore.refreshZones({ player: 0, location: OcgcoreScriptConstants.LOCATION_EXTRA })
+		this.ocgCore.refreshZones({ player: 1, location: OcgcoreScriptConstants.LOCATION_EXTRA })
+
 
 		this.ocgCore.advance();
-
-
-		//TODO: Mercury and EdoPro lists are linked by means of scripts in infrastructure
-		// const banList = MercuryBanListMemoryRepository.findByHash(this.room.banListHash);
-		// this.room.createDuel(banList?.name ?? null);
-		// this.notifyDuelStart(this.room);
 	}
 
-	private handleDuelEnd(_message: ClientMessage, _room: MercuryRoom, player: MercuryClient): void {
+	private handleDuelEnd(
+		_message: ClientMessage,
+		_room: MercuryRoom,
+		player: MercuryClient,
+	): void {
 		player.logger.info("MercuryDuelingState: DUEL_END");
 	}
 
-	private handleJoin(message: ClientMessage, room: MercuryRoom, socket: ISocket): void {
+	private handleJoin(
+		message: ClientMessage,
+		room: MercuryRoom,
+		socket: ISocket,
+	): void {
 		this.logger.info("JOIN");
-		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
-		const playerAlreadyInRoom = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
+		const playerInfoMessage = new PlayerInfoMessage(
+			message.previousMessage,
+			message.data.length,
+		);
+		const playerAlreadyInRoom = this.playerAlreadyInRoom(
+			playerInfoMessage,
+			room,
+			socket,
+		);
 
 		if (!(playerAlreadyInRoom instanceof MercuryClient)) {
 			const spectator = new MercuryClient({
@@ -190,16 +217,20 @@ export class MercuryDuelingState extends RoomState {
 	private handleGameMessage(
 		message: ClientMessage,
 		room: MercuryRoom,
-		player: MercuryClient
+		player: MercuryClient,
 	): void {
-		player.logger.info(`MercuryDuelingState: GAME_MSG: ${message.raw.toString("hex")}`);
+		player.logger.info(
+			`MercuryDuelingState: GAME_MSG: ${message.raw.toString("hex")}`,
+		);
 		if (player.isReconnecting) {
 			return;
 		}
 		const coreMessageType = message.raw.readInt8(3);
 
 		if (coreMessageType !== 1) {
-			player.logger.debug(`last message ${player.name} ${message.raw.toString("hex")}`);
+			player.logger.debug(
+				`last message ${player.name} ${message.raw.toString("hex")}`,
+			);
 			player.setLastMessage(message.raw);
 		}
 
@@ -226,7 +257,7 @@ export class MercuryDuelingState extends RoomState {
 						date: new Date(),
 						banListHash: room.edoBanListHash,
 						ranked: room.ranked,
-					})
+					}),
 				);
 
 				WebSocketSingleton.getInstance().broadcast({
@@ -240,7 +271,7 @@ export class MercuryDuelingState extends RoomState {
 	private handleFieldFinish(
 		_message: ClientMessage,
 		_room: MercuryRoom,
-		player: MercuryClient
+		player: MercuryClient,
 	): void {
 		if (player.cache) {
 			player.socket.send(player.cache);
@@ -251,7 +282,7 @@ export class MercuryDuelingState extends RoomState {
 	private handleUpdateDeck(
 		_message: ClientMessage,
 		_room: MercuryRoom,
-		player: MercuryClient
+		player: MercuryClient,
 	): void {
 		player.logger.info("MercuryDuelingState: UPDATE_DECK");
 		player.sendToCore(Buffer.from([0x01, 0x00, 0x30]));
@@ -260,7 +291,7 @@ export class MercuryDuelingState extends RoomState {
 	private handleTimeConfirm(
 		_message: ClientMessage,
 		_room: MercuryRoom,
-		player: MercuryClient
+		player: MercuryClient,
 	): void {
 		player.logger.info("MercuryDuelingState: TIME_CONFIRM");
 	}
@@ -268,7 +299,7 @@ export class MercuryDuelingState extends RoomState {
 	private handleTimeLimit(
 		_message: ClientMessage,
 		_room: MercuryRoom,
-		player: MercuryClient
+		player: MercuryClient,
 	): void {
 		player.logger.info("MercuryDuelingState: TIME_LIMIT");
 	}
@@ -276,7 +307,7 @@ export class MercuryDuelingState extends RoomState {
 	private handleChangeSide(
 		_message: ClientMessage,
 		room: MercuryRoom,
-		player: MercuryClient
+		player: MercuryClient,
 	): void {
 		player.logger.info("MercuryDuelingState: CHANGE_SIDE");
 
@@ -285,5 +316,57 @@ export class MercuryDuelingState extends RoomState {
 
 			return;
 		}
+	}
+
+	private handleResponse(
+		message: ClientMessage,
+		room: MercuryRoom,
+		player: MercuryClient,
+	): void {
+		player.logger.info("MercuryDuelingState: handleResponse");
+
+		// Validar que hay una respuesta esperada y el jugador es el correcto
+		// if (
+		// 	this.ocgCore.currentResponsePosition === null ||
+		// 	player !== this.getResponsePlayer(room, player) ||
+		// 	!this.ocgCore.hasOcgcore()
+		// ) {
+		// 	return;
+		// }
+
+		const responsePosition = this.ocgCore.currentResponsePosition;
+		const responseBuffer = Buffer.from(message.data);
+
+		// Guardar respuesta en el record (si existe)
+		room.addResponse(responseBuffer);
+
+		// Limpiar timer si hay límite de tiempo
+		if (this.ocgCore.timeLimitEnabled) {
+			this.ocgCore.clearResponseTimerState(true);
+		}
+
+		// Limpiar estado de respuesta
+		this.ocgCore.clearResponseState();
+
+		// Enviar respuesta al OCGCore y avanzar
+		this.ocgCore
+			.setResponse(responseBuffer)
+			.then(() => {
+				this.ocgCore.advance();
+			})
+			.catch((error) => {
+				player.logger.error("Failed to set response in ocgcore", { error });
+				room.setDuelFinished();
+			});
+	}
+
+	private getResponsePlayer(
+		room: MercuryRoom,
+		_player: MercuryClient,
+	): MercuryClient | null {
+		// TODO: Retornar el jugador que debe responder según responsePosition
+		// Por ahora retornamos el primer jugador
+		const clients = room.clients as MercuryClient[];
+		return clients.length > 0 ? clients[0] : null;
 	}
 }

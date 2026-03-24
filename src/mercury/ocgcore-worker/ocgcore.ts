@@ -5,10 +5,12 @@ import {
   YGOProMsgResponseBase,
   YGOProMsgRetry,
   YGOProStocGameMsg,
+  YGOProStocTimeLimit,
   YGOProMsgUpdateCard,
   YGOProMsgUpdateData,
   YGOProMsgWin,
   YGOProMsgWaiting,
+  RequireQueryLocation,
 } from "ygopro-msg-encode";
 import { MayBeArray } from "nfkit";
 
@@ -31,6 +33,12 @@ export class OCGCore {
   private lastResponseRequestMsg: YGOProMsgBase | null = null;
   private isRetrying = false;
   private isPositionSwapped = false;
+
+  // Timer state
+  private timerLeftMs: Record<number, number> = { 0: 0, 1: 0 };
+  private timerRunningPosition: number | null = null;
+  private timerTimeoutId: NodeJS.Timeout | null = null;
+  private hasTimeLimit = false;
 
   constructor(
     private readonly room: MercuryRoom,
@@ -56,8 +64,8 @@ export class OCGCore {
       start_lp: String(this.room.hostInfo.start_lp),
       start_hand: String(this.room.hostInfo.start_hand),
       draw_count: String(this.room.hostInfo.draw_count),
-      player_type_0: "0",
-      player_type_1: "1",
+      player_type_0: this.room.isPositionSwapped ? "1" : "0",
+      player_type_1: this.room.isPositionSwapped ? "0" : "1",
     };
 
     this.room.clients.forEach((player, index) => {
@@ -100,9 +108,35 @@ export class OCGCore {
     return this.ocgcore!.queryFieldCount({ player: team, location });
   }
 
-  // ============================================================
-  // Advance - Process duel loop
-  // ============================================================
+  // Public accessors for MercuryDuelingState
+  get currentResponsePosition(): number | null {
+    return this.responsePosition;
+  }
+
+  get timeLimitEnabled(): boolean {
+    return this.hasTimeLimit;
+  }
+
+  hasOcgcore(): boolean {
+    return this.ocgcore !== null;
+  }
+
+  clearResponseTimerState(settlePrevious: boolean): void {
+    this.clearResponseTimer(settlePrevious);
+  }
+
+  clearResponseState(): void {
+    this.lastResponseRequestMsg = null;
+    this.isRetrying = false;
+    this.responsePosition = null;
+  }
+
+  async setResponse(responseBuffer: Buffer): Promise<void> {
+    if (!this.ocgcore) {
+      throw new Error("OCGCore not initialized");
+    }
+    await this.ocgcore.setResponse(responseBuffer);
+  }
 
   async advance(): Promise<void> {
     if (!this.canAdvance()) {
@@ -147,7 +181,7 @@ export class OCGCore {
       if (status) {
         throw new Error(
           "Cannot continue ocgcore because received empty message with non-advancing status " +
-            status,
+          status,
         );
       }
       return;
@@ -164,7 +198,6 @@ export class OCGCore {
 
     const handledMessage = await this.dispatchGameMessage(message);
     if (!handledMessage) {
-      // Message blocked by middleware, do not route
       return;
     }
 
@@ -178,8 +211,14 @@ export class OCGCore {
 
   private async dispatchGameMessage(
     message: YGOProMsgBase,
+    options: { sendToClient?: MayBeArray<Client>; route?: boolean } = {}
   ): Promise<YGOProMsgBase | null> {
-    // TODO: Implement message dispatch through middleware
+    if (options?.route && message) {
+      await this.routeGameMsg(message, {
+        sendToClient: options?.sendToClient,
+      })
+    }
+
     return message;
   }
 
@@ -221,10 +260,10 @@ export class OCGCore {
 
     const sendToClients = options.sendToClient
       ? new Set(
-          Array.isArray(options.sendToClient)
-            ? options.sendToClient
-            : [options.sendToClient],
-        )
+        Array.isArray(options.sendToClient)
+          ? options.sendToClient
+          : [options.sendToClient],
+      )
       : undefined;
 
     await this.deliverToTargets(message, sendToClients);
@@ -292,12 +331,73 @@ export class OCGCore {
     }
   }
 
-  private async refreshZone(_location: {
+  private async refreshZone(request: {
     player: number;
     location: number;
   }): Promise<void> {
-    // TODO: Implement zone refresh
-    this.logger.debug("refreshZone not implemented yet");
+    if (!this.ocgcore) {
+      return;
+    }
+
+    const locations = this.splitRefreshLocations(request.location);
+    for (const location of locations) {
+      const queryResult = await this.ocgcore.queryFieldCard({
+        player: request.player,
+        location,
+        queryFlag: this.getZoneQueryFlag(location),
+        useCache: 1,
+      });
+
+      const cards = queryResult.cards ?? [];
+
+      await this.routeGameMsg(
+        new YGOProMsgUpdateData().fromPartial({
+          player: request.player,
+          location,
+          cards: cards as never[],
+        }),
+      );
+    }
+  }
+
+  async refreshZones(zone: RequireQueryLocation, options: { queryFlag?: number; sendToClient?: MayBeArray<Client>; useCache?: number; } = {}): Promise<void> {
+    if (!this.ocgcore) {
+      return
+    }
+
+    const locations = this.splitRefreshLocations(zone.location);
+    for (const location of locations) {
+      const { cards } = await this.ocgcore.queryFieldCard({
+        player: zone.player,
+        location,
+        queryFlag: options.queryFlag ?? this.getZoneQueryFlag(location),
+        useCache: options.useCache ?? 1
+      })
+      const updateDateMessage = new YGOProMsgUpdateData().fromPartial({
+        player: zone.player,
+        location,
+        cards: cards ?? [],
+      })
+      await this.dispatchGameMessage(updateDateMessage, { sendToClient: options.sendToClient, route: true })
+    }
+  }
+
+  private getZoneQueryFlag(location: number): number {
+    // Returns query flag for specific zone locations
+    switch (location) {
+      case 0x0080: // MZONE
+        return 0x881fff;
+      case 0x0100: // SZONE
+      case 0x1000: // EXTRA
+        return 0xe81fff;
+      case 0x0200: // HAND
+        return 0x681fff;
+      case 0x0400: // GRAVE
+      case 0x0800: // REMOVED
+        return 0x081fff;
+      default:
+        return 0xf81fff;
+    }
   }
 
   private splitRefreshLocations(location: number): number[] {
@@ -351,12 +451,60 @@ export class OCGCore {
   }
 
   private async setResponseTimer(position: number): Promise<void> {
-    // TODO: Implement response timer with timeout handling
-    // - Check if room has time limit enabled
-    // - Get remaining time from timer state
-    // - Send time limit message to player
-    // - Schedule timeout callback
-    this.logger.debug("setResponseTimer not fully implemented", { position });
+    this.clearResponseTimer(true);
+
+    if (!this.hasTimeLimit || (position !== 0 && position !== 1)) {
+      return;
+    }
+
+    const leftTime = Math.max(0, this.timerLeftMs[position] || 0);
+
+    await this.sendTimeLimitMessage(position);
+
+    if (leftTime <= 0) {
+      await this.handleResponseTimeout(position);
+      return;
+    }
+
+    this.timerRunningPosition = position;
+    this.timerTimeoutId = setTimeout(async () => {
+      await this.handleResponseTimeout(position);
+    }, leftTime);
+  }
+
+  private clearResponseTimer(settlePrevious: boolean): void {
+    if (settlePrevious && this.timerTimeoutId) {
+      clearTimeout(this.timerTimeoutId);
+      this.timerTimeoutId = null;
+    }
+    this.timerRunningPosition = null;
+  }
+
+  private async sendTimeLimitMessage(position: number): Promise<void> {
+    const leftTime = Math.max(0, this.timerLeftMs[position] || 0);
+    const timeLimitSeconds = Math.ceil(leftTime / 1000);
+
+    const timeLimitMessage = new YGOProStocTimeLimit().fromPartial({
+      player: position,
+      left_time: timeLimitSeconds,
+    });
+
+    const players = this.getPlayersAtIngamePosition(position);
+    await Promise.all(
+      players.map((client) =>
+        client.sendMessageToClient(
+          Buffer.from(timeLimitMessage.toFullPayload()),
+        ),
+      ),
+    );
+  }
+
+  private async handleResponseTimeout(position: number): Promise<void> {
+    this.clearResponseTimer(false);
+    this.logger.info("Response timeout", { position });
+
+    // TODO: Send timeout to client and handle the timeout state
+    // Could trigger retry or declare the other player as winner
   }
 
   // ============================================================

@@ -266,19 +266,21 @@ export class MercuryRoom extends YgoRoom {
   }
 
   get mode() {
-    return this.hostInfo.mode > 2 ? (this.isTag ? 2 : 1) : this.hostInfo.mode
+    return this.hostInfo.mode > 2 ? (this.isTag ? 2 : 1) : this.hostInfo.mode;
   }
 
   getTeam(position: number): number {
     if (position === NetPlayerType.OBSERVER) {
-      return -1
+      return -1;
     }
 
     return (position & (0x1 << this.teamOffsetBit)) >>> this.teamOffsetBit;
   }
 
   getTeamPlayers(team: number): MercuryClient[] {
-    return this.clients.filter((client) => this.getTeam(client.position) === team) as MercuryClient[]
+    return this.clients.filter(
+      (client) => this.getTeam(client.position) === team,
+    ) as MercuryClient[];
   }
 
   get isMatch(): boolean {
@@ -286,7 +288,7 @@ export class MercuryRoom extends YgoRoom {
   }
 
   get duelMode(): string {
-    return this.isTag ? "tag" : this.isMatch ? 'match' : 'single';
+    return this.isTag ? "tag" : this.isMatch ? "match" : "single";
   }
 
   private get teamOffsetBit() {
@@ -295,7 +297,7 @@ export class MercuryRoom extends YgoRoom {
 
   async getCard(cardId: number) {
     const cardReader = await this._resourceLoader.getCardReader();
-    return cardReader(cardId)
+    return cardReader(cardId);
   }
 
   async getCardReader() {
@@ -576,5 +578,14 @@ export class MercuryRoom extends YgoRoom {
     }
 
     return position === 0 ? Team.PLAYER : Team.OPPONENT;
+  }
+
+  // Response handling for duel
+  addResponse(_responseBuffer: Buffer): void {
+    // TODO: Implement response recording for duel replay
+  }
+
+  setDuelFinished(): void {
+    this._state = DuelState.WAITING;
   }
 }
