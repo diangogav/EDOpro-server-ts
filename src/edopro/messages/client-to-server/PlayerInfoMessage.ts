@@ -8,8 +8,17 @@ export class PlayerInfoMessage implements Message {
 
 	constructor(buffer: Buffer, length: number) {
 		const data = BufferToUTF16(buffer, length);
-		const [username, password] = data.split(":");
-		this.name = username;
+		const separatorIndex = data.indexOf(":");
+
+		if (separatorIndex === -1) {
+			this.name = data;
+			this.password = null;
+
+			return;
+		}
+
+		this.name = data.slice(0, separatorIndex);
+		const password = data.slice(separatorIndex + 1, separatorIndex + 5);
 		this.password = password || null;
 	}
 }
