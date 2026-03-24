@@ -31,11 +31,14 @@ import { MercurySideDeckingState } from "./states/MercurySideDeckingState";
 import { MercuryWaitingState } from "./states/MercuryWaitingState";
 import { RoomType } from "src/shared/room/domain/RoomType";
 import { YGOProResourceLoader } from "../../ygopro/ygopro-resource-loader";
-import { GameMode, NetPlayerType, PlayerChangeState, YGOProStocDeckCount, YGOProStocDeckCount_DeckInfo, YGOProStocHsPlayerChange, YGOProStocHsPlayerEnter, YGOProStocHsWatchChange, YGOProStocJoinGame, YGOProStocTypeChange } from "ygopro-msg-encode";
+import { GameMode, NetPlayerType, PlayerChangeState, YGOProMsgBase, YGOProStocDeckCount, YGOProStocDeckCount_DeckInfo, YGOProStocHsPlayerChange, YGOProStocHsPlayerEnter, YGOProStocHsWatchChange, YGOProStocJoinGame, YGOProStocTypeChange } from "ygopro-msg-encode";
 import { HostInfo } from "./host-info/HostInfo";
 import { ISocket } from "src/shared/socket/domain/ISocket";
 import YGOProDeck from "ygopro-deck-encode";
 import { DuelRecord } from "./DuelRecord";
+import { generateSeed } from "src/mercury/utils/generate-seed";
+import { shuffleDecksBySeed } from "src/mercury/utils/shuffle-decks-by-seed";
+import { calculateOcgcoreDeck } from "src/mercury/utils/calculate-ocgcore-deck";
 
 const BEST_OF = {
   [GameMode.SINGLE]: 1,
@@ -58,6 +61,7 @@ export class MercuryRoom extends YgoRoom {
   private _route = "mercury";
   private _isPositionSwapped: boolean = false;
   private _duelRecords: DuelRecord[] = [];
+  private _currentDuelRecord: DuelRecord;
   private readonly _hostInfo: HostInfo;
   private readonly _resourceLoader: YGOProResourceLoader;
 
@@ -302,6 +306,23 @@ export class MercuryRoom extends YgoRoom {
     );
   }
 
+  get duelRecordPlayers(): { name: string; deck: YGOProDeck }[] {
+    return this._currentDuelRecord.players;
+  }
+
+  get seed(): number[] {
+    return this._currentDuelRecord.seed;
+  }
+
+  async getDuelRecordDeck(): Promise<YGOProDeck[]> {
+    const cardReader = await this.getCardReader();
+    return this._currentDuelRecord
+      .toSwappedPlayers()
+      .map((player) =>
+        calculateOcgcoreDeck(player.deck, this.hostInfo, cardReader),
+      )
+  }
+
   waiting(): void {
     this.roomState?.removeAllListener();
     this.roomState = new MercuryWaitingState(
@@ -536,6 +557,27 @@ export class MercuryRoom extends YgoRoom {
     })
 
     client.sendMessageToClient(Buffer.from(message.toFullPayload()))
+  }
+
+  generateDuelRecord(): void {
+    const seed = generateSeed();
+    console.log("shuffleDeckEnabled", this.shuffleDeckEnabled)
+    const decks = this.shuffleDeckEnabled
+      ? shuffleDecksBySeed(this.clients.map((_client: MercuryClient) => _client.deck!), seed)
+      : this.clients.map((_client: MercuryClient) => _client.deck)
+
+    const players = this.clients.map((_client: MercuryClient, index: number) => ({
+      name: _client.name,
+      deck: decks[index]!
+    }))
+
+    const duelRecord = new DuelRecord(seed, players, this.isPositionSwapped);
+    this._duelRecords.push(duelRecord)
+    this._currentDuelRecord = duelRecord;
+  }
+
+  saveMessageToDuelRecord(message: YGOProMsgBase): void {
+    this._currentDuelRecord.messages.push(message);
   }
 
   async getCard(cardId: number) {

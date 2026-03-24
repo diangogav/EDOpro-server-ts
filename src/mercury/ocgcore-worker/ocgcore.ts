@@ -10,6 +10,9 @@ import {
   YGOProMsgUpdateData,
   YGOProMsgWin,
   YGOProMsgWaiting,
+  YGOProMsgNewTurn,
+  YGOProMsgNewPhase,
+  YGOProMsgResetTime,
   RequireQueryLocation,
 } from "ygopro-msg-encode";
 import { MayBeArray } from "nfkit";
@@ -21,6 +24,7 @@ import { generateSeed } from "../utils/generate-seed";
 import { OcgcoreWorker } from "./ocgcore-worker";
 import { Logger } from "src/shared/logger/domain/Logger";
 import { DuelRecord } from "../room/domain/DuelRecord";
+import { GameMessageMiddleware } from "../middleware/GameMessageMiddleware";
 
 const isUpdateMessage = (message: YGOProMsgBase) =>
   message instanceof YGOProMsgUpdateData ||
@@ -41,14 +45,61 @@ export class OCGCore {
   private timerTimeoutId: NodeJS.Timeout | null = null;
   private hasTimeLimit = false;
 
+  // Message middleware
+  private gameMiddleware = new GameMessageMiddleware();
+
   constructor(
     private readonly room: MercuryRoom,
     private readonly logger: Logger,
   ) {
     this.ocgcore = null;
+    this.registerMiddlewares();
   }
 
-  async init(duelRecord: DuelRecord): Promise<void> {
+  /**
+   * Register all game message middlewares
+   */
+  private registerMiddlewares(): void {
+    // Log all game messages (except updates)
+    // Record messages for replay
+    this.gameMiddleware.on(YGOProMsgBase, (msg) => {
+      if (!(msg instanceof YGOProMsgRetry)) {
+        this.room.saveMessageToDuelRecord(msg);
+      }
+      return msg;
+    });
+
+    // Handle new turn - just return msg, actual logic handled separately
+    this.gameMiddleware.on(YGOProMsgNewTurn, (msg) => {
+      console.log("YGOProMsgNewTurn")
+      return msg;
+    });
+
+    // Handle new phase - just return msg
+    this.gameMiddleware.on(YGOProMsgNewPhase, (msg) => {
+      console.log("YGOProMsgNewPhase")
+
+      return msg;
+    });
+
+    // Handle reset time - just return msg
+    this.gameMiddleware.on(YGOProMsgResetTime, (msg) => {
+      return msg;
+    });
+
+    // Handle retry - just return msg
+    this.gameMiddleware.on(YGOProMsgRetry, (msg) => {
+      return msg;
+    });
+
+    // Handle win - just return msg
+    this.gameMiddleware.on(YGOProMsgWin, (msg) => {
+      return msg;
+    });
+  }
+
+  async init(room: MercuryRoom): Promise<void> {
+    console.log("gklfdjgkldfjgfldkjglfdk")
     const extraScriptPaths = [
       "./script/patches/entry.lua",
       "./script/special.lua",
@@ -57,7 +108,6 @@ export class OCGCore {
     ];
 
     const cardStorage = await this.room.getCardStorage();
-    const cardReader = await this.room.getCardReader();
     const ocgcoreWasmBinary = await this.room.ocgCoreBinary();
 
     const registry: Record<string, string> = {
@@ -69,26 +119,22 @@ export class OCGCore {
       player_type_1: this.room.isPositionSwapped ? "0" : "1",
     };
 
-    duelRecord.players.forEach((player, index) => {
+    room.duelRecordPlayers.forEach((player, index) => {
       registry[`player_name_${index}`] = player.name;
     });
 
-    const decks = this.room.clients.map((player: MercuryClient) =>
-      calculateOcgcoreDeck(player.deck!, this.room.hostInfo, cardReader),
-    );
+    const decks = await room.getDuelRecordDeck();
 
     try {
       this.ocgcore = await initWorker(OcgcoreWorker, {
-        seed: duelRecord.seed,
+        seed: room.seed,
         hostinfo: this.room.hostInfo,
         ygoproPaths: this.room.getYGOProPaths(),
         extraScriptPaths,
         cardStorage,
         ocgcoreWasmBinary,
         registry,
-        decks: duelRecord
-          .toSwappedPlayers()
-          .map((player) => calculateOcgcoreDeck(player.deck, this.room.hostInfo, cardReader))
+        decks,
       });
 
       this.ocgcore.message$.subscribe((msg) => {
@@ -190,36 +236,40 @@ export class OCGCore {
       return;
     }
 
-    if (message instanceof YGOProMsgUpdateCard) {
+    // Process message through middleware
+    const processedMessage = await this.gameMiddleware.process(message);
+
+    if (processedMessage === null) {
+      // Message blocked by middleware
+      this.logger.debug("Message blocked by middleware");
+      return;
+    }
+
+    if (processedMessage instanceof YGOProMsgUpdateCard) {
       await this.refreshSingleCard({
-        player: message.controller,
-        location: message.location,
-        sequence: message.sequence,
+        player: processedMessage.controller,
+        location: processedMessage.location,
+        sequence: processedMessage.sequence,
       });
       return;
     }
 
-    const handledMessage = await this.dispatchGameMessage(message);
-    if (!handledMessage) {
+    if (processedMessage instanceof YGOProMsgWin) {
+      await this.handleWinCondition(processedMessage);
       return;
     }
 
-    if (handledMessage instanceof YGOProMsgWin) {
-      await this.handleWinCondition(handledMessage);
-      return;
-    }
-
-    await this.routeGameMsg(handledMessage);
+    await this.routeGameMsg(processedMessage);
   }
 
   private async dispatchGameMessage(
     message: YGOProMsgBase,
-    options: { sendToClient?: MayBeArray<Client>; route?: boolean } = {}
+    options: { sendToClient?: MayBeArray<Client>; route?: boolean } = {},
   ): Promise<YGOProMsgBase | null> {
     if (options?.route && message) {
       await this.routeGameMsg(message, {
         sendToClient: options?.sendToClient,
-      })
+      });
     }
 
     return message;
@@ -363,9 +413,16 @@ export class OCGCore {
     }
   }
 
-  async refreshZones(zone: RequireQueryLocation, options: { queryFlag?: number; sendToClient?: MayBeArray<Client>; useCache?: number; } = {}): Promise<void> {
+  async refreshZones(
+    zone: RequireQueryLocation,
+    options: {
+      queryFlag?: number;
+      sendToClient?: MayBeArray<Client>;
+      useCache?: number;
+    } = {},
+  ): Promise<void> {
     if (!this.ocgcore) {
-      return
+      return;
     }
 
     const locations = this.splitRefreshLocations(zone.location);
@@ -374,14 +431,17 @@ export class OCGCore {
         player: zone.player,
         location,
         queryFlag: options.queryFlag ?? this.getZoneQueryFlag(location),
-        useCache: options.useCache ?? 1
-      })
+        useCache: options.useCache ?? 1,
+      });
       const updateDateMessage = new YGOProMsgUpdateData().fromPartial({
         player: zone.player,
         location,
         cards: cards ?? [],
-      })
-      await this.dispatchGameMessage(updateDateMessage, { sendToClient: options.sendToClient, route: true })
+      });
+      await this.dispatchGameMessage(updateDateMessage, {
+        sendToClient: options.sendToClient,
+        route: true,
+      });
     }
   }
 

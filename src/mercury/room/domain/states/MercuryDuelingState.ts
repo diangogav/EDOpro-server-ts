@@ -26,6 +26,7 @@ import {
 	RequireQueryCardLocation,
 	YGOProMsgStart,
 	YGOProMsgUpdateCard,
+	YGOProStocDuelStart,
 	YGOProStocGameMsg,
 } from "ygopro-msg-encode";
 import { MayBeArray } from "nfkit";
@@ -104,20 +105,8 @@ export class MercuryDuelingState extends RoomState {
 
 	private async handle(): Promise<void> {
 		this.logger.info("MercuryDuelingState:handle");
-
-		const seed = generateSeed();
-		const decks = this.room.shuffleDeckEnabled
-			? this.room.clients.map((_client: MercuryClient) => _client.deck)
-			: shuffleDecksBySeed(this.room.clients.map((_client: MercuryClient) => _client.deck!), seed)
-
-		const players = this.room.clients.map((_client: MercuryClient, index: number) => ({
-			name: _client.name,
-			deck: decks[index]!
-		}))
-
-		const duelRecord = new DuelRecord(seed, players, this.room.isPositionSwapped);
-
-		await this.ocgCore.init(duelRecord);
+		this.room.generateDuelRecord();
+		await this.ocgCore.init(this.room);
 
 		const [
 			player0DeckCount,
@@ -200,31 +189,16 @@ export class MercuryDuelingState extends RoomState {
 		socket: ISocket,
 	): void {
 		this.logger.info("JOIN");
-		// const playerInfoMessage = new PlayerInfoMessage(
-		// 	message.previousMessage,
-		// 	message.data.length,
-		// );
-		// const playerAlreadyInRoom = this.playerAlreadyInRoom(
-		// 	playerInfoMessage,
-		// 	room,
-		// 	socket,
-		// );
+		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
+		const playerAlreadyInRoom = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
 
-		// if (!(playerAlreadyInRoom instanceof MercuryClient)) {
-		// 	const spectator = new MercuryClient({
-		// 		id: null,
-		// 		socket,
-		// 		logger: this.logger,
-		// 		messages: [],
-		// 		name: playerInfoMessage.name,
-		// 		position: room.playersCount,
-		// 		room,
-		// 		host: false,
-		// 	});
-		// 	room.addSpectator(spectator, true);
-
-		// 	return;
-		// }
+		if (!(playerAlreadyInRoom instanceof MercuryClient)) {
+			const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name);
+			room.addSpectatorUnsafe(spectator);
+			spectator.sendMessageToClient(Buffer.from(new YGOProStocDuelStart().toFullPayload()));
+			room.sendDeckCountMessage(spectator);
+			return;
+		}
 
 		// MercuryReconnect.run(playerAlreadyInRoom, room, socket);
 	}
