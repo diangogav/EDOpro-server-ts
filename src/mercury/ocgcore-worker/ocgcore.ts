@@ -13,6 +13,9 @@ import {
   YGOProMsgNewTurn,
   YGOProMsgNewPhase,
   YGOProMsgResetTime,
+  YGOProMsgReverseDeck,
+  YGOProMsgDeckTop,
+  OcgcoreCommonConstants,
   RequireQueryLocation,
   YGOProMsgStart,
   OcgcoreScriptConstants,
@@ -39,6 +42,7 @@ export class OCGCore {
   private lastResponseRequestMsg: YGOProMsgBase | null = null;
   private _phase: number | null = null;
   private isRetrying = false;
+  private _deckReversed = false;
 
   // Timer state
   private timerState = new TimerState();
@@ -92,9 +96,15 @@ export class OCGCore {
       return msg;
     });
 
-    // Handle new phase - just return msg
+    // Handle new phase
     this._gameMiddleware.on(YGOProMsgNewPhase, (msg) => {
       this._phase = msg.phase;
+      return msg;
+    });
+
+    // Track deck reversal
+    this._gameMiddleware.on(YGOProMsgReverseDeck, (msg) => {
+      this._deckReversed = !this._deckReversed;
       return msg;
     });
 
@@ -375,6 +385,57 @@ export class OCGCore {
         );
       }
     }
+  }
+
+  async sendDeckReversedAndTopMessages(client: MercuryClient): Promise<void> {
+    if (!this.ocgcore) {
+      return;
+    }
+
+    if (this._deckReversed) {
+      const msg = new YGOProMsgReverseDeck()
+      client.sendMessageToClient(Buffer.from(new YGOProStocGameMsg().fromPartial({ msg }).toFullPayload()))
+    }
+
+    for (const playerPosition of [0, 1]) {
+      await this.sendDeckTopMessage(client, playerPosition);
+    }
+  }
+
+  private async sendDeckTopMessage(client: MercuryClient, playerPosition: number): Promise<void> {
+    if (!this.ocgcore) {
+      return;
+    }
+
+    const DECK_TOP_QUERY_FLAGS =
+      OcgcoreCommonConstants.QUERY_CODE | OcgcoreCommonConstants.QUERY_POSITION;
+
+    const deckQuery = await this.ocgcore.queryFieldCard({
+      player: playerPosition,
+      location: OcgcoreScriptConstants.LOCATION_DECK,
+      queryFlag: DECK_TOP_QUERY_FLAGS,
+      useCache: 0,
+    });
+
+    const cards = (deckQuery.cards ?? []) as Array<{ code: number; position: number }>;
+    const topCard = cards[cards.length - 1];
+
+    if (!topCard) {
+      return;
+    }
+
+    const isFaceUp = (topCard.position & OcgcoreCommonConstants.POS_FACEUP) !== 0;
+    const shouldSendDeckTop = this._deckReversed || isFaceUp;
+
+    if (!shouldSendDeckTop) {
+      return;
+    }
+
+    const FACE_UP_CODE_FLAG = 0x80000000;
+    const code = isFaceUp ? topCard.code | FACE_UP_CODE_FLAG : topCard.code;
+
+    const msg = new YGOProMsgDeckTop().fromPartial({ player: playerPosition, sequence: 0, code })
+    client.sendMessageToClient(Buffer.from(new YGOProStocGameMsg().fromPartial({ msg }).toFullPayload()))
   }
 
   private canAdvance(): boolean {

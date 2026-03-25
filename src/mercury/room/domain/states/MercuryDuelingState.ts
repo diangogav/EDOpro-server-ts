@@ -329,6 +329,7 @@ export class MercuryDuelingState extends RoomState {
 		this.ocgCore.sendPhaseMessage(player);
 		await this.ocgCore.sendRequestFieldMessage(player);
 		await this.ocgCore.sendRefreshZonesMessages(player);
+		await this.ocgCore.sendDeckReversedAndTopMessages(player);
 
 	}
 
