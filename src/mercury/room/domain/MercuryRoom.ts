@@ -609,7 +609,6 @@ export class MercuryRoom extends YgoRoom {
         deck: decks[index]!,
       }),
     );
-
     const duelRecord = new DuelRecord(seed, players, this.isPositionSwapped);
     this._duelRecords.push(duelRecord);
     this._currentDuelRecord = duelRecord;

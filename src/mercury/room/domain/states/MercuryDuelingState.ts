@@ -156,21 +156,22 @@ export class MercuryDuelingState extends RoomState {
 				}),
 			});
 
-		const team0Players = this.room.getTeamPlayers(0);
-		const team1Players = this.room.getTeamPlayers(1);
+		// Use ingame position (considering swap) to match srvpro2 behavior
+		const player0Players = this.ocgCore.getPlayersAtIngamePosition(0);
+		const player1Players = this.ocgCore.getPlayersAtIngamePosition(1);
 
-		const team0StartMessage = createStartMsg(0);
-		const team1StartMessage = createStartMsg(1);
+		const player0StartMessage = createStartMsg(0);
+		const player1StartMessage = createStartMsg(1);
 
-		team0Players.forEach((_player) => {
+		player0Players.forEach((_player) => {
 			_player.sendMessageToClient(
-				Buffer.from(team0StartMessage.toFullPayload()),
+				Buffer.from(player0StartMessage.toFullPayload()),
 			);
 		});
 
-		team1Players.forEach((_player) => {
+		player1Players.forEach((_player) => {
 			_player.sendMessageToClient(
-				Buffer.from(team1StartMessage.toFullPayload()),
+				Buffer.from(player1StartMessage.toFullPayload()),
 			);
 		});
 
@@ -331,7 +332,9 @@ export class MercuryDuelingState extends RoomState {
 			return;
 		}
 
-		player.sendMessageToClient(Buffer.from(new YGOProStocDuelStart().toFullPayload()));
+		player.sendMessageToClient(
+			Buffer.from(new YGOProStocDuelStart().toFullPayload()),
+		);
 		this.ocgCore.sendStartMessageForReconnect(player);
 		this.ocgCore.sendTurnMessages(player);
 		this.ocgCore.sendPhaseMessage(player);

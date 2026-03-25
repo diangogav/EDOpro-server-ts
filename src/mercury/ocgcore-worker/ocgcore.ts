@@ -28,7 +28,10 @@ import { MercuryRoom } from "../room/domain/MercuryRoom";
 import { OcgcoreWorker } from "./ocgcore-worker";
 import { Logger } from "src/shared/logger/domain/Logger";
 import { GameMessageMiddleware } from "../middleware/GameMessageMiddleware";
-import { canIncreaseTime, getMessageIdentifier } from "../utils/response-time-utils";
+import {
+  canIncreaseTime,
+  getMessageIdentifier,
+} from "../utils/response-time-utils";
 import { TimerState } from "../room/domain/TimerState";
 
 const isUpdateMessage = (message: YGOProMsgBase) =>
@@ -126,7 +129,6 @@ export class OCGCore {
   }
 
   async init(room: MercuryRoom): Promise<void> {
-    console.log("gklfdjgkldfjgfldkjglfdk");
     const extraScriptPaths = [
       "./script/patches/entry.lua",
       "./script/special.lua",
@@ -340,7 +342,7 @@ export class OCGCore {
 
   sendPhaseMessage(client: MercuryClient): void {
     if (this._phase === null) {
-      return
+      return;
     }
 
     const message = new YGOProStocGameMsg().fromPartial({
@@ -354,7 +356,7 @@ export class OCGCore {
 
   async sendRequestFieldMessage(client: MercuryClient): Promise<void> {
     if (!this.ocgcore) {
-      return
+      return;
     }
     const info = await this.ocgcore.queryFieldInfo();
     const message = new YGOProStocGameMsg().fromPartial({
@@ -394,8 +396,12 @@ export class OCGCore {
     }
 
     if (this._deckReversed) {
-      const msg = new YGOProMsgReverseDeck()
-      client.sendMessageToClient(Buffer.from(new YGOProStocGameMsg().fromPartial({ msg }).toFullPayload()))
+      const msg = new YGOProMsgReverseDeck();
+      client.sendMessageToClient(
+        Buffer.from(
+          new YGOProStocGameMsg().fromPartial({ msg }).toFullPayload(),
+        ),
+      );
     }
 
     for (const playerPosition of [0, 1]) {
@@ -403,7 +409,10 @@ export class OCGCore {
     }
   }
 
-  private async sendDeckTopMessage(client: MercuryClient, playerPosition: number): Promise<void> {
+  private async sendDeckTopMessage(
+    client: MercuryClient,
+    playerPosition: number,
+  ): Promise<void> {
     if (!this.ocgcore) {
       return;
     }
@@ -418,14 +427,18 @@ export class OCGCore {
       useCache: 0,
     });
 
-    const cards = (deckQuery.cards ?? []) as Array<{ code: number; position: number }>;
+    const cards = (deckQuery.cards ?? []) as Array<{
+      code: number;
+      position: number;
+    }>;
     const topCard = cards[cards.length - 1];
 
     if (!topCard) {
       return;
     }
 
-    const isFaceUp = (topCard.position & OcgcoreCommonConstants.POS_FACEUP) !== 0;
+    const isFaceUp =
+      (topCard.position & OcgcoreCommonConstants.POS_FACEUP) !== 0;
     const shouldSendDeckTop = this._deckReversed || isFaceUp;
 
     if (!shouldSendDeckTop) {
@@ -435,11 +448,19 @@ export class OCGCore {
     const FACE_UP_CODE_FLAG = 0x80000000;
     const code = isFaceUp ? topCard.code | FACE_UP_CODE_FLAG : topCard.code;
 
-    const msg = new YGOProMsgDeckTop().fromPartial({ player: playerPosition, sequence: 0, code })
-    client.sendMessageToClient(Buffer.from(new YGOProStocGameMsg().fromPartial({ msg }).toFullPayload()))
+    const msg = new YGOProMsgDeckTop().fromPartial({
+      player: playerPosition,
+      sequence: 0,
+      code,
+    });
+    client.sendMessageToClient(
+      Buffer.from(new YGOProStocGameMsg().fromPartial({ msg }).toFullPayload()),
+    );
   }
 
-  async sendReconnectTimeLimitAndResponseState(client: MercuryClient): Promise<void> {
+  async sendReconnectTimeLimitAndResponseState(
+    client: MercuryClient,
+  ): Promise<void> {
     const clientDuelPos = client.position;
     const opponentDuelPos = 1 - clientDuelPos;
 
@@ -463,7 +484,9 @@ export class OCGCore {
     client.sendMessageToClient(Buffer.from(msg.toFullPayload()));
   }
 
-  private async resendResponseRequestToClient(client: MercuryClient): Promise<void> {
+  private async resendResponseRequestToClient(
+    client: MercuryClient,
+  ): Promise<void> {
     if (!this.lastResponseRequestMsg) {
       return;
     }
@@ -476,8 +499,12 @@ export class OCGCore {
     await this.setResponseTimer(client.position);
   }
 
-  private async sendWaitingAndTimeLimitToClient(client: MercuryClient): Promise<void> {
-    const waitingMsg = new YGOProStocGameMsg().fromPartial({ msg: new YGOProMsgWaiting() });
+  private async sendWaitingAndTimeLimitToClient(
+    client: MercuryClient,
+  ): Promise<void> {
+    const waitingMsg = new YGOProStocGameMsg().fromPartial({
+      msg: new YGOProMsgWaiting(),
+    });
     client.sendMessageToClient(Buffer.from(waitingMsg.toFullPayload()));
 
     await this.sendTimeLimitMessage(client.position, client);
@@ -533,7 +560,7 @@ export class OCGCore {
       if (status) {
         throw new Error(
           "Cannot continue ocgcore because received empty message with non-advancing status " +
-          status,
+            status,
         );
       }
       return;
@@ -616,10 +643,10 @@ export class OCGCore {
 
     const sendToClients = options.sendToClient
       ? new Set(
-        Array.isArray(options.sendToClient)
-          ? options.sendToClient
-          : [options.sendToClient],
-      )
+          Array.isArray(options.sendToClient)
+            ? options.sendToClient
+            : [options.sendToClient],
+        )
       : undefined;
 
     await this.deliverToTargets(message, sendToClients);
@@ -844,7 +871,10 @@ export class OCGCore {
     this.timerState.clear(settleElapsed);
   }
 
-  async sendTimeLimitMessage(originalDuelPos: number, toSpecificClient?: Client): Promise<void> {
+  async sendTimeLimitMessage(
+    originalDuelPos: number,
+    toSpecificClient?: Client,
+  ): Promise<void> {
     if (!this.hasTimeLimit || ![0, 1].includes(originalDuelPos)) {
       return;
     }
@@ -1000,9 +1030,9 @@ export class OCGCore {
   // ============================================================
 
   /**
-   * Returns players at the given ingame position (considering swap).
+   * Returns players at given ingame position (considering swap).
    */
-  private getPlayersAtIngamePosition(ingamePosition: number): Client[] {
+  getPlayersAtIngamePosition(ingamePosition: number): Client[] {
     const duelPosition = this.toIngamePosition(ingamePosition);
     return this.room.getTeamPlayers(duelPosition);
   }
