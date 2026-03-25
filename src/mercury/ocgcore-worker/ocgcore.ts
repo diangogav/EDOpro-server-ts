@@ -15,6 +15,7 @@ import {
   YGOProMsgResetTime,
   YGOProMsgReverseDeck,
   YGOProMsgDeckTop,
+  YGOProMsgHint,
   OcgcoreCommonConstants,
   RequireQueryLocation,
   YGOProMsgStart,
@@ -436,6 +437,76 @@ export class OCGCore {
 
     const msg = new YGOProMsgDeckTop().fromPartial({ player: playerPosition, sequence: 0, code })
     client.sendMessageToClient(Buffer.from(new YGOProStocGameMsg().fromPartial({ msg }).toFullPayload()))
+  }
+
+  async sendReconnectTimeLimitAndResponseState(client: MercuryClient): Promise<void> {
+    const clientDuelPos = client.position;
+    const opponentDuelPos = 1 - clientDuelPos;
+
+    await this.sendTimeLimitMessage(opponentDuelPos, client);
+
+    if (client === this.responsePlayer) {
+      await this.sendLastHintToClient(client);
+      await this.resendResponseRequestToClient(client);
+    } else {
+      await this.sendWaitingAndTimeLimitToClient(client);
+    }
+  }
+
+  private async sendLastHintToClient(client: MercuryClient): Promise<void> {
+    const lastHint = this.findLastHintForClient(client);
+    if (!lastHint) {
+      return;
+    }
+
+    const msg = new YGOProStocGameMsg().fromPartial({ msg: lastHint });
+    client.sendMessageToClient(Buffer.from(msg.toFullPayload()));
+  }
+
+  private async resendResponseRequestToClient(client: MercuryClient): Promise<void> {
+    if (!this.lastResponseRequestMsg) {
+      return;
+    }
+
+    const ingamePos = this.getIngamePosition(client);
+    const playerView = this.lastResponseRequestMsg.playerView(ingamePos);
+    const msg = new YGOProStocGameMsg().fromPartial({ msg: playerView });
+    client.sendMessageToClient(Buffer.from(msg.toFullPayload()));
+
+    await this.setResponseTimer(client.position);
+  }
+
+  private async sendWaitingAndTimeLimitToClient(client: MercuryClient): Promise<void> {
+    const waitingMsg = new YGOProStocGameMsg().fromPartial({ msg: new YGOProMsgWaiting() });
+    client.sendMessageToClient(Buffer.from(waitingMsg.toFullPayload()));
+
+    await this.sendTimeLimitMessage(client.position, client);
+  }
+
+  private findLastHintForClient(client: MercuryClient): YGOProMsgHint | null {
+    const record = this.room.currentDuelRecord;
+    if (!record) {
+      return null;
+    }
+
+    const clientIngamePos = this.getIngamePosition(client);
+
+    for (let i = record.messages.length - 1; i >= 0; i -= 1) {
+      const message = record.messages[i];
+      if (!(message instanceof YGOProMsgHint)) {
+        continue;
+      }
+      try {
+        const targets = message.getSendTargets();
+        if (targets.includes(clientIngamePos)) {
+          return message.playerView(clientIngamePos) as YGOProMsgHint;
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    return null;
   }
 
   private canAdvance(): boolean {
