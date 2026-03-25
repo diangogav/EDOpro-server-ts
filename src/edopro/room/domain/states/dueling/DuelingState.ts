@@ -1,5 +1,5 @@
- 
- 
+
+
 import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
 import { ServerInfoMessage } from "@edopro/messages/domain/ServerInfoMessage";
 import { spawn } from "child_process";
@@ -396,7 +396,7 @@ export class DuelingState extends RoomState {
 			return;
 		}
 
-		// Skip sending historical cache to avoid card duplication. 
+		// Skip sending historical cache to avoid card duplication.
 		// REFRESH_FIELD (called during express reconnect) provides the current state.
 		/*
 		if (player.cache) {
@@ -657,7 +657,7 @@ export class DuelingState extends RoomState {
 		this.logger.info("DUELING_STATE: EXPRESS_RECONNECT - START");
 		const token = message.data.toString("utf8");
 		this.logger.info(`DUELING_STATE: Token received: ${token}`);
-		
+
 		const entry = TokenIndex.getInstance().find(token);
 		if (!entry || !(entry.client instanceof Client) || entry.roomId !== room.id) {
 			this.logger.info(`DUELING_STATE: Player not found for token ${token} or room mismatch`);

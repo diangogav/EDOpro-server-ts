@@ -14,16 +14,15 @@ import {
   YGOProMsgNewPhase,
   YGOProMsgResetTime,
   RequireQueryLocation,
+  YGOProMsgStart,
+  OcgcoreScriptConstants,
 } from "ygopro-msg-encode";
 import { MayBeArray } from "nfkit";
 
 import { MercuryClient } from "../client/domain/MercuryClient";
 import { MercuryRoom } from "../room/domain/MercuryRoom";
-import { calculateOcgcoreDeck } from "../utils/calculate-ocgcore-deck";
-import { generateSeed } from "../utils/generate-seed";
 import { OcgcoreWorker } from "./ocgcore-worker";
 import { Logger } from "src/shared/logger/domain/Logger";
-import { DuelRecord } from "../room/domain/DuelRecord";
 import { GameMessageMiddleware } from "../middleware/GameMessageMiddleware";
 
 const isUpdateMessage = (message: YGOProMsgBase) =>
@@ -36,8 +35,8 @@ export class OCGCore {
   private ocgcore: WorkerInstance<OcgcoreWorker> | null;
   private responsePosition: number | null = null;
   private lastResponseRequestMsg: YGOProMsgBase | null = null;
+  private _phase: number | null = null;
   private isRetrying = false;
-  private isPositionSwapped = false;
 
   // Timer state
   private timerLeftMs: Record<number, number> = { 0: 0, 1: 0 };
@@ -79,14 +78,13 @@ export class OCGCore {
 
     // Handle new turn - just return msg, actual logic handled separately
     this._gameMiddleware.on(YGOProMsgNewTurn, (msg) => {
-      console.log("YGOProMsgNewTurn");
+      this.room.increaseTurn();
       return msg;
     });
 
     // Handle new phase - just return msg
     this._gameMiddleware.on(YGOProMsgNewPhase, (msg) => {
-      console.log("YGOProMsgNewPhase");
-
+      this._phase = msg.phase;
       return msg;
     });
 
@@ -214,6 +212,104 @@ export class OCGCore {
     }
   }
 
+  sendStartMessageForReconnect(client: MercuryClient): void {
+    const playerType = this.getIngamePosition(client);
+    const startMessage = new YGOProStocGameMsg().fromPartial({
+      msg: new YGOProMsgStart().fromPartial({
+        playerType,
+        duelRule: this.room.hostInfo.duel_rule,
+        startLp0: this.room.hostInfo.start_lp,
+        startLp1: this.room.hostInfo.start_lp,
+        player0: {
+          deckCount: 0,
+          extraCount: 0,
+        },
+        player1: {
+          deckCount: 0,
+          extraCount: 0,
+        },
+      }),
+    });
+    client.sendMessageToClient(Buffer.from(startMessage.toFullPayload()));
+  }
+
+  sendTurnMessages(client: MercuryClient): void {
+    const rawTurnCount = Math.max(1, this.room.turn || 0);
+    if (this.room.isTag) {
+      const turnCount = rawTurnCount % 4 || 4;
+      for (let index = 0; index < turnCount; index += 1) {
+        const message = new YGOProStocGameMsg().fromPartial({
+          msg: new YGOProMsgNewTurn().fromPartial({
+            player: index % 2,
+          }),
+        });
+        client.sendMessageToClient(Buffer.from(message.toFullPayload()));
+      }
+
+      return;
+    }
+
+    const turnCount = rawTurnCount % 2 === 0 ? 2 : 1;
+    for (let index = 0; index < turnCount; index += 1) {
+      const message = new YGOProStocGameMsg().fromPartial({
+        msg: new YGOProMsgNewTurn().fromPartial({
+          player: index,
+        }),
+      });
+      client.sendMessageToClient(Buffer.from(message.toFullPayload()));
+    }
+  }
+
+  sendPhaseMessage(client: MercuryClient): void {
+    if (this._phase === null) {
+      return
+    }
+
+    const message = new YGOProStocGameMsg().fromPartial({
+      msg: new YGOProMsgNewPhase().fromPartial({
+        phase: this._phase,
+      }),
+    });
+
+    client.sendMessageToClient(Buffer.from(message.toFullPayload()));
+  }
+
+  async sendRequestFieldMessage(client: MercuryClient): Promise<void> {
+    if (!this.ocgcore) {
+      return
+    }
+    const info = await this.ocgcore.queryFieldInfo();
+    const message = new YGOProStocGameMsg().fromPartial({
+      msg: info.field,
+    });
+    client.sendMessageToClient(Buffer.from(message.toFullPayload()));
+  }
+
+  async sendRefreshZonesMessages(client: MercuryClient) {
+    const queryFlag = 0xefffff;
+    const selfIngamePos = this.getIngamePosition(client);
+    const opponentIngamePos = 1 - selfIngamePos;
+
+    const locations = [
+      OcgcoreScriptConstants.LOCATION_MZONE,
+      OcgcoreScriptConstants.LOCATION_SZONE,
+      OcgcoreScriptConstants.LOCATION_HAND,
+      OcgcoreScriptConstants.LOCATION_GRAVE,
+      OcgcoreScriptConstants.LOCATION_EXTRA,
+      OcgcoreScriptConstants.LOCATION_REMOVED,
+    ];
+    const players = [opponentIngamePos, selfIngamePos];
+
+    for (const location of locations) {
+      for (const player of players) {
+        await this.refreshZones(
+          { player, location },
+          { queryFlag, sendToClient: client, useCache: 0 },
+        );
+      }
+    }
+  }
+
   private canAdvance(): boolean {
     // TODO: Check if room is in Dueling state
     return true;
@@ -238,7 +334,7 @@ export class OCGCore {
       if (status) {
         throw new Error(
           "Cannot continue ocgcore because received empty message with non-advancing status " +
-            status,
+          status,
         );
       }
       return;
@@ -321,10 +417,10 @@ export class OCGCore {
 
     const sendToClients = options.sendToClient
       ? new Set(
-          Array.isArray(options.sendToClient)
-            ? options.sendToClient
-            : [options.sendToClient],
-        )
+        Array.isArray(options.sendToClient)
+          ? options.sendToClient
+          : [options.sendToClient],
+      )
       : undefined;
 
     await this.deliverToTargets(message, sendToClients);
@@ -490,14 +586,6 @@ export class OCGCore {
     return locations.length > 0 ? locations : [location];
   }
 
-  private createEmptyCardData() {
-    const emptyCard = {
-      flags: 0,
-      empty: true,
-    };
-    return emptyCard;
-  }
-
   // ============================================================
   // Response Timer - Handle player response timeouts
   // ============================================================
@@ -661,6 +749,7 @@ export class OCGCore {
 
   private setLastResponseRequestMsg(message: YGOProMsgBase): void {
     this.lastResponseRequestMsg = message;
+    this.isRetrying = false;
   }
 
   // ============================================================

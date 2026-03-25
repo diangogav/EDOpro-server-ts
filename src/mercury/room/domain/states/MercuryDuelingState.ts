@@ -12,19 +12,24 @@ import { ClientMessage } from "../../../../edopro/messages/MessageProcessor";
 import { RoomState } from "../../../../edopro/room/domain/RoomState";
 import { Logger } from "../../../../shared/logger/domain/Logger";
 import { DuelState } from "../../../../shared/room/domain/YgoRoom";
+import { DuelStartClientMessage } from "../../../../shared/messages/server-to-client/DuelStartClientMessage";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
+import { MercuryReconnect } from "../../application/MercuryReconnect";
 import { MercuryRoom } from "../MercuryRoom";
 
 import {
 	OcgcoreScriptConstants,
+	YGOProCtosUpdateDeck,
 	YGOProMsgNewTurn,
 	YGOProMsgStart,
 	YGOProMsgWin,
 	YGOProStocDuelStart,
 	YGOProStocGameMsg,
+	YGOProStocHsPlayerChange,
 } from "ygopro-msg-encode";
 import { OCGCore } from "src/mercury/ocgcore-worker/ocgcore";
+import { deckEquals } from "src/mercury/utils/deck-equals";
 
 export class MercuryDuelingState extends RoomState {
 	private readonly eventBus: EventBus;
@@ -92,6 +97,12 @@ export class MercuryDuelingState extends RoomState {
 			Commands.RESPONSE as unknown as string,
 			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
 				void this.handleResponse.bind(this)(message, room, client),
+		);
+
+		this.eventEmitter.on(
+			Commands.READY as unknown as string,
+			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
+				void this.handleReady.bind(this)(message, room, client),
 		);
 	}
 
@@ -196,6 +207,7 @@ export class MercuryDuelingState extends RoomState {
 		socket: ISocket,
 	): void {
 		this.logger.info("JOIN");
+
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const playerAlreadyInRoom = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
 
@@ -208,7 +220,7 @@ export class MercuryDuelingState extends RoomState {
 			return;
 		}
 
-		// MercuryReconnect.run(playerAlreadyInRoom, room, socket);
+		this.room.reconnect(playerAlreadyInRoom, socket);
 	}
 
 	private handleGameMessage(
@@ -276,13 +288,48 @@ export class MercuryDuelingState extends RoomState {
 		}
 	}
 
-	private handleUpdateDeck(
+	private async handleReady(
 		_message: ClientMessage,
+		room: MercuryRoom,
+		player: MercuryClient,
+	): Promise<void> {
+		player.logger.info("MercuryDuelingState: READY");
+
+		if (!player.isReconnecting) {
+			return;
+		}
+
+		player.sendMessageToClient(Buffer.from(new YGOProStocDuelStart().toFullPayload()));
+	}
+
+	private async handleUpdateDeck(
+		message: ClientMessage,
 		_room: MercuryRoom,
 		player: MercuryClient,
-	): void {
+	): Promise<void> {
 		player.logger.info("MercuryDuelingState: UPDATE_DECK");
-		player.sendToCore(Buffer.from([0x01, 0x00, 0x30]));
+		if (!player.isReconnecting || !player.deck) {
+			return;
+		}
+
+		const updateDeckMessage = new YGOProCtosUpdateDeck().fromPayload(message.data)
+
+		if (!deckEquals(updateDeckMessage.deck, player.deck)) {
+			const status = (player.position << 4) | 0x0a;
+			const playerChangeMessage = new YGOProStocHsPlayerChange().fromPartial({
+				playerPosition: player.position,
+				playerState: status,
+			})
+			player.sendMessageToClient(Buffer.from(playerChangeMessage.toFullPayload()));
+			return;
+		}
+
+		this.ocgCore.sendStartMessageForReconnect(player);
+		this.ocgCore.sendTurnMessages(player);
+		this.ocgCore.sendPhaseMessage(player);
+		await this.ocgCore.sendRequestFieldMessage(player);
+		await this.ocgCore.sendRefreshZonesMessages(player);
+
 	}
 
 	private handleTimeConfirm(

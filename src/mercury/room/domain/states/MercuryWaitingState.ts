@@ -21,10 +21,7 @@ import {
 	NetPlayerType,
 	OcgcoreCommonConstants,
 	YGOProCtosUpdateDeck,
-	YGOProStocDeckCount,
-	YGOProStocDeckCount_DeckInfo,
 	YGOProStocDuelStart,
-	YGOProStocJoinGame,
 } from "ygopro-msg-encode";
 import YGOProDeck from "ygopro-deck-encode";
 

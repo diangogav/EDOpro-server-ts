@@ -314,6 +314,11 @@ export class MercuryRoom extends YgoRoom {
     return this._currentDuelRecord.seed;
   }
 
+
+  get currentDuelRecord(): DuelRecord {
+    return this._currentDuelRecord;
+  }
+
   async getDuelRecordDeck(): Promise<YGOProDeck[]> {
     const cardReader = await this.getCardReader();
     return this._currentDuelRecord
@@ -582,8 +587,23 @@ export class MercuryRoom extends YgoRoom {
   }
 
   saveMessageToDuelRecord(message: YGOProMsgBase): void {
-    console.log("guardando")
     this._currentDuelRecord.messages.push(message);
+  }
+
+  reconnect(player: MercuryClient, socket: ISocket): void {
+    player.socket.removeAllListeners();
+    player.setSocket(socket);
+    player.reconnecting();
+    this.sendJoinGameMessage(player);
+    const type = player.host ? player.position | 0x10 : player.position;
+    const typeChangeMessage = new YGOProStocTypeChange().fromPartial({
+      type,
+    })
+    player.sendMessageToClient(Buffer.from(typeChangeMessage.toFullPayload()));
+    this._clients.forEach((_client: MercuryClient) => {
+      const playerEnterMessage = this.preparePlayerEnterMessage(_client);
+      player.sendMessageToClient(Buffer.from(playerEnterMessage.toFullPayload()));
+    })
   }
 
   async getCard(cardId: number) {
@@ -698,10 +718,6 @@ export class MercuryRoom extends YgoRoom {
 
   get folderRoute(): string {
     return this._route;
-  }
-
-  setJoinBuffer(buffer: Buffer): void {
-    this._joinBuffer = buffer;
   }
 
   setBanListHash(banListHash: number): void {
