@@ -24,6 +24,8 @@ import { MercuryRoom } from "../room/domain/MercuryRoom";
 import { OcgcoreWorker } from "./ocgcore-worker";
 import { Logger } from "src/shared/logger/domain/Logger";
 import { GameMessageMiddleware } from "../middleware/GameMessageMiddleware";
+import { canIncreaseTime, getMessageIdentifier } from "../utils/response-time-utils";
+import { TimerState } from "../room/domain/TimerState";
 
 const isUpdateMessage = (message: YGOProMsgBase) =>
   message instanceof YGOProMsgUpdateData ||
@@ -39,10 +41,10 @@ export class OCGCore {
   private isRetrying = false;
 
   // Timer state
-  private timerLeftMs: Record<number, number> = { 0: 0, 1: 0 };
-  private timerRunningPosition: number | null = null;
-  private timerTimeoutId: NodeJS.Timeout | null = null;
-  private hasTimeLimit = false;
+  private timerState = new TimerState();
+  private get hasTimeLimit(): boolean {
+    return this.room.hostInfo.time_limit > 0;
+  }
 
   // Message middleware (public for external handlers)
   private _gameMiddleware = new GameMessageMiddleware();
@@ -76,9 +78,17 @@ export class OCGCore {
       return msg;
     });
 
-    // Handle new turn - just return msg, actual logic handled separately
+    // Handle new turn - reset timers to full like srvpro2's onNewTurn
     this._gameMiddleware.on(YGOProMsgNewTurn, (msg) => {
       this.room.increaseTurn();
+      if (this.hasTimeLimit) {
+        const recoverMs = Math.max(0, this.room.hostInfo.time_limit) * 1000;
+        for (const player of [0, 1] as const) {
+          this.timerState.leftMs[player] = recoverMs;
+          this.timerState.compensatorMs[player] = recoverMs;
+          this.timerState.backedMs[player] = recoverMs;
+        }
+      }
       return msg;
     });
 
@@ -172,18 +182,75 @@ export class OCGCore {
     return this.hasTimeLimit;
   }
 
+  get timerLeftMs(): [number, number] {
+    return this.timerState.leftMs;
+  }
+
   hasOcgcore(): boolean {
     return this.ocgcore !== null;
+  }
+
+  get currentLastResponseRequestMsg(): YGOProMsgBase | null {
+    return this.lastResponseRequestMsg;
+  }
+
+  get isRetryingState(): boolean {
+    return this.isRetrying;
+  }
+
+  get responsePlayer(): Client | null {
+    if (this.responsePosition === null) {
+      return null;
+    }
+    const ingamePos = this.toIngamePosition(this.responsePosition);
+    return this.getActivePlayer(ingamePos);
   }
 
   clearResponseTimerState(settlePrevious: boolean): void {
     this.clearResponseTimer(settlePrevious);
   }
 
+  clearResponseRequestState(): void {
+    this.lastResponseRequestMsg = null;
+    this.isRetrying = false;
+  }
+
   clearResponseState(): void {
     this.lastResponseRequestMsg = null;
     this.isRetrying = false;
     this.responsePosition = null;
+  }
+
+  resetResponseRequestState(): void {
+    const initialTime = this.hasTimeLimit
+      ? Math.max(0, this.room.hostInfo.time_limit) * 1000
+      : 0;
+    this.timerState.reset(initialTime);
+    this.lastResponseRequestMsg = null;
+    this.isRetrying = false;
+  }
+
+  increaseResponseTime(
+    originalDuelPos: number,
+    gameMsg: number,
+    response?: Buffer,
+  ): void {
+    const maxTimeMs = Math.max(0, this.room.hostInfo.time_limit || 0) * 1000;
+    if (
+      !this.hasTimeLimit ||
+      ![0, 1].includes(originalDuelPos) ||
+      this.timerState.backedMs[originalDuelPos] <= 0 ||
+      this.timerState.leftMs[originalDuelPos] >= maxTimeMs ||
+      !canIncreaseTime(gameMsg, response)
+    ) {
+      return;
+    }
+    this.timerState.leftMs[originalDuelPos] = Math.min(
+      maxTimeMs,
+      this.timerState.leftMs[originalDuelPos] + 1000,
+    );
+    this.timerState.compensatorMs[originalDuelPos] += 1000;
+    this.timerState.backedMs[originalDuelPos] -= 1000;
   }
 
   async setResponse(responseBuffer: Buffer): Promise<void> {
@@ -609,61 +676,82 @@ export class OCGCore {
     );
   }
 
-  private async setResponseTimer(position: number): Promise<void> {
-    this.clearResponseTimer(true);
-
-    if (!this.hasTimeLimit || (position !== 0 && position !== 1)) {
+  private async setResponseTimer(
+    originalDuelPos: number,
+    options: {
+      settlePrevious?: boolean;
+      sendTimeLimit?: boolean;
+      awaitingConfirm?: boolean;
+    } = {},
+  ): Promise<void> {
+    const {
+      settlePrevious = true,
+      sendTimeLimit = true,
+      awaitingConfirm = true,
+    } = options;
+    this.clearResponseTimer(settlePrevious);
+    if (!this.hasTimeLimit || ![0, 1].includes(originalDuelPos)) {
       return;
     }
-
-    const leftTime = Math.max(0, this.timerLeftMs[position] || 0);
-
-    await this.sendTimeLimitMessage(position);
-
+    const leftTime = Math.max(0, this.timerState.leftMs[originalDuelPos] || 0);
+    if (sendTimeLimit) {
+      await this.sendTimeLimitMessage(originalDuelPos);
+    }
     if (leftTime <= 0) {
-      await this.handleResponseTimeout(position);
+      await this.handleResponseTimeout(originalDuelPos);
       return;
     }
-
-    this.timerRunningPosition = position;
-    this.timerTimeoutId = setTimeout(async () => {
-      await this.handleResponseTimeout(position);
-    }, leftTime);
+    this.timerState.schedule(originalDuelPos, leftTime, awaitingConfirm, () => {
+      void this.handleResponseTimeout(originalDuelPos).catch((error) => {
+        this.logger.error("Failed to handle response timeout", { error });
+      });
+    });
   }
 
-  private clearResponseTimer(settlePrevious: boolean): void {
-    if (settlePrevious && this.timerTimeoutId) {
-      clearTimeout(this.timerTimeoutId);
-      this.timerTimeoutId = null;
+  private clearResponseTimer(settleElapsed = false): void {
+    this.timerState.clear(settleElapsed);
+  }
+
+  async sendTimeLimitMessage(originalDuelPos: number, toSpecificClient?: Client): Promise<void> {
+    if (!this.hasTimeLimit || ![0, 1].includes(originalDuelPos)) {
+      return;
     }
-    this.timerRunningPosition = null;
-  }
-
-  private async sendTimeLimitMessage(position: number): Promise<void> {
-    const leftTime = Math.max(0, this.timerLeftMs[position] || 0);
-    const timeLimitSeconds = Math.ceil(leftTime / 1000);
-
+    const leftTime = Math.max(0, this.timerState.leftMs[originalDuelPos] || 0);
+    const ingameDuelPos = this.toIngamePosition(originalDuelPos);
     const timeLimitMessage = new YGOProStocTimeLimit().fromPartial({
-      player: position,
-      left_time: timeLimitSeconds,
+      player: ingameDuelPos,
+      left_time: Math.ceil(leftTime / 1000),
     });
 
-    const players = this.getPlayersAtIngamePosition(position);
+    const allPlayers = [
+      ...this.room.getTeamPlayers(0),
+      ...this.room.getTeamPlayers(1),
+    ];
     await Promise.all(
-      players.map((client) =>
-        client.sendMessageToClient(
-          Buffer.from(timeLimitMessage.toFullPayload()),
+      allPlayers
+        .filter((p) => !toSpecificClient || p === toSpecificClient)
+        .map((client) =>
+          client.sendMessageToClient(
+            Buffer.from(timeLimitMessage.toFullPayload()),
+          ),
         ),
-      ),
     );
   }
 
-  private async handleResponseTimeout(position: number): Promise<void> {
+  private async handleResponseTimeout(originalDuelPos: number): Promise<void> {
+    if (this.timerState.runningPos !== originalDuelPos) {
+      return;
+    }
     this.clearResponseTimer(false);
-    this.logger.info("Response timeout", { position });
+    this.timerState.leftMs[originalDuelPos] = 0;
+    this.responsePosition = null;
+    this.logger.info("Response timeout", { originalDuelPos });
 
-    // TODO: Send timeout to client and handle the timeout state
-    // Could trigger retry or declare the other player as winner
+    const winnerOriginalDuelPos = 1 - originalDuelPos;
+    const winnerIngamePos = this.toIngamePosition(winnerOriginalDuelPos);
+    this.room.emitRoomEvent("DUEL_END", {} as any, null as any);
+    // TODO: Integrate with proper win() logic when available
+    this.logger.info("Timeout win", { winner: winnerIngamePos });
   }
 
   // ============================================================
@@ -731,6 +819,10 @@ export class OCGCore {
       return;
     }
     if (message instanceof YGOProMsgRetry && this.responsePosition != null) {
+      const record = this.room.currentDuelRecord;
+      if (record && record.responses.length > 0) {
+        record.responses.pop();
+      }
       this.isRetrying = true;
       await this.sendWaitingToNonOperator(
         this.toIngamePosition(this.responsePosition),
@@ -747,9 +839,10 @@ export class OCGCore {
     }
   }
 
-  private setLastResponseRequestMsg(message: YGOProMsgBase): void {
+  private setLastResponseRequestMsg(message: YGOProMsgResponseBase): void {
     this.lastResponseRequestMsg = message;
     this.isRetrying = false;
+    this.responsePosition = this.toIngamePosition(message.responsePlayer());
   }
 
   // ============================================================

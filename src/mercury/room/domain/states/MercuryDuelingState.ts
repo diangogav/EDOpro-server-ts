@@ -12,11 +12,10 @@ import { ClientMessage } from "../../../../edopro/messages/MessageProcessor";
 import { RoomState } from "../../../../edopro/room/domain/RoomState";
 import { Logger } from "../../../../shared/logger/domain/Logger";
 import { DuelState } from "../../../../shared/room/domain/YgoRoom";
-import { DuelStartClientMessage } from "../../../../shared/messages/server-to-client/DuelStartClientMessage";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
-import { MercuryReconnect } from "../../application/MercuryReconnect";
 import { MercuryRoom } from "../MercuryRoom";
+import { getMessageIdentifier } from "../../../utils/response-time-utils";
 
 import {
 	OcgcoreScriptConstants,
@@ -110,6 +109,7 @@ export class MercuryDuelingState extends RoomState {
 		this.logger.info("MercuryDuelingState:handle");
 		this.room.generateDuelRecord();
 		await this.ocgCore.init(this.room);
+		this.ocgCore.resetResponseRequestState();
 
 		this.ocgCore.messageMiddleware.on(YGOProMsgWin, (msg) => {
 			console.log("Winner", msg.player);
@@ -362,55 +362,52 @@ export class MercuryDuelingState extends RoomState {
 		}
 	}
 
-	private handleResponse(
+	private async handleResponse(
 		message: ClientMessage,
 		room: MercuryRoom,
 		player: MercuryClient,
-	): void {
+	): Promise<void> {
 		player.logger.info("MercuryDuelingState: handleResponse");
 
-		// Validar que hay una respuesta esperada y el jugador es el correcto
-		// if (
-		// 	this.ocgCore.currentResponsePosition === null ||
-		// 	player !== this.getResponsePlayer(room, player) ||
-		// 	!this.ocgCore.hasOcgcore()
-		// ) {
-		// 	return;
-		// }
-
-		const responsePosition = this.ocgCore.currentResponsePosition;
-		const responseBuffer = Buffer.from(message.data);
-
-		// Guardar respuesta en el record (si existe)
-		room.addResponse(responseBuffer);
-
-		// Limpiar timer si hay límite de tiempo
-		if (this.ocgCore.timeLimitEnabled) {
-			this.ocgCore.clearResponseTimerState(true);
+		if (
+			this.ocgCore.currentResponsePosition === null ||
+			player !== this.ocgCore.responsePlayer ||
+			!this.ocgCore.hasOcgcore()
+		) {
+			return;
 		}
 
-		// Limpiar estado de respuesta
-		this.ocgCore.clearResponseState();
+		const responsePosition = this.ocgCore.currentResponsePosition;
+		const responseRequestMsg = this.ocgCore.currentLastResponseRequestMsg;
+		const responseBuffer = Buffer.from(message.data);
 
-		// Enviar respuesta al OCGCore y avanzar
-		this.ocgCore
-			.setResponse(responseBuffer)
-			.then(() => {
-				this.ocgCore.advance();
-			})
-			.catch((error) => {
-				player.logger.error("Failed to set response in ocgcore", { error });
-				room.setDuelFinished();
-			});
-	}
+		// Save response to duel record
+		room.addResponse(responseBuffer);
 
-	private getResponsePlayer(
-		room: MercuryRoom,
-		_player: MercuryClient,
-	): MercuryClient | null {
-		// TODO: Retornar el jugador que debe responder según responsePosition
-		// Por ahora retornamos el primer jugador
-		const clients = room.clients as MercuryClient[];
-		return clients.length > 0 ? clients[0] : null;
+		// Handle time limit compensation
+		if (this.ocgCore.timeLimitEnabled) {
+			this.ocgCore.clearResponseTimerState(true);
+			const msgType = this.ocgCore.isRetryingState
+				? 0x02 // MSG_RETRY
+				: responseRequestMsg
+					? getMessageIdentifier(responseRequestMsg)
+					: 0;
+			this.ocgCore.increaseResponseTime(responsePosition, msgType, responseBuffer);
+		}
+
+		// Clear response request state (NOT responsePosition)
+		this.ocgCore.clearResponseRequestState();
+
+		// Send response to OCGCore and advance
+		try {
+			await this.ocgCore.setResponse(responseBuffer);
+		} catch (error) {
+			player.logger.error("Failed to set response in ocgcore", { error });
+			room.setDuelFinished();
+
+			return;
+		}
+
+		await this.ocgCore.advance();
 	}
 }
