@@ -14,25 +14,17 @@ import { Logger } from "../../../../shared/logger/domain/Logger";
 import { DuelState } from "../../../../shared/room/domain/YgoRoom";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
-import { MercuryReconnect } from "../../application/MercuryReconnect";
 import { MercuryRoom } from "../MercuryRoom";
-import MercuryBanListMemoryRepository from "src/mercury/ban-list/infrastructure/MercuryBanListMemoryRepository";
-import { initWorker, WorkerInstance } from "yuzuthread";
-import { OcgcoreWorker } from "src/mercury/ocgcore-worker";
-import { generateSeed } from "src/mercury/utils/generate-seed";
-import { calculateOcgcoreDeck } from "src/mercury/utils/calculate-ocgcore-deck";
+
 import {
 	OcgcoreScriptConstants,
-	RequireQueryCardLocation,
+	YGOProMsgNewTurn,
 	YGOProMsgStart,
-	YGOProMsgUpdateCard,
+	YGOProMsgWin,
 	YGOProStocDuelStart,
 	YGOProStocGameMsg,
 } from "ygopro-msg-encode";
-import { MayBeArray } from "nfkit";
 import { OCGCore } from "src/mercury/ocgcore-worker/ocgcore";
-import { DuelRecord } from "../DuelRecord";
-import { shuffleDecksBySeed } from "src/mercury/utils/shuffle-decks-by-seed";
 
 export class MercuryDuelingState extends RoomState {
 	private readonly eventBus: EventBus;
@@ -108,6 +100,11 @@ export class MercuryDuelingState extends RoomState {
 		this.room.generateDuelRecord();
 		await this.ocgCore.init(this.room);
 
+		this.ocgCore.messageMiddleware.on(YGOProMsgWin, (msg) => {
+			console.log("Winner", msg.player);
+			return msg;
+		}, 100);
+
 		const [
 			player0DeckCount,
 			player0ExtraCount,
@@ -168,6 +165,16 @@ export class MercuryDuelingState extends RoomState {
 			);
 		});
 
+		const watcherStartMessage = createStartMsg(this.room.isPositionSwapped ? 0x11 : 0x10);
+		const spectators = this.room.spectators as MercuryClient[];
+		spectators.forEach((spectator) => {
+			spectator.sendMessageToClient(
+				Buffer.from(watcherStartMessage.toFullPayload()),
+			);
+		});
+
+		this.room.saveMessageToDuelRecord(watcherStartMessage.msg!);
+
 		this.ocgCore.refreshZones({ player: 0, location: OcgcoreScriptConstants.LOCATION_EXTRA })
 		this.ocgCore.refreshZones({ player: 1, location: OcgcoreScriptConstants.LOCATION_EXTRA })
 
@@ -196,7 +203,8 @@ export class MercuryDuelingState extends RoomState {
 			const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name);
 			room.addSpectatorUnsafe(spectator);
 			spectator.sendMessageToClient(Buffer.from(new YGOProStocDuelStart().toFullPayload()));
-			room.sendDeckCountMessage(spectator);
+			room.sendPreviousDuelsHistoricalMessages(spectator);
+			room.sendCurrentDuelHistoricalMessages(spectator);
 			return;
 		}
 

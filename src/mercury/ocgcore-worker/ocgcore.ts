@@ -45,8 +45,16 @@ export class OCGCore {
   private timerTimeoutId: NodeJS.Timeout | null = null;
   private hasTimeLimit = false;
 
-  // Message middleware
-  private gameMiddleware = new GameMessageMiddleware();
+  // Message middleware (public for external handlers)
+  private _gameMiddleware = new GameMessageMiddleware();
+
+  /**
+   * Public access to game message middleware
+   * External handlers can register to process game messages
+   */
+  get messageMiddleware(): GameMessageMiddleware {
+    return this._gameMiddleware;
+  }
 
   constructor(
     private readonly room: MercuryRoom,
@@ -62,7 +70,7 @@ export class OCGCore {
   private registerMiddlewares(): void {
     // Log all game messages (except updates)
     // Record messages for replay
-    this.gameMiddleware.on(YGOProMsgBase, (msg) => {
+    this._gameMiddleware.on(YGOProMsgBase, (msg) => {
       if (!(msg instanceof YGOProMsgRetry)) {
         this.room.saveMessageToDuelRecord(msg);
       }
@@ -70,36 +78,36 @@ export class OCGCore {
     });
 
     // Handle new turn - just return msg, actual logic handled separately
-    this.gameMiddleware.on(YGOProMsgNewTurn, (msg) => {
-      console.log("YGOProMsgNewTurn")
+    this._gameMiddleware.on(YGOProMsgNewTurn, (msg) => {
+      console.log("YGOProMsgNewTurn");
       return msg;
     });
 
     // Handle new phase - just return msg
-    this.gameMiddleware.on(YGOProMsgNewPhase, (msg) => {
-      console.log("YGOProMsgNewPhase")
+    this._gameMiddleware.on(YGOProMsgNewPhase, (msg) => {
+      console.log("YGOProMsgNewPhase");
 
       return msg;
     });
 
     // Handle reset time - just return msg
-    this.gameMiddleware.on(YGOProMsgResetTime, (msg) => {
+    this._gameMiddleware.on(YGOProMsgResetTime, (msg) => {
       return msg;
     });
 
     // Handle retry - just return msg
-    this.gameMiddleware.on(YGOProMsgRetry, (msg) => {
+    this._gameMiddleware.on(YGOProMsgRetry, (msg) => {
       return msg;
     });
 
     // Handle win - just return msg
-    this.gameMiddleware.on(YGOProMsgWin, (msg) => {
+    this._gameMiddleware.on(YGOProMsgWin, (msg) => {
       return msg;
     });
   }
 
   async init(room: MercuryRoom): Promise<void> {
-    console.log("gklfdjgkldfjgfldkjglfdk")
+    console.log("gklfdjgkldfjgfldkjglfdk");
     const extraScriptPaths = [
       "./script/patches/entry.lua",
       "./script/special.lua",
@@ -230,14 +238,14 @@ export class OCGCore {
       if (status) {
         throw new Error(
           "Cannot continue ocgcore because received empty message with non-advancing status " +
-          status,
+            status,
         );
       }
       return;
     }
 
     // Process message through middleware
-    const processedMessage = await this.gameMiddleware.process(message);
+    const processedMessage = await this._gameMiddleware.process(message);
 
     if (processedMessage === null) {
       // Message blocked by middleware
@@ -313,10 +321,10 @@ export class OCGCore {
 
     const sendToClients = options.sendToClient
       ? new Set(
-        Array.isArray(options.sendToClient)
-          ? options.sendToClient
-          : [options.sendToClient],
-      )
+          Array.isArray(options.sendToClient)
+            ? options.sendToClient
+            : [options.sendToClient],
+        )
       : undefined;
 
     await this.deliverToTargets(message, sendToClients);

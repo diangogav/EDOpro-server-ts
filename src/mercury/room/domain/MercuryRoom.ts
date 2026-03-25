@@ -514,17 +514,22 @@ export class MercuryRoom extends YgoRoom {
     this.sendPlayerChangeMessage(player);
   }
 
-  sendMatchHistoricalMessages(spectator: MercuryClient): void {
-    if (!this._duelRecords.length) {
-      return
-    }
-
-    for (const record of this._duelRecords) {
+  sendPreviousDuelsHistoricalMessages(spectator: MercuryClient): void {
+    for (const record of this._duelRecords.slice(0, -1)) {
       for (const message of record.toPlayback((msg) => msg.observerView())) {
         spectator.sendMessageToClient(Buffer.from(message.toFullPayload()));
       }
     }
 
+  }
+
+  sendCurrentDuelHistoricalMessages(spectator: MercuryClient): void {
+    for (const message of this._currentDuelRecord?.toPlayback((msg) =>
+      msg.observerView(),
+    ) || []) {
+      console.log("enviando")
+      spectator.sendMessageToClient(Buffer.from(message.toFullPayload()));
+    }
   }
 
   sendDeckCountMessage(client: MercuryClient): void {
@@ -577,6 +582,7 @@ export class MercuryRoom extends YgoRoom {
   }
 
   saveMessageToDuelRecord(message: YGOProMsgBase): void {
+    console.log("guardando")
     this._currentDuelRecord.messages.push(message);
   }
 
