@@ -181,6 +181,14 @@ export abstract class RoomState {
 			return;
 		}
 
+		if (sanitized === ":spec") {
+			client.socket.send(
+				MercuryPlayerChatMessage.create(`Spectators: ${room.spectators.length}`)
+			);
+
+			return;
+		}
+
 		if (room.roomType === RoomType.MERCURY) {
 			return;
 		}
