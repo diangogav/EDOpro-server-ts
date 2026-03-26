@@ -3,6 +3,7 @@ import "reflect-metadata";
 import { faker } from "@faker-js/faker";
 import EventEmitter from "events";
 
+import { PlayerInfoMessage } from "../../../../../src/edopro/messages/client-to-server/PlayerInfoMessage";
 import MercuryBanListMemoryRepository from "../../../../../src/mercury/ban-list/infrastructure/MercuryBanListMemoryRepository";
 import { Mode } from "../../../../../src/mercury/room/domain/host-info/Mode.enum";
 import { MercuryRoom } from "../../../../../src/mercury/room/domain/MercuryRoom";
@@ -16,6 +17,64 @@ describe("MercuryRoom", () => {
 	const id = 1;
 	const playerInfoMessage = PlayerInfoMessageMother.create();
 	const socketId = faker.string.uuid();
+
+	it("Should expose Mdpro3 notes when the login payload has no mercury signature", () => {
+		const room = MercuryRoom.create(id, "m#123", logger, emitter, playerInfoMessage, socketId);
+
+		expect(room.toPresentation().roomnotes).toBe("(Mdpro3)");
+	});
+
+	it("Should expose Mercury notes when the login payload contains the mercury signature", () => {
+		const mercuryPlayerInfoMessage = new PlayerInfoMessage(
+			Buffer.from("Jaden$1234", "utf16le"),
+			Buffer.from("Jaden$1234", "utf16le").length
+		);
+		const room = MercuryRoom.create(
+			id,
+			"m#123",
+			logger,
+			emitter,
+			mercuryPlayerInfoMessage,
+			socketId
+		);
+
+		expect(room.toPresentation().roomnotes).toBe("(Mercury)");
+	});
+
+	it("Should expose Mdpro3-Ranked notes for ranked rooms without mercury signature", () => {
+		const rankedPlayerInfoMessage = new PlayerInfoMessage(
+			Buffer.from("Jaden:1234", "utf16le"),
+			Buffer.from("Jaden:1234", "utf16le").length
+		);
+		const room = MercuryRoom.create(
+			id,
+			"m#123",
+			logger,
+			emitter,
+			rankedPlayerInfoMessage,
+			socketId
+		);
+
+		expect(room.toPresentation().roomnotes).toBe("(Mdpro3-Ranked)");
+	});
+
+	it("Should expose Mercury-Ranked notes for ranked rooms with mercury signature", () => {
+		const rankedMercuryPlayerInfoMessage = new PlayerInfoMessage(
+			Buffer.from("Jaden:1234$5678", "utf16le"),
+			Buffer.from("Jaden:1234$5678", "utf16le").length
+		);
+		const room = MercuryRoom.create(
+			id,
+			"m#123",
+			logger,
+			emitter,
+			rankedMercuryPlayerInfoMessage,
+			socketId
+		);
+
+		expect(room.toPresentation().roomnotes).toBe("(Mercury-Ranked)");
+	});
+
 	it("Should create a room with `mode` 1 (Match) when command has `m`", () => {
 		const room = MercuryRoom.create(id, "m#123", logger, emitter, playerInfoMessage, socketId);
 		expect(room.hostInfo.mode).toBe(Mode.MATCH);

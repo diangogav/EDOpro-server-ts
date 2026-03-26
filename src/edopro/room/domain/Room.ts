@@ -281,14 +281,13 @@ export class Room extends YgoRoom {
 		logger: Logger
 	): Room {
 		const ranked = Room.isRanked(playerInfo.password);
+		const notePrefix = ranked ? "(Edopro-Ranked)" : "(Edopro)";
 
 		const room = new Room({
 			id,
 			name: message.name,
 			banListHash: message.banList,
-			notes: ranked
-				? `(Ranked) ${message.notes} - SD Max: ${message.sideDeckMax}`
-				: `${message.notes} - SD Max: ${message.sideDeckMax}`,
+			notes: `${notePrefix} ${message.notes} - SD Max: ${message.sideDeckMax}`,
 			mode: message.mode,
 			needPass: Buffer.from(message.password).some((element) => element !== 0x00),
 			team0: message.t0Count,
@@ -1058,7 +1057,6 @@ export class Room extends YgoRoom {
 			this.pendingCppMessages.shift();
 		}
 	}
-
 
 	private startIpcMetricsReporting(): void {
 		if (process.env.IPC_METRICS_ENABLED !== "true") {

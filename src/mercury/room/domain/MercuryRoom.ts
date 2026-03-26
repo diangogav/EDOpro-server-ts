@@ -40,6 +40,7 @@ export class MercuryRoom extends YgoRoom {
 	readonly password: string;
 	readonly createdBySocketId: string;
 	readonly cardRepository = new CardSQLiteTYpeORMRepository();
+	private readonly _usesMercuryNote: boolean;
 	private _logger: Logger;
 	private _coreStarted = false;
 	private _corePort: number | null = null;
@@ -61,6 +62,7 @@ export class MercuryRoom extends YgoRoom {
 		createdBySocketId,
 		bestOf,
 		startLp,
+		usesMercuryNote,
 	}: {
 		id: number;
 		password: string;
@@ -72,6 +74,7 @@ export class MercuryRoom extends YgoRoom {
 		createdBySocketId: string;
 		bestOf: number;
 		startLp: number;
+		usesMercuryNote: boolean;
 	}) {
 		super({ team0, team1, ranked, bestOf, startLp, id, notes: "", roomType: RoomType.MERCURY });
 		this.name = name;
@@ -81,6 +84,7 @@ export class MercuryRoom extends YgoRoom {
 		this._state = DuelState.WAITING;
 		this._banListHash = 0;
 		this.createdBySocketId = createdBySocketId;
+		this._usesMercuryNote = usesMercuryNote;
 	}
 
 	static create(
@@ -169,6 +173,7 @@ export class MercuryRoom extends YgoRoom {
 			createdBySocketId,
 			bestOf: hostInfo.bestOf,
 			startLp: hostInfo.startLp,
+			usesMercuryNote: playerInfo.hasMercurySignature,
 		});
 
 		room._logger = logger.child({ file: "MercuryRoom" });
@@ -402,10 +407,12 @@ export class MercuryRoom extends YgoRoom {
 	}
 
 	toPresentation(): { [key: string]: unknown } {
+		const notePrefix = this._usesMercuryNote ? "Mercury" : "Mdpro3";
+
 		return {
 			roomid: this.id,
 			roomname: this.name,
-			roomnotes: this.ranked ? "(Mercury-Ranked)" : "(Mercury)",
+			roomnotes: this.ranked ? `(${notePrefix}-Ranked)` : `(${notePrefix})`,
 			roommode: this._hostInfo.mode,
 			needpass: this.password.length > 0,
 			team1: this.team0,
