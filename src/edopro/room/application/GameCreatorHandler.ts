@@ -6,6 +6,7 @@ import { config } from "../../../config";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { GameCreatorMessageHandler } from "../../../shared/room/domain/GameCreatorMessageHandler";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
+import { sendGlobalPointsWelcomeMessage } from "../../../shared/stats/player-stats/application/sendGlobalPointsWelcomeMessage";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../messages/domain/Commands";
@@ -91,11 +92,15 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 
 		if (room.ranked) {
 			this.sendRankedMessage();
-
-			return;
+		} else {
+			this.sendUnrankedMessage();
 		}
 
-		this.sendUnrankedMessage();
+		await sendGlobalPointsWelcomeMessage(
+			this.socket,
+			playerInfoMessage.name,
+			userId
+		);
 	}
 
 	private sendRankedMessage(): void {

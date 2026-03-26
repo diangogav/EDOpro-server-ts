@@ -19,6 +19,7 @@ import { RoomState } from "../../../../edopro/room/domain/RoomState";
 import { YgoClient } from "../../../../shared/client/domain/YgoClient";
 import { Logger } from "../../../../shared/logger/domain/Logger";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
+import { sendGlobalPointsWelcomeMessage } from "../../../../shared/stats/player-stats/application/sendGlobalPointsWelcomeMessage";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { JoinGameCoreToClientMessage } from "../../../messages/core-to-client/JoinGameCoreToClientMessage";
 import { MercuryRoom } from "../MercuryRoom";
@@ -106,6 +107,12 @@ export class MercuryWaitingState extends RoomState {
 				room.startCore();
 			}
 			this.sendWelcomeMessage(room, socket);
+			await sendGlobalPointsWelcomeMessage(
+				socket,
+				playerInfoMessage.name,
+				room.ranked ? room.clients.find((client) => client.socket.id === socket.id)?.id ?? null : null,
+				"mercury-chat"
+			);
 
 			return;
 		}
@@ -122,6 +129,12 @@ export class MercuryWaitingState extends RoomState {
 		});
 
 		room.addSpectator(spectator, false, true);
+		await sendGlobalPointsWelcomeMessage(
+			socket,
+			playerInfoMessage.name,
+			null,
+			"mercury-chat"
+		);
 	}
 
 	private tryStartHandler(_message: ClientMessage, room: MercuryRoom, _socket: ISocket): void {

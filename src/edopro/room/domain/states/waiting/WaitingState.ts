@@ -7,6 +7,7 @@ import { EventEmitter } from "stream";
 import { Logger } from "../../../../../shared/logger/domain/Logger";
 import { DuelStartClientMessage } from "../../../../../shared/messages/server-to-client/DuelStartClientMessage";
 import { ISocket } from "../../../../../shared/socket/domain/ISocket";
+import { sendGlobalPointsWelcomeMessage } from "../../../../../shared/stats/player-stats/application/sendGlobalPointsWelcomeMessage";
 import { Client } from "../../../../client/domain/Client";
 import { DeckCreator } from "../../../../deck/application/DeckCreator";
 import { UpdateDeckMessageParser } from "../../../../deck/application/UpdateDeckMessageSizeCalculator";
@@ -260,6 +261,7 @@ export class WaitingState extends RoomState {
 			if (!place) {
 				const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name);
 				socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
+				await sendGlobalPointsWelcomeMessage(socket, playerInfoMessage.name);
 				room.addSpectatorUnsafe(spectator);
 				room.notifyToAllLobbyClients(spectator);
 				room.sendSpectatorCount({ enqueue: false });
@@ -285,6 +287,7 @@ export class WaitingState extends RoomState {
 			if (!player) {
 				const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name);
 				socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
+				await sendGlobalPointsWelcomeMessage(socket, playerInfoMessage.name);
 				room.addSpectatorUnsafe(spectator);
 				room.notifyToAllLobbyClients(spectator);
 				room.sendSpectatorCount({ enqueue: false });
@@ -293,6 +296,7 @@ export class WaitingState extends RoomState {
 			}
 
 			socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
+			await sendGlobalPointsWelcomeMessage(socket, playerInfoMessage.name, userId);
 			room.addPlayerUnsafe(player);
 		});
 	}
