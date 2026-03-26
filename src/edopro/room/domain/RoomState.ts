@@ -3,6 +3,7 @@ import { ServerInfoMessage } from "src/edopro/messages/domain/ServerInfoMessage"
 import { ErrorMessages } from "src/edopro/messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "src/edopro/messages/server-to-client/ErrorClientMessage";
 import { ServerErrorClientMessage } from "src/edopro/messages/server-to-client/ServerErrorMessageClientMessage";
+import { config } from "src/config";
 import { Team } from "src/shared/room/Team";
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 import { EventEmitter } from "stream";
@@ -23,6 +24,9 @@ import { ServerMessageClientMessage } from "../../messages/server-to-client/Serv
 import { SpectatorMessageClientMessage } from "../../messages/server-to-client/SpectatorMessageClientMessage";
 import { VersionErrorClientMessage } from "../../messages/server-to-client/VersionErrorClientMessage";
 import { RoomType } from "src/shared/room/domain/RoomType";
+
+const ASSISTANT_NAME = "Evo IA";
+const DEBUG_EVO_IA = process.env.DEBUG_EVO_IA === "true";
 
 export abstract class RoomState {
 	protected readonly eventEmitter: EventEmitter;
@@ -113,9 +117,48 @@ export abstract class RoomState {
 
 	protected processDuelMessage(messageType: CoreMessages, data: Buffer, room: YgoRoom): void {
 		if (messageType === CoreMessages.MSG_DAMAGE) {
-			const team = room.firstToPlay ^ data.readUint8(1);
+			const rawTeam = data.readUint8(1);
+			const damagedTeam = (room.firstToPlay ^ data.readUint8(1)) as Team;
+			const attackingTeam =
+				damagedTeam === Team.PLAYER ? Team.OPPONENT : Team.PLAYER;
 			const damage = data.readUint32LE(2);
-			room.decreaseLps(team as Team, damage);
+			this.debugEvoIa("damage:received", {
+				roomId: room.id,
+				firstToPlay: room.firstToPlay,
+				rawTeam,
+				damagedTeam,
+				attackingTeam,
+				damage,
+				data: data.toString("hex"),
+			});
+			room.decreaseLps(damagedTeam, damage);
+			const damagedMessage = room.evaluateDamageMessage(damagedTeam, damage);
+			this.debugEvoIa("damage:damaged-message", {
+				roomId: room.id,
+				team: damagedTeam,
+				message: damagedMessage,
+				lps: room.getLps(damagedTeam),
+			});
+			this.notifyTeamMessage(
+				damagedTeam,
+				damagedMessage,
+				room
+			);
+			const advantageMessage = room.evaluateAdvantageMessageForDamagingOpponent(
+				attackingTeam,
+				damage
+			);
+			this.debugEvoIa("damage:attacking-message", {
+				roomId: room.id,
+				team: attackingTeam,
+				message: advantageMessage,
+				lps: room.getLps(attackingTeam),
+			});
+			this.notifyTeamMessage(
+				attackingTeam,
+				advantageMessage,
+				room
+			);
 			WebSocketSingleton.getInstance().broadcast({
 				action: "UPDATE-ROOM",
 				data: room.toRealTimePresentation(),
@@ -126,6 +169,7 @@ export abstract class RoomState {
 			const team = room.firstToPlay ^ data.readUint8(1);
 			const health = data.readUint32LE(2);
 			room.increaseLps(team as Team, health);
+			this.notifyTeamMessage(team as Team, room.evaluateRecoveryMessage(team as Team), room);
 			WebSocketSingleton.getInstance().broadcast({
 				action: "UPDATE-ROOM",
 				data: room.toRealTimePresentation(),
@@ -136,6 +180,7 @@ export abstract class RoomState {
 			const team = room.firstToPlay ^ data.readUint8(1);
 			const cost = data.readUint32LE(2);
 			room.decreaseLps(team as Team, cost);
+			this.notifyTeamMessage(team as Team, room.evaluateLpCostMessage(team as Team), room);
 			WebSocketSingleton.getInstance().broadcast({
 				action: "UPDATE-ROOM",
 				data: room.toRealTimePresentation(),
@@ -144,6 +189,9 @@ export abstract class RoomState {
 
 		if (messageType === CoreMessages.MSG_NEW_TURN) {
 			room.increaseTurn();
+			room.evaluateTurnMessages().forEach(({ team, message }) => {
+				this.notifyTeamMessage(team, message, room);
+			});
 			WebSocketSingleton.getInstance().broadcast({
 				action: "UPDATE-ROOM",
 				data: room.toRealTimePresentation(),
@@ -173,10 +221,54 @@ export abstract class RoomState {
 		client.socket.send(MercuryPlayerChatMessage.create(message));
 	}
 
+	protected notifyTeamMessage(team: Team, message: string | null, room: YgoRoom): void {
+		if (!config.features.evoIa.enabled || !message) {
+			return;
+		}
+
+		const recipients = room.clients
+			.filter((player) => player.team === team)
+			.map((player) => player.name);
+
+		this.debugEvoIa("notify", {
+			roomId: room.id,
+			team,
+			message,
+			recipients,
+		});
+
+		const assistantMessage = MercuryPlayerChatMessage.create(
+			`[${ASSISTANT_NAME}] ${message}`
+		);
+
+		room.clients
+			.filter((player) => player.team === team)
+			.forEach((player) => {
+				player.socket.send(assistantMessage);
+			});
+	}
+
+	private debugEvoIa(event: string, payload: Record<string, unknown>): void {
+		if (!DEBUG_EVO_IA) {
+			return;
+		}
+
+		console.debug(`[${ASSISTANT_NAME} Debug] ${event}`, payload);
+		console.info(`[${ASSISTANT_NAME} Info] ${event}`, payload);
+	}
+
 	private handleChat(message: ClientMessage, room: YgoRoom, client: YgoClient): void {
 		const sanitized = BufferToUTF16(message.data, message.data.length);
 		if (sanitized === ":score") {
 			client.socket.send(MercuryPlayerChatMessage.create(room.score));
+
+			return;
+		}
+
+		if (sanitized === ":spec") {
+			client.socket.send(
+				MercuryPlayerChatMessage.create(`Spectators: ${room.spectators.length}`)
+			);
 
 			return;
 		}

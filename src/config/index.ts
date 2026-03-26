@@ -3,6 +3,11 @@ export const config = {
     use: process.env.USE_REDIS === "true",
     uri: process.env.REDIS_URI,
   },
+  features: {
+    evoIa: {
+      enabled: process.env.EVO_IA_ENABLED === "true",
+    },
+  },
   env: process.env.NODE_ENV,
   adminApiKey: process.env.ADMIN_API_KEY,
   postgres: {

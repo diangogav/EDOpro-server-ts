@@ -8,6 +8,7 @@ import { MercuryClient } from "../../../mercury/client/domain/MercuryClient";
 import { YgoClient } from "../../client/domain/YgoClient";
 import { ISocket } from "../../socket/domain/ISocket";
 import { Mutex } from "async-mutex";
+import { InteractiveDuelMessages } from "./InteractiveDuelMessages";
 import { Match } from "./match/domain/Match";
 import { RoomType } from "./RoomType";
 
@@ -42,6 +43,7 @@ export abstract class YgoRoom {
 	protected _firstToPlay: number;
 	protected isStart: string;
 	protected currentDuel: Duel | null = null;
+	private readonly interactiveDuelMessages: InteractiveDuelMessages;
 
 	protected constructor({
 		team0,
@@ -73,6 +75,7 @@ export abstract class YgoRoom {
 		this.id = id;
 		this.notes = notes;
 		this.roomType = roomType;
+		this.interactiveDuelMessages = new InteractiveDuelMessages(startLp);
 	}
 
 	emit(event: string, message: unknown, socket: ISocket): void {
@@ -224,6 +227,7 @@ export abstract class YgoRoom {
 	createDuel(banListName: string | null): void {
 		this.mutex.runExclusive(() => {
 			this.currentDuel = new Duel(this.STARTING_TURN, [this.startLp, this.startLp], banListName);
+			this.interactiveDuelMessages.reset();
 		});
 	}
 
@@ -254,6 +258,65 @@ export abstract class YgoRoom {
 	get score(): string {
 		return `Score: ${this.playerNames(0)}: ${this.matchScore().team0} - ${this.matchScore().team1
 			} ${this.playerNames(1)}`;
+	}
+
+	getLps(team: Team): number | null {
+		if (team !== Team.PLAYER && team !== Team.OPPONENT) {
+			return null;
+		}
+
+		return this.currentDuel?.lps[team] ?? null;
+	}
+
+	evaluateDamageMessage(team: Team, amount: number): string | null {
+		const lps = this.getLps(team);
+		if (lps === null) {
+			return null;
+		}
+
+		return this.interactiveDuelMessages.handleDamage(team, amount, this.turn, lps);
+	}
+
+	evaluateAdvantageMessageForDamagingOpponent(team: Team, amount: number): string | null {
+		if (team !== Team.PLAYER && team !== Team.OPPONENT) {
+			return null;
+		}
+
+		const opponentTeam = team === Team.PLAYER ? Team.OPPONENT : Team.PLAYER;
+		const opponentLps = this.getLps(opponentTeam);
+		if (opponentLps === null) {
+			return null;
+		}
+
+		const previousOpponentLp = opponentLps + amount;
+
+		return this.interactiveDuelMessages.handleOpponentLpDrop(
+			team,
+			previousOpponentLp,
+			opponentLps
+		);
+	}
+
+	evaluateLpCostMessage(team: Team): string | null {
+		const lps = this.getLps(team);
+		if (lps === null) {
+			return null;
+		}
+
+		return this.interactiveDuelMessages.handleLpCost(team, this.turn, lps);
+	}
+
+	evaluateRecoveryMessage(team: Team): string | null {
+		const lps = this.getLps(team);
+		if (lps === null) {
+			return null;
+		}
+
+		return this.interactiveDuelMessages.handleRecover(team, this.turn, lps);
+	}
+
+	evaluateTurnMessages(): Array<{ team: Team; message: string }> {
+		return this.interactiveDuelMessages.handleNewTurn(this.turn);
 	}
 
 	isFirstDuel(): boolean {
