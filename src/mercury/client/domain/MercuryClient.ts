@@ -21,6 +21,7 @@ export class MercuryClient extends YgoClient {
 	private readonly _roomMessageEmitter: SimpleRoomMessageEmitter;
 	private _rpsChosen: boolean;
 	private _deck: YGOProDeck | null;
+	private _captain: boolean = false;
 
 	constructor({
 		name,
@@ -166,5 +167,13 @@ export class MercuryClient extends YgoClient {
 
 	clearDeck(): void {
 		this._deck = null;
+	}
+
+	captain(): void {
+		this._captain = true;
+	}
+
+	get isCaptain(): boolean {
+		return this._captain;
 	}
 }

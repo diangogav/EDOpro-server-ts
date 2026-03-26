@@ -86,14 +86,14 @@ export class RpsChoiceCommandStrategy {
 			return;
 		}
 
-	const player0Turn = room.clients
-		.filter(p => p.team === 0)
-		.sort((a,b) => a.position - b.position)[0];
+		const player0Turn = room.clients
+			.filter(p => p.team === 0)
+			.sort((a, b) => a.position - b.position)[0];
 
-	const player1Turn = room.clients
-		.filter(p => p.team === 1)
-		.sort((a,b) => a.position - b.position)[0];
-		
+		const player1Turn = room.clients
+			.filter(p => p.team === 1)
+			.sort((a, b) => a.position - b.position)[0];
+
 		if (!player0Turn || !player1Turn) {
 			return;
 		}

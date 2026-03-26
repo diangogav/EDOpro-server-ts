@@ -1,5 +1,3 @@
-
-
 import EventEmitter from "events";
 
 import { PlayerInfoMessage } from "../../../../edopro/messages/client-to-server/PlayerInfoMessage";
@@ -14,127 +12,187 @@ import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { MercuryReconnect } from "../../application/MercuryReconnect";
 import { MercuryRoom } from "../MercuryRoom";
-import { HandResult, YGOProCtosHandResult, YGOProStocDuelStart, YGOProStocHandResult, YGOProStocSelectHand, YGOProStocSelectTp } from "ygopro-msg-encode";
+import {
+  HandResult,
+  YGOProCtosHandResult,
+  YGOProStocDuelStart,
+  YGOProStocHandResult,
+  YGOProStocSelectHand,
+  YGOProStocSelectTp,
+} from "ygopro-msg-encode";
 
 export class MercuryRockPaperScissorState extends RoomState {
-	private handResult = [0, 0]
+  private handResult = [0, 0];
 
-	constructor(eventEmitter: EventEmitter, private readonly logger: Logger) {
-		super(eventEmitter);
-		this.logger = logger.child({ file: "MercuryRockPaperScissorState" });
-		this.eventEmitter.on(
-			Commands.RPS_CHOICE as unknown as string,
-			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
-				this.handleRPSChoice.bind(this)(message, room, client)
-		);
-		this.eventEmitter.on(
-			"JOIN",
-			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
-				void this.handleJoin.bind(this)(message, room, socket)
-		);
-		this.eventEmitter.on(
-			Commands.READY as unknown as string,
-			(message: ClientMessage, room: Room, client: MercuryClient) =>
-				this.handleReady.bind(this)(message, room, client)
-		);
-	}
+  constructor(
+    eventEmitter: EventEmitter,
+    private readonly logger: Logger,
+  ) {
+    super(eventEmitter);
+    this.logger = logger.child({ file: "MercuryRockPaperScissorState" });
+    this.eventEmitter.on(
+      Commands.RPS_CHOICE as unknown as string,
+      (message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
+        this.handleRPSChoice.bind(this)(message, room, client),
+    );
+    this.eventEmitter.on(
+      "JOIN",
+      (message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
+        void this.handleJoin.bind(this)(message, room, socket),
+    );
+    this.eventEmitter.on(
+      Commands.READY as unknown as string,
+      (message: ClientMessage, room: Room, client: MercuryClient) =>
+        this.handleReady.bind(this)(message, room, client),
+    );
+  }
 
+  private handleJoin(
+    message: ClientMessage,
+    room: MercuryRoom,
+    socket: ISocket,
+  ): void {
+    this.logger.info("JOIN");
+    const playerInfoMessage = new PlayerInfoMessage(
+      message.previousMessage,
+      message.data.length,
+    );
+    const playerAlreadyInRoom = this.playerAlreadyInRoom(
+      playerInfoMessage,
+      room,
+      socket,
+    );
 
-	private handleJoin(message: ClientMessage, room: MercuryRoom, socket: ISocket): void {
-		this.logger.info("JOIN");
-		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
-		const playerAlreadyInRoom = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
+    if (!(playerAlreadyInRoom instanceof MercuryClient)) {
+      const spectator = room.createSpectatorUnsafe(
+        socket,
+        playerInfoMessage.name,
+      );
+      room.addSpectatorUnsafe(spectator);
+      spectator.sendMessageToClient(
+        Buffer.from(new YGOProStocDuelStart().toFullPayload()),
+      );
+      room.sendDeckCountMessage(spectator);
+      return;
+    }
 
-		if (!(playerAlreadyInRoom instanceof MercuryClient)) {
-			const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name);
-			room.addSpectatorUnsafe(spectator);
-			spectator.sendMessageToClient(Buffer.from(new YGOProStocDuelStart().toFullPayload()));
-			room.sendDeckCountMessage(spectator);
-			return;
-		}
+    room.reconnect(playerAlreadyInRoom, socket);
+    playerAlreadyInRoom.sendMessageToClient(
+      Buffer.from(new YGOProStocDuelStart().toFullPayload()),
+    );
+    room.sendDeckCountMessage(playerAlreadyInRoom);
+    const hasSelected = this.handResult[playerAlreadyInRoom.team] !== 0;
+    if (playerAlreadyInRoom.isCaptain && !hasSelected) {
+      playerAlreadyInRoom.sendMessageToClient(
+        Buffer.from(new YGOProStocSelectHand().toFullPayload()),
+      );
+    }
+  }
 
-		// MercuryReconnect.run(playerAlreadyInRoom, room, socket);
-	}
+  private handleReady(
+    _message: ClientMessage,
+    _room: Room,
+    player: MercuryClient,
+  ): void {
+    player.logger.info("MercuryRockPaperScissorState: READY");
 
-	private handleReady(_message: ClientMessage, _room: Room, player: MercuryClient): void {
-		player.logger.info("MercuryRockPaperScissorState: READY");
+    if (!player.isReconnecting) {
+      return;
+    }
 
-		if (!player.isReconnecting) {
-			return;
-		}
+    player.socket.send(DuelStartClientMessage.create());
 
-		player.socket.send(DuelStartClientMessage.create());
+    if (!player.rpsChosen) {
+      const rpsChooseMessage = RPSChooseClientMessage.create();
+      player.socket.send(rpsChooseMessage);
+    }
 
-		if (!player.rpsChosen) {
-			const rpsChooseMessage = RPSChooseClientMessage.create();
-			player.socket.send(rpsChooseMessage);
-		}
+    player.clearReconnecting();
+  }
 
-		player.clearReconnecting();
-	}
+  private handleRPSChoice(
+    message: ClientMessage,
+    room: MercuryRoom,
+    player: MercuryClient,
+  ): void {
+    player.logger.info(
+      `MercuryRockPaperScissorState: RPS_CHOICE: ${message.raw.toString("hex")}`,
+    );
 
-	private handleRPSChoice(message: ClientMessage, room: MercuryRoom, player: MercuryClient): void {
-		player.logger.info(`MercuryRockPaperScissorState: RPS_CHOICE: ${message.raw.toString("hex")}`);
+    if (!player.isCaptain) {
+      return;
+    }
 
-		const data = new YGOProCtosHandResult().fromPayload(message.data);
+    const data = new YGOProCtosHandResult().fromPayload(message.data);
 
-		if (data.res < HandResult.ROCK || data.res > HandResult.PAPER) {
-			return;
-		}
+    // if (data.res < HandResult.ROCK || data.res > HandResult.PAPER) {
+    // 	return;
+    // }
 
-		const team = room.getTeam(player.position);
-		if (team < 0 || team > 1) {
-			return;
-		}
+    const team = room.getTeam(player.position);
+    if (team < 0 || team > 1) {
+      return;
+    }
 
-		this.handResult[team] = data.res;
+    this.handResult[team] = data.res;
 
-		if (!this.handResult[0] || !this.handResult[1]) {
-			return;
-		}
+    if (!this.handResult[0] || !this.handResult[1]) {
+      return;
+    }
 
-		const team0Result = new YGOProStocHandResult().fromPartial({
-			res1: this.handResult[0],
-			res2: this.handResult[1]
-		})
-		room.getTeamPlayers(0).forEach((_player) => _player.sendMessageToClient(Buffer.from(team0Result.toFullPayload())))
-		room.spectators.forEach((spectator: MercuryClient) => spectator.sendMessageToClient(Buffer.from(team0Result.toFullPayload())))
+    const team0Result = new YGOProStocHandResult().fromPartial({
+      res1: this.handResult[0],
+      res2: this.handResult[1],
+    });
+    room
+      .getTeamPlayers(0)
+      .forEach((_player) =>
+        _player.sendMessageToClient(Buffer.from(team0Result.toFullPayload())),
+      );
+    room.spectators.forEach((spectator: MercuryClient) =>
+      spectator.sendMessageToClient(Buffer.from(team0Result.toFullPayload())),
+    );
 
-		const team1Result = new YGOProStocHandResult().fromPartial({
-			res1: this.handResult[1],
-			res2: this.handResult[0]
-		})
-		room.getTeamPlayers(1).forEach((_player) => _player.sendMessageToClient(Buffer.from(team1Result.toFullPayload())))
+    const team1Result = new YGOProStocHandResult().fromPartial({
+      res1: this.handResult[1],
+      res2: this.handResult[0],
+    });
+    room
+      .getTeamPlayers(1)
+      .forEach((_player) =>
+        _player.sendMessageToClient(Buffer.from(team1Result.toFullPayload())),
+      );
 
-		if (this.handResult[0] === this.handResult[1]) {
-			this.handResult = [0, 0];
-			this.toRPS(room);
-			return;
-		}
+    if (this.handResult[0] === this.handResult[1]) {
+      this.handResult = [0, 0];
+      this.toRPS(room);
+      return;
+    }
 
-		this.handResult = [0, 0];
+    const winner = this.getRPSWinner();
+    const winnerPlayer = room.getTeamPlayers(winner)[0];
+    if (!winnerPlayer) {
+      return;
+    }
 
-		const winner = this.getRPSWinner();
-		const winnerPlayer = room.getTeamPlayers(winner)[0];
-		if (!winnerPlayer) {
-			return;
-		}
+    this.handResult = [0, 0];
+    const selectTPMessage = new YGOProStocSelectTp();
+    winnerPlayer.sendMessageToClient(
+      Buffer.from(selectTPMessage.toFullPayload()),
+    );
 
-		const selectTPMessage = new YGOProStocSelectTp();
-		winnerPlayer.sendMessageToClient(Buffer.from(selectTPMessage.toFullPayload()));
+    room.choosingOrder();
+  }
 
-		room.choosingOrder();
-	}
-
-	private getRPSWinner(): number {
-		if (
-			(this.handResult[0] === 1 && this.handResult[1] === 2) ||
-			(this.handResult[0] === 2 && this.handResult[1] === 3) ||
-			(this.handResult[0] === 3 && this.handResult[1] === 1)
-		) {
-			return 1;
-		} else {
-			return 0;
-		}
-	}
+  private getRPSWinner(): number {
+    if (
+      (this.handResult[0] === 1 && this.handResult[1] === 2) ||
+      (this.handResult[0] === 2 && this.handResult[1] === 3) ||
+      (this.handResult[0] === 3 && this.handResult[1] === 1)
+    ) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
 }

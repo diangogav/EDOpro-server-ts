@@ -233,6 +233,8 @@ export abstract class RoomState {
 		}
 
 		const message = new YGOProStocSelectHand()
+		team0Player.captain()
+		team1Player.captain()
 		team0Player.sendMessageToClient(Buffer.from(message.toFullPayload()))
 		team1Player.sendMessageToClient(Buffer.from(message.toFullPayload()))
 	}
