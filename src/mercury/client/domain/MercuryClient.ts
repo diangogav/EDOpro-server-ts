@@ -1,7 +1,7 @@
 import net from "net";
 import { MercuryPlayerInfoToCoreMessage } from "src/mercury/messages/server-to-core";
 
-import { ClientMessage } from "../../../edopro/messages/MessageProcessor";
+import { ClientMessage } from "../../../shared/messages/MessageProcessor";
 import { YgoClient } from "../../../shared/client/domain/YgoClient";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { Team } from "../../../shared/room/Team";

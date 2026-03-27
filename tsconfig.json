@@ -19,6 +19,12 @@
     "paths": {
       "@edopro/*": [
         "src/edopro/*"
+      ],
+      "@shared/*": [
+        "src/shared/*"
+      ],
+      "@ygopro/*": [
+        "src/mercury/*"
       ]
     }
   },

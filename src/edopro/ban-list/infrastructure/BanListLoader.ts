@@ -4,8 +4,9 @@ import { join } from "path";
 
 import { EdoproBanList } from "../domain/BanList";
 import BanListMemoryRepository from "./BanListMemoryRepository";
+import { BanListLoader } from "src/shared/ban-list/BanListLoader";
 
-export class BanListLoader {
+export class EdoProBanListLoader extends BanListLoader {
 	async loadDirectory(path: string): Promise<void> {
 		const directoryPath = path;
 		const files = await readdir(directoryPath);

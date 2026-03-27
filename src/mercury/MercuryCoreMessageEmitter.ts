@@ -1,6 +1,6 @@
 import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
 
-import { MessageProcessor } from "../edopro/messages/MessageProcessor";
+import { MessageProcessor } from "../shared/messages/MessageProcessor";
 import { MercuryClient } from "./client/domain/MercuryClient";
 import { MercuryServerToClientMessages } from "./messages/domain/MercuryServerToClientMessages";
 import { MercuryRoom } from "./room/domain/MercuryRoom";

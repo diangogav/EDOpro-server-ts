@@ -19,7 +19,7 @@ import { Deck } from "../../deck/domain/Deck";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
 import { JSONMessageProcessor } from "../../messages/JSONMessageProcessor";
-import { MessageProcessor } from "../../messages/MessageProcessor";
+import { MessageProcessor } from "../../../shared/messages/MessageProcessor";
 import { Replay } from "../../replay/Replay";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
 import { FinishDuelHandler } from "../application/FinishDuelHandler";

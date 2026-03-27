@@ -3,7 +3,7 @@ import { randomUUID as uuidv4 } from "crypto";
 import { config } from "src/config";
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
-import { Commands } from "../edopro/messages/domain/Commands";
+import { Commands } from "../shared/messages/Commands";
 import { MessageEmitter } from "../edopro/MessageEmitter";
 import { ExpressReconnectHandler } from "../edopro/room/application/ExpressReconnectHandler";
 import { GameCreatorHandler } from "../edopro/room/application/GameCreatorHandler";
@@ -20,7 +20,7 @@ export class SocketConnectionHandler {
 		private readonly roomFinder: RoomFinder,
 		private readonly userAuth: UserAuth,
 		private readonly checkIfUserCanJoin: CheckIfUseCanJoin
-	) {}
+	) { }
 
 	handle(socket: ISocket): void {
 		const eventEmitter = new EventEmitter();
@@ -59,7 +59,7 @@ export class SocketConnectionHandler {
 
 		socket.onMessage((data: Buffer) => {
 			connectionLogger.debug(`roomId: ${socket.roomId} - Incoming message: ${data.toString("hex")}`);
-			
+
 			if (data.length >= 3) {
 				const command = data.readUInt8(2);
 				if (command === Commands.PING) {
@@ -70,7 +70,7 @@ export class SocketConnectionHandler {
 					return;
 				}
 			}
-			
+
 			messageEmitter.handleMessage(data);
 		});
 

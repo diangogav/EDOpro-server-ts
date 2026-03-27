@@ -6,10 +6,10 @@ import { DeckCreator } from "../../../../../../../src/edopro/deck/application/De
 import { SideDeckingState } from "../../../../../../../src/edopro/room/domain/states/side-decking/SideDeckingState";
 import { Room } from "../../../../../../../src/edopro/room/domain/Room";
 import { Client } from "../../../../../../../src/edopro/client/domain/Client";
-import { Commands } from "../../../../../../../src/edopro/messages/domain/Commands";
 import { ClientMessage } from "../../../../../../../src/edopro/messages/MessageProcessor";
 import { UpdateDeckMessageParser } from "../../../../../../../src/edopro/deck/application/UpdateDeckMessageSizeCalculator";
 import { ISocket } from "../../../../../../../src/shared/socket/domain/ISocket";
+import { Commands } from "../../../../../../../src/shared/messages/Commands";
 
 // Mocks
 jest.mock("../../../../../../../src/shared/logger/domain/Logger");

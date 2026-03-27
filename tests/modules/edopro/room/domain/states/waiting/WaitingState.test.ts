@@ -5,10 +5,10 @@ import { DeckCreator } from "../../../../../../../src/edopro/deck/application/De
 import { WaitingState } from "../../../../../../../src/edopro/room/domain/states/waiting/WaitingState";
 import { Room } from "../../../../../../../src/edopro/room/domain/Room";
 import { Client } from "../../../../../../../src/edopro/client/domain/Client";
-import { Commands } from "../../../../../../../src/edopro/messages/domain/Commands";
 import { ISocket } from "../../../../../../../src/shared/socket/domain/ISocket";
 import { ClientMessage } from "../../../../../../../src/edopro/messages/MessageProcessor";
 import { DuelStartClientMessage } from "../../../../../../../src/shared/messages/server-to-client/DuelStartClientMessage";
+import { Commands } from "../../../../../../../src/shared/messages/Commands";
 
 jest.mock("../../../../../../../src/shared/logger/domain/Logger");
 jest.mock("../../../../../../../src/shared/user-auth/application/UserAuth");

@@ -1,21 +1,23 @@
 
 
 
-import { CheckIfUseCanJoin } from "src/shared/user-auth/application/CheckIfUserCanJoin";
-import { generateUniqueId } from "src/utils/generateUniqueId";
 import { EventEmitter } from "stream";
 
-import { PlayerInfoMessage } from "../../../edopro/messages/client-to-server/PlayerInfoMessage";
-import { Commands } from "../../../edopro/messages/domain/Commands";
-import { ClientMessage } from "../../../edopro/messages/MessageProcessor";
-import { Logger } from "../../../shared/logger/domain/Logger";
-import { JoinMessageHandler } from "../../../shared/room/domain/JoinMessageHandler";
-import { ISocket } from "../../../shared/socket/domain/ISocket";
-import { MercuryJoinGameMessage } from "../../messages/MercuryJoinGameMessage";
+import { generateUniqueId } from "src/utils/generateUniqueId";
+
+import { CheckIfUseCanJoin } from "@shared/user-auth/application/CheckIfUserCanJoin";
+import { Commands } from "@shared/messages/Commands";
+import { ClientMessage } from "@shared/messages/MessageProcessor";
+import { Logger } from "@shared/logger/domain/Logger";
+import { JoinMessageHandler } from "@shared/room/domain/JoinMessageHandler";
+import { ISocket } from "@shared/socket/domain/ISocket";
+import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
+
 import { MercuryRoom } from "../domain/MercuryRoom";
 import MercuryRoomList from "../infrastructure/MercuryRoomList";
+import { YGOProCtosJoinGame } from "ygopro-msg-encode";
 
-export class MercuryJoinHandler implements JoinMessageHandler {
+export class YGOProJoinHandler implements JoinMessageHandler {
 	private readonly logger: Logger;
 	private readonly socket: ISocket;
 	private readonly eventEmitter: EventEmitter;
@@ -41,7 +43,7 @@ export class MercuryJoinHandler implements JoinMessageHandler {
 		this.logger.info("JOIN_GAME");
 
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
-		const joinMessage = new MercuryJoinGameMessage(message.data);
+		const joinMessage = new YGOProCtosJoinGame().fromPayload(message.data);
 
 		const room = this.createRoomIfNotExists(
 			joinMessage.pass,

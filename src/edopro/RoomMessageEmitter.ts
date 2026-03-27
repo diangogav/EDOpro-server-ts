@@ -1,6 +1,6 @@
 import { Client } from "./client/domain/Client";
-import { Commands } from "./messages/domain/Commands";
-import { MessageProcessor } from "./messages/MessageProcessor";
+import { Commands } from "../shared/messages/Commands";
+import { MessageProcessor } from "../shared/messages/MessageProcessor";
 import { Room } from "./room/domain/Room";
 
 const PONG_COMMAND = 0xfe;

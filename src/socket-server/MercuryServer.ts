@@ -7,12 +7,12 @@ import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastru
 import { EventEmitter } from "stream";
 
 import { MessageEmitter } from "../edopro/MessageEmitter";
-import { MercuryGameCreatorHandler } from "../mercury/room/application/MercuryGameCreatorHandler";
-import { MercuryJoinHandler } from "../mercury/room/application/MercuryJoinHandler";
 import { Logger } from "../shared/logger/domain/Logger";
 import { DisconnectHandler } from "../shared/room/application/DisconnectHandler";
 import { RoomFinder } from "../shared/room/application/RoomFinder";
 import { TCPClientSocket } from "../shared/socket/domain/TCPClientSocket";
+import { YGOProGameCreatorHandler } from "@ygopro/room/application/YGOProGameCreatorHandler";
+import { YGOProJoinHandler } from "@ygopro/room/application/YGOProJoinHandler";
 
 export class MercuryServer {
 	private readonly server: net.Server;
@@ -50,10 +50,10 @@ export class MercuryServer {
 			connectionLogger.info("Client connected");
 
 			const createGameListener = () => {
-				new MercuryGameCreatorHandler(eventEmitter, connectionLogger);
+				new YGOProGameCreatorHandler(eventEmitter, connectionLogger);
 			};
 			const joinGameListener = () => {
-				new MercuryJoinHandler(
+				new YGOProJoinHandler(
 					eventEmitter,
 					connectionLogger,
 					ygoClientSocket,
@@ -76,21 +76,21 @@ export class MercuryServer {
 			});
 
 			socket.on("end", () => {
-				 
+
 				connectionLogger.info(`${socket.remoteAddress} left in end event`);
 				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
 			});
 
 			socket.on("close", () => {
-				 
+
 				connectionLogger.info(`${socket.remoteAddress} left in close event`);
 				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
 			});
 
 			socket.on("error", (_error) => {
-				 
+
 				connectionLogger.info(`${socket.remoteAddress} left in error event`);
 				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);

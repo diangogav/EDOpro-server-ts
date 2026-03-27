@@ -1,11 +1,11 @@
 import { EventEmitter } from "stream";
 
-import { Commands } from "../../../edopro/messages/domain/Commands";
-import { ClientMessage } from "../../../edopro/messages/MessageProcessor";
-import { Logger } from "../../../shared/logger/domain/Logger";
-import { GameCreatorMessageHandler } from "../../../shared/room/domain/GameCreatorMessageHandler";
+import { ClientMessage } from "@shared/messages/MessageProcessor";
+import { Logger } from "@shared/logger/domain/Logger";
+import { GameCreatorMessageHandler } from "@shared/room/domain/GameCreatorMessageHandler";
+import { Commands } from "@shared/messages/Commands";
 
-export class MercuryGameCreatorHandler implements GameCreatorMessageHandler {
+export class YGOProGameCreatorHandler implements GameCreatorMessageHandler {
 	private readonly logger: Logger;
 	private readonly eventEmitter: EventEmitter;
 
@@ -13,12 +13,12 @@ export class MercuryGameCreatorHandler implements GameCreatorMessageHandler {
 		this.eventEmitter = eventEmitter;
 		this.logger = logger.child({ file: "MercuryGameCreatorHandler" });
 		this.eventEmitter.on(Commands.CREATE_GAME as unknown as string, (message: ClientMessage) => {
-			void this.handle(message);
+			void this.handleCreateGame(message);
 		});
 	}
 
-	 
-	async handle(message: ClientMessage): Promise<void> {
+
+	async handleCreateGame(message: ClientMessage): Promise<void> {
 		this.logger.info("CREATE_GAME");
 		this.logger.debug(`Game Creator Message: ${message.data.toString("hex")}`);
 	}

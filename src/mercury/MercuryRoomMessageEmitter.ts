@@ -1,4 +1,4 @@
-import { MessageProcessor } from "../edopro/messages/MessageProcessor";
+import { MessageProcessor } from "../shared/messages/MessageProcessor";
 import { MercuryClient } from "./client/domain/MercuryClient";
 import { MercuryRoom } from "./room/domain/MercuryRoom";
 

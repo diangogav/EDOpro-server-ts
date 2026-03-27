@@ -1,4 +1,4 @@
-import { Commands } from "./domain/Commands";
+import { Commands } from "./Commands";
 
 export interface ClientMessage {
   raw: Buffer;

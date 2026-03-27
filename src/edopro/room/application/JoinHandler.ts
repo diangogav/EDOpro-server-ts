@@ -10,8 +10,8 @@ import { JoinMessageHandler } from "../../../shared/room/domain/JoinMessageHandl
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { CheckIfUseCanJoin } from "../../../shared/user-auth/application/CheckIfUserCanJoin";
 import { JoinGameMessage } from "../../messages/client-to-server/JoinGameMessage";
-import { Commands } from "../../messages/domain/Commands";
-import { ClientMessage } from "../../messages/MessageProcessor";
+import { Commands } from "../../../shared/messages/Commands";
+import { ClientMessage } from "../../../shared/messages/MessageProcessor";
 import { ErrorMessages } from "../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientMessage";
 import { ServerErrorClientMessage } from "../../messages/server-to-client/ServerErrorMessageClientMessage";

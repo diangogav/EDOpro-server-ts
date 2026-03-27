@@ -1,5 +1,5 @@
- 
- 
+
+
 import EventEmitter from "events";
 
 import { Logger } from "../../../../../shared/logger/domain/Logger";
@@ -8,8 +8,8 @@ import { ISocket } from "../../../../../shared/socket/domain/ISocket";
 import { Client } from "../../../../client/domain/Client";
 import { JoinGameMessage } from "../../../../messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../../../messages/client-to-server/PlayerInfoMessage";
-import { Commands } from "../../../../messages/domain/Commands";
-import { ClientMessage } from "../../../../messages/MessageProcessor";
+import { Commands } from "../../../../../shared/messages/Commands";
+import { ClientMessage } from "../../../../../shared/messages/MessageProcessor";
 import { RPSChooseClientMessage } from "../../../../messages/server-to-client/RPSChooseClientMessage";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";

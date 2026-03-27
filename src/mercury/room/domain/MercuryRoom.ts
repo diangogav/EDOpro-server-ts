@@ -30,7 +30,7 @@ import { MercuryRockPaperScissorState } from "./states/MercuryRockPaperScissorsS
 import { MercurySideDeckingState } from "./states/MercurySideDeckingState";
 import { MercuryWaitingState } from "./states/MercuryWaitingState";
 import { RoomType } from "src/shared/room/domain/RoomType";
-import { YGOProResourceLoader } from "../../ygopro/ygopro-resource-loader";
+import { YGOProResourceLoader } from "../../ygopro/YGOProResourceLoader";
 import {
   GameMode,
   NetPlayerType,

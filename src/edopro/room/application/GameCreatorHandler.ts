@@ -8,9 +8,9 @@ import { GameCreatorMessageHandler } from "../../../shared/room/domain/GameCreat
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
-import { Commands } from "../../messages/domain/Commands";
+import { Commands } from "../../../shared/messages/Commands";
 import { ServerInfoMessage } from "../../messages/domain/ServerInfoMessage";
-import { ClientMessage } from "../../messages/MessageProcessor";
+import { ClientMessage } from "../../../shared/messages/MessageProcessor";
 import { CreateGameClientMessage } from "../../messages/server-to-client/CreateGameClientMessage";
 import { ErrorMessages } from "../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientMessage";
@@ -39,11 +39,11 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 		this.userAuth = userAuth;
 		this.roomId = roomId;
 		this.eventEmitter.on(Commands.CREATE_GAME as unknown as string, (message: ClientMessage) => {
-			void this.handle(message);
+			void this.handleCreateGame(message);
 		});
 	}
 
-	async handle(message: ClientMessage): Promise<void> {
+	async handleCreateGame(message: ClientMessage): Promise<void> {
 		this.logger.info("Handle");
 
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);

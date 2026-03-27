@@ -2,7 +2,7 @@ import { YgoClient } from "../../../shared/client/domain/YgoClient";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { Deck } from "../../deck/domain/Deck";
-import { ClientMessage, MessageProcessor } from "../../messages/MessageProcessor";
+import { ClientMessage, MessageProcessor } from "../../../shared/messages/MessageProcessor";
 import { Choose } from "../../rock-paper-scissor/RockPaperScissor";
 import { Room } from "../../room/domain/Room";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";

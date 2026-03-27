@@ -1,5 +1,5 @@
-import { ClientMessage } from "../../../edopro/messages/MessageProcessor";
+import { ClientMessage } from "../../messages/MessageProcessor";
 
 export interface GameCreatorMessageHandler {
-	handle(message: ClientMessage): Promise<void>;
+	handleCreateGame(message: ClientMessage): Promise<void>;
 }

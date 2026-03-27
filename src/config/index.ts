@@ -37,4 +37,9 @@ export const config = {
       duelPort: Number(process.env.WEBSOCKET_DUEL_PORT) || 4001,
     },
   },
+  resources: {
+    ygopro: {
+      folders: process.env?.YGOPRO_FOLDERS?.split(",") ?? []
+    }
+  }
 };

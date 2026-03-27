@@ -8,7 +8,7 @@ import { GameMode } from "ygopro-msg-encode";
 import { MercuryRoom } from "../../../../../src/mercury/room/domain/MercuryRoom";
 import { Pino } from "../../../../../src/shared/logger/infrastructure/Pino";
 import { PlayerInfoMessageMother } from "../../../shared/mothers/PlayerInfoMessageMother";
-import { MercuryBanList } from "../../../../../src/mercury/ban-list/domain/MercuryBanList";
+import { YGOProBanList } from "../../../../../src/mercury/ban-list/domain/YGOProBanList";
 
 describe("MercuryRoom", () => {
   const logger = new Pino();
@@ -427,11 +427,11 @@ describe("MercuryRoom", () => {
   });
 
   it("Should create a single match room, with the last tcg list if lf command is bad", () => {
-    const mercury202401BanList = new MercuryBanList();
+    const mercury202401BanList = new YGOProBanList();
     mercury202401BanList.setTCG(false);
     mercury202401BanList.setDate("2024.01");
     mercury202401BanList.setName("2024.01");
-    const mercury20244BanList = new MercuryBanList();
+    const mercury20244BanList = new YGOProBanList();
     mercury20244BanList.setTCG(true);
     mercury20244BanList.setDate("2024.4");
     mercury20244BanList.setName("2024.4");

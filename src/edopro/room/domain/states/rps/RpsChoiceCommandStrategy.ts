@@ -1,5 +1,5 @@
 import { Client } from "../../../../client/domain/Client";
-import { ClientMessage } from "../../../../messages/MessageProcessor";
+import { ClientMessage } from "../../../../../shared/messages/MessageProcessor";
 import { ChooseOrderClientMessage } from "../../../../messages/server-to-client/ChooseOrderClientMessage";
 import { RPSChooseClientMessage } from "../../../../messages/server-to-client/RPSChooseClientMessage";
 import { RPSResultClientMessage } from "../../../../messages/server-to-client/RPSResultClientMessage";

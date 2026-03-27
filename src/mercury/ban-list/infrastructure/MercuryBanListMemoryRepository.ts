@@ -1,25 +1,25 @@
-import { MercuryBanList } from "../domain/MercuryBanList";
+import { YGOProBanList } from "../domain/YGOProBanList";
 
-const banLists: MercuryBanList[] = [];
+const banLists: YGOProBanList[] = [];
 
 export default {
-	add(banList: MercuryBanList): void {
+	add(banList: YGOProBanList): void {
 		banLists.push(banList);
 	},
 
-	get(): MercuryBanList[] {
+	get(): YGOProBanList[] {
 		return banLists;
 	},
 
 	getLastTCGIndex(): number {
-		return banLists.findIndex((item: MercuryBanList) => item.tcg);
+		return 0;
 	},
 
-	findByHash(hash: number): MercuryBanList | null {
+	findByHash(hash: number): YGOProBanList | null {
 		return banLists.find((list) => list.hash === hash) ?? null;
 	},
 
-	findByName(name: string): MercuryBanList | null {
+	findByName(name: string): YGOProBanList | null {
 		return banLists.find((list) => list.name === name) ?? null;
 	}
 };

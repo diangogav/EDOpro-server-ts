@@ -1,4 +1,4 @@
-import { mercuryConfig } from "../../../mercury/config";
+import { mercuryConfig } from "../../config";
 import { decimalToBytesBuffer } from "../../../utils";
 import { UTF8ToUTF16 } from "../../../utils/UTF8ToUTF16";
 

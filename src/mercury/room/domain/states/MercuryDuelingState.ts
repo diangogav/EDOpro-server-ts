@@ -7,8 +7,8 @@ import { GameOverDomainEvent } from "src/shared/room/domain/match/domain/domain-
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 
 import { PlayerInfoMessage } from "../../../../edopro/messages/client-to-server/PlayerInfoMessage";
-import { Commands } from "../../../../edopro/messages/domain/Commands";
-import { ClientMessage } from "../../../../edopro/messages/MessageProcessor";
+import { Commands } from "../../../../shared/messages/Commands";
+import { ClientMessage } from "../../../../shared/messages/MessageProcessor";
 import { RoomState } from "../../../../edopro/room/domain/RoomState";
 import { Logger } from "../../../../shared/logger/domain/Logger";
 import { DuelState } from "../../../../shared/room/domain/YgoRoom";

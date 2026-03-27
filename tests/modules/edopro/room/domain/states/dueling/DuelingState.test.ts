@@ -8,12 +8,12 @@ import { JSONMessageProcessor } from "../../../../../../../src/edopro/messages/J
 import { DuelingState } from "../../../../../../../src/edopro/room/domain/states/dueling/DuelingState";
 import { Client } from "../../../../../../../src/edopro/client/domain/Client";
 import { ClientMessage } from "../../../../../../../src/edopro/messages/MessageProcessor";
-import { Commands } from "../../../../../../../src/edopro/messages/domain/Commands";
 import { FinishDuelHandler } from "../../../../../../../src/edopro/room/application/FinishDuelHandler";
 import { UpdateDeckMessageParser } from "../../../../../../../src/edopro/deck/application/UpdateDeckMessageSizeCalculator";
 import { ISocket } from "../../../../../../../src/shared/socket/domain/ISocket";
 import { spawn } from "child_process";
 import WebSocketSingleton from "../../../../../../../src/web-socket-server/WebSocketSingleton";
+import { Commands } from "../../../../../../../src/shared/messages/Commands";
 
 // Mocks
 jest.mock("../../../../../../../src/shared/logger/domain/Logger");

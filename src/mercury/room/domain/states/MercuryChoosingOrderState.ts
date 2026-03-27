@@ -3,8 +3,8 @@
 import EventEmitter from "events";
 
 import { PlayerInfoMessage } from "../../../../edopro/messages/client-to-server/PlayerInfoMessage";
-import { Commands } from "../../../../edopro/messages/domain/Commands";
-import { ClientMessage } from "../../../../edopro/messages/MessageProcessor";
+import { Commands } from "../../../../shared/messages/Commands";
+import { ClientMessage } from "../../../../shared/messages/MessageProcessor";
 import { RoomState } from "../../../../edopro/room/domain/RoomState";
 import { Logger } from "../../../../shared/logger/domain/Logger";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
