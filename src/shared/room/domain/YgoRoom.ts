@@ -227,6 +227,14 @@ export abstract class YgoRoom {
 		});
 	}
 
+	isFinished(): boolean {
+		return this.currentDuel?.isFinished ?? false;
+	}
+
+	finished(): void {
+		this.currentDuel?.finished();
+	}
+
 	decreaseLps(team: Team, value: number): void {
 		this.currentDuel?.decreaseLps(team, value);
 	}

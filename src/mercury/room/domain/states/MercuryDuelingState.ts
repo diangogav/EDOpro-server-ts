@@ -23,12 +23,16 @@ import {
 	YGOProMsgNewTurn,
 	YGOProMsgStart,
 	YGOProMsgWin,
+	YGOProStocChangeSide,
 	YGOProStocDuelStart,
 	YGOProStocGameMsg,
 	YGOProStocHsPlayerChange,
+	YGOProStocReplay,
+	YGOProStocWaitingSide,
 } from "ygopro-msg-encode";
 import { OCGCore } from "src/mercury/ocgcore-worker/ocgcore";
 import { deckEquals } from "src/mercury/utils/deck-equals";
+import { Team } from "src/shared/room/Team";
 
 export class MercuryDuelingState extends RoomState {
 	private readonly eventBus: EventBus;
@@ -75,12 +79,6 @@ export class MercuryDuelingState extends RoomState {
 		);
 
 		this.eventEmitter.on(
-			"CHANGE_SIDE",
-			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
-				void this.handleChangeSide.bind(this)(message, room, socket),
-		);
-
-		this.eventEmitter.on(
 			Commands.UPDATE_DECK as unknown as string,
 			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
 				void this.handleUpdateDeck.bind(this)(message, room, socket),
@@ -108,7 +106,9 @@ export class MercuryDuelingState extends RoomState {
 		this.ocgCore.messageMiddleware.on(
 			YGOProMsgWin,
 			(msg) => {
-				console.log("Winner", msg.player);
+				this.logger.info(`Winner: player=${msg.player}, type=${msg.type}`);
+				// Process win condition - update room state
+				this.handleWinCondition(msg);
 				return msg;
 			},
 			100,
@@ -159,7 +159,6 @@ export class MercuryDuelingState extends RoomState {
 		// Use ingame position (considering swap) to match srvpro2 behavior
 		const player0Players = this.ocgCore.getPlayersAtIngamePosition(0);
 		const player1Players = this.ocgCore.getPlayersAtIngamePosition(1);
-
 		const player0StartMessage = createStartMsg(0);
 		const player1StartMessage = createStartMsg(1);
 
@@ -196,6 +195,7 @@ export class MercuryDuelingState extends RoomState {
 			location: OcgcoreScriptConstants.LOCATION_EXTRA,
 		});
 
+		this.logger.info("advance core")
 		this.ocgCore.advance();
 	}
 
@@ -263,35 +263,6 @@ export class MercuryDuelingState extends RoomState {
 
 		if (player.position === 0) {
 			this.processDuelMessage(coreMessageType, message.data, room);
-		}
-
-		if (coreMessageType === CoreMessages.MSG_WIN && !room.isMatchFinished()) {
-			const winner = room.firstToPlay ^ message.raw.readInt8(4);
-
-			room.duelWinner(winner);
-
-			WebSocketSingleton.getInstance().broadcast({
-				action: "UPDATE-ROOM",
-				data: room.toRealTimePresentation(),
-			});
-
-			if (room.isMatchFinished()) {
-				this.eventBus.publish(
-					GameOverDomainEvent.DOMAIN_EVENT,
-					new GameOverDomainEvent({
-						bestOf: room.bestOf,
-						players: room.matchPlayersHistory,
-						date: new Date(),
-						banListHash: room.edoBanListHash,
-						ranked: room.ranked,
-					}),
-				);
-
-				WebSocketSingleton.getInstance().broadcast({
-					action: "REMOVE-ROOM",
-					data: room.toRealTimePresentation(),
-				});
-			}
 		}
 	}
 
@@ -361,20 +332,6 @@ export class MercuryDuelingState extends RoomState {
 		player.logger.info("MercuryDuelingState: TIME_LIMIT");
 	}
 
-	private handleChangeSide(
-		_message: ClientMessage,
-		room: MercuryRoom,
-		player: MercuryClient,
-	): void {
-		player.logger.info("MercuryDuelingState: CHANGE_SIDE");
-
-		if (room.duelState === DuelState.DUELING) {
-			room.sideDecking();
-
-			return;
-		}
-	}
-
 	private async handleResponse(
 		message: ClientMessage,
 		room: MercuryRoom,
@@ -427,4 +384,60 @@ export class MercuryDuelingState extends RoomState {
 
 		await this.ocgCore.advance();
 	}
+
+	private async handleWinCondition(winMsg: YGOProMsgWin): Promise<void> {
+		this.logger.info(
+			`handleWinCondition: player=${winMsg.player}, type=${winMsg.type}`,
+		);
+
+		const winner = this.ocgCore.toIngamePosition(winMsg.player)
+
+		if (this.room.isFinished()) {
+			return;
+		}
+
+		this.room.finished();
+
+		this.room.duelWinner(winner);
+
+		const clients = [...this.room.clients, ...this.room.spectators];
+
+		const winMessage = new YGOProStocGameMsg().fromPartial({
+			msg: new YGOProMsgWin().fromPartial(winMsg),
+		});
+		clients.forEach((_client: MercuryClient) => {
+			_client.sendMessageToClient(Buffer.from(winMessage.toFullPayload()));
+		});
+
+		this.room.clients.forEach((_client) => _client.notReady());
+
+		this.room.sideDecking();
+
+		if (!this.room.isMatchFinished()) {
+			this.room.clients.forEach((_client: MercuryClient) => {
+				_client.sendMessageToClient(Buffer.from(new YGOProStocChangeSide().toFullPayload()))
+			});
+
+			this.room.spectators.forEach((_client: MercuryClient) => {
+				_client.sendMessageToClient(Buffer.from(new YGOProStocWaitingSide().toFullPayload()))
+			});
+
+			if (winner === Team.PLAYER) {
+				const looser = this.room.clients.find(
+					(_client: MercuryClient) => _client.position % this.room.team1 === Team.PLAYER && _client.team === Team.OPPONENT
+				);
+				if (looser && looser instanceof MercuryClient) {
+					this.room.setClientWhoChoosesTurn(looser);
+				}
+			} else {
+				const looser = this.room.clients.find(
+					(_client: MercuryClient) => _client.position % this.room.team0 === Team.PLAYER && _client.team === Team.PLAYER
+				);
+				if (looser && looser instanceof MercuryClient) {
+					this.room.setClientWhoChoosesTurn(looser);
+				}
+			}
+		}
+	}
 }
+

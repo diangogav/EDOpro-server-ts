@@ -17,11 +17,11 @@ function extractNumberFromCommand(input: string): number | null {
 
 export const ruleMappings: RuleMappings = {
 	m: {
-		get: () => ({ mode: GameMode.MATCH, startLp: 8000, bestOf: 3 }),
+		get: () => ({ mode: GameMode.MATCH, start_lp: 8000, best_of: 3 }),
 		validate: (value) => value === "m" || value === "match",
 	},
 	t: {
-		get: () => ({ mode: GameMode.TAG, startLp: 16000, bestOf: 1 }),
+		get: () => ({ mode: GameMode.TAG, start_lp: 16000, best_of: 1 }),
 		validate: (value) => value === "t" || value === "tag",
 	},
 };
@@ -29,24 +29,24 @@ export const ruleMappings: RuleMappings = {
 export const priorityRuleMappings: RuleMappings = {
 	bo: {
 		get: (value: string) => {
-			const bestOf = extractNumberFromCommand(value.toString());
+			const best_of = extractNumberFromCommand(value.toString());
 
-			if (bestOf === null || bestOf < 1) {
+			if (best_of === null || best_of < 1) {
 				return {
 					mode: GameMode.MATCH,
-					bestOf: 3,
+					best_of: 3,
 				};
 			}
 
-			if (bestOf % 2 === 0) {
+			if (best_of % 2 === 0) {
 				return {
 					mode: GameMode.MATCH,
-					bestOf: bestOf + 1,
+					best_of: best_of + 1,
 				};
 			}
 
 			return {
-				bestOf,
+				best_of,
 				mode: GameMode.MATCH,
 			};
 		},
@@ -70,18 +70,18 @@ export const priorityRuleMappings: RuleMappings = {
 
 			if (numberValue <= 0) {
 				return {
-					startLp: 1,
+					start_lp: 1,
 				};
 			}
 
 			if (numberValue >= 99999) {
 				return {
-					startLp: 99999,
+					start_lp: 99999,
 				};
 			}
 
 			return {
-				startLp: +lps,
+				start_lp: +lps,
 			};
 		},
 		validate: (value) => {

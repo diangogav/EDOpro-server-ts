@@ -845,14 +845,6 @@ export class Room extends YgoRoom {
 		this.ipcMetrics.deferredProcessTicks += 1;
 	}
 
-	isFinished(): boolean {
-		return this.currentDuel?.isFinished ?? false;
-	}
-
-	finished(): void {
-		this.currentDuel?.finished();
-	}
-
 	setLastPhaseMessage(message: Buffer): void {
 		this._lastPhase = message;
 	}

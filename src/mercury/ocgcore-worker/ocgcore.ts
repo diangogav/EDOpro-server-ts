@@ -228,10 +228,9 @@ export class OCGCore {
     this.isRetrying = false;
   }
 
-  clearResponseState(): void {
-    this.lastResponseRequestMsg = null;
-    this.isRetrying = false;
-    this.responsePosition = null;
+  async dispose(): Promise<void> {
+    await this.ocgcore?.dispose()
+      .catch((_error) => this.logger.error(`Error disposing ocgcore`))
   }
 
   resetResponseRequestState(): void {
@@ -537,8 +536,7 @@ export class OCGCore {
   }
 
   private canAdvance(): boolean {
-    // TODO: Check if room is in Dueling state
-    return true;
+    return !!this.ocgcore;
   }
 
   private async handleAdvanceResult(advanceResult: {
@@ -560,7 +558,7 @@ export class OCGCore {
       if (status) {
         throw new Error(
           "Cannot continue ocgcore because received empty message with non-advancing status " +
-            status,
+          status,
         );
       }
       return;
@@ -585,7 +583,7 @@ export class OCGCore {
     }
 
     if (processedMessage instanceof YGOProMsgWin) {
-      await this.handleWinCondition(processedMessage);
+      await this.ocgcore?.dispose();
       return;
     }
 
@@ -603,11 +601,6 @@ export class OCGCore {
     }
 
     return message;
-  }
-
-  private async handleWinCondition(winMessage: YGOProMsgWin): Promise<void> {
-    // TODO: Implement win condition handling
-    this.logger.debug("handleWinCondition", { winMessage });
   }
 
   private async handleAdvanceError(error: unknown): Promise<void> {
@@ -643,10 +636,10 @@ export class OCGCore {
 
     const sendToClients = options.sendToClient
       ? new Set(
-          Array.isArray(options.sendToClient)
-            ? options.sendToClient
-            : [options.sendToClient],
-        )
+        Array.isArray(options.sendToClient)
+          ? options.sendToClient
+          : [options.sendToClient],
+      )
       : undefined;
 
     await this.deliverToTargets(message, sendToClients);
@@ -1015,7 +1008,7 @@ export class OCGCore {
    * Converts a duel position (0 or 1) to an ingame position.
    * Applies swap logic when positions are swapped (first to play becomes player 2).
    */
-  private toIngamePosition(duelPosition: number): number {
+  toIngamePosition(duelPosition: number): number {
     if (!this.isValidDuelPosition(duelPosition)) {
       return duelPosition;
     }

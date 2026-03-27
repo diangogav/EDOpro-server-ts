@@ -44,6 +44,7 @@ import {
   YGOProStocJoinGame,
   YGOProStocTypeChange,
 } from "ygopro-msg-encode";
+import { YGOProYrp } from 'ygopro-yrp-encode';
 import { HostInfo } from "./host-info/HostInfo";
 import { ISocket } from "src/shared/socket/domain/ISocket";
 import YGOProDeck from "ygopro-deck-encode";
@@ -560,6 +561,11 @@ export class MercuryRoom extends YgoRoom {
       spectator.sendMessageToClient(Buffer.from(message.toFullPayload()));
     }
   }
+
+  currentDuelReplayData(): YGOProYrp {
+    return this._currentDuelRecord.toYrp(this);
+  }
+
 
   sendDeckCountMessage(client: MercuryClient): void {
     const toDeckCount = (deck: YGOProDeck | null) => {

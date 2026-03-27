@@ -10,7 +10,6 @@ import { Logger } from "../../../../shared/logger/domain/Logger";
 import { DuelStartClientMessage } from "../../../../shared/messages/server-to-client/DuelStartClientMessage";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
-import { MercuryReconnect } from "../../application/MercuryReconnect";
 import { MercuryRoom } from "../MercuryRoom";
 import {
   HandResult,
@@ -181,6 +180,7 @@ export class MercuryRockPaperScissorState extends RoomState {
       Buffer.from(selectTPMessage.toFullPayload()),
     );
 
+    room.setClientWhoChoosesTurn(winnerPlayer);
     room.choosingOrder();
   }
 
