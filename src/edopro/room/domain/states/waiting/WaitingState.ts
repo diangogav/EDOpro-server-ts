@@ -85,7 +85,7 @@ export class WaitingState extends RoomState {
 			player.logger.info("WaitingState: KICK");
 
 			const positionKick = message.data.readInt8();
-			const playerSelect = room.clients.find((_client) => _client.position === positionKick);
+			const playerSelect = room.players.find((_client) => _client.position === positionKick);
 
 			if (!(playerSelect instanceof Client)) {
 				return;
@@ -102,7 +102,7 @@ export class WaitingState extends RoomState {
 
 			room.addKick(playerSelect);
 
-			room.clients.forEach((_client: Client) => {
+			room.players.forEach((_client: Client) => {
 				_client.sendMessage(
 					ServerErrorClientMessage.create(
 						`The player:${playerSelect.name} has been banned from this room, he can only enter as a spectator!!`
@@ -145,7 +145,7 @@ export class WaitingState extends RoomState {
 			}
 
 			const duelStartMessage = DuelStartClientMessage.create();
-			room.clients.forEach((client: Client) => {
+			room.players.forEach((client: Client) => {
 				client.sendMessage(duelStartMessage);
 			});
 
@@ -153,10 +153,10 @@ export class WaitingState extends RoomState {
 				client.sendMessage(duelStartMessage);
 			});
 
-			const t0Client = room.clients
+			const t0Client = room.players
 				.filter((_client: Client) => _client.team === 0)
 				.sort((a, b) => a.position - b.position)[0];
-			const t1Client = room.clients
+			const t1Client = room.players
 				.filter((_client: Client) => _client.team === 1)
 				.sort((a, b) => a.position - b.position)[0];
 

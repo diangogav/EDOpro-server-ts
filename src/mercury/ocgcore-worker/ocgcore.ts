@@ -813,7 +813,7 @@ export class OCGCore {
     ingamePosition: number,
   ): Promise<void> {
     const operatingPlayer = this.getActivePlayer(ingamePosition);
-    const nonOperatingPlayers = (this.room.clients as MercuryClient[]).filter(
+    const nonOperatingPlayers = (this.room.players as MercuryClient[]).filter(
       (client) => client !== operatingPlayer,
     );
 

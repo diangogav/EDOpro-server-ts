@@ -115,7 +115,7 @@ export class MercurySideDeckingState extends RoomState {
 		player.ready();
 		player.sendMessageToClient(Buffer.from(new YGOProStocDuelStart().toFullPayload()));
 
-		const allReady = room.clients.every((_client) => _client.isReady);
+		const allReady = room.players.every((_client) => _client.isReady);
 		if (!allReady) {
 			return;
 		}

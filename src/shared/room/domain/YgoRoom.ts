@@ -35,7 +35,7 @@ export abstract class YgoRoom {
 	protected emitter: EventEmitter;
 	protected _state: DuelState;
 	protected _spectatorCache: Buffer[] = [];
-	protected _clients: YgoClient[] = [];
+	protected _players: YgoClient[] = [];
 	protected _spectators: YgoClient[] = [];
 	protected _clientWhoChoosesTurn: YgoClient;
 	protected _match: Match | null;
@@ -97,7 +97,7 @@ export abstract class YgoRoom {
 
 	removePlayer(player: YgoClient): void {
 		this.mutex.runExclusive(() => {
-			this._clients = this._clients.filter((item) => item.socket.id !== player.socket.id);
+			this._players = this._players.filter((item) => item.socket.id !== player.socket.id);
 		});
 	}
 
@@ -106,7 +106,7 @@ export abstract class YgoRoom {
 			return;
 		}
 
-		const ips = this._clients.map((client) => ({
+		const ips = this._players.map((client) => ({
 			name: client.name,
 			ipAddress: client.socket.remoteAddress ?? null,
 		}));
@@ -118,8 +118,8 @@ export abstract class YgoRoom {
 		return this._match?.playersHistory ?? [];
 	}
 
-	get clients(): YgoClient[] {
-		return this._clients;
+	get players(): YgoClient[] {
+		return this._players;
 	}
 
 	get spectators(): YgoClient[] {
@@ -133,7 +133,7 @@ export abstract class YgoRoom {
 	}
 
 	calculatePlaceUnsafe(startPosition?: number): { position: number; team: number } | null {
-		const team0 = this.clients
+		const team0 = this.players
 			.filter((client: Client) => client.team === 0)
 			.map((client) => client.position);
 
@@ -149,7 +149,7 @@ export abstract class YgoRoom {
 			}
 		}
 
-		const team1 = this.clients
+		const team1 = this.players
 			.filter((client: Client) => client.team === 1)
 			.map((client) => client.position);
 
@@ -182,7 +182,7 @@ export abstract class YgoRoom {
 	}
 
 	initializeHistoricalData(): void {
-		const players = this._clients.map((client: Client) => ({
+		const players = this._players.map((client: Client) => ({
 			id: client.id,
 			team: client.team,
 			name: client.name,
@@ -215,7 +215,7 @@ export abstract class YgoRoom {
 	}
 
 	playerNames(team: number): string {
-		return this.clients
+		return this.players
 			.filter((player: Client) => player.team === team)
 			.map((item: Client) => `${item.name}`)
 			.join(",");
@@ -265,7 +265,7 @@ export abstract class YgoRoom {
 	}
 
 	get allPlayersReady(): boolean {
-		return !this._clients.some((client) => !client.isReady)
+		return !this._players.some((client) => !client.isReady)
 	}
 
 	isFirstDuel(): boolean {
@@ -280,7 +280,7 @@ export abstract class YgoRoom {
 			banList: {
 				name: this.currentDuel?.banListName,
 			},
-			players: this.clients.map((client: Client) => ({
+			players: this.players.map((client: Client) => ({
 				position: client.position,
 				username: client.name,
 				lps: this.currentDuel?.lps[client.team],
@@ -308,12 +308,12 @@ export abstract class YgoRoom {
 	}
 
 	protected removePlayerUnsafe(player: YgoClient): void {
-		this._clients = this._clients.filter((item) => item.socket.id !== player.socket.id);
+		this._players = this._players.filter((item) => item.socket.id !== player.socket.id);
 	}
 
 	protected nextAvailablePosition(position: number): { position: number; team: number } | null {
 		const positions = [...this.t1Positions, ...this.t0Positions].sort((a, b) => a - b);
-		const occupiedPositions = this.clients.map((client) => client.position);
+		const occupiedPositions = this.players.map((client) => client.position);
 		const difference = this.getDifference(positions, occupiedPositions);
 		if (difference.length === 0) {
 			return null;
@@ -351,7 +351,7 @@ export abstract class YgoRoom {
 	}
 
 	findPlayerByToken(token: string): YgoClient | undefined {
-		return this._clients.find((client) => client.reconnectionToken === token);
+		return this._players.find((client) => client.reconnectionToken === token);
 	}
 
 	removeSpectator(spectator: YgoClient): void {

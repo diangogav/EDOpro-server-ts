@@ -49,7 +49,7 @@ export abstract class RoomState {
 		socket: ISocket
 	): YgoClient | null {
 		if (!room.ranked) {
-			const player = room.clients.find((client) => {
+			const player = room.players.find((client) => {
 				return (
 					client.socket.remoteAddress === socket.remoteAddress &&
 					client.socket.closed &&
@@ -64,7 +64,7 @@ export abstract class RoomState {
 			return player;
 		}
 
-		const player = room.clients.find((client) => {
+		const player = room.players.find((client) => {
 			return playerInfoMessage.name === client.name;
 		});
 
@@ -192,7 +192,7 @@ export abstract class RoomState {
 				client.name.replace(/\0/g, "").trim(),
 				message.data
 			);
-			room.clients.forEach((player: Client) => {
+			room.players.forEach((player: Client) => {
 				player.socket.send(chatMessage);
 			});
 
@@ -214,7 +214,7 @@ export abstract class RoomState {
 			Number(!client.team)
 		);
 
-		room.clients.forEach((player: YgoClient) => {
+		room.players.forEach((player: YgoClient) => {
 			const message = player.team === client.team ? playerMessage : opponentMessage;
 			player.socket.send(message);
 		});

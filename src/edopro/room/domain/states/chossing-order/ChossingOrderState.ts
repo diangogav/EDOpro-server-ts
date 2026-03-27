@@ -1,5 +1,5 @@
- 
- 
+
+
 import EventEmitter from "events";
 
 import { Logger } from "../../../../../shared/logger/domain/Logger";
@@ -50,7 +50,7 @@ export class ChossingOrderState extends RoomState {
 		player.logger.info("CHOSSING_ORDER: TURN_CHOICE");
 
 		const turn = message.data.readInt8();
-		const team = (<Client | undefined>room.clients.find((client) => client === player))?.team;
+		const team = (<Client | undefined>room.players.find((client) => client === player))?.team;
 
 		if ((team === 0 && turn === 0) || (team === 1 && turn === 1)) {
 			room.setFirstToPlay(1);

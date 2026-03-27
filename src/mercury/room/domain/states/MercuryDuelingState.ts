@@ -400,7 +400,7 @@ export class MercuryDuelingState extends RoomState {
 
 		this.room.duelWinner(winner);
 
-		const clients = [...this.room.clients, ...this.room.spectators];
+		const clients = [...this.room.players, ...this.room.spectators];
 
 		const winMessage = new YGOProStocGameMsg().fromPartial({
 			msg: new YGOProMsgWin().fromPartial(winMsg),
@@ -409,12 +409,12 @@ export class MercuryDuelingState extends RoomState {
 			_client.sendMessageToClient(Buffer.from(winMessage.toFullPayload()));
 		});
 
-		this.room.clients.forEach((_client) => _client.notReady());
+		this.room.players.forEach((_client) => _client.notReady());
 
 		this.room.sideDecking();
 
 		if (!this.room.isMatchFinished()) {
-			this.room.clients.forEach((_client: MercuryClient) => {
+			this.room.players.forEach((_client: MercuryClient) => {
 				_client.sendMessageToClient(Buffer.from(new YGOProStocChangeSide().toFullPayload()))
 			});
 
@@ -423,14 +423,14 @@ export class MercuryDuelingState extends RoomState {
 			});
 
 			if (winner === Team.PLAYER) {
-				const looser = this.room.clients.find(
+				const looser = this.room.players.find(
 					(_client: MercuryClient) => _client.position % this.room.team1 === Team.PLAYER && _client.team === Team.OPPONENT
 				);
 				if (looser && looser instanceof MercuryClient) {
 					this.room.setClientWhoChoosesTurn(looser);
 				}
 			} else {
-				const looser = this.room.clients.find(
+				const looser = this.room.players.find(
 					(_client: MercuryClient) => _client.position % this.room.team0 === Team.PLAYER && _client.team === Team.PLAYER
 				);
 				if (looser && looser instanceof MercuryClient) {

@@ -113,7 +113,7 @@ export class MercuryRoom extends YgoRoom {
     });
     this.name = name;
     this.password = password;
-    this._clients = [];
+    this._players = [];
     this._hostInfo = hostInfo;
     this._state = DuelState.WAITING;
     this._banListHash = 0;
@@ -270,7 +270,7 @@ export class MercuryRoom extends YgoRoom {
   }
 
   getTeamPlayers(team: number): MercuryClient[] {
-    return this.clients.filter(
+    return this.players.filter(
       (client) => this.getTeam(client.position) === team,
     ) as MercuryClient[];
   }
@@ -308,7 +308,7 @@ export class MercuryRoom extends YgoRoom {
   }
 
   get playersCount(): number {
-    return this._clients.length;
+    return this._players.length;
   }
 
   get isPlayersFull(): boolean {
@@ -399,7 +399,7 @@ export class MercuryRoom extends YgoRoom {
     name: string,
     userId: string | null,
   ): MercuryClient | null {
-    const host = this._clients.some((client: MercuryClient) => client.host);
+    const host = this._players.some((client: MercuryClient) => client.host);
     const place = this.calculatePlaceUnsafe();
     if (!place) {
       return null;
@@ -421,12 +421,12 @@ export class MercuryRoom extends YgoRoom {
 
   addPlayerUnsafe(client: MercuryClient): void {
     this.sendJoinGameMessage(client);
-    this._clients.push(client);
+    this._players.push(client);
     client.socket.roomId = this.id;
 
     this.sendTypeChangeMessage(client);
 
-    [...this._clients, ...this.spectators].forEach((_client: MercuryClient) => {
+    [...this._players, ...this.spectators].forEach((_client: MercuryClient) => {
       const playerEnterMessage = this.preparePlayerEnterMessage(_client);
       client.sendMessageToClient(
         Buffer.from(playerEnterMessage.toFullPayload()),
@@ -440,7 +440,7 @@ export class MercuryRoom extends YgoRoom {
     });
 
     const playerEnterMessage = this.preparePlayerEnterMessage(client);
-    [...this._clients, ...this.spectators].forEach((_client: MercuryClient) => {
+    [...this._players, ...this.spectators].forEach((_client: MercuryClient) => {
       if (_client !== client) {
         _client.sendMessageToClient(
           Buffer.from(playerEnterMessage.toFullPayload()),
@@ -456,7 +456,7 @@ export class MercuryRoom extends YgoRoom {
     this._spectators.push(spectator);
     this.sendTypeChangeMessage(spectator);
 
-    [...this._clients, ...this.spectators].forEach((_client: MercuryClient) => {
+    [...this._players, ...this.spectators].forEach((_client: MercuryClient) => {
       const playerEnterMessage = this.preparePlayerEnterMessage(_client);
       spectator.sendMessageToClient(
         Buffer.from(playerEnterMessage.toFullPayload()),
@@ -493,7 +493,7 @@ export class MercuryRoom extends YgoRoom {
       return;
     }
     this.removeSpectatorUnsafe(player);
-    this._clients.push(player);
+    this._players.push(player);
 
     player.playerPosition(place.position, place.team);
     player.notReady();
@@ -524,7 +524,7 @@ export class MercuryRoom extends YgoRoom {
   }
 
   setDecksToPlayerUnsafe(position: number, deck: YGOProDeck): void {
-    const client = this._clients.find((client) => client.position === position);
+    const client = this._players.find((client) => client.position === position);
 
     if (!client || !(client instanceof MercuryClient)) {
       return;
@@ -604,12 +604,12 @@ export class MercuryRoom extends YgoRoom {
 
     const decks = this.shuffleDeckEnabled
       ? shuffleDecksBySeed(
-        this.clients.map((_client: MercuryClient) => _client.deck!),
+        this.players.map((_client: MercuryClient) => _client.deck!),
         seed,
       )
-      : this.clients.map((_client: MercuryClient) => _client.deck);
+      : this.players.map((_client: MercuryClient) => _client.deck);
 
-    const players = this.clients.map(
+    const players = this.players.map(
       (_client: MercuryClient, index: number) => ({
         name: _client.name,
         deck: decks[index]!,
@@ -634,7 +634,7 @@ export class MercuryRoom extends YgoRoom {
       type,
     });
     player.sendMessageToClient(Buffer.from(typeChangeMessage.toFullPayload()));
-    this._clients.forEach((_client: MercuryClient) => {
+    this._players.forEach((_client: MercuryClient) => {
       const playerEnterMessage = this.preparePlayerEnterMessage(_client);
       player.sendMessageToClient(
         Buffer.from(playerEnterMessage.toFullPayload()),
@@ -705,7 +705,7 @@ export class MercuryRoom extends YgoRoom {
       this._logger.debug(`Started Mercury Core at port: ${data.toString()}`);
       this._coreStarted = true;
       this._corePort = +data.toString();
-      this._clients.forEach((client: MercuryClient) => {
+      this._players.forEach((client: MercuryClient) => {
         client.connectToCore({
           url: "127.0.0.1",
           port: +data.toString(),
@@ -796,7 +796,7 @@ export class MercuryRoom extends YgoRoom {
       extra_max: 15,
       side_min: 0,
       side_max: 15,
-      users: this._clients.map((player) => ({
+      users: this._players.map((player) => ({
         name: player.name.replace(/\0/g, "").trim(),
         pos: player.position,
       })),
@@ -806,7 +806,7 @@ export class MercuryRoom extends YgoRoom {
   destroy(): void {
     this.emitter.removeAllListeners();
     this.roomState?.removeAllListener();
-    this._clients.forEach((client: MercuryClient) => {
+    this._players.forEach((client: MercuryClient) => {
       client.destroy();
     });
   }
@@ -878,7 +878,7 @@ export class MercuryRoom extends YgoRoom {
   }
 
   private broadcastToAll(message: Buffer): void {
-    this._clients.forEach((client: MercuryClient) => {
+    this._players.forEach((client: MercuryClient) => {
       client.sendMessageToClient(message);
     });
     this._spectators.forEach((client: MercuryClient) => {

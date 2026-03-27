@@ -145,7 +145,7 @@ export class MercuryWaitingState extends RoomState {
 
 		const duelStartMessage = new YGOProStocDuelStart()
 
-		for (const player of [...room.clients, ...room.spectators]) {
+		for (const player of [...room.players, ...room.spectators]) {
 			(player as MercuryClient).sendMessageToClient(Buffer.from(duelStartMessage.toFullPayload()));
 			room.sendDeckCountMessage(player as MercuryClient);
 		}

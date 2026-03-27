@@ -10,7 +10,7 @@ import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameC
 import { Room } from "../domain/Room";
 
 export class Reconnect {
-	constructor(private readonly checkIfUseCanJoin: CheckIfUseCanJoin) {}
+	constructor(private readonly checkIfUseCanJoin: CheckIfUseCanJoin) { }
 
 	async run(
 		playerInfoMessage: PlayerInfoMessage,
@@ -31,13 +31,13 @@ export class Reconnect {
 			// }
 		}
 
-		player.setSocket(socket, room.clients as Client[], room);
+		player.setSocket(socket, room.players as Client[], room);
 		player.reconnecting();
 		player.sendMessage(JoinGameClientMessage.createFromRoom(joinMessage, room));
 		const type = (Number(player.host) << 4) | player.position;
 		const typeChangeMessage = TypeChangeClientMessage.create({ type });
 		player.sendMessage(typeChangeMessage);
-		room.clients.forEach((_client) => {
+		room.players.forEach((_client) => {
 			const playerEnterClientMessage = PlayerEnterClientMessage.create(
 				_client.name,
 				_client.position
