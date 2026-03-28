@@ -37,11 +37,6 @@ import {
   YGOProMsgBase,
   YGOProStocDeckCount,
   YGOProStocDeckCount_DeckInfo,
-  YGOProStocHsPlayerChange,
-  YGOProStocHsPlayerEnter,
-  YGOProStocHsWatchChange,
-  YGOProStocJoinGame,
-  YGOProStocTypeChange,
 } from "ygopro-msg-encode";
 import { YGOProYrp } from 'ygopro-yrp-encode';
 import { ISocket } from "src/shared/socket/domain/ISocket";
