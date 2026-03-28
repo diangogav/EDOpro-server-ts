@@ -4,12 +4,13 @@ import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { Logger } from "@shared/logger/domain/Logger";
 import { GameCreatorMessageHandler } from "@shared/room/domain/GameCreatorMessageHandler";
 import { Commands } from "@shared/messages/Commands";
+import { MessageRepository } from "@shared/messages/MessageRepository";
 
 export class YGOProGameCreatorHandler implements GameCreatorMessageHandler {
 	private readonly logger: Logger;
 	private readonly eventEmitter: EventEmitter;
 
-	constructor(eventEmitter: EventEmitter, logger: Logger) {
+	constructor(eventEmitter: EventEmitter, logger: Logger, _messageRepository: MessageRepository) {
 		this.eventEmitter = eventEmitter;
 		this.logger = logger.child({ file: "MercuryGameCreatorHandler" });
 		this.eventEmitter.on(Commands.CREATE_GAME as unknown as string, (message: ClientMessage) => {

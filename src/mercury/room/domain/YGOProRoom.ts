@@ -47,6 +47,7 @@ import { YGOProYrp } from 'ygopro-yrp-encode';
 import { ISocket } from "src/shared/socket/domain/ISocket";
 import YGOProDeck from "ygopro-deck-encode";
 import { DuelRecord } from "./DuelRecord";
+import { MessageRepository } from "@shared/messages/MessageRepository";
 
 
 const BEST_OF = {
@@ -68,6 +69,7 @@ export class YGOProRoom extends YgoRoom {
   private _currentDuelRecord: DuelRecord;
   private readonly _hostInfo: HostInfo;
   private readonly _resourceLoader: YGOProResourceLoader;
+  private readonly _messageRepository: MessageRepository;
 
   private constructor({
     id,
@@ -80,6 +82,7 @@ export class YGOProRoom extends YgoRoom {
     createdBySocketId,
     bestOf,
     startLp,
+    messageRepository,
   }: {
     id: number;
     password: string;
@@ -91,6 +94,7 @@ export class YGOProRoom extends YgoRoom {
     createdBySocketId: string;
     bestOf: number;
     startLp: number;
+    messageRepository: MessageRepository,
   }) {
     super({
       team0,
@@ -110,6 +114,7 @@ export class YGOProRoom extends YgoRoom {
     this._banListHash = 0;
     this.createdBySocketId = createdBySocketId;
     this._resourceLoader = YGOProResourceLoader.getShared();
+    this._messageRepository = messageRepository
   }
 
   static create(
@@ -119,6 +124,7 @@ export class YGOProRoom extends YgoRoom {
     emitter: EventEmitter,
     playerInfo: PlayerInfoMessage,
     createdBySocketId: string,
+    messageRepository: MessageRepository,
   ): YGOProRoom {
     let hostInfo: HostInfo = {
       lflist: MercuryBanListMemoryRepository.getFirstTCGIndex(),
@@ -202,6 +208,7 @@ export class YGOProRoom extends YgoRoom {
       createdBySocketId,
       bestOf: hostInfo.best_of,
       startLp: hostInfo.start_lp,
+      messageRepository,
     });
 
     room._logger = logger.child({ file: "MercuryRoom" });
@@ -261,7 +268,7 @@ export class YGOProRoom extends YgoRoom {
   }
 
   get hostInfo(): HostInfo {
-    return this._hostInfo;
+    return { ...this._hostInfo, lflist: 0, mode: this.mode };
   }
 
   get playersCount(): number {
@@ -376,32 +383,27 @@ export class YGOProRoom extends YgoRoom {
     return client;
   }
 
-  addPlayerUnsafe(client: MercuryClient): void {
-    this.sendJoinGameMessage(client);
-    this._players.push(client);
-    client.socket.roomId = this.id;
+  addPlayerUnsafe(player: MercuryClient): void {
+    player.sendMessageToClient(this._messageRepository.joinGameMessage(this.hostInfo));
+    this._players.push(player);
+    player.socket.roomId = this.id;
 
-    this.sendTypeChangeMessage(client);
+    player.sendMessageToClient(this._messageRepository.typeChangeMessage(player.position, player.host));
 
     this.clients.forEach((_client: MercuryClient) => {
-      const playerEnterMessage = this.preparePlayerEnterMessage(_client);
-      client.sendMessageToClient(
-        Buffer.from(playerEnterMessage.toFullPayload()),
-      );
+      const playerEnterMessageBuffer = this._messageRepository.playerEnterMessage(_client.name, _client.position);
+      player.sendMessageToClient(playerEnterMessageBuffer);
+
       if (_client.deck) {
-        const playerChangeMessage = this.preparePlayerChangeMessage(_client);
-        client.sendMessageToClient(
-          Buffer.from(playerChangeMessage.toFullPayload()),
-        );
+        const state = _client.isReady ? PlayerChangeState.READY : PlayerChangeState.NOTREADY;
+        player.sendMessageToClient(this._messageRepository.playerChangeMessage(_client.position, state));
       }
     });
 
-    const playerEnterMessage = this.preparePlayerEnterMessage(client);
+    const playerEnterMessage = this._messageRepository.playerEnterMessage(player.name, player.position);
     this.clients.forEach((_client: MercuryClient) => {
-      if (_client !== client) {
-        _client.sendMessageToClient(
-          Buffer.from(playerEnterMessage.toFullPayload()),
-        );
+      if (_client !== player) {
+        _client.sendMessageToClient(playerEnterMessage);
       }
     });
 
@@ -409,20 +411,17 @@ export class YGOProRoom extends YgoRoom {
   }
 
   addSpectatorUnsafe(spectator: MercuryClient): void {
-    this.sendJoinGameMessage(spectator);
+    spectator.sendMessageToClient(this._messageRepository.joinGameMessage(this.hostInfo));
+
     this._spectators.push(spectator);
-    this.sendTypeChangeMessage(spectator);
+    spectator.sendMessageToClient(this._messageRepository.typeChangeMessage(spectator.position, spectator.host));
 
     this.clients.forEach((_client: MercuryClient) => {
-      const playerEnterMessage = this.preparePlayerEnterMessage(_client);
-      spectator.sendMessageToClient(
-        Buffer.from(playerEnterMessage.toFullPayload()),
-      );
+      const playerEnterMessageBuffer = this._messageRepository.playerEnterMessage(_client.name, _client.position);
+      spectator.sendMessageToClient(playerEnterMessageBuffer);
       if (_client.deck) {
-        const playerChangeMessage = this.preparePlayerChangeMessage(_client);
-        spectator.sendMessageToClient(
-          Buffer.from(playerChangeMessage.toFullPayload()),
-        );
+        const state = _client.isReady ? PlayerChangeState.READY : PlayerChangeState.NOTREADY;
+        spectator.sendMessageToClient(this._messageRepository.playerChangeMessage(_client.position, state));
       }
     });
 
@@ -433,14 +432,12 @@ export class YGOProRoom extends YgoRoom {
     this.removePlayerUnsafe(player);
     this._spectators.push(player);
 
-    const playerChangeMessage = this.preparePlayerChangeMessage(
-      player,
-      PlayerChangeState.OBSERVE,
-    );
-    this.broadcastToAll(Buffer.from(playerChangeMessage.toFullPayload()));
+    const playerChangeMessageBuffer = this._messageRepository.playerChangeMessage(player.position, PlayerChangeState.OBSERVE);
+    this.broadcastToAll(playerChangeMessageBuffer);
+
     player.spectatorPosition(NetPlayerType.OBSERVER);
     player.notReady();
-    this.sendTypeChangeMessage(player);
+    player.sendMessageToClient(this._messageRepository.typeChangeMessage(player.position, player.host));
     this.sendSpectatorCount({ enqueue: false });
   }
 
@@ -455,10 +452,10 @@ export class YGOProRoom extends YgoRoom {
     player.playerPosition(place.position, place.team);
     player.notReady();
 
-    const playerEnterMessage = this.preparePlayerEnterMessage(player);
-    this.broadcastToAll(Buffer.from(playerEnterMessage.toFullPayload()));
+    const playerEnterMessageBuffer = this._messageRepository.playerEnterMessage(player.name, player.position);
+    this.broadcastToAll(playerEnterMessageBuffer);
 
-    this.sendTypeChangeMessage(player);
+    player.sendMessageToClient(this._messageRepository.typeChangeMessage(player.position, player.host));
     this.sendSpectatorCount({ enqueue: false });
   }
 
@@ -468,10 +465,10 @@ export class YGOProRoom extends YgoRoom {
       return;
     }
     player.notReady();
-    this.sendPlayerChangeMessage(player, nextPlace.position);
-    this.sendPlayerChangeMessage(player, PlayerChangeState.NOTREADY);
+    player.sendMessageToClient(this._messageRepository.playerChangeMessage(player.position, nextPlace.position));
+    player.sendMessageToClient(this._messageRepository.playerChangeMessage(player.position, PlayerChangeState.NOTREADY));
     player.playerPosition(nextPlace.position, nextPlace.team);
-    this.sendTypeChangeMessage(player);
+    player.sendMessageToClient(this._messageRepository.typeChangeMessage(player.position, player.host));
   }
 
   setDecksToPlayer(position: number, deck: YGOProDeck): void {
@@ -489,8 +486,8 @@ export class YGOProRoom extends YgoRoom {
 
     client.ready();
     client.saveDeck(deck);
-    const message = this.preparePlayerChangeMessage(client);
-    this.broadcastToAll(Buffer.from(message.toFullPayload()));
+    const message = this._messageRepository.typeChangeMessage(client.position, client.host);
+    this.broadcastToAll(message);
   }
 
   notReadyUnsafe(player: MercuryClient): void {
@@ -499,7 +496,7 @@ export class YGOProRoom extends YgoRoom {
     }
     player.clearDeck();
     player.notReady();
-    this.sendPlayerChangeMessage(player);
+    player.sendMessageToClient(this._messageRepository.playerChangeMessage(player.position, PlayerChangeState.NOTREADY));
   }
 
   sendPreviousDuelsHistoricalMessages(spectator: MercuryClient): void {
@@ -584,17 +581,12 @@ export class YGOProRoom extends YgoRoom {
     player.socket.removeAllListeners();
     player.setSocket(socket);
     player.reconnecting();
-    this.sendJoinGameMessage(player);
+    player.sendMessageToClient(this._messageRepository.joinGameMessage(this.hostInfo))
     const type = player.host ? player.position | 0x10 : player.position;
-    const typeChangeMessage = new YGOProStocTypeChange().fromPartial({
-      type,
-    });
-    player.sendMessageToClient(Buffer.from(typeChangeMessage.toFullPayload()));
-    this._players.forEach((_client: MercuryClient) => {
-      const playerEnterMessage = this.preparePlayerEnterMessage(_client);
-      player.sendMessageToClient(
-        Buffer.from(playerEnterMessage.toFullPayload()),
-      );
+    player.sendMessageToClient(this._messageRepository.typeChangeMessageFromType(type));
+    this._players.forEach((_player: MercuryClient) => {
+      const playerEnterMessageBuffer = this._messageRepository.playerEnterMessage(_player.name, _player.position);
+      player.sendMessageToClient(playerEnterMessageBuffer);
     });
   }
 
@@ -694,47 +686,20 @@ export class YGOProRoom extends YgoRoom {
     this._state = DuelState.WAITING;
   }
 
-  sendSpectatorCount({ enqueue = false }: { enqueue: boolean }): void {
-    const message = new YGOProStocHsWatchChange().fromPartial({
-      watch_count: this.spectators.length,
-    });
+  get messageSender(): MessageRepository {
+    return this._messageRepository;
+  }
 
+  sendSpectatorCount({ enqueue = false }: { enqueue: boolean }): void {
+    const message = this._messageRepository.watchChangeMessage(this._spectators.length);
     if (!enqueue) {
-      this.broadcastToAll(Buffer.from(message.toFullPayload()));
+      this.broadcastToAll(message);
 
       return;
     }
     this.mutex.runExclusive(() => {
-      this.broadcastToAll(Buffer.from(message.toFullPayload()));
+      this.broadcastToAll(message);
     });
-  }
-
-  private sendTypeChangeMessage(client: MercuryClient): void {
-    const message = new YGOProStocTypeChange().fromPartial({
-      playerPosition: client.position,
-      isHost: client.host,
-    });
-    client.sendMessageToClient(Buffer.from(message.toFullPayload()));
-  }
-
-  private sendPlayerChangeMessage(
-    client: MercuryClient,
-    playerState?: PlayerChangeState | number,
-  ): void {
-    const message = this.preparePlayerChangeMessage(client, playerState);
-    client.sendMessageToClient(Buffer.from(message.toFullPayload()));
-  }
-
-  private sendJoinGameMessage(client: MercuryClient): void {
-    const message = new YGOProStocJoinGame().fromPartial({
-      info: {
-        ...this.hostInfo,
-        lflist: 0,
-        mode: this.mode,
-      },
-    });
-
-    client.sendMessageToClient(Buffer.from(message.toFullPayload()));
   }
 
   private broadcastToAll(message: Buffer): void {
@@ -743,36 +708,6 @@ export class YGOProRoom extends YgoRoom {
     });
     this._spectators.forEach((client: MercuryClient) => {
       client.sendMessageToClient(message);
-    });
-  }
-
-  private preparePlayerEnterMessage(
-    client: MercuryClient,
-  ): YGOProStocHsPlayerEnter {
-    return new YGOProStocHsPlayerEnter().fromPartial({
-      name: client.name,
-      pos: client.position,
-    });
-  }
-
-  private preparePlayerChangeMessage(
-    client: MercuryClient,
-    playerState?: PlayerChangeState | number,
-  ): YGOProStocHsPlayerChange {
-    if (!playerState) {
-      const playerState = client.isReady
-        ? PlayerChangeState.READY
-        : PlayerChangeState.NOTREADY;
-
-      return new YGOProStocHsPlayerChange().fromPartial({
-        playerPosition: client.position,
-        playerState,
-      });
-    }
-
-    return new YGOProStocHsPlayerChange().fromPartial({
-      playerPosition: client.position,
-      playerState,
     });
   }
 }

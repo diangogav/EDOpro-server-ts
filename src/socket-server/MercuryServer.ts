@@ -13,6 +13,7 @@ import { RoomFinder } from "../shared/room/application/RoomFinder";
 import { TCPClientSocket } from "../shared/socket/domain/TCPClientSocket";
 import { YGOProGameCreatorHandler } from "@ygopro/room/application/YGOProGameCreatorHandler";
 import { YGOProJoinHandler } from "@ygopro/room/application/YGOProJoinHandler";
+import { YGOProMessageRepository } from "@ygopro/room/infrastructure/YGOProMessageRepository";
 
 export class MercuryServer {
 	private readonly server: net.Server;
@@ -39,6 +40,8 @@ export class MercuryServer {
 			this.address = socket.remoteAddress;
 			const ygoClientSocket = new TCPClientSocket(socket);
 			const eventEmitter = new EventEmitter();
+			const messageRepository = new YGOProMessageRepository()
+
 			ygoClientSocket.id = uuidv4();
 
 			const connectionLogger = this.logger.child({
@@ -50,14 +53,15 @@ export class MercuryServer {
 			connectionLogger.info("Client connected");
 
 			const createGameListener = () => {
-				new YGOProGameCreatorHandler(eventEmitter, connectionLogger);
+				new YGOProGameCreatorHandler(eventEmitter, connectionLogger, messageRepository);
 			};
 			const joinGameListener = () => {
 				new YGOProJoinHandler(
 					eventEmitter,
 					connectionLogger,
 					ygoClientSocket,
-					this.checkIfUserCanJoin
+					this.checkIfUserCanJoin,
+					messageRepository,
 				);
 			};
 

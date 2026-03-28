@@ -16,23 +16,27 @@ import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoM
 import { YGOProRoom } from "../domain/YGOProRoom";
 import YGOProRoomList from "../infrastructure/MercuryRoomList";
 import { YGOProCtosJoinGame } from "ygopro-msg-encode";
+import { MessageRepository } from "@shared/messages/MessageRepository";
 
 export class YGOProJoinHandler implements JoinMessageHandler {
 	private readonly logger: Logger;
 	private readonly socket: ISocket;
 	private readonly eventEmitter: EventEmitter;
 	private readonly checkIfUserCanJoin: CheckIfUseCanJoin;
+	private readonly messageRepository: MessageRepository;
 
 	constructor(
 		eventEmitter: EventEmitter,
 		logger: Logger,
 		socket: ISocket,
-		checkIfUserCanJoin: CheckIfUseCanJoin
+		checkIfUserCanJoin: CheckIfUseCanJoin,
+		messageRepository: MessageRepository
 	) {
 		this.logger = logger.child({ file: "MercuryJoinHandler" });
 		this.socket = socket;
 		this.eventEmitter = eventEmitter;
 		this.checkIfUserCanJoin = checkIfUserCanJoin;
+		this.messageRepository = messageRepository;
 		this.eventEmitter.on(
 			Commands.JOIN_GAME as unknown as string,
 			(message: ClientMessage) => void this.handleJoinGame(message)
@@ -71,7 +75,8 @@ export class YGOProJoinHandler implements JoinMessageHandler {
 				this.logger,
 				this.eventEmitter,
 				playerInfo,
-				socketId
+				socketId,
+				this.messageRepository,
 			);
 			YGOProRoomList.addRoom(room);
 			room.waiting();

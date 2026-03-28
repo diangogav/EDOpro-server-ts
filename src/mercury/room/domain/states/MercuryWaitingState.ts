@@ -1,23 +1,24 @@
-import { CardTypes } from "@edopro/card/domain/CardTypes";
-import { BanListDeckError } from "@edopro/deck/domain/errors/BanListDeckError";
-import { MainDeckLimitError } from "@edopro/deck/domain/errors/MainDeckLimitError";
-import genesys from "genesys.json";
-import { ErrorMessages } from "src/edopro/messages/server-to-client/error-messages/ErrorMessages";
-import { ErrorClientMessage } from "src/edopro/messages/server-to-client/ErrorClientMessage";
-import { UserAuth } from "src/shared/user-auth/application/UserAuth";
-import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 import { EventEmitter } from "stream";
 
-import { PlayerInfoMessage } from "../../../../edopro/messages/client-to-server/PlayerInfoMessage";
-import { Commands } from "../../../../shared/messages/Commands";
-import { ClientMessage } from "../../../../shared/messages/MessageProcessor";
-import { RoomState } from "../../../../edopro/room/domain/RoomState";
-import { YgoClient } from "../../../../shared/client/domain/YgoClient";
-import { Logger } from "../../../../shared/logger/domain/Logger";
-import { ISocket } from "../../../../shared/socket/domain/ISocket";
+import genesys from "genesys.json";
+
+import { UserAuth } from "@shared/user-auth/application/UserAuth";
+import { UserProfile } from "@shared/user-profile/domain/UserProfile";
+
+import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
+import { RoomState } from "@edopro/room/domain/RoomState";
+
+import { Commands } from "@shared/messages/Commands";
+import { ClientMessage } from "@shared/messages/MessageProcessor";
+import { YgoClient } from "@shared/client/domain/YgoClient";
+import { Logger } from "@shared/logger/domain/Logger";
+import { ISocket } from "@shared/socket/domain/ISocket";
+
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { YGOProRoom } from "../YGOProRoom";
+
 import {
+	ErrorMessageType,
 	NetPlayerType,
 	OcgcoreCommonConstants,
 	YGOProCtosUpdateDeck,
@@ -47,7 +48,6 @@ export class MercuryWaitingState extends RoomState {
 			(message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
 				void this.tryStartHandler.bind(this)(message, room, client),
 		);
-
 		this.eventEmitter.on(
 			Commands.OBSERVER as unknown as string,
 			(message: ClientMessage, room: YGOProRoom, client: YgoClient) =>
@@ -109,8 +109,8 @@ export class MercuryWaitingState extends RoomState {
 			if (room.ranked) {
 				const user = await this.userAuth.run(playerInfoMessage);
 				if (!(user instanceof UserProfile)) {
-					socket.send(user as Buffer);
-					socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
+					socket.send(room.messageSender.errorMessage(ErrorMessageType.JOINERROR));
+
 					return null;
 				}
 				userId = user.id;
@@ -143,10 +143,9 @@ export class MercuryWaitingState extends RoomState {
 			return
 		}
 
-		const duelStartMessage = new YGOProStocDuelStart()
 
 		for (const player of [...room.players, ...room.spectators]) {
-			(player as MercuryClient).sendMessageToClient(Buffer.from(duelStartMessage.toFullPayload()));
+			(player as MercuryClient).sendMessageToClient(room.messageSender.duelStartMessage());
 			room.sendDeckCountMessage(player as MercuryClient);
 		}
 
@@ -161,7 +160,7 @@ export class MercuryWaitingState extends RoomState {
 		player: MercuryClient,
 	): void {
 		room.mutex.runExclusive(() => {
-			player.logger.info(`OBSERVER: ${message.data.toString("hex")}`);
+			player.logger.info(`handleToObserver: ${message.data.toString("hex")}`);
 
 			if (player.isSpectator) {
 				return;
@@ -196,10 +195,10 @@ export class MercuryWaitingState extends RoomState {
 		player: MercuryClient,
 	): Promise<void> {
 		player.logger.info(
-			`MercuryWaitingState UPDATE_DECK: ${message.data.toString("hex")}`,
+			`handleUpdateDeck: ${message.data.toString("hex")}`,
 		);
 
-		if (player.position === NetPlayerType.OBSERVER) {
+		if (!player.isSpectator) {
 			return;
 		}
 
@@ -256,73 +255,73 @@ export class MercuryWaitingState extends RoomState {
 		return deck;
 	}
 
-	private async validateGenesysDeck(
-		deck: number[],
-		client: MercuryClient,
-		room: YGOProRoom,
-	): Promise<boolean> {
-		let points = 0;
-		for (const code of deck) {
-			const card = await room.cardRepository.findByCode(code.toString());
-			if (!card) {
-				this.logger.info(`Card with code ${code} not found`);
-				this.sendSystemErrorMessage(`Card with code ${code} not found`, client);
-				continue;
-			}
+	// private async validateGenesysDeck(
+	// 	deck: number[],
+	// 	client: MercuryClient,
+	// 	room: YGOProRoom,
+	// ): Promise<boolean> {
+	// 	let points = 0;
+	// 	for (const code of deck) {
+	// 		const card = await room.cardRepository.findByCode(code.toString());
+	// 		if (!card) {
+	// 			this.logger.info(`Card with code ${code} not found`);
+	// 			this.sendSystemErrorMessage(`Card with code ${code} not found`, client);
+	// 			continue;
+	// 		}
 
-			if (card.type & (CardTypes.TYPE_PENDULUM | CardTypes.TYPE_LINK)) {
-				client.sendMessageToClient(
-					new BanListDeckError(Number(card.code)).buffer(),
-				);
-				this.sendSystemErrorMessage(
-					`Pendulum and link cards not allowed: ${card.code}`,
-					client,
-				);
+	// 		if (card.type & (CardTypes.TYPE_PENDULUM | CardTypes.TYPE_LINK)) {
+	// 			client.sendMessageToClient(
+	// 				new BanListDeckError(Number(card.code)).buffer(),
+	// 			);
+	// 			this.sendSystemErrorMessage(
+	// 				`Pendulum and link cards not allowed: ${card.code}`,
+	// 				client,
+	// 			);
 
-				return false;
-			}
+	// 			return false;
+	// 		}
 
-			if (card.variant === 8) {
-				client.sendMessageToClient(
-					new BanListDeckError(Number(card.code)).buffer(),
-				);
-				this.sendSystemErrorMessage(
-					`Unofficial cards not alloweds: ${card.code}`,
-					client,
-				);
+	// 		if (card.variant === 8) {
+	// 			client.sendMessageToClient(
+	// 				new BanListDeckError(Number(card.code)).buffer(),
+	// 			);
+	// 			this.sendSystemErrorMessage(
+	// 				`Unofficial cards not alloweds: ${card.code}`,
+	// 				client,
+	// 			);
 
-				return false;
-			}
+	// 			return false;
+	// 		}
 
-			const cardPoints =
-				this.genesysMap.get(card.code) ??
-				(card.alias ? this.genesysMap.get(card.alias) : 0) ??
-				0;
+	// 		const cardPoints =
+	// 			this.genesysMap.get(card.code) ??
+	// 			(card.alias ? this.genesysMap.get(card.alias) : 0) ??
+	// 			0;
 
-			points = points + cardPoints;
-		}
+	// 		points = points + cardPoints;
+	// 	}
 
-		if (points > room.hostInfo.max_deck_points) {
-			this.sendSystemErrorMessage(
-				`Deck points limit exceeded: ${points} of ${room.hostInfo.max_deck_points}`,
-				client,
-			);
-			client.sendMessageToClient(
-				new MainDeckLimitError(
-					points,
-					0,
-					room.hostInfo.max_deck_points,
-				).buffer(),
-			);
+	// 	if (points > room.hostInfo.max_deck_points) {
+	// 		this.sendSystemErrorMessage(
+	// 			`Deck points limit exceeded: ${points} of ${room.hostInfo.max_deck_points}`,
+	// 			client,
+	// 		);
+	// 		client.sendMessageToClient(
+	// 			new MainDeckLimitError(
+	// 				points,
+	// 				0,
+	// 				room.hostInfo.max_deck_points,
+	// 			).buffer(),
+	// 		);
 
-			return false;
-		}
+	// 		return false;
+	// 	}
 
-		this.sendSystemMessage(
-			`Genesys deck valid: ${points} / ${room.hostInfo.max_deck_points}`,
-			client,
-		);
+	// 	this.sendSystemMessage(
+	// 		`Genesys deck valid: ${points} / ${room.hostInfo.max_deck_points}`,
+	// 		client,
+	// 	);
 
-		return true;
-	}
+	// 	return true;
+	// }
 }
