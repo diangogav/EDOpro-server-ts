@@ -1,11 +1,11 @@
 import { MessageProcessor } from "../shared/messages/MessageProcessor";
 import { MercuryClient } from "./client/domain/MercuryClient";
-import { MercuryRoom } from "./room/domain/MercuryRoom";
+import { YGOProRoom } from "./room/domain/YGOProRoom";
 
 export class SimpleRoomMessageEmitter {
 	private readonly messageProcessor: MessageProcessor;
 
-	constructor(private readonly client: MercuryClient, private readonly room: MercuryRoom) {
+	constructor(private readonly client: MercuryClient, private readonly room: YGOProRoom) {
 		this.messageProcessor = new MessageProcessor();
 	}
 

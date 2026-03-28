@@ -13,8 +13,8 @@ import { JoinMessageHandler } from "@shared/room/domain/JoinMessageHandler";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
 
-import { MercuryRoom } from "../domain/MercuryRoom";
-import MercuryRoomList from "../infrastructure/MercuryRoomList";
+import { YGOProRoom } from "../domain/YGOProRoom";
+import YGOProRoomList from "../infrastructure/MercuryRoomList";
 import { YGOProCtosJoinGame } from "ygopro-msg-encode";
 
 export class YGOProJoinHandler implements JoinMessageHandler {
@@ -62,10 +62,10 @@ export class YGOProJoinHandler implements JoinMessageHandler {
 		name: string,
 		playerInfo: PlayerInfoMessage,
 		socketId: string
-	): MercuryRoom {
-		const existingRoom = MercuryRoomList.findByName(name);
+	): YGOProRoom {
+		const existingRoom = YGOProRoomList.findByName(name);
 		if (!existingRoom) {
-			const room = MercuryRoom.create(
+			const room = YGOProRoom.create(
 				generateUniqueId(),
 				name,
 				this.logger,
@@ -73,7 +73,7 @@ export class YGOProJoinHandler implements JoinMessageHandler {
 				playerInfo,
 				socketId
 			);
-			MercuryRoomList.addRoom(room);
+			YGOProRoomList.addRoom(room);
 			room.waiting();
 
 			return room;

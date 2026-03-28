@@ -1,25 +1,25 @@
-import { MercuryRoom } from "../domain/MercuryRoom";
+import { YGOProRoom } from "../domain/YGOProRoom";
 
-const rooms: MercuryRoom[] = [];
+const rooms: YGOProRoom[] = [];
 
 export default {
-	addRoom(room: MercuryRoom): void {
+	addRoom(room: YGOProRoom): void {
 		rooms.push(room);
 	},
 
-	getRooms(): MercuryRoom[] {
+	getRooms(): YGOProRoom[] {
 		return rooms;
 	},
 
-	findByName(name: string): MercuryRoom | null {
+	findByName(name: string): YGOProRoom | null {
 		return rooms.find((room) => room.name === name) ?? null;
 	},
 
-	findById(id: number): MercuryRoom | null {
+	findById(id: number): YGOProRoom | null {
 		return rooms.find((room) => room.id === id) ?? null;
 	},
 
-	deleteRoom(room: MercuryRoom): void {
+	deleteRoom(room: YGOProRoom): void {
 		const index = rooms.findIndex((item) => item.id === room.id);
 		if (index !== -1) {
 			rooms.splice(index, 1);

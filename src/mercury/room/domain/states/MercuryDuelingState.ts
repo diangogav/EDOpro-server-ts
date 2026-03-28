@@ -14,7 +14,7 @@ import { Logger } from "../../../../shared/logger/domain/Logger";
 import { DuelState } from "../../../../shared/room/domain/YgoRoom";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
-import { MercuryRoom } from "../MercuryRoom";
+import { YGOProRoom } from "../YGOProRoom";
 import { getMessageIdentifier } from "../../../utils/response-time-utils";
 
 import {
@@ -39,7 +39,7 @@ export class MercuryDuelingState extends RoomState {
 	private readonly ocgCore: OCGCore;
 
 	constructor(
-		private readonly room: MercuryRoom,
+		private readonly room: YGOProRoom,
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
 	) {
@@ -50,49 +50,49 @@ export class MercuryDuelingState extends RoomState {
 		this.eventBus = container.get(EventBus);
 		this.eventEmitter.on(
 			"DUEL_END",
-			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
+			(message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
 				this.handleDuelEnd.bind(this)(message, room, client),
 		);
 
 		this.eventEmitter.on(
 			"JOIN",
-			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
+			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
 				void this.handleJoin.bind(this)(message, room, socket),
 		);
 
 		this.eventEmitter.on(
 			"GAME_MSG",
-			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
+			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
 				void this.handleGameMessage.bind(this)(message, room, socket),
 		);
 
 		this.eventEmitter.on(
 			"FIELD_FINISH",
-			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
+			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
 				void this.handleFieldFinish.bind(this)(message, room, socket),
 		);
 
 		this.eventEmitter.on(
 			"TIME_LIMIT",
-			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
+			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
 				void this.handleTimeLimit.bind(this)(message, room, socket),
 		);
 
 		this.eventEmitter.on(
 			Commands.UPDATE_DECK as unknown as string,
-			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
+			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
 				void this.handleUpdateDeck.bind(this)(message, room, socket),
 		);
 
 		this.eventEmitter.on(
 			Commands.TIME_CONFIRM as unknown as string,
-			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
+			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
 				void this.handleTimeConfirm.bind(this)(message, room, socket),
 		);
 
 		this.eventEmitter.on(
 			Commands.RESPONSE as unknown as string,
-			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
+			(message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
 				void this.handleResponse.bind(this)(message, room, client),
 		);
 	}
@@ -201,7 +201,7 @@ export class MercuryDuelingState extends RoomState {
 
 	private handleDuelEnd(
 		_message: ClientMessage,
-		_room: MercuryRoom,
+		_room: YGOProRoom,
 		player: MercuryClient,
 	): void {
 		player.logger.info("MercuryDuelingState: DUEL_END");
@@ -209,7 +209,7 @@ export class MercuryDuelingState extends RoomState {
 
 	private handleJoin(
 		message: ClientMessage,
-		room: MercuryRoom,
+		room: YGOProRoom,
 		socket: ISocket,
 	): void {
 		this.logger.info("JOIN");
@@ -243,7 +243,7 @@ export class MercuryDuelingState extends RoomState {
 
 	private handleGameMessage(
 		message: ClientMessage,
-		room: MercuryRoom,
+		room: YGOProRoom,
 		player: MercuryClient,
 	): void {
 		player.logger.info(
@@ -268,7 +268,7 @@ export class MercuryDuelingState extends RoomState {
 
 	private handleFieldFinish(
 		_message: ClientMessage,
-		_room: MercuryRoom,
+		_room: YGOProRoom,
 		player: MercuryClient,
 	): void {
 		if (player.cache) {
@@ -279,7 +279,7 @@ export class MercuryDuelingState extends RoomState {
 
 	private async handleUpdateDeck(
 		message: ClientMessage,
-		_room: MercuryRoom,
+		_room: YGOProRoom,
 		player: MercuryClient,
 	): Promise<void> {
 		player.logger.info("MercuryDuelingState: UPDATE_DECK");
@@ -318,7 +318,7 @@ export class MercuryDuelingState extends RoomState {
 
 	private handleTimeConfirm(
 		_message: ClientMessage,
-		_room: MercuryRoom,
+		_room: YGOProRoom,
 		player: MercuryClient,
 	): void {
 		player.logger.info("MercuryDuelingState: TIME_CONFIRM");
@@ -326,7 +326,7 @@ export class MercuryDuelingState extends RoomState {
 
 	private handleTimeLimit(
 		_message: ClientMessage,
-		_room: MercuryRoom,
+		_room: YGOProRoom,
 		player: MercuryClient,
 	): void {
 		player.logger.info("MercuryDuelingState: TIME_LIMIT");
@@ -334,7 +334,7 @@ export class MercuryDuelingState extends RoomState {
 
 	private async handleResponse(
 		message: ClientMessage,
-		room: MercuryRoom,
+		room: YGOProRoom,
 		player: MercuryClient,
 	): Promise<void> {
 		player.logger.info("MercuryDuelingState: handleResponse");

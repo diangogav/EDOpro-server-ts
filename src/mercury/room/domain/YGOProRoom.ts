@@ -1,24 +1,22 @@
-import { CardSQLiteTYpeORMRepository } from "@edopro/card/infrastructure/sqlite/CardSQLiteTYpeORMRepository";
-import { spawn } from "child_process";
-import net from "net";
-import BanListMemoryRepository from "src/edopro/ban-list/infrastructure/BanListMemoryRepository";
-import { Team } from "src/shared/room/Team";
-import { UserAuth } from "src/shared/user-auth/application/UserAuth";
-import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { EventEmitter } from "stream";
 
-import { PlayerInfoMessage } from "../../../edopro/messages/client-to-server/PlayerInfoMessage";
-import { RoomState } from "../../../edopro/room/domain/RoomState";
-import { Logger } from "../../../shared/logger/domain/Logger";
-import { DuelState, YgoRoom } from "../../../shared/room/domain/YgoRoom";
+import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
+import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
+import { RoomState } from "@edopro/room/domain/RoomState";
+
+import { Team } from "@shared/room/Team";
+import { UserAuth } from "@shared/user-auth/application/UserAuth";
+import { UserProfilePostgresRepository } from "@shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
+import { Logger } from "@shared/logger/domain/Logger";
+import { DuelState, YgoRoom } from "@shared/room/domain/YgoRoom";
+import { RoomType } from "@shared/room/domain/RoomType";
+
+import { generateSeed } from "@ygopro/utils/generate-seed";
+import { shuffleDecksBySeed } from "@ygopro/utils/shuffle-decks-by-seed";
+import { calculateOcgcoreDeck } from "@ygopro/utils/calculate-ocgcore-deck";
+
 import MercuryBanListMemoryRepository from "../../ban-list/infrastructure/MercuryBanListMemoryRepository";
 import { MercuryClient } from "../../client/domain/MercuryClient";
-import {
-  MercuryJointGameToCoreMessage,
-  MercuryPlayerInfoToCoreMessage,
-  MercuryToObserverToCoreMessage,
-} from "../../messages/server-to-core";
-import MercuryRoomList from "../infrastructure/MercuryRoomList";
 import {
   formatRuleMappings,
   priorityRuleMappings,
@@ -29,8 +27,9 @@ import { MercuryDuelingState } from "./states/MercuryDuelingState";
 import { MercuryRockPaperScissorState } from "./states/MercuryRockPaperScissorsState";
 import { MercurySideDeckingState } from "./states/MercurySideDeckingState";
 import { MercuryWaitingState } from "./states/MercuryWaitingState";
-import { RoomType } from "src/shared/room/domain/RoomType";
 import { YGOProResourceLoader } from "../../ygopro/YGOProResourceLoader";
+import { HostInfo } from "./host-info/HostInfo";
+
 import {
   GameMode,
   NetPlayerType,
@@ -45,13 +44,10 @@ import {
   YGOProStocTypeChange,
 } from "ygopro-msg-encode";
 import { YGOProYrp } from 'ygopro-yrp-encode';
-import { HostInfo } from "./host-info/HostInfo";
 import { ISocket } from "src/shared/socket/domain/ISocket";
 import YGOProDeck from "ygopro-deck-encode";
 import { DuelRecord } from "./DuelRecord";
-import { generateSeed } from "src/mercury/utils/generate-seed";
-import { shuffleDecksBySeed } from "src/mercury/utils/shuffle-decks-by-seed";
-import { calculateOcgcoreDeck } from "src/mercury/utils/calculate-ocgcore-deck";
+
 
 const BEST_OF = {
   [GameMode.SINGLE]: 1,
@@ -59,19 +55,14 @@ const BEST_OF = {
   [GameMode.TAG]: 1,
 };
 
-export class MercuryRoom extends YgoRoom {
+export class YGOProRoom extends YgoRoom {
   readonly name: string;
   readonly password: string;
   readonly createdBySocketId: string;
-  readonly cardRepository = new CardSQLiteTYpeORMRepository();
   private _logger: Logger;
-  private _coreStarted = false;
-  private _corePort: number | null = null;
   private _banListHash: number;
   private _edoBanListHash: number;
-  private _joinBuffer: Buffer | null = null;
   private roomState: RoomState | null = null;
-  private _route = "mercury";
   private _isPositionSwapped: boolean = false;
   private _duelRecords: DuelRecord[] = [];
   private _currentDuelRecord: DuelRecord;
@@ -128,9 +119,9 @@ export class MercuryRoom extends YgoRoom {
     emitter: EventEmitter,
     playerInfo: PlayerInfoMessage,
     createdBySocketId: string,
-  ): MercuryRoom {
+  ): YGOProRoom {
     let hostInfo: HostInfo = {
-      lflist: MercuryBanListMemoryRepository.getLastTCGIndex(),
+      lflist: MercuryBanListMemoryRepository.getFirstTCGIndex(),
       rule: 1,
       mode: GameMode.SINGLE,
       duel_rule: 5,
@@ -200,7 +191,7 @@ export class MercuryRoom extends YgoRoom {
 
     const teamCount = hostInfo.mode === GameMode.TAG ? 2 : 1;
     const ranked = Boolean(playerInfo.password);
-    const room = new MercuryRoom({
+    const room = new YGOProRoom({
       id,
       hostInfo,
       name: command,
@@ -215,40 +206,6 @@ export class MercuryRoom extends YgoRoom {
 
     room._logger = logger.child({ file: "MercuryRoom" });
     room.emitter = emitter;
-
-    const routes = {
-      edison: "mercury/alternatives/edison",
-      hat: "mercury/alternatives/hat",
-      goat: "mercury/alternatives/goat",
-      tengu: "mercury/alternatives/tengu",
-      md: "mercury/alternatives/md",
-      jtp: "mercury/alternatives/jtp",
-      gx: "mercury/alternatives/gx",
-      mdc: "mercury/alternatives/mdc",
-      rush: "mercury/alternatives/rush",
-      speed: "mercury/alternatives/speed",
-      world: "mercury/alternatives/world",
-      pre: "mercury/pre-releases/tcg",
-      ocg: "mercury/ocg",
-      ocgpre: "mercury/pre-releases/ocg",
-      tcgpre: "mercury/pre-releases/tcg",
-      ocgart: "mercury/pre-releases/ocg",
-      tcgart: "mercury/pre-releases/tcg",
-      ot: "mercury/ocg",
-      otto: "mercury/ocg",
-      genesys: "mercury/alternatives/genesys",
-    };
-
-    const genesysRegex = /^g\d*$/;
-    options.forEach((option) => {
-      if (option.startsWith("genesys") || genesysRegex.test(option)) {
-        room._route = routes["genesys"];
-
-        return;
-      }
-
-      room._route = routes[option] ?? room._route;
-    });
 
     return room;
   }
@@ -426,7 +383,7 @@ export class MercuryRoom extends YgoRoom {
 
     this.sendTypeChangeMessage(client);
 
-    [...this._players, ...this.spectators].forEach((_client: MercuryClient) => {
+    this.clients.forEach((_client: MercuryClient) => {
       const playerEnterMessage = this.preparePlayerEnterMessage(_client);
       client.sendMessageToClient(
         Buffer.from(playerEnterMessage.toFullPayload()),
@@ -440,7 +397,7 @@ export class MercuryRoom extends YgoRoom {
     });
 
     const playerEnterMessage = this.preparePlayerEnterMessage(client);
-    [...this._players, ...this.spectators].forEach((_client: MercuryClient) => {
+    this.clients.forEach((_client: MercuryClient) => {
       if (_client !== client) {
         _client.sendMessageToClient(
           Buffer.from(playerEnterMessage.toFullPayload()),
@@ -456,7 +413,7 @@ export class MercuryRoom extends YgoRoom {
     this._spectators.push(spectator);
     this.sendTypeChangeMessage(spectator);
 
-    [...this._players, ...this.spectators].forEach((_client: MercuryClient) => {
+    this.clients.forEach((_client: MercuryClient) => {
       const playerEnterMessage = this.preparePlayerEnterMessage(_client);
       spectator.sendMessageToClient(
         Buffer.from(playerEnterMessage.toFullPayload()),
@@ -566,7 +523,6 @@ export class MercuryRoom extends YgoRoom {
     return this._currentDuelRecord.toYrp(this);
   }
 
-
   sendDeckCountMessage(client: MercuryClient): void {
     const toDeckCount = (deck: YGOProDeck | null) => {
       const message = new YGOProStocDeckCount_DeckInfo();
@@ -663,97 +619,6 @@ export class MercuryRoom extends YgoRoom {
     return this.isTag ? 1 : 0;
   }
 
-  startCore(): void {
-    this._logger.debug("Starting Mercury Core");
-    const core = spawn(
-      "./ygopro",
-      [
-        "0",
-        this._hostInfo.lflist.toString(),
-        this._hostInfo.rule.toString(),
-        this._hostInfo.mode.toString(),
-        this._hostInfo.duel_rule.toString(),
-        this._hostInfo.no_check_deck ? "T" : "F",
-        this._hostInfo.no_shuffle_deck ? "T" : "F",
-        this._hostInfo.start_lp.toString(),
-        this._hostInfo.start_hand.toString(),
-        this._hostInfo.draw_count.toString(),
-        this._hostInfo.time_limit.toString(),
-        "2", //REPLAY MODE
-        this.bestOf.toString(),
-      ],
-      {
-        cwd: this._route,
-      },
-    );
-
-    core.on("error", (error) => {
-      this._logger.error("Error running mercury core");
-      this._logger.error(error);
-    });
-
-    core.on("exit", (code, signal) => {
-      this._logger.debug(
-        `Core closed for room ${this.id} with code: ${code} and signal: ${signal} `,
-      );
-
-      MercuryRoomList.deleteRoom(this);
-    });
-
-    core.stdout.setEncoding("utf8");
-    core.stdout.once("data", (data: Buffer) => {
-      this._logger.debug(`Started Mercury Core at port: ${data.toString()}`);
-      this._coreStarted = true;
-      this._corePort = +data.toString();
-      this._players.forEach((client: MercuryClient) => {
-        client.connectToCore({
-          url: "127.0.0.1",
-          port: +data.toString(),
-        });
-      });
-
-      const watch = net.connect(this._corePort, "127.0.0.1", () => {
-        this._logger.debug("Connected to watch");
-        watch.write(MercuryPlayerInfoToCoreMessage.create("the Big Brother"));
-        watch.write(MercuryJointGameToCoreMessage.create("the Big Brother"));
-        watch.write(MercuryToObserverToCoreMessage.create());
-      });
-
-      watch.on("data", (data: Buffer) => {
-        this._logger.debug(
-          `Incoming data for spectators: ${data.toString("hex")}`,
-        );
-        this.spectatorCache.push(data);
-        this._spectators.forEach((spectator: MercuryClient) => {
-          if (spectator.needSpectatorMessages) {
-            spectator.socket.send(data);
-          }
-        });
-      });
-
-      watch.on("error", (error) => {
-        this._logger.error("Error connecting watch at mercury room");
-        this._logger.error(error);
-      });
-    });
-
-    core.stderr.on("data", (data: Buffer) => {
-      this._logger.error(`Error data at mercury core: ${data.toString()}`);
-    });
-  }
-
-  get joinBuffer(): Buffer | null {
-    return this._joinBuffer;
-  }
-
-  get isGenesys(): boolean {
-    return this._route === "mercury/alternatives/genesys";
-  }
-
-  get folderRoute(): string {
-    return this._route;
-  }
-
   setBanListHash(banListHash: number): void {
     this._banListHash = banListHash;
 
@@ -823,11 +688,6 @@ export class MercuryRoom extends YgoRoom {
 
   get edoBanListHash(): number {
     return this._edoBanListHash;
-  }
-
-  // Response handling for duel
-  addResponse(_responseBuffer: Buffer): void {
-    // TODO: Implement response recording for duel replay
   }
 
   setDuelFinished(): void {

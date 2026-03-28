@@ -12,7 +12,7 @@ import { Logger } from "../../../../shared/logger/domain/Logger";
 import { DuelStartClientMessage } from "../../../../shared/messages/server-to-client/DuelStartClientMessage";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
-import { MercuryRoom } from "../MercuryRoom";
+import { YGOProRoom } from "../YGOProRoom";
 import { ErrorMessageType, NetPlayerType, OcgcoreCommonConstants, YGOProCtosUpdateDeck, YGOProStocChangeSide, YGOProStocDuelStart, YGOProStocErrorMsg, YGOProStocSelectTp, YGOProStocWaitingSide } from "ygopro-msg-encode";
 import YGOProDeck from "ygopro-deck-encode";
 import { checkChangeSide } from "src/mercury/utils/check-deck";
@@ -23,13 +23,13 @@ export class MercurySideDeckingState extends RoomState {
 		this.logger = logger.child({ file: "MercurySideDeckingState" });
 		this.eventEmitter.on(
 			"JOIN",
-			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
+			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
 				void this.handleJoin.bind(this)(message, room, socket)
 		);
 
 		this.eventEmitter.on(
 			Commands.UPDATE_DECK as unknown as string,
-			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
+			(message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
 				void this.handleUpdateDeck.bind(this)(message, room, client)
 		);
 
@@ -40,7 +40,7 @@ export class MercurySideDeckingState extends RoomState {
 		);
 	}
 
-	private handleJoin(message: ClientMessage, room: MercuryRoom, socket: ISocket): void {
+	private handleJoin(message: ClientMessage, room: YGOProRoom, socket: ISocket): void {
 		this.logger.info("JOIN");
 
 		const playerInfoMessage = new PlayerInfoMessage(
@@ -75,7 +75,7 @@ export class MercurySideDeckingState extends RoomState {
 
 	}
 
-	private handleReady(_message: ClientMessage, room: MercuryRoom, player: MercuryClient): void {
+	private handleReady(_message: ClientMessage, room: YGOProRoom, player: MercuryClient): void {
 		player.logger.info("MercurySideDeckingState: READY");
 		if (!player.isReconnecting) {
 			return;
@@ -89,7 +89,7 @@ export class MercurySideDeckingState extends RoomState {
 		player.clearReconnecting();
 	}
 
-	private async handleUpdateDeck(message: ClientMessage, room: MercuryRoom, player: MercuryClient): Promise<void> {
+	private async handleUpdateDeck(message: ClientMessage, room: YGOProRoom, player: MercuryClient): Promise<void> {
 		player.logger.info(
 			`MercuryWaitingState UPDATE_DECK: ${message.data.toString("hex")}`,
 		);
@@ -127,7 +127,7 @@ export class MercurySideDeckingState extends RoomState {
 		room.choosingOrder();
 	}
 
-	private async buildDeck(message: YGOProCtosUpdateDeck, room: MercuryRoom): Promise<YGOProDeck> {
+	private async buildDeck(message: YGOProCtosUpdateDeck, room: YGOProRoom): Promise<YGOProDeck> {
 		const deck = new YGOProDeck({
 			main: [],
 			extra: [],

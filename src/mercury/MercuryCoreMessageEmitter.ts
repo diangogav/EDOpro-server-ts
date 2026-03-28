@@ -3,12 +3,12 @@ import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemo
 import { MessageProcessor } from "../shared/messages/MessageProcessor";
 import { MercuryClient } from "./client/domain/MercuryClient";
 import { MercuryServerToClientMessages } from "./messages/domain/MercuryServerToClientMessages";
-import { MercuryRoom } from "./room/domain/MercuryRoom";
+import { YGOProRoom } from "./room/domain/YGOProRoom";
 
 export class MercuryCoreMessageEmitter {
 	private readonly messageProcessor: MessageProcessor;
 
-	constructor(private readonly client: MercuryClient, private readonly room: MercuryRoom) {
+	constructor(private readonly client: MercuryClient, private readonly room: YGOProRoom) {
 		this.messageProcessor = new MessageProcessor();
 	}
 

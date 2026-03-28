@@ -24,7 +24,7 @@ import {
 import { MayBeArray } from "nfkit";
 
 import { MercuryClient } from "../client/domain/MercuryClient";
-import { MercuryRoom } from "../room/domain/MercuryRoom";
+import { YGOProRoom } from "../room/domain/YGOProRoom";
 import { OcgcoreWorker } from "./ocgcore-worker";
 import { Logger } from "src/shared/logger/domain/Logger";
 import { GameMessageMiddleware } from "../middleware/GameMessageMiddleware";
@@ -66,7 +66,7 @@ export class OCGCore {
   }
 
   constructor(
-    private readonly room: MercuryRoom,
+    private readonly room: YGOProRoom,
     private readonly logger: Logger,
   ) {
     this.ocgcore = null;
@@ -128,7 +128,7 @@ export class OCGCore {
     });
   }
 
-  async init(room: MercuryRoom): Promise<void> {
+  async init(room: YGOProRoom): Promise<void> {
     const extraScriptPaths = [
       "./script/patches/entry.lua",
       "./script/special.lua",

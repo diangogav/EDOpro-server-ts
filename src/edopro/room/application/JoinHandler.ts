@@ -2,7 +2,7 @@ import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoM
 import { EventEmitter } from "stream";
 
 import { config } from "../../../config";
-import { MercuryRoom } from "../../../mercury/room/domain/MercuryRoom";
+import { YGOProRoom } from "../../../mercury/room/domain/YGOProRoom";
 import MercuryRoomList from "../../../mercury/room/infrastructure/MercuryRoomList";
 import { Redis } from "../../../shared/db/redis/infrastructure/Redis";
 import { Logger } from "../../../shared/logger/domain/Logger";
@@ -115,7 +115,7 @@ export class JoinHandler implements JoinMessageHandler {
 		room.emit("JOIN", message, this.socket);
 	}
 
-	private findRoom(joinMessage: JoinGameMessage): MercuryRoom | Room | null {
+	private findRoom(joinMessage: JoinGameMessage): YGOProRoom | Room | null {
 		const room = RoomList.getRooms().find((room) => room.id === joinMessage.id);
 		if (room) {
 			return room;

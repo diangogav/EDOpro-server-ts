@@ -8,7 +8,7 @@ import {
     YGOProMsgWin,
     YGOProStocGameMsg,
 } from 'ygopro-msg-encode';
-import { MercuryRoom } from './MercuryRoom';
+import { YGOProRoom } from './YGOProRoom';
 import { calculateDuelOptions } from 'src/mercury/utils/calculate-duel-options';
 
 // Constants from ygopro
@@ -63,7 +63,7 @@ export class DuelRecord {
         });
     }
 
-    toYrp(room: Pick<MercuryRoom, 'hostInfo' | 'isTag'>) {
+    toYrp(room: Pick<YGOProRoom, 'hostInfo' | 'isTag'>) {
         const isTag = room.isTag;
 
         // Create replay header

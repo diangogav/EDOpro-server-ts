@@ -160,7 +160,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: MercuryBanListMemoryRepository.getLastTCGIndex(),
+				lflist: MercuryBanListMemoryRepository.getFirstTCGIndex(),
 			};
 		},
 		validate: (value) => {
@@ -260,7 +260,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 1,
-				lflist: MercuryBanListMemoryRepository.getLastTCGIndex(),
+				lflist: MercuryBanListMemoryRepository.getFirstTCGIndex(),
 			};
 		},
 		validate: (value) => {
@@ -327,7 +327,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: MercuryBanListMemoryRepository.getLastTCGIndex(),
+				lflist: MercuryBanListMemoryRepository.getFirstTCGIndex(),
 			};
 		},
 		validate: (value) => {
@@ -365,7 +365,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 1,
-				lflist: MercuryBanListMemoryRepository.getLastTCGIndex(),
+				lflist: MercuryBanListMemoryRepository.getFirstTCGIndex(),
 				mode: GameMode.MATCH,
 			};
 		},
@@ -378,7 +378,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: MercuryBanListMemoryRepository.getLastTCGIndex(),
+				lflist: MercuryBanListMemoryRepository.getFirstTCGIndex(),
 				mode: GameMode.MATCH,
 			};
 		},

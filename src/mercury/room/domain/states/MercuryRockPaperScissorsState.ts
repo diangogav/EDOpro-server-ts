@@ -10,7 +10,7 @@ import { Logger } from "../../../../shared/logger/domain/Logger";
 import { DuelStartClientMessage } from "../../../../shared/messages/server-to-client/DuelStartClientMessage";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
-import { MercuryRoom } from "../MercuryRoom";
+import { YGOProRoom } from "../YGOProRoom";
 import {
   HandResult,
   YGOProCtosHandResult,
@@ -31,12 +31,12 @@ export class MercuryRockPaperScissorState extends RoomState {
     this.logger = logger.child({ file: "MercuryRockPaperScissorState" });
     this.eventEmitter.on(
       Commands.RPS_CHOICE as unknown as string,
-      (message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
+      (message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
         this.handleRPSChoice.bind(this)(message, room, client),
     );
     this.eventEmitter.on(
       "JOIN",
-      (message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
+      (message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
         void this.handleJoin.bind(this)(message, room, socket),
     );
     this.eventEmitter.on(
@@ -48,7 +48,7 @@ export class MercuryRockPaperScissorState extends RoomState {
 
   private handleJoin(
     message: ClientMessage,
-    room: MercuryRoom,
+    room: YGOProRoom,
     socket: ISocket,
   ): void {
     this.logger.info("JOIN");
@@ -111,7 +111,7 @@ export class MercuryRockPaperScissorState extends RoomState {
 
   private handleRPSChoice(
     message: ClientMessage,
-    room: MercuryRoom,
+    room: YGOProRoom,
     player: MercuryClient,
   ): void {
     player.logger.info(

@@ -7,7 +7,7 @@ import { WatchChangeClientMessage } from "../../../edopro/messages/server-to-cli
 import { Room } from "../../../edopro/room/domain/Room";
 import RoomList from "../../../edopro/room/infrastructure/RoomList";
 import { MercuryClient } from "../../../mercury/client/domain/MercuryClient";
-import { MercuryRoom } from "../../../mercury/room/domain/MercuryRoom";
+import { YGOProRoom } from "../../../mercury/room/domain/YGOProRoom";
 import MercuryRoomList from "../../../mercury/room/infrastructure/MercuryRoomList";
 import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
 import { ISocket } from "../../socket/domain/ISocket";
@@ -32,7 +32,7 @@ export class DisconnectHandler {
 
 			return;
 		}
-		if (room instanceof MercuryRoom) {
+		if (room instanceof YGOProRoom) {
 			this.handleMercury(room);
 
 			return;
@@ -104,7 +104,7 @@ export class DisconnectHandler {
 		}
 	}
 
-	private handleMercury(room: MercuryRoom): void {
+	private handleMercury(room: YGOProRoom): void {
 		if (room.players.every((client) => client.socket.closed)) {
 			MercuryRoomList.deleteRoom(room);
 			WebSocketSingleton.getInstance().broadcast({
@@ -158,7 +158,7 @@ export class DisconnectHandler {
 		}
 	}
 
-	private removeMercurySpectator(room: MercuryRoom): void {
+	private removeMercurySpectator(room: YGOProRoom): void {
 		const spectator = room.spectators.find((client) => client.socket.id === this.socket.id);
 
 		if (!(spectator instanceof MercuryClient)) {

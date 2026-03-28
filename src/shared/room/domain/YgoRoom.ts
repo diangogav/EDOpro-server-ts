@@ -126,6 +126,10 @@ export abstract class YgoRoom {
 		return this._spectators;
 	}
 
+	get clients(): YgoClient[] {
+		return [...this._players, ...this._spectators];
+	}
+
 	async calculatePlace(startPosition?: number): Promise<{ position: number; team: number } | null> {
 		return this.mutex.runExclusive(() => {
 			return this.calculatePlaceUnsafe(startPosition);

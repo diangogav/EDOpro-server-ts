@@ -9,7 +9,7 @@ import { RoomState } from "../../../../edopro/room/domain/RoomState";
 import { Logger } from "../../../../shared/logger/domain/Logger";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
-import { MercuryRoom } from "../MercuryRoom";
+import { YGOProRoom } from "../YGOProRoom";
 import { TurnPlayerResult, YGOProCtosTpResult, YGOProStocDuelStart } from "ygopro-msg-encode";
 
 export class MercuryChoosingOrderState extends RoomState {
@@ -20,17 +20,17 @@ export class MercuryChoosingOrderState extends RoomState {
 
 		this.eventEmitter.on(
 			"JOIN",
-			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
+			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
 				void this.handleJoin.bind(this)(message, room, socket)
 		);
 		this.eventEmitter.on(
 			Commands.TURN_CHOICE as unknown as string,
-			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
+			(message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
 				this.handle.bind(this)(message, room, client)
 		);
 	}
 
-	private handle(message: ClientMessage, room: MercuryRoom, player: MercuryClient): void {
+	private handle(message: ClientMessage, room: YGOProRoom, player: MercuryClient): void {
 		player.logger.info("MercuryChoosingOrderState: CHOOSING_ORDER");
 
 		const data = new YGOProCtosTpResult().fromPayload(message.data);
@@ -40,7 +40,7 @@ export class MercuryChoosingOrderState extends RoomState {
 		room.dueling();
 	}
 
-	private handleJoin(message: ClientMessage, room: MercuryRoom, socket: ISocket): void {
+	private handleJoin(message: ClientMessage, room: YGOProRoom, socket: ISocket): void {
 		this.logger.info("JOIN");
 		this.logger.info("JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);

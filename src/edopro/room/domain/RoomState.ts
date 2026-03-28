@@ -23,7 +23,7 @@ import { ServerMessageClientMessage } from "../../messages/server-to-client/Serv
 import { SpectatorMessageClientMessage } from "../../messages/server-to-client/SpectatorMessageClientMessage";
 import { VersionErrorClientMessage } from "../../messages/server-to-client/VersionErrorClientMessage";
 import { RoomType } from "src/shared/room/domain/RoomType";
-import { MercuryRoom } from "src/mercury/room/domain/MercuryRoom";
+import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
 import { YGOProStocSelectHand } from "ygopro-msg-encode";
 
 export abstract class RoomState {
@@ -225,7 +225,7 @@ export abstract class RoomState {
 	}
 
 
-	protected toRPS(room: MercuryRoom): void {
+	protected toRPS(room: YGOProRoom): void {
 		const team0Player = room.getTeamPlayers(0)[0];
 		const team1Player = room.getTeamPlayers(1)[0];
 		if (!team0Player || !team1Player) {

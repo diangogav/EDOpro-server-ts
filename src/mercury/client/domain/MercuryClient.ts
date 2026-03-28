@@ -8,7 +8,7 @@ import { Team } from "../../../shared/room/Team";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { MercuryCoreMessageEmitter } from "../../MercuryCoreMessageEmitter";
 import { SimpleRoomMessageEmitter } from "../../MercuryRoomMessageEmitter";
-import { MercuryRoom } from "../../room/domain/MercuryRoom";
+import { YGOProRoom } from "../../room/domain/YGOProRoom";
 import YGOProDeck from "ygopro-deck-encode";
 
 export class MercuryClient extends YgoClient {
@@ -39,7 +39,7 @@ export class MercuryClient extends YgoClient {
 		logger: Logger;
 		// messages: Buffer[];
 		position: number;
-		room: MercuryRoom;
+		room: YGOProRoom;
 		host: boolean;
 		id: string | null;
 		team: Team

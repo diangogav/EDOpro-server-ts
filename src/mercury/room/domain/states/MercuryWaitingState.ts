@@ -16,7 +16,7 @@ import { YgoClient } from "../../../../shared/client/domain/YgoClient";
 import { Logger } from "../../../../shared/logger/domain/Logger";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
-import { MercuryRoom } from "../MercuryRoom";
+import { YGOProRoom } from "../YGOProRoom";
 import {
 	NetPlayerType,
 	OcgcoreCommonConstants,
@@ -39,28 +39,28 @@ export class MercuryWaitingState extends RoomState {
 		this.logger = logger.child({ file: "MercuryWaitingState" });
 		this.eventEmitter.on(
 			"JOIN",
-			(message: ClientMessage, room: MercuryRoom, socket: ISocket) =>
+			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
 				void this.handleJoin.bind(this)(message, room, socket),
 		);
 		this.eventEmitter.on(
 			Commands.TRY_START as unknown as string,
-			(message: ClientMessage, room: MercuryRoom, client: MercuryClient) =>
+			(message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
 				void this.tryStartHandler.bind(this)(message, room, client),
 		);
 
 		this.eventEmitter.on(
 			Commands.OBSERVER as unknown as string,
-			(message: ClientMessage, room: MercuryRoom, client: YgoClient) =>
+			(message: ClientMessage, room: YGOProRoom, client: YgoClient) =>
 				void this.handleToObserver.bind(this)(message, room, client),
 		);
 		this.eventEmitter.on(
 			Commands.TO_DUEL as unknown as string,
-			(message: ClientMessage, room: MercuryRoom, client: YgoClient) =>
+			(message: ClientMessage, room: YGOProRoom, client: YgoClient) =>
 				void this.handleToDuel.bind(this)(message, room, client),
 		);
 		this.eventEmitter.on(
 			Commands.UPDATE_DECK as unknown as string,
-			(message: ClientMessage, room: MercuryRoom, client: YgoClient) =>
+			(message: ClientMessage, room: YGOProRoom, client: YgoClient) =>
 				void this.handleUpdateDeck.bind(this)(
 					message,
 					room,
@@ -69,7 +69,7 @@ export class MercuryWaitingState extends RoomState {
 		);
 		this.eventEmitter.on(
 			Commands.NOT_READY as unknown as string,
-			(message: ClientMessage, room: MercuryRoom, client: YgoClient) =>
+			(message: ClientMessage, room: YGOProRoom, client: YgoClient) =>
 				void this.handleNotReady.bind(this)(
 					message,
 					room,
@@ -80,7 +80,7 @@ export class MercuryWaitingState extends RoomState {
 
 	private async handleJoin(
 		message: ClientMessage,
-		room: MercuryRoom,
+		room: YGOProRoom,
 		socket: ISocket,
 	): Promise<void> {
 		this.validateVersion(message.data, socket);
@@ -130,7 +130,7 @@ export class MercuryWaitingState extends RoomState {
 
 	private tryStartHandler(
 		_message: ClientMessage,
-		room: MercuryRoom,
+		room: YGOProRoom,
 		client: MercuryClient,
 	): void {
 		this.logger.info("TRY_START");
@@ -157,7 +157,7 @@ export class MercuryWaitingState extends RoomState {
 
 	private handleToObserver(
 		message: ClientMessage,
-		room: MercuryRoom,
+		room: YGOProRoom,
 		player: MercuryClient,
 	): void {
 		room.mutex.runExclusive(() => {
@@ -175,7 +175,7 @@ export class MercuryWaitingState extends RoomState {
 
 	private handleToDuel(
 		_message: ClientMessage,
-		room: MercuryRoom,
+		room: YGOProRoom,
 		player: MercuryClient,
 	): void {
 		room.mutex.runExclusive(() => {
@@ -192,7 +192,7 @@ export class MercuryWaitingState extends RoomState {
 
 	private async handleUpdateDeck(
 		message: ClientMessage,
-		room: MercuryRoom,
+		room: YGOProRoom,
 		player: MercuryClient,
 	): Promise<void> {
 		player.logger.info(
@@ -227,7 +227,7 @@ export class MercuryWaitingState extends RoomState {
 
 	private async handleNotReady(
 		message: ClientMessage,
-		room: MercuryRoom,
+		room: YGOProRoom,
 		client: MercuryClient,
 	) {
 		room.mutex.runExclusive(() => {
@@ -237,7 +237,7 @@ export class MercuryWaitingState extends RoomState {
 		});
 	}
 
-	private async buildDeck(message: YGOProCtosUpdateDeck, room: MercuryRoom): Promise<YGOProDeck> {
+	private async buildDeck(message: YGOProCtosUpdateDeck, room: YGOProRoom): Promise<YGOProDeck> {
 		const deck = new YGOProDeck({
 			main: [],
 			extra: [],
@@ -259,7 +259,7 @@ export class MercuryWaitingState extends RoomState {
 	private async validateGenesysDeck(
 		deck: number[],
 		client: MercuryClient,
-		room: MercuryRoom,
+		room: YGOProRoom,
 	): Promise<boolean> {
 		let points = 0;
 		for (const code of deck) {
