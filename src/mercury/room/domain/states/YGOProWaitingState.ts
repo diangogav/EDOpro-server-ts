@@ -4,7 +4,6 @@ import { UserAuth } from "@shared/user-auth/application/UserAuth";
 import { UserProfile } from "@shared/user-profile/domain/UserProfile";
 
 import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
-import { RoomState } from "@edopro/room/domain/RoomState";
 
 import { Commands } from "@shared/messages/Commands";
 import { ClientMessage } from "@shared/messages/MessageProcessor";
@@ -20,8 +19,9 @@ import {
 	YGOProCtosUpdateDeck,
 } from "ygopro-msg-encode";
 import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
+import { YGOProRoomState } from "../YGOProRoomState";
 
-export class YGOProWaitingState extends RoomState {
+export class YGOProWaitingState extends YGOProRoomState {
 	constructor(
 		private readonly userAuth: UserAuth,
 		eventEmitter: EventEmitter,

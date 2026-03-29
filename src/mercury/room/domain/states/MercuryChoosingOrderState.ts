@@ -31,7 +31,7 @@ export class MercuryChoosingOrderState extends RoomState {
 	}
 
 	private handle(message: ClientMessage, room: YGOProRoom, player: MercuryClient): void {
-		player.logger.info("MercuryChoosingOrderState: CHOOSING_ORDER");
+		player.logger.info("handle");
 
 		const data = new YGOProCtosTpResult().fromPayload(message.data);
 		const turn = data.res;

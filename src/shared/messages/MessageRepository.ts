@@ -9,4 +9,7 @@ export abstract class MessageRepository {
     abstract playerEnterMessage(name: string, position: number): Buffer;
     abstract playerChangeMessage(position: number, state: number): Buffer;
     abstract watchChangeMessage(watchCount: number): Buffer;
+    abstract selectHandMessage(): Buffer;
+    abstract selectTpMessage(): Buffer;
+    abstract handResultMessage(response1: number, response2: number): Buffer;
 }

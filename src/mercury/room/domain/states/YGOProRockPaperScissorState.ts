@@ -3,24 +3,17 @@ import EventEmitter from "events";
 import { PlayerInfoMessage } from "../../../../edopro/messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../../shared/messages/Commands";
 import { ClientMessage } from "../../../../shared/messages/MessageProcessor";
-import { RPSChooseClientMessage } from "../../../../edopro/messages/server-to-client/RPSChooseClientMessage";
-import { Room } from "../../../../edopro/room/domain/Room";
-import { RoomState } from "../../../../edopro/room/domain/RoomState";
 import { Logger } from "../../../../shared/logger/domain/Logger";
-import { DuelStartClientMessage } from "../../../../shared/messages/server-to-client/DuelStartClientMessage";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { YGOProRoom } from "../YGOProRoom";
 import {
-  HandResult,
   YGOProCtosHandResult,
-  YGOProStocDuelStart,
-  YGOProStocHandResult,
-  YGOProStocSelectHand,
-  YGOProStocSelectTp,
 } from "ygopro-msg-encode";
+import { Team } from "@shared/room/Team";
+import { YGOProRoomState } from "../YGOProRoomState";
 
-export class MercuryRockPaperScissorState extends RoomState {
+export class YGOProRockPaperScissorState extends YGOProRoomState {
   private handResult = [0, 0];
 
   constructor(
@@ -39,11 +32,6 @@ export class MercuryRockPaperScissorState extends RoomState {
       (message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
         void this.handleJoin.bind(this)(message, room, socket),
     );
-    this.eventEmitter.on(
-      Commands.READY as unknown as string,
-      (message: ClientMessage, room: Room, client: MercuryClient) =>
-        this.handleReady.bind(this)(message, room, client),
-    );
   }
 
   private handleJoin(
@@ -51,7 +39,8 @@ export class MercuryRockPaperScissorState extends RoomState {
     room: YGOProRoom,
     socket: ISocket,
   ): void {
-    this.logger.info("JOIN");
+    this.logger.info("handleJoin");
+
     const playerInfoMessage = new PlayerInfoMessage(
       message.previousMessage,
       message.data.length,
@@ -68,45 +57,21 @@ export class MercuryRockPaperScissorState extends RoomState {
         playerInfoMessage.name,
       );
       room.addSpectatorUnsafe(spectator);
-      spectator.sendMessageToClient(
-        Buffer.from(new YGOProStocDuelStart().toFullPayload()),
-      );
+      spectator.sendMessageToClient(room.messageSender.duelStartMessage());
       room.sendDeckCountMessage(spectator);
       return;
     }
 
     room.reconnect(playerAlreadyInRoom, socket);
-    playerAlreadyInRoom.sendMessageToClient(
-      Buffer.from(new YGOProStocDuelStart().toFullPayload()),
-    );
+
+    playerAlreadyInRoom.sendMessageToClient(room.messageSender.duelStartMessage());
+
     room.sendDeckCountMessage(playerAlreadyInRoom);
+
     const hasSelected = this.handResult[playerAlreadyInRoom.team] !== 0;
     if (playerAlreadyInRoom.isCaptain && !hasSelected) {
-      playerAlreadyInRoom.sendMessageToClient(
-        Buffer.from(new YGOProStocSelectHand().toFullPayload()),
-      );
+      playerAlreadyInRoom.sendMessageToClient(room.messageSender.selectHandMessage());
     }
-  }
-
-  private handleReady(
-    _message: ClientMessage,
-    _room: Room,
-    player: MercuryClient,
-  ): void {
-    player.logger.info("MercuryRockPaperScissorState: READY");
-
-    if (!player.isReconnecting) {
-      return;
-    }
-
-    player.socket.send(DuelStartClientMessage.create());
-
-    if (!player.rpsChosen) {
-      const rpsChooseMessage = RPSChooseClientMessage.create();
-      player.socket.send(rpsChooseMessage);
-    }
-
-    player.clearReconnecting();
   }
 
   private handleRPSChoice(
@@ -115,7 +80,7 @@ export class MercuryRockPaperScissorState extends RoomState {
     player: MercuryClient,
   ): void {
     player.logger.info(
-      `MercuryRockPaperScissorState: RPS_CHOICE: ${message.raw.toString("hex")}`,
+      `handleRPSChoice: ${message.raw.toString("hex")}`,
     );
 
     if (!player.isCaptain) {
@@ -129,40 +94,40 @@ export class MercuryRockPaperScissorState extends RoomState {
     // }
 
     const team = room.getTeam(player.position);
-    if (team < 0 || team > 1) {
+    if (team < Team.PLAYER || team > Team.OPPONENT) {
       return;
     }
 
     this.handResult[team] = data.res;
 
-    if (!this.handResult[0] || !this.handResult[1]) {
+    if (!this.handResult[Team.PLAYER] || !this.handResult[Team.OPPONENT]) {
       return;
     }
 
-    const team0Result = new YGOProStocHandResult().fromPartial({
-      res1: this.handResult[0],
-      res2: this.handResult[1],
-    });
+    const team0Result = room.messageSender.handResultMessage(
+      this.handResult[Team.PLAYER],
+      this.handResult[Team.OPPONENT],
+    );
     room
-      .getTeamPlayers(0)
+      .getTeamPlayers(Team.PLAYER)
       .forEach((_player) =>
-        _player.sendMessageToClient(Buffer.from(team0Result.toFullPayload())),
+        _player.sendMessageToClient(team0Result),
       );
     room.spectators.forEach((spectator: MercuryClient) =>
-      spectator.sendMessageToClient(Buffer.from(team0Result.toFullPayload())),
+      spectator.sendMessageToClient(team0Result),
     );
 
-    const team1Result = new YGOProStocHandResult().fromPartial({
-      res1: this.handResult[1],
-      res2: this.handResult[0],
-    });
+    const team1Result = room.messageSender.handResultMessage(
+      this.handResult[Team.OPPONENT],
+      this.handResult[Team.PLAYER],
+    );
     room
-      .getTeamPlayers(1)
+      .getTeamPlayers(Team.OPPONENT)
       .forEach((_player) =>
-        _player.sendMessageToClient(Buffer.from(team1Result.toFullPayload())),
+        _player.sendMessageToClient(team1Result),
       );
 
-    if (this.handResult[0] === this.handResult[1]) {
+    if (this.handResult[Team.PLAYER] === this.handResult[Team.OPPONENT]) {
       this.handResult = [0, 0];
       this.toRPS(room);
       return;
@@ -175,9 +140,8 @@ export class MercuryRockPaperScissorState extends RoomState {
     }
 
     this.handResult = [0, 0];
-    const selectTPMessage = new YGOProStocSelectTp();
     winnerPlayer.sendMessageToClient(
-      Buffer.from(selectTPMessage.toFullPayload()),
+      room.messageSender.selectTpMessage(),
     );
 
     room.setClientWhoChoosesTurn(winnerPlayer);
@@ -186,13 +150,13 @@ export class MercuryRockPaperScissorState extends RoomState {
 
   private getRPSWinner(): number {
     if (
-      (this.handResult[0] === 1 && this.handResult[1] === 2) ||
-      (this.handResult[0] === 2 && this.handResult[1] === 3) ||
-      (this.handResult[0] === 3 && this.handResult[1] === 1)
+      (this.handResult[Team.PLAYER] === 1 && this.handResult[Team.OPPONENT] === 2) ||
+      (this.handResult[Team.PLAYER] === 2 && this.handResult[Team.OPPONENT] === 3) ||
+      (this.handResult[Team.PLAYER] === 3 && this.handResult[Team.OPPONENT] === 1)
     ) {
-      return 1;
+      return Team.OPPONENT;
     } else {
-      return 0;
+      return Team.PLAYER;
     }
   }
 }

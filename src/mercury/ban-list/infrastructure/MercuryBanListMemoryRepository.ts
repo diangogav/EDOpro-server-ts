@@ -33,6 +33,24 @@ export default {
 		return banLists.find((list) => list.name === name) ?? null;
 	},
 
+	findByAlias(alias: string): YGOProBanList | null {
+		const index = this.findIndexByAlias(alias);
+		return index !== -1 ? banLists[index] : null;
+	},
+
+	findIndexByAlias(alias: string): number {
+		const normalizedAlias = alias.toLowerCase().replace(/\s+/g, "");
+		return banLists.findIndex((list) => {
+			if (!list.name) return false;
+			const normalizedName = list.name.toLowerCase().replace(/\s+/g, "");
+			return normalizedName.includes(normalizedAlias);
+		});
+	},
+
+	findIndexByHash(hash: number): number {
+		return banLists.findIndex((list) => list.hash === hash);
+	},
+
 	findLFListByIndex(lflistIndex: number): YGOProBanList | null {
 		return banLists[lflistIndex] ?? null;
 	}

@@ -270,19 +270,26 @@ export const priorityRuleMappings: RuleMappings = {
 
 	lf: {
 		get: (value: string) => {
-			const lflist = extractNumberFromCommand(value);
-			if (lflist === null) {
-				return {
-					lflist: -1,
-				};
+			const match = value.match(/^(?:lf|lflist)(.+)$/i);
+			if (!match) return { lflist: -1 };
+
+			const query = match[1];
+
+			const numericIndex = parseInt(query, 10);
+			if (!isNaN(numericIndex) && numericIndex.toString() === query) {
+				return { lflist: numericIndex - 1 };
 			}
 
-			return {
-				lflist: lflist - 1,
-			};
+			const aliasIndex = MercuryBanListMemoryRepository.findIndexByAlias(query);
+			
+			if (aliasIndex !== -1) {
+				return { lflist: aliasIndex };
+			}
+
+			return { lflist: 0 };
 		},
 		validate: (value) => {
-			const regex = /^(lf|lflist)\d+$/;
+			const regex = /^(lf|lflist)(.+)$/i;
 
 			return regex.test(value);
 		},
@@ -393,7 +400,7 @@ export const formatRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: 0,
+				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("edison")),
 				duelRule: 1,
 				timeLimit: 450,
 			};
@@ -406,7 +413,7 @@ export const formatRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: 0,
+				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("hat")),
 				duelRule: 2,
 				timeLimit: 450,
 			};
@@ -419,7 +426,7 @@ export const formatRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: 0,
+				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("tengu")),
 				duelRule: 2,
 				timeLimit: 450,
 			};
@@ -430,9 +437,10 @@ export const formatRuleMappings: RuleMappings = {
 	},
 	md: {
 		get: () => {
+			const index = MercuryBanListMemoryRepository.findIndexByAlias("masterduel");
 			return {
 				rule: 5,
-				lflist: 11,
+				lflist: index !== -1 ? index : 11,
 				duelRule: 5,
 				timeLimit: 450,
 			};
@@ -445,7 +453,7 @@ export const formatRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: 0,
+				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("jtp")),
 				duelRule: 2,
 			};
 		},
@@ -457,7 +465,7 @@ export const formatRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: 0,
+				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("gx")),
 				duelRule: 1,
 			};
 		},
@@ -469,7 +477,7 @@ export const formatRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: 0,
+				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("mdc")),
 				duelRule: 2,
 			};
 		},
@@ -481,7 +489,7 @@ export const formatRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: 0,
+				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("goat")),
 				duelRule: 4,
 			};
 		},
@@ -514,9 +522,10 @@ export const formatRuleMappings: RuleMappings = {
 	},
 	rush: {
 		get: () => {
+			const index = MercuryBanListMemoryRepository.findIndexByAlias("rush");
 			return {
 				rule: 5,
-				lflist: 2,
+				lflist: index !== -1 ? index : 2,
 				duelRule: 4,
 			};
 		},
@@ -526,9 +535,10 @@ export const formatRuleMappings: RuleMappings = {
 	},
 	rushpre: {
 		get: () => {
+			const index = MercuryBanListMemoryRepository.findIndexByAlias("rush");
 			return {
 				rule: 5,
-				lflist: 2,
+				lflist: index !== -1 ? index : 2,
 				duelRule: 4,
 			};
 		},
@@ -538,9 +548,10 @@ export const formatRuleMappings: RuleMappings = {
 	},
 	speed: {
 		get: () => {
+			const index = MercuryBanListMemoryRepository.findIndexByAlias("speed");
 			return {
 				rule: 5,
-				lflist: 3,
+				lflist: index !== -1 ? index : 3,
 				duelRule: 4,
 			};
 		},
@@ -550,9 +561,10 @@ export const formatRuleMappings: RuleMappings = {
 	},
 	world: {
 		get: () => {
+			const index = MercuryBanListMemoryRepository.findIndexByAlias("world");
 			return {
 				rule: 5,
-				lflist: 5,
+				lflist: index !== -1 ? index : 5,
 				duelRule: 4,
 			};
 		},

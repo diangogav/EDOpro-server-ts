@@ -24,7 +24,7 @@ import {
 } from "./RuleMappings";
 import { MercuryChoosingOrderState } from "./states/MercuryChoosingOrderState";
 import { MercuryDuelingState } from "./states/MercuryDuelingState";
-import { MercuryRockPaperScissorState } from "./states/MercuryRockPaperScissorsState";
+import { YGOProRockPaperScissorState } from "./states/YGOProRockPaperScissorState";
 import { MercurySideDeckingState } from "./states/MercurySideDeckingState";
 import { YGOProWaitingState } from "./states/YGOProWaitingState";
 import { YGOProResourceLoader } from "../../ygopro/YGOProResourceLoader";
@@ -332,7 +332,7 @@ export class YGOProRoom extends YgoRoom {
   rps(): void {
     this._state = DuelState.RPS;
     this.roomState?.removeAllListener();
-    this.roomState = new MercuryRockPaperScissorState(
+    this.roomState = new YGOProRockPaperScissorState(
       this.emitter,
       this._logger,
     );

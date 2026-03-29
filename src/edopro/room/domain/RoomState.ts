@@ -223,19 +223,4 @@ export abstract class RoomState {
 			spectator.socket.send(opponentMessage);
 		});
 	}
-
-
-	protected toRPS(room: YGOProRoom): void {
-		const team0Player = room.getTeamPlayers(0)[0];
-		const team1Player = room.getTeamPlayers(1)[0];
-		if (!team0Player || !team1Player) {
-			return;
-		}
-
-		const message = new YGOProStocSelectHand()
-		team0Player.captain()
-		team1Player.captain()
-		team0Player.sendMessageToClient(Buffer.from(message.toFullPayload()))
-		team1Player.sendMessageToClient(Buffer.from(message.toFullPayload()))
-	}
 }

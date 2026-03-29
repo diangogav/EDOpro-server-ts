@@ -1,8 +1,26 @@
 import { MessageRepository } from "@shared/messages/MessageRepository";
-import { ErrorMessageType, YGOProStocDeckCount_DeckInfo, YGOProStocDuelStart, YGOProStocErrorMsg, YGOProStocHsPlayerChange, YGOProStocHsPlayerEnter, YGOProStocHsWatchChange, YGOProStocJoinGame, YGOProStocTypeChange } from "ygopro-msg-encode";
+import { ErrorMessageType, YGOProStocDeckCount_DeckInfo, YGOProStocDuelStart, YGOProStocErrorMsg, YGOProStocHandResult, YGOProStocHsPlayerChange, YGOProStocHsPlayerEnter, YGOProStocHsWatchChange, YGOProStocJoinGame, YGOProStocSelectHand, YGOProStocSelectTp, YGOProStocTypeChange } from "ygopro-msg-encode";
 import { HostInfo } from "../domain/host-info/HostInfo";
 
 export class YGOProMessageRepository extends MessageRepository {
+  handResultMessage(response1: number, response2: number): Buffer {
+    const message = new YGOProStocHandResult().fromPartial({
+      res1: response1,
+      res2: response2,
+    });
+    return Buffer.from(message.toFullPayload());
+  }
+
+  selectTpMessage(): Buffer {
+    const message = new YGOProStocSelectTp();
+    return Buffer.from(message.toFullPayload());
+  }
+
+  selectHandMessage(): Buffer {
+    const message = new YGOProStocSelectHand();
+    return Buffer.from(message.toFullPayload());
+  }
+
   typeChangeMessageFromType(type: number): Buffer {
     const message = new YGOProStocTypeChange().fromPartial({
       type,
