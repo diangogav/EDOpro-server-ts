@@ -1,3 +1,4 @@
+import { YGOProResourceLoader } from "@ygopro/ygopro";
 import { YGOProBanList } from "../domain/YGOProBanList";
 
 const banLists: YGOProBanList[] = [];
@@ -31,4 +32,8 @@ export default {
 	findByName(name: string): YGOProBanList | null {
 		return banLists.find((list) => list.name === name) ?? null;
 	},
+
+	findLFListByIndex(lflistIndex: number): YGOProBanList | null {
+		return banLists[lflistIndex] ?? null;
+	}
 };

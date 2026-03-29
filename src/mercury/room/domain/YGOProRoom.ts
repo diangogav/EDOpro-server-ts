@@ -8,7 +8,7 @@ import { Team } from "@shared/room/Team";
 import { UserAuth } from "@shared/user-auth/application/UserAuth";
 import { UserProfilePostgresRepository } from "@shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { Logger } from "@shared/logger/domain/Logger";
-import { DuelState, YgoRoom } from "@shared/room/domain/YgoRoom";
+import { DeckRules, DuelState, YgoRoom } from "@shared/room/domain/YgoRoom";
 import { RoomType } from "@shared/room/domain/RoomType";
 
 import { generateSeed } from "@ygopro/utils/generate-seed";
@@ -38,12 +38,14 @@ import {
   YGOProStocDeckCount,
   YGOProStocDeckCount_DeckInfo,
 } from "ygopro-msg-encode";
-import { YGOProYrp } from 'ygopro-yrp-encode';
+import { YGOProYrp } from "ygopro-yrp-encode";
 import { ISocket } from "src/shared/socket/domain/ISocket";
 import YGOProDeck from "ygopro-deck-encode";
 import { DuelRecord } from "./DuelRecord";
 import { MessageRepository } from "@shared/messages/MessageRepository";
-
+import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
+import { CardYGOProRepository } from "@ygopro/card/infrastructure/CardYGOProRepository";
+import { Deck } from "@shared/deck/domain/Deck";
 
 const BEST_OF = {
   [GameMode.SINGLE]: 1,
@@ -55,9 +57,8 @@ export class YGOProRoom extends YgoRoom {
   readonly name: string;
   readonly password: string;
   readonly createdBySocketId: string;
+  readonly banListHash: number;
   private _logger: Logger;
-  private _banListHash: number;
-  private _edoBanListHash: number;
   private roomState: RoomState | null = null;
   private _isPositionSwapped: boolean = false;
   private _duelRecords: DuelRecord[] = [];
@@ -78,6 +79,7 @@ export class YGOProRoom extends YgoRoom {
     bestOf,
     startLp,
     messageRepository,
+    banListHash,
   }: {
     id: number;
     password: string;
@@ -89,7 +91,8 @@ export class YGOProRoom extends YgoRoom {
     createdBySocketId: string;
     bestOf: number;
     startLp: number;
-    messageRepository: MessageRepository,
+    messageRepository: MessageRepository;
+    banListHash: number;
   }) {
     super({
       team0,
@@ -106,10 +109,10 @@ export class YGOProRoom extends YgoRoom {
     this._players = [];
     this._hostInfo = hostInfo;
     this._state = DuelState.WAITING;
-    this._banListHash = 0;
+    this.banListHash = banListHash;
     this.createdBySocketId = createdBySocketId;
     this._resourceLoader = YGOProResourceLoader.getShared();
-    this._messageRepository = messageRepository
+    this._messageRepository = messageRepository;
   }
 
   static create(
@@ -192,6 +195,9 @@ export class YGOProRoom extends YgoRoom {
 
     const teamCount = hostInfo.mode === GameMode.TAG ? 2 : 1;
     const ranked = Boolean(playerInfo.password);
+    const banListHash =
+      MercuryBanListMemoryRepository.findLFListByIndex(hostInfo.lflist)?.hash ??
+      0;
     const room = new YGOProRoom({
       id,
       hostInfo,
@@ -204,12 +210,17 @@ export class YGOProRoom extends YgoRoom {
       bestOf: hostInfo.best_of,
       startLp: hostInfo.start_lp,
       messageRepository,
+      banListHash,
     });
 
     room._logger = logger.child({ file: "MercuryRoom" });
     room.emitter = emitter;
 
     return room;
+  }
+
+  shouldValidateDeck(): boolean {
+    return !this._hostInfo.no_check_deck;
   }
 
   get isTag() {
@@ -263,7 +274,7 @@ export class YGOProRoom extends YgoRoom {
   }
 
   get hostInfo(): HostInfo {
-    return { ...this._hostInfo, lflist: 0, mode: this.mode };
+    return { ...this._hostInfo, lflist: 0, mode: this._hostInfo.mode };
   }
 
   get playersCount(): number {
@@ -301,10 +312,21 @@ export class YGOProRoom extends YgoRoom {
 
   waiting(): void {
     this.roomState?.removeAllListener();
+    const cardRepository = new CardYGOProRepository();
+    const deckRules = new DeckRules({
+      mainMin: 40,
+      mainMax: 60,
+      extraMin: 0,
+      extraMax: 15,
+      sideMin: 0,
+      sideMax: 15,
+      rule: this._hostInfo.rule,
+    });
     this.roomState = new MercuryWaitingState(
       new UserAuth(new UserProfilePostgresRepository()),
       this.emitter,
       this._logger,
+      new YGOProDeckCreator(cardRepository, deckRules, this._logger),
     );
   }
 
@@ -379,23 +401,38 @@ export class YGOProRoom extends YgoRoom {
   }
 
   addPlayerUnsafe(player: MercuryClient): void {
-    player.sendMessageToClient(this._messageRepository.joinGameMessage(this.hostInfo));
+    player.sendMessageToClient(
+      this._messageRepository.joinGameMessage(this.hostInfo),
+    );
     this._players.push(player);
     player.socket.roomId = this.id;
 
-    player.sendMessageToClient(this._messageRepository.typeChangeMessage(player.position, player.host));
+    player.sendMessageToClient(
+      this._messageRepository.typeChangeMessage(player.position, player.host),
+    );
 
     this.clients.forEach((_client: MercuryClient) => {
-      const playerEnterMessageBuffer = this._messageRepository.playerEnterMessage(_client.name, _client.position);
+      const playerEnterMessageBuffer =
+        this._messageRepository.playerEnterMessage(
+          _client.name,
+          _client.position,
+        );
       player.sendMessageToClient(playerEnterMessageBuffer);
 
       if (_client.deck) {
-        const state = _client.isReady ? PlayerChangeState.READY : PlayerChangeState.NOTREADY;
-        player.sendMessageToClient(this._messageRepository.playerChangeMessage(_client.position, state));
+        const state = _client.isReady
+          ? PlayerChangeState.READY
+          : PlayerChangeState.NOTREADY;
+        player.sendMessageToClient(
+          this._messageRepository.playerChangeMessage(_client.position, state),
+        );
       }
     });
 
-    const playerEnterMessage = this._messageRepository.playerEnterMessage(player.name, player.position);
+    const playerEnterMessage = this._messageRepository.playerEnterMessage(
+      player.name,
+      player.position,
+    );
     this.clients.forEach((_client: MercuryClient) => {
       if (_client !== player) {
         _client.sendMessageToClient(playerEnterMessage);
@@ -406,17 +443,32 @@ export class YGOProRoom extends YgoRoom {
   }
 
   addSpectatorUnsafe(spectator: MercuryClient): void {
-    spectator.sendMessageToClient(this._messageRepository.joinGameMessage(this.hostInfo));
+    spectator.sendMessageToClient(
+      this._messageRepository.joinGameMessage(this.hostInfo),
+    );
 
     this._spectators.push(spectator);
-    spectator.sendMessageToClient(this._messageRepository.typeChangeMessage(spectator.position, spectator.host));
+    spectator.sendMessageToClient(
+      this._messageRepository.typeChangeMessage(
+        spectator.position,
+        spectator.host,
+      ),
+    );
 
     this.clients.forEach((_client: MercuryClient) => {
-      const playerEnterMessageBuffer = this._messageRepository.playerEnterMessage(_client.name, _client.position);
+      const playerEnterMessageBuffer =
+        this._messageRepository.playerEnterMessage(
+          _client.name,
+          _client.position,
+        );
       spectator.sendMessageToClient(playerEnterMessageBuffer);
       if (_client.deck) {
-        const state = _client.isReady ? PlayerChangeState.READY : PlayerChangeState.NOTREADY;
-        spectator.sendMessageToClient(this._messageRepository.playerChangeMessage(_client.position, state));
+        const state = _client.isReady
+          ? PlayerChangeState.READY
+          : PlayerChangeState.NOTREADY;
+        spectator.sendMessageToClient(
+          this._messageRepository.playerChangeMessage(_client.position, state),
+        );
       }
     });
 
@@ -427,12 +479,18 @@ export class YGOProRoom extends YgoRoom {
     this.removePlayerUnsafe(player);
     this._spectators.push(player);
 
-    const playerChangeMessageBuffer = this._messageRepository.playerChangeMessage(player.position, PlayerChangeState.OBSERVE);
+    const playerChangeMessageBuffer =
+      this._messageRepository.playerChangeMessage(
+        player.position,
+        PlayerChangeState.OBSERVE,
+      );
     this.broadcastToAll(playerChangeMessageBuffer);
 
     player.spectatorPosition(NetPlayerType.OBSERVER);
     player.notReady();
-    player.sendMessageToClient(this._messageRepository.typeChangeMessage(player.position, player.host));
+    player.sendMessageToClient(
+      this._messageRepository.typeChangeMessage(player.position, player.host),
+    );
     this.sendSpectatorCount({ enqueue: false });
   }
 
@@ -447,10 +505,15 @@ export class YGOProRoom extends YgoRoom {
     player.playerPosition(place.position, place.team);
     player.notReady();
 
-    const playerEnterMessageBuffer = this._messageRepository.playerEnterMessage(player.name, player.position);
+    const playerEnterMessageBuffer = this._messageRepository.playerEnterMessage(
+      player.name,
+      player.position,
+    );
     this.broadcastToAll(playerEnterMessageBuffer);
 
-    player.sendMessageToClient(this._messageRepository.typeChangeMessage(player.position, player.host));
+    player.sendMessageToClient(
+      this._messageRepository.typeChangeMessage(player.position, player.host),
+    );
     this.sendSpectatorCount({ enqueue: false });
   }
 
@@ -460,19 +523,31 @@ export class YGOProRoom extends YgoRoom {
       return;
     }
     player.notReady();
-    player.sendMessageToClient(this._messageRepository.playerChangeMessage(player.position, nextPlace.position));
-    player.sendMessageToClient(this._messageRepository.playerChangeMessage(player.position, PlayerChangeState.NOTREADY));
+    player.sendMessageToClient(
+      this._messageRepository.playerChangeMessage(
+        player.position,
+        nextPlace.position,
+      ),
+    );
+    player.sendMessageToClient(
+      this._messageRepository.playerChangeMessage(
+        player.position,
+        PlayerChangeState.NOTREADY,
+      ),
+    );
     player.playerPosition(nextPlace.position, nextPlace.team);
-    player.sendMessageToClient(this._messageRepository.typeChangeMessage(player.position, player.host));
+    player.sendMessageToClient(
+      this._messageRepository.typeChangeMessage(player.position, player.host),
+    );
   }
 
-  setDecksToPlayer(position: number, deck: YGOProDeck): void {
+  setDecksToPlayer(position: number, deck: Deck): void {
     this.mutex.runExclusive(() => {
       this.setDecksToPlayerUnsafe(position, deck);
     });
   }
 
-  setDecksToPlayerUnsafe(position: number, deck: YGOProDeck): void {
+  setDecksToPlayerUnsafe(position: number, deck: Deck): void {
     const client = this._players.find((client) => client.position === position);
 
     if (!client || !(client instanceof MercuryClient)) {
@@ -480,8 +555,11 @@ export class YGOProRoom extends YgoRoom {
     }
 
     client.ready();
-    client.saveDeck(deck);
-    const message = this._messageRepository.typeChangeMessage(client.position, client.host);
+    client.setDeck(deck);
+    const message = this._messageRepository.playerChangeMessage(
+      client.position,
+      PlayerChangeState.READY,
+    );
     this.broadcastToAll(message);
   }
 
@@ -489,9 +567,13 @@ export class YGOProRoom extends YgoRoom {
     if (player.position === NetPlayerType.OBSERVER) {
       return;
     }
-    player.clearDeck();
     player.notReady();
-    player.sendMessageToClient(this._messageRepository.playerChangeMessage(player.position, PlayerChangeState.NOTREADY));
+    player.sendMessageToClient(
+      this._messageRepository.playerChangeMessage(
+        player.position,
+        PlayerChangeState.NOTREADY,
+      ),
+    );
   }
 
   sendPreviousDuelsHistoricalMessages(spectator: MercuryClient): void {
@@ -516,7 +598,7 @@ export class YGOProRoom extends YgoRoom {
   }
 
   sendDeckCountMessage(client: MercuryClient): void {
-    const toDeckCount = (deck: YGOProDeck | null) => {
+    const toDeckCount = (deck: Deck | null) => {
       const message = new YGOProStocDeckCount_DeckInfo();
       if (!deck) {
         message.main = 0;
@@ -530,7 +612,7 @@ export class YGOProRoom extends YgoRoom {
       return message;
     };
 
-    const displayCountDecks: (YGOProDeck | null)[] = [0, 1].map((team) => {
+    const displayCountDecks: (Deck | null)[] = [0, 1].map((team) => {
       const player = this.getTeamPlayers(team)[0];
       return player.deck;
     });
@@ -547,26 +629,26 @@ export class YGOProRoom extends YgoRoom {
     client.sendMessageToClient(Buffer.from(message.toFullPayload()));
   }
 
-  generateDuelRecord(): void {
-    const seed = generateSeed();
+  // generateDuelRecord(): void {
+  //   const seed = generateSeed();
 
-    const decks = this.shuffleDeckEnabled
-      ? shuffleDecksBySeed(
-        this.players.map((_client: MercuryClient) => _client.deck!),
-        seed,
-      )
-      : this.players.map((_client: MercuryClient) => _client.deck);
+  //   const decks = this.shuffleDeckEnabled
+  //     ? shuffleDecksBySeed(
+  //       this.players.map((_client: MercuryClient) => _client.deck!),
+  //       seed,
+  //     )
+  //     : this.players.map((_client: MercuryClient) => _client.deck);
 
-    const players = this.players.map(
-      (_client: MercuryClient, index: number) => ({
-        name: _client.name,
-        deck: decks[index]!,
-      }),
-    );
-    const duelRecord = new DuelRecord(seed, players, this.isPositionSwapped);
-    this._duelRecords.push(duelRecord);
-    this._currentDuelRecord = duelRecord;
-  }
+  //   const players = this.players.map(
+  //     (_client: MercuryClient, index: number) => ({
+  //       name: _client.name,
+  //       deck: decks[index]!,
+  //     }),
+  //   );
+  //   const duelRecord = new DuelRecord(seed, players, this.isPositionSwapped);
+  //   this._duelRecords.push(duelRecord);
+  //   this._currentDuelRecord = duelRecord;
+  // }
 
   saveMessageToDuelRecord(message: YGOProMsgBase): void {
     this._currentDuelRecord.messages.push(message);
@@ -576,11 +658,19 @@ export class YGOProRoom extends YgoRoom {
     player.socket.removeAllListeners();
     player.setSocket(socket);
     player.reconnecting();
-    player.sendMessageToClient(this._messageRepository.joinGameMessage(this.hostInfo))
+    player.sendMessageToClient(
+      this._messageRepository.joinGameMessage(this.hostInfo),
+    );
     const type = player.host ? player.position | 0x10 : player.position;
-    player.sendMessageToClient(this._messageRepository.typeChangeMessageFromType(type));
+    player.sendMessageToClient(
+      this._messageRepository.typeChangeMessageFromType(type),
+    );
     this._players.forEach((_player: MercuryClient) => {
-      const playerEnterMessageBuffer = this._messageRepository.playerEnterMessage(_player.name, _player.position);
+      const playerEnterMessageBuffer =
+        this._messageRepository.playerEnterMessage(
+          _player.name,
+          _player.position,
+        );
       player.sendMessageToClient(playerEnterMessageBuffer);
     });
   }
@@ -606,19 +696,19 @@ export class YGOProRoom extends YgoRoom {
     return this.isTag ? 1 : 0;
   }
 
-  setBanListHash(banListHash: number): void {
-    this._banListHash = banListHash;
+  // setBanListHash(banListHash: number): void {
+  //   this._banListHash = banListHash;
 
-    const mercuryBanList =
-      MercuryBanListMemoryRepository.findByHash(banListHash);
-    if (!mercuryBanList?.name) {
-      return;
-    }
+  //   const mercuryBanList =
+  //     MercuryBanListMemoryRepository.findByHash(banListHash);
+  //   if (!mercuryBanList?.name) {
+  //     return;
+  //   }
 
-    const edoBanList = BanListMemoryRepository.findByName(mercuryBanList.name);
+  //   const edoBanList = BanListMemoryRepository.findByName(mercuryBanList.name);
 
-    this._edoBanListHash = edoBanList?.hash ?? 0;
-  }
+  //   this._edoBanListHash = edoBanList?.hash ?? 0;
+  // }
 
   toPresentation(): { [key: string]: unknown } {
     return {
@@ -640,7 +730,7 @@ export class YGOProRoom extends YgoRoom {
       rule: this._hostInfo.rule,
       no_check: this._hostInfo.no_check_deck,
       no_shuffle: this._hostInfo.no_shuffle_deck,
-      banlist_hash: this._edoBanListHash ?? this._banListHash,
+      // banlist_hash: this._edoBanListHash ?? this._banListHash,
       istart: this.isStart,
       main_min: 40,
       main_max: 60,
@@ -669,13 +759,13 @@ export class YGOProRoom extends YgoRoom {
     );
   }
 
-  get banListHash(): number {
-    return this._banListHash;
-  }
+  // get banListHash(): number {
+  //   return this._banListHash;
+  // }
 
-  get edoBanListHash(): number {
-    return this._edoBanListHash;
-  }
+  // get edoBanListHash(): number {
+  //   return this._edoBanListHash;
+  // }
 
   setDuelFinished(): void {
     this._state = DuelState.WAITING;
@@ -686,7 +776,9 @@ export class YGOProRoom extends YgoRoom {
   }
 
   sendSpectatorCount({ enqueue = false }: { enqueue: boolean }): void {
-    const message = this._messageRepository.watchChangeMessage(this._spectators.length);
+    const message = this._messageRepository.watchChangeMessage(
+      this._spectators.length,
+    );
     if (!enqueue) {
       this.broadcastToAll(message);
 

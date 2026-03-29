@@ -9,13 +9,13 @@ import { EventEmitter } from "stream";
 
 import { config } from "../../../config";
 import { Logger } from "../../../shared/logger/domain/Logger";
-import { DuelState, YgoRoom } from "../../../shared/room/domain/YgoRoom";
+import { DeckRules, DuelState, YgoRoom } from "../../../shared/room/domain/YgoRoom";
 import { Team } from "../../../shared/room/Team";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { CardSQLiteTYpeORMRepository } from "../../card/infrastructure/sqlite/CardSQLiteTYpeORMRepository";
 import { Client } from "../../client/domain/Client";
 import { DeckCreator } from "../../deck/application/DeckCreator";
-import { Deck } from "../../deck/domain/Deck";
+import { Deck } from "../../../shared/deck/domain/Deck";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
 import { JSONMessageProcessor } from "../../messages/JSONMessageProcessor";
@@ -38,14 +38,6 @@ import { WaitingState } from "./states/waiting/WaitingState";
 import { Timer } from "./Timer";
 import { RoomType } from "src/shared/room/domain/RoomType";
 
-export enum Rule {
-	ONLY_OCG,
-	ONLY_TCG,
-	OCG_TCG,
-	PRE_RELEASE,
-	ALL,
-}
-
 type IpcMetricsSnapshot = {
 	uptimeMs: number;
 	queueDepth: number;
@@ -62,45 +54,6 @@ type IpcMetricsSnapshot = {
 	deferredProcessTicks: number;
 };
 
-export class DeckRules {
-	public readonly mainMin: number;
-	public readonly mainMax: number;
-	public readonly extraMin: number;
-	public readonly extraMax: number;
-	public readonly sideMin: number;
-	public readonly sideMax: number;
-	public readonly rule: Rule;
-	public readonly maxDeckPoints: number;
-
-	constructor({
-		mainMin,
-		mainMax,
-		extraMin,
-		extraMax,
-		sideMin,
-		sideMax,
-		rule,
-		maxDeckPoints,
-	}: {
-		mainMin: number;
-		mainMax: number;
-		extraMin: number;
-		extraMax: number;
-		sideMin: number;
-		sideMax: number;
-		rule: number;
-		maxDeckPoints?: number;
-	}) {
-		this.mainMin = mainMin;
-		this.mainMax = mainMax;
-		this.extraMin = extraMin;
-		this.extraMax = extraMax;
-		this.sideMin = sideMin;
-		this.sideMax = sideMax;
-		this.rule = rule;
-		this.maxDeckPoints = maxDeckPoints ?? 100;
-	}
-}
 export interface RoomAttr {
 	id: number;
 	name: string;
@@ -330,6 +283,10 @@ export class Room extends YgoRoom {
 		}
 
 		return false;
+	}
+
+	shouldValidateDeck(): boolean {
+		return !this.noCheck;
 	}
 
 	resetReplay(): void {

@@ -94,37 +94,37 @@ export class MercurySideDeckingState extends RoomState {
 			`MercuryWaitingState UPDATE_DECK: ${message.data.toString("hex")}`,
 		);
 
-		if (player.position === NetPlayerType.OBSERVER) {
-			return;
-		}
+		// if (player.position === NetPlayerType.OBSERVER) {
+		// 	return;
+		// }
 
-		const updateDeckMessage = new YGOProCtosUpdateDeck().fromPayload(message.data)
-		const deck = await this.buildDeck(updateDeckMessage, room);
-		const isValid = checkChangeSide(player.deck!, deck);
-		if (!isValid) {
-			const message = new YGOProStocErrorMsg().fromPartial({
-				msg: ErrorMessageType.SIDEERROR,
-				code: 0,
-			})
-			player.sendMessageToClient(Buffer.from(message.toFullPayload()));
-			return;
-		}
+		// const updateDeckMessage = new YGOProCtosUpdateDeck().fromPayload(message.data)
+		// const deck = await this.buildDeck(updateDeckMessage, room);
+		// const isValid = checkChangeSide(player.deck!, deck);
+		// if (!isValid) {
+		// 	const message = new YGOProStocErrorMsg().fromPartial({
+		// 		msg: ErrorMessageType.SIDEERROR,
+		// 		code: 0,
+		// 	})
+		// 	player.sendMessageToClient(Buffer.from(message.toFullPayload()));
+		// 	return;
+		// }
 
 
-		room.setDecksToPlayerUnsafe(player.position, deck);
-		player.ready();
-		player.sendMessageToClient(Buffer.from(new YGOProStocDuelStart().toFullPayload()));
+		// room.setDecksToPlayerUnsafe(player.position, deck);
+		// player.ready();
+		// player.sendMessageToClient(Buffer.from(new YGOProStocDuelStart().toFullPayload()));
 
-		const allReady = room.players.every((_client) => _client.isReady);
-		if (!allReady) {
-			return;
-		}
+		// const allReady = room.players.every((_client) => _client.isReady);
+		// if (!allReady) {
+		// 	return;
+		// }
 
-		const selectTPMessage = new YGOProStocSelectTp();
-		(room.clientWhoChoosesTurn as MercuryClient).sendMessageToClient(
-			Buffer.from(selectTPMessage.toFullPayload()),
-		);
-		room.choosingOrder();
+		// const selectTPMessage = new YGOProStocSelectTp();
+		// (room.clientWhoChoosesTurn as MercuryClient).sendMessageToClient(
+		// 	Buffer.from(selectTPMessage.toFullPayload()),
+		// );
+		// room.choosingOrder();
 	}
 
 	private async buildDeck(message: YGOProCtosUpdateDeck, room: YGOProRoom): Promise<YGOProDeck> {

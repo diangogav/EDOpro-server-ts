@@ -181,4 +181,18 @@ export class YGOProResourceLoader {
       }
     }
   }
+
+  async logLFLists(): Promise<void> {
+    this.logger.info("Loading Forbidden/Limited Lists...");
+    let index = 0;
+    for await (const lflist of this.getLFLists()) {
+      this.logger.info(`  [${index}] ${lflist.name || "Unnamed"} ${lflist.getHash()}`);
+      index++;
+    }
+    if (index === 0) {
+      this.logger.error("No lflist.conf found in ygoproPaths");
+    } else {
+      this.logger.info(`Total LFLists loaded: ${index}`);
+    }
+  }
 }

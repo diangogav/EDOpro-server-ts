@@ -36,7 +36,7 @@ async function start(): Promise<void> {
   // await mercuryBanListLoader.loadDirectory("./mercury");
 
   await YGOProResourceLoader.start();
-
+  await YGOProResourceLoader.get().logLFLists()
   // Load ban lists from YGOPro resources
   const ygoProBanListLoader = new YGOProBanListLoader();
   await ygoProBanListLoader.load();

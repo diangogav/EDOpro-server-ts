@@ -20,7 +20,6 @@ export class MercuryClient extends YgoClient {
 	private _needSpectatorMessages = false;
 	private readonly _roomMessageEmitter: SimpleRoomMessageEmitter;
 	private _rpsChosen: boolean;
-	private _deck: YGOProDeck | null;
 	private _captain: boolean = false;
 
 	constructor({
@@ -155,18 +154,6 @@ export class MercuryClient extends YgoClient {
 
 	get rpsChosen(): boolean {
 		return this._rpsChosen;
-	}
-
-	saveDeck(deck: YGOProDeck): void {
-		this._deck = deck;
-	}
-
-	get deck(): YGOProDeck | null {
-		return this._deck;
-	}
-
-	clearDeck(): void {
-		this._deck = null;
 	}
 
 	captain(): void {

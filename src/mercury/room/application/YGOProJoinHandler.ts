@@ -32,7 +32,7 @@ export class YGOProJoinHandler implements JoinMessageHandler {
 		checkIfUserCanJoin: CheckIfUseCanJoin,
 		messageRepository: MessageRepository
 	) {
-		this.logger = logger.child({ file: "MercuryJoinHandler" });
+		this.logger = logger.child({ file: "YGOProJoinHandler" });
 		this.socket = socket;
 		this.eventEmitter = eventEmitter;
 		this.checkIfUserCanJoin = checkIfUserCanJoin;

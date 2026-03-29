@@ -1,14 +1,14 @@
-import { EdoproBanList } from "../../../ban-list/domain/BanList";
+import { BanList } from "@shared/ban-list/BanList";
 import { Deck } from "../Deck";
-import { BanListDeckError } from "../errors/BanListDeckError";
+import { CardMoreThan3Error } from "../errors/CardMoreThan3Error";
 import { DeckError } from "../errors/DeckError";
 import { DeckValidationHandler } from "./DeckValidationHandler";
 
-export class LimitedCardValidationHandler implements DeckValidationHandler {
-	private readonly banList: EdoproBanList;
+export class NoLimitedCardValidationHandler implements DeckValidationHandler {
+	private readonly banList: BanList;
 	private nextHandler: DeckValidationHandler | null = null;
 
-	constructor(banList: EdoproBanList) {
+	constructor(banList: BanList) {
 		this.banList = banList;
 	}
 
@@ -30,10 +30,11 @@ export class LimitedCardValidationHandler implements DeckValidationHandler {
 			cards.set(Number(card.code), count + 1);
 		}
 
-		for (const limitedCard of this.banList.limited) {
-			const count = cards.get(limitedCard) ?? 0;
-			if (count > 1) {
-				return new BanListDeckError(limitedCard);
+		for (const card of this.banList.all) {
+			const count = cards.get(card) ?? 0;
+
+			if (count > 3) {
+				return new CardMoreThan3Error(card);
 			}
 		}
 

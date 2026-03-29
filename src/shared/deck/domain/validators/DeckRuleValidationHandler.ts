@@ -1,10 +1,11 @@
-import { Card, ScopeCode } from "../../../card/domain/Card";
-import { DeckRules, Rule } from "../../../room/domain/Room";
+import { DeckRules } from "@shared/room/domain/YgoRoom";
 import { Deck } from "../Deck";
 import { DeckError } from "../errors/DeckError";
 import { OCGCardError } from "../errors/OCGCardError";
 import { TCGCardError } from "../errors/TCGCardError";
 import { DeckValidationHandler } from "./DeckValidationHandler";
+import { Rule } from "../Rule";
+import { Card, ScopeCode } from "@shared/card/domain/Card";
 
 export class DeckRuleValidationHandler implements DeckValidationHandler {
 	private readonly deckRules: DeckRules;

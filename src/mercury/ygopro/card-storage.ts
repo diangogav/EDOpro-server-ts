@@ -122,6 +122,7 @@ export class CardStorage {
         rscale: data.rscale,
         linkMarker: data.linkMarker,
         ruleCode: data.ruleCode,
+        category: data.category,
       };
     };
   }
@@ -165,24 +166,24 @@ export class CardStorage {
       card instanceof CardDataWithOt
         ? card.toPayload()
         : new CardDataWithOt()
-            .fromPartial({
-              code: card.code,
-              ot: card.ot,
-              alias: card.alias,
-              setcode: card.setcode,
-              type: card.type,
-              level: card.level,
-              attribute: card.attribute,
-              race: card.race,
-              attack: card.attack,
-              defense: card.defense,
-              lscale: card.lscale,
-              rscale: card.rscale,
-              linkMarker: card.linkMarker,
-              ruleCode: card.ruleCode,
-              category: card.category,
-            })
-            .toPayload();
+          .fromPartial({
+            code: card.code,
+            ot: card.ot,
+            alias: card.alias,
+            setcode: card.setcode,
+            type: card.type,
+            level: card.level,
+            attribute: card.attribute,
+            race: card.race,
+            attack: card.attack,
+            defense: card.defense,
+            lscale: card.lscale,
+            rscale: card.rscale,
+            linkMarker: card.linkMarker,
+            ruleCode: card.ruleCode,
+            category: card.category,
+          })
+          .toPayload();
     if (payload.length !== CARD_ENTRY_SIZE) {
       throw new TypeError(
         `Unexpected card entry payload size: ${payload.length}`,

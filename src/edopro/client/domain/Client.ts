@@ -1,7 +1,7 @@
 import { YgoClient } from "../../../shared/client/domain/YgoClient";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
-import { Deck } from "../../deck/domain/Deck";
+import { Deck } from "../../../shared/deck/domain/Deck";
 import { ClientMessage, MessageProcessor } from "../../../shared/messages/MessageProcessor";
 import { Choose } from "../../rock-paper-scissor/RockPaperScissor";
 import { Room } from "../../room/domain/Room";
@@ -14,7 +14,6 @@ export class Client extends YgoClient {
 	public readonly roomId: number;
 	public readonly logger: Logger;
 	private _rpsChosen: Choose | null = null;
-	private _deck: Deck;
 	private _duelPosition: number;
 	private _turn: boolean;
 	private _canReconnect: boolean;
@@ -73,14 +72,6 @@ export class Client extends YgoClient {
 
 	get rpsChoise(): Choose | null {
 		return this._rpsChosen;
-	}
-
-	setDeck(deck: Deck): void {
-		this._deck = deck;
-	}
-
-	get deck(): Deck {
-		return this._deck;
 	}
 
 	setDuelPosition(position: number): void {

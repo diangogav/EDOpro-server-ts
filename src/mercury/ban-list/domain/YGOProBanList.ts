@@ -2,9 +2,7 @@ import { BanList } from "src/shared/ban-list/BanList";
 
 
 export class YGOProBanList extends BanList {
-	constructor(name: string, hash: number) {
-		super();
-		this.setName(name);
+	setHash(hash: number) {
 		this._hash = hash;
 	}
 

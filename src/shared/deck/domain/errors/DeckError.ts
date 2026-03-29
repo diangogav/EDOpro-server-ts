@@ -1,11 +1,11 @@
 import { decimalToBytesBuffer } from "../../../../utils";
 
 export abstract class DeckError {
-	protected readonly type: number;
-	protected readonly code: number;
-	protected readonly got: number;
-	protected readonly min: number;
-	protected readonly max: number;
+	readonly type: number;
+	readonly code: number;
+	readonly got: number;
+	readonly min: number;
+	readonly max: number;
 	constructor({
 		type,
 		code = 0,

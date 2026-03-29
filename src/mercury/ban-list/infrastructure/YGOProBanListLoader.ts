@@ -47,7 +47,9 @@ export class YGOProBanListLoader {
       const normalizedName = this.normalizeName(lflist.name || "Unnamed");
       const hash = lflist.getHash();
 
-      const banList = new YGOProBanList(normalizedName, hash);
+      const banList = new YGOProBanList();
+      banList.setName(normalizedName);
+      banList.setHash(hash);
       lflist.entries.forEach((entry) => banList.add(entry.code, entry.limit));
       YGOProBanListMemoryRepository.add(banList);
     }

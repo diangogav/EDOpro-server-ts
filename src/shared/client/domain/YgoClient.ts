@@ -1,3 +1,4 @@
+import { Deck } from "@shared/deck/domain/Deck";
 import { ISocket } from "../../socket/domain/ISocket";
 
 export abstract class YgoClient {
@@ -12,6 +13,8 @@ export abstract class YgoClient {
 	protected _isReady: boolean;
 	protected _ipAddress: string | null;
 	protected _reconnectionToken: string | null = null;
+	protected _deck: Deck;
+
 
 	constructor({
 		name,
@@ -43,6 +46,14 @@ export abstract class YgoClient {
 
 	get team(): number {
 		return this._team;
+	}
+
+	setDeck(deck: Deck): void {
+		this._deck = deck;
+	}
+
+	get deck(): Deck {
+		return this._deck;
 	}
 
 	get socket(): ISocket {

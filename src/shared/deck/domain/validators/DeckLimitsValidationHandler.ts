@@ -1,4 +1,4 @@
-import { DeckRules } from "../../../room/domain/Room";
+import { DeckRules } from "@shared/room/domain/YgoRoom";
 import { Deck } from "../Deck";
 import { DeckError } from "../errors/DeckError";
 import { ExtraDeckLimitError } from "../errors/ExtraDeckLimitError";

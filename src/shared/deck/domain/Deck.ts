@@ -1,6 +1,5 @@
-import { EdoproBanList } from "../../ban-list/domain/BanList";
-import { Card } from "../../card/domain/Card";
-import { DeckRules } from "../../room/domain/Room";
+import { DeckRules } from "@shared/room/domain/YgoRoom";
+import { EdoproBanList } from "../../../edopro/ban-list/domain/BanList";
 import { DeckError } from "./errors/DeckError";
 import { AvailableCardValidationHandler } from "./validators/AvailableCardValidationHandler";
 import { DeckLimitsValidationHandler } from "./validators/DeckLimitsValidationHandler";
@@ -12,6 +11,7 @@ import { NoLimitedCardValidationHandler } from "./validators/NoLimitedCardValida
 import { OfficialCardValidationHandler } from "./validators/OfficialCardsValidationHandler";
 import { PrereleaseValidationHandler } from "./validators/PrereleaseValidationHandler";
 import { SemiLimitedCardValidationHandler } from "./validators/SemiLimitedCardValidationHandler";
+import { Card } from "@shared/card/domain/Card";
 
 export class Deck {
 	readonly main: Card[];

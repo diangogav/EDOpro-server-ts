@@ -99,7 +99,7 @@ export class MercuryDuelingState extends RoomState {
 
 	private async handle(): Promise<void> {
 		this.logger.info("MercuryDuelingState:handle");
-		this.room.generateDuelRecord();
+		// this.room.generateDuelRecord();
 		await this.ocgCore.init(this.room);
 		this.ocgCore.resetResponseRequestState();
 
@@ -291,17 +291,17 @@ export class MercuryDuelingState extends RoomState {
 			message.data,
 		);
 
-		if (!deckEquals(updateDeckMessage.deck, player.deck)) {
-			const status = (player.position << 4) | 0x0a;
-			const playerChangeMessage = new YGOProStocHsPlayerChange().fromPartial({
-				playerPosition: player.position,
-				playerState: status,
-			});
-			player.sendMessageToClient(
-				Buffer.from(playerChangeMessage.toFullPayload()),
-			);
-			return;
-		}
+		// if (!deckEquals(updateDeckMessage.deck, player.deck)) {
+		// 	const status = (player.position << 4) | 0x0a;
+		// 	const playerChangeMessage = new YGOProStocHsPlayerChange().fromPartial({
+		// 		playerPosition: player.position,
+		// 		playerState: status,
+		// 	});
+		// 	player.sendMessageToClient(
+		// 		Buffer.from(playerChangeMessage.toFullPayload()),
+		// 	);
+		// 	return;
+		// }
 
 		player.sendMessageToClient(
 			Buffer.from(new YGOProStocDuelStart().toFullPayload()),
@@ -352,7 +352,7 @@ export class MercuryDuelingState extends RoomState {
 		const responseBuffer = Buffer.from(message.data);
 
 		// Save response to duel record
-		room.addResponse(responseBuffer);
+		// room.addResponse(responseBuffer);
 
 		// Handle time limit compensation
 		if (this.ocgCore.timeLimitEnabled) {

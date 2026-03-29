@@ -10,6 +10,47 @@ import { ISocket } from "../../socket/domain/ISocket";
 import { Mutex } from "async-mutex";
 import { Match } from "./match/domain/Match";
 import { RoomType } from "./RoomType";
+import { Rule } from "@shared/deck/domain/Rule";
+
+export class DeckRules {
+	public readonly mainMin: number;
+	public readonly mainMax: number;
+	public readonly extraMin: number;
+	public readonly extraMax: number;
+	public readonly sideMin: number;
+	public readonly sideMax: number;
+	public readonly rule: Rule;
+	public readonly maxDeckPoints: number;
+
+	constructor({
+		mainMin,
+		mainMax,
+		extraMin,
+		extraMax,
+		sideMin,
+		sideMax,
+		rule,
+		maxDeckPoints,
+	}: {
+		mainMin: number;
+		mainMax: number;
+		extraMin: number;
+		extraMax: number;
+		sideMin: number;
+		sideMax: number;
+		rule: number;
+		maxDeckPoints?: number;
+	}) {
+		this.mainMin = mainMin;
+		this.mainMax = mainMax;
+		this.extraMin = extraMin;
+		this.extraMax = extraMax;
+		this.sideMin = sideMin;
+		this.sideMax = sideMax;
+		this.rule = rule;
+		this.maxDeckPoints = maxDeckPoints ?? 100;
+	}
+}
 
 export enum DuelState {
 	WAITING = "waiting",
@@ -74,6 +115,8 @@ export abstract class YgoRoom {
 		this.notes = notes;
 		this.roomType = roomType;
 	}
+
+	abstract shouldValidateDeck(): boolean;
 
 	emit(event: string, message: unknown, socket: ISocket): void {
 		this.emitter.emit(event, message, this, socket);

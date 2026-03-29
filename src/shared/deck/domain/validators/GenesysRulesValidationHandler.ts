@@ -1,5 +1,5 @@
 import { EdoproBanList } from "@edopro/ban-list/domain/BanList";
-import { CardTypes } from "@edopro/card/domain/CardTypes";
+import { CardTypes } from "@shared/card/domain/CardTypes";
 import genesys from "genesys.json";
 
 import { Deck } from "../Deck";
@@ -13,7 +13,7 @@ export class GenesysRulesValidationHandler implements DeckValidationHandler {
 	private readonly nextHandler: DeckValidationHandler | null = null;
 	private readonly genesysMap = new Map(genesys.map((item) => [item.code.toString(), item.points]));
 
-	constructor(private readonly maxDeckPoints: number) {}
+	constructor(private readonly maxDeckPoints: number) { }
 
 	setNextHandler(handler: DeckValidationHandler): DeckValidationHandler {
 		throw new Error("Method not implemented.");
