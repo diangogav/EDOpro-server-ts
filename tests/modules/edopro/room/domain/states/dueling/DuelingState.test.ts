@@ -7,7 +7,7 @@ import { Room } from "../../../../../../../src/edopro/room/domain/Room";
 import { JSONMessageProcessor } from "../../../../../../../src/edopro/messages/JSONMessageProcessor";
 import { DuelingState } from "../../../../../../../src/edopro/room/domain/states/dueling/DuelingState";
 import { Client } from "../../../../../../../src/edopro/client/domain/Client";
-import { ClientMessage } from "../../../../../../../src/edopro/messages/MessageProcessor";
+import { ClientMessage } from "../../../../../../../src/shared/messages/MessageProcessor";
 import { FinishDuelHandler } from "../../../../../../../src/edopro/room/application/FinishDuelHandler";
 import { UpdateDeckMessageParser } from "../../../../../../../src/edopro/deck/application/UpdateDeckMessageSizeCalculator";
 import { ISocket } from "../../../../../../../src/shared/socket/domain/ISocket";
@@ -102,7 +102,7 @@ describe("DuelingState", () => {
     } as unknown as jest.Mocked<Client>;
 
     mockRoom = {
-      clients: [mockClient],
+      players: [mockClient],
       spectators: [],
       startLp: 8000,
       startHand: 5,
@@ -331,5 +331,4 @@ describe("DuelingState", () => {
 
     setImmediateSpy.mockRestore();
   });
-
 });

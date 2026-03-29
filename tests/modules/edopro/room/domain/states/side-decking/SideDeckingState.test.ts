@@ -6,7 +6,7 @@ import { DeckCreator } from "../../../../../../../src/edopro/deck/application/De
 import { SideDeckingState } from "../../../../../../../src/edopro/room/domain/states/side-decking/SideDeckingState";
 import { Room } from "../../../../../../../src/edopro/room/domain/Room";
 import { Client } from "../../../../../../../src/edopro/client/domain/Client";
-import { ClientMessage } from "../../../../../../../src/edopro/messages/MessageProcessor";
+import { ClientMessage } from "../../../../../../../src/shared/messages/MessageProcessor";
 import { UpdateDeckMessageParser } from "../../../../../../../src/edopro/deck/application/UpdateDeckMessageSizeCalculator";
 import { ISocket } from "../../../../../../../src/shared/socket/domain/ISocket";
 import { Commands } from "../../../../../../../src/shared/messages/Commands";
@@ -76,7 +76,7 @@ describe("SideDeckingState", () => {
     });
 
     mockRoom = {
-      clients: [mockClient],
+      players: [mockClient],
       spectators: [],
       banListHash: 123,
       setDecksToPlayer: jest.fn(),

@@ -1,4 +1,4 @@
-import { MessageProcessor } from "../../../../src/edopro/messages/MessageProcessor";
+import { MessageProcessor } from "../../../../src/shared/messages/MessageProcessor";
 
 describe("MessageProcessor", () => {
   let processor: MessageProcessor;

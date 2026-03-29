@@ -48,7 +48,7 @@ describe("Reconnect", () => {
 
     mockRoom = {
       ranked: false,
-      clients: [mockPlayer],
+      players: [mockPlayer],
     } as unknown as jest.Mocked<Room>;
   });
 
@@ -66,7 +66,7 @@ describe("Reconnect", () => {
 
     expect(mockPlayer.setSocket).toHaveBeenCalledWith(
       mockSocket,
-      mockRoom.clients,
+      mockRoom.players,
       mockRoom,
     );
     expect(mockPlayer.reconnecting).toHaveBeenCalled();

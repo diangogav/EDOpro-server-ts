@@ -6,7 +6,7 @@ import { WaitingState } from "../../../../../../../src/edopro/room/domain/states
 import { Room } from "../../../../../../../src/edopro/room/domain/Room";
 import { Client } from "../../../../../../../src/edopro/client/domain/Client";
 import { ISocket } from "../../../../../../../src/shared/socket/domain/ISocket";
-import { ClientMessage } from "../../../../../../../src/edopro/messages/MessageProcessor";
+import { ClientMessage } from "../../../../../../../src/shared/messages/MessageProcessor";
 import { DuelStartClientMessage } from "../../../../../../../src/shared/messages/server-to-client/DuelStartClientMessage";
 import { Commands } from "../../../../../../../src/shared/messages/Commands";
 
@@ -50,7 +50,7 @@ describe("WaitingState", () => {
       mutex: {
         runExclusive: jest.fn((cb) => cb()),
       },
-      clients: [],
+      players: [],
       spectators: [],
       addKick: jest.fn(),
       playerToSpectatorUnsafe: jest.fn(),
@@ -119,7 +119,7 @@ describe("WaitingState", () => {
       name: "Kicked",
     });
 
-    Object.defineProperty(mockRoom, "clients", { value: [kickedClient] });
+    Object.defineProperty(mockRoom, "players", { value: [kickedClient] });
 
     mockEmitter.emit(
       Commands.KICK as unknown as string,
@@ -230,7 +230,7 @@ describe("WaitingState", () => {
     const t1 = new Client({} as any) as jest.Mocked<Client>;
     Object.assign(t1, { ...mockClient, team: 1, position: 1 });
 
-    Object.defineProperty(mockRoom, "clients", { value: [t0, t1] });
+    Object.defineProperty(mockRoom, "players", { value: [t0, t1] });
 
     mockEmitter.emit(
       Commands.TRY_START as unknown as string,

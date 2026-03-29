@@ -1,7 +1,5 @@
 import { EventEmitter } from "stream";
 
-import genesys from "genesys.json";
-
 import { UserAuth } from "@shared/user-auth/application/UserAuth";
 import { UserProfile } from "@shared/user-profile/domain/UserProfile";
 
@@ -23,11 +21,7 @@ import {
 } from "ygopro-msg-encode";
 import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
 
-export class MercuryWaitingState extends RoomState {
-	private readonly genesysMap = new Map(
-		genesys.map((item) => [item.code.toString(), item.points]),
-	);
-
+export class YGOProWaitingState extends RoomState {
 	constructor(
 		private readonly userAuth: UserAuth,
 		eventEmitter: EventEmitter,

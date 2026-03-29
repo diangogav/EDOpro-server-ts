@@ -96,7 +96,7 @@ export const priorityRuleMappings: RuleMappings = {
 			const time = extractNumberFromCommand(value);
 			if (time === null) {
 				return {
-					time_limit: 180,
+					time_limit: 450,
 				};
 			}
 

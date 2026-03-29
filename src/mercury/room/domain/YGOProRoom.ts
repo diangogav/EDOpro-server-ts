@@ -26,7 +26,7 @@ import { MercuryChoosingOrderState } from "./states/MercuryChoosingOrderState";
 import { MercuryDuelingState } from "./states/MercuryDuelingState";
 import { MercuryRockPaperScissorState } from "./states/MercuryRockPaperScissorsState";
 import { MercurySideDeckingState } from "./states/MercurySideDeckingState";
-import { MercuryWaitingState } from "./states/MercuryWaitingState";
+import { YGOProWaitingState } from "./states/YGOProWaitingState";
 import { YGOProResourceLoader } from "../../ygopro/YGOProResourceLoader";
 import { HostInfo } from "./host-info/HostInfo";
 
@@ -111,7 +111,6 @@ export class YGOProRoom extends YgoRoom {
     this._state = DuelState.WAITING;
     this.banListHash = banListHash;
     this.createdBySocketId = createdBySocketId;
-    this._resourceLoader = YGOProResourceLoader.getShared();
     this._messageRepository = messageRepository;
   }
 
@@ -134,7 +133,7 @@ export class YGOProRoom extends YgoRoom {
       start_lp: 8000,
       start_hand: 5,
       draw_count: 1,
-      time_limit: 180,
+      time_limit: 450,
       max_deck_points: 100,
       best_of: BEST_OF[GameMode.SINGLE],
     };
@@ -274,7 +273,7 @@ export class YGOProRoom extends YgoRoom {
   }
 
   get hostInfo(): HostInfo {
-    return { ...this._hostInfo, lflist: 0, mode: this._hostInfo.mode };
+    return { ...this._hostInfo, mode: this._hostInfo.mode };
   }
 
   get playersCount(): number {
@@ -322,7 +321,7 @@ export class YGOProRoom extends YgoRoom {
       sideMax: 15,
       rule: this._hostInfo.rule,
     });
-    this.roomState = new MercuryWaitingState(
+    this.roomState = new YGOProWaitingState(
       new UserAuth(new UserProfilePostgresRepository()),
       this.emitter,
       this._logger,

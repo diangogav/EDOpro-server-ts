@@ -58,7 +58,7 @@ describe("JoinToDuelAsSpectator", () => {
       addSpectatorUnsafe: jest.fn(),
       notifyToAllPlayers: jest.fn(),
       spectatorCache: [Buffer.from("cache1"), Buffer.from("cache2")],
-      clients: [mockClient1, mockClient2],
+      players: [mockClient1, mockClient2],
       spectators: [mockSpectator],
       matchScore: jest.fn().mockReturnValue({ team0: 1, team1: 0 }),
     } as unknown as jest.Mocked<Room>;

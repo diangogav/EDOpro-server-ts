@@ -1,17 +1,17 @@
 import { Logger } from "../../../../../src/shared/logger/domain/Logger";
 import { ISocket } from "../../../../../src/shared/socket/domain/ISocket";
 import { Client } from "../../../../../src/edopro/client/domain/Client";
-import { Deck } from "../../../../../src/edopro/deck/domain/Deck";
+import { Deck } from "../../../../../src/shared/deck/domain/Deck";
 import { Choose } from "../../../../../src/edopro/rock-paper-scissor/RockPaperScissor";
 import { Room } from "../../../../../src/edopro/room/domain/Room";
 import { RoomMessageEmitter } from "../../../../../src/edopro/RoomMessageEmitter";
 import {
   MessageProcessor,
   ClientMessage,
-} from "../../../../../src/edopro/messages/MessageProcessor";
+} from "../../../../../src/shared/messages/MessageProcessor";
 
 jest.mock("../../../../../src/edopro/RoomMessageEmitter");
-jest.mock("../../../../../src/edopro/messages/MessageProcessor");
+jest.mock("../../../../../src/shared/messages/MessageProcessor");
 
 describe("Client", () => {
   let client: Client;

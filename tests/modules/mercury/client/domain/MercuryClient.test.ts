@@ -1,10 +1,10 @@
 import net from "net";
 import { MercuryClient } from "../../../../../src/mercury/client/domain/MercuryClient";
-import { MercuryRoom } from "../../../../../src/mercury/room/domain/MercuryRoom";
+import { YGOProRoom } from "../../../../../src/mercury/room/domain/YGOProRoom";
 import { Logger } from "../../../../../src/shared/logger/domain/Logger";
 import { ISocket } from "../../../../../src/shared/socket/domain/ISocket";
 import { Team } from "../../../../../src/shared/room/Team";
-import { ClientMessage } from "../../../../../src/edopro/messages/MessageProcessor";
+import { ClientMessage } from "../../../../../src/shared/messages/MessageProcessor";
 
 // Mock dependencies
 jest.mock("net");
@@ -15,7 +15,7 @@ describe("MercuryClient", () => {
   let client: MercuryClient;
   let mockSocket: jest.Mocked<ISocket>;
   let mockLogger: jest.Mocked<Logger>;
-  let mockRoom: jest.Mocked<MercuryRoom>;
+  let mockRoom: jest.Mocked<YGOProRoom>;
   let mockCoreClient: jest.Mocked<net.Socket>;
 
   beforeEach(() => {
@@ -42,7 +42,7 @@ describe("MercuryClient", () => {
     // Mock room
     mockRoom = {
       id: "test-room-id",
-    } as unknown as jest.Mocked<MercuryRoom>;
+    } as unknown as jest.Mocked<YGOProRoom>;
 
     // Mock core client (net.Socket)
     mockCoreClient = {
@@ -64,11 +64,11 @@ describe("MercuryClient", () => {
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
-        messages: [],
         position: 0,
         room: mockRoom,
         host: true,
         id: "player-id-1",
+        team: Team.PLAYER,
       });
 
       expect(client.name).toBe("TestPlayer");
@@ -83,11 +83,11 @@ describe("MercuryClient", () => {
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
-        messages: [],
         position: 0,
         room: mockRoom,
-        host: false,
-        id: null,
+        host: true,
+        id: "player-id-1",
+        team: Team.PLAYER,
       });
 
       expect(client.team).toBe(Team.SPECTATOR);
@@ -99,11 +99,11 @@ describe("MercuryClient", () => {
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
-        messages: [],
         position: 0,
         room: mockRoom,
         host: true,
         id: "player-id-1",
+        team: Team.PLAYER,
       });
 
       expect(mockLogger.child).toHaveBeenCalledWith({
@@ -118,11 +118,11 @@ describe("MercuryClient", () => {
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
-        messages: [],
         position: 0,
         room: mockRoom,
         host: true,
         id: "player-id-1",
+        team: Team.PLAYER,
       });
 
       expect(mockCoreClient.on).toHaveBeenCalledWith(
@@ -136,11 +136,11 @@ describe("MercuryClient", () => {
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
-        messages: [],
         position: 0,
         room: mockRoom,
         host: true,
         id: "player-id-1",
+        team: Team.PLAYER,
       });
 
       expect(mockCoreClient.on).toHaveBeenCalledWith(
@@ -154,11 +154,11 @@ describe("MercuryClient", () => {
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
-        messages: [],
         position: 0,
         room: mockRoom,
         host: true,
         id: "player-id-1",
+        team: Team.PLAYER,
       });
 
       expect(mockSocket.onMessage).toHaveBeenCalledWith(expect.any(Function));
@@ -171,11 +171,11 @@ describe("MercuryClient", () => {
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
-        messages: [],
         position: 0,
         room: mockRoom,
         host: true,
         id: "player-id-1",
+        team: Team.PLAYER,
       });
     });
 
@@ -221,11 +221,11 @@ describe("MercuryClient", () => {
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
-        messages: [],
         position: 0,
         room: mockRoom,
         host: true,
         id: "player-id-1",
+        team: Team.PLAYER,
       });
     });
 
@@ -258,11 +258,11 @@ describe("MercuryClient", () => {
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
-        messages: [],
         position: 0,
         room: mockRoom,
         host: true,
         id: "player-id-1",
+        team: Team.PLAYER,
       });
     });
 
@@ -291,11 +291,11 @@ describe("MercuryClient", () => {
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
-        messages: [],
         position: 0,
         room: mockRoom,
         host: true,
         id: "player-id-1",
+        team: Team.PLAYER,
       });
     });
 
@@ -314,11 +314,11 @@ describe("MercuryClient", () => {
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
-        messages: [],
         position: 0,
         room: mockRoom,
         host: true,
         id: "player-id-1",
+        team: Team.PLAYER,
       });
     });
 
@@ -342,11 +342,11 @@ describe("MercuryClient", () => {
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
-        messages: [],
         position: 0,
         room: mockRoom,
         host: true,
         id: "player-id-1",
+        team: Team.PLAYER,
       });
     });
 
@@ -373,11 +373,11 @@ describe("MercuryClient", () => {
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
-        messages: [],
         position: 0,
         room: mockRoom,
         host: true,
         id: "player-id-1",
+        team: Team.PLAYER,
       });
     });
 
@@ -401,11 +401,11 @@ describe("MercuryClient", () => {
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
-        messages: [],
         position: 0,
         room: mockRoom,
         host: false,
         id: "player-id-1",
+        team: Team.PLAYER,
       });
     });
 
@@ -431,11 +431,11 @@ describe("MercuryClient", () => {
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
-        messages: [],
         position: 0,
         room: mockRoom,
         host: true,
         id: "player-id-1",
+        team: Team.PLAYER,
       });
     });
 
@@ -488,11 +488,11 @@ describe("MercuryClient", () => {
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
-        messages: [],
         position: 0,
         room: mockRoom,
         host: true,
         id: "player-id-1",
+        team: Team.PLAYER,
       });
     });
 
@@ -509,11 +509,11 @@ describe("MercuryClient", () => {
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
-        messages: [],
         position: 0,
         room: mockRoom,
         host: true,
         id: "player-id-1",
+        team: Team.PLAYER,
       });
     });
 
@@ -533,11 +533,11 @@ describe("MercuryClient", () => {
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
-        messages: [],
         position: 0,
         room: mockRoom,
         host: true,
         id: "player-id-1",
+        team: Team.PLAYER,
       });
     });
 
