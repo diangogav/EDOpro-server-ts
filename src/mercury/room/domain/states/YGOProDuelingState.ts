@@ -327,7 +327,9 @@ export class YGOProDuelingState extends RoomState {
 
   private broadcastWinMessage(winMsg: YGOProMsgWin): void {
     this.room.clients.forEach((client: MercuryClient) => {
-      client.sendMessageToClient(this.room.messageSender.winMessage(winMsg.player, winMsg.type));
+      client.sendMessageToClient(
+        this.room.messageSender.winMessage(winMsg.player, winMsg.type),
+      );
     });
   }
 
@@ -473,7 +475,7 @@ export class YGOProDuelingState extends RoomState {
         date: new Date(),
         banListHash: this.room.banListHash,
         ranked: this.room.ranked,
-      })
+      }),
     );
   }
 

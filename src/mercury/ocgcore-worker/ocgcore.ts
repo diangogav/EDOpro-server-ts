@@ -640,6 +640,12 @@ export class OCGCore {
     message: YGOProMsgBase,
     options: { sendToClient?: MayBeArray<Client>; route?: boolean } = {},
   ): Promise<YGOProMsgBase | null> {
+    if (!options?.sendToClient) {
+      if (!(message instanceof YGOProMsgRetry)) {
+        this.room.saveMessageToDuelRecord(message);
+      }
+    }
+
     if (options?.route && message) {
       await this.routeGameMsg(message, {
         sendToClient: options?.sendToClient,
@@ -659,7 +665,7 @@ export class OCGCore {
     });
 
     // TODO: Send chat message "#draw_due_to_error" with error color
-    await this.routeGameMsg(drawGame);
+    await this.dispatchGameMessage(drawGame, { route: true });
   }
 
   // ============================================================
@@ -742,13 +748,14 @@ export class OCGCore {
 
       const cardData = queryResult.card;
 
-      await this.routeGameMsg(
+      await this.dispatchGameMessage(
         new YGOProMsgUpdateCard().fromPartial({
           controller: request.player,
           location,
           sequence: request.sequence,
           card: cardData as never,
         }),
+        { route: true },
       );
     }
   }
@@ -772,12 +779,13 @@ export class OCGCore {
 
       const cards = queryResult.cards ?? [];
 
-      await this.routeGameMsg(
+      await this.dispatchGameMessage(
         new YGOProMsgUpdateData().fromPartial({
           player: request.player,
           location,
           cards: cards as never[],
         }),
+        { route: true },
       );
     }
   }
