@@ -30,7 +30,6 @@ import { Logger } from "src/shared/logger/domain/Logger";
 import { GameMessageMiddleware } from "../middleware/GameMessageMiddleware";
 import {
   canIncreaseTime,
-  getMessageIdentifier,
 } from "../utils/response-time-utils";
 import { TimerState } from "../room/domain/TimerState";
 import { YGOProResourceLoader } from "@ygopro/ygopro";

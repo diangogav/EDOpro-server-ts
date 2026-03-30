@@ -33,7 +33,7 @@ export class DisconnectHandler {
 			return;
 		}
 		if (room instanceof YGOProRoom) {
-			this.handleMercury(room);
+			this.handleYGOPro(room);
 
 			return;
 		}
@@ -104,8 +104,8 @@ export class DisconnectHandler {
 		}
 	}
 
-	private handleMercury(room: YGOProRoom): void {
-		if (room.players.every((client) => client.socket.closed)) {
+	private handleYGOPro(room: YGOProRoom): void {
+		if (room.players.every((player) => player.socket.closed)) {
 			MercuryRoomList.deleteRoom(room);
 			WebSocketSingleton.getInstance().broadcast({
 				action: "REMOVE-ROOM",
@@ -124,8 +124,8 @@ export class DisconnectHandler {
 		}
 
 		if (room.duelState === DuelState.WAITING) {
+			room.playerLeave(player);
 			player.destroy();
-			room.removePlayer(player);
 		}
 	}
 
@@ -165,6 +165,7 @@ export class DisconnectHandler {
 			return;
 		}
 
-		room.removeSpectator(spectator);
+		room.spectatorLeave(spectator);
+		spectator.destroy();
 	}
 }

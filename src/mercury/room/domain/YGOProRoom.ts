@@ -10,10 +10,9 @@ import { UserProfilePostgresRepository } from "@shared/user-profile/infrastructu
 import { Logger } from "@shared/logger/domain/Logger";
 import { DeckRules, DuelState, YgoRoom } from "@shared/room/domain/YgoRoom";
 import { RoomType } from "@shared/room/domain/RoomType";
-
-import { generateSeed } from "@ygopro/utils/generate-seed";
-import { shuffleDecksBySeed } from "@ygopro/utils/shuffle-decks-by-seed";
-import { calculateOcgcoreDeck } from "@ygopro/utils/calculate-ocgcore-deck";
+import { MessageRepository } from "@shared/messages/MessageRepository";
+import { ISocket } from "@shared/socket/domain/ISocket";
+import { Deck } from "@shared/deck/domain/Deck";
 
 import MercuryBanListMemoryRepository from "../../ban-list/infrastructure/MercuryBanListMemoryRepository";
 import { MercuryClient } from "../../client/domain/MercuryClient";
@@ -38,13 +37,9 @@ import {
   YGOProStocDeckCount_DeckInfo,
 } from "ygopro-msg-encode";
 import { YGOProYrp } from "ygopro-yrp-encode";
-import { ISocket } from "src/shared/socket/domain/ISocket";
-import YGOProDeck from "ygopro-deck-encode";
 import { DuelRecord } from "./DuelRecord";
-import { MessageRepository } from "@shared/messages/MessageRepository";
 import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
 import { CardYGOProRepository } from "@ygopro/card/infrastructure/CardYGOProRepository";
-import { Deck } from "@shared/deck/domain/Deck";
 
 const BEST_OF = {
   [GameMode.SINGLE]: 1,
@@ -57,8 +52,10 @@ export class YGOProRoom extends YgoRoom {
   readonly password: string;
   readonly createdBySocketId: string;
   readonly banListHash: number;
+  //TODO: compatibility with edopro list and rank;
+  readonly edoBanListHash: number;
   private _logger: Logger;
-  private roomState: RoomState | null = null;
+  private _roomState: RoomState | null = null;
   private _isPositionSwapped: boolean = false;
   private _duelRecords: DuelRecord[] = [];
   private _currentDuelRecord: DuelRecord;
@@ -204,9 +201,13 @@ export class YGOProRoom extends YgoRoom {
 
     const teamCount = hostInfo.mode === GameMode.TAG ? 2 : 1;
     const ranked = Boolean(playerInfo.password);
+    const banList = MercuryBanListMemoryRepository.findLFListByIndex(hostInfo.lflist)
     const banListHash =
-      MercuryBanListMemoryRepository.findLFListByIndex(hostInfo.lflist)?.hash ??
+      banList?.hash ??
       0;
+    const edoBanList = BanListMemoryRepository.findByName(banList?.name ?? "");
+    const edoBanListHash = edoBanList?.hash ?? 0;
+
     const room = new YGOProRoom({
       id,
       hostInfo,
@@ -275,7 +276,7 @@ export class YGOProRoom extends YgoRoom {
   }
 
   get hostInfo(): HostInfo {
-    return { ...this._hostInfo, mode: this._hostInfo.mode };
+    return { ...this._hostInfo, mode: this._hostInfo.mode, lflist: this.banListHash };
   }
 
   get playersCount(): number {
@@ -303,8 +304,8 @@ export class YGOProRoom extends YgoRoom {
   }
 
   waiting(): void {
-    this.roomState?.removeAllListener();
-    this.roomState = new YGOProWaitingState(
+    this._roomState?.removeAllListener();
+    this._roomState = new YGOProWaitingState(
       new UserAuth(new UserProfilePostgresRepository()),
       this.emitter,
       this._logger,
@@ -318,8 +319,8 @@ export class YGOProRoom extends YgoRoom {
 
   rps(): void {
     this._state = DuelState.RPS;
-    this.roomState?.removeAllListener();
-    this.roomState = new YGOProRockPaperScissorState(
+    this._roomState?.removeAllListener();
+    this._roomState = new YGOProRockPaperScissorState(
       this.emitter,
       this._logger,
     );
@@ -327,21 +328,21 @@ export class YGOProRoom extends YgoRoom {
 
   choosingOrder(): void {
     this._state = DuelState.CHOOSING_ORDER;
-    this.roomState?.removeAllListener();
-    this.roomState = new YGOProChoosingOrderState(this.emitter, this._logger);
+    this._roomState?.removeAllListener();
+    this._roomState = new YGOProChoosingOrderState(this.emitter, this._logger);
   }
 
   dueling(): void {
     this._state = DuelState.DUELING;
     this.isStart = "start";
-    this.roomState?.removeAllListener();
-    this.roomState = new YGOProDuelingState(this, this.emitter, this._logger);
+    this._roomState?.removeAllListener();
+    this._roomState = new YGOProDuelingState(this, this.emitter, this._logger);
   }
 
   sideDecking(): void {
     this._state = DuelState.SIDE_DECKING;
-    this.roomState?.removeAllListener();
-    this.roomState = new YGOProSideDeckingState(
+    this._roomState?.removeAllListener();
+    this._roomState = new YGOProSideDeckingState(
       this.emitter,
       this._logger,
       new YGOProDeckCreator(
@@ -657,20 +658,6 @@ export class YGOProRoom extends YgoRoom {
     return this.isTag ? 1 : 0;
   }
 
-  // setBanListHash(banListHash: number): void {
-  //   this._banListHash = banListHash;
-
-  //   const mercuryBanList =
-  //     MercuryBanListMemoryRepository.findByHash(banListHash);
-  //   if (!mercuryBanList?.name) {
-  //     return;
-  //   }
-
-  //   const edoBanList = BanListMemoryRepository.findByName(mercuryBanList.name);
-
-  //   this._edoBanListHash = edoBanList?.hash ?? 0;
-  // }
-
   toPresentation(): { [key: string]: unknown } {
     return {
       roomid: this.id,
@@ -691,7 +678,7 @@ export class YGOProRoom extends YgoRoom {
       rule: this._hostInfo.rule,
       no_check: this._hostInfo.no_check_deck,
       no_shuffle: this._hostInfo.no_shuffle_deck,
-      // banlist_hash: this._edoBanListHash ?? this._banListHash,
+      banlist_hash: this.edoBanListHash ?? this.banListHash,
       istart: this.isStart,
       main_min: 40,
       main_max: 60,
@@ -708,7 +695,7 @@ export class YGOProRoom extends YgoRoom {
 
   destroy(): void {
     this.emitter.removeAllListeners();
-    this.roomState?.removeAllListener();
+    this._roomState?.removeAllListener();
     this._players.forEach((client: MercuryClient) => {
       client.destroy();
     });
@@ -720,13 +707,16 @@ export class YGOProRoom extends YgoRoom {
     );
   }
 
-  // get banListHash(): number {
-  //   return this._banListHash;
-  // }
+  playerLeave(player: MercuryClient): void {
+    this.removePlayer(player);
+    const message = this.messageSender.playerChangeMessage(player.position, PlayerChangeState.LEAVE)
+    this.broadcastToAll(message);
+  }
 
-  // get edoBanListHash(): number {
-  //   return this._edoBanListHash;
-  // }
+  spectatorLeave(spectator: MercuryClient): void {
+    this.removeSpectator(spectator);
+    this.sendSpectatorCount({ enqueue: false });
+  }
 
   setDuelFinished(): void {
     this._state = DuelState.WAITING;
