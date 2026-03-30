@@ -25,7 +25,7 @@ import {
 import { YGOProChoosingOrderState } from "./states/YGOProChoosingOrderState";
 import { YGOProDuelingState } from "./states/YGOProDuelingState";
 import { YGOProRockPaperScissorState } from "./states/YGOProRockPaperScissorState";
-import { MercurySideDeckingState } from "./states/MercurySideDeckingState";
+import { YGOProSideDeckingState } from "./states/YGOProSideDeckingState";
 import { YGOProWaitingState } from "./states/YGOProWaitingState";
 import { HostInfo } from "./host-info/HostInfo";
 
@@ -333,7 +333,7 @@ export class YGOProRoom extends YgoRoom {
   sideDecking(): void {
     this._state = DuelState.SIDE_DECKING;
     this.roomState?.removeAllListener();
-    this.roomState = new MercurySideDeckingState(
+    this.roomState = new YGOProSideDeckingState(
       this.emitter,
       this._logger,
       new YGOProDeckCreator(this._cardRepository, this._deckRules, this._logger),

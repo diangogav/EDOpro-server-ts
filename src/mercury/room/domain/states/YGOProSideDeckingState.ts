@@ -16,7 +16,7 @@ import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { YGOProRoom } from "../YGOProRoom";
 import { ErrorMessageType, YGOProCtosUpdateDeck, YGOProStocDuelStart, YGOProStocWaitingSide } from "ygopro-msg-encode";
 
-export class MercurySideDeckingState extends RoomState {
+export class YGOProSideDeckingState extends RoomState {
 	constructor(
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
