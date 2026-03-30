@@ -947,6 +947,15 @@ export class OCGCore {
     );
   }
 
+
+  /**
+   * Returns the ingame position for a client (applies swap if needed).
+   */
+  getIngamePosition(client: Client): number {
+    return this.toIngamePosition(client.position);
+  }
+
+
   private async handleResponseTimeout(originalDuelPos: number): Promise<void> {
     if (this.timerState.runningPos !== originalDuelPos) {
       return;
@@ -957,10 +966,14 @@ export class OCGCore {
     this.logger.info("Response timeout", { originalDuelPos });
 
     const winnerOriginalDuelPos = 1 - originalDuelPos;
-    const winnerIngamePos = this.toIngamePosition(winnerOriginalDuelPos);
-    this.room.emitRoomEvent("DUEL_END", {} as any, null as any);
-    // TODO: Integrate with proper win() logic when available
-    this.logger.info("Timeout win", { winner: winnerIngamePos });
+    const player = this.room.players.find((player: MercuryClient) => player.position === originalDuelPos);
+    const event = "FINISH_DUEL_BY_TIMEOUT";
+    const msgWin = new YGOProMsgWin().fromPartial({
+      player: winnerOriginalDuelPos,
+      type: 0x3,
+    });
+
+    this.room.emitRoomEvent(event, msgWin, player as MercuryClient);
   }
 
   // ============================================================
@@ -1085,17 +1098,29 @@ export class OCGCore {
   }
 
   /**
-   * Returns the ingame position for a client (applies swap if needed).
-   */
-  private getIngamePosition(client: Client): number {
-    return this.toIngamePosition(client.position);
-  }
-
-  /**
    * Returns the active player (who must respond) at the given position.
    */
   private getActivePlayer(ingamePosition: number): Client | null {
     const players = this.getPlayersAtIngamePosition(ingamePosition);
+    if (!this.room.isTag || players.length <= 1) {
+      return players[0] ?? null;
+    }
+
+    // tag_duel.cpp cur_player equivalent, computed from turnCount
+    // duelPosition 0: start from players[0], toggle every two turns from turn 3
+    // duelPosition 1: start from players[1], toggle every two turns from turn 2
+    const tc = Math.max(0, this.room.turn || 0);
+    const duelPosition = this.toIngamePosition(ingamePosition);
+
+    if (duelPosition === 0) {
+      const idx = Math.floor(Math.max(0, tc - 1) / 2) % 2;
+      return players[idx] ?? null;
+    }
+    if (duelPosition === 1) {
+      const idx = 1 - (Math.floor(tc / 2) % 2);
+      return players[idx] ?? null;
+    }
+
     return players[0] ?? null;
   }
 }
