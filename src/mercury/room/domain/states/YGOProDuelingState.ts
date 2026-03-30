@@ -1,18 +1,18 @@
-import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
 import { EventEmitter } from "events";
-import { CoreMessages } from "src/edopro/messages/domain/CoreMessages";
-import { container } from "src/shared/dependency-injection";
-import { EventBus } from "src/shared/event-bus/EventBus";
-import { GameOverDomainEvent } from "src/shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
-import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 
-import { PlayerInfoMessage } from "../../../../edopro/messages/client-to-server/PlayerInfoMessage";
-import { Commands } from "../../../../shared/messages/Commands";
-import { ClientMessage } from "../../../../shared/messages/MessageProcessor";
-import { RoomState } from "../../../../edopro/room/domain/RoomState";
-import { Logger } from "../../../../shared/logger/domain/Logger";
-import { DuelState } from "../../../../shared/room/domain/YgoRoom";
-import { ISocket } from "../../../../shared/socket/domain/ISocket";
+import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
+import { RoomState } from "@edopro/room/domain/RoomState";
+
+import { OCGCore } from "@ygopro/ocgcore-worker/ocgcore";
+
+import { container } from "@shared/dependency-injection";
+import { EventBus } from "@shared/event-bus/EventBus";
+import { Commands } from "@shared/messages/Commands";
+import { ClientMessage } from "@shared/messages/MessageProcessor";
+import { Logger } from "@shared/logger/domain/Logger";
+import { ISocket } from "@shared/socket/domain/ISocket";
+import { Team } from "@shared/room/Team";
+
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { YGOProRoom } from "../YGOProRoom";
 import { getMessageIdentifier } from "../../../utils/response-time-utils";
@@ -20,21 +20,15 @@ import { getMessageIdentifier } from "../../../utils/response-time-utils";
 import {
 	OcgcoreScriptConstants,
 	YGOProCtosUpdateDeck,
-	YGOProMsgNewTurn,
 	YGOProMsgStart,
 	YGOProMsgWin,
 	YGOProStocChangeSide,
 	YGOProStocDuelStart,
 	YGOProStocGameMsg,
-	YGOProStocHsPlayerChange,
-	YGOProStocReplay,
 	YGOProStocWaitingSide,
 } from "ygopro-msg-encode";
-import { OCGCore } from "src/mercury/ocgcore-worker/ocgcore";
-import { deckEquals } from "src/mercury/utils/deck-equals";
-import { Team } from "src/shared/room/Team";
 
-export class MercuryDuelingState extends RoomState {
+export class YGOProDuelingState extends RoomState {
 	private readonly eventBus: EventBus;
 	private readonly ocgCore: OCGCore;
 
@@ -50,45 +44,15 @@ export class MercuryDuelingState extends RoomState {
 		this.eventBus = container.get(EventBus);
 
 		this.eventEmitter.on(
-			"DUEL_END",
-			(message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
-				this.handleDuelEnd.bind(this)(message, room, client),
-		);
-
-		this.eventEmitter.on(
 			"JOIN",
 			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
 				void this.handleJoin.bind(this)(message, room, socket),
 		);
 
 		this.eventEmitter.on(
-			"GAME_MSG",
-			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
-				void this.handleGameMessage.bind(this)(message, room, socket),
-		);
-
-		this.eventEmitter.on(
-			"FIELD_FINISH",
-			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
-				void this.handleFieldFinish.bind(this)(message, room, socket),
-		);
-
-		this.eventEmitter.on(
-			"TIME_LIMIT",
-			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
-				void this.handleTimeLimit.bind(this)(message, room, socket),
-		);
-
-		this.eventEmitter.on(
 			Commands.UPDATE_DECK as unknown as string,
 			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
 				void this.handleUpdateDeck.bind(this)(message, room, socket),
-		);
-
-		this.eventEmitter.on(
-			Commands.TIME_CONFIRM as unknown as string,
-			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
-				void this.handleTimeConfirm.bind(this)(message, room, socket),
 		);
 
 		this.eventEmitter.on(
@@ -101,8 +65,8 @@ export class MercuryDuelingState extends RoomState {
 	private async handle(): Promise<void> {
 		this.logger.info("handle");
 
-		this.room.generateDuelRecord();
-		await this.ocgCore.init(this.room);
+		const duelRecord = await this.ocgCore.init();
+		this.room.addDuelRecord(duelRecord);
 		this.ocgCore.resetResponseRequestState();
 
 		this.ocgCore.messageMiddleware.on(
@@ -157,11 +121,10 @@ export class MercuryDuelingState extends RoomState {
 				}),
 			});
 
-		// Use ingame position (considering swap) to match srvpro2 behavior
-		const player0Players = this.ocgCore.getPlayersAtIngamePosition(0);
-		const player1Players = this.ocgCore.getPlayersAtIngamePosition(1);
-		const player0StartMessage = createStartMsg(0);
-		const player1StartMessage = createStartMsg(1);
+		const player0Players = this.ocgCore.getPlayersAtIngamePosition(Team.PLAYER);
+		const player1Players = this.ocgCore.getPlayersAtIngamePosition(Team.OPPONENT);
+		const player0StartMessage = createStartMsg(Team.PLAYER);
+		const player1StartMessage = createStartMsg(Team.OPPONENT);
 
 		player0Players.forEach((_player) => {
 			_player.sendMessageToClient(
@@ -188,24 +151,15 @@ export class MercuryDuelingState extends RoomState {
 		this.room.saveMessageToDuelRecord(watcherStartMessage.msg!);
 
 		this.ocgCore.refreshZones({
-			player: 0,
+			player: Team.PLAYER,
 			location: OcgcoreScriptConstants.LOCATION_EXTRA,
 		});
 		this.ocgCore.refreshZones({
-			player: 1,
+			player: Team.OPPONENT,
 			location: OcgcoreScriptConstants.LOCATION_EXTRA,
 		});
 
-		this.logger.info("advance core")
 		this.ocgCore.advance();
-	}
-
-	private handleDuelEnd(
-		_message: ClientMessage,
-		_room: YGOProRoom,
-		player: MercuryClient,
-	): void {
-		player.logger.info("MercuryDuelingState: DUEL_END");
 	}
 
 	private handleJoin(
@@ -242,48 +196,12 @@ export class MercuryDuelingState extends RoomState {
 		this.room.reconnect(playerAlreadyInRoom, socket);
 	}
 
-	private handleGameMessage(
-		message: ClientMessage,
-		room: YGOProRoom,
-		player: MercuryClient,
-	): void {
-		player.logger.info(
-			`MercuryDuelingState: GAME_MSG: ${message.raw.toString("hex")}`,
-		);
-		if (player.isReconnecting) {
-			return;
-		}
-		const coreMessageType = message.raw.readInt8(3);
-
-		if (coreMessageType !== 1) {
-			player.logger.debug(
-				`last message ${player.name} ${message.raw.toString("hex")}`,
-			);
-			player.setLastMessage(message.raw);
-		}
-
-		if (player.position === 0) {
-			this.processDuelMessage(coreMessageType, message.data, room);
-		}
-	}
-
-	private handleFieldFinish(
-		_message: ClientMessage,
-		_room: YGOProRoom,
-		player: MercuryClient,
-	): void {
-		if (player.cache) {
-			player.socket.send(player.cache);
-			player.clearReconnecting();
-		}
-	}
-
 	private async handleUpdateDeck(
 		message: ClientMessage,
 		_room: YGOProRoom,
 		player: MercuryClient,
 	): Promise<void> {
-		player.logger.info("MercuryDuelingState: UPDATE_DECK");
+		player.logger.info("handleUpdateDeck");
 		if (!player.isReconnecting || !player.deck) {
 			return;
 		}
@@ -292,17 +210,18 @@ export class MercuryDuelingState extends RoomState {
 			message.data,
 		);
 
-		// if (!deckEquals(updateDeckMessage.deck, player.deck)) {
-		// 	const status = (player.position << 4) | 0x0a;
-		// 	const playerChangeMessage = new YGOProStocHsPlayerChange().fromPartial({
-		// 		playerPosition: player.position,
-		// 		playerState: status,
-		// 	});
-		// 	player.sendMessageToClient(
-		// 		Buffer.from(playerChangeMessage.toFullPayload()),
-		// 	);
-		// 	return;
-		// }
+		const completeIncomingDeck = [...updateDeckMessage.deck.main, ...updateDeckMessage.deck.side];
+		const completeCurrentDeck = [
+			...player.deck.main,
+			...player.deck.side,
+			...player.deck.extra,
+		].map((item) => Number(item.code));
+
+		if (completeCurrentDeck.length !== completeIncomingDeck.length) {
+			const status = (player.position << 4) | 0x0a;
+			player.sendMessageToClient(this.room.messageSender.playerChangeMessage(player.position, status));
+			return;
+		}
 
 		player.sendMessageToClient(
 			Buffer.from(new YGOProStocDuelStart().toFullPayload()),
@@ -317,28 +236,12 @@ export class MercuryDuelingState extends RoomState {
 		player.clearReconnecting();
 	}
 
-	private handleTimeConfirm(
-		_message: ClientMessage,
-		_room: YGOProRoom,
-		player: MercuryClient,
-	): void {
-		player.logger.info("MercuryDuelingState: TIME_CONFIRM");
-	}
-
-	private handleTimeLimit(
-		_message: ClientMessage,
-		_room: YGOProRoom,
-		player: MercuryClient,
-	): void {
-		player.logger.info("MercuryDuelingState: TIME_LIMIT");
-	}
-
 	private async handleResponse(
 		message: ClientMessage,
 		room: YGOProRoom,
 		player: MercuryClient,
 	): Promise<void> {
-		player.logger.info("MercuryDuelingState: handleResponse");
+		player.logger.info("handleResponse");
 
 		if (
 			this.ocgCore.currentResponsePosition === null ||
@@ -351,9 +254,6 @@ export class MercuryDuelingState extends RoomState {
 		const responsePosition = this.ocgCore.currentResponsePosition;
 		const responseRequestMsg = this.ocgCore.currentLastResponseRequestMsg;
 		const responseBuffer = Buffer.from(message.data);
-
-		// Save response to duel record
-		// room.addResponse(responseBuffer);
 
 		// Handle time limit compensation
 		if (this.ocgCore.timeLimitEnabled) {

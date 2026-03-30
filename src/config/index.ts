@@ -39,7 +39,8 @@ export const config = {
   },
   resources: {
     ygopro: {
-      folders: process.env?.YGOPRO_FOLDERS?.split(",") ?? []
+      folders: process.env?.YGOPRO_FOLDERS?.split(",") ?? [],
+      extraScripts: process.env?.YGOPRO_EXTRA_SCRIPTS?.split(",") ?? [],
     }
   }
 };

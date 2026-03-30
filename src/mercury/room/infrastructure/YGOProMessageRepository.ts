@@ -1,8 +1,12 @@
 import { MessageRepository } from "@shared/messages/MessageRepository";
-import { ErrorMessageType, YGOProStocDeckCount_DeckInfo, YGOProStocDuelStart, YGOProStocErrorMsg, YGOProStocHandResult, YGOProStocHsPlayerChange, YGOProStocHsPlayerEnter, YGOProStocHsWatchChange, YGOProStocJoinGame, YGOProStocSelectHand, YGOProStocSelectTp, YGOProStocTypeChange } from "ygopro-msg-encode";
+import { ErrorMessageType, YGOProStocChangeSide, YGOProStocDuelStart, YGOProStocErrorMsg, YGOProStocHandResult, YGOProStocHsPlayerChange, YGOProStocHsPlayerEnter, YGOProStocHsWatchChange, YGOProStocJoinGame, YGOProStocSelectHand, YGOProStocSelectTp, YGOProStocTypeChange } from "ygopro-msg-encode";
 import { HostInfo } from "../domain/host-info/HostInfo";
 
 export class YGOProMessageRepository extends MessageRepository {
+  changeSideMessage(): Buffer {
+    return Buffer.from(new YGOProStocChangeSide().toFullPayload());
+  }
+
   handResultMessage(response1: number, response2: number): Buffer {
     const message = new YGOProStocHandResult().fromPartial({
       res1: response1,
@@ -77,9 +81,10 @@ export class YGOProMessageRepository extends MessageRepository {
     return Buffer.from(message.toFullPayload());
   }
 
-  errorMessage(errorCode: ErrorMessageType): Buffer {
+  errorMessage(type: ErrorMessageType, code: number): Buffer {
     const message = new YGOProStocErrorMsg().fromPartial({
-      msg: errorCode,
+      msg: type,
+      code,
     });
 
     return Buffer.from(message.toFullPayload());

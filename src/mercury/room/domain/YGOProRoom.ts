@@ -23,11 +23,10 @@ import {
   ruleMappings,
 } from "./RuleMappings";
 import { YGOProChoosingOrderState } from "./states/YGOProChoosingOrderState";
-import { MercuryDuelingState } from "./states/MercuryDuelingState";
+import { YGOProDuelingState } from "./states/YGOProDuelingState";
 import { YGOProRockPaperScissorState } from "./states/YGOProRockPaperScissorState";
 import { MercurySideDeckingState } from "./states/MercurySideDeckingState";
 import { YGOProWaitingState } from "./states/YGOProWaitingState";
-import { YGOProResourceLoader } from "../../ygopro/YGOProResourceLoader";
 import { HostInfo } from "./host-info/HostInfo";
 
 import {
@@ -64,8 +63,9 @@ export class YGOProRoom extends YgoRoom {
   private _duelRecords: DuelRecord[] = [];
   private _currentDuelRecord: DuelRecord;
   private readonly _hostInfo: HostInfo;
-  private readonly _resourceLoader: YGOProResourceLoader;
   private readonly _messageRepository: MessageRepository;
+  private readonly _cardRepository: CardYGOProRepository;
+  private readonly _deckRules: DeckRules;
 
   private constructor({
     id,
@@ -112,6 +112,16 @@ export class YGOProRoom extends YgoRoom {
     this.banListHash = banListHash;
     this.createdBySocketId = createdBySocketId;
     this._messageRepository = messageRepository;
+    this._cardRepository = new CardYGOProRepository();
+    this._deckRules = new DeckRules({
+      mainMin: 40,
+      mainMax: 60,
+      extraMin: 0,
+      extraMax: 15,
+      sideMin: 0,
+      sideMax: 15,
+      rule: this._hostInfo.rule,
+    });
   }
 
   static create(
@@ -256,14 +266,6 @@ export class YGOProRoom extends YgoRoom {
     return !this.hostInfo.no_shuffle_deck;
   }
 
-  getYGOProPaths(): string[] {
-    return this._resourceLoader.ygoproPaths;
-  }
-
-  getScriptPaths(): string[] {
-    return this._resourceLoader.extraScriptPaths;
-  }
-
   setPositionSwapped(value: boolean): void {
     this._isPositionSwapped = value;
   }
@@ -288,10 +290,6 @@ export class YGOProRoom extends YgoRoom {
     );
   }
 
-  get duelRecordPlayers(): { name: string; deck: YGOProDeck }[] {
-    return this._currentDuelRecord.players;
-  }
-
   get seed(): number[] {
     return this._currentDuelRecord.seed;
   }
@@ -300,32 +298,13 @@ export class YGOProRoom extends YgoRoom {
     return this._currentDuelRecord;
   }
 
-  async getDuelRecordDeck(): Promise<YGOProDeck[]> {
-    const cardReader = await this.getCardReader();
-    return this._currentDuelRecord
-      .toSwappedPlayers()
-      .map((player) =>
-        calculateOcgcoreDeck(player.deck, this.hostInfo, cardReader),
-      );
-  }
-
   waiting(): void {
     this.roomState?.removeAllListener();
-    const cardRepository = new CardYGOProRepository();
-    const deckRules = new DeckRules({
-      mainMin: 40,
-      mainMax: 60,
-      extraMin: 0,
-      extraMax: 15,
-      sideMin: 0,
-      sideMax: 15,
-      rule: this._hostInfo.rule,
-    });
     this.roomState = new YGOProWaitingState(
       new UserAuth(new UserProfilePostgresRepository()),
       this.emitter,
       this._logger,
-      new YGOProDeckCreator(cardRepository, deckRules, this._logger),
+      new YGOProDeckCreator(this._cardRepository, this._deckRules, this._logger),
     );
   }
 
@@ -348,13 +327,17 @@ export class YGOProRoom extends YgoRoom {
     this._state = DuelState.DUELING;
     this.isStart = "start";
     this.roomState?.removeAllListener();
-    this.roomState = new MercuryDuelingState(this, this.emitter, this._logger);
+    this.roomState = new YGOProDuelingState(this, this.emitter, this._logger);
   }
 
   sideDecking(): void {
     this._state = DuelState.SIDE_DECKING;
     this.roomState?.removeAllListener();
-    this.roomState = new MercurySideDeckingState(this.emitter, this._logger);
+    this.roomState = new MercurySideDeckingState(
+      this.emitter,
+      this._logger,
+      new YGOProDeckCreator(this._cardRepository, this._deckRules, this._logger),
+    );
   }
 
   createSpectatorUnsafe(socket: ISocket, name: string): MercuryClient {
@@ -587,7 +570,6 @@ export class YGOProRoom extends YgoRoom {
     for (const message of this._currentDuelRecord?.toPlayback((msg) =>
       msg.observerView(),
     ) || []) {
-      console.log("enviando");
       spectator.sendMessageToClient(Buffer.from(message.toFullPayload()));
     }
   }
@@ -628,30 +610,7 @@ export class YGOProRoom extends YgoRoom {
     client.sendMessageToClient(Buffer.from(message.toFullPayload()));
   }
 
-  generateDuelRecord(): void {
-    const seed = generateSeed();
-
-    const decks = this.players.map((_client: MercuryClient) => {
-      const deck = _client.deck!;
-      const ygoproDeck = new YGOProDeck({
-        main: deck.main.map((card) => parseInt(card.code, 16)),
-        side: deck.side.map((card) => parseInt(card.code, 16)),
-        extra: deck.extra.map((card) => parseInt(card.code, 16)),
-      });
-      return ygoproDeck;
-    });
-
-    const shuffledDecks = this.shuffleDeckEnabled
-      ? shuffleDecksBySeed(decks, seed)
-      : decks;
-
-    const players = this.players.map(
-      (_client: MercuryClient, index: number) => ({
-        name: _client.name,
-        deck: shuffledDecks[index]!,
-      }),
-    );
-    const duelRecord = new DuelRecord(seed, players, this.isPositionSwapped);
+  addDuelRecord(duelRecord: DuelRecord): void {
     this._duelRecords.push(duelRecord);
     this._currentDuelRecord = duelRecord;
   }
@@ -679,23 +638,6 @@ export class YGOProRoom extends YgoRoom {
         );
       player.sendMessageToClient(playerEnterMessageBuffer);
     });
-  }
-
-  async getCard(cardId: number) {
-    const cardReader = await this._resourceLoader.getCardReader();
-    return cardReader(cardId);
-  }
-
-  async getCardReader() {
-    return this._resourceLoader.getCardReader();
-  }
-
-  async getCardStorage() {
-    return this._resourceLoader.getCardStorage();
-  }
-
-  async ocgCoreBinary() {
-    return this._resourceLoader.getOcgcoreWasmBinary();
   }
 
   private get teamOffsetBit() {

@@ -33,6 +33,12 @@ import {
   getMessageIdentifier,
 } from "../utils/response-time-utils";
 import { TimerState } from "../room/domain/TimerState";
+import { YGOProResourceLoader } from "@ygopro/ygopro";
+import YGOProDeck from "ygopro-deck-encode";
+import { shuffleDecksBySeed } from "@ygopro/utils/shuffle-decks-by-seed";
+import { generateSeed } from "@ygopro/utils/generate-seed";
+import { DuelRecord } from "@ygopro/room/domain/DuelRecord";
+import { calculateOcgcoreDeck } from "@ygopro/utils/calculate-ocgcore-deck";
 
 const isUpdateMessage = (message: YGOProMsgBase) =>
   message instanceof YGOProMsgUpdateData ||
@@ -128,16 +134,18 @@ export class OCGCore {
     });
   }
 
-  async init(room: YGOProRoom): Promise<void> {
+  async init(): Promise<DuelRecord> {
+    const duelRecord = this.generateDuelRecord();
+
     const extraScriptPaths = [
       "./script/patches/entry.lua",
       "./script/special.lua",
       "./script/init.lua",
-      ...this.room.getScriptPaths(),
+      ...YGOProResourceLoader.get().extraScriptPaths,
     ];
 
-    const cardStorage = await this.room.getCardStorage();
-    const ocgcoreWasmBinary = await this.room.ocgCoreBinary();
+    const cardStorage = await YGOProResourceLoader.get().getCardStorage();
+    const ocgcoreWasmBinary = await YGOProResourceLoader.get().getOcgcoreWasmBinary();
 
     const registry: Record<string, string> = {
       duel_mode: this.room.duelMode,
@@ -148,17 +156,23 @@ export class OCGCore {
       player_type_1: this.room.isPositionSwapped ? "0" : "1",
     };
 
-    room.duelRecordPlayers.forEach((player, index) => {
+    duelRecord.players.forEach((player, index) => {
       registry[`player_name_${index}`] = player.name;
     });
 
-    const decks = await room.getDuelRecordDeck();
+    const cardReader = await YGOProResourceLoader.get().getCardReader()
 
+    const decks = duelRecord
+      .toSwappedPlayers()
+      .map((player) => calculateOcgcoreDeck(player.deck, this.room.hostInfo, cardReader));
+
+    console.log("YGOProResourceLoader.get().ygoproPaths", YGOProResourceLoader.get().ygoproPaths)
+    console.log("YGOProResourceLoader.get().extraScriptPaths", extraScriptPaths)
     try {
       this.ocgcore = await initWorker(OcgcoreWorker, {
-        seed: room.seed,
+        seed: duelRecord.seed,
         hostinfo: this.room.hostInfo,
-        ygoproPaths: this.room.getYGOProPaths(),
+        ygoproPaths: YGOProResourceLoader.get().ygoproPaths,
         extraScriptPaths,
         cardStorage,
         ocgcoreWasmBinary,
@@ -170,10 +184,43 @@ export class OCGCore {
         this.logger.info("Received message from OCGCoreWorker");
         this.logger.info({ message: msg.message, type: msg.type });
       });
+
+      return duelRecord;
     } catch (error) {
       this.logger.error(error);
       throw error;
     }
+  }
+
+  private generateDuelRecord(): DuelRecord {
+    const seed = generateSeed();
+    const players = this.generatePlayers(seed);
+    return new DuelRecord(seed, players, this.room.isPositionSwapped);
+  }
+
+  private generatePlayers(seed: number[]): { name: string; deck: YGOProDeck }[] {
+    const decks = this.room.players.map((_client: MercuryClient) => {
+      const deck = _client.deck!;
+      const ygoproDeck = new YGOProDeck({
+        main: deck.main.map((card) => parseInt(card.code, 10)),
+        side: deck.side.map((card) => parseInt(card.code, 10)),
+        extra: deck.extra.map((card) => parseInt(card.code, 10)),
+      });
+      return ygoproDeck;
+    });
+
+    const shuffledDecks = this.room.shuffleDeckEnabled
+      ? shuffleDecksBySeed(decks, seed)
+      : decks;
+
+    const players = this.room.players.map(
+      (_client: MercuryClient, index: number) => ({
+        name: _client.name,
+        deck: shuffledDecks[index]!,
+      }),
+    );
+
+    return players;
   }
 
   async queryFieldCount({

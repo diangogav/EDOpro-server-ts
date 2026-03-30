@@ -208,7 +208,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 		if (hasError) {
 			this.logger.warn(`Deck has an error: type ${hasError.type}, code ${hasError.code}`);
 			room.notReadyUnsafe(player);
-			room.messageSender.errorMessage(hasError.type);
+			room.messageSender.errorMessage(ErrorMessageType.DECKERROR, hasError.type);
 			return;
 		}
 
