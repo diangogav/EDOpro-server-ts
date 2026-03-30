@@ -12,11 +12,11 @@ import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { YGOProRoom } from "../YGOProRoom";
 import { TurnPlayerResult, YGOProCtosTpResult, YGOProStocDuelStart } from "ygopro-msg-encode";
 
-export class MercuryChoosingOrderState extends RoomState {
+export class YGOProChoosingOrderState extends RoomState {
 	constructor(eventEmitter: EventEmitter, private readonly logger: Logger) {
 		super(eventEmitter);
 
-		this.logger = logger.child({ file: "MercuryChoosingOrderState" });
+		this.logger = logger.child({ file: "YGOProChoosingOrderState" });
 
 		this.eventEmitter.on(
 			"JOIN",
@@ -26,12 +26,12 @@ export class MercuryChoosingOrderState extends RoomState {
 		this.eventEmitter.on(
 			Commands.TURN_CHOICE as unknown as string,
 			(message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
-				this.handle.bind(this)(message, room, client)
+				this.handleTurnChoice.bind(this)(message, room, client)
 		);
 	}
 
-	private handle(message: ClientMessage, room: YGOProRoom, player: MercuryClient): void {
-		player.logger.info("handle");
+	private handleTurnChoice(message: ClientMessage, room: YGOProRoom, player: MercuryClient): void {
+		player.logger.info("handleTurnChoice");
 
 		const data = new YGOProCtosTpResult().fromPayload(message.data);
 		const turn = data.res;
@@ -41,8 +41,8 @@ export class MercuryChoosingOrderState extends RoomState {
 	}
 
 	private handleJoin(message: ClientMessage, room: YGOProRoom, socket: ISocket): void {
-		this.logger.info("JOIN");
-		this.logger.info("JOIN");
+		this.logger.info("handleJoin");
+
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const playerAlreadyInRoom = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
 
@@ -54,6 +54,12 @@ export class MercuryChoosingOrderState extends RoomState {
 			return;
 		}
 
-		// MercuryReconnect.run(playerAlreadyInRoom, room, socket);
+		room.reconnect(playerAlreadyInRoom, socket);
+		playerAlreadyInRoom.sendMessageToClient(room.messageSender.duelStartMessage());
+		room.sendDeckCountMessage(playerAlreadyInRoom);
+
+		if (room.clientWhoChoosesTurn === playerAlreadyInRoom) {
+			playerAlreadyInRoom.sendMessageToClient(room.messageSender.selectTpMessage());
+		}
 	}
 }

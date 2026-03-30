@@ -22,7 +22,7 @@ import {
   priorityRuleMappings,
   ruleMappings,
 } from "./RuleMappings";
-import { MercuryChoosingOrderState } from "./states/MercuryChoosingOrderState";
+import { YGOProChoosingOrderState } from "./states/YGOProChoosingOrderState";
 import { MercuryDuelingState } from "./states/MercuryDuelingState";
 import { YGOProRockPaperScissorState } from "./states/YGOProRockPaperScissorState";
 import { MercurySideDeckingState } from "./states/MercurySideDeckingState";
@@ -341,7 +341,7 @@ export class YGOProRoom extends YgoRoom {
   choosingOrder(): void {
     this._state = DuelState.CHOOSING_ORDER;
     this.roomState?.removeAllListener();
-    this.roomState = new MercuryChoosingOrderState(this.emitter, this._logger);
+    this.roomState = new YGOProChoosingOrderState(this.emitter, this._logger);
   }
 
   dueling(): void {

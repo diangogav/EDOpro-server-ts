@@ -21,7 +21,7 @@ export class YGOProRockPaperScissorState extends YGOProRoomState {
     private readonly logger: Logger,
   ) {
     super(eventEmitter);
-    this.logger = logger.child({ file: "MercuryRockPaperScissorState" });
+    this.logger = logger.child({ file: "YGOProRockPaperScissorState" });
     this.eventEmitter.on(
       Commands.RPS_CHOICE as unknown as string,
       (message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
