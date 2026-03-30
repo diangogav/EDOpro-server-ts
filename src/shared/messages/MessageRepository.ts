@@ -13,4 +13,6 @@ export abstract class MessageRepository {
     abstract selectTpMessage(): Buffer;
     abstract handResultMessage(response1: number, response2: number): Buffer;
     abstract changeSideMessage(): Buffer;
+    abstract winMessage(winner: number, reason: number): Buffer;
+    abstract waitingSideMessage(): Buffer;
 }

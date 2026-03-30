@@ -1,8 +1,24 @@
 import { MessageRepository } from "@shared/messages/MessageRepository";
-import { ErrorMessageType, YGOProStocChangeSide, YGOProStocDuelStart, YGOProStocErrorMsg, YGOProStocHandResult, YGOProStocHsPlayerChange, YGOProStocHsPlayerEnter, YGOProStocHsWatchChange, YGOProStocJoinGame, YGOProStocSelectHand, YGOProStocSelectTp, YGOProStocTypeChange } from "ygopro-msg-encode";
+import { ErrorMessageType, YGOProMsgWin, YGOProStocChangeSide, YGOProStocDuelStart, YGOProStocErrorMsg, YGOProStocGameMsg, YGOProStocHandResult, YGOProStocHsPlayerChange, YGOProStocHsPlayerEnter, YGOProStocHsWatchChange, YGOProStocJoinGame, YGOProStocSelectHand, YGOProStocSelectTp, YGOProStocTypeChange, YGOProStocWaitingSide } from "ygopro-msg-encode";
 import { HostInfo } from "../domain/host-info/HostInfo";
 
 export class YGOProMessageRepository extends MessageRepository {
+  waitingSideMessage(): Buffer {
+    return Buffer.from(
+      new YGOProStocWaitingSide().toFullPayload(),
+    );
+  }
+
+  winMessage(winner: number, reason: number): Buffer {
+    const message = new YGOProStocGameMsg().fromPartial({
+      msg: new YGOProMsgWin().fromPartial({
+        player: winner,
+        type: reason,
+      }),
+    });
+    return Buffer.from(message.toFullPayload());
+  }
+
   changeSideMessage(): Buffer {
     return Buffer.from(new YGOProStocChangeSide().toFullPayload());
   }

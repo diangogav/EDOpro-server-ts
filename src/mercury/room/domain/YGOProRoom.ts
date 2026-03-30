@@ -298,13 +298,21 @@ export class YGOProRoom extends YgoRoom {
     return this._currentDuelRecord;
   }
 
+  get duelRecords(): DuelRecord[] {
+    return this._duelRecords;
+  }
+
   waiting(): void {
     this.roomState?.removeAllListener();
     this.roomState = new YGOProWaitingState(
       new UserAuth(new UserProfilePostgresRepository()),
       this.emitter,
       this._logger,
-      new YGOProDeckCreator(this._cardRepository, this._deckRules, this._logger),
+      new YGOProDeckCreator(
+        this._cardRepository,
+        this._deckRules,
+        this._logger,
+      ),
     );
   }
 
@@ -336,7 +344,11 @@ export class YGOProRoom extends YgoRoom {
     this.roomState = new YGOProSideDeckingState(
       this.emitter,
       this._logger,
-      new YGOProDeckCreator(this._cardRepository, this._deckRules, this._logger),
+      new YGOProDeckCreator(
+        this._cardRepository,
+        this._deckRules,
+        this._logger,
+      ),
     );
   }
 
@@ -574,7 +586,8 @@ export class YGOProRoom extends YgoRoom {
     }
   }
 
-  currentDuelReplayData(): YGOProYrp {
+  currentDuelReplayData(): YGOProYrp | null {
+    if (!this._currentDuelRecord) return null;
     return this._currentDuelRecord.toYrp(this);
   }
 
