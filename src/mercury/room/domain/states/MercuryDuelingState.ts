@@ -48,6 +48,7 @@ export class MercuryDuelingState extends RoomState {
 		this.ocgCore = new OCGCore(this.room, this.logger);
 		this.handle();
 		this.eventBus = container.get(EventBus);
+
 		this.eventEmitter.on(
 			"DUEL_END",
 			(message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
@@ -98,8 +99,9 @@ export class MercuryDuelingState extends RoomState {
 	}
 
 	private async handle(): Promise<void> {
-		this.logger.info("MercuryDuelingState:handle");
-		// this.room.generateDuelRecord();
+		this.logger.info("handle");
+
+		this.room.generateDuelRecord();
 		await this.ocgCore.init(this.room);
 		this.ocgCore.resetResponseRequestState();
 
@@ -107,7 +109,6 @@ export class MercuryDuelingState extends RoomState {
 			YGOProMsgWin,
 			(msg) => {
 				this.logger.info(`Winner: player=${msg.player}, type=${msg.type}`);
-				// Process win condition - update room state
 				this.handleWinCondition(msg);
 				return msg;
 			},
@@ -121,19 +122,19 @@ export class MercuryDuelingState extends RoomState {
 			player1ExtraCount,
 		] = await Promise.all([
 			this.ocgCore.queryFieldCount({
-				team: 0,
+				team: Team.PLAYER,
 				location: OcgcoreScriptConstants.LOCATION_DECK,
 			}),
 			this.ocgCore.queryFieldCount({
-				team: 0,
+				team: Team.PLAYER,
 				location: OcgcoreScriptConstants.LOCATION_EXTRA,
 			}),
 			this.ocgCore.queryFieldCount({
-				team: 1,
+				team: Team.OPPONENT,
 				location: OcgcoreScriptConstants.LOCATION_DECK,
 			}),
 			this.ocgCore.queryFieldCount({
-				team: 1,
+				team: Team.OPPONENT,
 				location: OcgcoreScriptConstants.LOCATION_EXTRA,
 			}),
 		]);
@@ -212,7 +213,7 @@ export class MercuryDuelingState extends RoomState {
 		room: YGOProRoom,
 		socket: ISocket,
 	): void {
-		this.logger.info("JOIN");
+		this.logger.info("handleJoin");
 
 		const playerInfoMessage = new PlayerInfoMessage(
 			message.previousMessage,

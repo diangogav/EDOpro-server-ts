@@ -628,26 +628,33 @@ export class YGOProRoom extends YgoRoom {
     client.sendMessageToClient(Buffer.from(message.toFullPayload()));
   }
 
-  // generateDuelRecord(): void {
-  //   const seed = generateSeed();
+  generateDuelRecord(): void {
+    const seed = generateSeed();
 
-  //   const decks = this.shuffleDeckEnabled
-  //     ? shuffleDecksBySeed(
-  //       this.players.map((_client: MercuryClient) => _client.deck!),
-  //       seed,
-  //     )
-  //     : this.players.map((_client: MercuryClient) => _client.deck);
+    const decks = this.players.map((_client: MercuryClient) => {
+      const deck = _client.deck!;
+      const ygoproDeck = new YGOProDeck({
+        main: deck.main.map((card) => parseInt(card.code, 16)),
+        side: deck.side.map((card) => parseInt(card.code, 16)),
+        extra: deck.extra.map((card) => parseInt(card.code, 16)),
+      });
+      return ygoproDeck;
+    });
 
-  //   const players = this.players.map(
-  //     (_client: MercuryClient, index: number) => ({
-  //       name: _client.name,
-  //       deck: decks[index]!,
-  //     }),
-  //   );
-  //   const duelRecord = new DuelRecord(seed, players, this.isPositionSwapped);
-  //   this._duelRecords.push(duelRecord);
-  //   this._currentDuelRecord = duelRecord;
-  // }
+    const shuffledDecks = this.shuffleDeckEnabled
+      ? shuffleDecksBySeed(decks, seed)
+      : decks;
+
+    const players = this.players.map(
+      (_client: MercuryClient, index: number) => ({
+        name: _client.name,
+        deck: shuffledDecks[index]!,
+      }),
+    );
+    const duelRecord = new DuelRecord(seed, players, this.isPositionSwapped);
+    this._duelRecords.push(duelRecord);
+    this._currentDuelRecord = duelRecord;
+  }
 
   saveMessageToDuelRecord(message: YGOProMsgBase): void {
     this._currentDuelRecord.messages.push(message);
