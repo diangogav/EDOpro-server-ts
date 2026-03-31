@@ -93,7 +93,7 @@ export class YGOProRockPaperScissorState extends YGOProRoomState {
     // 	return;
     // }
 
-    const team = room.getTeam(player.position);
+    const team = player.team;
     if (team < Team.PLAYER || team > Team.OPPONENT) {
       return;
     }

@@ -201,10 +201,10 @@ export class YGOProRoom extends YgoRoom {
 
     const teamCount = hostInfo.mode === GameMode.TAG ? 2 : 1;
     const ranked = Boolean(playerInfo.password);
-    const banList = MercuryBanListMemoryRepository.findLFListByIndex(hostInfo.lflist)
-    const banListHash =
-      banList?.hash ??
-      0;
+    const banList = MercuryBanListMemoryRepository.findLFListByIndex(
+      hostInfo.lflist,
+    );
+    const banListHash = banList?.hash ?? 0;
     const edoBanList = BanListMemoryRepository.findByName(banList?.name ?? "");
     const edoBanListHash = edoBanList?.hash ?? 0;
 
@@ -241,18 +241,10 @@ export class YGOProRoom extends YgoRoom {
     return this.hostInfo.mode > 2 ? (this.isTag ? 2 : 1) : this.hostInfo.mode;
   }
 
-  getTeam(position: number): number {
-    if (position === NetPlayerType.OBSERVER) {
-      return -1;
-    }
-
-    return (position & (0x1 << this.teamOffsetBit)) >>> this.teamOffsetBit;
-  }
-
   getTeamPlayers(team: number): MercuryClient[] {
-    return this.players.filter(
-      (client) => this.getTeam(client.position) === team,
-    ) as MercuryClient[];
+    return (this.players as MercuryClient[])
+      .filter((client) => client.team === team)
+      .sort((a, b) => a.position - b.position);
   }
 
   get isMatch(): boolean {
@@ -276,7 +268,11 @@ export class YGOProRoom extends YgoRoom {
   }
 
   get hostInfo(): HostInfo {
-    return { ...this._hostInfo, mode: this._hostInfo.mode, lflist: this.banListHash };
+    return {
+      ...this._hostInfo,
+      mode: this._hostInfo.mode,
+      lflist: this.banListHash,
+    };
   }
 
   get playersCount(): number {
@@ -333,6 +329,10 @@ export class YGOProRoom extends YgoRoom {
   }
 
   dueling(): void {
+    // Create the Duel object to track turn count for Tag rotation
+    const banList = MercuryBanListMemoryRepository.findByHash(this.banListHash);
+    this.createDuel(banList?.name ?? null);
+
     this._state = DuelState.DUELING;
     this.isStart = "start";
     this._roomState?.removeAllListener();
@@ -612,7 +612,7 @@ export class YGOProRoom extends YgoRoom {
       return player.deck;
     });
 
-    const team = this.getTeam(client.position);
+    const team = client.team;
     const deck = displayCountDecks[team];
     const otherDeck = displayCountDecks[1 - team];
 
@@ -654,9 +654,6 @@ export class YGOProRoom extends YgoRoom {
     });
   }
 
-  private get teamOffsetBit() {
-    return this.isTag ? 1 : 0;
-  }
 
   toPresentation(): { [key: string]: unknown } {
     return {
@@ -709,7 +706,10 @@ export class YGOProRoom extends YgoRoom {
 
   playerLeave(player: MercuryClient): void {
     this.removePlayer(player);
-    const message = this.messageSender.playerChangeMessage(player.position, PlayerChangeState.LEAVE)
+    const message = this.messageSender.playerChangeMessage(
+      player.position,
+      PlayerChangeState.LEAVE,
+    );
     this.broadcastToAll(message);
   }
 

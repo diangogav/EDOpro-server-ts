@@ -36,7 +36,7 @@ export class YGOProChoosingOrderState extends RoomState {
 		const data = new YGOProCtosTpResult().fromPayload(message.data);
 		const turn = data.res;
 
-		room.setPositionSwapped((turn === TurnPlayerResult.FIRST) !== (room.getTeam(player.position) === 0))
+		room.setPositionSwapped((turn === TurnPlayerResult.FIRST) !== (player.team === 0))
 		room.dueling();
 	}
 

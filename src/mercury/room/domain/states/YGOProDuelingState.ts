@@ -65,6 +65,12 @@ export class YGOProDuelingState extends RoomState {
       (message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
         void this.handleResponse.bind(this)(message, room, client),
     );
+
+    this.eventEmitter.on(
+      Commands.TIME_CONFIRM as unknown as string,
+      (message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
+        void this.handleTimeConfirm.bind(this)(message, room, client),
+    );
   }
 
   private async handle(): Promise<void> {
@@ -126,28 +132,18 @@ export class YGOProDuelingState extends RoomState {
         }),
       });
 
-    const player0Players = this.ocgCore.getPlayersAtIngamePosition(Team.PLAYER);
-    const player1Players = this.ocgCore.getPlayersAtIngamePosition(
-      Team.OPPONENT,
+    const side0Players = this.ocgCore.getPlayersAtIngamePosition(0);
+    const side1Players = this.ocgCore.getPlayersAtIngamePosition(1);
+
+    side0Players.forEach((p) =>
+      p.sendMessageToClient(Buffer.from(createStartMsg(0).toFullPayload())),
     );
-    const player0StartMessage = createStartMsg(Team.PLAYER);
-    const player1StartMessage = createStartMsg(Team.OPPONENT);
-
-    player0Players.forEach((_player) => {
-      _player.sendMessageToClient(
-        Buffer.from(player0StartMessage.toFullPayload()),
-      );
-    });
-
-    player1Players.forEach((_player) => {
-      _player.sendMessageToClient(
-        Buffer.from(player1StartMessage.toFullPayload()),
-      );
-    });
-
-    const watcherStartMessage = createStartMsg(
-      this.room.isPositionSwapped ? 0x11 : 0x10,
+    side1Players.forEach((p) =>
+      p.sendMessageToClient(Buffer.from(createStartMsg(1).toFullPayload())),
     );
+
+    const watcherType = this.room.isPositionSwapped ? 0x11 : 0x10;
+    const watcherStartMessage = createStartMsg(watcherType);
     const spectators = this.room.spectators as MercuryClient[];
     spectators.forEach((spectator) => {
       spectator.sendMessageToClient(
@@ -256,14 +252,15 @@ export class YGOProDuelingState extends RoomState {
     player.logger.info("handleResponse");
 
     if (
-      this.ocgCore.currentResponsePosition === null ||
+      this.ocgCore.currentResponseSide === null ||
       player !== this.ocgCore.responsePlayer ||
       !this.ocgCore.hasOcgcore()
     ) {
       return;
     }
 
-    const responsePosition = this.ocgCore.currentResponsePosition;
+    const responseSide = this.ocgCore.currentResponseSide;
+    const responseTeam = this.ocgCore.getSideTeam(responseSide);
     const responseRequestMsg = this.ocgCore.currentLastResponseRequestMsg;
     const responseBuffer = Buffer.from(message.data);
 
@@ -276,7 +273,7 @@ export class YGOProDuelingState extends RoomState {
           ? getMessageIdentifier(responseRequestMsg)
           : 0;
       this.ocgCore.increaseResponseTime(
-        responsePosition,
+        responseTeam,
         msgType,
         responseBuffer,
       );
@@ -296,6 +293,48 @@ export class YGOProDuelingState extends RoomState {
     }
 
     await this.ocgCore.advance();
+  }
+
+  private async handleTimeConfirm(
+    _message: ClientMessage,
+    _room: YGOProRoom,
+    player: MercuryClient,
+  ): Promise<void> {
+    player.logger.info("handleTimeConfirm");
+
+    // Check if time limit is enabled
+    if (!this.ocgCore.timeLimitEnabled) {
+      return;
+    }
+
+    // Check if there's an active response request
+    const responseSide = this.ocgCore.currentResponseSide;
+    if (responseSide === null) {
+      return;
+    }
+
+    const timerState = this.ocgCore.timerStateAccessor;
+
+    // Check if timer is running and waiting for confirm
+    if (timerState.runningPos === null || !timerState.awaitingConfirm) {
+      return;
+    }
+
+    // Check if the player responding is the one who sent TIME_CONFIRM
+    if (timerState.runningPos !== this.ocgCore.getSideTeam(responseSide)) {
+      return;
+    }
+
+    // Verify the player is the one who should respond
+    const responsePlayer = this.ocgCore.responsePlayer;
+    if (!responsePlayer || player !== responsePlayer) {
+      return;
+    }
+
+    // Handle TIME_CONFIRM - reschedule timer and send TIME_LIMIT to client
+    await this.ocgCore.rescheduleTimerAfterConfirm(responseSide);
+
+    // Continue the duel after confirming time
   }
 
   private async handleWinCondition(winMsg: YGOProMsgWin): Promise<void> {

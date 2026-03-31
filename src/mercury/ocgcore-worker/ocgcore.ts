@@ -28,9 +28,7 @@ import { YGOProRoom } from "../room/domain/YGOProRoom";
 import { OcgcoreWorker } from "./ocgcore-worker";
 import { Logger } from "src/shared/logger/domain/Logger";
 import { GameMessageMiddleware } from "../middleware/GameMessageMiddleware";
-import {
-  canIncreaseTime,
-} from "../utils/response-time-utils";
+import { canIncreaseTime } from "../utils/response-time-utils";
 import { TimerState } from "../room/domain/TimerState";
 import { YGOProResourceLoader } from "@ygopro/ygopro";
 import YGOProDeck from "ygopro-deck-encode";
@@ -47,7 +45,8 @@ type Client = MercuryClient;
 
 export class OCGCore {
   private ocgcore: WorkerInstance<OcgcoreWorker> | null;
-  private responsePosition: number | null = null;
+  // responseSide: the side (0 or 1) currently being prompted by the core
+  private responseSide: number | null = null;
   private lastResponseRequestMsg: YGOProMsgBase | null = null;
   private _phase: number | null = null;
   private isRetrying = false;
@@ -144,7 +143,8 @@ export class OCGCore {
     ];
 
     const cardStorage = await YGOProResourceLoader.get().getCardStorage();
-    const ocgcoreWasmBinary = await YGOProResourceLoader.get().getOcgcoreWasmBinary();
+    const ocgcoreWasmBinary =
+      await YGOProResourceLoader.get().getOcgcoreWasmBinary();
 
     const registry: Record<string, string> = {
       duel_mode: this.room.duelMode,
@@ -159,14 +159,22 @@ export class OCGCore {
       registry[`player_name_${index}`] = player.name;
     });
 
-    const cardReader = await YGOProResourceLoader.get().getCardReader()
+    const cardReader = await YGOProResourceLoader.get().getCardReader();
 
     const decks = duelRecord
       .toSwappedPlayers()
-      .map((player) => calculateOcgcoreDeck(player.deck, this.room.hostInfo, cardReader));
+      .map((player) =>
+        calculateOcgcoreDeck(player.deck, this.room.hostInfo, cardReader),
+      );
 
-    console.log("YGOProResourceLoader.get().ygoproPaths", YGOProResourceLoader.get().ygoproPaths)
-    console.log("YGOProResourceLoader.get().extraScriptPaths", extraScriptPaths)
+    console.log(
+      "YGOProResourceLoader.get().ygoproPaths",
+      YGOProResourceLoader.get().ygoproPaths,
+    );
+    console.log(
+      "YGOProResourceLoader.get().extraScriptPaths",
+      extraScriptPaths,
+    );
     try {
       this.ocgcore = await initWorker(OcgcoreWorker, {
         seed: duelRecord.seed,
@@ -197,7 +205,9 @@ export class OCGCore {
     return new DuelRecord(seed, players, this.room.isPositionSwapped);
   }
 
-  private generatePlayers(seed: number[]): { name: string; deck: YGOProDeck }[] {
+  private generatePlayers(
+    seed: number[],
+  ): { name: string; deck: YGOProDeck }[] {
     const decks = this.room.players.map((_client: MercuryClient) => {
       const deck = _client.deck!;
       const ygoproDeck = new YGOProDeck({
@@ -233,8 +243,8 @@ export class OCGCore {
   }
 
   // Public accessors for MercuryDuelingState
-  get currentResponsePosition(): number | null {
-    return this.responsePosition;
+  get currentResponseSide(): number | null {
+    return this.responseSide;
   }
 
   get timeLimitEnabled(): boolean {
@@ -257,12 +267,15 @@ export class OCGCore {
     return this.isRetrying;
   }
 
+  /**
+   * Simplified: Get the client who should respond.
+   * Based on the current response side.
+   */
   get responsePlayer(): Client | null {
-    if (this.responsePosition === null) {
+    if (this.responseSide === null) {
       return null;
     }
-    const ingamePos = this.toIngamePosition(this.responsePosition);
-    return this.getActivePlayer(ingamePos);
+    return this.getActivePlayer(this.responseSide);
   }
 
   clearResponseTimerState(settlePrevious: boolean): void {
@@ -274,9 +287,47 @@ export class OCGCore {
     this.isRetrying = false;
   }
 
+  // Timer state accessor for TIME_CONFIRM handling
+  get timerStateAccessor() {
+    return this.timerState;
+  }
+
+  // Re-schedule timer after TIME_CONFIRM - sends TIME_LIMIT to client
+  async rescheduleTimerAfterConfirm(side: number): Promise<void> {
+    if (!this.hasTimeLimit || ![0, 1].includes(side)) {
+      return;
+    }
+    const originalPos = this.getSideTeam(side);
+    const elapsedMs = this.timerState.elapsedMs();
+    const runningPos = this.timerState.runningPos;
+
+    if (runningPos === undefined || runningPos !== originalPos) {
+      return;
+    }
+    // Apply time compensation logic from srvpro2
+    if (
+      elapsedMs < 10_000 &&
+      elapsedMs <= this.timerState.compensatorMs[runningPos]
+    ) {
+      this.timerState.compensatorMs[runningPos] -= elapsedMs;
+    } else {
+      this.timerState.leftMs[runningPos] = Math.max(
+        0,
+        this.timerState.leftMs[runningPos] - elapsedMs,
+      );
+    }
+    this.timerState.awaitingConfirm = false;
+    // Reschedule timer
+    await this.setResponseTimer(runningPos, {
+      settlePrevious: false,
+      awaitingConfirm: false,
+    });
+  }
+
   async dispose(): Promise<void> {
-    await this.ocgcore?.dispose()
-      .catch((_error) => this.logger.error(`Error disposing ocgcore`))
+    await this.ocgcore
+      ?.dispose()
+      .catch((_error) => this.logger.error(`Error disposing ocgcore`));
   }
 
   resetResponseRequestState(): void {
@@ -604,7 +655,7 @@ export class OCGCore {
       if (status) {
         throw new Error(
           "Cannot continue ocgcore because received empty message with non-advancing status " +
-          status,
+            status,
         );
       }
       return;
@@ -688,10 +739,10 @@ export class OCGCore {
 
     const sendToClients = options.sendToClient
       ? new Set(
-        Array.isArray(options.sendToClient)
-          ? options.sendToClient
-          : [options.sendToClient],
-      )
+          Array.isArray(options.sendToClient)
+            ? options.sendToClient
+            : [options.sendToClient],
+        )
       : undefined;
 
     await this.deliverToTargets(message, sendToClients);
@@ -863,10 +914,11 @@ export class OCGCore {
   // Response Timer - Handle player response timeouts
   // ============================================================
 
-  private async sendWaitingToNonOperator(
-    ingamePosition: number,
-  ): Promise<void> {
-    const operatingPlayer = this.getActivePlayer(ingamePosition);
+  /**
+   * Simplified: Send waiting message to all players except the active one for the given team.
+   */
+  private async sendWaitingToNonOperator(side: number): Promise<void> {
+    const operatingPlayer = this.getActivePlayer(side);
     const nonOperatingPlayers = (this.room.players as MercuryClient[]).filter(
       (client) => client !== operatingPlayer,
     );
@@ -947,14 +999,28 @@ export class OCGCore {
     );
   }
 
-
   /**
-   * Returns the ingame position for a client (applies swap if needed).
+   * Returns the ingame position (side) for a client, considering isPositionSwapped.
+   * Team 0 -> Side 0, Team 1 -> Side 1 (by default).
    */
   getIngamePosition(client: Client): number {
-    return this.toIngamePosition(client.position);
+    const team = (client as MercuryClient).team;
+    return this.getTeamSide(team);
   }
 
+  /**
+   * Maps a side (0 or 1) from the core perspective to a room team index (0 or 1).
+   */
+  getSideTeam(side: number): number {
+    return this.room.isPositionSwapped ? 1 - side : side;
+  }
+
+  /**
+   * Maps a room team index (0 or 1) to a side index (0 or 1) from core perspective.
+   */
+  getTeamSide(team: number): number {
+    return this.room.isPositionSwapped ? 1 - team : team;
+  }
 
   private async handleResponseTimeout(originalDuelPos: number): Promise<void> {
     if (this.timerState.runningPos !== originalDuelPos) {
@@ -962,11 +1028,13 @@ export class OCGCore {
     }
     this.clearResponseTimer(false);
     this.timerState.leftMs[originalDuelPos] = 0;
-    this.responsePosition = null;
+    this.responseSide = null;
     this.logger.info("Response timeout", { originalDuelPos });
 
     const winnerOriginalDuelPos = 1 - originalDuelPos;
-    const player = this.room.players.find((player: MercuryClient) => player.position === originalDuelPos);
+    const player = this.room.players.find(
+      (player: MercuryClient) => player.position === originalDuelPos,
+    );
     const event = "FINISH_DUEL_BY_TIMEOUT";
     const msgWin = new YGOProMsgWin().fromPartial({
       player: winnerOriginalDuelPos,
@@ -1007,21 +1075,22 @@ export class OCGCore {
               if (sendToClients && !sendToClients.has(client)) {
                 return;
               }
-              const ingamePosition = this.getIngamePosition(client);
-              const playerView = message.playerView(ingamePosition);
-              const activePlayer = this.getActivePlayer(ingamePosition);
+              const side = this.getIngamePosition(client);
+              const playerView = message.playerView(side);
+              const actor = this.getActivePlayer(side);
+
+              // Response messages only go to the operating player (srvpro2 parity)
               if (
                 message instanceof YGOProMsgResponseBase &&
-                client !== activePlayer
+                client !== actor
               ) {
                 return;
               }
-              return sendGameMessage(
-                client,
-                client === activePlayer
-                  ? playerView
-                  : playerView.teammateView(),
-              );
+
+              const finalMsg =
+                client === actor ? playerView : playerView.teammateView();
+
+              await sendGameMessage(client, finalMsg);
             }),
           );
         }
@@ -1037,34 +1106,32 @@ export class OCGCore {
     if (message instanceof YGOProMsgResponseBase) {
       this.setLastResponseRequestMsg(message);
       await this.sendWaitingToNonOperator(message.responsePlayer());
-      await this.setResponseTimer(this.responsePosition!);
+      await this.setResponseTimer(this.getSideTeam(this.responseSide!));
       return;
     }
-    if (message instanceof YGOProMsgRetry && this.responsePosition != null) {
+    if (message instanceof YGOProMsgRetry && this.responseSide != null) {
       const record = this.room.currentDuelRecord;
       if (record && record.responses.length > 0) {
         record.responses.pop();
       }
       this.isRetrying = true;
-      await this.sendWaitingToNonOperator(
-        this.toIngamePosition(this.responsePosition),
-      );
-      await this.setResponseTimer(this.responsePosition);
+      await this.sendWaitingToNonOperator(this.responseSide);
+      await this.setResponseTimer(this.getSideTeam(this.responseSide));
       return;
     }
     if (
-      this.responsePosition != null &&
+      this.responseSide != null &&
       !this.lastResponseRequestMsg &&
       !(message instanceof YGOProMsgResponseBase)
     ) {
-      this.responsePosition = null;
+      this.responseSide = null;
     }
   }
 
   private setLastResponseRequestMsg(message: YGOProMsgResponseBase): void {
     this.lastResponseRequestMsg = message;
     this.isRetrying = false;
-    this.responsePosition = this.toIngamePosition(message.responsePlayer());
+    this.responseSide = message.responsePlayer();
   }
 
   // ============================================================
@@ -1090,37 +1157,69 @@ export class OCGCore {
   // ============================================================
 
   /**
-   * Returns players at given ingame position (considering swap).
+   * Returns players at given side index (0 or 1 from core perspective).
+   * In Tag Duel, side already represents team index (0 or 1) - no swap needed.
    */
-  getPlayersAtIngamePosition(ingamePosition: number): Client[] {
-    const duelPosition = this.toIngamePosition(ingamePosition);
-    return this.room.getTeamPlayers(duelPosition);
+  getPlayersAtIngamePosition(side: number): Client[] {
+    // In Tag Duel, the engine's positions 0/1 map directly to teams 0/1
+    // No swap should be applied in tag mode
+    const team = this.room.isTag ? side : this.getSideTeam(side);
+    return this.room.getTeamPlayers(team);
   }
 
   /**
-   * Returns the active player (who must respond) at the given position.
+   * Returns the active player (who must respond) for the given side.
+   * Decides which teammate within the team should act based on turn rotation.
+   * In Tag Duel, side already represents team index - no swap needed.
+   *
+   * Formula from srvpro2 (tag_duel.cpp cur_player):
+   * - Team 0: idx = floor(max(0, tc - 1) / 2) % 2
+   * - Team 1: idx = 1 - (floor(tc / 2) % 2)
+   * Where tc = turnCount (starts at 0, incremented at each new turn)
    */
-  private getActivePlayer(ingamePosition: number): Client | null {
-    const players = this.getPlayersAtIngamePosition(ingamePosition);
-    if (!this.room.isTag || players.length <= 1) {
-      return players[0] ?? null;
+  private getActivePlayer(side: number): Client | null {
+    // In Tag Duel, the engine's positions 0/1 map directly to teams 0/1
+    // No swap should be applied in tag mode
+    const team = this.room.isTag ? side : this.getSideTeam(side);
+    const teamPlayers = this.room.players.filter(
+      (p) => p.team === team,
+    ) as Client[];
+
+    if (!this.room.isTag || teamPlayers.length <= 1) {
+      return teamPlayers[0] ?? null;
     }
 
-    // tag_duel.cpp cur_player equivalent, computed from turnCount
-    // duelPosition 0: start from players[0], toggle every two turns from turn 3
-    // duelPosition 1: start from players[1], toggle every two turns from turn 2
+    // Use turn count from currentDuel - this.room.turn returns the current turn number
+    // It starts at 1 (STARTING_TURN from YgoRoom) and increments on each new turn
     const tc = Math.max(0, this.room.turn || 0);
-    const duelPosition = this.toIngamePosition(ingamePosition);
 
-    if (duelPosition === 0) {
-      const idx = Math.floor(Math.max(0, tc - 1) / 2) % 2;
-      return players[idx] ?? null;
-    }
-    if (duelPosition === 1) {
-      const idx = 1 - (Math.floor(tc / 2) % 2);
-      return players[idx] ?? null;
+    // Asymmetric Tag rotation logic from srvpro2:
+    let idx: number;
+    if (side === 0) {
+      // Team 0: starts with player 0, toggles every 2 turns from turn 3
+      // Formula: floor(max(0, tc - 1) / 2) % 2
+      idx = Math.floor(Math.max(0, tc - 1) / 2) % 2;
+    } else {
+      // Team 1: starts with player 1, toggles every 2 turns from turn 2
+      // Formula: 1 - (floor(tc / 2) % 2)
+      idx = 1 - (Math.floor(tc / 2) % 2);
     }
 
-    return players[0] ?? null;
+    // Get players sorted by position to match the team player order
+    const sortedPlayers = [...teamPlayers].sort(
+      (a, b) => a.position - b.position,
+    );
+    const active = sortedPlayers[idx] ?? sortedPlayers[0] ?? null;
+
+    this.logger.debug("Tag Rotation Debug", {
+      turnCount: tc,
+      side,
+      team,
+      idx,
+      sortedPositions: sortedPlayers.map((p) => p.position),
+      activePlayer: (active as MercuryClient)?.name,
+    });
+
+    return active;
   }
 }
