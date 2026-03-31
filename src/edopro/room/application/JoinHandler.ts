@@ -3,7 +3,7 @@ import { EventEmitter } from "stream";
 
 import { config } from "../../../config";
 import { YGOProRoom } from "../../../mercury/room/domain/YGOProRoom";
-import MercuryRoomList from "../../../mercury/room/infrastructure/MercuryRoomList";
+import MercuryRoomList from "../../../mercury/room/infrastructure/YGOProRoomList";
 import { Redis } from "../../../shared/db/redis/infrastructure/Redis";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { JoinMessageHandler } from "../../../shared/room/domain/JoinMessageHandler";

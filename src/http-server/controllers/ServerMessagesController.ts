@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { ServerMessageClientMessage } from "../../edopro/messages/server-to-client/ServerMessageClientMessage";
 import RoomList from "../../edopro/room/infrastructure/RoomList";
-import MercuryRoomList from "../../mercury/room/infrastructure/MercuryRoomList";
+import MercuryRoomList from "../../mercury/room/infrastructure/YGOProRoomList";
 import { Logger } from "../../shared/logger/domain/Logger";
 
 export const ServerMessageSchema = z.object({

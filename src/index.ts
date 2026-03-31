@@ -29,15 +29,14 @@ async function start(): Promise<void> {
 
   const database = new EdoProSQLiteTypeORM();
   const banListLoader = new EdoProBanListLoader();
-  // await banListLoader.loadDirectory("./banlists/evolution");
+  // await banListLoader.loadDirectory("resources/edopro/banlists-evolution");
+  // await banListLoader.loadDirectory("resources/edopro/banlists-ignis");
 
-  // const mercuryBanListLoader = new MercuryBanListLoader();
-  // await BanListMemoryRepository.backup();
-  // await mercuryBanListLoader.loadDirectory("./mercury");
+  console.log(BanListMemoryRepository.getOnlyWithName());
 
   await YGOProResourceLoader.start();
   await YGOProResourceLoader.get().logLFLists()
-  // Load ban lists from YGOPro resources
+
   const ygoProBanListLoader = new YGOProBanListLoader();
   await ygoProBanListLoader.load();
 

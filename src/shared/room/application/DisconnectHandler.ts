@@ -8,7 +8,7 @@ import { Room } from "../../../edopro/room/domain/Room";
 import RoomList from "../../../edopro/room/infrastructure/RoomList";
 import { MercuryClient } from "../../../mercury/client/domain/MercuryClient";
 import { YGOProRoom } from "../../../mercury/room/domain/YGOProRoom";
-import MercuryRoomList from "../../../mercury/room/infrastructure/MercuryRoomList";
+import MercuryRoomList from "../../../mercury/room/infrastructure/YGOProRoomList";
 import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
 import { ISocket } from "../../socket/domain/ISocket";
 import { DuelState } from "../domain/YgoRoom";
