@@ -14,7 +14,7 @@ import { ISocket } from "@shared/socket/domain/ISocket";
 import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
 
 import { YGOProRoom } from "../domain/YGOProRoom";
-import YGOProRoomList from "../infrastructure/MercuryRoomList";
+import YGOProRoomList from "../infrastructure/YGOProRoomList";
 import { YGOProCtosJoinGame } from "ygopro-msg-encode";
 import { MessageRepository } from "@shared/messages/MessageRepository";
 

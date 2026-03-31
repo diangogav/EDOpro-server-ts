@@ -1,7 +1,7 @@
- 
+
 import { createServer } from "http";
 import { config } from "src/config";
-import MercuryRoomList from "src/mercury/room/infrastructure/MercuryRoomList";
+import MercuryRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 import WebSocket, { WebSocketServer } from "ws";
 

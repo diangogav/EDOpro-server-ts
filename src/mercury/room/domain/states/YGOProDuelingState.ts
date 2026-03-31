@@ -30,7 +30,7 @@ import {
   YGOProStocReplay,
 } from "ygopro-msg-encode";
 import { GameOverDomainEvent } from "@shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
-import MercuryRoomList from "@ygopro/room/infrastructure/MercuryRoomList";
+import MercuryRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 
 export class YGOProDuelingState extends RoomState {

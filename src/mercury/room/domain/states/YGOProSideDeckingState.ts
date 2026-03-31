@@ -85,7 +85,7 @@ export class YGOProSideDeckingState extends RoomState {
 
 		const updateDeckMessage = new YGOProCtosUpdateDeck().fromPayload(message.data);
 		if (!player.deck.isSideDeckValid(updateDeckMessage.deck.main, updateDeckMessage.deck.side)) {
-			room.messageSender.errorMessage(ErrorMessageType.SIDEERROR, 0);
+			player.sendMessageToClient(room.messageSender.errorMessage(ErrorMessageType.SIDEERROR, 0));
 			return;
 		}
 
@@ -99,7 +99,7 @@ export class YGOProSideDeckingState extends RoomState {
 		if (hasError) {
 			this.logger.warn(`Deck has an error: type ${hasError.type}, code ${hasError.code}`);
 			room.notReadyUnsafe(player);
-			room.messageSender.errorMessage(ErrorMessageType.DECKERROR, hasError.type);
+			player.sendMessageToClient(room.messageSender.errorMessage(ErrorMessageType.DECKERROR, hasError.type));
 			return;
 		}
 

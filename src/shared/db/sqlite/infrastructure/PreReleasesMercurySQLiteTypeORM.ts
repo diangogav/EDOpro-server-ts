@@ -7,7 +7,7 @@ import { mercuryDataSource } from "./data-source";
 
 export class PreReleasesMercurySQLiteTypeORM implements Database {
 	private readonly dataSource: DataSource;
-	private readonly mercuryPreReleasesDirectoryPath = "./databases/mercury-pre-releases";
+	private readonly mercuryPreReleasesDirectoryPath = "./resources/ygopro/prereleases/databases";
 
 	constructor() {
 		this.dataSource = mercuryDataSource;

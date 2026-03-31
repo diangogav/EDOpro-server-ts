@@ -21,6 +21,7 @@ import {
 import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
 import { MercuryDeckValidator } from "@ygopro/deck/domain/MercuryDeckValidator";
 import { YGOProRoomState } from "../YGOProRoomState";
+import MercuryBanListMemoryRepository from "@ygopro/ban-list/infrastructure/MercuryBanListMemoryRepository";
 
 export class YGOProWaitingState extends YGOProRoomState {
 	constructor(
@@ -206,11 +207,13 @@ export class YGOProWaitingState extends YGOProRoomState {
 			banListHash: room.banListHash,
 		});
 
+		console.log("banlist", MercuryBanListMemoryRepository.findByHash(room.banListHash)?.name);
+
 		const hasError = room.shouldValidateDeck() && this.deckValidator.validate(deck);
 		if (hasError) {
 			this.logger.warn(`Deck has an error: type ${hasError.type}, code ${hasError.code}`);
 			room.notReadyUnsafe(player);
-			room.messageSender.errorMessage(ErrorMessageType.DECKERROR, hasError.type);
+			player.sendMessageToClient(room.messageSender.errorMessage(ErrorMessageType.DECKERROR, hasError.type));
 			return;
 		}
 
