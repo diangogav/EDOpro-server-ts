@@ -126,6 +126,7 @@ export default tseslint.config(
       "databases/**",
       "repositories/**",
       ".agents/**",
+      "resources/**",
     ],
   },
 );

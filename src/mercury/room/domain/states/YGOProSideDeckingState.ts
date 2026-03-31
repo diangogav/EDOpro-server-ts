@@ -6,6 +6,7 @@ import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoM
 import { RoomState } from "@edopro/room/domain/RoomState";
 
 import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
+import { MercuryDeckValidator } from "@ygopro/deck/domain/MercuryDeckValidator";
 
 import { Commands } from "@shared/messages/Commands";
 import { ClientMessage } from "@shared/messages/MessageProcessor";
@@ -21,6 +22,7 @@ export class YGOProSideDeckingState extends RoomState {
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
 		private readonly deckCreator: YGOProDeckCreator,
+		private readonly deckValidator: MercuryDeckValidator,
 	) {
 		super(eventEmitter);
 		this.logger = logger.child({ file: "MercurySideDeckingState" });
@@ -82,7 +84,7 @@ export class YGOProSideDeckingState extends RoomState {
 		}
 
 		const updateDeckMessage = new YGOProCtosUpdateDeck().fromPayload(message.data);
-		if (!player.deck.isSideDeckValid(updateDeckMessage.deck.main)) {
+		if (!player.deck.isSideDeckValid(updateDeckMessage.deck.main, updateDeckMessage.deck.side)) {
 			room.messageSender.errorMessage(ErrorMessageType.SIDEERROR, 0);
 			return;
 		}
@@ -93,7 +95,7 @@ export class YGOProSideDeckingState extends RoomState {
 			banListHash: room.banListHash,
 		});
 
-		const hasError = room.shouldValidateDeck() && deck.validate();
+		const hasError = room.shouldValidateDeck() && this.deckValidator.validate(deck);
 		if (hasError) {
 			this.logger.warn(`Deck has an error: type ${hasError.type}, code ${hasError.code}`);
 			room.notReadyUnsafe(player);

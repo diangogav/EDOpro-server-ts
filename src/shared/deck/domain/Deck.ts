@@ -40,8 +40,30 @@ export class Deck {
 		this.deckRules = deckRules;
 	}
 
-	isSideDeckValid(mainDeck: number[]): boolean {
-		return mainDeck.length === this.main.length + this.extra.length;
+	isSideDeckValid(newMain: number[], newSide: number[]): boolean {
+		const oldCounts = new Map<number, number>();
+		const newCounts = new Map<number, number>();
+
+		for (const card of this.allCards) {
+			const code = Number(card.code);
+			oldCounts.set(code, (oldCounts.get(code) ?? 0) + 1);
+		}
+
+		for (const code of [...newMain, ...newSide]) {
+			newCounts.set(code, (newCounts.get(code) ?? 0) + 1);
+		}
+
+		if (oldCounts.size !== newCounts.size) {
+			return false;
+		}
+
+		for (const [code, count] of oldCounts) {
+			if (newCounts.get(code) !== count) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	get allCards(): Card[] {

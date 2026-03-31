@@ -39,7 +39,9 @@ import {
 import { YGOProYrp } from "ygopro-yrp-encode";
 import { DuelRecord } from "./DuelRecord";
 import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
+import { MercuryDeckValidator } from "@ygopro/deck/domain/MercuryDeckValidator";
 import { CardYGOProRepository } from "@ygopro/card/infrastructure/CardYGOProRepository";
+import { YGOProBanList } from "@ygopro/ban-list/domain/YGOProBanList";
 
 const BEST_OF = {
   [GameMode.SINGLE]: 1,
@@ -310,6 +312,7 @@ export class YGOProRoom extends YgoRoom {
         this._deckRules,
         this._logger,
       ),
+      this.createDeckValidator(),
     );
   }
 
@@ -350,6 +353,7 @@ export class YGOProRoom extends YgoRoom {
         this._deckRules,
         this._logger,
       ),
+      this.createDeckValidator(),
     );
   }
 
@@ -654,6 +658,12 @@ export class YGOProRoom extends YgoRoom {
     });
   }
 
+
+  private createDeckValidator(): MercuryDeckValidator {
+    const banList = MercuryBanListMemoryRepository.findByHash(this.banListHash);
+
+    return new MercuryDeckValidator(this._deckRules, banList ?? new YGOProBanList());
+  }
 
   toPresentation(): { [key: string]: unknown } {
     return {

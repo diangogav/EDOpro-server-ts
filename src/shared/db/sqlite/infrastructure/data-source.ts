@@ -4,7 +4,7 @@ import { DataSource, DataSourceOptions } from "typeorm";
 
 const options: DataSourceOptions = {
 	type: "better-sqlite3",
-	database: "jtp_evolution_cards.db",
+	database: "evolution_cards.db",
 	synchronize: true,
 	logging: false,
 	entities: [CardEntity, CardTextEntity],

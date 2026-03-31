@@ -132,7 +132,7 @@ export class SideDeckingState extends RoomState {
 		player.logger.info("SIDE_DECKING: UPDATE_DECK");
 		const parser = new UpdateDeckMessageParser(message.data);
 		const [mainDeck, sideDeck] = parser.getDeck();
-		if (!player.deck.isSideDeckValid(mainDeck)) {
+		if (!player.deck.isSideDeckValid(mainDeck, sideDeck)) {
 			const message = ErrorClientMessage.create(ErrorMessages.SIDE_ERROR);
 			player.sendMessage(message);
 

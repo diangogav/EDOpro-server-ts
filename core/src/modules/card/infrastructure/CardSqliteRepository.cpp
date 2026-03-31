@@ -17,7 +17,7 @@ FROM datas WHERE datas.id = ?;
 CardSqliteRepository::CardSqliteRepository()
 {
   std::filesystem::path currentPath = std::filesystem::current_path();
-  std::filesystem::path dbPath = currentPath / "jtp_evolution_cards.db";
+  std::filesystem::path dbPath = currentPath / "evolution_cards.db";
   const char *path = dbPath.c_str();
 
   if (sqlite3_open(path, &db) != SQLITE_OK)

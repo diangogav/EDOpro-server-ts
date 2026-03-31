@@ -213,17 +213,12 @@ export class YGOProDuelingState extends RoomState {
       message.data,
     );
 
-    const completeIncomingDeck = [
-      ...updateDeckMessage.deck.main,
-      ...updateDeckMessage.deck.side,
-    ];
-    const completeCurrentDeck = [
-      ...player.deck.main,
-      ...player.deck.side,
-      ...player.deck.extra,
-    ].map((item) => Number(item.code));
-
-    if (completeCurrentDeck.length !== completeIncomingDeck.length) {
+    if (
+      !player.deck.isSideDeckValid(
+        updateDeckMessage.deck.main,
+        updateDeckMessage.deck.side,
+      )
+    ) {
       const status = (player.position << 4) | 0x0a;
       player.sendMessageToClient(
         this.room.messageSender.playerChangeMessage(player.position, status),

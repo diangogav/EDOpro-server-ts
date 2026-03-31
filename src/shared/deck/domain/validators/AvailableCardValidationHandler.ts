@@ -23,23 +23,19 @@ export class AvailableCardValidationHandler implements DeckValidationHandler {
 			return null;
 		}
 
-		const availableCards = [
+		const availableCards = new Set([
 			...this.banList.limited,
 			...this.banList.semiLimited,
 			...this.banList.forbidden,
 			...this.banList.all,
-		];
+		]);
 
-		if (availableCards.length > 0) {
+		if (availableCards.size > 0) {
 			for (const card of deck.allCards) {
-				if (
-					!availableCards.find(
-						(availableCard) =>
-							availableCard === Number(card.code) ||
-							(Number(card.alias) !== 0 && availableCard === Number(card.alias))
-					)
-				) {
-					return new UnknownCardError(Number(card.code));
+				const code = Number(card.code);
+				const alias = Number(card.alias);
+				if (!availableCards.has(code) && (alias === 0 || !availableCards.has(alias))) {
+					return new UnknownCardError(code);
 				}
 			}
 		}

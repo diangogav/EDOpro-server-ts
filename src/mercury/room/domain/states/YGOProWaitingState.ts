@@ -19,6 +19,7 @@ import {
 	YGOProCtosUpdateDeck,
 } from "ygopro-msg-encode";
 import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
+import { MercuryDeckValidator } from "@ygopro/deck/domain/MercuryDeckValidator";
 import { YGOProRoomState } from "../YGOProRoomState";
 
 export class YGOProWaitingState extends YGOProRoomState {
@@ -27,6 +28,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
 		private readonly deckCreator: YGOProDeckCreator,
+		private readonly deckValidator: MercuryDeckValidator,
 	) {
 		super(eventEmitter);
 		this.logger = logger.child({ file: "MercuryWaitingState" });
@@ -204,7 +206,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 			banListHash: room.banListHash,
 		});
 
-		const hasError = room.shouldValidateDeck() && deck.validate();
+		const hasError = room.shouldValidateDeck() && this.deckValidator.validate(deck);
 		if (hasError) {
 			this.logger.warn(`Deck has an error: type ${hasError.type}, code ${hasError.code}`);
 			room.notReadyUnsafe(player);
