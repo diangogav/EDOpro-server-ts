@@ -122,7 +122,7 @@ export abstract class YgoRoom {
 		this.emitter.emit(event, message, this, socket);
 	}
 
-	emitRoomEvent(event: string, message: unknown, client: Client | MercuryClient): void {
+	emitRoomEvent(event: string, message: unknown, client?: Client | MercuryClient): void {
 		this.emitter.emit(event, message, this, client);
 	}
 

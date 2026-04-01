@@ -71,6 +71,12 @@ export class YGOProDuelingState extends RoomState {
       (message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
         void this.handleTimeConfirm.bind(this)(message, room, client),
     );
+
+    this.eventEmitter.on(
+      "FINISH_DUEL_BY_TIMEOUT",
+      (winMsg: YGOProMsgWin) =>
+        void this.handleWinCondition.bind(this)(winMsg),
+    );
   }
 
   private async handle(): Promise<void> {

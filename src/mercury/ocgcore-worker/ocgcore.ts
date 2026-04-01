@@ -1031,17 +1031,15 @@ export class OCGCore {
     this.responseSide = null;
     this.logger.info("Response timeout", { originalDuelPos });
 
-    const winnerOriginalDuelPos = 1 - originalDuelPos;
-    const player = this.room.players.find(
-      (player: MercuryClient) => player.position === originalDuelPos,
-    );
+    const winnerTeam = 1 - originalDuelPos;
+    const winnerEnginePos = this.getTeamSide(winnerTeam);
     const event = "FINISH_DUEL_BY_TIMEOUT";
     const msgWin = new YGOProMsgWin().fromPartial({
-      player: winnerOriginalDuelPos,
+      player: winnerEnginePos,
       type: 0x3,
     });
 
-    this.room.emitRoomEvent(event, msgWin, player as MercuryClient);
+    this.room.emitRoomEvent(event, msgWin);
   }
 
   // ============================================================
