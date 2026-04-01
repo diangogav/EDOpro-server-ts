@@ -28,6 +28,7 @@ import { YGOProRockPaperScissorState } from "./states/YGOProRockPaperScissorStat
 import { YGOProSideDeckingState } from "./states/YGOProSideDeckingState";
 import { YGOProWaitingState } from "./states/YGOProWaitingState";
 import { HostInfo } from "./host-info/HostInfo";
+import { getLobbyDuelInfo } from "./LobbyDuelFlags";
 
 import {
   GameMode,
@@ -675,6 +676,8 @@ export class YGOProRoom extends YgoRoom {
   }
 
   toPresentation(): { [key: string]: unknown } {
+    const lobbyInfo = getLobbyDuelInfo(this._hostInfo.duel_rule);
+
     return {
       roomid: this.id,
       roomname: this.name,
@@ -684,8 +687,8 @@ export class YGOProRoom extends YgoRoom {
       team1: this.team0,
       team2: this.team1,
       best_of: this.bestOf,
-      duel_flag: 0,
-      forbidden_types: 0,
+      duel_flag: lobbyInfo.duelFlag,
+      forbidden_types: lobbyInfo.forbiddenTypes,
       extra_rules: 0,
       start_lp: this._hostInfo.start_lp,
       start_hand: this._hostInfo.start_hand,
