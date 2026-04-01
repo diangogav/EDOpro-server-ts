@@ -217,10 +217,36 @@ describe("YGOProRoom", () => {
     });
   });
 
-  it("Should create a room with OCG ban list and ocg only if command is oo", () => {
-    const room = YGOProRoomMother.create({ command: "oor#123" });
-    expect(room.hostInfo.rule).toBe(0);
-    expect(room.hostInfo.lflist).toBe(0);
+  describe("OCG command", () => {
+    it("Should create a room with rule 0 and lflist 0 if command is oor", () => {
+      const room = YGOProRoomMother.create({ command: "oor#123" });
+      expect(room.hostInfo.rule).toBe(0);
+      expect(room.hostInfo.lflist).toBe(0);
+    });
+
+    it("Should create a room with rule 0 and lflist 0 if command is oo (alias of oor)", () => {
+      const room = YGOProRoomMother.create({ command: "oo#123" });
+      expect(room.hostInfo.rule).toBe(0);
+      expect(room.hostInfo.lflist).toBe(0);
+    });
+
+    it("Should create a room with rule 0 and lflist 0 if command is ocgonly (alias of oor)", () => {
+      const room = YGOProRoomMother.create({ command: "ocgonly#123" });
+      expect(room.hostInfo.rule).toBe(0);
+      expect(room.hostInfo.lflist).toBe(0);
+    });
+
+    it("Should create a room with rule 0 and lflist 0 if command is ocg", () => {
+      const room = YGOProRoomMother.create({ command: "ocg#123" });
+      expect(room.hostInfo.rule).toBe(0);
+      expect(room.hostInfo.lflist).toBe(0);
+    });
+
+    it("Should create a match room with rule 0 if command is ocg,m", () => {
+      const room = YGOProRoomMother.create({ command: "ocg,m#123" });
+      expect(room.hostInfo.rule).toBe(0);
+      expect(room.hostInfo.mode).toBe(GameMode.MATCH);
+    });
   });
 
   describe("Genesys Format", () => {

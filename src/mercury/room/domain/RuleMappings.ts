@@ -314,7 +314,7 @@ export const priorityRuleMappings: RuleMappings = {
 			};
 		},
 		validate: (value) => {
-			return value === "oor";
+			return value === "oor" || value === "oo" || value === "ocgonly";
 		},
 	},
 
