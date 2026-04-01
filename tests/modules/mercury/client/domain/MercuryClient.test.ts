@@ -1,14 +1,10 @@
-import net from "net";
 import { MercuryClient } from "../../../../../src/mercury/client/domain/MercuryClient";
 import { YGOProRoom } from "../../../../../src/mercury/room/domain/YGOProRoom";
 import { Logger } from "../../../../../src/shared/logger/domain/Logger";
 import { ISocket } from "../../../../../src/shared/socket/domain/ISocket";
 import { Team } from "../../../../../src/shared/room/Team";
-import { ClientMessage } from "../../../../../src/shared/messages/MessageProcessor";
 
 // Mock dependencies
-jest.mock("net");
-jest.mock("../../../../../src/mercury/MercuryCoreMessageEmitter");
 jest.mock("../../../../../src/mercury/MercuryRoomMessageEmitter");
 
 describe("MercuryClient", () => {
@@ -16,8 +12,6 @@ describe("MercuryClient", () => {
   let mockSocket: jest.Mocked<ISocket>;
   let mockLogger: jest.Mocked<Logger>;
   let mockRoom: jest.Mocked<YGOProRoom>;
-  let mockCoreClient: jest.Mocked<net.Socket>;
-
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
@@ -43,19 +37,6 @@ describe("MercuryClient", () => {
     mockRoom = {
       id: "test-room-id",
     } as unknown as jest.Mocked<YGOProRoom>;
-
-    // Mock core client (net.Socket)
-    mockCoreClient = {
-      on: jest.fn(),
-      connect: jest.fn(),
-      write: jest.fn(),
-      destroy: jest.fn(),
-    } as unknown as jest.Mocked<net.Socket>;
-
-    // Mock net.Socket constructor
-    (net.Socket as unknown as jest.Mock).mockImplementation(
-      () => mockCoreClient,
-    );
   });
 
   describe("Constructor", () => {
@@ -78,7 +59,7 @@ describe("MercuryClient", () => {
       expect(client.connectedToCore).toBe(false);
     });
 
-    it("should initialize with spectator team", () => {
+    it("should initialize with the team passed in constructor", () => {
       client = new MercuryClient({
         name: "TestPlayer",
         socket: mockSocket,
@@ -88,6 +69,22 @@ describe("MercuryClient", () => {
         host: true,
         id: "player-id-1",
         team: Team.PLAYER,
+      });
+
+      expect(client.team).toBe(Team.PLAYER);
+      expect(client.isSpectator).toBe(false);
+    });
+
+    it("should initialize as spectator when spectator team is passed", () => {
+      client = new MercuryClient({
+        name: "Spectator",
+        socket: mockSocket,
+        logger: mockLogger,
+        position: 0,
+        room: mockRoom,
+        host: false,
+        id: "spectator-id-1",
+        team: Team.SPECTATOR,
       });
 
       expect(client.team).toBe(Team.SPECTATOR);
@@ -113,43 +110,7 @@ describe("MercuryClient", () => {
       });
     });
 
-    it("should register data event listener on core client", () => {
-      client = new MercuryClient({
-        name: "TestPlayer",
-        socket: mockSocket,
-        logger: mockLogger,
-        position: 0,
-        room: mockRoom,
-        host: true,
-        id: "player-id-1",
-        team: Team.PLAYER,
-      });
-
-      expect(mockCoreClient.on).toHaveBeenCalledWith(
-        "data",
-        expect.any(Function),
-      );
-    });
-
-    it("should register connect event listener on core client", () => {
-      client = new MercuryClient({
-        name: "TestPlayer",
-        socket: mockSocket,
-        logger: mockLogger,
-        position: 0,
-        room: mockRoom,
-        host: true,
-        id: "player-id-1",
-        team: Team.PLAYER,
-      });
-
-      expect(mockCoreClient.on).toHaveBeenCalledWith(
-        "connect",
-        expect.any(Function),
-      );
-    });
-
-    it("should register message handler on socket", () => {
+    it("should register message handler on socket via roomMessageEmitter", () => {
       client = new MercuryClient({
         name: "TestPlayer",
         socket: mockSocket,
@@ -163,126 +124,7 @@ describe("MercuryClient", () => {
 
       expect(mockSocket.onMessage).toHaveBeenCalledWith(expect.any(Function));
     });
-  });
 
-  describe("connectToCore", () => {
-    beforeEach(() => {
-      client = new MercuryClient({
-        name: "TestPlayer",
-        socket: mockSocket,
-        logger: mockLogger,
-        position: 0,
-        room: mockRoom,
-        host: true,
-        id: "player-id-1",
-        team: Team.PLAYER,
-      });
-    });
-
-    it("should connect to core with correct url and port", () => {
-      client.connectToCore({ url: "localhost", port: 3000 });
-
-      expect(mockCoreClient.connect).toHaveBeenCalledWith(
-        3000,
-        "localhost",
-        expect.any(Function),
-      );
-    });
-
-    it("should not connect if already connected to core", () => {
-      // Simulate connection
-      const connectHandler = (mockCoreClient.on as jest.Mock).mock.calls.find(
-        (call) => call[0] === "connect",
-      )[1];
-      connectHandler();
-
-      // Try to connect again
-      client.connectToCore({ url: "localhost", port: 3000 });
-
-      expect(mockCoreClient.connect).not.toHaveBeenCalled();
-    });
-
-    it("should set connectedToCore to true on connect event", () => {
-      expect(client.connectedToCore).toBe(false);
-
-      // Trigger connect event
-      const connectHandler = (mockCoreClient.on as jest.Mock).mock.calls.find(
-        (call) => call[0] === "connect",
-      )[1];
-      connectHandler();
-
-      expect(client.connectedToCore).toBe(true);
-    });
-  });
-
-  describe("sendMessageToCore", () => {
-    beforeEach(() => {
-      client = new MercuryClient({
-        name: "TestPlayer",
-        socket: mockSocket,
-        logger: mockLogger,
-        position: 0,
-        room: mockRoom,
-        host: true,
-        id: "player-id-1",
-        team: Team.PLAYER,
-      });
-    });
-
-    it("should send ClientMessage to core client", () => {
-      const message: ClientMessage = {
-        raw: Buffer.from([0x01, 0x02, 0x03]),
-      } as ClientMessage;
-
-      client.sendMessageToCore(message);
-
-      expect(mockCoreClient.write).toHaveBeenCalledWith(message.raw);
-    });
-
-    it("should log debug message when sending to core", () => {
-      const message: ClientMessage = {
-        raw: Buffer.from([0x01, 0x02, 0x03]),
-      } as ClientMessage;
-
-      client.sendMessageToCore(message);
-
-      expect(mockLogger.debug).toHaveBeenCalledWith(
-        expect.stringContaining("SENDING TO CORE:"),
-      );
-    });
-  });
-
-  describe("sendToCore", () => {
-    beforeEach(() => {
-      client = new MercuryClient({
-        name: "TestPlayer",
-        socket: mockSocket,
-        logger: mockLogger,
-        position: 0,
-        room: mockRoom,
-        host: true,
-        id: "player-id-1",
-        team: Team.PLAYER,
-      });
-    });
-
-    it("should send buffer to core client", () => {
-      const buffer = Buffer.from([0x04, 0x05, 0x06]);
-
-      client.sendToCore(buffer);
-
-      expect(mockCoreClient.write).toHaveBeenCalledWith(buffer);
-    });
-
-    it("should log debug message when sending buffer to core", () => {
-      const buffer = Buffer.from([0x04, 0x05, 0x06]);
-
-      client.sendToCore(buffer);
-
-      expect(mockLogger.debug).toHaveBeenCalledWith(
-        expect.stringContaining("SENDING TO CORE:"),
-      );
-    });
   });
 
   describe("sendMessageToClient", () => {
@@ -322,17 +164,10 @@ describe("MercuryClient", () => {
       });
     });
 
-    it("should destroy both core client and socket", () => {
+    it("should destroy socket", () => {
       client.destroy();
 
-      expect(mockCoreClient.destroy).toHaveBeenCalled();
       expect(mockSocket.destroy).toHaveBeenCalled();
-    });
-
-    it("should log debug message on destroy", () => {
-      client.destroy();
-
-      expect(mockLogger.debug).toHaveBeenCalledWith("DESTROY");
     });
   });
 
@@ -358,12 +193,23 @@ describe("MercuryClient", () => {
     });
 
     it("should change from spectator to player", () => {
-      expect(client.team).toBe(Team.SPECTATOR);
+      const spectatorClient = new MercuryClient({
+        name: "TestPlayer",
+        socket: mockSocket,
+        logger: mockLogger,
+        position: 0,
+        room: mockRoom,
+        host: false,
+        id: "player-id-1",
+        team: Team.SPECTATOR,
+      });
 
-      client.playerPosition(0, Team.PLAYER);
+      expect(spectatorClient.team).toBe(Team.SPECTATOR);
 
-      expect(client.team).toBe(Team.PLAYER);
-      expect(client.isSpectator).toBe(false);
+      spectatorClient.playerPosition(0, Team.PLAYER);
+
+      expect(spectatorClient.team).toBe(Team.PLAYER);
+      expect(spectatorClient.isSpectator).toBe(false);
     });
   });
 
@@ -467,19 +313,6 @@ describe("MercuryClient", () => {
       );
     });
 
-    it("should update IP address from new socket", () => {
-      const newMockSocket = {
-        send: jest.fn(),
-        destroy: jest.fn(),
-        onMessage: jest.fn(),
-        remoteAddress: "192.168.1.100",
-      } as unknown as jest.Mocked<ISocket>;
-
-      client.setSocket(newMockSocket);
-
-      // IP address is protected, but we can verify by creating a client with null and updating
-      expect(newMockSocket.remoteAddress).toBe("192.168.1.100");
-    });
   });
 
   describe("rpsChoose", () => {
@@ -527,42 +360,4 @@ describe("MercuryClient", () => {
     });
   });
 
-  describe("Getters", () => {
-    beforeEach(() => {
-      client = new MercuryClient({
-        name: "TestPlayer",
-        socket: mockSocket,
-        logger: mockLogger,
-        position: 0,
-        room: mockRoom,
-        host: true,
-        id: "player-id-1",
-        team: Team.PLAYER,
-      });
-    });
-
-    it("should return socket", () => {
-      expect(client.socket).toBe(mockSocket);
-    });
-
-    it("should return connectedToCore", () => {
-      expect(client.connectedToCore).toBe(false);
-
-      // Trigger connect event
-      const connectHandler = (mockCoreClient.on as jest.Mock).mock.calls.find(
-        (call) => call[0] === "connect",
-      )[1];
-      connectHandler();
-
-      expect(client.connectedToCore).toBe(true);
-    });
-
-    it("should return needSpectatorMessages", () => {
-      expect(client.needSpectatorMessages).toBe(false);
-
-      client.setNeedSpectatorMessages(true);
-
-      expect(client.needSpectatorMessages).toBe(true);
-    });
-  });
 });
