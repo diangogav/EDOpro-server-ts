@@ -127,6 +127,7 @@ The Mercury engine uses YGOPro-compatible protocol (based on srvpro2). Players c
 - ✅ Card scripts and databases from ygopro-scripts
 - ✅ Ban lists and alternative format resources
 - ✅ The `YGOPRO_FOLDERS` environment variable pointing to your resource directories
+- ✅ (Optional) The `YGOPRO_EXTRA_DB_FOLDERS` environment variable for pre-release and art card databases
 
 **Minimum `.env` configuration:**
 
@@ -142,8 +143,8 @@ YGOPRO_FOLDERS=./resources/ygopro/base
 ```
 📂 resources/ygopro/
 ├── 📜 base/               # Core scripts + lflist + cards.cdb (loaded by all modes)
-├── 🆕 prereleases-cdb/    # Pre-release card scripts and databases
-├── 🎨 cards-art/          # Custom card art scripts and databases
+├── 🆕 prereleases-cdb/    # Pre-release card scripts and databases (extra DB)
+├── 🎨 cards-art/          # Custom card art scripts and databases (extra DB)
 ├── 🌏 ocg/                # OCG-specific banlist
 └── 🃏 alternatives/       # Format variants (Edison, GOAT, HAT, etc.)
 ```
@@ -151,7 +152,8 @@ YGOPRO_FOLDERS=./resources/ygopro/base
 To enable all formats and pre-releases, set:
 
 ```env
-YGOPRO_FOLDERS=./resources/ygopro/base,./resources/ygopro/prereleases-cdb,./resources/ygopro/cards-art,./resources/ygopro/ocg,./resources/ygopro/alternatives
+YGOPRO_FOLDERS=./resources/ygopro/base,./resources/ygopro/ocg,./resources/ygopro/alternatives
+YGOPRO_EXTRA_DB_FOLDERS=./resources/ygopro/prereleases-cdb,./resources/ygopro/cards-art
 ```
 
 ```bash
@@ -171,7 +173,8 @@ HOST_PORT=7911
 MERCURY_PORT=7711
 HTTP_PORT=7922
 WEBSOCKET_PORT=4000
-YGOPRO_FOLDERS=./resources/ygopro/base,./resources/ygopro/prereleases-cdb,./resources/ygopro/cards-art,./resources/ygopro/ocg,./resources/ygopro/alternatives
+YGOPRO_FOLDERS=./resources/ygopro/base,./resources/ygopro/ocg,./resources/ygopro/alternatives
+YGOPRO_EXTRA_DB_FOLDERS=./resources/ygopro/prereleases-cdb,./resources/ygopro/cards-art
 ```
 
 ```bash
@@ -190,7 +193,8 @@ Both engines run in the same process, sharing the HTTP API and WebSocket server.
 | `MERCURY_PORT` | Mercury (YGOPro) server port | `7711` |
 | `HTTP_PORT` | HTTP API port | `7922` |
 | `WEBSOCKET_PORT` | WebSocket port | `4000` |
-| `YGOPRO_FOLDERS` | Comma-separated resource directories for Mercury engine | *(empty)* |
+| `YGOPRO_FOLDERS` | Comma-separated resource directories for Mercury engine (standard card pool) | *(empty)* |
+| `YGOPRO_EXTRA_DB_FOLDERS` | Comma-separated extra DB directories (pre-releases, art cards) — only loaded for PRE/ART room formats | *(empty)* |
 | `RANK_ENABLED` | Enable ranking system (requires PostgreSQL) | `false` |
 | `POSTGRES_HOST` | PostgreSQL host | `localhost` |
 | `POSTGRES_PORT` | PostgreSQL port | `5432` |

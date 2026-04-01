@@ -5,6 +5,7 @@ import { RoomState } from "@edopro/room/domain/RoomState";
 
 import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
 import { MercuryDeckValidator } from "@ygopro/deck/domain/MercuryDeckValidator";
+import { DeckError } from "@shared/deck/domain/errors/DeckError";
 
 import { Commands } from "@shared/messages/Commands";
 import { ClientMessage } from "@shared/messages/MessageProcessor";
@@ -194,12 +195,20 @@ export class YGOProSideDeckingState extends RoomState {
 			return;
 		}
 
-		const deck = await this.deckCreator.build({
+		const deckOrError = await this.deckCreator.build({
 			main: updateDeckMessage.deck.main,
 			side: updateDeckMessage.deck.side,
 			banListHash: room.banListHash,
 		});
 
+		if (deckOrError instanceof DeckError) {
+			this.logger.warn(`Deck build error: type ${deckOrError.type}, code ${deckOrError.code}`);
+			room.notReadyUnsafe(player);
+			player.sendMessageToClient(room.messageSender.errorMessage(ErrorMessageType.DECKERROR, deckOrError.type));
+			return;
+		}
+
+		const deck = deckOrError;
 		const hasError = room.shouldValidateDeck() && this.deckValidator.validate(deck);
 		if (hasError) {
 			this.logger.warn(`Deck has an error: type ${hasError.type}, code ${hasError.code}`);

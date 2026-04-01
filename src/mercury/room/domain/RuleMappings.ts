@@ -647,3 +647,12 @@ export const formatRuleMappings: RuleMappings = {
 		},
 	},
 };
+
+export const extendedCardPoolFormats = new Set([
+	"pre",
+	"tcgpre",
+	"ocgpre",
+	"tcgart",
+	"ocgart",
+	"rushpre",
+]);

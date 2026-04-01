@@ -40,6 +40,7 @@ export const config = {
   resources: {
     ygopro: {
       folders: process.env?.YGOPRO_FOLDERS?.split(",") ?? [],
+      extraDbFolders: process.env?.YGOPRO_EXTRA_DB_FOLDERS?.split(",") ?? [],
       extraScripts: process.env?.YGOPRO_EXTRA_SCRIPTS?.split(",") ?? [],
     }
   },

@@ -33,7 +33,7 @@ export class YGOProResourceLoader {
 
   static async start(): Promise<void> {
     const loader = YGOProResourceLoader.get();
-    await loader.getCardStorage();
+    await loader.loadYGOProCdbs();
   }
 
   static get(): YGOProResourceLoader {
@@ -50,51 +50,112 @@ export class YGOProResourceLoader {
 
   ygoproPaths = config.resources.ygopro.folders;
 
+  extraDbPaths = config.resources.ygopro.extraDbFolders;
+
   extraScriptPaths = config.resources.ygopro.extraScripts;
 
   private loadingLock = new BetterLock();
-  private loadingCardStorage?: Promise<CardStorage>;
-  private currentCardStorage?: CardStorage;
-  private currentCardStorageSha512?: Buffer;
+
+  private standardLoadingPromise?: Promise<CardStorage>;
+  private standardCardStorage?: CardStorage;
+  private standardSha512?: Buffer;
+
+  private extendedLoadingPromise?: Promise<CardStorage>;
+  private extendedCardStorage?: CardStorage;
+  private extendedSha512?: Buffer;
+
   private reloadTimerRegistered = false;
 
+  get hasExtraDbPaths(): boolean {
+    return this.extraDbPaths.length > 0;
+  }
+
   async getCardStorage() {
-    if (this.currentCardStorage) {
-      return this.currentCardStorage;
+    return this.getStandardCardStorage();
+  }
+
+  async getStandardCardStorage(): Promise<CardStorage> {
+    if (this.standardCardStorage) {
+      return this.standardCardStorage;
     }
-    if (this.loadingCardStorage) {
-      return this.loadingCardStorage;
+    if (this.standardLoadingPromise) {
+      return this.standardLoadingPromise;
     }
-    return this.loadYGOProCdbs();
+    return this.loadStandardCdbs();
+  }
+
+  async getExtendedCardStorage(): Promise<CardStorage> {
+    if (!this.hasExtraDbPaths) {
+      return this.getStandardCardStorage();
+    }
+    if (this.extendedCardStorage) {
+      return this.extendedCardStorage;
+    }
+    if (this.extendedLoadingPromise) {
+      return this.extendedLoadingPromise;
+    }
+    return this.loadExtendedCdbs();
   }
 
   async getCardReader(): Promise<CardReaderFn> {
-    const storage = await this.getCardStorage();
+    const storage = await this.getStandardCardStorage();
+    return storage.toCardReader();
+  }
+
+  async getExtendedCardReader(): Promise<CardReaderFn> {
+    const storage = await this.getExtendedCardStorage();
     return storage.toCardReader();
   }
 
   async getOcgcoreWasmBinary() {
-    const storage = await this.getCardStorage();
+    const storage = await this.getStandardCardStorage();
     return storage.ocgcoreWasmBinary;
   }
 
   async loadYGOProCdbs() {
-    if (this.loadingCardStorage) {
-      return this.loadingCardStorage;
+    await this.loadStandardCdbs();
+    if (this.hasExtraDbPaths) {
+      await this.loadExtendedCdbs();
+    }
+  }
+
+  private async loadStandardCdbs(): Promise<CardStorage> {
+    if (this.standardLoadingPromise) {
+      return this.standardLoadingPromise;
     }
     const loading = this.loadingLock.acquire(async () => {
-      const { cardStorage, sha512 } = await this.loadCardStorage();
-      const storage = cardStorage;
-      this.currentCardStorage = storage;
-      this.currentCardStorageSha512 = sha512;
-      return storage;
+      const { cardStorage, sha512 } = await this.loadCardStorageFromPaths(this.ygoproPaths, "standard");
+      this.standardCardStorage = cardStorage;
+      this.standardSha512 = sha512;
+      return cardStorage;
     });
-    this.loadingCardStorage = loading;
+    this.standardLoadingPromise = loading;
     try {
       return await loading;
     } finally {
-      if (this.loadingCardStorage === loading) {
-        this.loadingCardStorage = undefined;
+      if (this.standardLoadingPromise === loading) {
+        this.standardLoadingPromise = undefined;
+      }
+    }
+  }
+
+  private async loadExtendedCdbs(): Promise<CardStorage> {
+    if (this.extendedLoadingPromise) {
+      return this.extendedLoadingPromise;
+    }
+    const loading = this.loadingLock.acquire(async () => {
+      const allPaths = [...this.ygoproPaths, ...this.extraDbPaths];
+      const { cardStorage, sha512 } = await this.loadCardStorageFromPaths(allPaths, "extended");
+      this.extendedCardStorage = cardStorage;
+      this.extendedSha512 = sha512;
+      return cardStorage;
+    });
+    this.extendedLoadingPromise = loading;
+    try {
+      return await loading;
+    } finally {
+      if (this.extendedLoadingPromise === loading) {
+        this.extendedLoadingPromise = undefined;
       }
     }
   }
@@ -105,44 +166,62 @@ export class YGOProResourceLoader {
     }
     this.reloadTimerRegistered = true;
     setInterval(() => {
-      this.reloadYGOProCdbsIfChanged().catch((error) => {
+      this.reloadIfChanged().catch((error) => {
         this.logger.error("Failed reloading card storage by periodic refresh");
         this.logger.error(error);
       });
     }, CARD_STORAGE_RELOAD_INTERVAL_MS);
   }
 
-  private async reloadYGOProCdbsIfChanged() {
-    if (!this.currentCardStorage) {
-      await this.loadYGOProCdbs();
-      return;
-    }
-    if (this.loadingCardStorage) {
-      await this.loadingCardStorage;
-      return;
-    }
-    const loading = this.loadingLock.acquire(async () => {
-      const { cardStorage, sha512 } = await this.loadCardStorage();
-      if (this.currentCardStorageSha512?.equals(sha512)) {
-        this.logger.debug("Card storage hash unchanged, keeping current data");
-        return this.currentCardStorage!;
-      }
-      this.currentCardStorage = cardStorage;
-      this.currentCardStorageSha512 = sha512;
-      this.logger.info("Card storage hash changed, replaced current data");
-      return cardStorage;
-    });
-    this.loadingCardStorage = loading;
-    try {
-      await loading;
-    } finally {
-      if (this.loadingCardStorage === loading) {
-        this.loadingCardStorage = undefined;
-      }
+  private async reloadIfChanged() {
+    await this.reloadStorageIfChanged(
+      this.ygoproPaths,
+      "standard",
+      this.standardCardStorage,
+      this.standardSha512,
+      (storage, sha512) => {
+        this.standardCardStorage = storage;
+        this.standardSha512 = sha512;
+      },
+    );
+
+    if (this.hasExtraDbPaths) {
+      const allPaths = [...this.ygoproPaths, ...this.extraDbPaths];
+      await this.reloadStorageIfChanged(
+        allPaths,
+        "extended",
+        this.extendedCardStorage,
+        this.extendedSha512,
+        (storage, sha512) => {
+          this.extendedCardStorage = storage;
+          this.extendedSha512 = sha512;
+        },
+      );
     }
   }
 
-  private async loadCardStorage() {
+  private async reloadStorageIfChanged(
+    paths: string[],
+    label: string,
+    currentStorage: CardStorage | undefined,
+    currentSha512: Buffer | undefined,
+    setter: (storage: CardStorage, sha512: Buffer) => void,
+  ) {
+    if (!currentStorage) {
+      return;
+    }
+    await this.loadingLock.acquire(async () => {
+      const { cardStorage, sha512 } = await this.loadCardStorageFromPaths(paths, label);
+      if (currentSha512?.equals(sha512)) {
+        this.logger.debug(`Card storage (${label}) hash unchanged, keeping current data`);
+        return;
+      }
+      setter(cardStorage, sha512);
+      this.logger.info(`Card storage (${label}) hash changed, replaced current data`);
+    });
+  }
+
+  private async loadCardStorageFromPaths(paths: string[], label: string) {
     const ocgcoreWasmPathConfig = "./ocgcore-worker";
     const ocgcoreWasmPath = ocgcoreWasmPathConfig
       ? path.resolve(process.cwd(), ocgcoreWasmPathConfig)
@@ -150,7 +229,7 @@ export class YGOProResourceLoader {
     const { cardStorage, dbCount, failedFiles, sha512 } = await runInWorker(
       CardLoadWorker,
       (worker) => worker.load(),
-      this.ygoproPaths,
+      paths,
       ocgcoreWasmPath,
     );
 
@@ -158,7 +237,7 @@ export class YGOProResourceLoader {
       this.logger.error(`Failed to read ${failedFile}`);
     }
     this.logger.info(
-      `Merged database from ${dbCount} databases with ${cardStorage.size} cards`,
+      `Merged ${label} database from ${dbCount} databases with ${cardStorage.size} cards`,
     );
     return {
       cardStorage,

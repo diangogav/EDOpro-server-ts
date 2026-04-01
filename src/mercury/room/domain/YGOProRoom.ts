@@ -17,6 +17,7 @@ import { Deck } from "@shared/deck/domain/Deck";
 import MercuryBanListMemoryRepository from "../../ban-list/infrastructure/MercuryBanListMemoryRepository";
 import { MercuryClient } from "../../client/domain/MercuryClient";
 import {
+  extendedCardPoolFormats,
   formatRuleMappings,
   priorityRuleMappings,
   ruleMappings,
@@ -54,6 +55,7 @@ export class YGOProRoom extends YgoRoom {
   readonly password: string;
   readonly createdBySocketId: string;
   readonly banListHash: number;
+  readonly useExtendedCardPool: boolean;
   //TODO: compatibility with edopro list and rank;
   readonly edoBanListHash: number;
   private _logger: Logger;
@@ -79,6 +81,7 @@ export class YGOProRoom extends YgoRoom {
     startLp,
     messageRepository,
     banListHash,
+    useExtendedCardPool,
   }: {
     id: number;
     password: string;
@@ -92,6 +95,7 @@ export class YGOProRoom extends YgoRoom {
     startLp: number;
     messageRepository: MessageRepository;
     banListHash: number;
+    useExtendedCardPool: boolean;
   }) {
     super({
       team0,
@@ -109,9 +113,10 @@ export class YGOProRoom extends YgoRoom {
     this._hostInfo = hostInfo;
     this._state = DuelState.WAITING;
     this.banListHash = banListHash;
+    this.useExtendedCardPool = useExtendedCardPool;
     this.createdBySocketId = createdBySocketId;
     this._messageRepository = messageRepository;
-    this._cardRepository = new CardYGOProRepository();
+    this._cardRepository = new CardYGOProRepository(this.useExtendedCardPool);
     this._deckRules = new DeckRules({
       mainMin: 40,
       mainMax: 60,
@@ -203,6 +208,7 @@ export class YGOProRoom extends YgoRoom {
 
     const teamCount = hostInfo.mode === GameMode.TAG ? 2 : 1;
     const ranked = Boolean(playerInfo.password);
+    const useExtendedCardPool = options.some((opt) => extendedCardPoolFormats.has(opt));
     const banList = MercuryBanListMemoryRepository.findLFListByIndex(
       hostInfo.lflist,
     );
@@ -223,6 +229,7 @@ export class YGOProRoom extends YgoRoom {
       startLp: hostInfo.start_lp,
       messageRepository,
       banListHash,
+      useExtendedCardPool,
     });
 
     room._logger = logger.child({ file: "MercuryRoom" });

@@ -43,8 +43,7 @@ RUN bash -c 'set -e; \
 RUN find . -name ".git" -type d -exec rm -rf {} + 2>/dev/null; \
     mkdir -p /resources/edopro \
              /resources/ygopro/base \
-             /resources/ygopro/ocg \
-             /resources/ygopro/prereleases/databases && \
+             /resources/ygopro/ocg && \
     \
     # ── edopro ── \
     cp -r edopro-card-scripts /resources/edopro/scripts && \
@@ -59,11 +58,7 @@ RUN find . -name ".git" -type d -exec rm -rf {} + 2>/dev/null; \
     cp -r ygopro-prereleases-cdb /resources/ygopro/prereleases-cdb && \
     cp -r ygopro-cards-art /resources/ygopro/cards-art && \
     cp -r ygopro-format-alternatives /resources/ygopro/alternatives && \
-    cp edopro-banlists-ignis/OCG.lflist.conf /resources/ygopro/ocg/lflist.conf && \
-    \
-    # ── prereleases databases (for CDB generation) ── \
-    find ygopro-prereleases-cdb ygopro-cards-art -name "*.cdb" -exec cp {} /resources/ygopro/prereleases/databases/ \; && \
-    cp ygopro-cards.cdb /resources/ygopro/prereleases/databases/
+    cp edopro-banlists-ignis/OCG.lflist.conf /resources/ygopro/ocg/lflist.conf
 
 
 # Stage 2: Build CoreIntegrator (C++)
@@ -98,11 +93,8 @@ RUN npm ci
 RUN git clone --depth 1 https://github.com/diangogav/evolution-types.git ./src/evolution-types
 
 COPY . .
-COPY --from=resources-builder /resources/ygopro/prereleases/databases ./resources/ygopro/prereleases/databases
 
-RUN mkdir -p ./resources/ygopro/prereleases/tcg && \
-    npm run generate-mercury-pre-releases-cdb && \
-    npm run build && \
+RUN npm run build && \
     npm prune --production
 
 
@@ -126,8 +118,5 @@ COPY --from=core-builder /app/CoreIntegrator ./core/CoreIntegrator
 
 # All resources (assembled in Stage 1)
 COPY --from=resources-builder /resources ./resources
-
-# Generated pre-releases merged CDB
-COPY --from=server-builder /server/resources/ygopro/prereleases/tcg/cards.cdb ./resources/ygopro/prereleases/cards.cdb
 
 CMD ["dumb-init", "node", "./src/index.js"]

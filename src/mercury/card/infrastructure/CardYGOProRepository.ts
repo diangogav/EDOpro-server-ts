@@ -1,11 +1,20 @@
+import type { CardReaderFn } from "koishipro-core.js";
 import { Card } from "@shared/card/domain/Card";
 import { CardRepository } from "@shared/card/domain/CardRepository";
 import { YGOProResourceLoader } from "@ygopro/ygopro";
 
 export class CardYGOProRepository implements CardRepository {
-    async findByCode(code: string): Promise<Card | null> {
+    constructor(private readonly useExtendedCardPool: boolean = false) {}
+
+    private async getCardReader(): Promise<CardReaderFn> {
         const loader = YGOProResourceLoader.get();
-        const cardReader = await loader.getCardReader();
+        return this.useExtendedCardPool
+            ? loader.getExtendedCardReader()
+            : loader.getCardReader();
+    }
+
+    async findByCode(code: string): Promise<Card | null> {
+        const cardReader = await this.getCardReader();
         const card = cardReader(+code);
         if (
             !card ||

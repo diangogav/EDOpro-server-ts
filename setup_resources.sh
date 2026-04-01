@@ -52,9 +52,4 @@ for name in "${!MAP[@]}"; do
     cp "$src" "./resources/ygopro/alternatives/${MAP[$name]}/lflist.conf"
 done
 
-# === Prereleases databases (for CDB generation) ===
-mkdir -p ./resources/ygopro/prereleases/databases
-find "$REPOS/ygopro-prereleases-cdb" "$REPOS/ygopro-cards-art" -name "*.cdb" -exec cp {} ./resources/ygopro/prereleases/databases/ \;
-cp "$REPOS/ygopro-cards.cdb" ./resources/ygopro/prereleases/databases/
-
 echo "Resources assembled successfully."

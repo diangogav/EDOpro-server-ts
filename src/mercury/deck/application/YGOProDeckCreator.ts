@@ -1,6 +1,8 @@
 import { Card } from "@shared/card/domain/Card";
 import { CardRepository } from "@shared/card/domain/CardRepository";
 import { Deck } from "@shared/deck/domain/Deck";
+import { DeckError } from "@shared/deck/domain/errors/DeckError";
+import { UnknownCardError } from "@shared/deck/domain/errors/UnknownCardError";
 import { Logger } from "@shared/logger/domain/Logger";
 import { DeckRules } from "@shared/room/domain/YgoRoom";
 import { YGOProBanList } from "@ygopro/ban-list/domain/YGOProBanList";
@@ -26,7 +28,7 @@ export class YGOProDeckCreator {
         main: number[];
         side: number[];
         banListHash: number;
-    }): Promise<Deck> {
+    }): Promise<Deck | DeckError> {
         const mainDeck: Card[] = [];
         const extraDeck: Card[] = [];
         const sideDeck: Card[] = [];
@@ -35,7 +37,7 @@ export class YGOProDeckCreator {
             const card = await this.cardRepository.findByCode(cardId.toString());
             if (!card) {
                 this.logger.warn(`Card with code ${cardId} not found.`);
-                continue;
+                return new UnknownCardError(cardId);
             }
 
             if (card?.type && card?.type & OcgcoreCommonConstants.TYPES_EXTRA_DECK) {
@@ -48,7 +50,8 @@ export class YGOProDeckCreator {
         for (const cardId of side) {
             const card = await this.cardRepository.findByCode(cardId.toString());
             if (!card) {
-                continue;
+                this.logger.warn(`Card with code ${cardId} not found in side deck.`);
+                return new UnknownCardError(cardId);
             }
             sideDeck.push(card);
         }

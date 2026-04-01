@@ -144,9 +144,11 @@ export class OCGCore {
       ...YGOProResourceLoader.get().extraScriptPaths,
     ];
 
-    const cardStorage = await YGOProResourceLoader.get().getCardStorage();
-    const ocgcoreWasmBinary =
-      await YGOProResourceLoader.get().getOcgcoreWasmBinary();
+    const loader = YGOProResourceLoader.get();
+    const cardStorage = this.room.useExtendedCardPool
+      ? await loader.getExtendedCardStorage()
+      : await loader.getStandardCardStorage();
+    const ocgcoreWasmBinary = await loader.getOcgcoreWasmBinary();
 
     const registry: Record<string, string> = {
       duel_mode: this.room.duelMode,
@@ -161,7 +163,9 @@ export class OCGCore {
       registry[`player_name_${index}`] = player.name;
     });
 
-    const cardReader = await YGOProResourceLoader.get().getCardReader();
+    const cardReader = this.room.useExtendedCardPool
+      ? await loader.getExtendedCardReader()
+      : await loader.getCardReader();
 
     const decks = duelRecord
       .toSwappedPlayers()
@@ -169,14 +173,6 @@ export class OCGCore {
         calculateOcgcoreDeck(player.deck, this.room.hostInfo, cardReader),
       );
 
-    console.log(
-      "YGOProResourceLoader.get().ygoproPaths",
-      YGOProResourceLoader.get().ygoproPaths,
-    );
-    console.log(
-      "YGOProResourceLoader.get().extraScriptPaths",
-      extraScriptPaths,
-    );
     try {
       this.ocgcore = await initWorker(OcgcoreWorker, {
         seed: duelRecord.seed,
