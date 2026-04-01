@@ -11,7 +11,7 @@ Evolution Server runs two independent game engines side by side, so you can supp
 | Engine | Clients | Protocol | Port |
 |--------|---------|----------|------|
 | 🖥️ **EDOPro** | EDOPro desktop client | EDOPro protocol | `7911` |
-| 📱 **Mercury** | Koishi, YGO Mobile, YGOPro | YGOPro-compatible (srvpro2) | `7711` |
+| 📱 **YGOPro** | Koishi, YGO Mobile, YGOPro | YGOPro-compatible (srvpro2) | `7711` |
 
 ---
 
@@ -119,9 +119,9 @@ npm run dev
 
 ---
 
-### 📱 Running the Mercury (YGOPro) engine only
+### 📱 Running the YGOPro engine only
 
-The Mercury engine uses YGOPro-compatible protocol (based on srvpro2). Players connect using Koishi, YGO Mobile, or any YGOPro-compatible client.
+The YGOPro engine uses srvpro2-compatible protocol. Players connect using Koishi, YGO Mobile, or any YGOPro-compatible client.
 
 **What you need:**
 - ✅ Card scripts and databases from ygopro-scripts
@@ -132,7 +132,7 @@ The Mercury engine uses YGOPro-compatible protocol (based on srvpro2). Players c
 **Minimum `.env` configuration:**
 
 ```env
-MERCURY_PORT=7711
+YGOPRO_PORT=7711
 HTTP_PORT=7922
 WEBSOCKET_PORT=4000
 YGOPRO_FOLDERS=./resources/ygopro/base
@@ -143,11 +143,13 @@ YGOPRO_FOLDERS=./resources/ygopro/base
 ```
 📂 resources/ygopro/
 ├── 📜 base/               # Core scripts + lflist + cards.cdb (loaded by all modes)
-├── 🆕 prereleases-cdb/    # Pre-release card scripts and databases (extra DB)
-├── 🎨 cards-art/          # Custom card art scripts and databases (extra DB)
 ├── 🌏 ocg/                # OCG-specific banlist
-└── 🃏 alternatives/       # Format variants (Edison, GOAT, HAT, etc.)
+├── 🃏 alternatives/       # Format variants (Edison, GOAT, HAT, etc.)
+├── 🆕 prereleases-cdb/    # Pre-release card databases (extra DB)
+└── 🎨 cards-art/          # Custom card art databases (extra DB)
 ```
+
+**Standard card pool** (`YGOPRO_FOLDERS`) is loaded for all rooms. **Extra databases** (`YGOPRO_EXTRA_DB_FOLDERS`) are only available in rooms that use PRE or ART formats — standard rooms cannot use those cards.
 
 To enable all formats and pre-releases, set:
 
@@ -166,11 +168,11 @@ npm run dev
 
 ### 🔥 Running both engines
 
-Just set both ports and `YGOPRO_FOLDERS` in your `.env`:
+Just set both ports in your `.env`:
 
 ```env
 HOST_PORT=7911
-MERCURY_PORT=7711
+YGOPRO_PORT=7711
 HTTP_PORT=7922
 WEBSOCKET_PORT=4000
 YGOPRO_FOLDERS=./resources/ygopro/base,./resources/ygopro/ocg,./resources/ygopro/alternatives
@@ -185,15 +187,30 @@ Both engines run in the same process, sharing the HTTP API and WebSocket server.
 
 ---
 
+## 🗂️ Card Database Architecture
+
+The YGOPro engine maintains **two separate card pools** in memory:
+
+| Pool | Loaded from | Available to |
+|------|-------------|--------------|
+| **Standard** | `YGOPRO_FOLDERS` | All rooms |
+| **Extended** | `YGOPRO_FOLDERS` + `YGOPRO_EXTRA_DB_FOLDERS` | PRE/ART rooms only |
+
+When a player creates a room with a format like `PRE`, `TCGPRE`, `OCGPRE`, `TCGART`, or `OCGART`, the server uses the **extended** card pool for both deck validation and the duel engine. Standard rooms (`M`, `TCG`, `OT`, `GOAT`, etc.) use only the **standard** pool — any card not in that pool is rejected as unknown.
+
+Both pools are loaded at startup and refreshed every 10 minutes if the underlying `.cdb` files change.
+
+---
+
 ## ⚙️ Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `HOST_PORT` | EDOPro server port | `7911` |
-| `MERCURY_PORT` | Mercury (YGOPro) server port | `7711` |
+| `YGOPRO_PORT` | YGOPro server port | `7711` |
 | `HTTP_PORT` | HTTP API port | `7922` |
 | `WEBSOCKET_PORT` | WebSocket port | `4000` |
-| `YGOPRO_FOLDERS` | Comma-separated resource directories for Mercury engine (standard card pool) | *(empty)* |
+| `YGOPRO_FOLDERS` | Comma-separated resource directories (standard card pool) | *(empty)* |
 | `YGOPRO_EXTRA_DB_FOLDERS` | Comma-separated extra DB directories (pre-releases, art cards) — only loaded for PRE/ART room formats | *(empty)* |
 | `RANK_ENABLED` | Enable ranking system (requires PostgreSQL) | `false` |
 | `POSTGRES_HOST` | PostgreSQL host | `localhost` |
@@ -211,7 +228,7 @@ Both engines run in the same process, sharing the HTTP API and WebSocket server.
 ```
 src/
 ├── 🖥️ edopro/             # EDOPro engine (EDOPro protocol)
-├── 📱 mercury/            # Mercury engine (YGOPro/srvpro2-compatible)
+├── 📱 ygopro/             # YGOPro engine (srvpro2-compatible)
 ├── 🤝 shared/             # Shared domain logic (rooms, decks, cards, clients)
 ├── 🔌 socket-server/      # TCP socket servers for both engines
 ├── 🌐 http-server/        # REST API
@@ -225,7 +242,7 @@ Both engines share the same room management, player handling, and match lifecycl
 ## 🙏 Acknowledgments
 
 - [Multirole](https://github.com/DyXel/Multirole) by @Dyxel — the reference for the EDOPro engine
-- [srvpro2](https://github.com/purerosefallen/srvpro) — the reference for the Mercury engine
+- [srvpro2](https://github.com/purerosefallen/srvpro) — the reference for the YGOPro engine
 - The [Project Ignis](https://github.com/ProjectIgnis), [MyCard](https://mycard.moe/), and [Evolution](https://github.com/evolutionygo) communities
 
 ---

@@ -14,7 +14,7 @@
 | **API**         | `src/http-server/`                      | Express, Diod    | REST endpoints for management                    |
 | **Realtime**    | `src/socket-server/`                    | WS, Net          | WebSocket & TCP socket handling                  |
 | **Persistence** | `src/shared/infrastructure/persistence` | TypeORM, Redis   | PostgreSQL (Users), SQLite (Game), Redis (Cache) |
-| **Clients**     | `src/edopro/`, `src/mercury/`           | Custom Protocols | Implementations for EDOPro and Koishi clients    |
+| **Clients**     | `src/edopro/`, `src/ygopro/`            | Custom Protocols | Implementations for EDOPro and YGOPro clients    |
 
 ---
 
@@ -178,8 +178,7 @@ When performing these actions, **ALWAYS** follow the corresponding Standard Oper
 The server acts as a bridge between different client protocols and the C++ Duel Engine:
 
 - **EDOPro**: Binary TCP protocol.
-- **Mercury**: WebSocket (JSON/Protobuf).
-- **YGO Mobile**: Custom TCP.
-- **Engine**: C++ child process interaction.
+- **YGOPro**: Binary TCP protocol (srvpro2-compatible) for Koishi, YGO Mobile, and YGOPro clients.
+- **Engine**: C++ ocgcore via worker threads (WASM).
 
-Ensure changes in `shared/` do not break protocol-specific implementations in `edopro/` or `mercury/`.
+Ensure changes in `shared/` do not break protocol-specific implementations in `edopro/` or `ygopro/`.
