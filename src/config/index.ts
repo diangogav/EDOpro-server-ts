@@ -27,7 +27,7 @@ export const config = {
       port: Number(process.env.HOST_PORT),
     },
     mercury: {
-      port: Number(process.env.MERCURY_PORT),
+      port: Number(process.env.YGOPRO_PORT),
     },
     http: {
       port: Number(process.env.HTTP_PORT),
