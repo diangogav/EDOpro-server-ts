@@ -77,6 +77,12 @@ export class YGOProDuelingState extends RoomState {
       (winMsg: YGOProMsgWin) =>
         void this.handleWinCondition.bind(this)(winMsg),
     );
+
+    this.eventEmitter.on(
+      Commands.SURRENDER as unknown as string,
+      (_message: ClientMessage, _room: YGOProRoom, client: MercuryClient) =>
+        void this.handleSurrender.bind(this)(client),
+    );
   }
 
   private async handle(): Promise<void> {
@@ -336,6 +342,22 @@ export class YGOProDuelingState extends RoomState {
     await this.ocgCore.rescheduleTimerAfterConfirm(responseSide);
 
     // Continue the duel after confirming time
+  }
+
+  private async handleSurrender(client: MercuryClient): Promise<void> {
+    if (client.isSpectator) {
+      return;
+    }
+
+    this.logger.info(`Surrender by ${client.name} (position=${client.position})`);
+
+    const winnerEnginePos = 1 - this.ocgCore.getIngamePosition(client);
+    const winMsg = new YGOProMsgWin().fromPartial({
+      player: winnerEnginePos,
+      type: 0x0,
+    });
+
+    await this.handleWinCondition(winMsg);
   }
 
   private async handleWinCondition(winMsg: YGOProMsgWin): Promise<void> {
