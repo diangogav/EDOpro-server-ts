@@ -53,5 +53,9 @@ export default {
 
 	findLFListByIndex(lflistIndex: number): YGOProBanList | null {
 		return banLists[lflistIndex] ?? null;
-	}
+	},
+
+	clear(): void {
+		banLists.length = 0;
+	},
 };

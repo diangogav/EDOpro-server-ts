@@ -2,6 +2,15 @@ import "reflect-metadata";
 
 import { GameMode } from "ygopro-msg-encode";
 import { YGOProRoomMother } from "../../../shared/mothers/room/YGOProRoomMother";
+import MercuryBanListMemoryRepository from "../../../../../src/mercury/ban-list/infrastructure/MercuryBanListMemoryRepository";
+import { YGOProBanList } from "../../../../../src/mercury/ban-list/domain/YGOProBanList";
+
+function createBanList(name: string, hash: number): YGOProBanList {
+  const banList = new YGOProBanList();
+  banList.setName(name);
+  banList.setHash(hash);
+  return banList;
+}
 
 describe("YGOProRoom", () => {
   it("Should create a room with `mode` 1 (Match) when command has `m`", () => {
@@ -53,6 +62,17 @@ describe("YGOProRoom", () => {
   it("Should create a single match room, allowing all cards from TCG and OCG (But the Forbidden/Limited List is still OCG's) sending rule 5 if command contains ot", () => {
     const room = YGOProRoomMother.create({ command: "ot#123" });
     expect(room.hostInfo.rule).toBe(5);
+  });
+
+  it("Should create a room with rule 5 if command contains tcg (alias of ot)", () => {
+    const room = YGOProRoomMother.create({ command: "tcg#123" });
+    expect(room.hostInfo.rule).toBe(5);
+  });
+
+  it("Should create a match room with rule 5 if command contains tcg,m", () => {
+    const room = YGOProRoomMother.create({ command: "tcg,m#123" });
+    expect(room.hostInfo.rule).toBe(5);
+    expect(room.hostInfo.mode).toBe(GameMode.MATCH);
   });
 
   it("Should create a tag room, allowing all cards from TCG and OCG, with a life point total of 36000.", () => {
@@ -174,14 +194,27 @@ describe("YGOProRoom", () => {
     expect(room.hostInfo.start_hand).toBe(10);
   });
 
-  it("Should create a single match room, with the lflist selected minus 1 through lf command", () => {
-    const room = YGOProRoomMother.create({ command: "lf2#123" });
-    expect(room.hostInfo.lflist).toBe(1);
-  });
+  describe("LFList command", () => {
+    beforeEach(() => {
+      MercuryBanListMemoryRepository.clear();
+      for (let i = 0; i < 10; i++) {
+        MercuryBanListMemoryRepository.add(createBanList(`BanList ${i}`, (i + 1) * 100));
+      }
+    });
 
-  it("Should create a single match room, with the lflist selected minus 1 through lflist command", () => {
-    const room = YGOProRoomMother.create({ command: "lf10#123" });
-    expect(room.hostInfo.lflist).toBe(9);
+    afterEach(() => {
+      MercuryBanListMemoryRepository.clear();
+    });
+
+    it("Should create a room with the banlist hash at index (lf value - 1) through lf command", () => {
+      const room = YGOProRoomMother.create({ command: "lf2#123" });
+      expect(room.hostInfo.lflist).toBe(200);
+    });
+
+    it("Should create a room with the banlist hash at index (lf value - 1) through lflist command", () => {
+      const room = YGOProRoomMother.create({ command: "lf10#123" });
+      expect(room.hostInfo.lflist).toBe(1000);
+    });
   });
 
   it("Should create a room with OCG ban list and ocg only if command is oo", () => {

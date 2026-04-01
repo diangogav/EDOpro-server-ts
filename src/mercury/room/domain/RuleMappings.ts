@@ -145,7 +145,7 @@ export const priorityRuleMappings: RuleMappings = {
 	ot: {
 		get: () => ({ rule: 5 }),
 		validate: (value) => {
-			return value === "ot";
+			return value === "ot" || value === "tcg";
 		},
 	},
 	// OCG with TCG and OCG cards allowed
@@ -401,8 +401,8 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("edison")),
-				duelRule: 1,
-				timeLimit: 450,
+				duel_rule: 1,
+				time_limit: 450,
 			};
 		},
 		validate: (value) => {
@@ -414,8 +414,8 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("hat")),
-				duelRule: 2,
-				timeLimit: 450,
+				duel_rule: 2,
+				time_limit: 450,
 			};
 		},
 		validate: (value) => {
@@ -427,8 +427,8 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("tengu")),
-				duelRule: 2,
-				timeLimit: 450,
+				duel_rule: 2,
+				time_limit: 450,
 			};
 		},
 		validate: (value) => {
@@ -441,8 +441,8 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: index !== -1 ? index : 11,
-				duelRule: 5,
-				timeLimit: 450,
+				duel_rule: 5,
+				time_limit: 450,
 			};
 		},
 		validate: (value) => {
@@ -454,7 +454,7 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("jtp")),
-				duelRule: 2,
+				duel_rule: 2,
 			};
 		},
 		validate: (value) => {
@@ -466,7 +466,7 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("gx")),
-				duelRule: 1,
+				duel_rule: 1,
 			};
 		},
 		validate: (value) => {
@@ -478,7 +478,7 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("mdc")),
-				duelRule: 2,
+				duel_rule: 2,
 			};
 		},
 		validate: (value) => {
@@ -490,7 +490,7 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("goat")),
-				duelRule: 4,
+				duel_rule: 4,
 			};
 		},
 		validate: (value) => {
@@ -499,18 +499,18 @@ export const formatRuleMappings: RuleMappings = {
 	},
 	genesys: {
 		get: (value: string) => {
-			let maxDeckPoints = extractNumberFromCommand(value);
+			let max_deck_points = extractNumberFromCommand(value);
 
-			if (maxDeckPoints === null) {
-				maxDeckPoints = 100;
+			if (max_deck_points === null) {
+				max_deck_points = 100;
 			}
 
 			return {
 				rule: 1,
 				lflist: 0,
-				duelRule: 5,
-				maxDeckPoints,
-				timeLimit: 450,
+				duel_rule: 5,
+				max_deck_points,
+				time_limit: 450,
 			};
 		},
 		validate: (value) => {
@@ -526,7 +526,7 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: index !== -1 ? index : 2,
-				duelRule: 4,
+				duel_rule: 4,
 			};
 		},
 		validate: (value) => {
@@ -539,7 +539,7 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: index !== -1 ? index : 2,
-				duelRule: 4,
+				duel_rule: 4,
 			};
 		},
 		validate: (value) => {
@@ -552,7 +552,7 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: index !== -1 ? index : 3,
-				duelRule: 4,
+				duel_rule: 4,
 			};
 		},
 		validate: (value) => {
@@ -565,7 +565,7 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: index !== -1 ? index : 5,
-				duelRule: 4,
+				duel_rule: 4,
 			};
 		},
 		validate: (value) => {
@@ -576,8 +576,8 @@ export const formatRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				duelRule: 5,
-				timeLimit: 450,
+				duel_rule: 5,
+				time_limit: 450,
 			};
 		},
 		validate: (value) => {
@@ -589,7 +589,7 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 0,
 				lflist: 0,
-				timeLimit: 450,
+				time_limit: 450,
 			};
 		},
 		validate: (value) => {
@@ -600,8 +600,8 @@ export const formatRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				duelRule: 5,
-				timeLimit: 450,
+				duel_rule: 5,
+				time_limit: 450,
 			};
 		},
 		validate: (value) => {
@@ -612,9 +612,9 @@ export const formatRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				duelRule: 5,
+				duel_rule: 5,
 				lflist: 0,
-				timeLimit: 450,
+				time_limit: 450,
 			};
 		},
 		validate: (value) => {
@@ -625,8 +625,8 @@ export const formatRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				duelRule: 5,
-				timeLimit: 450,
+				duel_rule: 5,
+				time_limit: 450,
 			};
 		},
 		validate: (value) => {
@@ -637,9 +637,9 @@ export const formatRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 4,
-				duelRule: 3,
+				duel_rule: 3,
 				lflist: 0,
-				timeLimit: 450,
+				time_limit: 450,
 			};
 		},
 		validate: (value) => {
