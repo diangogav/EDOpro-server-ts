@@ -9,11 +9,11 @@ import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 import { config } from "./config";
 import { PostgresTypeORM } from "./evolution-types/src/PostgresTypeORM";
 import { Server } from "./http-server/Server";
-import { YGOProBanListLoader } from "./mercury/ban-list/infrastructure/YGOProBanListLoader";
-import { YGOProResourceLoader } from "./mercury/ygopro/YGOProResourceLoader";
+import { YGOProBanListLoader } from "./ygopro/ban-list/infrastructure/YGOProBanListLoader";
+import { YGOProResourceLoader } from "./ygopro/ygopro/YGOProResourceLoader";
 import { HostServer } from "./socket-server/HostServer";
 import { WSHostServer } from "./socket-server/WSHostServer";
-import { MercuryServer } from "./socket-server/MercuryServer";
+import { YGOProServer } from "./socket-server/YGOProServer";
 import WebSocketSingleton from "./web-socket-server/WebSocketSingleton";
 
 void start();
@@ -22,7 +22,7 @@ async function start(): Promise<void> {
   const logger = LoggerFactory.getLogger();
 
   const server = new Server(logger);
-  const mercuryServer = new MercuryServer(logger);
+  const ygoproServer = new YGOProServer(logger);
 
   const hostServer = new HostServer(logger);
   const wsHostServer = new WSHostServer(logger);
@@ -31,8 +31,6 @@ async function start(): Promise<void> {
   const banListLoader = new EdoProBanListLoader();
   await banListLoader.loadDirectory("resources/edopro/banlists-evolution");
   await banListLoader.loadDirectory("resources/edopro/banlists-ignis");
-
-  console.log(BanListMemoryRepository.getOnlyWithName());
 
   await YGOProResourceLoader.start();
   await YGOProResourceLoader.get().logLFLists()
@@ -51,5 +49,5 @@ async function start(): Promise<void> {
   WebSocketSingleton.getInstance();
   hostServer.initialize();
   wsHostServer.initialize();
-  mercuryServer.initialize();
+  ygoproServer.initialize();
 }

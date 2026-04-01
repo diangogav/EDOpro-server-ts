@@ -1,4 +1,3 @@
-import { YGOProResourceLoader } from "@ygopro/ygopro";
 import { YGOProBanList } from "../domain/YGOProBanList";
 
 const banLists: YGOProBanList[] = [];

@@ -5,7 +5,7 @@ import { Commands } from "../../../../shared/messages/Commands";
 import { ClientMessage } from "../../../../shared/messages/MessageProcessor";
 import { Logger } from "../../../../shared/logger/domain/Logger";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
-import { MercuryClient } from "../../../client/domain/MercuryClient";
+import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { YGOProRoom } from "../YGOProRoom";
 import {
   YGOProCtosHandResult,
@@ -24,7 +24,7 @@ export class YGOProRockPaperScissorState extends YGOProRoomState {
     this.logger = logger.child({ file: "YGOProRockPaperScissorState" });
     this.eventEmitter.on(
       Commands.RPS_CHOICE as unknown as string,
-      (message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
+      (message: ClientMessage, room: YGOProRoom, client: YGOProClient) =>
         this.handleRPSChoice.bind(this)(message, room, client),
     );
     this.eventEmitter.on(
@@ -51,7 +51,7 @@ export class YGOProRockPaperScissorState extends YGOProRoomState {
       socket,
     );
 
-    if (!(playerAlreadyInRoom instanceof MercuryClient)) {
+    if (!(playerAlreadyInRoom instanceof YGOProClient)) {
       const spectator = room.createSpectatorUnsafe(
         socket,
         playerInfoMessage.name,
@@ -77,7 +77,7 @@ export class YGOProRockPaperScissorState extends YGOProRoomState {
   private handleRPSChoice(
     message: ClientMessage,
     room: YGOProRoom,
-    player: MercuryClient,
+    player: YGOProClient,
   ): void {
     player.logger.info(
       `handleRPSChoice: ${message.raw.toString("hex")}`,
@@ -113,7 +113,7 @@ export class YGOProRockPaperScissorState extends YGOProRoomState {
       .forEach((_player) =>
         _player.sendMessageToClient(team0Result),
       );
-    room.spectators.forEach((spectator: MercuryClient) =>
+    room.spectators.forEach((spectator: YGOProClient) =>
       spectator.sendMessageToClient(team0Result),
     );
 

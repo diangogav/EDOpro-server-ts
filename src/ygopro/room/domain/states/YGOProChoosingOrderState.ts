@@ -8,7 +8,7 @@ import { ClientMessage } from "../../../../shared/messages/MessageProcessor";
 import { RoomState } from "../../../../edopro/room/domain/RoomState";
 import { Logger } from "../../../../shared/logger/domain/Logger";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
-import { MercuryClient } from "../../../client/domain/MercuryClient";
+import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { YGOProRoom } from "../YGOProRoom";
 import { TurnPlayerResult, YGOProCtosTpResult, YGOProStocDuelStart } from "ygopro-msg-encode";
 
@@ -25,12 +25,12 @@ export class YGOProChoosingOrderState extends RoomState {
 		);
 		this.eventEmitter.on(
 			Commands.TURN_CHOICE as unknown as string,
-			(message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
+			(message: ClientMessage, room: YGOProRoom, client: YGOProClient) =>
 				this.handleTurnChoice.bind(this)(message, room, client)
 		);
 	}
 
-	private handleTurnChoice(message: ClientMessage, room: YGOProRoom, player: MercuryClient): void {
+	private handleTurnChoice(message: ClientMessage, room: YGOProRoom, player: YGOProClient): void {
 		player.logger.info("handleTurnChoice");
 
 		const data = new YGOProCtosTpResult().fromPayload(message.data);
@@ -46,7 +46,7 @@ export class YGOProChoosingOrderState extends RoomState {
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const playerAlreadyInRoom = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
 
-		if (!(playerAlreadyInRoom instanceof MercuryClient)) {
+		if (!(playerAlreadyInRoom instanceof YGOProClient)) {
 			const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name);
 			room.addSpectatorUnsafe(spectator);
 			spectator.sendMessageToClient(Buffer.from(new YGOProStocDuelStart().toFullPayload()));

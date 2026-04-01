@@ -11,7 +11,7 @@ import { YgoClient } from "@shared/client/domain/YgoClient";
 import { Logger } from "@shared/logger/domain/Logger";
 import { ISocket } from "@shared/socket/domain/ISocket";
 
-import { MercuryClient } from "../../../client/domain/MercuryClient";
+import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { YGOProRoom } from "../YGOProRoom";
 
 import {
@@ -22,7 +22,7 @@ import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
 import { MercuryDeckValidator } from "@ygopro/deck/domain/MercuryDeckValidator";
 import { DeckError } from "@shared/deck/domain/errors/DeckError";
 import { YGOProRoomState } from "../YGOProRoomState";
-import MercuryBanListMemoryRepository from "@ygopro/ban-list/infrastructure/MercuryBanListMemoryRepository";
+import MercuryBanListMemoryRepository from "@ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository";
 
 export class YGOProWaitingState extends YGOProRoomState {
 	constructor(
@@ -41,7 +41,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 		);
 		this.eventEmitter.on(
 			Commands.TRY_START as unknown as string,
-			(message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
+			(message: ClientMessage, room: YGOProRoom, client: YGOProClient) =>
 				void this.handleTryStart.bind(this)(message, room, client),
 		);
 		this.eventEmitter.on(
@@ -60,7 +60,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 				void this.handleUpdateDeck.bind(this)(
 					message,
 					room,
-					client as MercuryClient,
+					client as YGOProClient,
 				),
 		);
 		this.eventEmitter.on(
@@ -69,7 +69,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 				void this.handleNotReady.bind(this)(
 					message,
 					room,
-					client as MercuryClient,
+					client as YGOProClient,
 				),
 		);
 	}
@@ -129,7 +129,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 	private handleTryStart(
 		_message: ClientMessage,
 		room: YGOProRoom,
-		player: MercuryClient,
+		player: YGOProClient,
 	): void {
 		player.logger.info("handleTryStart");
 
@@ -143,8 +143,8 @@ export class YGOProWaitingState extends YGOProRoomState {
 
 
 		for (const player of room.clients) {
-			(player as MercuryClient).sendMessageToClient(room.messageSender.duelStartMessage());
-			room.sendDeckCountMessage(player as MercuryClient);
+			(player as YGOProClient).sendMessageToClient(room.messageSender.duelStartMessage());
+			room.sendDeckCountMessage(player as YGOProClient);
 		}
 
 		this.toRPS(room);
@@ -155,7 +155,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 	private handleToObserver(
 		message: ClientMessage,
 		room: YGOProRoom,
-		player: MercuryClient,
+		player: YGOProClient,
 	): void {
 		player.logger.info(`handleToObserver: ${message.data.toString("hex")}`);
 
@@ -173,7 +173,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 	private handleToDuel(
 		_message: ClientMessage,
 		room: YGOProRoom,
-		player: MercuryClient,
+		player: YGOProClient,
 	): void {
 		player.logger.info("handleToDuel");
 
@@ -191,7 +191,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 	private async handleUpdateDeck(
 		message: ClientMessage,
 		room: YGOProRoom,
-		player: MercuryClient,
+		player: YGOProClient,
 	): Promise<void> {
 		player.logger.info(
 			`handleUpdateDeck: ${message.data.toString("hex")}`,
@@ -232,7 +232,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 	private async handleNotReady(
 		message: ClientMessage,
 		room: YGOProRoom,
-		player: MercuryClient,
+		player: YGOProClient,
 	) {
 		player.logger.info(`handleNotReady: ${message.data.toString("hex")}`);
 

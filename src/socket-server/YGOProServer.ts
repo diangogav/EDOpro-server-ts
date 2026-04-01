@@ -15,7 +15,7 @@ import { YGOProGameCreatorHandler } from "@ygopro/room/application/YGOProGameCre
 import { YGOProJoinHandler } from "@ygopro/room/application/YGOProJoinHandler";
 import { YGOProMessageRepository } from "@ygopro/room/infrastructure/YGOProMessageRepository";
 
-export class MercuryServer {
+export class YGOProServer {
 	private readonly server: net.Server;
 	private readonly logger: Logger;
 	private readonly roomFinder: RoomFinder;

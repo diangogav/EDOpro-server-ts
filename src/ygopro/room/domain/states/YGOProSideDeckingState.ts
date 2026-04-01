@@ -12,7 +12,7 @@ import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { Logger } from "@shared/logger/domain/Logger";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
 
-import { MercuryClient } from "../../../client/domain/MercuryClient";
+import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { YGOProRoom } from "../YGOProRoom";
 import { config } from "../../../../config";
 import {
@@ -48,7 +48,7 @@ export class YGOProSideDeckingState extends RoomState {
 
 		this.eventEmitter.on(
 			Commands.UPDATE_DECK as unknown as string,
-			(message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
+			(message: ClientMessage, room: YGOProRoom, client: YGOProClient) =>
 				void this.handleUpdateDeck.bind(this)(message, room, client)
 		);
 
@@ -60,12 +60,12 @@ export class YGOProSideDeckingState extends RoomState {
 			return;
 		}
 
-		for (const player of this.room.players as MercuryClient[]) {
+		for (const player of this.room.players as YGOProClient[]) {
 			this.startPlayerTimeout(player);
 		}
 	}
 
-	private startPlayerTimeout(player: MercuryClient): void {
+	private startPlayerTimeout(player: YGOProClient): void {
 		this.playerRemainMinutes.set(player.position, SIDE_TIMEOUT_MINUTES);
 
 		this.sendChatToPlayer(
@@ -81,7 +81,7 @@ export class YGOProSideDeckingState extends RoomState {
 		this.playerTimers.set(player.position, timer);
 	}
 
-	private tickPlayerTimeout(player: MercuryClient): void {
+	private tickPlayerTimeout(player: YGOProClient): void {
 		const remain = this.playerRemainMinutes.get(player.position);
 		if (remain === undefined) {
 			this.clearPlayerTimeout(player.position);
@@ -126,7 +126,7 @@ export class YGOProSideDeckingState extends RoomState {
 		}
 	}
 
-	private sendChatToPlayer(player: MercuryClient, msg: string, color: ChatColor): void {
+	private sendChatToPlayer(player: YGOProClient, msg: string, color: ChatColor): void {
 		const chatMsg = new YGOProStocChat().fromPartial({
 			player_type: color,
 			msg,
@@ -140,7 +140,7 @@ export class YGOProSideDeckingState extends RoomState {
 			msg,
 		});
 		const buffer = Buffer.from(chatMsg.toFullPayload());
-		for (const client of this.room.clients as MercuryClient[]) {
+		for (const client of this.room.clients as YGOProClient[]) {
 			client.sendMessageToClient(buffer);
 		}
 	}
@@ -158,7 +158,7 @@ export class YGOProSideDeckingState extends RoomState {
 			socket,
 		);
 
-		if (!(playerAlreadyInRoom instanceof MercuryClient)) {
+		if (!(playerAlreadyInRoom instanceof YGOProClient)) {
 			const spectator = room.createSpectatorUnsafe(
 				socket,
 				playerInfoMessage.name,
@@ -180,7 +180,7 @@ export class YGOProSideDeckingState extends RoomState {
 		playerAlreadyInRoom.clearReconnecting();
 	}
 
-	private async handleUpdateDeck(message: ClientMessage, room: YGOProRoom, player: MercuryClient): Promise<void> {
+	private async handleUpdateDeck(message: ClientMessage, room: YGOProRoom, player: YGOProClient): Promise<void> {
 		player.logger.info(
 			`handleUpdateDeck: ${message.data.toString("hex")}`,
 		);
@@ -228,7 +228,7 @@ export class YGOProSideDeckingState extends RoomState {
 		}
 
 		this.clearAllTimeouts();
-		(room.clientWhoChoosesTurn as MercuryClient).sendMessageToClient(room.messageSender.selectTpMessage());
+		(room.clientWhoChoosesTurn as YGOProClient).sendMessageToClient(room.messageSender.selectTpMessage());
 
 		room.choosingOrder();
 	}

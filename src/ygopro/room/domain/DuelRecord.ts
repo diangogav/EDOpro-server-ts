@@ -9,7 +9,7 @@ import {
     YGOProStocGameMsg,
 } from 'ygopro-msg-encode';
 import { YGOProRoom } from './YGOProRoom';
-import { calculateDuelOptions } from 'src/mercury/utils/calculate-duel-options';
+import { calculateDuelOptions } from '@ygopro/utils/calculate-duel-options';
 
 // Constants from ygopro
 const REPLAY_COMPRESSED = 0x1;

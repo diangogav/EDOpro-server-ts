@@ -7,9 +7,9 @@ import { Team } from "src/shared/room/Team";
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 import { EventEmitter } from "stream";
 
-import { mercuryConfig } from "../../../mercury/config";
-import { MercuryJoinGameMessage } from "../../../mercury/messages/MercuryJoinGameMessage";
-import { MercuryPlayerChatMessage } from "../../../mercury/messages/server-to-client/MercuryPlayerChatMessage";
+import { mercuryConfig } from "@ygopro/config";
+import { MercuryJoinGameMessage } from "@ygopro/messages/MercuryJoinGameMessage";
+import { MercuryPlayerChatMessage } from "@ygopro/messages/server-to-client/MercuryPlayerChatMessage";
 import { YgoClient } from "../../../shared/client/domain/YgoClient";
 import { YgoRoom } from "../../../shared/room/domain/YgoRoom";
 import { ISocket } from "../../../shared/socket/domain/ISocket";

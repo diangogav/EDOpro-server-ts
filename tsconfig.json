@@ -24,7 +24,7 @@
         "src/shared/*"
       ],
       "@ygopro/*": [
-        "src/mercury/*"
+        "src/ygopro/*"
       ]
     }
   },

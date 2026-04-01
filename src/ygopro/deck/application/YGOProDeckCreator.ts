@@ -6,7 +6,7 @@ import { UnknownCardError } from "@shared/deck/domain/errors/UnknownCardError";
 import { Logger } from "@shared/logger/domain/Logger";
 import { DeckRules } from "@shared/room/domain/YgoRoom";
 import { YGOProBanList } from "@ygopro/ban-list/domain/YGOProBanList";
-import YGOProBanListMemoryRepository from "@ygopro/ban-list/infrastructure/MercuryBanListMemoryRepository";
+import YGOProBanListMemoryRepository from "@ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository";
 import { OcgcoreCommonConstants } from "ygopro-msg-encode";
 
 export class YGOProDeckCreator {

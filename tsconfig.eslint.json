@@ -15,10 +15,19 @@
     "sourceMap": true,
     "inlineSources": true,
     "paths": {
-      "@edopro/*": ["src/edopro/*"],
-      "@shared/*": ["src/shared/*"],
-      "@ygopro/*": ["src/mercury/*"]
+      "@edopro/*": [
+        "src/edopro/*"
+      ],
+      "@shared/*": [
+        "src/shared/*"
+      ],
+      "@ygopro/*": [
+        "src/ygopro/*"
+      ]
     }
   },
-  "include": ["src", "tests"]
+  "include": [
+    "src",
+    "tests"
+  ]
 }

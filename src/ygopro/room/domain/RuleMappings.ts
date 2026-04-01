@@ -1,4 +1,4 @@
-import MercuryBanListMemoryRepository from "../../ban-list/infrastructure/MercuryBanListMemoryRepository";
+import MercuryBanListMemoryRepository from "../../ban-list/infrastructure/YGOProBanListMemoryRepository";
 import { GameMode } from "ygopro-msg-encode";
 import { HostInfo } from "./host-info/HostInfo";
 
@@ -281,7 +281,7 @@ export const priorityRuleMappings: RuleMappings = {
 			}
 
 			const aliasIndex = MercuryBanListMemoryRepository.findIndexByAlias(query);
-			
+
 			if (aliasIndex !== -1) {
 				return { lflist: aliasIndex };
 			}

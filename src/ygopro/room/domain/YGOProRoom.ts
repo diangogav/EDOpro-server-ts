@@ -14,8 +14,8 @@ import { MessageRepository } from "@shared/messages/MessageRepository";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { Deck } from "@shared/deck/domain/Deck";
 
-import MercuryBanListMemoryRepository from "../../ban-list/infrastructure/MercuryBanListMemoryRepository";
-import { MercuryClient } from "../../client/domain/MercuryClient";
+import MercuryBanListMemoryRepository from "../../ban-list/infrastructure/YGOProBanListMemoryRepository";
+import { YGOProClient } from "../../client/domain/YGOProClient";
 import {
   extendedCardPoolFormats,
   formatRuleMappings,
@@ -250,8 +250,8 @@ export class YGOProRoom extends YgoRoom {
     return this.hostInfo.mode > 2 ? (this.isTag ? 2 : 1) : this.hostInfo.mode;
   }
 
-  getTeamPlayers(team: number): MercuryClient[] {
-    return (this.players as MercuryClient[])
+  getTeamPlayers(team: number): YGOProClient[] {
+    return (this.players as YGOProClient[])
       .filter((client) => client.team === team)
       .sort((a, b) => a.position - b.position);
   }
@@ -365,10 +365,10 @@ export class YGOProRoom extends YgoRoom {
     );
   }
 
-  createSpectatorUnsafe(socket: ISocket, name: string): MercuryClient {
+  createSpectatorUnsafe(socket: ISocket, name: string): YGOProClient {
     const position = NetPlayerType.OBSERVER;
 
-    const client = new MercuryClient({
+    const client = new YGOProClient({
       name,
       socket,
       logger: this._logger,
@@ -386,14 +386,14 @@ export class YGOProRoom extends YgoRoom {
     socket: ISocket,
     name: string,
     userId: string | null,
-  ): MercuryClient | null {
-    const host = this._players.some((client: MercuryClient) => client.host);
+  ): YGOProClient | null {
+    const host = this._players.some((client: YGOProClient) => client.host);
     const place = this.calculatePlaceUnsafe();
     if (!place) {
       return null;
     }
 
-    const client = new MercuryClient({
+    const client = new YGOProClient({
       name,
       socket,
       logger: this._logger,
@@ -407,7 +407,7 @@ export class YGOProRoom extends YgoRoom {
     return client;
   }
 
-  addPlayerUnsafe(player: MercuryClient): void {
+  addPlayerUnsafe(player: YGOProClient): void {
     player.sendMessageToClient(
       this._messageRepository.joinGameMessage(this.hostInfo),
     );
@@ -418,7 +418,7 @@ export class YGOProRoom extends YgoRoom {
       this._messageRepository.typeChangeMessage(player.position, player.host),
     );
 
-    this.clients.forEach((_client: MercuryClient) => {
+    this.clients.forEach((_client: YGOProClient) => {
       const playerEnterMessageBuffer =
         this._messageRepository.playerEnterMessage(
           _client.name,
@@ -440,7 +440,7 @@ export class YGOProRoom extends YgoRoom {
       player.name,
       player.position,
     );
-    this.clients.forEach((_client: MercuryClient) => {
+    this.clients.forEach((_client: YGOProClient) => {
       if (_client !== player) {
         _client.sendMessageToClient(playerEnterMessage);
       }
@@ -449,7 +449,7 @@ export class YGOProRoom extends YgoRoom {
     this.sendSpectatorCount({ enqueue: false });
   }
 
-  addSpectatorUnsafe(spectator: MercuryClient): void {
+  addSpectatorUnsafe(spectator: YGOProClient): void {
     spectator.sendMessageToClient(
       this._messageRepository.joinGameMessage(this.hostInfo),
     );
@@ -462,7 +462,7 @@ export class YGOProRoom extends YgoRoom {
       ),
     );
 
-    this.clients.forEach((_client: MercuryClient) => {
+    this.clients.forEach((_client: YGOProClient) => {
       const playerEnterMessageBuffer =
         this._messageRepository.playerEnterMessage(
           _client.name,
@@ -482,7 +482,7 @@ export class YGOProRoom extends YgoRoom {
     this.sendSpectatorCount({ enqueue: false });
   }
 
-  playerToSpectatorUnsafe(player: MercuryClient): void {
+  playerToSpectatorUnsafe(player: YGOProClient): void {
     this.removePlayerUnsafe(player);
     this._spectators.push(player);
 
@@ -501,7 +501,7 @@ export class YGOProRoom extends YgoRoom {
     this.sendSpectatorCount({ enqueue: false });
   }
 
-  spectatorToPlayerUnsafe(player: MercuryClient): void {
+  spectatorToPlayerUnsafe(player: YGOProClient): void {
     const place = this.calculatePlaceUnsafe();
     if (!place) {
       return;
@@ -524,7 +524,7 @@ export class YGOProRoom extends YgoRoom {
     this.sendSpectatorCount({ enqueue: false });
   }
 
-  movePlayerToAnotherCellUnsafe(player: MercuryClient): void {
+  movePlayerToAnotherCellUnsafe(player: YGOProClient): void {
     const nextPlace = this.nextAvailablePosition(player.position);
     if (!nextPlace) {
       return;
@@ -557,7 +557,7 @@ export class YGOProRoom extends YgoRoom {
   setDecksToPlayerUnsafe(position: number, deck: Deck): void {
     const client = this._players.find((client) => client.position === position);
 
-    if (!client || !(client instanceof MercuryClient)) {
+    if (!client || !(client instanceof YGOProClient)) {
       return;
     }
 
@@ -570,7 +570,7 @@ export class YGOProRoom extends YgoRoom {
     this.broadcastToAll(message);
   }
 
-  notReadyUnsafe(player: MercuryClient): void {
+  notReadyUnsafe(player: YGOProClient): void {
     if (player.position === NetPlayerType.OBSERVER) {
       return;
     }
@@ -583,7 +583,7 @@ export class YGOProRoom extends YgoRoom {
     );
   }
 
-  sendPreviousDuelsHistoricalMessages(spectator: MercuryClient): void {
+  sendPreviousDuelsHistoricalMessages(spectator: YGOProClient): void {
     for (const record of this._duelRecords.slice(0, -1)) {
       for (const message of record.toPlayback((msg) => msg.observerView())) {
         spectator.sendMessageToClient(Buffer.from(message.toFullPayload()));
@@ -591,7 +591,7 @@ export class YGOProRoom extends YgoRoom {
     }
   }
 
-  sendCurrentDuelHistoricalMessages(spectator: MercuryClient): void {
+  sendCurrentDuelHistoricalMessages(spectator: YGOProClient): void {
     for (const message of this._currentDuelRecord?.toPlayback((msg) =>
       msg.observerView(),
     ) || []) {
@@ -604,7 +604,7 @@ export class YGOProRoom extends YgoRoom {
     return this._currentDuelRecord.toYrp(this);
   }
 
-  sendDeckCountMessage(client: MercuryClient): void {
+  sendDeckCountMessage(client: YGOProClient): void {
     const toDeckCount = (deck: Deck | null) => {
       const message = new YGOProStocDeckCount_DeckInfo();
       if (!deck) {
@@ -645,7 +645,7 @@ export class YGOProRoom extends YgoRoom {
     this._currentDuelRecord.messages.push(message);
   }
 
-  reconnect(player: MercuryClient, socket: ISocket): void {
+  reconnect(player: YGOProClient, socket: ISocket): void {
     player.socket.removeAllListeners();
     player.setSocket(socket);
     player.reconnecting();
@@ -656,7 +656,7 @@ export class YGOProRoom extends YgoRoom {
     player.sendMessageToClient(
       this._messageRepository.typeChangeMessageFromType(type),
     );
-    this._players.forEach((_player: MercuryClient) => {
+    this._players.forEach((_player: YGOProClient) => {
       const playerEnterMessageBuffer =
         this._messageRepository.playerEnterMessage(
           _player.name,
@@ -711,18 +711,18 @@ export class YGOProRoom extends YgoRoom {
   destroy(): void {
     this.emitter.removeAllListeners();
     this._roomState?.removeAllListener();
-    this._players.forEach((client: MercuryClient) => {
+    this._players.forEach((client: YGOProClient) => {
       client.destroy();
     });
   }
 
-  removeSpectator(spectator: MercuryClient): void {
+  removeSpectator(spectator: YGOProClient): void {
     this._spectators = this._spectators.filter(
       (item) => item.socket.id !== spectator.socket.id,
     );
   }
 
-  playerLeave(player: MercuryClient): void {
+  playerLeave(player: YGOProClient): void {
     this.removePlayer(player);
     const message = this.messageSender.playerChangeMessage(
       player.position,
@@ -731,7 +731,7 @@ export class YGOProRoom extends YgoRoom {
     this.broadcastToAll(message);
   }
 
-  spectatorLeave(spectator: MercuryClient): void {
+  spectatorLeave(spectator: YGOProClient): void {
     this.removeSpectator(spectator);
     this.sendSpectatorCount({ enqueue: false });
   }
@@ -759,10 +759,10 @@ export class YGOProRoom extends YgoRoom {
   }
 
   private broadcastToAll(message: Buffer): void {
-    this._players.forEach((client: MercuryClient) => {
+    this._players.forEach((client: YGOProClient) => {
       client.sendMessageToClient(message);
     });
-    this._spectators.forEach((client: MercuryClient) => {
+    this._spectators.forEach((client: YGOProClient) => {
       client.sendMessageToClient(message);
     });
   }

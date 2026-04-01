@@ -1,10 +1,10 @@
-import { PlayerData } from "src/shared/player/domain/PlayerData";
-import { Duel } from "src/shared/room/Duel";
-import { Team } from "src/shared/room/Team";
+import { PlayerData } from "@shared/player/domain/PlayerData";
+import { Duel } from "@shared/room/Duel";
+import { Team } from "@shared/room/Team";
 import { EventEmitter } from "stream";
 
 import { Client } from "../../../edopro/client/domain/Client";
-import { MercuryClient } from "../../../mercury/client/domain/MercuryClient";
+import { YGOProClient } from "@ygopro/client/domain/YGOProClient";
 import { YgoClient } from "../../client/domain/YgoClient";
 import { ISocket } from "../../socket/domain/ISocket";
 import { Mutex } from "async-mutex";
@@ -122,7 +122,7 @@ export abstract class YgoRoom {
 		this.emitter.emit(event, message, this, socket);
 	}
 
-	emitRoomEvent(event: string, message: unknown, client?: Client | MercuryClient): void {
+	emitRoomEvent(event: string, message: unknown, client?: Client | YGOProClient): void {
 		this.emitter.emit(event, message, this, client);
 	}
 

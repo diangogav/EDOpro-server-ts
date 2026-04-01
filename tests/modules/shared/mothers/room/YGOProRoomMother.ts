@@ -3,9 +3,9 @@ import EventEmitter from "events";
 
 import { PlayerInfoMessageMother } from "../PlayerInfoMessageMother";
 import { MessageRepositoryMock } from "../../mocks/MessageRepositoryMock";
-import { YGOProRoom } from "../../../../../src/mercury/room/domain/YGOProRoom";
 import { LoggerMock } from "../../mocks/logger/LoggerMock";
 import { randomInt } from "crypto";
+import { YGOProRoom } from "../../../../../src/ygopro/room/domain/YGOProRoom";
 
 export class YGOProRoomMother {
     static create({ command }: { command: string }): YGOProRoom {

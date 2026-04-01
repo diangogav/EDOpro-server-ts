@@ -2,8 +2,8 @@ import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoM
 import { EventEmitter } from "stream";
 
 import { config } from "../../../config";
-import { YGOProRoom } from "../../../mercury/room/domain/YGOProRoom";
-import MercuryRoomList from "../../../mercury/room/infrastructure/YGOProRoomList";
+import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
+import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import { Redis } from "../../../shared/db/redis/infrastructure/Redis";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { JoinMessageHandler } from "../../../shared/room/domain/JoinMessageHandler";
@@ -121,6 +121,6 @@ export class JoinHandler implements JoinMessageHandler {
 			return room;
 		}
 
-		return MercuryRoomList.findById(joinMessage.id);
+		return YGOProRoomList.findById(joinMessage.id);
 	}
 }

@@ -2,8 +2,8 @@ import "reflect-metadata";
 
 import { GameMode } from "ygopro-msg-encode";
 import { YGOProRoomMother } from "../../../shared/mothers/room/YGOProRoomMother";
-import MercuryBanListMemoryRepository from "../../../../../src/mercury/ban-list/infrastructure/MercuryBanListMemoryRepository";
-import { YGOProBanList } from "../../../../../src/mercury/ban-list/domain/YGOProBanList";
+import YGOProBanListMemoryRepository from "../../../../../src/ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository";
+import { YGOProBanList } from "../../../../../src/ygopro/ban-list/domain/YGOProBanList";
 
 function createBanList(name: string, hash: number): YGOProBanList {
   const banList = new YGOProBanList();
@@ -213,14 +213,14 @@ describe("YGOProRoom", () => {
 
   describe("LFList command", () => {
     beforeEach(() => {
-      MercuryBanListMemoryRepository.clear();
+      YGOProBanListMemoryRepository.clear();
       for (let i = 0; i < 10; i++) {
-        MercuryBanListMemoryRepository.add(createBanList(`BanList ${i}`, (i + 1) * 100));
+        YGOProBanListMemoryRepository.add(createBanList(`BanList ${i}`, (i + 1) * 100));
       }
     });
 
     afterEach(() => {
-      MercuryBanListMemoryRepository.clear();
+      YGOProBanListMemoryRepository.clear();
     });
 
     it("Should create a room with the banlist hash at index (lf value - 1) through lf command", () => {

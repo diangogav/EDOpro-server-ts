@@ -1,6 +1,6 @@
 import { YGOProResourceLoader } from "../../ygopro/YGOProResourceLoader";
 import { YGOProBanList } from "../domain/YGOProBanList";
-import YGOProBanListMemoryRepository from "./MercuryBanListMemoryRepository";
+import YGOProBanListMemoryRepository from "./YGOProBanListMemoryRepository";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 
 /**

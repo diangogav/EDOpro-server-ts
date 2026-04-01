@@ -1,14 +1,14 @@
-import { MercuryClient } from "../../../../../src/mercury/client/domain/MercuryClient";
-import { YGOProRoom } from "../../../../../src/mercury/room/domain/YGOProRoom";
+import { YGOProClient } from "../../../../../src/ygopro/client/domain/YGOProClient";
+import { YGOProRoom } from "../../../../../src/ygopro/room/domain/YGOProRoom";
 import { Logger } from "../../../../../src/shared/logger/domain/Logger";
 import { ISocket } from "../../../../../src/shared/socket/domain/ISocket";
 import { Team } from "../../../../../src/shared/room/Team";
 
 // Mock dependencies
-jest.mock("../../../../../src/mercury/MercuryRoomMessageEmitter");
+jest.mock("../../../../../src/ygopro/SimpleRoomMessageEmitter");
 
-describe("MercuryClient", () => {
-  let client: MercuryClient;
+describe("YGOProClient", () => {
+  let client: YGOProClient;
   let mockSocket: jest.Mocked<ISocket>;
   let mockLogger: jest.Mocked<Logger>;
   let mockRoom: jest.Mocked<YGOProRoom>;
@@ -40,8 +40,8 @@ describe("MercuryClient", () => {
   });
 
   describe("Constructor", () => {
-    it("should create a MercuryClient instance", () => {
-      client = new MercuryClient({
+    it("should create a YGOProClient instance", () => {
+      client = new YGOProClient({
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
@@ -60,7 +60,7 @@ describe("MercuryClient", () => {
     });
 
     it("should initialize with the team passed in constructor", () => {
-      client = new MercuryClient({
+      client = new YGOProClient({
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
@@ -76,7 +76,7 @@ describe("MercuryClient", () => {
     });
 
     it("should initialize as spectator when spectator team is passed", () => {
-      client = new MercuryClient({
+      client = new YGOProClient({
         name: "Spectator",
         socket: mockSocket,
         logger: mockLogger,
@@ -92,7 +92,7 @@ describe("MercuryClient", () => {
     });
 
     it("should create child logger with correct context", () => {
-      client = new MercuryClient({
+      client = new YGOProClient({
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
@@ -106,12 +106,12 @@ describe("MercuryClient", () => {
       expect(mockLogger.child).toHaveBeenCalledWith({
         clientName: "TestPlayer",
         roomId: "test-room-id",
-        file: "MercuryClient",
+        file: "YGOProClient",
       });
     });
 
     it("should register message handler on socket via roomMessageEmitter", () => {
-      client = new MercuryClient({
+      client = new YGOProClient({
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
@@ -129,7 +129,7 @@ describe("MercuryClient", () => {
 
   describe("sendMessageToClient", () => {
     beforeEach(() => {
-      client = new MercuryClient({
+      client = new YGOProClient({
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
@@ -152,7 +152,7 @@ describe("MercuryClient", () => {
 
   describe("destroy", () => {
     beforeEach(() => {
-      client = new MercuryClient({
+      client = new YGOProClient({
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
@@ -173,7 +173,7 @@ describe("MercuryClient", () => {
 
   describe("playerPosition", () => {
     beforeEach(() => {
-      client = new MercuryClient({
+      client = new YGOProClient({
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
@@ -193,7 +193,7 @@ describe("MercuryClient", () => {
     });
 
     it("should change from spectator to player", () => {
-      const spectatorClient = new MercuryClient({
+      const spectatorClient = new YGOProClient({
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
@@ -215,7 +215,7 @@ describe("MercuryClient", () => {
 
   describe("setNeedSpectatorMessages", () => {
     beforeEach(() => {
-      client = new MercuryClient({
+      client = new YGOProClient({
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
@@ -243,7 +243,7 @@ describe("MercuryClient", () => {
 
   describe("setHost", () => {
     beforeEach(() => {
-      client = new MercuryClient({
+      client = new YGOProClient({
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
@@ -273,7 +273,7 @@ describe("MercuryClient", () => {
 
   describe("setSocket", () => {
     beforeEach(() => {
-      client = new MercuryClient({
+      client = new YGOProClient({
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
@@ -317,7 +317,7 @@ describe("MercuryClient", () => {
 
   describe("rpsChoose", () => {
     beforeEach(() => {
-      client = new MercuryClient({
+      client = new YGOProClient({
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,
@@ -338,7 +338,7 @@ describe("MercuryClient", () => {
 
   describe("rpsRpsChoose", () => {
     beforeEach(() => {
-      client = new MercuryClient({
+      client = new YGOProClient({
         name: "TestPlayer",
         socket: mockSocket,
         logger: mockLogger,

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 
 import RoomList from "../../edopro/room/infrastructure/RoomList";
-import YGOProRoomList from "../../mercury/room/infrastructure/YGOProRoomList";
+import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 
 export class GetRoomListController {
 	run(_req: Request, response: Response): void {

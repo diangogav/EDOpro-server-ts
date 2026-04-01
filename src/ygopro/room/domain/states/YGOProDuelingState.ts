@@ -13,7 +13,7 @@ import { Logger } from "@shared/logger/domain/Logger";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { Team } from "@shared/room/Team";
 
-import { MercuryClient } from "../../../client/domain/MercuryClient";
+import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { DuelRecord } from "../DuelRecord";
 import { YGOProRoom } from "../YGOProRoom";
 import { getMessageIdentifier } from "../../../utils/response-time-utils";
@@ -65,13 +65,13 @@ export class YGOProDuelingState extends RoomState {
 
     this.eventEmitter.on(
       Commands.RESPONSE as unknown as string,
-      (message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
+      (message: ClientMessage, room: YGOProRoom, client: YGOProClient) =>
         void this.handleResponse.bind(this)(message, room, client),
     );
 
     this.eventEmitter.on(
       Commands.TIME_CONFIRM as unknown as string,
-      (message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
+      (message: ClientMessage, room: YGOProRoom, client: YGOProClient) =>
         void this.handleTimeConfirm.bind(this)(message, room, client),
     );
 
@@ -83,7 +83,7 @@ export class YGOProDuelingState extends RoomState {
 
     this.eventEmitter.on(
       Commands.SURRENDER as unknown as string,
-      (_message: ClientMessage, _room: YGOProRoom, client: MercuryClient) =>
+      (_message: ClientMessage, _room: YGOProRoom, client: YGOProClient) =>
         void this.handleSurrender.bind(this)(client),
     );
   }
@@ -166,7 +166,7 @@ export class YGOProDuelingState extends RoomState {
 
     const watcherType = this.room.isPositionSwapped ? 0x11 : 0x10;
     const watcherStartMessage = createStartMsg(watcherType);
-    const spectators = this.room.spectators as MercuryClient[];
+    const spectators = this.room.spectators as YGOProClient[];
     spectators.forEach((spectator) => {
       spectator.sendMessageToClient(
         Buffer.from(watcherStartMessage.toFullPayload()),
@@ -204,7 +204,7 @@ export class YGOProDuelingState extends RoomState {
       socket,
     );
 
-    if (!(playerAlreadyInRoom instanceof MercuryClient)) {
+    if (!(playerAlreadyInRoom instanceof YGOProClient)) {
       const spectator = room.createSpectatorUnsafe(
         socket,
         playerInfoMessage.name,
@@ -224,7 +224,7 @@ export class YGOProDuelingState extends RoomState {
   private async handleUpdateDeck(
     message: ClientMessage,
     _room: YGOProRoom,
-    player: MercuryClient,
+    player: YGOProClient,
   ): Promise<void> {
     player.logger.info("handleUpdateDeck");
     if (!player.isReconnecting || !player.deck) {
@@ -264,7 +264,7 @@ export class YGOProDuelingState extends RoomState {
   private async handleResponse(
     message: ClientMessage,
     room: YGOProRoom,
-    player: MercuryClient,
+    player: YGOProClient,
   ): Promise<void> {
     player.logger.info("handleResponse");
 
@@ -315,7 +315,7 @@ export class YGOProDuelingState extends RoomState {
   private async handleTimeConfirm(
     _message: ClientMessage,
     _room: YGOProRoom,
-    player: MercuryClient,
+    player: YGOProClient,
   ): Promise<void> {
     player.logger.info("handleTimeConfirm");
 
@@ -354,7 +354,7 @@ export class YGOProDuelingState extends RoomState {
     // Continue the duel after confirming time
   }
 
-  private async handleSurrender(client: MercuryClient): Promise<void> {
+  private async handleSurrender(client: YGOProClient): Promise<void> {
     if (client.isSpectator) {
       return;
     }
@@ -389,7 +389,7 @@ export class YGOProDuelingState extends RoomState {
     teammate.sendMessageToClient(surrenderMsg);
   }
 
-  private async executeSurrender(client: MercuryClient): Promise<void> {
+  private async executeSurrender(client: YGOProClient): Promise<void> {
     const winnerEnginePos = 1 - this.ocgCore.getIngamePosition(client);
     const winMsg = new YGOProMsgWin().fromPartial({
       player: winnerEnginePos,
@@ -399,8 +399,8 @@ export class YGOProDuelingState extends RoomState {
     await this.handleWinCondition(winMsg);
   }
 
-  private getTeammate(client: MercuryClient): MercuryClient | undefined {
-    return (this.room.players as MercuryClient[]).find(
+  private getTeammate(client: YGOProClient): YGOProClient | undefined {
+    return (this.room.players as YGOProClient[]).find(
       (p) => p.team === client.team && p !== client,
     );
   }
@@ -433,7 +433,7 @@ export class YGOProDuelingState extends RoomState {
   }
 
   private broadcastWinMessage(winMsg: YGOProMsgWin): void {
-    this.room.clients.forEach((client: MercuryClient) => {
+    this.room.clients.forEach((client: YGOProClient) => {
       client.sendMessageToClient(
         this.room.messageSender.winMessage(winMsg.player, winMsg.type),
       );
@@ -470,11 +470,11 @@ export class YGOProDuelingState extends RoomState {
   private transitionToSideDecking(winner: number): void {
     this.room.sideDecking();
 
-    this.room.players.forEach((client: MercuryClient) => {
+    this.room.players.forEach((client: YGOProClient) => {
       client.sendMessageToClient(this.room.messageSender.changeSideMessage());
     });
 
-    this.room.spectators.forEach((client: MercuryClient) => {
+    this.room.spectators.forEach((client: YGOProClient) => {
       client.sendMessageToClient(this.room.messageSender.waitingSideMessage());
     });
 
@@ -482,7 +482,7 @@ export class YGOProDuelingState extends RoomState {
   }
 
   private assignSideDeckChoice(winner: number): void {
-    const looser = this.room.players.find((client: MercuryClient) => {
+    const looser = this.room.players.find((client: YGOProClient) => {
       const isLoserTeam =
         winner === Team.PLAYER
           ? client.team === Team.OPPONENT
@@ -552,7 +552,7 @@ export class YGOProDuelingState extends RoomState {
     });
     const hintBuffer = Buffer.from(hintMsg.toFullPayload());
 
-    this.room.clients.forEach((client: MercuryClient) => {
+    this.room.clients.forEach((client: YGOProClient) => {
       client.sendMessageToClient(hintBuffer);
       client.sendMessageToClient(replayBuffer);
     });
@@ -565,7 +565,7 @@ export class YGOProDuelingState extends RoomState {
   private sendDuelEndAndDisconnect(): void {
     const duelEndBuffer = Buffer.from(new YGOProStocDuelEnd().toFullPayload());
 
-    this.room.clients.forEach((client: MercuryClient) => {
+    this.room.clients.forEach((client: YGOProClient) => {
       client.sendMessageToClient(duelEndBuffer);
       client.destroy();
     });

@@ -2,10 +2,10 @@ import { YgoClient } from "../../../shared/client/domain/YgoClient";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { Team } from "../../../shared/room/Team";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
-import { SimpleRoomMessageEmitter } from "../../MercuryRoomMessageEmitter";
+import { SimpleRoomMessageEmitter } from "../../SimpleRoomMessageEmitter";
 import { YGOProRoom } from "../../room/domain/YGOProRoom";
 
-export class MercuryClient extends YgoClient {
+export class YGOProClient extends YgoClient {
 	public readonly logger: Logger;
 	private _connectedToCore = false;
 	private _needSpectatorMessages = false;
@@ -33,7 +33,7 @@ export class MercuryClient extends YgoClient {
 		team: Team
 	}) {
 		super({ name, position, team, socket, host, id });
-		this.logger = logger.child({ clientName: name, roomId: room.id, file: "MercuryClient" });
+		this.logger = logger.child({ clientName: name, roomId: room.id, file: "YGOProClient" });
 
 		this._roomMessageEmitter = new SimpleRoomMessageEmitter(this, room);
 
