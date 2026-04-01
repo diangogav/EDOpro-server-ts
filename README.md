@@ -1,133 +1,152 @@
-<h1 align="center">Evolution Server 🎮</h1>
+<h1 align="center">Evolution Server</h1>
 
 [![PR Pipeline](https://github.com/diangogav/EDOpro-server-ts/actions/workflows/pipeline.yaml/badge.svg)](https://github.com/diangogav/EDOpro-server-ts/actions/workflows/pipeline.yaml)
 
-Welcome to **Evolution Server**, a scalable and modern backend server for Yu-Gi-Oh! matches, compatible with **EDOPro**, **Koishi**, and **YGO Mobile** clients. Unlike traditional implementations, Evolution focuses on **code extensibility** and **data collection**, enabling new gameplay features and statistics.
+A scalable backend server for Yu-Gi-Oh! matches, compatible with **EDOPro**, **Koishi**, and **YGO Mobile** clients. Focused on **code extensibility** and **data collection**, enabling new gameplay features and statistics.
 
 ---
 
-## ✨ Features
+## Features
 
-- 🏰 Room creation through the EDOPro lobby.
-- 📱 Duel creation supported via Koishi and YGO Mobile.
-- 🧪 Cross-client duels between different platforms *(experimental)*.
-- 🔌 Automatic reconnection after disconnection or crash.
-- 📊 Match data collection for future analytics.
-- 🚀 Isolated core logic for each match.
+- Room creation through the EDOPro lobby.
+- Duel creation supported via Koishi and YGO Mobile.
+- Cross-client duels between different platforms *(experimental)*.
+- Automatic reconnection after disconnection or crash.
+- Match data collection for future analytics.
+- Isolated core logic for each match.
 
 ---
 
-## 📋 Requirements
+## Requirements
 
-- [Node.js](https://nodejs.org) (>= 24.11.0)
 - [Node.js](https://nodejs.org) (>= 24.11.0)
 - [CMake](https://cmake.org/download/) (>= 3.18)
-- [Vcpkg](https://github.com/microsoft/vcpkg) (handled automatically by build script)
-- System dependencies (Ubuntu/Debian): `wget`, `git`, `tar`, `curl`, `zip`, `unzip`, `pkg-config`, `g++`, `make` , `cmake`, `ninja-build`
+- System dependencies (Ubuntu/Debian): `wget`, `git`, `curl`, `g++`, `make`, `cmake`, `pkg-config`
+- C++ libraries: `libboost-system-dev`, `libsqlite3-dev`, `libjsoncpp-dev`, `nlohmann-json3-dev`, `libcurl4-openssl-dev`
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
-Before running the server, you must configure the environment variables.
+Before running the server, configure the environment variables:
 
-1. Copy the example configuration file:
-   ```bash
-   cp .env.example .env
-   ```
-
-2. Edit `.env` with your settings (ports, database credentials, etc.).
-
----
-
-## 🚀 Vcpkg Setup (Linux)
-
-Vcpkg is used to manage C++ dependencies. The `build_core_integrator.sh` script handles the bootstrapping and installation of Vcpkg automatically.
-
-If you want to manually set it up:
 ```bash
-git clone https://github.com/microsoft/vcpkg.git
-./vcpkg/bootstrap-vcpkg.sh
+cp .env.example .env
 ```
 
+Edit `.env` with your settings (ports, database credentials, etc.).
+
+### Key environment variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `YGOPRO_FOLDERS` | Comma-separated list of YGOPro resource directories | *(empty)* |
+| `HOST_PORT` | EDOPro server port | `7911` |
+| `MERCURY_PORT` | Mercury (YGOPro) server port | `7711` |
+| `HTTP_PORT` | HTTP API port | `7922` |
+| `WEBSOCKET_PORT` | WebSocket port | `4000` |
+
 ---
 
-## 🛠️ Manual Installation (No Docker)
+## Manual Installation (No Docker)
 
-### 1️⃣ Clone the main project
+### 1. Clone the project
 
 ```bash
 git clone --recursive https://github.com/diangogav/EDOpro-server-ts
 cd EDOpro-server-ts
 ```
 
-### 📝 Install System Dependencies (Optional helper)
-
-You can use the provided script to install system dependencies on Ubuntu/Debian:
+### 2. Install system dependencies
 
 ```bash
 sudo bash install_dependencies.sh
 ```
 
-### 2️⃣ Clone external dependencies
+### 3. Clone external repositories
 
 ```bash
 bash clone_repositories.sh
 ```
 
-This will create a `repositories/` folder with all required assets (scripts, databases, banlists, etc).
+This creates a `repositories/` folder with all required assets (card scripts, databases, banlists).
 
-### 3️⃣ Organize assets into their expected locations
+### 4. Assemble resources
 
 ```bash
 bash setup_resources.sh
 ```
 
-This mimics the layout used in the Dockerfile (e.g. copying resources to `./mercury`, `./scripts/evolution`, etc.).
+This organizes assets into the `resources/` directory:
 
-### 4️⃣ Build the CoreIntegrator (native C++)
+```
+resources/
+├── edopro/
+│   ├── scripts/            # Card scripts (ProjectIgnis)
+│   ├── databases/          # Card databases (ProjectIgnis)
+│   ├── banlists-ignis/     # Banlists (ProjectIgnis)
+│   └── banlists-evolution/ # Banlists (Evolution)
+└── ygopro/
+    ├── base/               # Base scripts + lflist + cards.cdb
+    ├── prereleases-cdb/    # Pre-release card scripts
+    ├── cards-art/          # Custom card art scripts + databases
+    ├── ocg/                # OCG banlist
+    └── alternatives/       # Format alternatives (Edison, GOAT, etc.)
+```
+
+### 5. Build the CoreIntegrator (C++)
 
 ```bash
 bash build_core_integrator.sh
 ```
 
-This compiles the duel core used by the backend using Vcpkg and CMake.
-
-### 5️⃣ Install Node.js dependencies
+### 6. Install Node.js dependencies
 
 ```bash
 npm install
 ```
 
-### 6️⃣ Launch the server in development mode
+### 7. Set YGOPRO_FOLDERS
+
+Add to your `.env` file:
+
+```
+YGOPRO_FOLDERS=./resources/ygopro/base,./resources/ygopro/prereleases-cdb,./resources/ygopro/cards-art,./resources/ygopro/ocg,./resources/ygopro/alternatives
+```
+
+### 8. Launch the server
 
 ```bash
 npm run dev
 ```
 
-Server should now be running and listening on the configured ports (default: `7911`, `7922`, `4000`).
-
 ---
 
-## 🐳 Running with Docker (Alternative)
+## Running with Docker
 
-If you'd rather use Docker:
+### Using Docker Compose (recommended)
 
-### Build the image
+```bash
+docker compose -f docker-compose.prod.yaml up -d
+```
+
+### Using Docker directly
+
+Build:
 
 ```bash
 docker build -t evolution-server .
 ```
 
-### Run the container
+Run:
 
 ```bash
-docker run -p 4000:4000 -p 7911:7911 -p 7922:7922 evolution-server
+docker run -p 7711:7711 -p 7911:7911 -p 7922:7922 -p 4000:4000 --env-file .env evolution-server
 ```
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Based on [Multirole](https://github.com/DyXel/Multirole) by @Dyxel
 - Inspired by the amazing work of the Project Ignis, MyCard and Evolution communities

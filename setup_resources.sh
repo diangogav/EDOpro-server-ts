@@ -2,58 +2,59 @@
 
 set -e
 
-echo "📁 Preparando estructura local..."
+echo "Assembling resources structure..."
 
-# === Evolution Resources ===
-mkdir -p ./scripts/evolution
-cp -r ./repositories/scripts/* ./scripts/evolution/
+REPOS=./repositories
 
-mkdir -p ./databases/evolution
-cp -r ./repositories/databases/* ./databases/evolution/
+# Strip .git dirs
+find "$REPOS" -name ".git" -type d -exec rm -rf {} + 2>/dev/null || true
 
-mkdir -p ./databases/mercury-pre-releases
-cp -r ./repositories/mercury-pre-releases-cdbs/* ./databases/mercury-pre-releases/
-cp ./repositories/mercury-cards.cdb ./databases/mercury-pre-releases/cards.cdb
+# === EDOPro ===
+mkdir -p ./resources/edopro
+cp -r "$REPOS/edopro-card-scripts" ./resources/edopro/scripts
+cp -r "$REPOS/edopro-card-databases" ./resources/edopro/databases
+cp -r "$REPOS/edopro-banlists-ignis" ./resources/edopro/banlists-ignis
+cp -r "$REPOS/edopro-banlists-evolution" ./resources/edopro/banlists-evolution
 
-mkdir -p ./banlists/evolution
-cp -r ./repositories/banlists/* ./banlists/evolution/
+# === YGOPro Base (scripts + cards.cdb + lflist propagate to all variants) ===
+mkdir -p ./resources/ygopro/base
+cp -r "$REPOS/ygopro-scripts" ./resources/ygopro/base/script
+cp "$REPOS/ygopro-lflist.conf" ./resources/ygopro/base/lflist.conf
+cp "$REPOS/ygopro-cards.cdb" ./resources/ygopro/base/cards.cdb
 
-# === Mercury Base ===
-mkdir -p ./mercury/script
-cp -r ./repositories/mercury-scripts/* ./mercury/script/
+# === YGOPro Prereleases (each repo as independent folder) ===
+cp -r "$REPOS/ygopro-prereleases-cdb" ./resources/ygopro/prereleases-cdb
+cp -r "$REPOS/ygopro-cards-art" ./resources/ygopro/cards-art
 
-cp ./repositories/mercury-lflist.conf ./mercury/lflist.conf
-cp ./repositories/mercury-cards.cdb ./mercury/cards.cdb
+# === YGOPro OCG (only own lflist) ===
+mkdir -p ./resources/ygopro/ocg
+cp "$REPOS/edopro-banlists-ignis/OCG.lflist.conf" ./resources/ygopro/ocg/lflist.conf
 
-mkdir -p ./mercury/alternatives/md
-cp ./repositories/mercury-cards.cdb ./mercury/alternatives/md/cards.cdb
+# === YGOPro Alternatives (repo as-is + banlists) ===
+cp -r "$REPOS/ygopro-format-alternatives" ./resources/ygopro/alternatives
 
-# === Mercury Pre-releases (TCG & OCG) ===
-mkdir -p ./mercury/pre-releases/tcg/script
-mkdir -p ./mercury/pre-releases/ocg/script
+declare -A MAP=(
+    ["2010.03 Edison(Pre Errata)"]="edison"
+    ["2014.04 HAT (Pre Errata)"]="hat"
+    ["jtp-oficial"]="jtp"
+    ["GOAT"]="goat"
+    ["Rush"]="rush"
+    ["Speed"]="speed"
+    ["Tengu.Plant"]="tengu"
+    ["World"]="world"
+    ["MD.2025.03"]="md"
+    ["Genesys"]="genesys"
+)
 
-cp -r ./repositories/mercury-scripts/* ./mercury/pre-releases/tcg/script/
-cp ./repositories/mercury-lflist.conf ./mercury/pre-releases/tcg/lflist.conf
-cp -r ./repositories/mercury-prerelases/script/* ./mercury/pre-releases/tcg/script/
-cp -r ./repositories/mercury-arts/script/* ./mercury/pre-releases/tcg/script/
+for name in "${!MAP[@]}"; do
+    src="$REPOS/edopro-banlists-evolution/${name}.lflist.conf"
+    [ -f "$src" ] || src="$REPOS/edopro-banlists-ignis/${name}.lflist.conf"
+    cp "$src" "./resources/ygopro/alternatives/${MAP[$name]}/lflist.conf"
+done
 
-cp -r ./repositories/mercury-scripts/* ./mercury/pre-releases/ocg/script/
-cp ./databases/mercury-pre-releases/cards.cdb ./mercury/pre-releases/ocg/cards.cdb
-cp ./repositories/banlists/OCG.lflist.conf ./mercury/pre-releases/ocg/lflist.conf
-cp -r ./repositories/mercury-prerelases/script/* ./mercury/pre-releases/ocg/script/
-cp -r ./repositories/mercury-arts/script/* ./mercury/pre-releases/ocg/script/
+# === Prereleases databases (for CDB generation) ===
+mkdir -p ./resources/ygopro/prereleases/databases
+find "$REPOS/ygopro-prereleases-cdb" "$REPOS/ygopro-cards-art" -name "*.cdb" -exec cp {} ./resources/ygopro/prereleases/databases/ \;
+cp "$REPOS/ygopro-cards.cdb" ./resources/ygopro/prereleases/databases/
 
-# === Mercury OCG ===
-mkdir -p ./mercury/ocg/script
-cp -r ./repositories/mercury-scripts/* ./mercury/ocg/script/
-cp ./repositories/banlists/OCG.lflist.conf ./mercury/ocg/lflist.conf
-cp ./repositories/mercury-cards.cdb ./mercury/ocg/cards.cdb
-
-mkdir -p ./mercury/ocg/ygopro
-cp -r ./repositories/ygopro/* ./mercury/ocg/ygopro/ 2>/dev/null || echo "🔔 ygopro no encontrado (puede omitirse)"
-
-# === Mercury Alternatives ===
-mkdir -p ./mercury/alternatives
-cp -r ./repositories/alternatives/* ./mercury/alternatives/
-
-echo "✅ Recursos organizados exitosamente."
+echo "Resources assembled successfully."
