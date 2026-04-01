@@ -287,10 +287,27 @@ describe("YGOProRoom", () => {
   });
 
   describe("Pre releases", () => {
-    it("Should create a room with pre release format if command contains pr and the default points should be 100", () => {
+    it("Should create a room with rule 3 (pre-release), duel_rule 5 and time_limit 450 if command is pre", () => {
+      const room = YGOProRoomMother.create({ command: "pre#123" });
+
+      expect(room.hostInfo.rule).toBe(3);
+      expect(room.hostInfo.duel_rule).toBe(5);
+      expect(room.hostInfo.time_limit).toBe(450);
+    });
+
+    it("Should create a pre release match room with start hand 7 if command is pre,m,st7", () => {
+      const room = YGOProRoomMother.create({ command: "pre,m,st7#123" });
+
+      expect(room.hostInfo.rule).toBe(3);
+      expect(room.hostInfo.duel_rule).toBe(5);
+      expect(room.hostInfo.mode).toBe(GameMode.MATCH);
+      expect(room.hostInfo.start_hand).toBe(7);
+    });
+
+    it("Should create a pre release room combined with other params", () => {
       const room = YGOProRoomMother.create({ command: "PRE,NC,M,TM15#KIRITO" });
 
-      expect(room.hostInfo.rule).toBe(5);
+      expect(room.hostInfo.rule).toBe(3);
       expect(room.hostInfo.time_limit).toBe(900);
       expect(room.hostInfo.duel_rule).toBe(5);
       expect(room.hostInfo.no_check_deck).toBe(1);

@@ -9,6 +9,7 @@ import { UserAuth } from "@shared/user-auth/application/UserAuth";
 import { UserProfilePostgresRepository } from "@shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { Logger } from "@shared/logger/domain/Logger";
 import { DeckRules, DuelState, YgoRoom } from "@shared/room/domain/YgoRoom";
+import { Rule } from "@shared/deck/domain/Rule";
 import { RoomType } from "@shared/room/domain/RoomType";
 import { MessageRepository } from "@shared/messages/MessageRepository";
 import { ISocket } from "@shared/socket/domain/ISocket";
@@ -119,7 +120,7 @@ export class YGOProRoom extends YgoRoom {
       extraMax: 15,
       sideMin: 0,
       sideMax: 15,
-      rule: this._hostInfo.rule,
+      rule: YGOProRoom.protocolRuleToRule(this._hostInfo.rule),
     });
   }
 
@@ -287,6 +288,25 @@ export class YGOProRoom extends YgoRoom {
         this._hostInfo.mode === GameMode.MATCH) &&
       this.playersCount === 2
     );
+  }
+
+  /**
+   * Maps srvpro2 protocol rule values to the Rule enum used by deck validation.
+   * Protocol: 0=OCG, 1=TCG, 2=SC, 3=CUSTOM, 4=OCG+TCG, 5=ALL
+   */
+  private static protocolRuleToRule(protocolRule: number): Rule {
+    switch (protocolRule) {
+      case 0:
+        return Rule.ONLY_OCG;
+      case 1:
+        return Rule.ONLY_TCG;
+      case 4:
+        return Rule.OCG_TCG;
+      case 3:
+        return Rule.PRE_RELEASE;
+      default:
+        return Rule.ALL;
+    }
   }
 
   get seed(): number[] {
