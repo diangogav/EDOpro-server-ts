@@ -21,7 +21,10 @@ import { getMessageIdentifier } from "../../../utils/response-time-utils";
 import {
   OcgcoreScriptConstants,
   YGOProCtosUpdateDeck,
+  YGOProMsgDamage,
   YGOProMsgNewTurn,
+  YGOProMsgPayLpCost,
+  YGOProMsgRecover,
   YGOProMsgStart,
   YGOProMsgWin,
   YGOProStocChat,
@@ -109,6 +112,28 @@ export class YGOProDuelingState extends RoomState {
       if (this.room.isTag && (msg.player & 0x2) === 0) {
         this.pendingSurrenders.clear();
       }
+      this.broadcastRoomUpdate();
+      return msg;
+    });
+
+    this.ocgCore.messageMiddleware.on(YGOProMsgDamage, (msg) => {
+      const team = this.resolveTeam(msg.player);
+      this.room.decreaseLps(team, msg.value);
+      this.broadcastRoomUpdate();
+      return msg;
+    });
+
+    this.ocgCore.messageMiddleware.on(YGOProMsgRecover, (msg) => {
+      const team = this.resolveTeam(msg.player);
+      this.room.increaseLps(team, msg.value);
+      this.broadcastRoomUpdate();
+      return msg;
+    });
+
+    this.ocgCore.messageMiddleware.on(YGOProMsgPayLpCost, (msg) => {
+      const team = this.resolveTeam(msg.player);
+      this.room.decreaseLps(team, msg.cost);
+      this.broadcastRoomUpdate();
       return msg;
     });
 
@@ -184,6 +209,7 @@ export class YGOProDuelingState extends RoomState {
       location: OcgcoreScriptConstants.LOCATION_EXTRA,
     });
 
+    this.notifyDuelStart(this.room);
     this.ocgCore.advance();
   }
 
@@ -584,6 +610,17 @@ export class YGOProDuelingState extends RoomState {
         ranked: this.room.ranked,
       }),
     );
+  }
+
+  private resolveTeam(side: number): Team {
+    return (this.room.isTag ? side : this.ocgCore.getSideTeam(side)) as Team;
+  }
+
+  private broadcastRoomUpdate(): void {
+    WebSocketSingleton.getInstance().broadcast({
+      action: "UPDATE-ROOM",
+      data: this.room.toRealTimePresentation(),
+    });
   }
 
   private removeRoom(): void {
