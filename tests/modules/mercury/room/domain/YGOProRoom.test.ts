@@ -287,7 +287,7 @@ describe("YGOProRoom", () => {
   });
 
   describe("Pre releases", () => {
-    it("Should create a room with pre release format if command contains pr and the default points should be 100", () => {
+    it("Should create a room with pre release format if command contains pre", () => {
       const room = YGOProRoomMother.create({ command: "PRE,NC,M,TM15#KIRITO" });
 
       expect(room.hostInfo.rule).toBe(5);
@@ -295,6 +295,41 @@ describe("YGOProRoom", () => {
       expect(room.hostInfo.duel_rule).toBe(5);
       expect(room.hostInfo.no_check_deck).toBe(1);
       expect(room.hostInfo.mode).toBe(GameMode.MATCH);
+    });
+
+    it("Should use extended card pool for pre format", () => {
+      const room = YGOProRoomMother.create({ command: "pre#123" });
+      expect(room.useExtendedCardPool).toBe(true);
+    });
+
+    it("Should use extended card pool for tcgpre format", () => {
+      const room = YGOProRoomMother.create({ command: "tcgpre#123" });
+      expect(room.useExtendedCardPool).toBe(true);
+    });
+
+    it("Should use extended card pool for ocgpre format", () => {
+      const room = YGOProRoomMother.create({ command: "ocgpre#123" });
+      expect(room.useExtendedCardPool).toBe(true);
+    });
+
+    it("Should use extended card pool for tcgart format", () => {
+      const room = YGOProRoomMother.create({ command: "tcgart#123" });
+      expect(room.useExtendedCardPool).toBe(true);
+    });
+
+    it("Should use extended card pool for ocgart format", () => {
+      const room = YGOProRoomMother.create({ command: "ocgart#123" });
+      expect(room.useExtendedCardPool).toBe(true);
+    });
+
+    it("Should NOT use extended card pool for standard formats", () => {
+      const room = YGOProRoomMother.create({ command: "m#123" });
+      expect(room.useExtendedCardPool).toBe(false);
+    });
+
+    it("Should NOT use extended card pool for ot format", () => {
+      const room = YGOProRoomMother.create({ command: "ot#123" });
+      expect(room.useExtendedCardPool).toBe(false);
     });
   });
 
