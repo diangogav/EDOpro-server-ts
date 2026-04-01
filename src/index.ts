@@ -29,8 +29,8 @@ async function start(): Promise<void> {
 
   const database = new EdoProSQLiteTypeORM();
   const banListLoader = new EdoProBanListLoader();
-  // await banListLoader.loadDirectory("resources/edopro/banlists-evolution");
-  // await banListLoader.loadDirectory("resources/edopro/banlists-ignis");
+  await banListLoader.loadDirectory("resources/edopro/banlists-evolution");
+  await banListLoader.loadDirectory("resources/edopro/banlists-ignis");
 
   console.log(BanListMemoryRepository.getOnlyWithName());
 
@@ -40,8 +40,8 @@ async function start(): Promise<void> {
   const ygoProBanListLoader = new YGOProBanListLoader();
   await ygoProBanListLoader.load();
 
-  // await database.connect();
-  // await database.initialize();
+  await database.connect();
+  await database.initialize();
   if (config.ranking.enabled) {
     logger.info("Postgres database enabled!");
     const postgresDatabase = new PostgresTypeORM();

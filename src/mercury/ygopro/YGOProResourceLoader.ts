@@ -173,11 +173,10 @@ export class YGOProResourceLoader {
         continue;
       }
       const buf = await file.read();
-      const lflist = new YGOProLFList().fromText(
-        Buffer.from(buf).toString("utf-8"),
-      );
+      const text = Buffer.from(buf).toString("utf-8");
+      const lflist = new YGOProLFList().fromText(text);
       for (const item of lflist.items) {
-        yield item;
+        yield { item, text };
       }
     }
   }
@@ -185,7 +184,7 @@ export class YGOProResourceLoader {
   async logLFLists(): Promise<void> {
     this.logger.info("Loading Forbidden/Limited Lists...");
     let index = 0;
-    for await (const lflist of this.getLFLists()) {
+    for await (const { item: lflist } of this.getLFLists()) {
       this.logger.info(`  [${index}] ${lflist.name || "Unnamed"} ${lflist.getHash()}`);
       index++;
     }

@@ -43,13 +43,18 @@ export class YGOProBanListLoader {
 
     this.logger.info("Loading ban lists from YGOPro resources...");
 
-    for await (const lflist of loader.getLFLists()) {
+    for await (const { item: lflist, text } of loader.getLFLists()) {
       const normalizedName = this.normalizeName(lflist.name || "Unnamed");
       const hash = lflist.getHash();
 
       const banList = new YGOProBanList();
       banList.setName(normalizedName);
       banList.setHash(hash);
+
+      if (text.includes("$whitelist")) {
+        banList.whileListed();
+      }
+
       lflist.entries.forEach((entry) => banList.add(entry.code, entry.limit));
       YGOProBanListMemoryRepository.add(banList);
     }

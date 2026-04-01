@@ -207,8 +207,6 @@ export class YGOProWaitingState extends YGOProRoomState {
 			banListHash: room.banListHash,
 		});
 
-		console.log("banlist", MercuryBanListMemoryRepository.findByHash(room.banListHash)?.name);
-
 		const hasError = room.shouldValidateDeck() && this.deckValidator.validate(deck);
 		if (hasError) {
 			this.logger.warn(`Deck has an error: type ${hasError.type}, code ${hasError.code}`);
