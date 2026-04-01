@@ -21,6 +21,7 @@ import { getMessageIdentifier } from "../../../utils/response-time-utils";
 import {
   OcgcoreScriptConstants,
   YGOProCtosUpdateDeck,
+  YGOProMsgNewTurn,
   YGOProMsgStart,
   YGOProMsgWin,
   YGOProStocChat,
@@ -28,6 +29,7 @@ import {
   YGOProStocDuelStart,
   YGOProStocGameMsg,
   YGOProStocReplay,
+  YGOProStocTeammateSurrender,
 } from "ygopro-msg-encode";
 import { GameOverDomainEvent } from "@shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
 import MercuryRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
@@ -36,6 +38,7 @@ import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 export class YGOProDuelingState extends RoomState {
   private readonly eventBus: EventBus;
   private readonly ocgCore: OCGCore;
+  private readonly pendingSurrenders = new Set<number>();
 
   constructor(
     private readonly room: YGOProRoom,
@@ -101,6 +104,13 @@ export class YGOProDuelingState extends RoomState {
       },
       100,
     );
+
+    this.ocgCore.messageMiddleware.on(YGOProMsgNewTurn, (msg) => {
+      if (this.room.isTag && (msg.player & 0x2) === 0) {
+        this.pendingSurrenders.clear();
+      }
+      return msg;
+    });
 
     const [
       player0DeckCount,
@@ -351,6 +361,35 @@ export class YGOProDuelingState extends RoomState {
 
     this.logger.info(`Surrender by ${client.name} (position=${client.position})`);
 
+    if (!this.room.isTag) {
+      await this.executeSurrender(client);
+      return;
+    }
+
+    const teammate = this.getTeammate(client);
+    if (!teammate || teammate.isReconnecting) {
+      this.pendingSurrenders.clear();
+      await this.executeSurrender(client);
+      return;
+    }
+
+    if (this.pendingSurrenders.has(client.position)) {
+      return;
+    }
+
+    if (this.pendingSurrenders.has(teammate.position)) {
+      this.pendingSurrenders.clear();
+      await this.executeSurrender(client);
+      return;
+    }
+
+    this.pendingSurrenders.add(client.position);
+    const surrenderMsg = Buffer.from(new YGOProStocTeammateSurrender().toFullPayload());
+    client.sendMessageToClient(surrenderMsg);
+    teammate.sendMessageToClient(surrenderMsg);
+  }
+
+  private async executeSurrender(client: MercuryClient): Promise<void> {
     const winnerEnginePos = 1 - this.ocgCore.getIngamePosition(client);
     const winMsg = new YGOProMsgWin().fromPartial({
       player: winnerEnginePos,
@@ -358,6 +397,12 @@ export class YGOProDuelingState extends RoomState {
     });
 
     await this.handleWinCondition(winMsg);
+  }
+
+  private getTeammate(client: MercuryClient): MercuryClient | undefined {
+    return (this.room.players as MercuryClient[]).find(
+      (p) => p.team === client.team && p !== client,
+    );
   }
 
   private async handleWinCondition(winMsg: YGOProMsgWin): Promise<void> {
