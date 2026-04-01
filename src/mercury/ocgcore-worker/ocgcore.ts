@@ -20,12 +20,14 @@ import {
   RequireQueryLocation,
   YGOProMsgStart,
   OcgcoreScriptConstants,
+  ChatColor,
+  YGOProStocChat,
 } from "ygopro-msg-encode";
 import { MayBeArray } from "nfkit";
 
 import { MercuryClient } from "../client/domain/MercuryClient";
 import { YGOProRoom } from "../room/domain/YGOProRoom";
-import { OcgcoreWorker } from "./ocgcore-worker";
+import { OcgcoreWorker, OcgcoreProcessTimeoutError } from "./ocgcore-worker";
 import { Logger } from "src/shared/logger/domain/Logger";
 import { GameMessageMiddleware } from "../middleware/GameMessageMiddleware";
 import { canIncreaseTime } from "../utils/response-time-utils";
@@ -324,10 +326,46 @@ export class OCGCore {
     });
   }
 
+  private static readonly DISPOSE_TIMEOUT_MS = 60_000;
+
   async dispose(): Promise<void> {
-    await this.ocgcore
-      ?.dispose()
-      .catch((_error) => this.logger.error(`Error disposing ocgcore`));
+    this.disposeWithTimeout(false);
+  }
+
+  private disposeWithTimeout(kill: boolean): void {
+    const ocgcore = this.ocgcore;
+    if (!ocgcore) {
+      return;
+    }
+    this.ocgcore = null;
+
+    if (kill) {
+      ocgcore.finalize().catch((error) => {
+        this.logger.error("Error force finalizing ocgcore", { error });
+      });
+      return;
+    }
+
+    let finished = false;
+    const timeout = setTimeout(() => {
+      if (finished) {
+        return;
+      }
+      this.logger.warn("OCGCore dispose timed out, forcing finalize");
+      ocgcore.finalize().catch((error) => {
+        this.logger.error("Error force finalizing ocgcore after timeout", { error });
+      });
+    }, OCGCore.DISPOSE_TIMEOUT_MS);
+
+    ocgcore
+      .dispose()
+      .catch((error) => {
+        this.logger.error("Error disposing ocgcore", { error });
+      })
+      .finally(() => {
+        finished = true;
+        clearTimeout(timeout);
+      });
   }
 
   resetResponseRequestState(): void {
@@ -707,16 +745,32 @@ export class OCGCore {
   }
 
   private async handleAdvanceError(error: unknown): Promise<void> {
-    // TODO: Check if timeout error using OcgcoreProcessTimeoutError.is(error)
-    this.logger.info("Error while advancing ocgcore", { error });
+    const isTimeout = OcgcoreProcessTimeoutError.is(error);
+    this.logger.error("Error while advancing ocgcore", { error, isTimeout });
+
+    this.broadcastChat(
+      "The duel has ended in a draw due to a server error.",
+      ChatColor.RED,
+    );
 
     const drawGame = new YGOProMsgWin().fromPartial({
       type: 0x11,
       player: 2,
     });
 
-    // TODO: Send chat message "#draw_due_to_error" with error color
+    this.disposeWithTimeout(isTimeout);
     await this.dispatchGameMessage(drawGame, { route: true });
+  }
+
+  private broadcastChat(msg: string, color: ChatColor): void {
+    const chatMsg = new YGOProStocChat().fromPartial({
+      player_type: color,
+      msg,
+    });
+    const buffer = Buffer.from(chatMsg.toFullPayload());
+    for (const client of this.room.clients as MercuryClient[]) {
+      client.sendMessageToClient(buffer);
+    }
   }
 
   // ============================================================
