@@ -302,13 +302,19 @@ describe("YGOProRoom", () => {
       expect(room.useExtendedCardPool).toBe(true);
     });
 
-    it("Should use extended card pool for tcgpre format", () => {
-      const room = YGOProRoomMother.create({ command: "tcgpre#123" });
+    it("Should create a tcgpre room with rule 1 (TCG only) and extended card pool", () => {
+      const room = YGOProRoomMother.create({ command: "tcgpre,tm800#123" });
+      expect(room.hostInfo.rule).toBe(1);
+      expect(room.hostInfo.duel_rule).toBe(5);
+      expect(room.hostInfo.time_limit).toBe(800);
       expect(room.useExtendedCardPool).toBe(true);
     });
 
-    it("Should use extended card pool for ocgpre format", () => {
+    it("Should create an ocgpre room with rule 0 (OCG only) and extended card pool", () => {
       const room = YGOProRoomMother.create({ command: "ocgpre#123" });
+      expect(room.hostInfo.rule).toBe(0);
+      expect(room.hostInfo.lflist).toBe(0);
+      expect(room.hostInfo.duel_rule).toBe(5);
       expect(room.useExtendedCardPool).toBe(true);
     });
 

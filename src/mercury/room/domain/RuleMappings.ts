@@ -599,7 +599,7 @@ export const formatRuleMappings: RuleMappings = {
 	tcgpre: {
 		get: () => {
 			return {
-				rule: 5,
+				rule: 1,
 				duel_rule: 5,
 				time_limit: 450,
 			};
@@ -611,7 +611,7 @@ export const formatRuleMappings: RuleMappings = {
 	ocgpre: {
 		get: () => {
 			return {
-				rule: 5,
+				rule: 0,
 				duel_rule: 5,
 				lflist: 0,
 				time_limit: 450,
