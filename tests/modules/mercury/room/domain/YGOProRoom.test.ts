@@ -82,6 +82,23 @@ describe("YGOProRoom", () => {
     expect(room.hostInfo.mode).toBe(GameMode.TAG);
   });
 
+  it("Should create an otto room with rule 5 (all cards), OCG banlist and match mode", () => {
+    const room = YGOProRoomMother.create({ command: "otto,m,st7#123" });
+    expect(room.hostInfo.rule).toBe(5);
+    expect(room.hostInfo.lflist).toBe(0);
+    expect(room.hostInfo.mode).toBe(GameMode.MATCH);
+    expect(room.hostInfo.start_hand).toBe(7);
+    expect(room.useExtendedCardPool).toBe(false);
+  });
+
+  it("Should create a toot room with rule 5 (all cards), TCG banlist and match mode", () => {
+    const room = YGOProRoomMother.create({ command: "toot,m,st7#123" });
+    expect(room.hostInfo.rule).toBe(5);
+    expect(room.hostInfo.mode).toBe(GameMode.MATCH);
+    expect(room.hostInfo.start_hand).toBe(7);
+    expect(room.useExtendedCardPool).toBe(false);
+  });
+
   it("Should create room with timelimit of 300 segs (for values between 1 and 60 should be covert to seconds) if the command is tm5#123", () => {
     const room = YGOProRoomMother.create({ command: "tm5#123" });
     expect(room.hostInfo.time_limit).toBe(300);
@@ -249,6 +266,29 @@ describe("YGOProRoom", () => {
     });
   });
 
+  describe("Edison Format", () => {
+    it("Should create an edison room with rule 5, duel_rule 1 and start hand 6", () => {
+      const room = YGOProRoomMother.create({ command: "edison,st6#123" });
+      expect(room.hostInfo.rule).toBe(5);
+      expect(room.hostInfo.duel_rule).toBe(1);
+      expect(room.hostInfo.time_limit).toBe(450);
+      expect(room.hostInfo.start_hand).toBe(6);
+      expect(room.useExtendedCardPool).toBe(false);
+    });
+  });
+
+  describe("Master Duel Format", () => {
+    it("Should create an md room with rule 5, duel_rule 5, match mode, start hand 6 and time limit 400", () => {
+      const room = YGOProRoomMother.create({ command: "md,m,st6,tm400#123" });
+      expect(room.hostInfo.rule).toBe(5);
+      expect(room.hostInfo.duel_rule).toBe(5);
+      expect(room.hostInfo.mode).toBe(GameMode.MATCH);
+      expect(room.hostInfo.start_hand).toBe(6);
+      expect(room.hostInfo.time_limit).toBe(400);
+      expect(room.useExtendedCardPool).toBe(false);
+    });
+  });
+
   describe("Genesys Format", () => {
     it("Should create a room with Genesys format if command contains genesys and the default points should be 100", () => {
       const room = YGOProRoomMother.create({ command: "genesys#123" });
@@ -318,13 +358,19 @@ describe("YGOProRoom", () => {
       expect(room.useExtendedCardPool).toBe(true);
     });
 
-    it("Should use extended card pool for tcgart format", () => {
-      const room = YGOProRoomMother.create({ command: "tcgart#123" });
+    it("Should create a tcgart room with rule 1 (TCG only) and extended card pool", () => {
+      const room = YGOProRoomMother.create({ command: "tcgart,tm800#123" });
+      expect(room.hostInfo.rule).toBe(1);
+      expect(room.hostInfo.duel_rule).toBe(5);
+      expect(room.hostInfo.time_limit).toBe(800);
       expect(room.useExtendedCardPool).toBe(true);
     });
 
-    it("Should use extended card pool for ocgart format", () => {
+    it("Should create an ocgart room with rule 0 (OCG only) and extended card pool", () => {
       const room = YGOProRoomMother.create({ command: "ocgart#123" });
+      expect(room.hostInfo.rule).toBe(0);
+      expect(room.hostInfo.lflist).toBe(0);
+      expect(room.hostInfo.duel_rule).toBe(5);
       expect(room.useExtendedCardPool).toBe(true);
     });
 
@@ -335,6 +381,46 @@ describe("YGOProRoom", () => {
 
     it("Should NOT use extended card pool for ot format", () => {
       const room = YGOProRoomMother.create({ command: "ot#123" });
+      expect(room.useExtendedCardPool).toBe(false);
+    });
+  });
+
+  describe("JTP Format", () => {
+    it("Should create a jtp room with rule 5, duel_rule 2 and start hand 5", () => {
+      const room = YGOProRoomMother.create({ command: "jtp,st5#123" });
+      expect(room.hostInfo.rule).toBe(5);
+      expect(room.hostInfo.duel_rule).toBe(2);
+      expect(room.hostInfo.start_hand).toBe(5);
+      expect(room.useExtendedCardPool).toBe(false);
+    });
+  });
+
+  describe("Tengu Format", () => {
+    it("Should create a tengu room with rule 5, duel_rule 2 and match mode", () => {
+      const room = YGOProRoomMother.create({ command: "tengu,m#123" });
+      expect(room.hostInfo.rule).toBe(5);
+      expect(room.hostInfo.duel_rule).toBe(2);
+      expect(room.hostInfo.mode).toBe(GameMode.MATCH);
+      expect(room.useExtendedCardPool).toBe(false);
+    });
+  });
+
+  describe("HAT Format", () => {
+    it("Should create a hat room with rule 5, duel_rule 2 and time_limit 450", () => {
+      const room = YGOProRoomMother.create({ command: "hat#123" });
+      expect(room.hostInfo.rule).toBe(5);
+      expect(room.hostInfo.duel_rule).toBe(2);
+      expect(room.hostInfo.time_limit).toBe(450);
+      expect(room.useExtendedCardPool).toBe(false);
+    });
+  });
+
+  describe("GX Format", () => {
+    it("Should create a gx room with rule 5, duel_rule 1 and time limit 500", () => {
+      const room = YGOProRoomMother.create({ command: "gx,tm500#123" });
+      expect(room.hostInfo.rule).toBe(5);
+      expect(room.hostInfo.duel_rule).toBe(1);
+      expect(room.hostInfo.time_limit).toBe(500);
       expect(room.useExtendedCardPool).toBe(false);
     });
   });
