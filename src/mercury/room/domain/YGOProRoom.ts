@@ -354,6 +354,7 @@ export class YGOProRoom extends YgoRoom {
         this._logger,
       ),
       this.createDeckValidator(),
+      this,
     );
   }
 

@@ -42,5 +42,6 @@ export const config = {
       folders: process.env?.YGOPRO_FOLDERS?.split(",") ?? [],
       extraScripts: process.env?.YGOPRO_EXTRA_SCRIPTS?.split(",") ?? [],
     }
-  }
+  },
+  sideTimeoutMinutes: Number(process.env.SIDE_TIMEOUT_MINUTES) || 3,
 };

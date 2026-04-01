@@ -1,5 +1,3 @@
-
-
 import { EventEmitter } from "stream";
 
 import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
@@ -15,14 +13,29 @@ import { ISocket } from "../../../../shared/socket/domain/ISocket";
 
 import { MercuryClient } from "../../../client/domain/MercuryClient";
 import { YGOProRoom } from "../YGOProRoom";
-import { ErrorMessageType, YGOProCtosUpdateDeck, YGOProStocDuelStart, YGOProStocWaitingSide } from "ygopro-msg-encode";
+import { config } from "../../../../config";
+import {
+	ChatColor,
+	ErrorMessageType,
+	YGOProCtosUpdateDeck,
+	YGOProStocChat,
+	YGOProStocDuelStart,
+	YGOProStocWaitingSide,
+} from "ygopro-msg-encode";
+
+const SIDE_TIMEOUT_MINUTES = config.sideTimeoutMinutes;
+const TICK_INTERVAL_MS = 60_000;
 
 export class YGOProSideDeckingState extends RoomState {
+	private readonly playerTimers = new Map<number, NodeJS.Timeout>();
+	private readonly playerRemainMinutes = new Map<number, number>();
+
 	constructor(
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
 		private readonly deckCreator: YGOProDeckCreator,
 		private readonly deckValidator: MercuryDeckValidator,
+		private readonly room: YGOProRoom,
 	) {
 		super(eventEmitter);
 		this.logger = logger.child({ file: "MercurySideDeckingState" });
@@ -37,6 +50,98 @@ export class YGOProSideDeckingState extends RoomState {
 			(message: ClientMessage, room: YGOProRoom, client: MercuryClient) =>
 				void this.handleUpdateDeck.bind(this)(message, room, client)
 		);
+
+		this.startTimeouts();
+	}
+
+	private startTimeouts(): void {
+		if (SIDE_TIMEOUT_MINUTES <= 0) {
+			return;
+		}
+
+		for (const player of this.room.players as MercuryClient[]) {
+			this.startPlayerTimeout(player);
+		}
+	}
+
+	private startPlayerTimeout(player: MercuryClient): void {
+		this.playerRemainMinutes.set(player.position, SIDE_TIMEOUT_MINUTES);
+
+		this.sendChatToPlayer(
+			player,
+			`You have ${SIDE_TIMEOUT_MINUTES} minute(s) to submit your side deck.`,
+			ChatColor.BABYBLUE,
+		);
+
+		const timer = setInterval(() => {
+			this.tickPlayerTimeout(player);
+		}, TICK_INTERVAL_MS);
+
+		this.playerTimers.set(player.position, timer);
+	}
+
+	private tickPlayerTimeout(player: MercuryClient): void {
+		const remain = this.playerRemainMinutes.get(player.position);
+		if (remain === undefined) {
+			this.clearPlayerTimeout(player.position);
+			return;
+		}
+
+		if (remain <= 1) {
+			this.clearPlayerTimeout(player.position);
+			this.logger.info("Side deck timeout", { player: player.name, position: player.position });
+
+			this.broadcastChat(
+				`${player.name} has been disconnected for not submitting a side deck in time.`,
+				ChatColor.BABYBLUE,
+			);
+			this.sendChatToPlayer(player, "Time is up! You have been disconnected.", ChatColor.RED);
+			player.destroy();
+			return;
+		}
+
+		const nextRemain = remain - 1;
+		this.playerRemainMinutes.set(player.position, nextRemain);
+
+		this.sendChatToPlayer(
+			player,
+			`${nextRemain} minute(s) remaining to submit your side deck.`,
+			ChatColor.BABYBLUE,
+		);
+	}
+
+	private clearPlayerTimeout(position: number): void {
+		const timer = this.playerTimers.get(position);
+		if (timer) {
+			clearInterval(timer);
+			this.playerTimers.delete(position);
+		}
+		this.playerRemainMinutes.delete(position);
+	}
+
+	private clearAllTimeouts(): void {
+		for (const [position] of this.playerTimers) {
+			this.clearPlayerTimeout(position);
+		}
+	}
+
+	private sendChatToPlayer(player: MercuryClient, msg: string, color: ChatColor): void {
+		const chatMsg = new YGOProStocChat().fromPartial({
+			player_type: color,
+			msg,
+		});
+		player.sendMessageToClient(Buffer.from(chatMsg.toFullPayload()));
+	}
+
+	private broadcastChat(msg: string, color: ChatColor): void {
+		const chatMsg = new YGOProStocChat().fromPartial({
+			player_type: color,
+			msg,
+		});
+		const buffer = Buffer.from(chatMsg.toFullPayload());
+		for (const client of this.room.clients as MercuryClient[]) {
+			client.sendMessageToClient(buffer);
+		}
 	}
 
 	private handleJoin(message: ClientMessage, room: YGOProRoom, socket: ISocket): void {
@@ -105,6 +210,7 @@ export class YGOProSideDeckingState extends RoomState {
 
 		room.setDecksToPlayerUnsafe(player.position, deck);
 		player.ready();
+		this.clearPlayerTimeout(player.position);
 		player.sendMessageToClient(room.messageSender.duelStartMessage());
 
 		const allReady = room.players.every((_client) => _client.isReady);
@@ -112,6 +218,7 @@ export class YGOProSideDeckingState extends RoomState {
 			return;
 		}
 
+		this.clearAllTimeouts();
 		(room.clientWhoChoosesTurn as MercuryClient).sendMessageToClient(room.messageSender.selectTpMessage());
 
 		room.choosingOrder();
