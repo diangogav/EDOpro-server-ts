@@ -1,152 +1,231 @@
-<h1 align="center">Evolution Server</h1>
+<h1 align="center">🎮 Evolution Server</h1>
+<p align="center">
+  <strong>A Yu-Gi-Oh! game server built with TypeScript</strong><br>
+  <em>Host duels for EDOPro, Koishi, and YGO Mobile — all from one server.</em>
+</p>
 
 [![PR Pipeline](https://github.com/diangogav/EDOpro-server-ts/actions/workflows/pipeline.yaml/badge.svg)](https://github.com/diangogav/EDOpro-server-ts/actions/workflows/pipeline.yaml)
 
-A scalable backend server for Yu-Gi-Oh! matches, compatible with **EDOPro**, **Koishi**, and **YGO Mobile** clients. Focused on **code extensibility** and **data collection**, enabling new gameplay features and statistics.
+Evolution Server runs two independent game engines side by side, so you can support both ecosystems from a single server — or pick just one.
+
+| Engine | Clients | Protocol | Port |
+|--------|---------|----------|------|
+| 🖥️ **EDOPro** | EDOPro desktop client | EDOPro protocol | `7911` |
+| 📱 **Mercury** | Koishi, YGO Mobile, YGOPro | YGOPro-compatible (srvpro2) | `7711` |
 
 ---
 
-## Features
+## ✨ What can it do?
 
-- Room creation through the EDOPro lobby.
-- Duel creation supported via Koishi and YGO Mobile.
-- Cross-client duels between different platforms *(experimental)*.
-- Automatic reconnection after disconnection or crash.
-- Match data collection for future analytics.
-- Isolated core logic for each match.
-
----
-
-## Requirements
-
-- [Node.js](https://nodejs.org) (>= 24.11.0)
-- [CMake](https://cmake.org/download/) (>= 3.18)
-- System dependencies (Ubuntu/Debian): `wget`, `git`, `curl`, `g++`, `make`, `cmake`, `pkg-config`
-- C++ libraries: `libboost-system-dev`, `libsqlite3-dev`, `libjsoncpp-dev`, `nlohmann-json3-dev`, `libcurl4-openssl-dev`
+- 🏰 **Room creation** through the EDOPro lobby or YGOPro-compatible clients
+- 🔀 **Cross-client duels** between different platforms *(experimental)*
+- 🔌 **Automatic reconnection** after disconnection or crash
+- 📊 **Match data collection** for rankings and analytics
+- 🧪 **Isolated duel cores** — each match runs in its own process
 
 ---
 
-## Configuration
+## 🚀 Quick Start (Docker)
 
-Before running the server, configure the environment variables:
+The fastest way to get running. Three commands and you're dueling:
 
 ```bash
-cp .env.example .env
-```
-
-Edit `.env` with your settings (ports, database credentials, etc.).
-
-### Key environment variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `YGOPRO_FOLDERS` | Comma-separated list of YGOPro resource directories | *(empty)* |
-| `HOST_PORT` | EDOPro server port | `7911` |
-| `MERCURY_PORT` | Mercury (YGOPro) server port | `7711` |
-| `HTTP_PORT` | HTTP API port | `7922` |
-| `WEBSOCKET_PORT` | WebSocket port | `4000` |
-
----
-
-## Manual Installation (No Docker)
-
-### 1. Clone the project
-
-```bash
-git clone --recursive https://github.com/diangogav/EDOpro-server-ts
+git clone https://github.com/diangogav/EDOpro-server-ts
 cd EDOpro-server-ts
+docker compose -f docker-compose.prod.yaml up -d
 ```
 
-### 2. Install system dependencies
+That's it! 🎉 Both engines start automatically with PostgreSQL and Valkey included.
+
+> 💡 Connect with EDOPro on port `7911` or with Koishi/YGO Mobile on port `7711`.
+
+---
+
+## 🛠️ Manual Installation
+
+For when you want full control, or Docker isn't an option.
+
+### 📋 Prerequisites
+
+- [Node.js](https://nodejs.org) >= 24
+- [CMake](https://cmake.org/download/) >= 3.18
+- A C++ compiler (g++ or clang++)
+
+On Ubuntu/Debian, the provided script installs everything you need:
 
 ```bash
 sudo bash install_dependencies.sh
 ```
 
-### 3. Clone external repositories
+### 📦 Step by step
 
 ```bash
+# 1️⃣ Clone the project
+git clone https://github.com/diangogav/EDOpro-server-ts
+cd EDOpro-server-ts
+
+# 2️⃣ Clone card scripts, databases, and banlists
 bash clone_repositories.sh
-```
 
-This creates a `repositories/` folder with all required assets (card scripts, databases, banlists).
-
-### 4. Assemble resources
-
-```bash
+# 3️⃣ Organize everything into resources/
 bash setup_resources.sh
-```
 
-This organizes assets into the `resources/` directory:
-
-```
-resources/
-├── edopro/
-│   ├── scripts/            # Card scripts (ProjectIgnis)
-│   ├── databases/          # Card databases (ProjectIgnis)
-│   ├── banlists-ignis/     # Banlists (ProjectIgnis)
-│   └── banlists-evolution/ # Banlists (Evolution)
-└── ygopro/
-    ├── base/               # Base scripts + lflist + cards.cdb
-    ├── prereleases-cdb/    # Pre-release card scripts
-    ├── cards-art/          # Custom card art scripts + databases
-    ├── ocg/                # OCG banlist
-    └── alternatives/       # Format alternatives (Edison, GOAT, etc.)
-```
-
-### 5. Build the CoreIntegrator (C++)
-
-```bash
+# 4️⃣ Build the C++ duel core (used by the EDOPro engine)
 bash build_core_integrator.sh
-```
 
-### 6. Install Node.js dependencies
-
-```bash
+# 5️⃣ Install Node.js dependencies
 npm install
+
+# 6️⃣ Configure environment
+cp .env.example .env
 ```
 
-### 7. Set YGOPRO_FOLDERS
+Now choose which engine(s) you want to run 👇
 
-Add to your `.env` file:
+---
+
+### 🖥️ Running the EDOPro engine only
+
+Players connect using the EDOPro desktop client.
+
+**What you need:**
+- ✅ The CoreIntegrator binary (built in step 4)
+- ✅ Card databases and scripts from ProjectIgnis
+- ✅ Banlists from ProjectIgnis and/or Evolution
+
+**Minimum `.env` configuration:**
+
+```env
+HOST_PORT=7911
+HTTP_PORT=7922
+WEBSOCKET_PORT=4000
+```
+
+**Resource structure used:**
 
 ```
-YGOPRO_FOLDERS=./resources/ygopro/base,./resources/ygopro/prereleases-cdb,./resources/ygopro/cards-art,./resources/ygopro/ocg,./resources/ygopro/alternatives
+📂 resources/edopro/
+├── 📜 scripts/            # ProjectIgnis/CardScripts
+├── 🗄️ databases/          # ProjectIgnis/BabelCDB
+├── 📋 banlists-ignis/     # ProjectIgnis/LFLists
+└── 📋 banlists-evolution/ # Evolution community banlists
 ```
-
-### 8. Launch the server
 
 ```bash
 npm run dev
 ```
 
----
-
-## Running with Docker
-
-### Using Docker Compose (recommended)
-
-```bash
-docker compose -f docker-compose.prod.yaml up -d
-```
-
-### Using Docker directly
-
-Build:
-
-```bash
-docker build -t evolution-server .
-```
-
-Run:
-
-```bash
-docker run -p 7711:7711 -p 7911:7911 -p 7922:7922 -p 4000:4000 --env-file .env evolution-server
-```
+> 🎯 Connect with EDOPro to `your-server-ip:7911`
 
 ---
 
-## Acknowledgments
+### 📱 Running the Mercury (YGOPro) engine only
 
-- Based on [Multirole](https://github.com/DyXel/Multirole) by @Dyxel
-- Inspired by the amazing work of the Project Ignis, MyCard and Evolution communities
+The Mercury engine uses YGOPro-compatible protocol (based on srvpro2). Players connect using Koishi, YGO Mobile, or any YGOPro-compatible client.
+
+**What you need:**
+- ✅ Card scripts and databases from ygopro-scripts
+- ✅ Ban lists and alternative format resources
+- ✅ The `YGOPRO_FOLDERS` environment variable pointing to your resource directories
+
+**Minimum `.env` configuration:**
+
+```env
+MERCURY_PORT=7711
+HTTP_PORT=7922
+WEBSOCKET_PORT=4000
+YGOPRO_FOLDERS=./resources/ygopro/base
+```
+
+**Resource structure used:**
+
+```
+📂 resources/ygopro/
+├── 📜 base/               # Core scripts + lflist + cards.cdb (loaded by all modes)
+├── 🆕 prereleases-cdb/    # Pre-release card scripts and databases
+├── 🎨 cards-art/          # Custom card art scripts and databases
+├── 🌏 ocg/                # OCG-specific banlist
+└── 🃏 alternatives/       # Format variants (Edison, GOAT, HAT, etc.)
+```
+
+To enable all formats and pre-releases, set:
+
+```env
+YGOPRO_FOLDERS=./resources/ygopro/base,./resources/ygopro/prereleases-cdb,./resources/ygopro/cards-art,./resources/ygopro/ocg,./resources/ygopro/alternatives
+```
+
+```bash
+npm run dev
+```
+
+> 🎯 Connect with Koishi or YGO Mobile to `your-server-ip:7711`
+
+---
+
+### 🔥 Running both engines
+
+Just set both ports and `YGOPRO_FOLDERS` in your `.env`:
+
+```env
+HOST_PORT=7911
+MERCURY_PORT=7711
+HTTP_PORT=7922
+WEBSOCKET_PORT=4000
+YGOPRO_FOLDERS=./resources/ygopro/base,./resources/ygopro/prereleases-cdb,./resources/ygopro/cards-art,./resources/ygopro/ocg,./resources/ygopro/alternatives
+```
+
+```bash
+npm run dev
+```
+
+Both engines run in the same process, sharing the HTTP API and WebSocket server. 💪
+
+---
+
+## ⚙️ Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `HOST_PORT` | EDOPro server port | `7911` |
+| `MERCURY_PORT` | Mercury (YGOPro) server port | `7711` |
+| `HTTP_PORT` | HTTP API port | `7922` |
+| `WEBSOCKET_PORT` | WebSocket port | `4000` |
+| `YGOPRO_FOLDERS` | Comma-separated resource directories for Mercury engine | *(empty)* |
+| `RANK_ENABLED` | Enable ranking system (requires PostgreSQL) | `false` |
+| `POSTGRES_HOST` | PostgreSQL host | `localhost` |
+| `POSTGRES_PORT` | PostgreSQL port | `5432` |
+| `POSTGRES_DB` | PostgreSQL database name | `evolution` |
+| `POSTGRES_USER` | PostgreSQL username | `evolution` |
+| `POSTGRES_PASSWORD` | PostgreSQL password | *(required if ranking enabled)* |
+| `USE_REDIS` | Enable Redis/Valkey for session management | `false` |
+| `REDIS_URI` | Redis/Valkey connection URI | *(required if redis enabled)* |
+
+---
+
+## 🏗️ Project Architecture
+
+```
+src/
+├── 🖥️ edopro/             # EDOPro engine (EDOPro protocol)
+├── 📱 mercury/            # Mercury engine (YGOPro/srvpro2-compatible)
+├── 🤝 shared/             # Shared domain logic (rooms, decks, cards, clients)
+├── 🔌 socket-server/      # TCP socket servers for both engines
+├── 🌐 http-server/        # REST API
+└── 📡 web-socket-server/  # WebSocket server for real-time updates
+```
+
+Both engines share the same room management, player handling, and match lifecycle — but use different protocols, card databases, and deck validation rules.
+
+---
+
+## 🙏 Acknowledgments
+
+- [Multirole](https://github.com/DyXel/Multirole) by @Dyxel — the reference for the EDOPro engine
+- [srvpro2](https://github.com/purerosefallen/srvpro) — the reference for the Mercury engine
+- The [Project Ignis](https://github.com/ProjectIgnis), [MyCard](https://mycard.moe/), and [Evolution](https://github.com/evolutionygo) communities
+
+---
+
+<p align="center">
+  Made with ❤️ by the Evolution community
+</p>
