@@ -57,7 +57,7 @@ export class YGOProRoom extends YgoRoom {
   readonly banListHash: number;
   readonly useExtendedCardPool: boolean;
   //TODO: compatibility with edopro list and rank;
-  readonly edoBanListHash: number;
+  private _edoBanListHash: number;
   private _logger: Logger;
   private _roomState: RoomState | null = null;
   private _isPositionSwapped: boolean = false;
@@ -125,7 +125,10 @@ export class YGOProRoom extends YgoRoom {
       sideMin: 0,
       sideMax: 15,
       rule: this._hostInfo.rule,
-    });
+    }); banListHash
+    const banList = MercuryBanListMemoryRepository.findByHash(banListHash);
+    const edoBanList = BanListMemoryRepository.findByName(banList?.name ?? "");
+    this._edoBanListHash = edoBanList?.hash ?? 0;
   }
 
   static create(
@@ -213,8 +216,6 @@ export class YGOProRoom extends YgoRoom {
       hostInfo.lflist,
     );
     const banListHash = banList?.hash ?? 0;
-    const edoBanList = BanListMemoryRepository.findByName(banList?.name ?? "");
-    const edoBanListHash = edoBanList?.hash ?? 0;
 
     const room = new YGOProRoom({
       id,
@@ -693,7 +694,7 @@ export class YGOProRoom extends YgoRoom {
       rule: this._hostInfo.rule,
       no_check: Boolean(this._hostInfo.no_check_deck),
       no_shuffle: Boolean(this._hostInfo.no_shuffle_deck),
-      banlist_hash: this.edoBanListHash ?? this.banListHash,
+      banlist_hash: this._edoBanListHash ?? this.banListHash,
       istart: this.isStart,
       main_min: 40,
       main_max: 60,
