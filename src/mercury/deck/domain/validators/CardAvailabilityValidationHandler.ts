@@ -18,12 +18,10 @@ import { Rule } from "@shared/deck/domain/Rule";
  */
 export class CardAvailabilityValidationHandler implements DeckValidationHandler {
 	private readonly availFlag: number;
-	private readonly allowPrerelease: boolean;
 	private nextHandler: DeckValidationHandler | null = null;
 
 	constructor(rule: Rule) {
 		this.availFlag = CardAvailabilityValidationHandler.ruleToAvailFlag(rule);
-		this.allowPrerelease = rule === Rule.PRE_RELEASE || rule === Rule.ALL;
 	}
 
 	setNextHandler(handler: DeckValidationHandler): DeckValidationHandler {
@@ -55,21 +53,15 @@ export class CardAvailabilityValidationHandler implements DeckValidationHandler 
 			return null;
 		}
 
-		if ((ot & ScopeCode.PRERELEASE) && !this.allowPrerelease) {
-			return new NotOfficialCardError(code);
-		}
-
-		const effectiveOt = ot & ~ScopeCode.PRERELEASE;
-
-		if ((effectiveOt & this.availFlag) === this.availFlag) {
+		if ((ot & this.availFlag) === this.availFlag) {
 			return null;
 		}
 
-		if (effectiveOt & ScopeCode.OCG && this.availFlag !== ScopeCode.OCG) {
+		if (ot & ScopeCode.OCG && this.availFlag !== ScopeCode.OCG) {
 			return new OCGCardError(code);
 		}
 
-		if (effectiveOt & ScopeCode.TCG && this.availFlag !== ScopeCode.TCG) {
+		if (ot & ScopeCode.TCG && this.availFlag !== ScopeCode.TCG) {
 			return new TCGCardError(code);
 		}
 
@@ -83,8 +75,8 @@ export class CardAvailabilityValidationHandler implements DeckValidationHandler 
 			case Rule.ONLY_TCG:
 				return ScopeCode.TCG;
 			case Rule.OCG_TCG:
-				return ScopeCode.OCG_TCG;
 			case Rule.PRE_RELEASE:
+				return ScopeCode.OCG_TCG;
 			case Rule.ALL:
 				return 0;
 			default:
