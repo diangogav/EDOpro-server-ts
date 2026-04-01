@@ -8,8 +8,8 @@ import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 import { EventEmitter } from "stream";
 
 import { mercuryConfig } from "@ygopro/config";
-import { MercuryJoinGameMessage } from "@ygopro/messages/MercuryJoinGameMessage";
-import { MercuryPlayerChatMessage } from "@ygopro/messages/server-to-client/MercuryPlayerChatMessage";
+import { YGOProJoinGameMessage } from "@ygopro/messages/YGOProJoinGameMessage";
+import { YGOProPlayerChatMessage } from "@ygopro/messages/server-to-client/YGOProPlayerChatMessage";
 import { YgoClient } from "../../../shared/client/domain/YgoClient";
 import { YgoRoom } from "../../../shared/room/domain/YgoRoom";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
@@ -76,7 +76,7 @@ export abstract class RoomState {
 	}
 
 	protected validateVersion(message: Buffer, socket: ISocket): void {
-		const joinMessage = new MercuryJoinGameMessage(message);
+		const joinMessage = new YGOProJoinGameMessage(message);
 
 		if (joinMessage.version !== mercuryConfig.version) {
 			socket.send(VersionErrorClientMessage.create(mercuryConfig.version));
@@ -102,13 +102,13 @@ export abstract class RoomState {
 
 	protected sendWelcomeMessage(room: YgoRoom, socket: ISocket): void {
 		if (room.ranked) {
-			socket.send(MercuryPlayerChatMessage.create(
+			socket.send(YGOProPlayerChatMessage.create(
 				`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS} - ${ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION}`
 			));
 			return;
 		}
 
-		socket.send(MercuryPlayerChatMessage.create(
+		socket.send(YGOProPlayerChatMessage.create(
 			`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.UN_RANKED_ROOM_CREATION_SUCCESS}`
 		));
 	}
@@ -168,17 +168,17 @@ export abstract class RoomState {
 	}
 
 	protected sendSystemErrorMessage(message: string, client: YgoClient): void {
-		client.socket.send(MercuryPlayerChatMessage.create(message));
+		client.socket.send(YGOProPlayerChatMessage.create(message));
 	}
 
 	protected sendSystemMessage(message: string, client: YgoClient): void {
-		client.socket.send(MercuryPlayerChatMessage.create(message));
+		client.socket.send(YGOProPlayerChatMessage.create(message));
 	}
 
 	private handleChat(message: ClientMessage, room: YgoRoom, client: YgoClient): void {
 		const sanitized = BufferToUTF16(message.data, message.data.length);
 		if (sanitized === ":score") {
-			client.socket.send(MercuryPlayerChatMessage.create(room.score));
+			client.socket.send(YGOProPlayerChatMessage.create(room.score));
 
 			return;
 		}

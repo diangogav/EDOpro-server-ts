@@ -18,11 +18,11 @@ import { CardAvailabilityValidationHandler } from "./validators/CardAvailability
  * (OfficialCardValidationHandler, DeckRuleValidationHandler, PrereleaseValidationHandler)
  * with a single CardAvailabilityValidationHandler that uses srvpro2's bitwise logic.
  */
-export class MercuryDeckValidator {
+export class YGOProDeckValidator {
 	constructor(
 		private readonly deckRules: DeckRules,
 		private readonly banList: EdoproBanList,
-	) {}
+	) { }
 
 	validate(deck: Deck): DeckError | null {
 		const chain = new DeckLimitsValidationHandler(this.deckRules);

@@ -4,7 +4,7 @@ import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoM
 import { RoomState } from "@edopro/room/domain/RoomState";
 
 import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
-import { MercuryDeckValidator } from "@ygopro/deck/domain/MercuryDeckValidator";
+import { YGOProDeckValidator } from "@ygopro/deck/domain/YGOProDeckValidator";
 import { DeckError } from "@shared/deck/domain/errors/DeckError";
 
 import { Commands } from "@shared/messages/Commands";
@@ -35,7 +35,7 @@ export class YGOProSideDeckingState extends RoomState {
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
 		private readonly deckCreator: YGOProDeckCreator,
-		private readonly deckValidator: MercuryDeckValidator,
+		private readonly deckValidator: YGOProDeckValidator,
 		private readonly room: YGOProRoom,
 	) {
 		super(eventEmitter);

@@ -19,7 +19,7 @@ import {
 	YGOProCtosUpdateDeck,
 } from "ygopro-msg-encode";
 import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
-import { MercuryDeckValidator } from "@ygopro/deck/domain/MercuryDeckValidator";
+import { YGOProDeckValidator } from "@ygopro/deck/domain/YGOProDeckValidator";
 import { DeckError } from "@shared/deck/domain/errors/DeckError";
 import { YGOProRoomState } from "../YGOProRoomState";
 import MercuryBanListMemoryRepository from "@ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository";
@@ -30,7 +30,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
 		private readonly deckCreator: YGOProDeckCreator,
-		private readonly deckValidator: MercuryDeckValidator,
+		private readonly deckValidator: YGOProDeckValidator,
 	) {
 		super(eventEmitter);
 		this.logger = logger.child({ file: "MercuryWaitingState" });

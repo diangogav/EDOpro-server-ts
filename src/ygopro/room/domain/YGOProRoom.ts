@@ -40,7 +40,7 @@ import {
 import { YGOProYrp } from "ygopro-yrp-encode";
 import { DuelRecord } from "./DuelRecord";
 import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
-import { MercuryDeckValidator } from "@ygopro/deck/domain/MercuryDeckValidator";
+import { YGOProDeckValidator } from "@ygopro/deck/domain/YGOProDeckValidator";
 import { CardYGOProRepository } from "@ygopro/card/infrastructure/CardYGOProRepository";
 import { YGOProBanList } from "@ygopro/ban-list/domain/YGOProBanList";
 
@@ -667,10 +667,10 @@ export class YGOProRoom extends YgoRoom {
   }
 
 
-  private createDeckValidator(): MercuryDeckValidator {
+  private createDeckValidator(): YGOProDeckValidator {
     const banList = MercuryBanListMemoryRepository.findByHash(this.banListHash);
 
-    return new MercuryDeckValidator(this._deckRules, banList ?? new YGOProBanList());
+    return new YGOProDeckValidator(this._deckRules, banList ?? new YGOProBanList());
   }
 
   toPresentation(): { [key: string]: unknown } {

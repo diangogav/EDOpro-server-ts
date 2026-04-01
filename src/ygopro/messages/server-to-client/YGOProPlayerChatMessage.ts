@@ -2,7 +2,7 @@ import { UTF8ToUTF16 } from "src/utils/UTF8ToUTF16";
 
 import { decimalToBytesBuffer } from "../../../utils";
 
-export class MercuryPlayerChatMessage {
+export class YGOProPlayerChatMessage {
 	static create(message: string): Buffer {
 		const type = Buffer.from([0x19]);
 		const data = Buffer.concat([type, decimalToBytesBuffer(0x09, 2), UTF8ToUTF16(message, 512)]);

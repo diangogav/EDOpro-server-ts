@@ -1,7 +1,7 @@
 import { Message } from "../../edopro/messages/Message";
 import { TextVO } from "../../shared/value-objects/TextVO";
 
-export class MercuryJoinGameMessage implements Message {
+export class YGOProJoinGameMessage implements Message {
 	public readonly version: number;
 	public readonly align: number;
 	public readonly gameId: number;
