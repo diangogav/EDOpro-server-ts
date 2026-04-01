@@ -150,7 +150,7 @@ export const priorityRuleMappings: RuleMappings = {
 	},
 	// OCG with TCG and OCG cards allowed
 	otto: {
-		get: () => ({ rule: 5 }),
+		get: () => ({ rule: 5, lflist: 0 }),
 		validate: (value) => {
 			return value === "otto";
 		},
@@ -437,10 +437,10 @@ export const formatRuleMappings: RuleMappings = {
 	},
 	md: {
 		get: () => {
-			const index = MercuryBanListMemoryRepository.findIndexByAlias("masterduel");
+			const index = MercuryBanListMemoryRepository.findIndexByAlias("md");
 			return {
 				rule: 5,
-				lflist: index !== -1 ? index : 11,
+				lflist: Math.max(0, index),
 				duel_rule: 5,
 				time_limit: 450,
 			};
@@ -624,7 +624,7 @@ export const formatRuleMappings: RuleMappings = {
 	tcgart: {
 		get: () => {
 			return {
-				rule: 5,
+				rule: 1,
 				duel_rule: 5,
 				time_limit: 450,
 			};
@@ -636,8 +636,8 @@ export const formatRuleMappings: RuleMappings = {
 	ocgart: {
 		get: () => {
 			return {
-				rule: 4,
-				duel_rule: 3,
+				rule: 0,
+				duel_rule: 5,
 				lflist: 0,
 				time_limit: 450,
 			};
