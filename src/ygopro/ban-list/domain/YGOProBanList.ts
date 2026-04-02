@@ -16,6 +16,10 @@ export class YGOProBanList extends BanList {
 				break;
 			case 2:
 				this.semiLimited.push(cardId);
+				break;
+			default:
+				this.all.push(cardId);
+				break;
 		}
 	}
 }

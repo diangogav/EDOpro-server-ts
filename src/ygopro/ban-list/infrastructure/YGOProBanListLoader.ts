@@ -38,6 +38,28 @@ export class YGOProBanListLoader {
     return normalized;
   }
 
+  /**
+   * ygopro-lflist-encode only parses entries with limit 0-2.
+   * Whitelist banlists also list unrestricted cards (limit >= 3) that the
+   * library silently discards. We parse them from the raw text.
+   */
+  private parseUnrestrictedEntries(text: string, banList: YGOProBanList): void {
+    for (const line of text.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#") || trimmed.startsWith("!") || trimmed.startsWith("$") || trimmed.startsWith("-")) {
+        continue;
+      }
+      const match = trimmed.match(/^(\d+)\s+(\d+)/);
+      if (!match) {
+        continue;
+      }
+      const limit = parseInt(match[2], 10);
+      if (limit >= 3) {
+        banList.add(parseInt(match[1], 10), limit);
+      }
+    }
+  }
+
   async load(): Promise<void> {
     const loader = YGOProResourceLoader.get();
 
@@ -51,11 +73,17 @@ export class YGOProBanListLoader {
       banList.setName(normalizedName);
       banList.setHash(hash);
 
-      if (text.includes("$whitelist")) {
+      const isWhitelist = text.includes("$whitelist");
+      if (isWhitelist) {
         banList.whileListed();
       }
 
       lflist.entries.forEach((entry) => banList.add(entry.code, entry.limit));
+
+      if (isWhitelist) {
+        this.parseUnrestrictedEntries(text, banList);
+      }
+
       YGOProBanListMemoryRepository.add(banList);
     }
 

@@ -57,7 +57,6 @@ export class YGOProDeckCreator {
         }
 
         const banList = YGOProBanListMemoryRepository.findByHash(banListHash);
-
         return new Deck({
             main: mainDeck,
             extra: extraDeck,
