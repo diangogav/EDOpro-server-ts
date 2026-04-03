@@ -1,5 +1,5 @@
- 
- 
+
+
 import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
 import { ServerInfoMessage } from "@edopro/messages/domain/ServerInfoMessage";
 import { spawn } from "child_process";
@@ -16,9 +16,9 @@ import { Client } from "../../../../client/domain/Client";
 import { UpdateDeckMessageParser } from "../../../../deck/application/UpdateDeckMessageSizeCalculator";
 import { JoinGameMessage } from "../../../../messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../../../messages/client-to-server/PlayerInfoMessage";
-import { Commands } from "../../../../messages/domain/Commands";
+import { Commands } from "../../../../../shared/messages/Commands";
 import { JSONMessageProcessor } from "../../../../messages/JSONMessageProcessor";
-import { ClientMessage } from "../../../../messages/MessageProcessor";
+import { ClientMessage } from "../../../../../shared/messages/MessageProcessor";
 import { ErrorMessages } from "../../../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../../../messages/server-to-client/ErrorClientMessage";
 import { StartDuelClientMessage } from "../../../../messages/server-to-client/game-messages/StartDuelClientMessage";
@@ -202,12 +202,12 @@ export class DuelingState extends RoomState {
 	}
 
 	private handle(): void {
-		this.room.clients.forEach((item) => {
+		this.room.players.forEach((item) => {
 			item.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.PREPARING_DUEL));
 		});
 		this.room.prepareTurnOrder();
 
-		const players = this.room.clients.map((item: Client) => ({
+		const players = this.room.players.map((item: Client) => ({
 			team: item.team,
 			mainDeck: item.deck.main.map((card) => Number(card.code)),
 			sideDeck: item.deck.side.map((card) => Number(card.code)),
@@ -220,7 +220,7 @@ export class DuelingState extends RoomState {
 
 		this.logger.info("Starting Duel");
 
-		this.room.clients.forEach((item) => {
+		this.room.players.forEach((item) => {
 			item.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.STARTING_DUEL));
 			const reconnectionToken = crypto.randomBytes(16).toString("hex");
 			item.setReconnectionToken(reconnectionToken);
@@ -254,7 +254,7 @@ export class DuelingState extends RoomState {
 
 		core.stderr.on("data", (data: string) => {
 			this.logger.error(data.toString(), { roomId: this.room.id });
-			this.room.clients.forEach((item) => {
+			this.room.players.forEach((item) => {
 				item.socket.send(ServerMessageClientMessage.create(data.toString()));
 			});
 		});
@@ -390,13 +390,13 @@ export class DuelingState extends RoomState {
 		const _team = message.team;
 		const position = message.position;
 
-		const player = this.room.clients.find((player) => player.position === position);
+		const player = this.room.players.find((player) => player.position === position);
 
 		if (!(player instanceof Client)) {
 			return;
 		}
 
-		// Skip sending historical cache to avoid card duplication. 
+		// Skip sending historical cache to avoid card duplication.
 		// REFRESH_FIELD (called during express reconnect) provides the current state.
 		/*
 		if (player.cache) {
@@ -437,7 +437,7 @@ export class DuelingState extends RoomState {
 			player.sendMessage(player.cache);
 		}
 
-		this.room.clients.forEach((client: Client) => {
+		this.room.players.forEach((client: Client) => {
 			client.sendMessage(
 				ServerMessageClientMessage.create(
 					`${player.name} ${ServerInfoMessage.HAS_ENTERED_TO_THE_DUEL}`
@@ -458,7 +458,7 @@ export class DuelingState extends RoomState {
 		const data = Buffer.from(message.data, "hex");
 		const payload = Buffer.concat([decimalToBytesBuffer(data.length, 2), data]);
 
-		const player = this.room.clients.find((player) => player.position === message.position);
+		const player = this.room.players.find((player) => player.position === message.position);
 
 		if (!(player instanceof Client)) {
 			return;
@@ -509,7 +509,7 @@ export class DuelingState extends RoomState {
 
 		this.room.resetTimer(payload.team, payload.time);
 
-		this.room.clients.forEach((client: Client) => {
+		this.room.players.forEach((client: Client) => {
 			this.room.cacheTeamMessage(client.team, message, true, null);
 			client.sendMessage(message);
 		});
@@ -523,7 +523,7 @@ export class DuelingState extends RoomState {
 		const data = Buffer.from(message.data, "hex");
 		const payload = Buffer.concat([decimalToBytesBuffer(data.length, 2), data]);
 		this.room.cacheTeamMessage(3, payload, true, null);
-		[...this.room.clients, ...this.room.spectators].forEach((client: Client) => {
+		[...this.room.players, ...this.room.spectators].forEach((client: Client) => {
 			client.sendMessage(payload);
 		});
 	}
@@ -533,7 +533,7 @@ export class DuelingState extends RoomState {
 		const payload = Buffer.concat([decimalToBytesBuffer(data.length, 2), data]);
 
 		if (message.except !== undefined) {
-			this.room.clients.forEach((client: Client) => {
+			this.room.players.forEach((client: Client) => {
 				if (!(client.team === message.except && client.inTurn)) {
 					client.sendMessage(payload);
 				}
@@ -552,7 +552,7 @@ export class DuelingState extends RoomState {
 		}
 
 		if (message.position) {
-			const player = [...this.room.clients, ...this.room.spectators].find(
+			const player = [...this.room.players, ...this.room.spectators].find(
 				(player: Client) => player.position === message.position
 			);
 
@@ -562,7 +562,7 @@ export class DuelingState extends RoomState {
 		}
 
 		if (message.except !== undefined) {
-			this.room.clients.forEach((client: Client) => {
+			this.room.players.forEach((client: Client) => {
 				if (!(client.team === message.except && client.inTurn)) {
 					client.sendMessage(payload);
 				}
@@ -575,7 +575,7 @@ export class DuelingState extends RoomState {
 			const data = Buffer.from(message.data, "hex");
 			const payload = Buffer.concat([decimalToBytesBuffer(data.length, 2), data]);
 
-			[...this.room.clients, ...this.room.spectators].forEach((client: Client) => {
+			[...this.room.players, ...this.room.spectators].forEach((client: Client) => {
 				if (client.team === message.receiver) {
 					client.sendMessage(payload);
 				}
@@ -584,7 +584,7 @@ export class DuelingState extends RoomState {
 			return;
 		}
 
-		const player = [...this.room.clients, ...this.room.spectators].find(
+		const player = [...this.room.players, ...this.room.spectators].find(
 			(player: Client) => player.inTurn && player.team === message.receiver
 		);
 
@@ -625,13 +625,13 @@ export class DuelingState extends RoomState {
 		this.room.setPlayerDecksSize(message.playerDeckSize, message.playerExtraDeckSize);
 		this.room.setOpponentDecksSize(message.opponentDeckSize, message.opponentExtraDeckSize);
 
-		this.room.clients.forEach((client: Client) => {
+		this.room.players.forEach((client: Client) => {
 			if (client.team === 0) {
 				client.sendMessage(playerGameMessage);
 			}
 		});
 
-		this.room.clients.forEach((client: Client) => {
+		this.room.players.forEach((client: Client) => {
 			if (client.team === 1) {
 				client.sendMessage(opponentGameMessage);
 			}
@@ -657,7 +657,7 @@ export class DuelingState extends RoomState {
 		this.logger.info("DUELING_STATE: EXPRESS_RECONNECT - START");
 		const token = message.data.toString("utf8");
 		this.logger.info(`DUELING_STATE: Token received: ${token}`);
-		
+
 		const entry = TokenIndex.getInstance().find(token);
 		if (!entry || !(entry.client instanceof Client) || entry.roomId !== room.id) {
 			this.logger.info(`DUELING_STATE: Player not found for token ${token} or room mismatch`);
@@ -684,7 +684,7 @@ export class DuelingState extends RoomState {
 		socket.send(Buffer.concat([size, dataStatus]));
 
 		// 2. Perform the reconnection logic (similar to handleReady but without waiting for READY)
-		player.setSocket(socket, room.clients as Client[], room);
+		player.setSocket(socket, room.players as Client[], room);
 		player.reconnecting();
 		player.setCanReconnect(true);
 

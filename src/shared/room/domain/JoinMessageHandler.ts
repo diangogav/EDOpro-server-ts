@@ -1,5 +1,5 @@
-import { ClientMessage } from "../../../edopro/messages/MessageProcessor";
+import { ClientMessage } from "../../messages/MessageProcessor";
 
 export interface JoinMessageHandler {
-	handle(message: ClientMessage): void;
+	handleJoinGame(message: ClientMessage): void;
 }

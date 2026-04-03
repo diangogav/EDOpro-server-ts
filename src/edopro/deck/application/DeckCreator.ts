@@ -1,9 +1,9 @@
+import { DeckRules } from "@shared/room/domain/YgoRoom";
 import { EdoproBanList } from "../../ban-list/domain/BanList";
 import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
-import { Card } from "../../card/domain/Card";
-import { CardRepository } from "../../card/domain/CardRepository";
-import { DeckRules } from "../../room/domain/Room";
-import { Deck } from "../domain/Deck";
+import { Card } from "../../../shared/card/domain/Card";
+import { CardRepository } from "../../../shared/card/domain/CardRepository";
+import { Deck } from "../../../shared/deck/domain/Deck";
 
 export class DeckCreator {
 	private readonly cardRepository: CardRepository;
@@ -32,7 +32,7 @@ export class DeckCreator {
 		const placeRitualInExtraDeckEnabled = this.placeRitualInExtraDeckEnabled();
 
 		for (const code of main) {
-			 
+
 			const card = await this.cardRepository.findByCode(code.toString());
 			if (!card) {
 				continue;
@@ -46,7 +46,7 @@ export class DeckCreator {
 		}
 
 		for (const code of side) {
-			 
+
 			const card = await this.cardRepository.findByCode(code.toString());
 			if (!card) {
 				continue;

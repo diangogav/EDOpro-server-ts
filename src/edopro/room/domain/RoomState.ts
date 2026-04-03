@@ -7,22 +7,24 @@ import { Team } from "src/shared/room/Team";
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 import { EventEmitter } from "stream";
 
-import { mercuryConfig } from "../../../mercury/config";
-import { MercuryJoinGameMessage } from "../../../mercury/messages/MercuryJoinGameMessage";
-import { MercuryPlayerChatMessage } from "../../../mercury/messages/server-to-client/MercuryPlayerChatMessage";
+import { mercuryConfig } from "@ygopro/config";
+import { YGOProJoinGameMessage } from "@ygopro/messages/YGOProJoinGameMessage";
+import { YGOProPlayerChatMessage } from "@ygopro/messages/server-to-client/YGOProPlayerChatMessage";
 import { YgoClient } from "../../../shared/client/domain/YgoClient";
 import { YgoRoom } from "../../../shared/room/domain/YgoRoom";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { BufferToUTF16 } from "../../../utils/BufferToUTF16";
 import { Client } from "../../client/domain/Client";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
-import { Commands } from "../../messages/domain/Commands";
-import { ClientMessage } from "../../messages/MessageProcessor";
+import { Commands } from "../../../shared/messages/Commands";
+import { ClientMessage } from "../../../shared/messages/MessageProcessor";
 import { PlayerMessageClientMessage } from "../../messages/server-to-client/PlayerMessageClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { SpectatorMessageClientMessage } from "../../messages/server-to-client/SpectatorMessageClientMessage";
 import { VersionErrorClientMessage } from "../../messages/server-to-client/VersionErrorClientMessage";
 import { RoomType } from "src/shared/room/domain/RoomType";
+import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
+import { NetPlayerType, YGOProStocChat, YGOProStocSelectHand } from "ygopro-msg-encode";
 
 export abstract class RoomState {
 	protected readonly eventEmitter: EventEmitter;
@@ -47,7 +49,7 @@ export abstract class RoomState {
 		socket: ISocket
 	): YgoClient | null {
 		if (!room.ranked) {
-			const player = room.clients.find((client) => {
+			const player = room.players.find((client) => {
 				return (
 					client.socket.remoteAddress === socket.remoteAddress &&
 					client.socket.closed &&
@@ -62,7 +64,7 @@ export abstract class RoomState {
 			return player;
 		}
 
-		const player = room.clients.find((client) => {
+		const player = room.players.find((client) => {
 			return playerInfoMessage.name === client.name;
 		});
 
@@ -74,7 +76,7 @@ export abstract class RoomState {
 	}
 
 	protected validateVersion(message: Buffer, socket: ISocket): void {
-		const joinMessage = new MercuryJoinGameMessage(message);
+		const joinMessage = new YGOProJoinGameMessage(message);
 
 		if (joinMessage.version !== mercuryConfig.version) {
 			socket.send(VersionErrorClientMessage.create(mercuryConfig.version));
@@ -100,13 +102,13 @@ export abstract class RoomState {
 
 	protected sendWelcomeMessage(room: YgoRoom, socket: ISocket): void {
 		if (room.ranked) {
-			socket.send(MercuryPlayerChatMessage.create(
+			socket.send(YGOProPlayerChatMessage.create(
 				`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS} - ${ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION}`
 			));
 			return;
 		}
 
-		socket.send(MercuryPlayerChatMessage.create(
+		socket.send(YGOProPlayerChatMessage.create(
 			`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.UN_RANKED_ROOM_CREATION_SUCCESS}`
 		));
 	}
@@ -165,23 +167,41 @@ export abstract class RoomState {
 		}
 	}
 
+	private handleMercuryChat(message: ClientMessage, room: YGOProRoom, client: YgoClient): void {
+		const playerType = client.isSpectator
+			? NetPlayerType.OBSERVER
+			: room.isPositionSwapped
+				? client.position ^ 1
+				: client.position;
+
+		const content = BufferToUTF16(message.data, message.data.length);
+		const chatMessage = Buffer.from(
+			new YGOProStocChat().fromPartial({ player_type: playerType, msg: content }).toFullPayload()
+		);
+
+		room.clients.forEach((_client: YgoClient) => {
+			_client.socket.send(chatMessage);
+		});
+	}
+
 	protected sendSystemErrorMessage(message: string, client: YgoClient): void {
-		client.socket.send(MercuryPlayerChatMessage.create(message));
+		client.socket.send(YGOProPlayerChatMessage.create(message));
 	}
 
 	protected sendSystemMessage(message: string, client: YgoClient): void {
-		client.socket.send(MercuryPlayerChatMessage.create(message));
+		client.socket.send(YGOProPlayerChatMessage.create(message));
 	}
 
 	private handleChat(message: ClientMessage, room: YgoRoom, client: YgoClient): void {
 		const sanitized = BufferToUTF16(message.data, message.data.length);
 		if (sanitized === ":score") {
-			client.socket.send(MercuryPlayerChatMessage.create(room.score));
+			client.socket.send(YGOProPlayerChatMessage.create(room.score));
 
 			return;
 		}
 
 		if (room.roomType === RoomType.MERCURY) {
+			this.handleMercuryChat(message, room as YGOProRoom, client);
 			return;
 		}
 
@@ -190,7 +210,7 @@ export abstract class RoomState {
 				client.name.replace(/\0/g, "").trim(),
 				message.data
 			);
-			room.clients.forEach((player: Client) => {
+			room.players.forEach((player: Client) => {
 				player.socket.send(chatMessage);
 			});
 
@@ -212,7 +232,7 @@ export abstract class RoomState {
 			Number(!client.team)
 		);
 
-		room.clients.forEach((player: YgoClient) => {
+		room.players.forEach((player: YgoClient) => {
 			const message = player.team === client.team ? playerMessage : opponentMessage;
 			player.socket.send(message);
 		});

@@ -1,5 +1,5 @@
 import RoomList from "../../../edopro/room/infrastructure/RoomList";
-import MercuryRoomList from "../../../mercury/room/infrastructure/MercuryRoomList";
+import MercuryRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import { YgoRoom } from "../domain/YgoRoom";
 
 export class RoomFinder {
@@ -7,7 +7,7 @@ export class RoomFinder {
 		const rooms = [...RoomList.getRooms(), ...MercuryRoomList.getRooms()];
 		let room: YgoRoom | null = null;
 		for (const item of rooms) {
-			const allClients = [...item.clients, ...item.spectators];
+			const allClients = [...item.players, ...item.spectators];
 			const found = allClients.find((client) => client.socket.id === socketId);
 			if (found) {
 				room = item;

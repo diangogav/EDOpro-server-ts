@@ -1,7 +1,7 @@
-import { PreReleasesMercurySQLiteTypeORM } from "src/shared/db/sqlite/infrastructure/PreReleasesMercurySQLiteTypeORM";
+import { PreReleasesYGOProSQLiteTypeORM } from "src/shared/db/sqlite/infrastructure/PreReleasesMercurySQLiteTypeORM";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 
-const database = new PreReleasesMercurySQLiteTypeORM();
+const database = new PreReleasesYGOProSQLiteTypeORM();
 const logger = LoggerFactory.getLogger();
 
 async function run() {

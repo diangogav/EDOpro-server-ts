@@ -27,7 +27,7 @@ export const config = {
       port: Number(process.env.HOST_PORT),
     },
     mercury: {
-      port: Number(process.env.MERCURY_PORT),
+      port: Number(process.env.YGOPRO_PORT),
     },
     http: {
       port: Number(process.env.HTTP_PORT),
@@ -37,4 +37,12 @@ export const config = {
       duelPort: Number(process.env.WEBSOCKET_DUEL_PORT) || 4001,
     },
   },
+  resources: {
+    ygopro: {
+      folders: process.env?.YGOPRO_FOLDERS?.split(",") ?? [],
+      extraDbFolders: process.env?.YGOPRO_EXTRA_DB_FOLDERS?.split(",") ?? [],
+      extraScripts: process.env?.YGOPRO_EXTRA_SCRIPTS?.split(",") ?? [],
+    }
+  },
+  sideTimeoutMinutes: Number(process.env.SIDE_TIMEOUT_MINUTES) || 3,
 };

@@ -15,7 +15,7 @@ This module handles the low-level socket connections and server initialization f
 ### 1. Connection Management (`src/socket-server/`)
 
 - **EDOPro**: Use `net.createServer()` for EDOPro clients.
-- **Mercury**: Use `new WebSocket.Server()` for Mercury clients.
+- **YGOPro**: Use `net.createServer()` for YGOPro-compatible clients (Koishi, YGO Mobile).
 - **Lifecycle**: Handle `connection`, `data`, `close`, `error` events robustly.
 
 ### 2. Dependency Injection
@@ -27,5 +27,5 @@ This module handles the low-level socket connections and server initialization f
 
 ### [SOP-SOCK-001] Modifying Connection Handling
 
-1.  **Modify Event Listener**: Update `on('data')` or `on('connection')` in `HostServer.ts` or `MercuryServer.ts`.
+1.  **Modify Event Listener**: Update `on('data')` or `on('connection')` in `HostServer.ts` or `YGOProServer.ts`.
 2.  **Buffers**: Ensure buffer parsing logic is correct for the protocol.

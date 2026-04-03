@@ -2,8 +2,8 @@ import { generateUniqueId } from "src/utils/generateUniqueId";
 import { EventEmitter } from "stream";
 
 import { Logger } from "../shared/logger/domain/Logger";
-import { Commands } from "./messages/domain/Commands";
-import { MessageProcessor } from "./messages/MessageProcessor";
+import { Commands } from "../shared/messages/Commands";
+import { MessageProcessor } from "../shared/messages/MessageProcessor";
 
 export class MessageEmitter {
 	private readonly messageProcessor: MessageProcessor;

@@ -2,7 +2,7 @@
 
 ## Context
 
-This is the **Core Domain** and **Common Infrastructure** layer. It contains entities, value objects, and shared logic used by all modules (EDOPro, Mercury, HTTP).
+This is the **Core Domain** and **Common Infrastructure** layer. It contains entities, value objects, and shared logic used by all modules (EDOPro, YGOPro, HTTP).
 
 ## Key Responsibilities
 

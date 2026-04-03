@@ -1,10 +1,11 @@
 import { EdoproBanList } from "../../../../../src/edopro/ban-list/domain/BanList";
 import BanListMemoryRepository from "../../../../../src/edopro/ban-list/infrastructure/BanListMemoryRepository";
-import { Card } from "../../../../../src/edopro/card/domain/Card";
-import { CardRepository } from "../../../../../src/edopro/card/domain/CardRepository";
-import { CardTypes } from "../../../../../src/edopro/card/domain/CardTypes";
+import { Card } from "../../../../../src/shared/card/domain/Card";
+import { CardRepository } from "../../../../../src/shared/card/domain/CardRepository";
+import { CardTypes } from "../../../../../src/shared/card/domain/CardTypes";
+import { Rule } from "../../../../../src/shared/deck/domain/Rule";
 import { DeckCreator } from "../../../../../src/edopro/deck/application/DeckCreator";
-import { DeckRules, Rule } from "../../../../../src/edopro/room/domain/Room";
+import { DeckRules } from "../../../../../src/shared/room/domain/YgoRoom";
 
 // Mock dependencies
 const mockCardRepository: jest.Mocked<CardRepository> = {

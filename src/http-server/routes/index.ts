@@ -6,7 +6,6 @@ import { Logger } from "../../shared/logger/domain/Logger";
 import { CreateRoomController } from "../controllers/CreateRoomController";
 import { GetRoomListController } from "../controllers/GetRoomListController";
 import { ServerMessagesController } from "../controllers/ServerMessagesController";
-import { SyncRepositoriesController } from "../controllers/SyncRepositoriesController";
 import { AuthAdminMiddleware } from "../middlewares/AuthAdminMiddleware";
 
 export function loadRoutes(app: Express, logger: Logger): void {
@@ -16,14 +15,6 @@ export function loadRoutes(app: Express, logger: Logger): void {
 
 	app.use("/api/admin", AuthAdminMiddleware);
 
-	app.post("/api/admin/sync", (req, res) => {
-		void new SyncRepositoriesController(logger).run(req, res);
-	});
-
-	app.get("/api/admin/sync", (req, res) => {
-		void new SyncRepositoriesController(logger).run(req, res);
-	});
-	 
 	app.post("/api/admin/message", async (req, res) => {
 		await new ServerMessagesController(logger).run(req, res);
 	});

@@ -76,7 +76,7 @@ describe("FinishDuelHandler", () => {
       stopRoomTimer: jest.fn(),
       stopTimer: jest.fn(),
       clearSpectatorCache: jest.fn(),
-      clients: [mockClient1, mockClient2],
+      players: [mockClient1, mockClient2],
       spectators: [mockSpectator],
       score: "0-0",
       firstToPlay: 0,

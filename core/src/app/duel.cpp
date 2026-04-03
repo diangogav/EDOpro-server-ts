@@ -60,7 +60,7 @@ void Duel::destroy()
 void Duel::load_scripts()
 {
   std::filesystem::path current_path = std::filesystem::current_path();
-  std::filesystem::path scripts_path = current_path / "scripts/evolution";
+  std::filesystem::path scripts_path = current_path / "resources/edopro/scripts";
   const char *path = scripts_path.c_str();
 
   std::vector<char> constants_buffer = this->file_reader.read(path, "constant.lua");

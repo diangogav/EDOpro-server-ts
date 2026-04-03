@@ -2,16 +2,16 @@ import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoM
 import { EventEmitter } from "stream";
 
 import { config } from "../../../config";
-import { MercuryRoom } from "../../../mercury/room/domain/MercuryRoom";
-import MercuryRoomList from "../../../mercury/room/infrastructure/MercuryRoomList";
+import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
+import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import { Redis } from "../../../shared/db/redis/infrastructure/Redis";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { JoinMessageHandler } from "../../../shared/room/domain/JoinMessageHandler";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { CheckIfUseCanJoin } from "../../../shared/user-auth/application/CheckIfUserCanJoin";
 import { JoinGameMessage } from "../../messages/client-to-server/JoinGameMessage";
-import { Commands } from "../../messages/domain/Commands";
-import { ClientMessage } from "../../messages/MessageProcessor";
+import { Commands } from "../../../shared/messages/Commands";
+import { ClientMessage } from "../../../shared/messages/MessageProcessor";
 import { ErrorMessages } from "../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientMessage";
 import { ServerErrorClientMessage } from "../../messages/server-to-client/ServerErrorMessageClientMessage";
@@ -36,11 +36,11 @@ export class JoinHandler implements JoinMessageHandler {
 		this.checkIfUseCanJoin = checkIfUseCanJoin;
 		this.eventEmitter.on(
 			Commands.JOIN_GAME as unknown as string,
-			(message: ClientMessage) => void this.handle(message)
+			(message: ClientMessage) => void this.handleJoinGame(message)
 		);
 	}
 
-	async handle(message: ClientMessage): Promise<void> {
+	async handleJoinGame(message: ClientMessage): Promise<void> {
 		this.logger.info("handle");
 		const joinMessage = new JoinGameMessage(message.data);
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
@@ -115,12 +115,12 @@ export class JoinHandler implements JoinMessageHandler {
 		room.emit("JOIN", message, this.socket);
 	}
 
-	private findRoom(joinMessage: JoinGameMessage): MercuryRoom | Room | null {
+	private findRoom(joinMessage: JoinGameMessage): YGOProRoom | Room | null {
 		const room = RoomList.getRooms().find((room) => room.id === joinMessage.id);
 		if (room) {
 			return room;
 		}
 
-		return MercuryRoomList.findById(joinMessage.id);
+		return YGOProRoomList.findById(joinMessage.id);
 	}
 }

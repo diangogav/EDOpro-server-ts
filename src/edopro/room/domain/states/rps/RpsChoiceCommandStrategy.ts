@@ -1,5 +1,5 @@
 import { Client } from "../../../../client/domain/Client";
-import { ClientMessage } from "../../../../messages/MessageProcessor";
+import { ClientMessage } from "../../../../../shared/messages/MessageProcessor";
 import { ChooseOrderClientMessage } from "../../../../messages/server-to-client/ChooseOrderClientMessage";
 import { RPSChooseClientMessage } from "../../../../messages/server-to-client/RPSChooseClientMessage";
 import { RPSResultClientMessage } from "../../../../messages/server-to-client/RPSResultClientMessage";
@@ -22,13 +22,13 @@ export class RpsChoiceCommandStrategy {
 
 		const body = message.data.readInt8() as keyof typeof NumberToChoose;
 		const choise = NumberToChoose[body] as Choose;
-		const player = room.clients.find((_client) => _client === client);
+		const player = room.players.find((_client) => _client === client);
 		if (!(player instanceof Client)) {
 			return;
 		}
 		player.setRpsChosen(choise);
 
-		const players = room.clients.filter((client: Client) => client.rpsChoise !== null);
+		const players = room.players.filter((client: Client) => client.rpsChoise !== null);
 
 		if (players.length < 2) {
 			return;
@@ -57,13 +57,13 @@ export class RpsChoiceCommandStrategy {
 			choise2: ChooseToNumber[playerOne.rpsChoise as keyof typeof ChooseToNumber],
 		});
 
-		room.clients.forEach((player: Client) => {
+		room.players.forEach((player: Client) => {
 			if (player.team === 0) {
 				player.sendMessage(team0Response);
 			}
 		});
 
-		room.clients.forEach((player: Client) => {
+		room.players.forEach((player: Client) => {
 			if (player.team === 1) {
 				player.sendMessage(team1Response);
 			}
@@ -73,7 +73,7 @@ export class RpsChoiceCommandStrategy {
 			spectator.sendMessage(team0Response);
 		});
 
-		room.clients.forEach((client: Client) => {
+		room.players.forEach((client: Client) => {
 			client.clearRpsChoise();
 		});
 
@@ -86,14 +86,14 @@ export class RpsChoiceCommandStrategy {
 			return;
 		}
 
-	const player0Turn = room.clients
-		.filter(p => p.team === 0)
-		.sort((a,b) => a.position - b.position)[0];
+		const player0Turn = room.players
+			.filter(p => p.team === 0)
+			.sort((a, b) => a.position - b.position)[0];
 
-	const player1Turn = room.clients
-		.filter(p => p.team === 1)
-		.sort((a,b) => a.position - b.position)[0];
-		
+		const player1Turn = room.players
+			.filter(p => p.team === 1)
+			.sort((a, b) => a.position - b.position)[0];
+
 		if (!player0Turn || !player1Turn) {
 			return;
 		}

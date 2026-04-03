@@ -1,6 +1,6 @@
 import { dataSource } from "../../../../shared/db/sqlite/infrastructure/data-source";
-import { Card } from "../../domain/Card";
-import { CardRepository } from "../../domain/CardRepository";
+import { Card } from "../../../../shared/card/domain/Card";
+import { CardRepository } from "../../../../shared/card/domain/CardRepository";
 import { CardEntity } from "./CardEntity";
 
 export class CardSQLiteTYpeORMRepository implements CardRepository {

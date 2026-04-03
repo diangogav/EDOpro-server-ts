@@ -1,5 +1,5 @@
- 
- 
+
+
 import EventEmitter from "events";
 
 import { Logger } from "../../../../../shared/logger/domain/Logger";
@@ -10,8 +10,8 @@ import { DeckCreator } from "../../../../deck/application/DeckCreator";
 import { UpdateDeckMessageParser } from "../../../../deck/application/UpdateDeckMessageSizeCalculator";
 import { JoinGameMessage } from "../../../../messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../../../messages/client-to-server/PlayerInfoMessage";
-import { Commands } from "../../../../messages/domain/Commands";
-import { ClientMessage } from "../../../../messages/MessageProcessor";
+import { Commands } from "../../../../../shared/messages/Commands";
+import { ClientMessage } from "../../../../../shared/messages/MessageProcessor";
 import { ChooseOrderClientMessage } from "../../../../messages/server-to-client/ChooseOrderClientMessage";
 import { ErrorMessages } from "../../../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../../../messages/server-to-client/ErrorClientMessage";
@@ -63,7 +63,7 @@ export class SideDeckingState extends RoomState {
 	): Promise<void> {
 		this.logger.info("SIDE_DECKING: EXPRESS_RECONNECT - START");
 		const token = message.data.toString("utf8");
-		
+
 		const entry = TokenIndex.getInstance().find(token);
 		if (!entry || !(entry.client instanceof Client) || entry.roomId !== room.id) {
 			this.logger.info(`SIDE_DECKING: Player not found for token ${token} or room mismatch`);
@@ -80,7 +80,7 @@ export class SideDeckingState extends RoomState {
 		const player = entry.client as Client;
 		this.logger.info(`SIDE_DECKING: MATCH! Reconnecting player ${player.name}`);
 
-		player.setSocket(socket, room.clients as Client[], room);
+		player.setSocket(socket, room.players as Client[], room);
 		player.reconnecting();
 
 		// Send success status
@@ -94,7 +94,7 @@ export class SideDeckingState extends RoomState {
 		// For Side-Decking, we just need to send the SideDeck message again
 		player.sendMessage(DuelStartClientMessage.create());
 		player.sendMessage(SideDeckClientMessage.create());
-		
+
 		const oldToken = player.reconnectionToken;
 		if (oldToken) {
 			TokenIndex.getInstance().unregister(oldToken);
@@ -132,7 +132,7 @@ export class SideDeckingState extends RoomState {
 		player.logger.info("SIDE_DECKING: UPDATE_DECK");
 		const parser = new UpdateDeckMessageParser(message.data);
 		const [mainDeck, sideDeck] = parser.getDeck();
-		if (!player.deck.isSideDeckValid(mainDeck)) {
+		if (!player.deck.isSideDeckValid(mainDeck, sideDeck)) {
 			const message = ErrorClientMessage.create(ErrorMessages.SIDE_ERROR);
 			player.sendMessage(message);
 
@@ -180,7 +180,7 @@ export class SideDeckingState extends RoomState {
 	private startDuel(room: Room): void {
 		this.logger.debug("START_DUEL");
 
-		const allClientsNotReady = room.clients.some((client: Client) => !client.isReady);
+		const allClientsNotReady = room.players.some((client: Client) => !client.isReady);
 		if (allClientsNotReady) {
 			return;
 		}

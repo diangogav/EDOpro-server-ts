@@ -7,10 +7,11 @@ import { dataSource } from "./data-source";
 
 export class EdoProSQLiteTypeORM implements Database {
 	private readonly dataSource: DataSource;
-	private readonly directoryPath = "./databases/evolution";
+	private readonly directoryPaths: string[];
 
-	constructor() {
+	constructor(directoryPaths?: string[]) {
 		this.dataSource = dataSource;
+		this.directoryPaths = directoryPaths ?? ["./resources/edopro/databases"];
 	}
 
 	async connect(): Promise<void> {
@@ -18,16 +19,12 @@ export class EdoProSQLiteTypeORM implements Database {
 	}
 
 	async initialize(): Promise<void> {
-		const files = await readdir(this.directoryPath);
-		const cdbFiles = files.filter((file) => file.endsWith(".cdb"));
-		await this.load(cdbFiles);
-	}
-
-	async load(cdbFiles: string[]): Promise<void> {
-		for (const file of cdbFiles) {
-			const filePath = join(this.directoryPath, file);
-			 
-			await this.merge(filePath);
+		for (const dirPath of this.directoryPaths) {
+			const files = await readdir(dirPath);
+			const cdbFiles = files.filter((file) => file.endsWith(".cdb"));
+			for (const file of cdbFiles) {
+				await this.merge(join(dirPath, file));
+			}
 		}
 	}
 

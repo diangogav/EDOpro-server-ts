@@ -1,43 +1,23 @@
-# Stage 1: Build CoreIntegrator
-FROM public.ecr.aws/docker/library/node:24.11.0-bullseye-slim AS core-integrator-builder
+# Stage 1: Clone repositories and assemble resources
+FROM public.ecr.aws/docker/library/node:24.11.0-bullseye-slim AS resources-builder
 
-# Install required dependencies
 RUN apt-get update -y && \
-    apt-get install -y --no-install-recommends \
-    wget tar git autoconf ca-certificates g++ \
-    m4 automake libtool pkg-config make tzdata \
-    cmake ninja-build unzip zip curl linux-libc-dev && \
+    apt-get install -y --no-install-recommends wget git ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /repositories
 
 # Clone required repositories
-RUN git clone --depth 1 --branch master https://github.com/ProjectIgnis/CardScripts.git scripts && \
-    git clone --depth 1 --branch master https://github.com/ProjectIgnis/BabelCDB.git databases && \
-    git clone --depth 1 --branch master https://github.com/ProjectIgnis/LFLists banlists-project-ignis && \
-    git clone --depth 1 --branch master https://github.com/Fluorohydride/ygopro-scripts mercury-scripts && \
-    git clone --depth 1 --branch master https://github.com/evolutionygo/pre-release-database-cdb mercury-prerelases && \
-    git clone --depth 1 --branch main https://github.com/evolutionygo/cards-art-server mercury-arts && \
-    git clone --depth 1 --branch main https://github.com/termitaklk/lflist banlists-evolution && \
-    git clone --depth 1 --branch main https://github.com/evolutionygo/server-formats-cdb.git alternatives && \
-    wget -O mercury-lflist.conf https://raw.githubusercontent.com/termitaklk/koishi-Iflist/main/lflist.conf && \
-    wget -O mercury-cards.cdb https://github.com/purerosefallen/ygopro/raw/server/cards.cdb
-
-# Prepare banlists and pre-releases folder
-RUN mkdir banlists mercury-pre-releases-cdbs && \
-    mv banlists-project-ignis/* banlists/ && \
-    mv banlists-evolution/* banlists/ && \
-    find mercury-prerelases mercury-arts -name "*.cdb" -exec cp {} mercury-pre-releases-cdbs/ \;
-
-# Copy binary and setup directories
-COPY ./mercury/ygopro .
-
-# Copy scripts and binaries into each alternative directory
-RUN for dir in ./alternatives/*/; do \
-    echo "$dir/script"; \
-    cp -r ./mercury-scripts/* "$dir/script"; \
-    cp ygopro "$dir"; \
-    done
+RUN git clone --depth 1 --branch master https://github.com/ProjectIgnis/CardScripts.git edopro-card-scripts && \
+    git clone --depth 1 --branch master https://github.com/ProjectIgnis/BabelCDB.git edopro-card-databases && \
+    git clone --depth 1 --branch master https://github.com/ProjectIgnis/LFLists edopro-banlists-ignis && \
+    git clone --depth 1 --branch main https://github.com/termitaklk/lflist edopro-banlists-evolution && \
+    git clone --depth 1 https://code.moenext.com/nanahira/ygopro-scripts ygopro-scripts && \
+    git clone --depth 1 --branch master https://github.com/evolutionygo/pre-release-database-cdb ygopro-prereleases-cdb && \
+    git clone --depth 1 --branch main https://github.com/evolutionygo/cards-art-server ygopro-cards-art && \
+    git clone --depth 1 --branch main https://github.com/evolutionygo/server-formats-cdb.git ygopro-format-alternatives && \
+    wget -O ygopro-lflist.conf https://cdntx.moecube.com/ygopro-database/zh-CN/lflist.conf && \
+    wget -O ygopro-cards.cdb https://cdntx.moecube.com/ygopro-database/zh-CN/cards.cdb
 
 # Copy selected banlists into corresponding alternative folders
 RUN bash -c 'set -e; \
@@ -54,56 +34,75 @@ RUN bash -c 'set -e; \
     ["Genesys"]="genesys" \
     ); \
     for name in "${!MAP[@]}"; do \
-    cp "./banlists/${name}.lflist.conf" "./alternatives/${MAP[$name]}/lflist.conf"; \
+    src="./edopro-banlists-evolution/${name}.lflist.conf"; \
+    [ -f "$src" ] || src="./edopro-banlists-ignis/${name}.lflist.conf"; \
+    cp "$src" "./ygopro-format-alternatives/${MAP[$name]}/lflist.conf"; \
     done'
+
+# Assemble final resources structure and strip .git dirs
+RUN find . -name ".git" -type d -exec rm -rf {} + 2>/dev/null; \
+    mkdir -p /resources/edopro \
+             /resources/ygopro/base \
+             /resources/ygopro/ocg && \
+    \
+    # ── edopro ── \
+    cp -r edopro-card-scripts /resources/edopro/scripts && \
+    cp -r edopro-card-databases /resources/edopro/databases && \
+    cp -r edopro-banlists-ignis /resources/edopro/banlists-ignis && \
+    cp -r edopro-banlists-evolution /resources/edopro/banlists-evolution && \
+    \
+    # ── ygopro (each repo as its own independent folder) ── \
+    cp -r ygopro-scripts /resources/ygopro/base/script && \
+    cp ygopro-lflist.conf /resources/ygopro/base/lflist.conf && \
+    cp ygopro-cards.cdb /resources/ygopro/base/cards.cdb && \
+    cp -r ygopro-prereleases-cdb /resources/ygopro/prereleases-cdb && \
+    cp -r ygopro-cards-art /resources/ygopro/cards-art && \
+    cp -r ygopro-format-alternatives /resources/ygopro/alternatives && \
+    cp edopro-banlists-ignis/OCG.lflist.conf /resources/ygopro/ocg/lflist.conf
+
+
+# Stage 2: Build CoreIntegrator (C++)
+FROM public.ecr.aws/docker/library/node:24.11.0-bullseye-slim AS core-builder
+
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends \
+    g++ make cmake pkg-config \
+    libboost-system-dev \
+    libsqlite3-dev \
+    libjsoncpp-dev \
+    nlohmann-json3-dev \
+    libcurl4-openssl-dev && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Clone and bootstrap Vcpkg
-RUN git clone https://github.com/microsoft/vcpkg.git && \
-    ./vcpkg/bootstrap-vcpkg.sh
-
-# Copy CoreIntegrator source
 COPY ./core .
 
-# Install dependencies and build the application
-# Note: we disable the internal vcpkg build of the build script to rely on the docker environment's vcpkg if needed,
-# but the build script effectively does the same. ideally we can just run the cmake commands directly here
-# to avoid re-cloning vcpkg or issues with the script's path logic.
-RUN ./vcpkg/vcpkg install --triplet x64-linux && \
-    cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release && \
+RUN cmake -B build -S . -DCMAKE_BUILD_TYPE=Release && \
     cmake --build build
 
-# Stage 2: Build Node.js server
-FROM public.ecr.aws/docker/library/node:24.11.0-bullseye AS server-builder
 
-ENV USER=node
+# Stage 3: Build Node.js server
+FROM public.ecr.aws/docker/library/node:24.11.0-bullseye AS server-builder
 
 WORKDIR /server
 
-# Install dependencies
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Clone shared types
 RUN git clone --depth 1 https://github.com/diangogav/evolution-types.git ./src/evolution-types
 
-# Copy server source and build
 COPY . .
-COPY --from=core-integrator-builder /repositories/mercury-pre-releases-cdbs ./databases/mercury-pre-releases
-COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./databases/mercury-pre-releases
 
-RUN npm run generate-mercury-pre-releases-cdb && \
-    npm run build && \
+RUN npm run build && \
     npm prune --production
 
 
-# Stage 3: Final image
+# Stage 4: Final image
 FROM public.ecr.aws/docker/library/node:24.11.0-slim
 
-# Install runtime dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl git wget liblua5.3-dev libsqlite3-dev libevent-dev dumb-init && \
+    apt-get install -y --no-install-recommends curl liblua5.3-dev libsqlite3-dev libevent-dev dumb-init && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -112,46 +111,12 @@ WORKDIR /app
 COPY --from=server-builder /server/dist ./
 COPY --from=server-builder /server/package.json ./package.json
 COPY --from=server-builder /server/node_modules ./node_modules
-COPY --from=server-builder /server/mercury ./mercury
 
 # CoreIntegrator binaries
-COPY --from=core-integrator-builder /app/libocgcore.so ./core/libocgcore.so
-COPY --from=core-integrator-builder /app/CoreIntegrator ./core/CoreIntegrator
+COPY --from=core-builder /app/libocgcore.so ./core/libocgcore.so
+COPY --from=core-builder /app/CoreIntegrator ./core/CoreIntegrator
 
-# Evolution Resources
-COPY --from=core-integrator-builder /repositories/scripts ./scripts/evolution/
-COPY --from=core-integrator-builder /repositories/databases ./databases/evolution/
-COPY --from=core-integrator-builder /repositories/mercury-pre-releases-cdbs ./databases/mercury-pre-releases
-COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./databases/mercury-pre-releases
-COPY --from=core-integrator-builder /repositories/banlists ./banlists/evolution/
+# All resources (assembled in Stage 1)
+COPY --from=resources-builder /resources ./resources
 
-# Mercury
-COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/script
-COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/lflist.conf
-COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/cards.cdb
-COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/alternatives/md/cards.cdb
-COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/alternatives/genesys/cards.cdb
-
-# Mercury Pre-releases
-COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/pre-releases/tcg/script
-COPY --from=core-integrator-builder /repositories/mercury-lflist.conf ./mercury/pre-releases/tcg/lflist.conf
-COPY --from=core-integrator-builder /repositories/mercury-prerelases/script/ ./mercury/pre-releases/tcg/script/
-COPY --from=core-integrator-builder /repositories/mercury-arts/script/ ./mercury/pre-releases/tcg/script/
-
-COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/pre-releases/ocg/script
-COPY --from=server-builder /server/mercury/pre-releases/tcg/cards.cdb ./mercury/pre-releases/ocg/cards.cdb
-COPY --from=core-integrator-builder /repositories/banlists/OCG.lflist.conf ./mercury/pre-releases/ocg/lflist.conf
-COPY --from=core-integrator-builder /repositories/mercury-prerelases/script/ ./mercury/pre-releases/ocg/script/
-COPY --from=core-integrator-builder /repositories/mercury-arts/script/ ./mercury/pre-releases/ocg/script/
-
-# Mercury OCG
-COPY --from=core-integrator-builder /repositories/mercury-scripts ./mercury/ocg/script
-COPY --from=core-integrator-builder /repositories/banlists/OCG.lflist.conf ./mercury/ocg/lflist.conf
-COPY --from=core-integrator-builder /repositories/mercury-cards.cdb ./mercury/ocg/cards.cdb
-COPY --from=core-integrator-builder /repositories/ygopro ./mercury/ocg/ygopro
-
-# Mercury Alternatives
-COPY --from=core-integrator-builder /repositories/alternatives ./mercury/alternatives/
-
-# USER node
 CMD ["dumb-init", "node", "./src/index.js"]

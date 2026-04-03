@@ -31,11 +31,11 @@ export class JoinToDuelAsSpectator {
 
 		spectator.sendMessage(CatchUpClientMessage.create({ catchingUp: false }));
 
-		const team0 = room.clients
+		const team0 = room.players
 			.filter((player: Client) => player.team === 0)
 			.map((item) => item.name.replace(/\0/g, "").trim());
 
-		const team1 = room.clients
+		const team1 = room.players
 			.filter((player: Client) => player.team === 1)
 			.map((item) => item.name.replace(/\0/g, "").trim());
 
@@ -44,13 +44,12 @@ export class JoinToDuelAsSpectator {
 		);
 		socket.send(
 			ServerMessageClientMessage.create(
-				`Score: ${team0.join(",")}: ${room.matchScore().team0} vs ${team1.join(",")}: ${
-					room.matchScore().team1
+				`Score: ${team0.join(",")}: ${room.matchScore().team0} vs ${team1.join(",")}: ${room.matchScore().team1
 				}`
 			)
 		);
 
-		[...room.clients, ...room.spectators].forEach((_client: Client) => {
+		[...room.players, ...room.spectators].forEach((_client: Client) => {
 			_client.sendMessage(
 				ServerMessageClientMessage.create(
 					`${spectator.name} ${ServerInfoMessage.HAS_ENTERED_AS_A_SPECTATOR}`

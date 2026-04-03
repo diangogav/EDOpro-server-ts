@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { ServerMessageClientMessage } from "../../edopro/messages/server-to-client/ServerMessageClientMessage";
 import RoomList from "../../edopro/room/infrastructure/RoomList";
-import MercuryRoomList from "../../mercury/room/infrastructure/MercuryRoomList";
+import MercuryRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import { Logger } from "../../shared/logger/domain/Logger";
 
 export const ServerMessageSchema = z.object({
@@ -14,7 +14,7 @@ export const ServerMessageSchema = z.object({
 export type CreateMessageRequest = z.infer<typeof ServerMessageSchema>;
 
 export class ServerMessagesController {
-  constructor(private readonly logger: Logger) {}
+  constructor(private readonly logger: Logger) { }
 
   async run(req: Request, response: Response): Promise<void> {
     const validation = ServerMessageSchema.safeParse(req.body);
@@ -30,7 +30,7 @@ export class ServerMessagesController {
     const payload = validation.data;
     const rooms = [...RoomList.getRooms(), ...MercuryRoomList.getRooms()];
     for (const room of rooms) {
-      const allClients = [...room.clients, ...room.spectators];
+      const allClients = [...room.players, ...room.spectators];
       for (const client of allClients) {
         const socket = client.socket;
         socket.send(

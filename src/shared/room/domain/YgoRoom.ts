@@ -1,15 +1,56 @@
-import { PlayerData } from "src/shared/player/domain/PlayerData";
-import { Duel } from "src/shared/room/Duel";
-import { Team } from "src/shared/room/Team";
+import { PlayerData } from "@shared/player/domain/PlayerData";
+import { Duel } from "@shared/room/Duel";
+import { Team } from "@shared/room/Team";
 import { EventEmitter } from "stream";
 
 import { Client } from "../../../edopro/client/domain/Client";
-import { MercuryClient } from "../../../mercury/client/domain/MercuryClient";
+import { YGOProClient } from "@ygopro/client/domain/YGOProClient";
 import { YgoClient } from "../../client/domain/YgoClient";
 import { ISocket } from "../../socket/domain/ISocket";
 import { Mutex } from "async-mutex";
 import { Match } from "./match/domain/Match";
 import { RoomType } from "./RoomType";
+import { Rule } from "@shared/deck/domain/Rule";
+
+export class DeckRules {
+	public readonly mainMin: number;
+	public readonly mainMax: number;
+	public readonly extraMin: number;
+	public readonly extraMax: number;
+	public readonly sideMin: number;
+	public readonly sideMax: number;
+	public readonly rule: Rule;
+	public readonly maxDeckPoints: number;
+
+	constructor({
+		mainMin,
+		mainMax,
+		extraMin,
+		extraMax,
+		sideMin,
+		sideMax,
+		rule,
+		maxDeckPoints,
+	}: {
+		mainMin: number;
+		mainMax: number;
+		extraMin: number;
+		extraMax: number;
+		sideMin: number;
+		sideMax: number;
+		rule: number;
+		maxDeckPoints?: number;
+	}) {
+		this.mainMin = mainMin;
+		this.mainMax = mainMax;
+		this.extraMin = extraMin;
+		this.extraMax = extraMax;
+		this.sideMin = sideMin;
+		this.sideMax = sideMax;
+		this.rule = rule;
+		this.maxDeckPoints = maxDeckPoints ?? 100;
+	}
+}
 
 export enum DuelState {
 	WAITING = "waiting",
@@ -35,7 +76,7 @@ export abstract class YgoRoom {
 	protected emitter: EventEmitter;
 	protected _state: DuelState;
 	protected _spectatorCache: Buffer[] = [];
-	protected _clients: YgoClient[] = [];
+	protected _players: YgoClient[] = [];
 	protected _spectators: YgoClient[] = [];
 	protected _clientWhoChoosesTurn: YgoClient;
 	protected _match: Match | null;
@@ -75,11 +116,13 @@ export abstract class YgoRoom {
 		this.roomType = roomType;
 	}
 
+	abstract shouldValidateDeck(): boolean;
+
 	emit(event: string, message: unknown, socket: ISocket): void {
 		this.emitter.emit(event, message, this, socket);
 	}
 
-	emitRoomEvent(event: string, message: unknown, client: Client | MercuryClient): void {
+	emitRoomEvent(event: string, message: unknown, client?: Client | YGOProClient): void {
 		this.emitter.emit(event, message, this, client);
 	}
 
@@ -97,7 +140,7 @@ export abstract class YgoRoom {
 
 	removePlayer(player: YgoClient): void {
 		this.mutex.runExclusive(() => {
-			this._clients = this._clients.filter((item) => item.socket.id !== player.socket.id);
+			this._players = this._players.filter((item) => item.socket.id !== player.socket.id);
 		});
 	}
 
@@ -106,7 +149,7 @@ export abstract class YgoRoom {
 			return;
 		}
 
-		const ips = this._clients.map((client) => ({
+		const ips = this._players.map((client) => ({
 			name: client.name,
 			ipAddress: client.socket.remoteAddress ?? null,
 		}));
@@ -118,12 +161,16 @@ export abstract class YgoRoom {
 		return this._match?.playersHistory ?? [];
 	}
 
-	get clients(): YgoClient[] {
-		return this._clients;
+	get players(): YgoClient[] {
+		return this._players;
 	}
 
 	get spectators(): YgoClient[] {
 		return this._spectators;
+	}
+
+	get clients(): YgoClient[] {
+		return [...this._players, ...this._spectators];
 	}
 
 	async calculatePlace(startPosition?: number): Promise<{ position: number; team: number } | null> {
@@ -133,7 +180,7 @@ export abstract class YgoRoom {
 	}
 
 	calculatePlaceUnsafe(startPosition?: number): { position: number; team: number } | null {
-		const team0 = this.clients
+		const team0 = this.players
 			.filter((client: Client) => client.team === 0)
 			.map((client) => client.position);
 
@@ -149,7 +196,7 @@ export abstract class YgoRoom {
 			}
 		}
 
-		const team1 = this.clients
+		const team1 = this.players
 			.filter((client: Client) => client.team === 1)
 			.map((client) => client.position);
 
@@ -182,7 +229,7 @@ export abstract class YgoRoom {
 	}
 
 	initializeHistoricalData(): void {
-		const players = this._clients.map((client: Client) => ({
+		const players = this._players.map((client: Client) => ({
 			id: client.id,
 			team: client.team,
 			name: client.name,
@@ -215,7 +262,7 @@ export abstract class YgoRoom {
 	}
 
 	playerNames(team: number): string {
-		return this.clients
+		return this.players
 			.filter((player: Client) => player.team === team)
 			.map((item: Client) => `${item.name}`)
 			.join(",");
@@ -225,6 +272,14 @@ export abstract class YgoRoom {
 		this.mutex.runExclusive(() => {
 			this.currentDuel = new Duel(this.STARTING_TURN, [this.startLp, this.startLp], banListName);
 		});
+	}
+
+	isFinished(): boolean {
+		return this.currentDuel?.isFinished ?? false;
+	}
+
+	finished(): void {
+		this.currentDuel?.finished();
 	}
 
 	decreaseLps(team: Team, value: number): void {
@@ -256,6 +311,10 @@ export abstract class YgoRoom {
 			} ${this.playerNames(1)}`;
 	}
 
+	get allPlayersReady(): boolean {
+		return !this._players.some((client) => !client.isReady)
+	}
+
 	isFirstDuel(): boolean {
 		return this._match?.isFirstDuel() ?? true;
 	}
@@ -268,7 +327,7 @@ export abstract class YgoRoom {
 			banList: {
 				name: this.currentDuel?.banListName,
 			},
-			players: this.clients.map((client: Client) => ({
+			players: this.players.map((client: Client) => ({
 				position: client.position,
 				username: client.name,
 				lps: this.currentDuel?.lps[client.team],
@@ -295,11 +354,61 @@ export abstract class YgoRoom {
 		return a.filter((item) => !b.includes(item));
 	}
 
-	protected removePlayerUnsafe(player: Client): void {
-		this._clients = this._clients.filter((item) => item.socket.id !== player.socket.id);
+	protected removePlayerUnsafe(player: YgoClient): void {
+		this._players = this._players.filter((item) => item.socket.id !== player.socket.id);
+	}
+
+	protected nextAvailablePosition(position: number): { position: number; team: number } | null {
+		const positions = [...this.t1Positions, ...this.t0Positions].sort((a, b) => a - b);
+		const occupiedPositions = this.players.map((client) => client.position);
+		const difference = this.getDifference(positions, occupiedPositions);
+		if (difference.length === 0) {
+			return null;
+		}
+
+		const nextPositions = difference.filter((item) => item > position);
+
+		if (nextPositions.length > 0) {
+			const isTeam0 = this.t0Positions.find((pos) => pos === nextPositions[0]);
+			if (isTeam0 !== undefined) {
+				return {
+					position: nextPositions[0],
+					team: 0,
+				};
+			}
+
+			return {
+				position: nextPositions[0],
+				team: 1,
+			};
+		}
+
+		const isTeam0 = this.t0Positions.find((pos) => pos === positions[0]);
+		if (isTeam0 !== undefined) {
+			return {
+				position: difference[0],
+				team: 0,
+			};
+		}
+
+		return {
+			position: difference[0],
+			team: 1,
+		};
 	}
 
 	findPlayerByToken(token: string): YgoClient | undefined {
-		return this._clients.find((client) => client.reconnectionToken === token);
+		return this._players.find((client) => client.reconnectionToken === token);
+	}
+
+	removeSpectator(spectator: YgoClient): void {
+		this.mutex.runExclusive(() => {
+			this.removeSpectatorUnsafe(spectator);
+		});
+	}
+
+	removeSpectatorUnsafe(spectator: YgoClient): void {
+		const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
+		this._spectators = filtered;
 	}
 }

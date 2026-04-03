@@ -4,7 +4,7 @@ import { DataSource, DataSourceOptions } from "typeorm";
 
 const options: DataSourceOptions = {
 	type: "better-sqlite3",
-	database: "jtp_evolution_cards.db",
+	database: "evolution_cards.db",
 	synchronize: true,
 	logging: false,
 	entities: [CardEntity, CardTextEntity],
@@ -14,7 +14,7 @@ const options: DataSourceOptions = {
 
 const mercuryOptions: DataSourceOptions = {
 	type: "better-sqlite3",
-	database: "./mercury/pre-releases/tcg/cards.cdb",
+	database: "./resources/ygopro/prereleases/tcg/cards.cdb",
 	synchronize: true,
 	logging: false,
 	entities: [CardEntity, CardTextEntity],

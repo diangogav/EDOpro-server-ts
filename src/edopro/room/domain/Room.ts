@@ -9,17 +9,17 @@ import { EventEmitter } from "stream";
 
 import { config } from "../../../config";
 import { Logger } from "../../../shared/logger/domain/Logger";
-import { DuelState, YgoRoom } from "../../../shared/room/domain/YgoRoom";
+import { DeckRules, DuelState, YgoRoom } from "../../../shared/room/domain/YgoRoom";
 import { Team } from "../../../shared/room/Team";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { CardSQLiteTYpeORMRepository } from "../../card/infrastructure/sqlite/CardSQLiteTYpeORMRepository";
 import { Client } from "../../client/domain/Client";
 import { DeckCreator } from "../../deck/application/DeckCreator";
-import { Deck } from "../../deck/domain/Deck";
+import { Deck } from "../../../shared/deck/domain/Deck";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
 import { JSONMessageProcessor } from "../../messages/JSONMessageProcessor";
-import { MessageProcessor } from "../../messages/MessageProcessor";
+import { MessageProcessor } from "../../../shared/messages/MessageProcessor";
 import { Replay } from "../../replay/Replay";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
 import { FinishDuelHandler } from "../application/FinishDuelHandler";
@@ -38,14 +38,6 @@ import { WaitingState } from "./states/waiting/WaitingState";
 import { Timer } from "./Timer";
 import { RoomType } from "src/shared/room/domain/RoomType";
 
-export enum Rule {
-	ONLY_OCG,
-	ONLY_TCG,
-	OCG_TCG,
-	PRE_RELEASE,
-	ALL,
-}
-
 type IpcMetricsSnapshot = {
 	uptimeMs: number;
 	queueDepth: number;
@@ -62,45 +54,6 @@ type IpcMetricsSnapshot = {
 	deferredProcessTicks: number;
 };
 
-export class DeckRules {
-	public readonly mainMin: number;
-	public readonly mainMax: number;
-	public readonly extraMin: number;
-	public readonly extraMax: number;
-	public readonly sideMin: number;
-	public readonly sideMax: number;
-	public readonly rule: Rule;
-	public readonly maxDeckPoints: number;
-
-	constructor({
-		mainMin,
-		mainMax,
-		extraMin,
-		extraMax,
-		sideMin,
-		sideMax,
-		rule,
-		maxDeckPoints,
-	}: {
-		mainMin: number;
-		mainMax: number;
-		extraMin: number;
-		extraMax: number;
-		sideMin: number;
-		sideMax: number;
-		rule: number;
-		maxDeckPoints?: number;
-	}) {
-		this.mainMin = mainMin;
-		this.mainMax = mainMax;
-		this.extraMin = extraMin;
-		this.extraMax = extraMax;
-		this.sideMin = sideMin;
-		this.sideMax = sideMax;
-		this.rule = rule;
-		this.maxDeckPoints = maxDeckPoints ?? 100;
-	}
-}
 export interface RoomAttr {
 	id: number;
 	name: string;
@@ -259,7 +212,7 @@ export class Room extends YgoRoom {
 			new UserAuth(new UserProfilePostgresRepository())
 		);
 		this.notifier = new RoomClientNotifier(
-			() => this._clients as Client[],
+			() => this._players as Client[],
 			() => this._spectators as Client[]
 		);
 	}
@@ -332,6 +285,10 @@ export class Room extends YgoRoom {
 		return false;
 	}
 
+	shouldValidateDeck(): boolean {
+		return !this.noCheck;
+	}
+
 	resetReplay(): void {
 
 		if (this._replay) {
@@ -357,7 +314,7 @@ export class Room extends YgoRoom {
 	}
 
 	createPlayerUnsafe(socket: ISocket, name: string, userId: string | null): Client | null {
-		const host = this._clients.some((client: Client) => client.host);
+		const host = this._players.some((client: Client) => client.host);
 		const place = this.calculatePlaceUnsafe();
 
 		if (!place) {
@@ -385,7 +342,7 @@ export class Room extends YgoRoom {
 	}
 
 	addPlayerUnsafe(client: Client): void {
-		this._clients.push(client);
+		this._players.push(client);
 		client.socket.roomId = this.id;
 
 		this.notifier.sendPlayerEnter(client, { position: client.position, team: client.team });
@@ -479,7 +436,7 @@ export class Room extends YgoRoom {
 			return;
 		}
 		this.removeSpectatorUnsafe(player);
-		this._clients.push(player);
+		this._players.push(player);
 		this.notifier.sendPlayerEnter(player, place);
 		this.notifier.sendPlayerChange(player, PlayerRoomState.NOT_READY);
 		this.sendSpectatorCount({ enqueue: false });
@@ -504,17 +461,6 @@ export class Room extends YgoRoom {
 		this.notifier.sendPlayerChange(player, PlayerRoomState.NOT_READY);
 		player.playerPosition(nextPlace.position, nextPlace.team);
 		this.notifier.sendTypeChange(player);
-	}
-
-	removeSpectator(spectator: Client): void {
-		this.mutex.runExclusive(() => {
-			this.removeSpectatorUnsafe(spectator);
-		});
-	}
-
-	removeSpectatorUnsafe(spectator: Client): void {
-		const filtered = this._spectators.filter((item) => item.socket.id !== spectator.socket.id);
-		this._spectators = filtered;
 	}
 	//********************************************************************************************* */
 	//**********************************END CLIENTS CRUD******************************************* */
@@ -551,7 +497,7 @@ export class Room extends YgoRoom {
 	}
 
 	get allPlayersReady(): boolean {
-		return this._clients.every((player) => player.isReady);
+		return this._players.every((player) => player.isReady);
 	}
 
 	get kick(): Client[] {
@@ -572,7 +518,7 @@ export class Room extends YgoRoom {
 	}
 
 	setDecksToPlayerUnsafe(position: number, deck: Deck): void {
-		const client = this._clients.find((client) => client.position === position);
+		const client = this._players.find((client) => client.position === position);
 		if (!client || !(client instanceof Client)) {
 			return;
 		}
@@ -691,20 +637,20 @@ export class Room extends YgoRoom {
 		}
 
 		if (position !== null) {
-			const player = this.clients.find((client: Client) => client.position === position);
+			const player = this.players.find((client: Client) => client.position === position);
 			player?.setLastMessage(message);
 
 			return;
 		}
 
 		if (!all) {
-			const player = this.clients.find((client: Client) => client.team === team && client.inTurn);
+			const player = this.players.find((client: Client) => client.team === team && client.inTurn);
 			player?.setLastMessage(message);
 
 			return;
 		}
 
-		const players = this.clients.filter((client: Client) => client.team === team);
+		const players = this.players.filter((client: Client) => client.team === team);
 		players.forEach((player: Client) => {
 			player.setLastMessage(message);
 		});
@@ -741,11 +687,11 @@ export class Room extends YgoRoom {
 	}
 
 	prepareTurnOrder(): void {
-		const team0Players = this.clients
+		const team0Players = this.players
 			.filter(p => p.team === 0)
 			.sort((a, b) => a.position - b.position) as Client[];
 
-		const team1Players = this.clients
+		const team1Players = this.players
 			.filter(p => p.team === 1)
 			.sort((a, b) => a.position - b.position) as Client[];
 
@@ -767,12 +713,12 @@ export class Room extends YgoRoom {
 		team1Players.find(p => p.duelPosition === 0)?.turn();
 
 
-		this.clients.forEach((element: Client) => {
+		this.players.forEach((element: Client) => {
 		})
 	}
 
 	nextTurn(team: number): void {
-		const teamPlayers = (this.clients as Client[])
+		const teamPlayers = (this.players as Client[])
 			.filter(p => p.team === team)
 			.sort((a: Client, b: Client) => a.duelPosition - b.duelPosition);
 
@@ -856,14 +802,6 @@ export class Room extends YgoRoom {
 		this.ipcMetrics.deferredProcessTicks += 1;
 	}
 
-	isFinished(): boolean {
-		return this.currentDuel?.isFinished ?? false;
-	}
-
-	finished(): void {
-		this.currentDuel?.finished();
-	}
-
 	setLastPhaseMessage(message: Buffer): void {
 		this._lastPhase = message;
 	}
@@ -900,7 +838,7 @@ export class Room extends YgoRoom {
 			extra_max: this.deckRules.extraMax,
 			side_min: this.deckRules.sideMin,
 			side_max: this.deckRules.sideMax,
-			users: this.clients.map((player) => ({
+			users: this.players.map((player) => ({
 				name: player.name.replace(/\0/g, "").trim(),
 				pos: player.position,
 			})),
@@ -924,7 +862,7 @@ export class Room extends YgoRoom {
 				);
 			}
 
-			this._clients.forEach((client: Client) => {
+			this._players.forEach((client: Client) => {
 				client.socket.destroy();
 			});
 			this._spectators.forEach((client) => {
@@ -941,10 +879,10 @@ export class Room extends YgoRoom {
 	}
 
 	notifyToAllLobbyClients(client: Client): void {
-		this._clients.forEach((_client) => {
+		this._players.forEach((_client) => {
 			if (_client.socket.id !== client.socket.id) {
 				const status = (<Client | undefined>(
-					this._clients.find((item: Client) => item.position === _client.position)
+					this._players.find((item: Client) => item.position === _client.position)
 				))?.isReady
 					? (_client.position << 4) | PlayerRoomState.READY
 					: (_client.position << 4) | PlayerRoomState.NOT_READY;
@@ -957,7 +895,7 @@ export class Room extends YgoRoom {
 
 	notifyToAllPlayers(client: Client): void {
 		this.mutex.runExclusive(() => {
-			this._clients.forEach((item) => {
+			this._players.forEach((item) => {
 				const status = (item.position << 4) | 0x09;
 				client.sendMessage(PlayerEnterClientMessage.create(item.name, item.position));
 				client.sendMessage(PlayerChangeClientMessage.create({ status }));
@@ -980,45 +918,6 @@ export class Room extends YgoRoom {
 		return this.mutex.runExclusive(() => {
 			return this.nextSpectatorPositionUnsafe();
 		});
-	}
-
-	private nextAvailablePosition(position: number): { position: number; team: number } | null {
-		const positions = [...this.t1Positions, ...this.t0Positions].sort((a, b) => a - b);
-		const occupiedPositions = this.clients.map((client) => client.position);
-		const difference = this.getDifference(positions, occupiedPositions);
-		if (difference.length === 0) {
-			return null;
-		}
-
-		const nextPositions = difference.filter((item) => item > position);
-
-		if (nextPositions.length > 0) {
-			const isTeam0 = this.t0Positions.find((pos) => pos === nextPositions[0]);
-			if (isTeam0 !== undefined) {
-				return {
-					position: nextPositions[0],
-					team: 0,
-				};
-			}
-
-			return {
-				position: nextPositions[0],
-				team: 1,
-			};
-		}
-
-		const isTeam0 = this.t0Positions.find((pos) => pos === positions[0]);
-		if (isTeam0 !== undefined) {
-			return {
-				position: difference[0],
-				team: 0,
-			};
-		}
-
-		return {
-			position: difference[0],
-			team: 1,
-		};
 	}
 
 	private flushCppMessageQueue(): void {
