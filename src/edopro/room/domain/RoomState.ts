@@ -24,7 +24,7 @@ import { SpectatorMessageClientMessage } from "../../messages/server-to-client/S
 import { VersionErrorClientMessage } from "../../messages/server-to-client/VersionErrorClientMessage";
 import { RoomType } from "src/shared/room/domain/RoomType";
 import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
-import { YGOProStocSelectHand } from "ygopro-msg-encode";
+import { NetPlayerType, YGOProStocChat, YGOProStocSelectHand } from "ygopro-msg-encode";
 
 export abstract class RoomState {
 	protected readonly eventEmitter: EventEmitter;
@@ -167,6 +167,23 @@ export abstract class RoomState {
 		}
 	}
 
+	private handleMercuryChat(message: ClientMessage, room: YGOProRoom, client: YgoClient): void {
+		const playerType = client.isSpectator
+			? NetPlayerType.OBSERVER
+			: room.isPositionSwapped
+				? client.position ^ 1
+				: client.position;
+
+		const content = BufferToUTF16(message.data, message.data.length);
+		const chatMessage = Buffer.from(
+			new YGOProStocChat().fromPartial({ player_type: playerType, msg: content }).toFullPayload()
+		);
+
+		room.clients.forEach((_client: YgoClient) => {
+			_client.socket.send(chatMessage);
+		});
+	}
+
 	protected sendSystemErrorMessage(message: string, client: YgoClient): void {
 		client.socket.send(YGOProPlayerChatMessage.create(message));
 	}
@@ -184,6 +201,7 @@ export abstract class RoomState {
 		}
 
 		if (room.roomType === RoomType.MERCURY) {
+			this.handleMercuryChat(message, room as YGOProRoom, client);
 			return;
 		}
 
