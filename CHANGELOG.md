@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.13.1](https://github.com/diangogav/EDOpro-server-ts/compare/v2.13.0...v2.13.1) (2026-04-04)
+
+
+### Bug Fixes
+
+* add getter for edoBanListHash and update banListHash reference in YGOProDuelingState ([#226](https://github.com/diangogav/EDOpro-server-ts/issues/226)) ([f2c6deb](https://github.com/diangogav/EDOpro-server-ts/commit/f2c6deb894f054e541effd5a3f309cb9dc7c89b5))
+* prevent memory leaks in OCGCore, DuelingState and SideDeckingState ([#227](https://github.com/diangogav/EDOpro-server-ts/issues/227)) ([73476c6](https://github.com/diangogav/EDOpro-server-ts/commit/73476c644249f43ea50f1817285ae1277e5d3c2f))
+* remove extra characters appended by mobile client. ([661ea3c](https://github.com/diangogav/EDOpro-server-ts/commit/661ea3c499c664d5a9118e699c0fecc2fabd9969))
+
 ## [2.13.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.12.0...v2.13.0) (2026-04-03)
 
 
