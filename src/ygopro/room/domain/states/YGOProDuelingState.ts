@@ -494,6 +494,7 @@ export class YGOProDuelingState extends RoomState {
   }
 
   private transitionToSideDecking(winner: number): void {
+    this.disposeCore();
     this.room.sideDecking();
 
     this.room.players.forEach((client: YGOProClient) => {
@@ -528,6 +529,7 @@ export class YGOProDuelingState extends RoomState {
   private async finalizeWithReplays(): Promise<void> {
     this.logger.info("Finalizing match and sending replays");
 
+    this.removeAllListener();
     this.disposeCore();
     await this.sendAllReplays();
     this.sendDuelEndAndDisconnect();

@@ -126,6 +126,11 @@ export class YGOProSideDeckingState extends RoomState {
 		}
 	}
 
+	override removeAllListener(): void {
+		this.clearAllTimeouts();
+		super.removeAllListener();
+	}
+
 	private sendChatToPlayer(player: YGOProClient, msg: string, color: ChatColor): void {
 		const chatMsg = new YGOProStocChat().fromPartial({
 			player_type: color,

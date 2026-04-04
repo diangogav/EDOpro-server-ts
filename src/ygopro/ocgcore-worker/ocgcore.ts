@@ -23,6 +23,7 @@ import {
   ChatColor,
   YGOProStocChat,
 } from "ygopro-msg-encode";
+import { type Subscription } from "rxjs";
 import { MayBeArray } from "nfkit";
 
 import { YGOProClient } from "../client/domain/YGOProClient";
@@ -47,6 +48,7 @@ type Client = YGOProClient;
 
 export class OCGCore {
   private ocgcore: WorkerInstance<OcgcoreWorker> | null;
+  private messageSubscription: Subscription | null = null;
   // responseSide: the side (0 or 1) currently being prompted by the core
   private responseSide: number | null = null;
   private lastResponseRequestMsg: YGOProMsgBase | null = null;
@@ -185,7 +187,7 @@ export class OCGCore {
         decks,
       });
 
-      this.ocgcore.message$.subscribe((msg) => {
+      this.messageSubscription = this.ocgcore.message$.subscribe((msg) => {
         this.logger.info("Received message from OCGCoreWorker");
         this.logger.info({ message: msg.message, type: msg.type });
       });
@@ -334,6 +336,9 @@ export class OCGCore {
       return;
     }
     this.ocgcore = null;
+    this.messageSubscription?.unsubscribe();
+    this.messageSubscription = null;
+    this.timerState.clear();
 
     if (kill) {
       ocgcore.finalize().catch((error) => {
