@@ -310,6 +310,10 @@ export class YGOProRoom extends YgoRoom {
     return this._duelRecords;
   }
 
+  get edoBanListHash(): number {
+    return this._edoBanListHash;
+  }
+
   waiting(): void {
     this._roomState?.removeAllListener();
     this._roomState = new YGOProWaitingState(

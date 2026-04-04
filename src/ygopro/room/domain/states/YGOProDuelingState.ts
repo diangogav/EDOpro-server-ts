@@ -606,7 +606,7 @@ export class YGOProDuelingState extends RoomState {
         bestOf: this.room.bestOf,
         players: this.room.matchPlayersHistory,
         date: new Date(),
-        banListHash: this.room.banListHash,
+        banListHash: this.room.edoBanListHash, //TODO: Fallback to syncronized banlist hash rank for different hash for the same banlist
         ranked: this.room.ranked,
       }),
     );
