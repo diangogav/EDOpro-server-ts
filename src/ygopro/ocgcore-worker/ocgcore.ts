@@ -1211,29 +1211,24 @@ export class OCGCore {
 
   /**
    * Returns players at given side index (0 or 1 from core perspective).
-   * In Tag Duel, side already represents team index (0 or 1) - no swap needed.
+   * Applies position swap to map engine side to room team.
    */
   getPlayersAtIngamePosition(side: number): Client[] {
-    // In Tag Duel, the engine's positions 0/1 map directly to teams 0/1
-    // No swap should be applied in tag mode
-    const team = this.room.isTag ? side : this.getSideTeam(side);
+    const team = this.getSideTeam(side);
     return this.room.getTeamPlayers(team);
   }
 
   /**
    * Returns the active player (who must respond) for the given side.
    * Decides which teammate within the team should act based on turn rotation.
-   * In Tag Duel, side already represents team index - no swap needed.
    *
    * Formula from srvpro2 (tag_duel.cpp cur_player):
-   * - Team 0: idx = floor(max(0, tc - 1) / 2) % 2
-   * - Team 1: idx = 1 - (floor(tc / 2) % 2)
+   * - Side 0: idx = floor(max(0, tc - 1) / 2) % 2
+   * - Side 1: idx = 1 - (floor(tc / 2) % 2)
    * Where tc = turnCount (starts at 0, incremented at each new turn)
    */
   private getActivePlayer(side: number): Client | null {
-    // In Tag Duel, the engine's positions 0/1 map directly to teams 0/1
-    // No swap should be applied in tag mode
-    const team = this.room.isTag ? side : this.getSideTeam(side);
+    const team = this.getSideTeam(side);
     const teamPlayers = this.room.players.filter(
       (p) => p.team === team,
     ) as Client[];
