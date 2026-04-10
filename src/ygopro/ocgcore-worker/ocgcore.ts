@@ -929,36 +929,36 @@ export class OCGCore {
   }
 
   private getZoneQueryFlag(location: number): number {
-    // Returns query flag for specific zone locations
-    switch (location) {
-      case 0x0080: // MZONE
-        return 0x881fff;
-      case 0x0100: // SZONE
-      case 0x1000: // EXTRA
-        return 0xe81fff;
-      case 0x0200: // HAND
-        return 0x681fff;
-      case 0x0400: // GRAVE
-      case 0x0800: // REMOVED
-        return 0x081fff;
-      default:
-        return 0xf81fff;
+    if (location === OcgcoreScriptConstants.LOCATION_MZONE) {
+      return 0x881fff;
     }
+    if (location === OcgcoreScriptConstants.LOCATION_SZONE) {
+      return 0xe81fff;
+    }
+    if (location === OcgcoreScriptConstants.LOCATION_HAND) {
+      return 0x681fff;
+    }
+    if (location === OcgcoreScriptConstants.LOCATION_GRAVE) {
+      return 0x081fff;
+    }
+    if (location === OcgcoreScriptConstants.LOCATION_EXTRA) {
+      return 0xe81fff;
+    }
+    return 0xf81fff;
   }
 
   private splitRefreshLocations(location: number): number[] {
-    // Split location flags into individual locations
     const locationFlags = [
-      0x0080, // MZONE
-      0x0100, // SZONE
-      0x0200, // HAND
-      0x0400, // GRAVE
-      0x0800, // REMOVED
-      0x1000, // EXTRA
-      0x2000, // DECK
-      0x4000, // OVERLAY
-      0x8000, // FZONE
-      0x10000, // PZONE
+      OcgcoreScriptConstants.LOCATION_MZONE,
+      OcgcoreScriptConstants.LOCATION_SZONE,
+      OcgcoreScriptConstants.LOCATION_HAND,
+      OcgcoreScriptConstants.LOCATION_GRAVE,
+      OcgcoreScriptConstants.LOCATION_REMOVED,
+      OcgcoreScriptConstants.LOCATION_EXTRA,
+      OcgcoreScriptConstants.LOCATION_DECK,
+      OcgcoreScriptConstants.LOCATION_OVERLAY,
+      OcgcoreScriptConstants.LOCATION_FZONE,
+      OcgcoreScriptConstants.LOCATION_PZONE,
     ];
 
     const locations = locationFlags.filter((flag) => (location & flag) !== 0);
