@@ -39,6 +39,18 @@ export class YGOProBanListLoader {
   }
 
   /**
+   * YGOPro lflist.conf uses date-only names for OCG banlists (e.g. "2026.04")
+   * while EDOpro uses "2026.04 OCG". Append " OCG" to date-only names so they
+   * match EDOpro banlist names when mapping edoBanListHash.
+   */
+  private appendOcgSuffix(name: string): string {
+    if (/^\d{4}\.\d{2}(?:\.\d{2})?$/.test(name)) {
+      return `${name} OCG`;
+    }
+    return name;
+  }
+
+  /**
    * ygopro-lflist-encode only parses entries with limit 0-2.
    * Whitelist banlists also list unrestricted cards (limit >= 3) that the
    * library silently discards. We parse them from the raw text.
@@ -66,7 +78,9 @@ export class YGOProBanListLoader {
     this.logger.info("Loading ban lists from YGOPro resources...");
 
     for await (const { item: lflist, text } of loader.getLFLists()) {
-      const normalizedName = this.normalizeName(lflist.name || "Unnamed");
+      const normalizedName = this.appendOcgSuffix(
+        this.normalizeName(lflist.name || "Unnamed"),
+      );
       const hash = lflist.getHash();
 
       const banList = new YGOProBanList();
