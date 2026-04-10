@@ -42,17 +42,19 @@ export abstract class BanList {
 		const compact = s.replace(/\s+/g, " ");
 
 		// Match YYYY.M.D with optional suffix (e.g. "2013.3.1", "2014.1.1 TCG")
-		const md = compact.match(/^(\d{4})[.\-/](\d{1,2})[.\-/]\d{1,2}(?:\s+(.+))?$/);
+		const md = compact.match(/^(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})(?:\s+(.+))?$/);
 		if (md) {
 			const year = Number(md[1]);
 			const month = Number(md[2]);
-			const name = md[3]?.trim().replace(/\s+/g, " ");
+			const day = Number(md[3]);
+			const name = md[4]?.trim().replace(/\s+/g, " ");
 
 			if (!Number.isInteger(year) || year < 1900 || year > 3000) return null;
 			if (!Number.isInteger(month) || month < 1 || month > 12) return null;
 
 			const mm = String(month).padStart(2, "0");
-			return name ? `${year}.${mm} ${name}` : `${year}.${mm}`;
+			const dd = String(day).padStart(2, "0");
+			return name ? `${year}.${mm}.${dd} ${name}` : `${year}.${mm}.${dd}`;
 		}
 
 		// Match YYYY.M with optional suffix (e.g. "2026.4", "2026.2 TCG")
