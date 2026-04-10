@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.13.1](https://github.com/diangogav/EDOpro-server-ts/compare/v2.13.0...v2.13.1) (2026-04-10)
+
+
+### Bug Fixes
+
+* add getter for edoBanListHash and update banListHash reference in YGOProDuelingState ([#226](https://github.com/diangogav/EDOpro-server-ts/issues/226)) ([f2c6deb](https://github.com/diangogav/EDOpro-server-ts/commit/f2c6deb894f054e541effd5a3f309cb9dc7c89b5))
+* allow OCG and TCG cards in pre-release and art room modes ([#230](https://github.com/diangogav/EDOpro-server-ts/issues/230)) ([7c283ec](https://github.com/diangogav/EDOpro-server-ts/commit/7c283ec49cb14210c627f68dc8dcb33acc0655f0))
+* apply position swap in tag duel player resolution ([#229](https://github.com/diangogav/EDOpro-server-ts/issues/229)) ([d92bec8](https://github.com/diangogav/EDOpro-server-ts/commit/d92bec8076d61d3a1c3134dcc381f826b6e95ad4))
+* normalize banlist names for all date formats ([#231](https://github.com/diangogav/EDOpro-server-ts/issues/231)) ([e94ef1d](https://github.com/diangogav/EDOpro-server-ts/commit/e94ef1d61ad2a7b979f1a3496085da3b6519df7f))
+* prevent memory leaks in OCGCore, DuelingState and SideDeckingState ([#227](https://github.com/diangogav/EDOpro-server-ts/issues/227)) ([73476c6](https://github.com/diangogav/EDOpro-server-ts/commit/73476c644249f43ea50f1817285ae1277e5d3c2f))
+* remove extra characters appended by mobile client. ([661ea3c](https://github.com/diangogav/EDOpro-server-ts/commit/661ea3c499c664d5a9118e699c0fecc2fabd9969))
+* use OcgcoreScriptConstants for zone refresh location matching ([#228](https://github.com/diangogav/EDOpro-server-ts/issues/228)) ([4be2649](https://github.com/diangogav/EDOpro-server-ts/commit/4be26495a709b49a96649b95e60ab48859ee1e06))
+
 ## [2.13.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.12.0...v2.13.0) (2026-04-03)
 
 
