@@ -342,33 +342,33 @@ describe("YGOProRoom", () => {
       expect(room.useExtendedCardPool).toBe(true);
     });
 
-    it("Should create a tcgpre room with rule 1 (TCG only) and extended card pool", () => {
+    it("Should create a tcgpre room with rule 5 (no scope restriction) and extended card pool", () => {
       const room = YGOProRoomMother.create({ command: "tcgpre,tm800#123" });
-      expect(room.hostInfo.rule).toBe(1);
+      expect(room.hostInfo.rule).toBe(5);
       expect(room.hostInfo.duel_rule).toBe(5);
       expect(room.hostInfo.time_limit).toBe(800);
       expect(room.useExtendedCardPool).toBe(true);
     });
 
-    it("Should create an ocgpre room with rule 0 (OCG only) and extended card pool", () => {
+    it("Should create an ocgpre room with rule 5 (no scope restriction) and extended card pool", () => {
       const room = YGOProRoomMother.create({ command: "ocgpre#123" });
-      expect(room.hostInfo.rule).toBe(0);
+      expect(room.hostInfo.rule).toBe(5);
       expect(room.hostInfo.lflist).toBe(0);
       expect(room.hostInfo.duel_rule).toBe(5);
       expect(room.useExtendedCardPool).toBe(true);
     });
 
-    it("Should create a tcgart room with rule 1 (TCG only) and extended card pool", () => {
+    it("Should create a tcgart room with rule 5 (no scope restriction) and extended card pool", () => {
       const room = YGOProRoomMother.create({ command: "tcgart,tm800#123" });
-      expect(room.hostInfo.rule).toBe(1);
+      expect(room.hostInfo.rule).toBe(5);
       expect(room.hostInfo.duel_rule).toBe(5);
       expect(room.hostInfo.time_limit).toBe(800);
       expect(room.useExtendedCardPool).toBe(true);
     });
 
-    it("Should create an ocgart room with rule 0 (OCG only) and extended card pool", () => {
+    it("Should create an ocgart room with rule 5 (no scope restriction) and extended card pool", () => {
       const room = YGOProRoomMother.create({ command: "ocgart#123" });
-      expect(room.hostInfo.rule).toBe(0);
+      expect(room.hostInfo.rule).toBe(5);
       expect(room.hostInfo.lflist).toBe(0);
       expect(room.hostInfo.duel_rule).toBe(5);
       expect(room.useExtendedCardPool).toBe(true);
