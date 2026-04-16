@@ -211,7 +211,11 @@ export class OCGCore {
   private generatePlayers(
     seed: number[],
   ): { name: string; deck: YGOProDeck }[] {
-    const decks = this.room.players.map((_client: YGOProClient) => {
+    const sortedPlayers = [...(this.room.players as YGOProClient[])].sort(
+      (a, b) => a.position - b.position,
+    );
+
+    const decks = sortedPlayers.map((_client) => {
       const deck = _client.deck!;
       const ygoproDeck = new YGOProDeck({
         main: deck.main.map((card) => parseInt(card.code, 10)),
@@ -225,12 +229,10 @@ export class OCGCore {
       ? shuffleDecksBySeed(decks, seed)
       : decks;
 
-    const players = this.room.players.map(
-      (_client: YGOProClient, index: number) => ({
-        name: _client.name,
-        deck: shuffledDecks[index]!,
-      }),
-    );
+    const players = sortedPlayers.map((_client, index) => ({
+      name: _client.name,
+      deck: shuffledDecks[index]!,
+    }));
 
     return players;
   }
