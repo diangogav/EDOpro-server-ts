@@ -535,20 +535,21 @@ export class YGOProRoom extends YgoRoom {
     if (!nextPlace) {
       return;
     }
+    const oldPosition = player.position;
     player.notReady();
-    player.sendMessageToClient(
+    this.broadcastToAll(
       this._messageRepository.playerChangeMessage(
-        player.position,
+        oldPosition,
         nextPlace.position,
       ),
     );
-    player.sendMessageToClient(
+    player.playerPosition(nextPlace.position, nextPlace.team);
+    this.broadcastToAll(
       this._messageRepository.playerChangeMessage(
         player.position,
         PlayerChangeState.NOTREADY,
       ),
     );
-    player.playerPosition(nextPlace.position, nextPlace.team);
     player.sendMessageToClient(
       this._messageRepository.typeChangeMessage(player.position, player.host),
     );
