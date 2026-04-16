@@ -58,7 +58,7 @@ services:
       HTTP_PORT: ${HTTP_PORT:-7922}
       WEBSOCKET_PORT: ${WEBSOCKET_PORT:-4000}
       YGOPRO_FOLDERS: ./resources/ygopro/base,./resources/ygopro/ocg,./resources/ygopro/alternatives
-      YGOPRO_EXTRA_DB_FOLDERS: ./resources/ygopro/prereleases-cdb,./resources/ygopro/cards-art
+      YGOPRO_EXTRA_FOLDERS: ./resources/ygopro/prereleases-cdb,./resources/ygopro/cards-art
     ports:
       - "${HOST_PORT:-7911}:${HOST_PORT:-7911}"
       - "${MERCURY_PORT:-7711}:${MERCURY_PORT:-7711}"
