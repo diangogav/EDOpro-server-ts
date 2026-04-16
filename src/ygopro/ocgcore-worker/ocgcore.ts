@@ -150,6 +150,9 @@ export class OCGCore {
     const cardStorage = this.room.useExtendedCardPool
       ? await loader.getExtendedCardStorage()
       : await loader.getStandardCardStorage();
+    const scriptSearchPaths = this.room.useExtendedCardPool
+      ? [...loader.ygoproPaths, ...loader.extraFolderPaths]
+      : loader.ygoproPaths;
     const ocgcoreWasmBinary = await loader.getOcgcoreWasmBinary();
 
     const registry: Record<string, string> = {
@@ -179,7 +182,7 @@ export class OCGCore {
       this.ocgcore = await initWorker(OcgcoreWorker, {
         seed: duelRecord.seed,
         hostinfo: this.room.hostInfo,
-        ygoproPaths: YGOProResourceLoader.get().ygoproPaths,
+        ygoproPaths: scriptSearchPaths,
         extraScriptPaths,
         cardStorage,
         ocgcoreWasmBinary,

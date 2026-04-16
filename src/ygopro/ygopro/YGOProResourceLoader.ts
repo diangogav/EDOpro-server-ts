@@ -50,7 +50,7 @@ export class YGOProResourceLoader {
 
   ygoproPaths = config.resources.ygopro.folders;
 
-  extraDbPaths = config.resources.ygopro.extraDbFolders;
+  extraFolderPaths = config.resources.ygopro.extraFolders;
 
   extraScriptPaths = config.resources.ygopro.extraScripts;
 
@@ -66,8 +66,8 @@ export class YGOProResourceLoader {
 
   private reloadTimerRegistered = false;
 
-  get hasExtraDbPaths(): boolean {
-    return this.extraDbPaths.length > 0;
+  get hasExtraFolderPaths(): boolean {
+    return this.extraFolderPaths.length > 0;
   }
 
   async getCardStorage() {
@@ -85,7 +85,7 @@ export class YGOProResourceLoader {
   }
 
   async getExtendedCardStorage(): Promise<CardStorage> {
-    if (!this.hasExtraDbPaths) {
+    if (!this.hasExtraFolderPaths) {
       return this.getStandardCardStorage();
     }
     if (this.extendedCardStorage) {
@@ -114,7 +114,7 @@ export class YGOProResourceLoader {
 
   async loadYGOProCdbs() {
     await this.loadStandardCdbs();
-    if (this.hasExtraDbPaths) {
+    if (this.hasExtraFolderPaths) {
       await this.loadExtendedCdbs();
     }
   }
@@ -144,7 +144,7 @@ export class YGOProResourceLoader {
       return this.extendedLoadingPromise;
     }
     const loading = this.loadingLock.acquire(async () => {
-      const allPaths = [...this.ygoproPaths, ...this.extraDbPaths];
+      const allPaths = [...this.ygoproPaths, ...this.extraFolderPaths];
       const { cardStorage, sha512 } = await this.loadCardStorageFromPaths(allPaths, "extended");
       this.extendedCardStorage = cardStorage;
       this.extendedSha512 = sha512;
@@ -185,8 +185,8 @@ export class YGOProResourceLoader {
       },
     );
 
-    if (this.hasExtraDbPaths) {
-      const allPaths = [...this.ygoproPaths, ...this.extraDbPaths];
+    if (this.hasExtraFolderPaths) {
+      const allPaths = [...this.ygoproPaths, ...this.extraFolderPaths];
       await this.reloadStorageIfChanged(
         allPaths,
         "extended",

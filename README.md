@@ -127,7 +127,7 @@ The YGOPro engine uses srvpro2-compatible protocol. Players connect using Koishi
 - ✅ Card scripts and databases from ygopro-scripts
 - ✅ Ban lists and alternative format resources
 - ✅ The `YGOPRO_FOLDERS` environment variable pointing to your resource directories
-- ✅ (Optional) The `YGOPRO_EXTRA_DB_FOLDERS` environment variable for pre-release and art card databases
+- ✅ (Optional) The `YGOPRO_EXTRA_FOLDERS` environment variable for pre-release and art card resource folders (cdbs + scripts)
 
 **Minimum `.env` configuration:**
 
@@ -145,17 +145,17 @@ YGOPRO_FOLDERS=./resources/ygopro/base
 ├── 📜 base/               # Core scripts + lflist + cards.cdb (loaded by all modes)
 ├── 🌏 ocg/                # OCG-specific banlist
 ├── 🃏 alternatives/       # Format variants (Edison, GOAT, HAT, etc.)
-├── 🆕 prereleases-cdb/    # Pre-release card databases (extra DB)
-└── 🎨 cards-art/          # Custom card art databases (extra DB)
+├── 🆕 prereleases-cdb/    # Pre-release card databases + scripts (extra folder)
+└── 🎨 cards-art/          # Custom card art databases (extra folder)
 ```
 
-**Standard card pool** (`YGOPRO_FOLDERS`) is loaded for all rooms. **Extra databases** (`YGOPRO_EXTRA_DB_FOLDERS`) are only available in rooms that use PRE or ART formats — standard rooms cannot use those cards.
+**Standard card pool** (`YGOPRO_FOLDERS`) is loaded for all rooms. **Extra folders** (`YGOPRO_EXTRA_FOLDERS`) — which can contain cdbs, scripts, and other card assets — are only available in rooms that use PRE or ART formats. Standard rooms cannot use those cards.
 
 To enable all formats and pre-releases, set:
 
 ```env
 YGOPRO_FOLDERS=./resources/ygopro/base,./resources/ygopro/ocg,./resources/ygopro/alternatives
-YGOPRO_EXTRA_DB_FOLDERS=./resources/ygopro/prereleases-cdb,./resources/ygopro/cards-art
+YGOPRO_EXTRA_FOLDERS=./resources/ygopro/prereleases-cdb,./resources/ygopro/cards-art
 ```
 
 ```bash
@@ -176,7 +176,7 @@ YGOPRO_PORT=7711
 HTTP_PORT=7922
 WEBSOCKET_PORT=4000
 YGOPRO_FOLDERS=./resources/ygopro/base,./resources/ygopro/ocg,./resources/ygopro/alternatives
-YGOPRO_EXTRA_DB_FOLDERS=./resources/ygopro/prereleases-cdb,./resources/ygopro/cards-art
+YGOPRO_EXTRA_FOLDERS=./resources/ygopro/prereleases-cdb,./resources/ygopro/cards-art
 ```
 
 ```bash
@@ -194,7 +194,7 @@ The YGOPro engine maintains **two separate card pools** in memory:
 | Pool | Loaded from | Available to |
 |------|-------------|--------------|
 | **Standard** | `YGOPRO_FOLDERS` | All rooms |
-| **Extended** | `YGOPRO_FOLDERS` + `YGOPRO_EXTRA_DB_FOLDERS` | PRE/ART rooms only |
+| **Extended** | `YGOPRO_FOLDERS` + `YGOPRO_EXTRA_FOLDERS` | PRE/ART rooms only |
 
 When a player creates a room with a format like `PRE`, `TCGPRE`, `OCGPRE`, `TCGART`, or `OCGART`, the server uses the **extended** card pool for both deck validation and the duel engine. Standard rooms (`M`, `TCG`, `OT`, `GOAT`, etc.) use only the **standard** pool — any card not in that pool is rejected as unknown.
 
@@ -211,7 +211,7 @@ Both pools are loaded at startup and refreshed every 10 minutes if the underlyin
 | `HTTP_PORT` | HTTP API port | `7922` |
 | `WEBSOCKET_PORT` | WebSocket port | `4000` |
 | `YGOPRO_FOLDERS` | Comma-separated resource directories (standard card pool) | *(empty)* |
-| `YGOPRO_EXTRA_DB_FOLDERS` | Comma-separated extra DB directories (pre-releases, art cards) — only loaded for PRE/ART room formats | *(empty)* |
+| `YGOPRO_EXTRA_FOLDERS` | Comma-separated extra resource directories (cdbs + scripts for pre-releases, art cards) — only loaded for PRE/ART room formats | *(empty)* |
 | `RANK_ENABLED` | Enable ranking system (requires PostgreSQL) | `false` |
 | `POSTGRES_HOST` | PostgreSQL host | `localhost` |
 | `POSTGRES_PORT` | PostgreSQL port | `5432` |
