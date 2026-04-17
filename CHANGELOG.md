@@ -1,5 +1,31 @@
 # Changelog
 
+## [2.13.2](https://github.com/diangogav/EDOpro-server-ts/compare/v2.13.1...v2.13.2) (2026-04-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ygopro:** rename YGOPRO_EXTRA_DB_FOLDERS env var to YGOPRO_EXTRA_FOLDERS. The "DB" suffix was misleading — these folders hold scripts too, not only card databases. Internal fields renamed accordingly (extraDbFolders -> extraFolders, extraDbPaths -> extraFolderPaths, hasExtraDbPaths -> hasExtraFolderPaths).
+
+### Features
+
+* **api:** add GET /api/rooms endpoint with display-ready DTO ([#236](https://github.com/diangogav/EDOpro-server-ts/issues/236)) ([7194e3f](https://github.com/diangogav/EDOpro-server-ts/commit/7194e3f22472f7ec167d3846709c16ca1fafd074))
+* **ygopro:** add WebSocket server for YGOPro clients ([#237](https://github.com/diangogav/EDOpro-server-ts/issues/237)) ([4fc62c2](https://github.com/diangogav/EDOpro-server-ts/commit/4fc62c2136f753954e492e4bdc32cc273d1027e9))
+
+
+### Bug Fixes
+
+* **ygopro:** broadcast slot change to all clients in movePlayerToAnotherCellUnsafe ([#235](https://github.com/diangogav/EDOpro-server-ts/issues/235)) ([1f663b0](https://github.com/diangogav/EDOpro-server-ts/commit/1f663b0a0cd53e48784c569997e131d4b0284abc))
+* **ygopro:** load lua scripts from extra pool folders ([aec1b44](https://github.com/diangogav/EDOpro-server-ts/commit/aec1b44a7685d26833e0a72f740c871d7c6ce605))
+* **ygopro:** load lua scripts from extra pool folders in ocgcore ([2ba3d20](https://github.com/diangogav/EDOpro-server-ts/commit/2ba3d208d1102319f65e3bf1cb74893c974d2de2))
+* **ygopro:** reject join with wrong password instead of creating duplicate room ([#238](https://github.com/diangogav/EDOpro-server-ts/issues/238)) ([5c875cf](https://github.com/diangogav/EDOpro-server-ts/commit/5c875cfd7f0220f8dca4146b8b19e5cee79846b0))
+* **ygopro:** sort players by position before mapping decks to ocgcore ([#234](https://github.com/diangogav/EDOpro-server-ts/issues/234)) ([c986893](https://github.com/diangogav/EDOpro-server-ts/commit/c98689302ef5a4e28248906d9d2c80f41ed06c5a))
+
+
+### Miscellaneous Chores
+
+* release as 2.13.2 ([85c8809](https://github.com/diangogav/EDOpro-server-ts/commit/85c8809d8eca0a1829106c4f38800d3723d5c761))
+
 ## [2.13.1](https://github.com/diangogav/EDOpro-server-ts/compare/v2.13.0...v2.13.1) (2026-04-10)
 
 
