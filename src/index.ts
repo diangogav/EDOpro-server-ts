@@ -14,6 +14,7 @@ import { YGOProResourceLoader } from "./ygopro/ygopro/YGOProResourceLoader";
 import { HostServer } from "./socket-server/HostServer";
 import { WSHostServer } from "./socket-server/WSHostServer";
 import { YGOProServer } from "./socket-server/YGOProServer";
+import { WSYGOProServer } from "./socket-server/WSYGOProServer";
 import WebSocketSingleton from "./web-socket-server/WebSocketSingleton";
 
 void start();
@@ -23,6 +24,7 @@ async function start(): Promise<void> {
 
   const server = new Server(logger);
   const ygoproServer = new YGOProServer(logger);
+  const wsYgoproServer = new WSYGOProServer(logger);
 
   const hostServer = new HostServer(logger);
   const wsHostServer = new WSHostServer(logger);
@@ -50,4 +52,5 @@ async function start(): Promise<void> {
   hostServer.initialize();
   wsHostServer.initialize();
   ygoproServer.initialize();
+  wsYgoproServer.initialize();
 }

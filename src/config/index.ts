@@ -28,6 +28,7 @@ export const config = {
     },
     mercury: {
       port: Number(process.env.YGOPRO_PORT),
+      wsPort: Number(process.env.YGOPRO_WEBSOCKET_PORT) || 4002,
     },
     http: {
       port: Number(process.env.HTTP_PORT),
