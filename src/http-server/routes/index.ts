@@ -5,11 +5,14 @@ import { Express } from "express";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { CreateRoomController } from "../controllers/CreateRoomController";
 import { GetRoomListController } from "../controllers/GetRoomListController";
+import { RoomListController } from "../controllers/RoomListController";
 import { ServerMessagesController } from "../controllers/ServerMessagesController";
 import { AuthAdminMiddleware } from "../middlewares/AuthAdminMiddleware";
 
 export function loadRoutes(app: Express, logger: Logger): void {
 	app.get("/api/getrooms", (req, res) => new GetRoomListController().run(req, res));
+
+	app.get("/api/rooms", (req, res) => new RoomListController().run(req, res));
 
 	app.post("/api/room", (req, res) => new CreateRoomController(logger).run(req, res));
 
