@@ -49,11 +49,22 @@ export class YGOProJoinHandler implements JoinMessageHandler {
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const joinMessage = new YGOProCtosJoinGame().fromPayload(message.data);
 
-		const room = this.createRoomIfNotExists(
+		const [command, password = ""] = joinMessage.pass.split("#");
+
+		const room = this.findOrCreateRoom(
+			command,
+			password,
 			joinMessage.pass,
 			playerInfoMessage,
 			this.socket.id as string
 		);
+
+		if (!room) {
+			this.logger.info("JOIN_GAME rejected: wrong password");
+			this.socket.destroy();
+
+			return;
+		}
 
 		if (room.ranked && !(await this.checkIfUserCanJoin.check(playerInfoMessage, this.socket))) {
 			return;
@@ -62,28 +73,34 @@ export class YGOProJoinHandler implements JoinMessageHandler {
 		room.emit("JOIN", message, this.socket);
 	}
 
-	private createRoomIfNotExists(
-		name: string,
+	private findOrCreateRoom(
+		command: string,
+		password: string,
+		fullPass: string,
 		playerInfo: PlayerInfoMessage,
 		socketId: string
-	): YGOProRoom {
-		const existingRoom = YGOProRoomList.findByName(name);
-		if (!existingRoom) {
-			const room = YGOProRoom.create(
-				generateUniqueId(),
-				name,
-				this.logger,
-				this.eventEmitter,
-				playerInfo,
-				socketId,
-				this.messageRepository,
-			);
-			YGOProRoomList.addRoom(room);
-			room.waiting();
+	): YGOProRoom | null {
+		const existingRoom = YGOProRoomList.findByName(command);
+		if (existingRoom) {
+			if (existingRoom.password !== password) {
+				return null;
+			}
 
-			return room;
+			return existingRoom;
 		}
 
-		return existingRoom;
+		const room = YGOProRoom.create(
+			generateUniqueId(),
+			fullPass,
+			this.logger,
+			this.eventEmitter,
+			playerInfo,
+			socketId,
+			this.messageRepository,
+		);
+		YGOProRoomList.addRoom(room);
+		room.waiting();
+
+		return room;
 	}
 }

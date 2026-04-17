@@ -156,7 +156,7 @@ export class YGOProRoom extends YgoRoom {
       best_of: BEST_OF[GameMode.SINGLE],
     };
 
-    const [configuration, password] = command.split("#");
+    const [configuration, password = ""] = command.split("#");
     const options = configuration
       .toLowerCase()
       .split(",")
@@ -221,7 +221,7 @@ export class YGOProRoom extends YgoRoom {
     const room = new YGOProRoom({
       id,
       hostInfo,
-      name: command,
+      name: configuration,
       password,
       team0: teamCount,
       team1: teamCount,
