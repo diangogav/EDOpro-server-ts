@@ -717,6 +717,45 @@ export class YGOProRoom extends YgoRoom {
     };
   }
 
+  toRoomListDTO(): { [key: string]: unknown } {
+    const RULE_LABELS: Record<number, string> = {
+      0: "OCG",
+      1: "TCG",
+      2: "OCG/TCG",
+      3: "Pre-release",
+      4: "Anything Goes",
+      5: "Anything Goes",
+    };
+
+    const started = this.duelState !== DuelState.WAITING;
+    const maxPlayers = this.team0 + this.team1;
+    const banList = MercuryBanListMemoryRepository.findByHash(this.banListHash);
+
+    return {
+      id: this.id,
+      command: this.name,
+      status: this.duelState,
+      started,
+      private: this.password.length > 0,
+      canPlay: !started && this._players.length < maxPlayers,
+      canWatch: true,
+      banlist: banList?.name ?? "No banlist",
+      rule: RULE_LABELS[this._hostInfo.rule] ?? "Anything Goes",
+      mode: this._hostInfo.mode,
+      bestOf: this.bestOf,
+      duelRule: this._hostInfo.duel_rule,
+      startLp: this._hostInfo.start_lp,
+      timeLimit: this._hostInfo.time_limit,
+      players: this._players.map((player) => ({
+        name: player.name.replace(/\0/g, "").trim(),
+        position: player.position,
+        team: player.team,
+      })),
+      maxPlayers,
+      spectators: this._spectators.length,
+    };
+  }
+
   destroy(): void {
     this.emitter.removeAllListeners();
     this._roomState?.removeAllListener();
