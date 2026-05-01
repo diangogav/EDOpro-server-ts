@@ -574,10 +574,10 @@ std::vector<QueryRequest> Duel::post_queries(const std::vector<uint8_t> &message
     queryRequests.emplace_back(QueryLocationRequest{player, LOCATION_DECK, 0x1181FFF});
     queryRequests.emplace_back(QueryLocationRequest{player, LOCATION_EXTRA, 0x381FFF});
     queryRequests.emplace_back(QueryLocationRequest{player, LOCATION_HAND, 0x3781FFF});
-    queryRequests.emplace_back(QueryLocationRequest{0U, LOCATION_MZONE, 0x3081FFF});
-    queryRequests.emplace_back(QueryLocationRequest{1U, LOCATION_MZONE, 0x3081FFF});
-    queryRequests.emplace_back(QueryLocationRequest{0U, LOCATION_SZONE, 0x30681FFF});
-    queryRequests.emplace_back(QueryLocationRequest{1U, LOCATION_SZONE, 0x30681FFF});
+    queryRequests.emplace_back(QueryLocationRequest{0U, LOCATION_MZONE, 0x3181FFF});
+    queryRequests.emplace_back(QueryLocationRequest{1U, LOCATION_MZONE, 0x3181FFF});
+    queryRequests.emplace_back(QueryLocationRequest{0U, LOCATION_SZONE, 0x3781FFF});
+    queryRequests.emplace_back(QueryLocationRequest{1U, LOCATION_SZONE, 0x3781FFF});
   }
 
   if (messageType == MSG_RELOAD_FIELD)
