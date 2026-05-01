@@ -307,6 +307,8 @@ export class YGOProDuelingState extends RoomState {
     const responseRequestMsg = this.ocgCore.currentLastResponseRequestMsg;
     const responseBuffer = Buffer.from(message.data);
 
+    room.currentDuelRecord?.responses.push(responseBuffer);
+
     // Handle time limit compensation
     if (this.ocgCore.timeLimitEnabled) {
       this.ocgCore.clearResponseTimerState(true);
@@ -576,7 +578,7 @@ export class YGOProDuelingState extends RoomState {
   ): void {
     const hintMsg = new YGOProStocChat().fromPartial({
       player_type: 0,
-      msg: `#replay_hint_part1${index}#replay_hint_part2`,
+      msg: `#{replay_hint_part1}${index}#{replay_hint_part2}`,
     });
     const hintBuffer = Buffer.from(hintMsg.toFullPayload());
 
