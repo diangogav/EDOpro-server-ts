@@ -100,6 +100,11 @@
     "code": 20292186
   },
   {
+    "name": "Artmage Impasto -Recapture-",
+    "points": 10,
+    "code": 44654994
+  },
+  {
     "name": "Artmage Non-Finito",
     "points": 15,
     "code": 74631897
@@ -413,6 +418,21 @@
     "name": "Chicken Game",
     "points": 7,
     "code": 67616300
+  },
+  {
+    "name": "Clown Crew Biancaviso",
+    "points": 1,
+    "code": 82159583
+  },
+  {
+    "name": "Clown Crew Malabarisme",
+    "points": 10,
+    "code": 83232904
+  },
+  {
+    "name": "Clown Crew Matinee Operatics",
+    "points": 20,
+    "code": 57847269
   },
   {
     "name": "Cold Wave",
@@ -750,6 +770,16 @@
     "code": 97045737
   },
   {
+    "name": "Dominus Spark",
+    "points": 10,
+    "code": 6325660
+  },
+  {
+    "name": "DoomZ XIII Over - Graflareio",
+    "points": 20,
+    "code": 65848113
+  },
+  {
     "name": "Dracotail Arthalion",
     "points": 20,
     "code": 33760966
@@ -870,6 +900,11 @@
     "code": 12375297
   },
   {
+    "name": "Elfnote Regina",
+    "points": 40,
+    "code": 56651978
+  },
+  {
     "name": "Elzette, Azamina of the White Forest",
     "points": 22,
     "code": 38648860
@@ -913,6 +948,11 @@
     "name": "Evolzar Lars",
     "points": 20,
     "code": 35103106
+  },
+  {
+    "name": "Exceptional Schedule",
+    "points": 10,
+    "code": 52782439
   },
   {
     "name": "Exosister Betrayal",
@@ -1058,6 +1098,11 @@
     "name": "Fusion Destiny",
     "points": 33,
     "code": 52947044
+  },
+  {
+    "name": "Fydraulis Harmonia",
+    "points": 50,
+    "code": 70088809
   },
   {
     "name": "Gagagaga Girl",
@@ -1420,14 +1465,29 @@
     "code": 6153210
   },
   {
+    "name": "Kewl Tune B2B",
+    "points": 40,
+    "code": 65961304
+  },
+  {
     "name": "Kewl Tune Clip",
     "points": 6,
     "code": 43904702
   },
   {
+    "name": "Kewl Tune Crackle",
+    "points": 70,
+    "code": 39576656
+  },
+  {
     "name": "Kewl Tune Cue",
     "points": 6,
     "code": 16387555
+  },
+  {
+    "name": "Kewl Tune Rotary",
+    "points": 40,
+    "code": 17209452
   },
   {
     "name": "Kewl Tune Synchro",
@@ -2060,6 +2120,11 @@
     "code": 72537897
   },
   {
+    "name": "Officiator of Doom Samuel",
+    "points": 10,
+    "code": 101304089
+  },
+  {
     "name": "Ohime the Manifested Mikanko",
     "points": 33,
     "code": 81260679
@@ -2153,6 +2218,11 @@
     "name": "Pot of Prosperity",
     "points": 40,
     "code": 84211599
+  },
+  {
+    "name": "Power Vice Dragon",
+    "points": 5,
+    "code": 19434243
   },
   {
     "name": "Powersink Stone",
@@ -2645,6 +2715,11 @@
     "code": 60228941
   },
   {
+    "name": "Solemn Accusation",
+    "points": 12,
+    "code": 78114463
+  },
+  {
     "name": "Solemn Judgment",
     "points": 7,
     "code": 41420027
@@ -2883,6 +2958,11 @@
     "name": "The Bystial Lubellion",
     "points": 30,
     "code": 32731036
+  },
+  {
+    "name": "The Crimson King",
+    "points": 10,
+    "code": 67809530
   },
   {
     "name": "The Dragon that Devours the Dogma",
