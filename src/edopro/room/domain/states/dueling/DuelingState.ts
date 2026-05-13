@@ -224,7 +224,7 @@ export class DuelingState extends RoomState {
 			item.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.STARTING_DUEL));
 			const reconnectionToken = crypto.randomBytes(16).toString("hex");
 			item.setReconnectionToken(reconnectionToken);
-			TokenIndex.getInstance().register(reconnectionToken, item, this.room.id);
+			TokenIndex.getInstance().register(reconnectionToken, item, this.room.id, "reconnect");
 			item.socket.send(ReconnectionTokenClientMessage.create(reconnectionToken));
 		});
 
@@ -423,13 +423,13 @@ export class DuelingState extends RoomState {
 		player.clearReconnecting();
 		player.clearReconnectionToken();
 		if (oldToken) {
-			TokenIndex.getInstance().unregister(oldToken);
+			TokenIndex.getInstance().unregister(oldToken, "reconnect");
 		}
 
 		// Generate new token for future reconnections
 		const newToken = crypto.randomBytes(16).toString("hex");
 		player.setReconnectionToken(newToken);
-		TokenIndex.getInstance().register(newToken, player, this.room.id);
+		TokenIndex.getInstance().register(newToken, player, this.room.id, "reconnect");
 		player.sendMessage(ReconnectionTokenClientMessage.create(newToken));
 
 		if (player.cache) {
@@ -658,7 +658,7 @@ export class DuelingState extends RoomState {
 		const token = message.data.toString("utf8");
 		this.logger.info(`DUELING_STATE: Token received: ${token}`);
 
-		const entry = TokenIndex.getInstance().find(token);
+		const entry = TokenIndex.getInstance().find(token, "reconnect");
 		if (!entry || !(entry.client instanceof Client) || entry.roomId !== room.id) {
 			this.logger.info(`DUELING_STATE: Player not found for token ${token} or room mismatch`);
 			const type = Buffer.from([0xfd]);

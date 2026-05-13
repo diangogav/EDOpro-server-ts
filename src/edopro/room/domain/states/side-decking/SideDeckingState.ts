@@ -64,7 +64,7 @@ export class SideDeckingState extends RoomState {
 		this.logger.info("SIDE_DECKING: EXPRESS_RECONNECT - START");
 		const token = message.data.toString("utf8");
 
-		const entry = TokenIndex.getInstance().find(token);
+		const entry = TokenIndex.getInstance().find(token, "reconnect");
 		if (!entry || !(entry.client instanceof Client) || entry.roomId !== room.id) {
 			this.logger.info(`SIDE_DECKING: Player not found for token ${token} or room mismatch`);
 			const type = Buffer.from([0xfd]);
@@ -97,13 +97,13 @@ export class SideDeckingState extends RoomState {
 
 		const oldToken = player.reconnectionToken;
 		if (oldToken) {
-			TokenIndex.getInstance().unregister(oldToken);
+			TokenIndex.getInstance().unregister(oldToken, "reconnect");
 		}
 
 		// Renew token
 		const newToken = crypto.randomBytes(16).toString("hex");
 		player.setReconnectionToken(newToken);
-		TokenIndex.getInstance().register(newToken, player, room.id);
+		TokenIndex.getInstance().register(newToken, player, room.id, "reconnect");
 		player.sendMessage(ReconnectionTokenClientMessage.create(newToken));
 
 		player.clearReconnecting();

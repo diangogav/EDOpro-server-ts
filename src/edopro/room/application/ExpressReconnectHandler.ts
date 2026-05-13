@@ -24,7 +24,7 @@ export class ExpressReconnectHandler {
 		const token = message.data.toString("utf8");
 		this.logger.info(`Checking token: ${token}`);
 
-		const entry = TokenIndex.getInstance().find(token);
+		const entry = TokenIndex.getInstance().find(token, "reconnect");
 		if (entry && entry.client instanceof Client) {
 			const player = entry.client as Client;
 			this.logger.info(`MATCH! Found player ${player.name} in room ${entry.roomId}`);
