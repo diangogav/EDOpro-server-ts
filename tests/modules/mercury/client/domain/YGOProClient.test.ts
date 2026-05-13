@@ -360,4 +360,47 @@ describe("YGOProClient", () => {
     });
   });
 
+  describe("isInternal", () => {
+    beforeEach(() => {
+      client = new YGOProClient({
+        name: "TestPlayer",
+        socket: mockSocket,
+        logger: mockLogger,
+        position: 0,
+        room: mockRoom,
+        host: true,
+        id: "player-id-1",
+        team: Team.PLAYER,
+      });
+    });
+
+    it("should default to false on a fresh client", () => {
+      expect(client.isInternal).toBe(false);
+    });
+
+    it("should return true after markInternal() is called", () => {
+      client.markInternal();
+
+      expect(client.isInternal).toBe(true);
+    });
+
+    it("should leave other client state unaffected after markInternal()", () => {
+      client.markInternal();
+
+      expect(client.name).toBe("TestPlayer");
+      expect(client.id).toBe("player-id-1");
+      expect(client.position).toBe(0);
+      expect(client.host).toBe(true);
+      expect(client.isCaptain).toBe(false);
+    });
+
+    it("should remain true after subsequent unrelated state changes (monotonic)", () => {
+      client.markInternal();
+      client.rpsChoose();
+      client.setNeedSpectatorMessages(true);
+
+      expect(client.isInternal).toBe(true);
+    });
+  });
+
 });

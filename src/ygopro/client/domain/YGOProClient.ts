@@ -12,6 +12,7 @@ export class YGOProClient extends YgoClient {
 	private readonly _roomMessageEmitter: SimpleRoomMessageEmitter;
 	private _rpsChosen: boolean;
 	private _captain: boolean = false;
+	private _isInternal: boolean = false;
 
 	constructor({
 		name,
@@ -102,5 +103,13 @@ export class YGOProClient extends YgoClient {
 
 	get isCaptain(): boolean {
 		return this._captain;
+	}
+
+	markInternal(): void {
+		this._isInternal = true;
+	}
+
+	get isInternal(): boolean {
+		return this._isInternal;
 	}
 }

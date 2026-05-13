@@ -216,6 +216,14 @@ export class YGOProWaitingState extends YGOProRoomState {
 		}
 
 		const deck = deckOrError;
+
+		if (player.isInternal) {
+			room.mutex.runExclusive(() => {
+				room.setDecksToPlayerUnsafe(player.position, deck);
+			});
+			return;
+		}
+
 		const hasError = room.shouldValidateDeck() && this.deckValidator.validate(deck);
 		if (hasError) {
 			const failedCard = deck.allCards.find((c) => Number(c.code) === hasError.code);
