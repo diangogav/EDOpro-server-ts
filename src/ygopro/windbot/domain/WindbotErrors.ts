@@ -13,3 +13,14 @@ export class WindbotsExhaustedError extends Error {
 		Object.setPrototypeOf(this, WindbotsExhaustedError.prototype);
 	}
 }
+
+export class WindbotUnreachableError extends Error {
+	readonly attempts: number;
+
+	constructor(botName: string, attempts: number) {
+		super(`Windbot unreachable after ${attempts} attempts for bot "${botName}"`);
+		this.name = "WindbotUnreachableError";
+		this.attempts = attempts;
+		Object.setPrototypeOf(this, WindbotUnreachableError.prototype);
+	}
+}
