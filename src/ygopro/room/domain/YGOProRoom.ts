@@ -69,6 +69,11 @@ export class YGOProRoom extends YgoRoom {
   private readonly _cardRepository: CardYGOProRepository;
   private readonly _deckRules: DeckRules;
 
+  // PR-4: windbot room flags (REQ-ROOM-501)
+  windbot?: { name: string; deck: string };
+  noHost: boolean = false;
+  noReconnect: boolean = false;
+
   private constructor({
     id,
     name,

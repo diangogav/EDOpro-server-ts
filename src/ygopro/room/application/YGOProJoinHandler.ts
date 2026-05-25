@@ -1,9 +1,4 @@
-
-
-
 import { EventEmitter } from "stream";
-
-import { generateUniqueId } from "src/utils/generateUniqueId";
 
 import { CheckIfUseCanJoin } from "@shared/user-auth/application/CheckIfUserCanJoin";
 import { Commands } from "@shared/messages/Commands";
@@ -13,10 +8,11 @@ import { JoinMessageHandler } from "@shared/room/domain/JoinMessageHandler";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
 
-import { YGOProRoom } from "../domain/YGOProRoom";
-import YGOProRoomList from "../infrastructure/YGOProRoomList";
 import { YGOProCtosJoinGame } from "ygopro-msg-encode";
 import { MessageRepository } from "@shared/messages/MessageRepository";
+
+import { JoinStrategyRegistry } from "./join-strategies/JoinStrategyRegistry";
+import { JoinContext } from "./join-strategies/JoinStrategy";
 
 export class YGOProJoinHandler implements JoinMessageHandler {
 	private readonly logger: Logger;
@@ -24,19 +20,22 @@ export class YGOProJoinHandler implements JoinMessageHandler {
 	private readonly eventEmitter: EventEmitter;
 	private readonly checkIfUserCanJoin: CheckIfUseCanJoin;
 	private readonly messageRepository: MessageRepository;
+	private readonly registry: JoinStrategyRegistry;
 
 	constructor(
 		eventEmitter: EventEmitter,
 		logger: Logger,
 		socket: ISocket,
 		checkIfUserCanJoin: CheckIfUseCanJoin,
-		messageRepository: MessageRepository
+		messageRepository: MessageRepository,
+		registry?: JoinStrategyRegistry,
 	) {
 		this.logger = logger.child({ file: "YGOProJoinHandler" });
 		this.socket = socket;
 		this.eventEmitter = eventEmitter;
 		this.checkIfUserCanJoin = checkIfUserCanJoin;
 		this.messageRepository = messageRepository;
+		this.registry = registry ?? JoinStrategyRegistry.getInstance();
 		this.eventEmitter.on(
 			Commands.JOIN_GAME as unknown as string,
 			(message: ClientMessage) => void this.handleJoinGame(message)
@@ -49,58 +48,27 @@ export class YGOProJoinHandler implements JoinMessageHandler {
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const joinMessage = new YGOProCtosJoinGame().fromPayload(message.data);
 
+		// NOTE: password is the single segment after the first "#", matching
+		// YGOProRoom.create's own parsing. Do NOT join the rest with "#" — a room
+		// password containing "#" must still compare equal in DefaultJoinStrategy.
+		// AI/AIJOIN strategies read ctx.rawPass directly, so they are unaffected.
 		const [command, password = ""] = joinMessage.pass.split("#");
 
-		const room = this.findOrCreateRoom(
+		const ctx: JoinContext = {
+			rawPass: joinMessage.pass,
 			command,
 			password,
-			joinMessage.pass,
-			playerInfoMessage,
-			this.socket.id as string
-		);
+			playerInfo: playerInfoMessage,
+			socket: this.socket,
+			socketId: this.socket.id as string,
+			eventEmitter: this.eventEmitter,
+			messageRepository: this.messageRepository,
+			logger: this.logger,
+			checkIfUserCanJoin: this.checkIfUserCanJoin,
+			message,
+		};
 
-		if (!room) {
-			this.logger.info("JOIN_GAME rejected: wrong password");
-			this.socket.destroy();
-
-			return;
-		}
-
-		if (room.ranked && !(await this.checkIfUserCanJoin.check(playerInfoMessage, this.socket))) {
-			return;
-		}
-
-		room.emit("JOIN", message, this.socket);
-	}
-
-	private findOrCreateRoom(
-		command: string,
-		password: string,
-		fullPass: string,
-		playerInfo: PlayerInfoMessage,
-		socketId: string
-	): YGOProRoom | null {
-		const existingRoom = YGOProRoomList.findByName(command);
-		if (existingRoom) {
-			if (existingRoom.password !== password) {
-				return null;
-			}
-
-			return existingRoom;
-		}
-
-		const room = YGOProRoom.create(
-			generateUniqueId(),
-			fullPass,
-			this.logger,
-			this.eventEmitter,
-			playerInfo,
-			socketId,
-			this.messageRepository,
-		);
-		YGOProRoomList.addRoom(room);
-		room.waiting();
-
-		return room;
+		const strategy = this.registry.resolve(ctx);
+		await strategy.handle(ctx);
 	}
 }
