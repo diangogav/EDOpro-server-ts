@@ -53,7 +53,7 @@ export class WindbotModule {
 
 	/**
 	 * Returns the singleton instance.
-	 * Throws if init() was never called — callers that guard on isEnabled() avoid this.
+	 * Throws if init() was never called — callers that guard on isInitialized() avoid this.
 	 */
 	static getInstance(): WindbotModule {
 		if (!WindbotModule._instance) {
@@ -63,10 +63,32 @@ export class WindbotModule {
 	}
 
 	/**
+	 * Guard for call sites that run for EVERY room (windbot or not), such as
+	 * YGOProDuelingState.removeRoom(). Returns false before init() is called
+	 * so the cleanup hook is a no-op for non-windbot rooms.
+	 *
+	 * Usage pattern:
+	 *   if (WindbotModule.isInitialized() && WindbotModule.getInstance().isEnabled()) {
+	 *     WindbotModule.getInstance().cleanupRoom(roomId);
+	 *   }
+	 */
+	static isInitialized(): boolean {
+		return WindbotModule._instance !== null;
+	}
+
+	/**
 	 * Test seam: construct a module with injected deps without touching the singleton.
 	 */
 	static createForTests(deps: WindbotModuleDeps): WindbotModule {
 		return new WindbotModule(deps);
+	}
+
+	/**
+	 * Test seam: reset the singleton so test suites can call init() cleanly.
+	 * MUST NOT be called in production code.
+	 */
+	static resetForTests(): void {
+		WindbotModule._instance = null;
 	}
 
 	// ---- facade methods ----
