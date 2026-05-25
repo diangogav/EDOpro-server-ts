@@ -1,0 +1,16 @@
+[
+  {
+    "name": "Anna",
+    "deck": "Anna"
+  },
+  {
+    "name": "Gear",
+    "deck": "Gearfried",
+    "hidden": false
+  },
+  {
+    "name": "Hidden Bot",
+    "deck": "Chaos",
+    "hidden": true
+  }
+]

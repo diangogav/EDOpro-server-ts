@@ -51,6 +51,7 @@ export class WindBotJoinStrategy implements JoinStrategy {
 		if (room.isTag) {
 			const errorBuf = ctx.messageRepository.errorMessage(ErrorMessageType.JOINERROR, 0);
 			ctx.socket.send(errorBuf);
+			ctx.socket.destroy();
 			// Room was NOT added to the list — no cleanup needed
 			return;
 		}
@@ -91,6 +92,7 @@ export class WindBotJoinStrategy implements JoinStrategy {
 
 				const errorBuf = ctx.messageRepository.errorMessage(ErrorMessageType.JOINERROR, 0);
 				ctx.socket.send(errorBuf);
+				ctx.socket.destroy();
 			});
 	}
 }

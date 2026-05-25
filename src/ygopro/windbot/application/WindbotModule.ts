@@ -77,6 +77,24 @@ export class WindbotModule {
 	}
 
 	/**
+	 * Convenience guard: run cleanupRoom only when initialized AND enabled.
+	 * Returns 0 (no-op) when windbot is not initialized or disabled.
+	 *
+	 * Use this at ALL windbot token cleanup call sites (removeRoom, handleYGOPro, etc.)
+	 * to avoid duplicating the two-line guard everywhere.
+	 */
+	static cleanupRoomIfEnabled(roomId: number): number {
+		if (!WindbotModule.isInitialized()) {
+			return 0;
+		}
+		const instance = WindbotModule.getInstance();
+		if (!instance.isEnabled()) {
+			return 0;
+		}
+		return instance.cleanupRoom(roomId);
+	}
+
+	/**
 	 * Test seam: construct a module with injected deps without touching the singleton.
 	 */
 	static createForTests(deps: WindbotModuleDeps): WindbotModule {

@@ -13,6 +13,7 @@ import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
 import { ISocket } from "../../socket/domain/ISocket";
 import { DuelState } from "../domain/YgoRoom";
 import { RoomFinder } from "./RoomFinder";
+import { WindbotModule } from "../../../ygopro/windbot/application/WindbotModule";
 
 export class DisconnectHandler {
 	constructor(private readonly socket: ISocket, private readonly roomFinder: RoomFinder) { }
@@ -106,6 +107,12 @@ export class DisconnectHandler {
 
 	private handleYGOPro(room: YGOProRoom): void {
 		if (room.players.every((player) => player.socket.closed)) {
+			// PR-7: mirror YGOProDuelingState.removeRoom() — mark finalizing FIRST so any
+			// in-flight windbot retry loop aborts, THEN clean up windbot tokens (if any),
+			// THEN delete the room and broadcast. Without this, windbot tokens for this room
+			// would leak in-memory until server restart on abnormal mid-duel disconnects.
+			room.finalizing = true;
+			WindbotModule.cleanupRoomIfEnabled(room.id);
 			MercuryRoomList.deleteRoom(room);
 			WebSocketSingleton.getInstance().broadcast({
 				action: "REMOVE-ROOM",
