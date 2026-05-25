@@ -628,6 +628,10 @@ export class YGOProDuelingState extends RoomState {
   }
 
   private removeRoom(): void {
+    // PR-5: mark finalizing BEFORE broadcasting so any in-flight retry loop
+    // (WindBotJoinStrategy._requestBotFireAndForget) sees the flag and aborts.
+    this.room.finalizing = true;
+
     WebSocketSingleton.getInstance().broadcast({
       action: "REMOVE-ROOM",
       data: this.room.toRealTimePresentation(),

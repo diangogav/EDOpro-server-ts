@@ -1,6 +1,7 @@
 /**
- * Tests for windbot-specific flags added to YGOProRoom in PR-4.
+ * Tests for windbot-specific flags added to YGOProRoom in PR-4 and PR-5.
  * REQ-ROOM-501: noHost, noReconnect, windbot? flags.
+ * REQ-HTTP-402 (PR-5): finalizing flag — defaults false, flips true on teardown.
  */
 
 import { EventEmitter } from "stream";
@@ -71,6 +72,19 @@ describe("YGOProRoom windbot flags", () => {
 			room.windbot = { name: "Anna", deck: "Anna.ydk" };
 			expect(room.windbot?.name).toBe("Anna");
 			expect(room.windbot?.deck).toBe("Anna.ydk");
+		});
+	});
+
+	describe("finalizing (PR-5 — REQ-HTTP-402)", () => {
+		it("finalizing defaults to false", () => {
+			const room = createRoom();
+			expect(room.finalizing).toBe(false);
+		});
+
+		it("finalizing can be set to true", () => {
+			const room = createRoom();
+			room.finalizing = true;
+			expect(room.finalizing).toBe(true);
 		});
 	});
 });

@@ -74,6 +74,12 @@ export class YGOProRoom extends YgoRoom {
   noHost: boolean = false;
   noReconnect: boolean = false;
 
+  // PR-5: finalizing flag (REQ-HTTP-402)
+  // Set to true when the room begins teardown (removeRoom entry point in YGOProDuelingState).
+  // The WindBotJoinStrategy retry-abort callback reads this to stop retrying when the room
+  // is being torn down.
+  finalizing: boolean = false;
+
   private constructor({
     id,
     name,

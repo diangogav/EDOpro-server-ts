@@ -305,5 +305,59 @@ describe("WindBotJoinStrategy", () => {
 				expect(YGOProRoomList.getRooms().length).toBe(0);
 			});
 		});
+
+		describe("isFinalizing callback (PR-5 — REQ-HTTP-402)", () => {
+			it("isFinalizing callback returns false before room is finalized", async () => {
+				// provider.requestJoin receives { token, bot, isFinalizing } — capture isFinalizing
+				let capturedIsFinalizing: (() => boolean) | undefined;
+				const provider = {
+					requestJoin: jest.fn().mockImplementation(
+						(params: { token: string; bot: { name: string; deck: string }; isFinalizing: () => boolean }) => {
+							capturedIsFinalizing = params.isFinalizing;
+							return Promise.resolve();
+						},
+					),
+				};
+				const mod = makeModule({ provider: provider as never });
+				const strategy = new WindBotJoinStrategy(mod);
+
+				const ctx = makeCtx("AI");
+				await strategy.handle(ctx);
+				await new Promise((r) => setImmediate(r));
+
+				expect(capturedIsFinalizing).toBeDefined();
+				// room.finalizing is false at this point
+				expect(capturedIsFinalizing!()).toBe(false);
+			});
+
+			it("isFinalizing callback returns true when room.finalizing is set to true", async () => {
+				// provider.requestJoin receives { token, bot, isFinalizing } — capture isFinalizing
+				let capturedIsFinalizing: (() => boolean) | undefined;
+				const provider = {
+					requestJoin: jest.fn().mockImplementation(
+						(params: { token: string; bot: { name: string; deck: string }; isFinalizing: () => boolean }) => {
+							capturedIsFinalizing = params.isFinalizing;
+							return Promise.resolve();
+						},
+					),
+				};
+				const mod = makeModule({ provider: provider as never });
+				const strategy = new WindBotJoinStrategy(mod);
+
+				const ctx = makeCtx("AI");
+				await strategy.handle(ctx);
+				await new Promise((r) => setImmediate(r));
+
+				expect(capturedIsFinalizing).toBeDefined();
+
+				// Simulate room teardown — flip finalizing on the created room.
+				// The callback must reflect this change (it closes over room.finalizing).
+				const room = YGOProRoomList.getRooms()[0];
+				expect(room).toBeDefined();
+				room.finalizing = true;
+
+				expect(capturedIsFinalizing!()).toBe(true);
+			});
+		});
 	});
 });

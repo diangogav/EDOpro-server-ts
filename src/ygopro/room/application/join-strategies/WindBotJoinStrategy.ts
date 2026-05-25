@@ -68,8 +68,9 @@ export class WindBotJoinStrategy implements JoinStrategy {
 		// Emit JOIN for the human client (enters team 0)
 		room.emit("JOIN", ctx.message, ctx.socket);
 
-		// Fire-and-forget: request bot — handle failure internally
-		// TODO PR-5: replace () => false with () => room.finalizing once that field exists
+		// Fire-and-forget: request bot — handle failure internally.
+		// REQ-HTTP-402: pass () => room.finalizing so the retry loop aborts
+		// as soon as the room begins teardown (e.g. triggered by a concurrent failure).
 		this._requestBotFireAndForget(room, botNameOrNull, ctx);
 	}
 
@@ -79,7 +80,7 @@ export class WindBotJoinStrategy implements JoinStrategy {
 		ctx: JoinContext,
 	): void {
 		this.module
-			.requestBot(room.id, botNameOrNull, () => false)
+			.requestBot(room.id, botNameOrNull, () => room.finalizing)
 			.then(({ bot }) => {
 				// Set windbot data on the room now that we know the bot
 				room.windbot = { name: bot.name, deck: bot.deck };
