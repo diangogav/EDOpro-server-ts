@@ -33,7 +33,8 @@ export class FileBotlistRepository implements WindbotBotlistRepository {
 	}
 
 	findByName(name: string): WindbotData | null {
-		return this.bots.find((b) => b.name === name) ?? null;
+		const lower = name.toLowerCase();
+		return this.bots.find((b) => b.name.toLowerCase() === lower) ?? null;
 	}
 
 	pickRandom(): WindbotData | null {

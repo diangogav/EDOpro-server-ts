@@ -25,16 +25,28 @@ export class WindBotJoinStrategy implements JoinStrategy {
 			return false;
 		}
 
-		const pass = ctx.rawPass;
-		return pass === "" || pass === "AI" || pass.startsWith("AI#");
+		// Blank password routes to windbot when enabled
+		if (ctx.rawPass === "") {
+			return true;
+		}
+
+		// Extract config segment (everything before the first "#"), split by comma,
+		// trim and lowercase — check if "ai" is among the tokens.
+		// This is ORDER-INDEPENDENT and CASE-INSENSITIVE.
+		// Examples: "AI#Anna", "ai,jtp#Joey", "nc,ns,ai#joey", "jtp,ai", "ai"
+		const configSegment = ctx.rawPass.split("#")[0];
+		const tokens = configSegment.split(",").map((t) => t.trim().toLowerCase());
+		return tokens.includes("ai");
 	}
 
 	async handle(ctx: JoinContext): Promise<void> {
-		// Determine bot name from password
-		// "AI#Anna" → botName = "Anna", "AI" or "" → botName = null (random)
-		const botNameOrNull = ctx.rawPass.startsWith("AI#")
-			? ctx.rawPass.slice(3)
-			: null;
+		// Determine bot name from the segment AFTER the first "#"
+		// ctx.password is rawPass.split("#")[1] ?? "" (set by YGOProJoinHandler)
+		// "ai,jtp#Joey" → botName = "Joey"
+		// "nc,ns,ai#joey" → botName = "joey"
+		// "ai" / "nc,ai" (no "#") → botName = null (random)
+		// blank → null (random)
+		const botNameOrNull = ctx.password !== "" ? ctx.password : null;
 
 		// Create the room through the SAME path as the default flow
 		const room = YGOProRoom.create(

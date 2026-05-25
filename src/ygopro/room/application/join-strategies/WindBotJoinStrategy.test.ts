@@ -151,6 +151,55 @@ describe("WindBotJoinStrategy", () => {
 			expect(strategy.matches(makeCtx("NORMALROOM"))).toBe(false);
 			expect(strategy.matches(makeCtx("AIJOIN#sometoken"))).toBe(false);
 		});
+
+		// Multi-token AI command tests
+		it("returns true for 'ai,jtp#Joey' (ai token present, not first)", () => {
+			const strategy = new WindBotJoinStrategy(makeModule());
+			expect(strategy.matches(makeCtx("ai,jtp#Joey"))).toBe(true);
+		});
+
+		it("returns true for 'nc,ns,ai#joey' (ai not first among tokens)", () => {
+			const strategy = new WindBotJoinStrategy(makeModule());
+			expect(strategy.matches(makeCtx("nc,ns,ai#joey"))).toBe(true);
+		});
+
+		it("returns true for 'jtp,ai' (ai token present, no bot name)", () => {
+			const strategy = new WindBotJoinStrategy(makeModule());
+			expect(strategy.matches(makeCtx("jtp,ai"))).toBe(true);
+		});
+
+		it("returns true for lowercase 'ai' (case-insensitive token match)", () => {
+			const strategy = new WindBotJoinStrategy(makeModule());
+			expect(strategy.matches(makeCtx("ai"))).toBe(true);
+		});
+
+		it("returns false for 'jtp#pass' (no ai token)", () => {
+			const strategy = new WindBotJoinStrategy(makeModule());
+			expect(strategy.matches(makeCtx("jtp#pass"))).toBe(false);
+		});
+
+		it("returns false for 'nc,ns#pass' (no ai token)", () => {
+			const strategy = new WindBotJoinStrategy(makeModule());
+			expect(strategy.matches(makeCtx("nc,ns#pass"))).toBe(false);
+		});
+
+		it("returns false for 'normalroom' (no ai token)", () => {
+			const strategy = new WindBotJoinStrategy(makeModule());
+			expect(strategy.matches(makeCtx("normalroom"))).toBe(false);
+		});
+
+		it("returns false for any password when module is disabled", () => {
+			const mod = WindbotModule.createForTests({
+				enabled: false,
+				repo: makeRepo(),
+				tokenStore: WindbotTokenStore.createForTests(),
+				provider: makeProvider() as never,
+			});
+			const strategy = new WindBotJoinStrategy(mod);
+			expect(strategy.matches(makeCtx("ai,jtp#Joey"))).toBe(false);
+			expect(strategy.matches(makeCtx("nc,ns,ai"))).toBe(false);
+			expect(strategy.matches(makeCtx("jtp,ai"))).toBe(false);
+		});
 	});
 
 	describe("handle()", () => {
@@ -264,6 +313,57 @@ describe("WindBotJoinStrategy", () => {
 
 				// pickRandom called because no name specified
 				expect(repo.pickRandom).toHaveBeenCalled();
+			});
+
+			// Multi-token bot-name parsing tests
+			it("parses bot name from 'ai,jtp#Joey' → findByName('Joey')", async () => {
+				const repo = makeRepo();
+				const mod = makeModule({ repo });
+				const strategy = new WindBotJoinStrategy(mod);
+
+				const ctx = makeCtx("ai,jtp#Joey");
+
+				await strategy.handle(ctx);
+
+				expect(repo.findByName).toHaveBeenCalledWith("Joey");
+			});
+
+			it("parses bot name from 'nc,ns,ai#joey' → findByName('joey')", async () => {
+				const repo = makeRepo();
+				const mod = makeModule({ repo });
+				const strategy = new WindBotJoinStrategy(mod);
+
+				const ctx = makeCtx("nc,ns,ai#joey");
+
+				await strategy.handle(ctx);
+
+				expect(repo.findByName).toHaveBeenCalledWith("joey");
+			});
+
+			it("uses pickRandom when 'ai' has no '#' segment (no bot name)", async () => {
+				const repo = makeRepo();
+				const mod = makeModule({ repo });
+				const strategy = new WindBotJoinStrategy(mod);
+
+				const ctx = makeCtx("ai");
+
+				await strategy.handle(ctx);
+
+				expect(repo.pickRandom).toHaveBeenCalled();
+				expect(repo.findByName).not.toHaveBeenCalled();
+			});
+
+			it("uses pickRandom when 'nc,ai' has no '#' segment (no bot name)", async () => {
+				const repo = makeRepo();
+				const mod = makeModule({ repo });
+				const strategy = new WindBotJoinStrategy(mod);
+
+				const ctx = makeCtx("nc,ai");
+
+				await strategy.handle(ctx);
+
+				expect(repo.pickRandom).toHaveBeenCalled();
+				expect(repo.findByName).not.toHaveBeenCalled();
 			});
 		});
 

@@ -93,17 +93,40 @@ describe("FileBotlistRepository", () => {
 
 			const repo = new FileBotlistRepository(filePath);
 
-			expect(repo.findByName("gear")).toBeNull();
+			expect(repo.findByName("nope")).toBeNull();
 		});
 
-		it("is case-sensitive: 'anna' does NOT match 'Anna'", () => {
+		it("is case-insensitive: 'anna' matches 'Anna'", () => {
 			const filePath = writeTempFile(
 				JSON.stringify([{ name: "Anna", deck: "Anna.ydk" }])
 			);
 
 			const repo = new FileBotlistRepository(filePath);
 
-			expect(repo.findByName("anna")).toBeNull();
+			expect(repo.findByName("anna")).not.toBeNull();
+			expect(repo.findByName("anna")?.name).toBe("Anna");
+		});
+
+		it("is case-insensitive: 'JOEY' matches a bot registered as 'Joey'", () => {
+			const filePath = writeTempFile(
+				JSON.stringify([{ name: "Joey", deck: "Joey.ydk" }])
+			);
+
+			const repo = new FileBotlistRepository(filePath);
+
+			expect(repo.findByName("JOEY")).not.toBeNull();
+			expect(repo.findByName("JOEY")?.name).toBe("Joey");
+		});
+
+		it("is case-insensitive: 'joey' matches a bot registered as 'Joey'", () => {
+			const filePath = writeTempFile(
+				JSON.stringify([{ name: "Joey", deck: "Joey.ydk" }])
+			);
+
+			const repo = new FileBotlistRepository(filePath);
+
+			expect(repo.findByName("joey")).not.toBeNull();
+			expect(repo.findByName("joey")?.name).toBe("Joey");
 		});
 	});
 
