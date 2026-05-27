@@ -1,21 +1,22 @@
 
 import { faker } from "@faker-js/faker";
 import { mock, MockProxy } from "jest-mock-extended";
-import { Logger } from "../../../../src/shared/logger/domain/Logger";
-import { Player } from "../../../../src/shared/player/domain/Player";
-import { Team } from "../../../../src/shared/room/Team";
-import { BasicStatsCalculator } from "../../../../src/shared/stats/basic/application/BasicStatsCalculator";
-import { MatchResumeCreator } from "../../../../src/shared/stats/match-resume/application/MatchResumeCreator";
-import { DuelResumeCreator } from "../../../../src/shared/stats/match-resume/duel-resume/application/DuelResumeCreator";
-import { PlayerStats } from "../../../../src/shared/stats/player-stats/domain/PlayerStats";
-import { PlayerStatsRepository } from "../../../../src/shared/stats/player-stats/domain/PlayerStatsRepository";
-import { UserProfile } from "../../../../src/shared/user-profile/domain/UserProfile";
-import { UserProfileRepository } from "../../../../src/shared/user-profile/domain/UserProfileRepository";
-import { GameMother } from "../../../../src/test-support/mothers/player/GameMother";
-import { GameOverDomainEventMother } from "../../../../src/test-support/mothers/player/GameOverDomainEventMother";
-import { PlayerMother } from "../../../../src/test-support/mothers/player/PlayerMother";
-import { PlayerStatsMother } from "../../../../src/test-support/mothers/player/PlayerStatsMother";
-import { UserProfileMother } from "../../../../src/test-support/mothers/user-profile/UserProfileMother";
+import { Logger } from "@shared/logger/domain/Logger";
+import { Player } from "@shared/player/domain/Player";
+import { Team } from "@shared/room/Team";
+import { MatchResumeCreator } from "@shared/stats/match-resume/application/MatchResumeCreator";
+import { DuelResumeCreator } from "@shared/stats/match-resume/duel-resume/application/DuelResumeCreator";
+import { PlayerStats } from "@shared/stats/player-stats/domain/PlayerStats";
+import { PlayerStatsRepository } from "@shared/stats/player-stats/domain/PlayerStatsRepository";
+import { UserProfile } from "@shared/user-profile/domain/UserProfile";
+import { UserProfileRepository } from "@shared/user-profile/domain/UserProfileRepository";
+import { GameMother } from "@test-support/mothers/player/GameMother";
+import { GameOverDomainEventMother } from "@test-support/mothers/player/GameOverDomainEventMother";
+import { PlayerMother } from "@test-support/mothers/player/PlayerMother";
+import { PlayerStatsMother } from "@test-support/mothers/player/PlayerStatsMother";
+import { UserProfileMother } from "@test-support/mothers/user-profile/UserProfileMother";
+
+import { BasicStatsCalculator } from "./BasicStatsCalculator";
 
 describe("BasicStatsCalculator", () => {
 	let basicStatsCalculator: BasicStatsCalculator;
