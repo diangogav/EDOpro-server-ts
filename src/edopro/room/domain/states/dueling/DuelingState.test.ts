@@ -1,35 +1,35 @@
 import "reflect-metadata";
 import { EventEmitter } from "stream";
-import { Logger } from "../../../../../../../src/shared/logger/domain/Logger";
-import { Reconnect } from "../../../../../../../src/edopro/room/application/Reconnect";
-import { JoinToDuelAsSpectator } from "../../../../../../../src/edopro/room/application/JoinToDuelAsSpectator";
-import { Room } from "../../../../../../../src/edopro/room/domain/Room";
-import { JSONMessageProcessor } from "../../../../../../../src/edopro/messages/JSONMessageProcessor";
-import { DuelingState } from "../../../../../../../src/edopro/room/domain/states/dueling/DuelingState";
-import { Client } from "../../../../../../../src/edopro/client/domain/Client";
-import { ClientMessage } from "../../../../../../../src/shared/messages/MessageProcessor";
-import { FinishDuelHandler } from "../../../../../../../src/edopro/room/application/FinishDuelHandler";
-import { UpdateDeckMessageParser } from "../../../../../../../src/edopro/deck/application/UpdateDeckMessageSizeCalculator";
-import { ISocket } from "../../../../../../../src/shared/socket/domain/ISocket";
+import { Logger } from "@shared/logger/domain/Logger";
+import { Reconnect } from "@edopro/room/application/Reconnect";
+import { JoinToDuelAsSpectator } from "@edopro/room/application/JoinToDuelAsSpectator";
+import { Room } from "@edopro/room/domain/Room";
+import { JSONMessageProcessor } from "@edopro/messages/JSONMessageProcessor";
+import { DuelingState } from "./DuelingState";
+import { Client } from "@edopro/client/domain/Client";
+import { ClientMessage } from "@shared/messages/MessageProcessor";
+import { FinishDuelHandler } from "@edopro/room/application/FinishDuelHandler";
+import { UpdateDeckMessageParser } from "@edopro/deck/application/UpdateDeckMessageSizeCalculator";
+import { ISocket } from "@shared/socket/domain/ISocket";
 import { spawn } from "child_process";
-import WebSocketSingleton from "../../../../../../../src/web-socket-server/WebSocketSingleton";
-import { Commands } from "../../../../../../../src/shared/messages/Commands";
+import WebSocketSingleton from "../../../../../web-socket-server/WebSocketSingleton";
+import { Commands } from "@shared/messages/Commands";
 
 // Mocks
-jest.mock("../../../../../../../src/shared/logger/domain/Logger");
-jest.mock("../../../../../../../src/edopro/room/application/Reconnect");
+jest.mock("@shared/logger/domain/Logger");
+jest.mock("@edopro/room/application/Reconnect");
 jest.mock(
-  "../../../../../../../src/edopro/room/application/JoinToDuelAsSpectator",
+  "@edopro/room/application/JoinToDuelAsSpectator",
 );
-jest.mock("../../../../../../../src/edopro/room/domain/Room");
-jest.mock("../../../../../../../src/edopro/messages/JSONMessageProcessor");
-jest.mock("../../../../../../../src/edopro/client/domain/Client");
-jest.mock("../../../../../../../src/edopro/room/application/FinishDuelHandler");
+jest.mock("@edopro/room/domain/Room");
+jest.mock("@edopro/messages/JSONMessageProcessor");
+jest.mock("@edopro/client/domain/Client");
+jest.mock("@edopro/room/application/FinishDuelHandler");
 jest.mock(
-  "../../../../../../../src/edopro/deck/application/UpdateDeckMessageSizeCalculator",
+  "@edopro/deck/application/UpdateDeckMessageSizeCalculator",
 );
 jest.mock("child_process");
-jest.mock("../../../../../../../src/web-socket-server/WebSocketSingleton");
+jest.mock("../../../../../web-socket-server/WebSocketSingleton");
 
 describe("DuelingState", () => {
   let state: DuelingState;

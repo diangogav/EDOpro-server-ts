@@ -1,22 +1,22 @@
 import { EventEmitter } from "stream";
-import { Logger } from "../../../../../../../src/shared/logger/domain/Logger";
-import { UserAuth } from "../../../../../../../src/shared/user-auth/application/UserAuth";
-import { DeckCreator } from "../../../../../../../src/edopro/deck/application/DeckCreator";
-import { WaitingState } from "../../../../../../../src/edopro/room/domain/states/waiting/WaitingState";
-import { Room } from "../../../../../../../src/edopro/room/domain/Room";
-import { Client } from "../../../../../../../src/edopro/client/domain/Client";
-import { ISocket } from "../../../../../../../src/shared/socket/domain/ISocket";
-import { ClientMessage } from "../../../../../../../src/shared/messages/MessageProcessor";
-import { DuelStartClientMessage } from "../../../../../../../src/shared/messages/server-to-client/DuelStartClientMessage";
-import { Commands } from "../../../../../../../src/shared/messages/Commands";
+import { Logger } from "@shared/logger/domain/Logger";
+import { UserAuth } from "@shared/user-auth/application/UserAuth";
+import { DeckCreator } from "@edopro/deck/application/DeckCreator";
+import { WaitingState } from "./WaitingState";
+import { Room } from "@edopro/room/domain/Room";
+import { Client } from "@edopro/client/domain/Client";
+import { ISocket } from "@shared/socket/domain/ISocket";
+import { ClientMessage } from "@shared/messages/MessageProcessor";
+import { DuelStartClientMessage } from "@shared/messages/server-to-client/DuelStartClientMessage";
+import { Commands } from "@shared/messages/Commands";
 
-jest.mock("../../../../../../../src/shared/logger/domain/Logger");
-jest.mock("../../../../../../../src/shared/user-auth/application/UserAuth");
-jest.mock("../../../../../../../src/edopro/deck/application/DeckCreator");
-jest.mock("../../../../../../../src/edopro/room/domain/Room");
-jest.mock("../../../../../../../src/edopro/client/domain/Client");
+jest.mock("@shared/logger/domain/Logger");
+jest.mock("@shared/user-auth/application/UserAuth");
+jest.mock("@edopro/deck/application/DeckCreator");
+jest.mock("@edopro/room/domain/Room");
+jest.mock("@edopro/client/domain/Client");
 jest.mock(
-  "../../../../../../../src/shared/messages/server-to-client/DuelStartClientMessage",
+  "@shared/messages/server-to-client/DuelStartClientMessage",
 );
 
 describe("WaitingState", () => {

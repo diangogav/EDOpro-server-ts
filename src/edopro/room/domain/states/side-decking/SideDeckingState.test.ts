@@ -1,27 +1,27 @@
 import { EventEmitter } from "stream";
-import { Logger } from "../../../../../../../src/shared/logger/domain/Logger";
-import { Reconnect } from "../../../../../../../src/edopro/room/application/Reconnect";
-import { JoinToDuelAsSpectator } from "../../../../../../../src/edopro/room/application/JoinToDuelAsSpectator";
-import { DeckCreator } from "../../../../../../../src/edopro/deck/application/DeckCreator";
-import { SideDeckingState } from "../../../../../../../src/edopro/room/domain/states/side-decking/SideDeckingState";
-import { Room } from "../../../../../../../src/edopro/room/domain/Room";
-import { Client } from "../../../../../../../src/edopro/client/domain/Client";
-import { ClientMessage } from "../../../../../../../src/shared/messages/MessageProcessor";
-import { UpdateDeckMessageParser } from "../../../../../../../src/edopro/deck/application/UpdateDeckMessageSizeCalculator";
-import { ISocket } from "../../../../../../../src/shared/socket/domain/ISocket";
-import { Commands } from "../../../../../../../src/shared/messages/Commands";
+import { Logger } from "@shared/logger/domain/Logger";
+import { Reconnect } from "@edopro/room/application/Reconnect";
+import { JoinToDuelAsSpectator } from "@edopro/room/application/JoinToDuelAsSpectator";
+import { DeckCreator } from "@edopro/deck/application/DeckCreator";
+import { SideDeckingState } from "./SideDeckingState";
+import { Room } from "@edopro/room/domain/Room";
+import { Client } from "@edopro/client/domain/Client";
+import { ClientMessage } from "@shared/messages/MessageProcessor";
+import { UpdateDeckMessageParser } from "@edopro/deck/application/UpdateDeckMessageSizeCalculator";
+import { ISocket } from "@shared/socket/domain/ISocket";
+import { Commands } from "@shared/messages/Commands";
 
 // Mocks
-jest.mock("../../../../../../../src/shared/logger/domain/Logger");
-jest.mock("../../../../../../../src/edopro/room/application/Reconnect");
+jest.mock("@shared/logger/domain/Logger");
+jest.mock("@edopro/room/application/Reconnect");
 jest.mock(
-  "../../../../../../../src/edopro/room/application/JoinToDuelAsSpectator",
+  "@edopro/room/application/JoinToDuelAsSpectator",
 );
-jest.mock("../../../../../../../src/edopro/deck/application/DeckCreator");
-jest.mock("../../../../../../../src/edopro/room/domain/Room");
-jest.mock("../../../../../../../src/edopro/client/domain/Client");
+jest.mock("@edopro/deck/application/DeckCreator");
+jest.mock("@edopro/room/domain/Room");
+jest.mock("@edopro/client/domain/Client");
 jest.mock(
-  "../../../../../../../src/edopro/deck/application/UpdateDeckMessageSizeCalculator",
+  "@edopro/deck/application/UpdateDeckMessageSizeCalculator",
 );
 
 describe("SideDeckingState", () => {

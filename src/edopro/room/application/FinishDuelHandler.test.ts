@@ -1,19 +1,19 @@
 import "reflect-metadata";
-import { container } from "../../../../../src/shared/dependency-injection";
-import { EventBus } from "../../../../../src/shared/event-bus/EventBus";
-import WebSocketSingleton from "../../../../../src/web-socket-server/WebSocketSingleton";
-import { Client } from "../../../../../src/edopro/client/domain/Client";
-import { FinishDuelHandler } from "../../../../../src/edopro/room/application/FinishDuelHandler";
-import { DuelFinishReason } from "../../../../../src/edopro/room/domain/DuelFinishReason";
-import { Room } from "../../../../../src/edopro/room/domain/Room";
-import { Replay } from "../../../../../src/edopro/replay/Replay";
+import { container } from "@shared/dependency-injection";
+import { EventBus } from "@shared/event-bus/EventBus";
+import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
+import { Client } from "@edopro/client/domain/Client";
+import { FinishDuelHandler } from "./FinishDuelHandler";
+import { DuelFinishReason } from "@edopro/room/domain/DuelFinishReason";
+import { Room } from "@edopro/room/domain/Room";
+import { Replay } from "@edopro/replay/Replay";
 
 // Mock dependencies
-jest.mock("../../../../../src/shared/dependency-injection");
-jest.mock("../../../../../src/shared/event-bus/EventBus");
-jest.mock("../../../../../src/web-socket-server/WebSocketSingleton");
-jest.mock("../../../../../src/edopro/client/domain/Client");
-jest.mock("../../../../../src/edopro/room/domain/Room");
+jest.mock("@shared/dependency-injection");
+jest.mock("@shared/event-bus/EventBus");
+jest.mock("../../../web-socket-server/WebSocketSingleton");
+jest.mock("@edopro/client/domain/Client");
+jest.mock("@edopro/room/domain/Room");
 
 describe("FinishDuelHandler", () => {
   let handler: FinishDuelHandler;

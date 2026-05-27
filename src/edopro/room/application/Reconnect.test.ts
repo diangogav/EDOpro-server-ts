@@ -1,23 +1,23 @@
-import { ISocket } from "../../../../../src/shared/socket/domain/ISocket";
-import { CheckIfUseCanJoin } from "../../../../../src/shared/user-auth/application/CheckIfUserCanJoin";
-import { Client } from "../../../../../src/edopro/client/domain/Client";
-import { JoinGameMessage } from "../../../../../src/edopro/messages/client-to-server/JoinGameMessage";
-import { PlayerInfoMessage } from "../../../../../src/edopro/messages/client-to-server/PlayerInfoMessage";
-import { Reconnect } from "../../../../../src/edopro/room/application/Reconnect";
-import { Room } from "../../../../../src/edopro/room/domain/Room";
+import { ISocket } from "@shared/socket/domain/ISocket";
+import { CheckIfUseCanJoin } from "@shared/user-auth/application/CheckIfUserCanJoin";
+import { Client } from "@edopro/client/domain/Client";
+import { JoinGameMessage } from "@edopro/messages/client-to-server/JoinGameMessage";
+import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
+import { Reconnect } from "./Reconnect";
+import { Room } from "@edopro/room/domain/Room";
 
 // Mock dependencies
-jest.mock("../../../../../src/edopro/room/domain/Room");
-jest.mock("../../../../../src/edopro/client/domain/Client");
-jest.mock("../../../../../src/shared/user-auth/application/CheckIfUserCanJoin");
+jest.mock("@edopro/room/domain/Room");
+jest.mock("@edopro/client/domain/Client");
+jest.mock("@shared/user-auth/application/CheckIfUserCanJoin");
 jest.mock(
-  "../../../../../src/edopro/messages/server-to-client/JoinGameClientMessage",
+  "@edopro/messages/server-to-client/JoinGameClientMessage",
 );
 jest.mock(
-  "../../../../../src/shared/messages/server-to-client/TypeChangeClientMessage",
+  "@shared/messages/server-to-client/TypeChangeClientMessage",
 );
 jest.mock(
-  "../../../../../src/shared/messages/server-to-client/PlayerEnterClientMessage",
+  "@shared/messages/server-to-client/PlayerEnterClientMessage",
 );
 
 describe("Reconnect", () => {

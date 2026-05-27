@@ -1,24 +1,24 @@
-import { ISocket } from "../../../../../src/shared/socket/domain/ISocket";
-import { Client } from "../../../../../src/edopro/client/domain/Client";
-import { JoinGameMessage } from "../../../../../src/edopro/messages/client-to-server/JoinGameMessage";
-import { PlayerInfoMessage } from "../../../../../src/edopro/messages/client-to-server/PlayerInfoMessage";
-import { JoinToDuelAsSpectator } from "../../../../../src/edopro/room/application/JoinToDuelAsSpectator";
-import { Room } from "../../../../../src/edopro/room/domain/Room";
+import { ISocket } from "@shared/socket/domain/ISocket";
+import { Client } from "@edopro/client/domain/Client";
+import { JoinGameMessage } from "@edopro/messages/client-to-server/JoinGameMessage";
+import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
+import { JoinToDuelAsSpectator } from "./JoinToDuelAsSpectator";
+import { Room } from "@edopro/room/domain/Room";
 
 // Mock dependencies
-jest.mock("../../../../../src/edopro/room/domain/Room");
-jest.mock("../../../../../src/edopro/client/domain/Client");
+jest.mock("@edopro/room/domain/Room");
+jest.mock("@edopro/client/domain/Client");
 jest.mock(
-  "../../../../../src/edopro/messages/server-to-client/JoinGameClientMessage",
+  "@edopro/messages/server-to-client/JoinGameClientMessage",
 );
 jest.mock(
-  "../../../../../src/shared/messages/server-to-client/DuelStartClientMessage",
+  "@shared/messages/server-to-client/DuelStartClientMessage",
 );
 jest.mock(
-  "../../../../../src/edopro/messages/server-to-client/CatchUpClientMessage",
+  "@edopro/messages/server-to-client/CatchUpClientMessage",
 );
 jest.mock(
-  "../../../../../src/edopro/messages/server-to-client/ServerMessageClientMessage",
+  "@edopro/messages/server-to-client/ServerMessageClientMessage",
 );
 
 describe("JoinToDuelAsSpectator", () => {
