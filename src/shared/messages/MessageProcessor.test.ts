@@ -1,4 +1,11 @@
-import { MessageProcessor } from "../../../../src/shared/messages/MessageProcessor";
+import { Commands } from "./Commands";
+import { MessageProcessor } from "./MessageProcessor";
+
+// Real wire-format capture: a PLAYER_INFO message (41 bytes) followed by a CREATE_GAME message.
+const PLAYER_INFO_THEN_CREATE_GAME = Buffer.from(
+  "2900106300680061007a007a000000000000000000000000000000000000000000000000000000000000005d01111c6a241a0400000000000000401f00000501fa0000000000016201f128010a0001000000010000000500000080060d0000000005000028003c0000000f0000000f00410849003a005000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000cec47b0000000000000000000000000000000000000000000000000000000000003e0008000000180000006cfd7a0a429cc27b30003f0003001f0014fd7a0a00003e00050000000a00000800103f0002100000e8c83e00000000004000000000003e00e8c83e00021000008cfd7a0afe81c27b2000000016000000bcfe7a0aa050087b00103f0020003f0000000000021000005000000038004108021000009f6c077b00103f00e8c83e0000000000e0c83e000c000000040000008cfd7a0a0210000000003e00",
+  "hex",
+);
 
 describe("MessageProcessor", () => {
   let processor: MessageProcessor;
@@ -124,5 +131,47 @@ describe("MessageProcessor", () => {
     processor.process();
     // Nothing should change, size should be undefined (or default)
     expect(processor.size).toBeUndefined();
+  });
+
+  it("parses a real PLAYER_INFO packet from the wire", () => {
+    processor.read(PLAYER_INFO_THEN_CREATE_GAME);
+    processor.process();
+
+    expect(processor.command).toBe(Commands.PLAYER_INFO);
+    expect(processor.size).toBe(41);
+    expect(processor.bufferLength).toBe(351);
+  });
+
+  it("parses consecutive PLAYER_INFO and CREATE_GAME packets from one buffer", () => {
+    processor.read(PLAYER_INFO_THEN_CREATE_GAME);
+
+    processor.process();
+    expect(processor.command).toBe(Commands.PLAYER_INFO);
+    expect(processor.size).toBe(41);
+    expect(processor.bufferLength).toBe(351);
+
+    processor.process();
+    expect(processor.command).toBe(Commands.CREATE_GAME);
+    expect(processor.size).toBe(349);
+    expect(processor.bufferLength).toBe(0);
+  });
+
+  it("buffers a partial header, then parses RESPONSE and TIME_CONFIRM", () => {
+    processor.read(Buffer.from("050001", "hex"));
+    processor.process();
+    expect(processor.command).toBeUndefined();
+    expect(processor.size).toBeUndefined();
+    expect(processor.bufferLength).toBe(3);
+
+    processor.read(Buffer.from("ffffffff010015", "hex"));
+    processor.process();
+    expect(processor.command).toBe(Commands.RESPONSE);
+    expect(processor.size).toBe(5);
+    expect(processor.bufferLength).toBe(3);
+
+    processor.process();
+    expect(processor.command).toBe(Commands.TIME_CONFIRM);
+    expect(processor.size).toBe(1);
+    expect(processor.bufferLength).toBe(0);
   });
 });

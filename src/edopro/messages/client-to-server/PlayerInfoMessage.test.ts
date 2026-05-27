@@ -1,4 +1,4 @@
-import { PlayerInfoMessage } from "../../../../../src/edopro/messages/client-to-server/PlayerInfoMessage";
+import { PlayerInfoMessage } from "./PlayerInfoMessage";
 
 describe("PlayerInfoMessage", () => {
   it("should parse name only", () => {

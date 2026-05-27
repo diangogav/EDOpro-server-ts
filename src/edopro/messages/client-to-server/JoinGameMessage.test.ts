@@ -1,4 +1,4 @@
-import { JoinGameMessage } from "../../../../../src/edopro/messages/client-to-server/JoinGameMessage";
+import { JoinGameMessage } from "./JoinGameMessage";
 
 describe("JoinGameMessage", () => {
   it("should parse correctly", () => {

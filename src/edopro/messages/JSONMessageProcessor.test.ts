@@ -1,4 +1,4 @@
-import { JSONMessageProcessor } from "../../../../src/edopro/messages/JSONMessageProcessor";
+import { JSONMessageProcessor } from "./JSONMessageProcessor";
 
 describe("JSONMessageProcessor", () => {
   let processor: JSONMessageProcessor;
