@@ -1,6 +1,6 @@
 import { YgoRoom } from "../../../../src/shared/room/domain/YgoRoom";
-import { ClientMother } from "../../shared/mothers/client/ClientMother";
-import { SimpleRoomMother } from "../../shared/mothers/room/SimpleRoomMother";
+import { ClientMother } from "../../../../src/test-support/mothers/client/ClientMother";
+import { SimpleRoomMother } from "../../../../src/test-support/mothers/room/SimpleRoomMother";
 
 describe("YgoRoom", () => {
   describe("Lock-Free", () => {

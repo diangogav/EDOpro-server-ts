@@ -1,7 +1,7 @@
 import "reflect-metadata";
 
 import { GameMode } from "ygopro-msg-encode";
-import { YGOProRoomMother } from "../../../shared/mothers/room/YGOProRoomMother";
+import { YGOProRoomMother } from "../../../../../src/test-support/mothers/room/YGOProRoomMother";
 import YGOProBanListMemoryRepository from "../../../../../src/ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository";
 import { YGOProBanList } from "../../../../../src/ygopro/ban-list/domain/YGOProBanList";
 

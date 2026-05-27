@@ -1,8 +1,8 @@
 import { faker } from "@faker-js/faker";
 
-import { Client } from "../../../../../src/edopro/client/domain/Client";
-import { Logger } from "../../../../../src/shared/logger/domain/Logger";
-import { ISocket } from "../../../../../src/shared/socket/domain/ISocket";
+import { Client } from "@edopro/client/domain/Client";
+import { Logger } from "@shared/logger/domain/Logger";
+import { ISocket } from "@shared/socket/domain/ISocket";
 import { LoggerMock } from "../../mocks/logger/LoggerMock";
 import { SocketMock } from "../../mocks/socket/SocketMock";
 

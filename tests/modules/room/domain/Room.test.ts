@@ -1,7 +1,7 @@
  
 import { Room } from "../../../../src/edopro/room/domain/Room";
-import { ClientMother } from "../../shared/mothers/client/ClientMother";
-import { RoomMother } from "../../shared/mothers/room/RoomMother";
+import { ClientMother } from "../../../../src/test-support/mothers/client/ClientMother";
+import { RoomMother } from "../../../../src/test-support/mothers/room/RoomMother";
 
 describe("Room", () => {
 	let room: Room;
