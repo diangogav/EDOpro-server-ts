@@ -1,4 +1,4 @@
-import { EdoproBanList } from "../../../../../src/edopro/ban-list/domain/BanList";
+import { EdoproBanList } from "./BanList";
 
 describe("EdoproBanList", () => {
   let banList: EdoproBanList;

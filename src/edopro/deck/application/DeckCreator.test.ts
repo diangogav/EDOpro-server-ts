@@ -1,11 +1,11 @@
-import { EdoproBanList } from "../../../../../src/edopro/ban-list/domain/BanList";
-import BanListMemoryRepository from "../../../../../src/edopro/ban-list/infrastructure/BanListMemoryRepository";
-import { Card } from "../../../../../src/shared/card/domain/Card";
-import { CardRepository } from "../../../../../src/shared/card/domain/CardRepository";
-import { CardTypes } from "../../../../../src/shared/card/domain/CardTypes";
-import { Rule } from "../../../../../src/shared/deck/domain/Rule";
-import { DeckCreator } from "../../../../../src/edopro/deck/application/DeckCreator";
-import { DeckRules } from "../../../../../src/shared/room/domain/YgoRoom";
+import { EdoproBanList } from "@edopro/ban-list/domain/BanList";
+import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
+import { Card } from "@shared/card/domain/Card";
+import { CardRepository } from "@shared/card/domain/CardRepository";
+import { CardTypes } from "@shared/card/domain/CardTypes";
+import { Rule } from "@shared/deck/domain/Rule";
+import { DeckCreator } from "./DeckCreator";
+import { DeckRules } from "@shared/room/domain/YgoRoom";
 
 // Mock dependencies
 const mockCardRepository: jest.Mocked<CardRepository> = {
@@ -13,7 +13,7 @@ const mockCardRepository: jest.Mocked<CardRepository> = {
 };
 
 jest.mock(
-  "../../../../../src/edopro/ban-list/infrastructure/BanListMemoryRepository",
+  "@edopro/ban-list/infrastructure/BanListMemoryRepository",
 );
 
 describe("DeckCreator", () => {

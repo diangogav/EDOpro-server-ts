@@ -1,4 +1,4 @@
-import { UpdateDeckMessageParser } from "../../../../../src/edopro/deck/application/UpdateDeckMessageSizeCalculator";
+import { UpdateDeckMessageParser } from "./UpdateDeckMessageSizeCalculator";
 
 describe("UpdateDeckMessageParser", () => {
   it("should parse deck correctly", () => {

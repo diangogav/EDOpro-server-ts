@@ -1,17 +1,17 @@
-import { Logger } from "../../../../../src/shared/logger/domain/Logger";
-import { ISocket } from "../../../../../src/shared/socket/domain/ISocket";
-import { Client } from "../../../../../src/edopro/client/domain/Client";
-import { Deck } from "../../../../../src/shared/deck/domain/Deck";
-import { Choose } from "../../../../../src/edopro/rock-paper-scissor/RockPaperScissor";
-import { Room } from "../../../../../src/edopro/room/domain/Room";
-import { RoomMessageEmitter } from "../../../../../src/edopro/RoomMessageEmitter";
+import { Logger } from "@shared/logger/domain/Logger";
+import { ISocket } from "@shared/socket/domain/ISocket";
+import { Client } from "./Client";
+import { Deck } from "@shared/deck/domain/Deck";
+import { Choose } from "@edopro/rock-paper-scissor/RockPaperScissor";
+import { Room } from "@edopro/room/domain/Room";
+import { RoomMessageEmitter } from "@edopro/RoomMessageEmitter";
 import {
   MessageProcessor,
   ClientMessage,
-} from "../../../../../src/shared/messages/MessageProcessor";
+} from "@shared/messages/MessageProcessor";
 
-jest.mock("../../../../../src/edopro/RoomMessageEmitter");
-jest.mock("../../../../../src/shared/messages/MessageProcessor");
+jest.mock("@edopro/RoomMessageEmitter");
+jest.mock("@shared/messages/MessageProcessor");
 
 describe("Client", () => {
   let client: Client;
