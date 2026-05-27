@@ -26,7 +26,7 @@ As an AI agent, you must strictly adhere to these rules. **Violation of these ru
 
 - **DDD is Mandatory**: Business logic lives in `domain/`. Never import `infrastructure/` or `application/`. Dependencies point inward.
 - **Hexagonal Architecture**: Dependencies point inward. The core doesn't know about the database or sockets.
-- **Mother Pattern**: ALWAYS use `*Mother` classes (Object Factories) for test data. Never manually instantiate complex entities in tests.
+- **Test data**: Use `*Mother` classes for shared domain entities; local `make*` factories for suite-specific stubs. Tests are **co-located** in `src/` next to their source. See [testing conventions](./docs/testing.md).
 - **Chain of Responsibility**: Use this pattern for complex validations (e.g., Deck Rules).
 - **Dependency Injection**: Use `diod` or constructor injection to manage dependencies.
 
@@ -62,7 +62,7 @@ When performing these actions, **ALWAYS** follow the corresponding Standard Oper
 | Action                                              | Skill / SOP                                     |
 | --------------------------------------------------- | ----------------------------------------------- |
 | "Implement feature...", "Create use case..."        | **[SOP-001] Feature Implementation (DDD)**      |
-| "Write tests...", "Fix bug...", "Add unit test"     | **[SOP-002] Testing Strategy (Mother Pattern)** |
+| "Write tests...", "Fix bug...", "Add unit test"     | **[SOP-002] Testing Strategy**                  |
 | "Add field to DB", "Update schema", "New entity"    | **[SOP-003] Database Migration**                |
 | "Create new module", "New architecture component"   | **[SOP-004] Module Creation**                   |
 | "Fix complex type error", "Optimize TS build"       | **typescript-expert**                           |
@@ -91,38 +91,35 @@ When performing these actions, **ALWAYS** follow the corresponding Standard Oper
 4.  **Interface Layer**:
     - Expose via Controller (HTTP) or Event Handler (Socket).
 
-### [SOP-002] Testing Strategy (Mother Pattern)
+### [SOP-002] Testing Strategy
 
-**Goal**: Ensure robust testing using consistent data factories.
+**Goal**: Consistent, co-located tests. Full conventions in [docs/testing.md](./docs/testing.md).
 
-1.  **Locate/Create Mother**:
-    - Check `tests/modules/[module]/domain/[Entity]Mother.ts`.
-    - If missing, create it using `@faker-js/faker`.
-    - _Template_:
+1.  **Co-locate the test**: create `[Thing].test.ts` next to `src/[module]/[Thing].ts`. Do **not** add to the root `tests/` folder (legacy, being migrated out).
+2.  **Build test data**:
+    - Shared domain entities → use/create a `*Mother` (static `create(overrides?)`, faker defaults):
       ```typescript
       export class UserMother {
         static create(overrides?: Partial<UserPrimitives>): User {
-          const primitives = {
+          return User.fromPrimitives({
             id: UuidMother.create(),
             name: faker.person.firstName(),
             ...overrides,
-          };
-          return User.fromPrimitives(primitives);
+          });
         }
       }
       ```
-2.  **Write Test Spec**:
-    - Create `[UseCase].test.ts` in `tests/modules/[module]/application/`.
-    - **Rule**: Describe the test case in **Spanish**.
-    - _Template_:
+    - Suite-local stubs (fake repo/provider/socket) → inline `make*` factory with an `overrides` param.
+3.  **Naming**: `describe` the unit, `it` the behavior in **English**, present tense, no "should":
       ```typescript
-      describe("CrearSala", () => {
-        it("debe permitir crear una sala pública correctamente", async () => {
+      describe("CreateRoom", () => {
+        it("creates a public room", async () => {
           const user = UserMother.create();
           // ...
         });
       });
       ```
+4.  **Mocks**: shared Mock classes for infra (Logger/Socket/MessageRepository), `jest.mock()` for module singletons, `mock<T>()` (jest-mock-extended) for one-off interfaces. Reset singletons in `afterEach`.
 
 ### [SOP-003] Database Migration
 
@@ -146,8 +143,8 @@ When performing these actions, **ALWAYS** follow the corresponding Standard Oper
 1.  **Structure**:
     ```bash
     mkdir -p src/new-module/{domain,application,infrastructure}
-    mkdir -p tests/modules/new-module
     ```
+    Tests are co-located next to their source inside these folders — no separate `tests/` tree.
 2.  **Registration**:
     - Register new entities in TypeORM config.
     - Register new controllers/handlers in the dependency injection container (`diod`).
