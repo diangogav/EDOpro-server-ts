@@ -30,7 +30,6 @@
     }
   },
   "include": [
-    "src",
-    "tests"
+    "src"
   ]
 }

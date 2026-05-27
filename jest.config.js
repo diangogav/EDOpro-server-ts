@@ -6,7 +6,7 @@ module.exports = {
 	testEnvironment: "node",
 	modulePaths: [compilerOptions.baseUrl],
 	moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths),
-	roots: ["<rootDir>/src", "<rootDir>/tests"],
+	roots: ["<rootDir>/src"],
 	maxWorkers: "50%",
 	transform: {
 		"^.+\\.tsx?$": "ts-jest",
