@@ -1,5 +1,5 @@
-import { Duel } from "../../../../src/shared/room/Duel";
-import { Team } from "../../../../src/shared/room/Team";
+import { Duel } from "./Duel";
+import { Team } from "@shared/room/Team";
 
 describe("Duel", () => {
   let duel: Duel;

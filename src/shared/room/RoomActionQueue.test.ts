@@ -1,4 +1,4 @@
-import { RoomActionQueue } from "../../../src/shared/room/RoomActionQueue";
+import { RoomActionQueue } from "./RoomActionQueue";
 
 describe("RoomActionQueue (Lock-Free Queue)", () => {
 	it("ejecuta acciones en orden FIFO", async () => {
