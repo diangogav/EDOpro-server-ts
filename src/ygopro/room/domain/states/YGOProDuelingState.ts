@@ -15,9 +15,9 @@ import { Team } from "@shared/room/Team";
 
 import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { DuelRecord } from "../DuelRecord";
+import { FinalizeYGOProRoom } from "../../application/FinalizeYGOProRoom";
 import { YGOProRoom } from "../YGOProRoom";
 import { getMessageIdentifier } from "../../../utils/response-time-utils";
-import { WindbotModule } from "../../../windbot/application/WindbotModule";
 
 import {
   OcgcoreScriptConstants,
@@ -36,7 +36,6 @@ import {
   YGOProStocTeammateSurrender,
 } from "ygopro-msg-encode";
 import { GameOverDomainEvent } from "@shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
-import MercuryRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 
 export class YGOProDuelingState extends RoomState {
@@ -629,23 +628,6 @@ export class YGOProDuelingState extends RoomState {
   }
 
   private removeRoom(): void {
-    // Mark finalizing BEFORE broadcasting so any in-flight retry loop
-    // (WindBotJoinStrategy._requestBotFireAndForget) sees the flag and aborts.
-    this.room.finalizing = true;
-
-    // Clean up any windbot tokens still registered for this room. This is a no-op when:
-    //   • windbot is not initialized (non-windbot server, or ENABLE_WINDBOT=false)
-    //   • windbot is initialized but disabled
-    //   • the bot already consumed its token before duel end (clearByRoom returns 0)
-    // Guard: isInitialized() prevents getInstance() from throwing for non-windbot rooms.
-    if (WindbotModule.isInitialized() && WindbotModule.getInstance().isEnabled()) {
-      WindbotModule.getInstance().cleanupRoom(this.room.id);
-    }
-
-    WebSocketSingleton.getInstance().broadcast({
-      action: "REMOVE-ROOM",
-      data: this.room.toRealTimePresentation(),
-    });
-    MercuryRoomList.deleteRoom(this.room);
+    FinalizeYGOProRoom.run(this.room);
   }
 }
