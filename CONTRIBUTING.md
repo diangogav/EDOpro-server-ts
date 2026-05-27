@@ -9,7 +9,7 @@ Thank you for your interest in contributing to Evolution Server! Your help is we
 3. **Link related issues** in your PR description if applicable.
 4. **Ensure your code passes linting** by running `npm run lint` before submitting.
 5. **Write clear, maintainable code** following the TypeScript and ESLint (Codely) standards used in this project.
-6. **Add or update tests** if your changes affect logic or features.
+6. **Add or update tests** if your changes affect logic or features. Follow the [testing conventions](./docs/testing.md).
 7. **Update documentation** if your changes require it.
 
 ## Code Style
