@@ -1,11 +1,11 @@
-import { YGOProClient } from "../../../../../src/ygopro/client/domain/YGOProClient";
-import { YGOProRoom } from "../../../../../src/ygopro/room/domain/YGOProRoom";
-import { Logger } from "../../../../../src/shared/logger/domain/Logger";
-import { ISocket } from "../../../../../src/shared/socket/domain/ISocket";
-import { Team } from "../../../../../src/shared/room/Team";
+import { YGOProClient } from "./YGOProClient";
+import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
+import { Logger } from "@shared/logger/domain/Logger";
+import { ISocket } from "@shared/socket/domain/ISocket";
+import { Team } from "@shared/room/Team";
 
 // Mock dependencies
-jest.mock("../../../../../src/ygopro/SimpleRoomMessageEmitter");
+jest.mock("@ygopro/SimpleRoomMessageEmitter");
 
 describe("YGOProClient", () => {
   let client: YGOProClient;

@@ -1,9 +1,9 @@
 import "reflect-metadata";
 
 import { GameMode } from "ygopro-msg-encode";
-import { YGOProRoomMother } from "../../../../../src/test-support/mothers/room/YGOProRoomMother";
-import YGOProBanListMemoryRepository from "../../../../../src/ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository";
-import { YGOProBanList } from "../../../../../src/ygopro/ban-list/domain/YGOProBanList";
+import { YGOProRoomMother } from "@test-support/mothers/room/YGOProRoomMother";
+import YGOProBanListMemoryRepository from "@ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository";
+import { YGOProBanList } from "@ygopro/ban-list/domain/YGOProBanList";
 
 function createBanList(name: string, hash: number): YGOProBanList {
   const banList = new YGOProBanList();
