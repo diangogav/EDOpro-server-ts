@@ -1,5 +1,5 @@
 /**
- * PR-6 tests — WindbotModule singleton guard.
+ * WindbotModule singleton guard.
  *
  * isInitialized() must return false before init() is called,
  * and true after. This is the guard used by YGOProDuelingState.removeRoom()
@@ -35,7 +35,7 @@ const makeDeps = (overrides: Partial<WindbotModuleDeps> = {}): WindbotModuleDeps
 
 // ---------- tests ----------
 
-describe("WindbotModule — singleton guard (PR-6)", () => {
+describe("WindbotModule — singleton guard", () => {
 	afterEach(() => {
 		// Reset singleton so tests do not bleed into each other.
 		WindbotModule.resetForTests();

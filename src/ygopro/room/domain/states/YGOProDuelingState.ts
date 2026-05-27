@@ -629,12 +629,11 @@ export class YGOProDuelingState extends RoomState {
   }
 
   private removeRoom(): void {
-    // PR-5: mark finalizing BEFORE broadcasting so any in-flight retry loop
+    // Mark finalizing BEFORE broadcasting so any in-flight retry loop
     // (WindBotJoinStrategy._requestBotFireAndForget) sees the flag and aborts.
     this.room.finalizing = true;
 
-    // PR-6 (REQ-TOKEN-204 / REQ-PROVIDER-303): clean up any windbot tokens still
-    // registered for this room. This is a no-op when:
+    // Clean up any windbot tokens still registered for this room. This is a no-op when:
     //   • windbot is not initialized (non-windbot server, or ENABLE_WINDBOT=false)
     //   • windbot is initialized but disabled
     //   • the bot already consumed its token before duel end (clearByRoom returns 0)

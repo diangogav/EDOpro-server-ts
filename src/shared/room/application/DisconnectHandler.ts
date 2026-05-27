@@ -107,7 +107,7 @@ export class DisconnectHandler {
 
 	private handleYGOPro(room: YGOProRoom): void {
 		if (room.players.every((player) => player.socket.closed)) {
-			// PR-7: mirror YGOProDuelingState.removeRoom() — mark finalizing FIRST so any
+			// Mirror YGOProDuelingState.removeRoom() — mark finalizing FIRST so any
 			// in-flight windbot retry loop aborts, THEN clean up windbot tokens (if any),
 			// THEN delete the room and broadcast. Without this, windbot tokens for this room
 			// would leak in-memory until server restart on abnormal mid-duel disconnects.

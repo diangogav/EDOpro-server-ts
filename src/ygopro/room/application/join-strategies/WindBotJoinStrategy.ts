@@ -10,12 +10,12 @@ import YGOProRoomList from "../../infrastructure/YGOProRoomList";
 /**
  * WindBotJoinStrategy — handles blank / AI / AI#name join passwords.
  *
- * Matches only when WindbotModule is enabled (REQ-JOIN-102: falls through to
- * DefaultJoinStrategy when ENABLE_WINDBOT=false, so AI/blank become normal room names).
+ * Matches only when WindbotModule is enabled (falls through to DefaultJoinStrategy
+ * when ENABLE_WINDBOT=false, so AI/blank become normal room names).
  *
- * REQ-JOIN-103 / REQ-ROOM-502: rejects tag-mode rooms BEFORE any room or token is created.
- * REQ-ROOM-501: sets windbot, noHost, noReconnect flags on the created room.
- * REQ-HTTP-402/403: fires requestBot as fire-and-forget; on failure destroys room + notifies human.
+ * Rejects tag-mode rooms BEFORE any room or token is created.
+ * Sets windbot, noHost, noReconnect flags on the created room.
+ * Fires requestBot as fire-and-forget; on failure destroys room + notifies human.
  */
 export class WindBotJoinStrategy implements JoinStrategy {
 	constructor(private readonly module: WindbotModule) {}
@@ -59,7 +59,7 @@ export class WindBotJoinStrategy implements JoinStrategy {
 			ctx.messageRepository,
 		);
 
-		// REQ-JOIN-103 / REQ-ROOM-502: reject tag-mode BEFORE adding to list or issuing token
+		// Reject tag-mode BEFORE adding to list or issuing token
 		if (room.isTag) {
 			const errorBuf = ctx.messageRepository.errorMessage(ErrorMessageType.JOINERROR, 0);
 			ctx.socket.send(errorBuf);
@@ -68,7 +68,6 @@ export class WindBotJoinStrategy implements JoinStrategy {
 			return;
 		}
 
-		// Set windbot flags (REQ-ROOM-501)
 		// The actual windbot data (name/deck) will be filled once requestBot resolves below.
 		// For now set a placeholder — we overwrite after bot is resolved.
 		room.noHost = true;
@@ -82,8 +81,8 @@ export class WindBotJoinStrategy implements JoinStrategy {
 		room.emit("JOIN", ctx.message, ctx.socket);
 
 		// Fire-and-forget: request bot — handle failure internally.
-		// REQ-HTTP-402: pass () => room.finalizing so the retry loop aborts
-		// as soon as the room begins teardown (e.g. triggered by a concurrent failure).
+		// Pass () => room.finalizing so the retry loop aborts as soon as the room
+		// begins teardown (e.g. triggered by a concurrent failure).
 		this._requestBotFireAndForget(room, botNameOrNull, ctx);
 	}
 
@@ -99,7 +98,7 @@ export class WindBotJoinStrategy implements JoinStrategy {
 				room.windbot = { name: bot.name, deck: bot.deck };
 			})
 			.catch(() => {
-				// REQ-HTTP-403: on trigger failure, destroy room + notify human
+				// On trigger failure, destroy room + notify human
 				YGOProRoomList.deleteRoom(room);
 
 				const errorBuf = ctx.messageRepository.errorMessage(ErrorMessageType.JOINERROR, 0);

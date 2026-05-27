@@ -1,5 +1,5 @@
 /**
- * PR-7 tests — socket.destroy() called after error sends.
+ * socket.destroy() called after error sends.
  *
  * WARNING-3 / SUGGESTION-3 from verify-pr4:
  * Both WindBotJoinStrategy and AIJoinTokenStrategy call ctx.socket.send(errorBuf)
@@ -108,7 +108,7 @@ const makeCtx = (rawPass: string, overrides: Partial<JoinContext> = {}): JoinCon
 
 // ---------- tests ----------
 
-describe("socket.destroy() after error send — PR-7 (WARNING-3 fix)", () => {
+describe("socket.destroy() after error send (WARNING-3 fix)", () => {
 	let waitingSpy: jest.SpyInstance;
 	let emitSpy: jest.SpyInstance;
 

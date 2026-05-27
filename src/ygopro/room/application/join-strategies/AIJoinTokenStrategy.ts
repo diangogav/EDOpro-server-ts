@@ -11,8 +11,8 @@ import YGOProRoomList from "../../infrastructure/YGOProRoomList";
  * Matches password prefix "AIJOIN#" when WindbotModule is enabled.
  * MUST be first in the chain because the bot connecting back must never be misrouted.
  *
- * REQ-TOKEN-205: invalid/missing token → reject without creating a room, no fall-through.
- * REQ-CLIENT-601: sets client.isInternal = true via markInternal() after join.
+ * Invalid/missing token → reject without creating a room, no fall-through.
+ * Sets client.isInternal = true via markInternal() after join.
  *
  * Design note: We emit JOIN through the normal room event system so that
  * WaitingState.handleJoin runs and adds the bot to the correct slot. handleJoin
@@ -33,22 +33,20 @@ export class AIJoinTokenStrategy implements JoinStrategy {
 	}
 
 	async handle(ctx: JoinContext): Promise<void> {
-		// Extract the token after "AIJOIN#"
 		const token = ctx.rawPass.slice("AIJOIN#".length);
 
-		// Consume the token — throws on miss (locked contract from PR-1/PR-3b)
+		// Consume the token — throws on miss
 		let payload: { roomId: number; botName: string; deck: string };
 		try {
 			payload = this.module.consumeToken(token);
 		} catch {
-			// REQ-TOKEN-205: invalid / expired / already-consumed token → reject, no new room
+			// Invalid / expired / already-consumed token → reject, no new room
 			const errorBuf = ctx.messageRepository.errorMessage(ErrorMessageType.JOINERROR, 0);
 			ctx.socket.send(errorBuf);
 			ctx.socket.destroy();
 			return;
 		}
 
-		// Find the room the human created
 		const room = YGOProRoomList.findById(payload.roomId);
 		if (!room) {
 			// Room disappeared (e.g. was destroyed during HTTP retry failure) — reject cleanly

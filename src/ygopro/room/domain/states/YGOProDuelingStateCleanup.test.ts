@@ -1,7 +1,7 @@
 /**
- * PR-6 tests — WindbotModule cleanup hook in YGOProDuelingState.removeRoom().
+ * WindbotModule cleanup hook in YGOProDuelingState.removeRoom().
  *
- * REQ-TOKEN-204 / REQ-PROVIDER-303: when a room finalizes, all windbot tokens
+ * When a room finalizes, all windbot tokens
  * for that room must be cleaned up.
  *
  * Critical invariants:
@@ -55,7 +55,7 @@ function simulateRemoveRoomHook(roomId: number): number | undefined {
 
 // ---------- tests ----------
 
-describe("YGOProDuelingState — removeRoom() windbot cleanup hook (PR-6)", () => {
+describe("YGOProDuelingState — removeRoom() windbot cleanup hook", () => {
 	afterEach(() => {
 		WindbotModule.resetForTests();
 		jest.restoreAllMocks();

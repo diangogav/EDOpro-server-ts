@@ -4,7 +4,7 @@ import { DefaultJoinStrategy } from "./DefaultJoinStrategy";
 /**
  * JoinStrategyRegistry — ordered resolver for join strategies.
  *
- * Priority order (highest to lowest, per spec REQ-JOIN-101):
+ * Priority order (highest to lowest):
  *   1. AIJoinTokenStrategy  — catches reverse-connecting bot first (AIJOIN# prefix)
  *   2. WindBotJoinStrategy  — matches blank / AI / AI#name when windbot enabled
  *   3. DefaultJoinStrategy  — terminal fallback, always matches
@@ -36,7 +36,7 @@ export class JoinStrategyRegistry {
 	/**
 	 * Returns the module-level singleton.
 	 * Lazily constructed with a DefaultJoinStrategy-only chain on first call
-	 * (windbot strategies are added when WindbotModule is initialized, PR-7).
+	 * (windbot strategies are added when WindbotModule is initialized).
 	 */
 	static getInstance(): JoinStrategyRegistry {
 		if (!JoinStrategyRegistry._instance) {
@@ -47,7 +47,7 @@ export class JoinStrategyRegistry {
 
 	/**
 	 * Replace the singleton with a custom strategy list.
-	 * Called by PR-7 bootstrap when WindbotModule is ready.
+	 * Called by the bootstrap when WindbotModule is ready.
 	 */
 	static setStrategies(strategies: JoinStrategy[]): void {
 		JoinStrategyRegistry._instance = new JoinStrategyRegistry(strategies);

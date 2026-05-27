@@ -78,7 +78,7 @@ async function start(): Promise<void> {
     });
     WindbotModule.init({ enabled: true, repo, tokenStore, provider });
 
-    // Wire the strategy chain in priority order (REQ-JOIN-101):
+    // Wire the strategy chain in priority order:
     //   1. AIJoinTokenStrategy — AIJOIN# prefix (reverse-connecting bot)
     //   2. WindBotJoinStrategy — blank / AI / AI#name (human requesting bot)
     //   3. DefaultJoinStrategy — anything else (unchanged fallback)

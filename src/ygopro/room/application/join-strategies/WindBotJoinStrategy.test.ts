@@ -406,7 +406,7 @@ describe("WindBotJoinStrategy", () => {
 			});
 		});
 
-		describe("isFinalizing callback (PR-5 — REQ-HTTP-402)", () => {
+		describe("isFinalizing callback (REQ-HTTP-402)", () => {
 			it("isFinalizing callback returns false before room is finalized", async () => {
 				// provider.requestJoin receives { token, bot, isFinalizing } — capture isFinalizing
 				let capturedIsFinalizing: (() => boolean) | undefined;

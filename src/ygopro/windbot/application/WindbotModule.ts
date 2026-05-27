@@ -23,10 +23,8 @@ export interface WindbotModuleDeps {
 /**
  * WindbotModule — singleton facade that wires together all windbot use cases.
  *
- * Callers (PR-4 strategies) use this module via the singleton accessor.
+ * Callers use this module via the singleton accessor.
  * Tests use WindbotModule.createForTests(deps) to inject all dependencies.
- *
- * Not wired into src/index.ts yet — that is PR-7 scope.
  */
 export class WindbotModule {
 	private readonly requestJoinUseCase: RequestWindBotJoin;
@@ -45,7 +43,7 @@ export class WindbotModule {
 
 	/**
 	 * Init the module singleton from parsed config and infrastructure deps.
-	 * Called once at boot from src/index.ts (PR-7) when ENABLE_WINDBOT=true.
+	 * Called once at boot from src/index.ts when ENABLE_WINDBOT=true.
 	 */
 	static init(deps: WindbotModuleDeps): void {
 		WindbotModule._instance = new WindbotModule(deps);

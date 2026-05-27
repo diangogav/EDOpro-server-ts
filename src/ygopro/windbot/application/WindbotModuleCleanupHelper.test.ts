@@ -1,5 +1,5 @@
 /**
- * PR-7 tests — WindbotModule.cleanupRoomIfEnabled() static helper.
+ * WindbotModule.cleanupRoomIfEnabled() static helper.
  *
  * This helper centralises the two-line guard pattern:
  *   if (WindbotModule.isInitialized() && WindbotModule.getInstance().isEnabled()) {
@@ -7,8 +7,8 @@
  *   }
  *
  * It is called from BOTH:
- *   - YGOProDuelingState.removeRoom() (PR-6, already calls cleanupRoom directly — updated in PR-7)
- *   - DisconnectHandler.handleYGOPro() (PR-7 gap fix)
+ *   - YGOProDuelingState.removeRoom()
+ *   - DisconnectHandler.handleYGOPro() (gap fix)
  *
  * Invariants:
  *   1. No-op (returns 0) when WindbotModule is not initialized — NO throw.
@@ -42,7 +42,7 @@ const makeDeps = (overrides: Partial<WindbotModuleDeps> = {}): WindbotModuleDeps
 
 // ---------- tests ----------
 
-describe("WindbotModule.cleanupRoomIfEnabled() — PR-7 static helper", () => {
+describe("WindbotModule.cleanupRoomIfEnabled() — static helper", () => {
 	afterEach(() => {
 		WindbotModule.resetForTests();
 		jest.restoreAllMocks();

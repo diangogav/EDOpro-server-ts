@@ -1,13 +1,13 @@
 /**
- * PR-7 tests — DisconnectHandler.handleYGOPro() windbot cleanup gap fix.
+ * DisconnectHandler.handleYGOPro() windbot cleanup gap fix.
  *
- * Gap confirmed in verify-pr6: when ALL players disconnect mid-duel,
+ * Gap confirmed: when ALL players disconnect mid-duel,
  * DisconnectHandler.handleYGOPro() calls MercuryRoomList.deleteRoom(room) directly
  * WITHOUT setting room.finalizing=true and WITHOUT calling the windbot cleanup hook.
  * This causes windbot token leaks (in-memory, self-heals on restart, but still wrong).
  *
- * PR-7 fix: in the all-sockets-closed branch:
- *   1. Set room.finalizing = true (mirrors removeRoom() in PR-5)
+ * Fix: in the all-sockets-closed branch:
+ *   1. Set room.finalizing = true (mirrors removeRoom())
  *   2. Call WindbotModule.cleanupRoomIfEnabled(room.id)
  *   3. THEN call MercuryRoomList.deleteRoom(room) + broadcast REMOVE-ROOM
  *
@@ -97,12 +97,12 @@ const createRoomInList = (socketId = "sock-human"): YGOProRoom => {
 };
 
 /**
- * Simulate the all-sockets-closed branch of handleYGOPro() — the PR-7 fix.
+ * Simulate the all-sockets-closed branch of handleYGOPro() — the fix.
  * This is the exact logic that goes into DisconnectHandler.handleYGOPro()
  * after the fix, so we test the behavior directly.
  */
 function simulateHandleYGOProAllClosed(room: YGOProRoom): void {
-	// PR-7 fix: mirror removeRoom() — set finalizing FIRST, then cleanup, then delete
+	// mirror removeRoom() — set finalizing FIRST, then cleanup, then delete
 	room.finalizing = true;
 	WindbotModule.cleanupRoomIfEnabled(room.id);
 	MercuryRoomList.deleteRoom(room);
@@ -114,7 +114,7 @@ function simulateHandleYGOProAllClosed(room: YGOProRoom): void {
 
 // ---------- tests ----------
 
-describe("DisconnectHandler.handleYGOPro() — windbot gap fix (PR-7)", () => {
+describe("DisconnectHandler.handleYGOPro() — windbot gap fix", () => {
 	// Use the mock broadcast from the mocked singleton
 	const mockInstance = WebSocketSingleton.getInstance();
 

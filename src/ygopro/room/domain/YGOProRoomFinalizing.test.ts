@@ -1,9 +1,9 @@
 /**
- * PR-5 tests — room.finalizing lifecycle and captain-via-toRPS.
+ * room.finalizing lifecycle and captain-via-toRPS.
  *
- * REQ-HTTP-402: room.finalizing flips to true when removeRoom() is called
+ * room.finalizing flips to true when removeRoom() is called
  *               (the teardown entry point inside YGOProDuelingState).
- * REQ-CLIENT-603: the bot (team-1 player) is already isCaptain when RPS runs
+ * The bot (team-1 player) is already isCaptain when RPS runs
  *                 because toRPS() calls captain() on both team players unconditionally.
  */
 
@@ -62,7 +62,7 @@ class TestRoomState extends YGOProRoomState {
 	}
 }
 
-// ---- REQ-CLIENT-603: captain via toRPS() ----
+// ---- captain via toRPS() ----
 
 describe("captain assignment via toRPS() (REQ-CLIENT-603)", () => {
 	it("sets isCaptain=true on the team-0 player after toRPS()", () => {
