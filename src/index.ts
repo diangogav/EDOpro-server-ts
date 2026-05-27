@@ -16,6 +16,17 @@ import { WSHostServer } from "./socket-server/WSHostServer";
 import { YGOProServer } from "./socket-server/YGOProServer";
 import { WSYGOProServer } from "./socket-server/WSYGOProServer";
 import WebSocketSingleton from "./web-socket-server/WebSocketSingleton";
+import { WindbotModule } from "./ygopro/windbot/application/WindbotModule";
+import { FileBotlistRepository } from "./ygopro/windbot/infrastructure/FileBotlistRepository";
+import { HttpWindBotProvider } from "./ygopro/windbot/infrastructure/HttpWindBotProvider";
+import { WindbotTokenStore } from "./ygopro/windbot/domain/WindbotTokenStore";
+import { JoinStrategyRegistry } from "./ygopro/room/application/join-strategies/JoinStrategyRegistry";
+import { AIJoinTokenStrategy } from "./ygopro/room/application/join-strategies/AIJoinTokenStrategy";
+import { WindBotJoinStrategy } from "./ygopro/room/application/join-strategies/WindBotJoinStrategy";
+import { DefaultJoinStrategy } from "./ygopro/room/application/join-strategies/DefaultJoinStrategy";
+
+// YGOPro protocol version (same as DuelRecord.ts — must stay in sync)
+const YGOPRO_VERSION = 0x1362;
 
 void start();
 
@@ -51,6 +62,35 @@ async function start(): Promise<void> {
   WebSocketSingleton.getInstance();
   hostServer.initialize();
   wsHostServer.initialize();
+
+  // Windbot bootstrap — ONLY when ENABLE_WINDBOT=true.
+  // When disabled, this block is never entered: existing join behaviour is byte-for-byte unchanged.
+  // config.windbot is parsed (and validated for fail-fast) at module load time in src/config/index.ts.
+  if (config.windbot.enabled) {
+    logger.info("Windbot enabled — initializing WindbotModule");
+    const repo = new FileBotlistRepository(config.windbot.botlistPath);
+    const tokenStore = new WindbotTokenStore();
+    const provider = new HttpWindBotProvider({
+      endpoint: config.windbot.endpoint,
+      myIp: config.windbot.myIp,
+      serverPort: config.servers.mercury.port,
+      version: YGOPRO_VERSION,
+    });
+    WindbotModule.init({ enabled: true, repo, tokenStore, provider });
+
+    // Wire the strategy chain in priority order:
+    //   1. AIJoinTokenStrategy — AIJOIN# prefix (reverse-connecting bot)
+    //   2. WindBotJoinStrategy — blank / AI / AI#name (human requesting bot)
+    //   3. DefaultJoinStrategy — anything else (unchanged fallback)
+    const module = WindbotModule.getInstance();
+    JoinStrategyRegistry.setStrategies([
+      new AIJoinTokenStrategy(module),
+      new WindBotJoinStrategy(module),
+      new DefaultJoinStrategy(),
+    ]);
+    logger.info("WindbotModule and JoinStrategyRegistry initialised");
+  }
+
   ygoproServer.initialize();
   wsYgoproServer.initialize();
 }

@@ -8,11 +8,11 @@ import { Room } from "../../../edopro/room/domain/Room";
 import RoomList from "../../../edopro/room/infrastructure/RoomList";
 import { YGOProClient } from "@ygopro/client/domain/YGOProClient";
 import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
-import MercuryRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
 import { ISocket } from "../../socket/domain/ISocket";
 import { DuelState } from "../domain/YgoRoom";
 import { RoomFinder } from "./RoomFinder";
+import { FinalizeYGOProRoom } from "@ygopro/room/application/FinalizeYGOProRoom";
 
 export class DisconnectHandler {
 	constructor(private readonly socket: ISocket, private readonly roomFinder: RoomFinder) { }
@@ -106,11 +106,7 @@ export class DisconnectHandler {
 
 	private handleYGOPro(room: YGOProRoom): void {
 		if (room.players.every((player) => player.socket.closed)) {
-			MercuryRoomList.deleteRoom(room);
-			WebSocketSingleton.getInstance().broadcast({
-				action: "REMOVE-ROOM",
-				data: room.toRealTimePresentation(),
-			});
+			FinalizeYGOProRoom.run(room);
 
 			return;
 		}
@@ -119,6 +115,14 @@ export class DisconnectHandler {
 
 		if (!(player instanceof YGOProClient)) {
 			this.removeMercurySpectator(room);
+
+			return;
+		}
+
+		// AI rooms have no second human host, so a single human leaving in ANY phase
+		// must tear down the whole room — otherwise the orphaned bot lingers as a zombie.
+		if (room.noHost) {
+			FinalizeYGOProRoom.run(room);
 
 			return;
 		}

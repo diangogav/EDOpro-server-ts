@@ -1,3 +1,5 @@
+import { parseWindbotConfig } from "../ygopro/windbot/infrastructure/WindbotConfig";
+
 export const config = {
   redis: {
     use: process.env.USE_REDIS === "true",
@@ -46,4 +48,5 @@ export const config = {
     }
   },
   sideTimeoutMinutes: Number(process.env.SIDE_TIMEOUT_MINUTES) || 3,
+  windbot: parseWindbotConfig(process.env),
 };

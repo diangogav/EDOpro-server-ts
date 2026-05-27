@@ -15,6 +15,7 @@ import { Team } from "@shared/room/Team";
 
 import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { DuelRecord } from "../DuelRecord";
+import { FinalizeYGOProRoom } from "../../application/FinalizeYGOProRoom";
 import { YGOProRoom } from "../YGOProRoom";
 import { getMessageIdentifier } from "../../../utils/response-time-utils";
 
@@ -35,7 +36,6 @@ import {
   YGOProStocTeammateSurrender,
 } from "ygopro-msg-encode";
 import { GameOverDomainEvent } from "@shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
-import MercuryRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 
 export class YGOProDuelingState extends RoomState {
@@ -628,10 +628,6 @@ export class YGOProDuelingState extends RoomState {
   }
 
   private removeRoom(): void {
-    WebSocketSingleton.getInstance().broadcast({
-      action: "REMOVE-ROOM",
-      data: this.room.toRealTimePresentation(),
-    });
-    MercuryRoomList.deleteRoom(this.room);
+    FinalizeYGOProRoom.run(this.room);
   }
 }

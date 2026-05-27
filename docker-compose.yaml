@@ -19,5 +19,20 @@ services:
       timeout: 5s
       retries: 5
 
+  # WindBot service — only needed when ENABLE_WINDBOT=true.
+  # The game server reaches this container at http://windbot:7790 (set WINDBOT_ENDPOINT accordingly).
+  # The WindBot binary reverse-connects back to the game server via WINDBOT_MY_IP (the game server
+  # hostname or IP reachable from inside Docker, e.g. the host machine IP or a service name).
+  #
+  # To enable: uncomment this section and set the env vars in your .env file.
+  # windbot:
+  #   image: ghcr.io/duellinks/windbot:latest   # replace with your WindBot image
+  #   container_name: evolution-windbot
+  #   environment:
+  #     - PORT=7790
+  #   ports:
+  #     - "7790:7790"
+  #   restart: unless-stopped
+
 volumes:
   postgres_data:

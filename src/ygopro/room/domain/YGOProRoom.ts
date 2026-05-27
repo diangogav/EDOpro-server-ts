@@ -69,6 +69,15 @@ export class YGOProRoom extends YgoRoom {
   private readonly _cardRepository: CardYGOProRepository;
   private readonly _deckRules: DeckRules;
 
+  windbot?: { name: string; deck: string };
+  noHost: boolean = false;
+  noReconnect: boolean = false;
+
+  // Set to true when the room begins teardown (removeRoom entry point in YGOProDuelingState).
+  // The WindBotJoinStrategy retry-abort callback reads this to stop retrying when the room
+  // is being torn down.
+  finalizing: boolean = false;
+
   private constructor({
     id,
     name,
