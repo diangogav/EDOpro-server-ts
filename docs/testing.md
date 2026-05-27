@@ -2,7 +2,7 @@
 
 How we write tests in EDOpro-server-ts: where they live, how we build test data, how we mock, and how we format them. The goal is one consistent pattern so any test reads like the one next to it.
 
-> **Status:** This is the target standard. The suite is being migrated incrementally — legacy tests under the root `tests/` folder still follow older patterns and are being moved to co-location module by module. New tests **must** follow this doc.
+> **Status:** Active standard. All tests are co-located under `src/` — the legacy `tests/` folder has been fully migrated and removed. New tests **must** follow this doc.
 
 ## Quick path — writing a new test
 
@@ -104,4 +104,4 @@ Known consolidation work, done opportunistically as modules are touched:
 | `YGOProRoom` built two ways | ✅ Consolidated onto `YGOProRoomMother`. |
 | Mothers & mocks under `tests/` | ✅ Moved to `src/test-support/`. |
 | 2-space formatting | ✅ `.editorconfig` added (editor-applied, not CI-gated). |
-| 26 legacy tests in `tests/` | Pending — migrate to co-location per module; drop `tests/` from `jest roots` when empty. |
+| 26 legacy tests in `tests/` | ✅ Migrated to co-location; `tests/` removed and dropped from `jest roots`. |
