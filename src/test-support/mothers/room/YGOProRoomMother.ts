@@ -1,23 +1,27 @@
 import { faker } from "@faker-js/faker";
 import EventEmitter from "events";
+import { randomInt } from "crypto";
 
+import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
 import { PlayerInfoMessageMother } from "../PlayerInfoMessageMother";
 import { MessageRepositoryMock } from "../../mocks/MessageRepositoryMock";
 import { LoggerMock } from "../../mocks/logger/LoggerMock";
-import { randomInt } from "crypto";
-import { YGOProRoom } from "../../../../../src/ygopro/room/domain/YGOProRoom";
+
+interface YGOProRoomMotherProps {
+    id: number;
+    command: string;
+    createdBySocketId: string;
+}
 
 export class YGOProRoomMother {
-    static create({ command }: { command: string }): YGOProRoom {
-        const socketId = faker.string.uuid();
-        const id = randomInt(0, 10000);
+    static create(overrides?: Partial<YGOProRoomMotherProps>): YGOProRoom {
         return YGOProRoom.create(
-            id,
-            command,
+            overrides?.id ?? randomInt(0, 10000),
+            overrides?.command ?? faker.string.alpha({ length: 6 }),
             new LoggerMock(),
             new EventEmitter(),
             PlayerInfoMessageMother.create(),
-            socketId,
+            overrides?.createdBySocketId ?? faker.string.uuid(),
             new MessageRepositoryMock(),
         );
     }

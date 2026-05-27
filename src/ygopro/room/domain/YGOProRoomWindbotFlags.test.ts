@@ -4,37 +4,9 @@
  * finalizing flag — defaults false, flips true on teardown.
  */
 
-import { EventEmitter } from "stream";
+import { YGOProRoomMother } from "@test-support/mothers/room/YGOProRoomMother";
 
-import { YGOProRoom } from "./YGOProRoom";
-
-const makeLogger = () => ({
-	child: jest.fn().mockReturnThis(),
-	info: jest.fn(),
-	warn: jest.fn(),
-	error: jest.fn(),
-	debug: jest.fn(),
-});
-
-const makeMessageRepo = () => ({
-	joinGameMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
-	typeChangeMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
-	playerEnterMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
-	playerChangeMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
-	spectatorCountMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
-	errorMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
-});
-
-const createRoom = (): YGOProRoom =>
-	YGOProRoom.create(
-		1,
-		"TESTROOM",
-		makeLogger() as never,
-		new EventEmitter(),
-		{ name: "TestPlayer", password: "", previousMessage: Buffer.alloc(0) } as never,
-		"sock-test",
-		makeMessageRepo() as never,
-	);
+const createRoom = () => YGOProRoomMother.create();
 
 describe("YGOProRoom windbot flags", () => {
 	describe("defaults (non-windbot rooms)", () => {

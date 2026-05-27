@@ -22,24 +22,14 @@ jest.mock("../../../web-socket-server/WebSocketSingleton", () => {
 	};
 });
 
-import { EventEmitter } from "stream";
-
 import { WindbotModule, WindbotModuleDeps } from "../../windbot/application/WindbotModule";
 import { WindbotTokenStore } from "../../windbot/domain/WindbotTokenStore";
 import { FinalizeYGOProRoom } from "./FinalizeYGOProRoom";
-import { YGOProRoom } from "../domain/YGOProRoom";
 import MercuryRoomList from "../infrastructure/YGOProRoomList";
 import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
+import { YGOProRoomMother } from "@test-support/mothers/room/YGOProRoomMother";
 
 // ---------- helpers ----------
-
-const makeLogger = () => ({
-	child: jest.fn().mockReturnThis(),
-	info: jest.fn(),
-	warn: jest.fn(),
-	error: jest.fn(),
-	debug: jest.fn(),
-});
 
 const makeSocket = (closed = true) => ({
 	id: `sock-${Math.random()}`,
@@ -47,11 +37,6 @@ const makeSocket = (closed = true) => ({
 	destroy: jest.fn(),
 	send: jest.fn(),
 	removeAllListeners: jest.fn(),
-});
-
-const makeMessageRepository = () => ({
-	errorMessage: jest.fn().mockReturnValue(Buffer.alloc(4)),
-	joinGameMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
 });
 
 const makeRepo = () => ({
@@ -72,8 +57,6 @@ const makeDeps = (overrides: Partial<WindbotModuleDeps> = {}): WindbotModuleDeps
 	...overrides,
 });
 
-const makeEventEmitter = () => new EventEmitter();
-
 interface FakeClient {
 	socket: ReturnType<typeof makeSocket>;
 	destroy: jest.Mock;
@@ -91,15 +74,7 @@ const makeClient = (socket = makeSocket()): FakeClient => {
  * Build a real room registered in MercuryRoomList and stub its client list.
  */
 const createRoomInList = (clients: FakeClient[] = []) => {
-	const room = YGOProRoom.create(
-		Math.floor(Math.random() * 100000),
-		"AIROOM",
-		makeLogger() as never,
-		makeEventEmitter(),
-		{ name: "Human", password: "", previousMessage: Buffer.alloc(0) } as never,
-		"sock-human",
-		makeMessageRepository() as never,
-	);
+	const room = YGOProRoomMother.create({ command: "AIROOM" });
 	Object.defineProperty(room, "clients", { get: () => clients, configurable: true });
 	MercuryRoomList.addRoom(room);
 	return room;

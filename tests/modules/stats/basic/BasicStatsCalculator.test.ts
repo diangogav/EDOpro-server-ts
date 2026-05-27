@@ -11,11 +11,11 @@ import { PlayerStats } from "../../../../src/shared/stats/player-stats/domain/Pl
 import { PlayerStatsRepository } from "../../../../src/shared/stats/player-stats/domain/PlayerStatsRepository";
 import { UserProfile } from "../../../../src/shared/user-profile/domain/UserProfile";
 import { UserProfileRepository } from "../../../../src/shared/user-profile/domain/UserProfileRepository";
-import { GameMother } from "../../../../tests/modules/shared/mothers/player/GameMother";
-import { GameOverDomainEventMother } from "../../../../tests/modules/shared/mothers/player/GameOverDomainEventMother";
-import { PlayerMother } from "../../../../tests/modules/shared/mothers/player/PlayerMother";
-import { PlayerStatsMother } from "../../../../tests/modules/shared/mothers/player/PlayerStatsMother";
-import { UserProfileMother } from "../../../../tests/modules/shared/mothers/user-profile/UserProfileMother";
+import { GameMother } from "../../../../src/test-support/mothers/player/GameMother";
+import { GameOverDomainEventMother } from "../../../../src/test-support/mothers/player/GameOverDomainEventMother";
+import { PlayerMother } from "../../../../src/test-support/mothers/player/PlayerMother";
+import { PlayerStatsMother } from "../../../../src/test-support/mothers/player/PlayerStatsMother";
+import { UserProfileMother } from "../../../../src/test-support/mothers/user-profile/UserProfileMother";
 
 describe("BasicStatsCalculator", () => {
 	let basicStatsCalculator: BasicStatsCalculator;

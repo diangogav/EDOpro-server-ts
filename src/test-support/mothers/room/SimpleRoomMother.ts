@@ -1,9 +1,9 @@
 import { faker } from "@faker-js/faker";
 import { EventEmitter } from "events";
 
-import { YgoRoom } from "../../../../../src/shared/room/domain/YgoRoom";
-import { RoomActionQueue } from "../../../../../src/shared/room/RoomActionQueue";
-import { RoomType } from "../../../../../src/shared/room/domain/RoomType";
+import { YgoRoom } from "@shared/room/domain/YgoRoom";
+import { RoomActionQueue } from "@shared/room/RoomActionQueue";
+import { RoomType } from "@shared/room/domain/RoomType";
 
 class SimpleRoom extends YgoRoom {
   public actionQueue = new RoomActionQueue();

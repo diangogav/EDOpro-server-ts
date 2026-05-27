@@ -1,4 +1,4 @@
-import { Logger } from "../../../../../src/shared/logger/domain/Logger";
+import { Logger } from "@shared/logger/domain/Logger";
 
 export class LoggerMock implements Logger {
   debug(_message: unknown, _context?: Record<string, unknown>): void {

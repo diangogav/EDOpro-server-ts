@@ -25,6 +25,9 @@
       ],
       "@ygopro/*": [
         "src/ygopro/*"
+      ],
+      "@test-support/*": [
+        "src/test-support/*"
       ]
     }
   },
@@ -34,6 +37,8 @@
   "exclude": [
     "node_modules",
     "dist",
-    "tests"
+    "tests",
+    "**/*.test.ts",
+    "src/test-support/**"
   ]
 }

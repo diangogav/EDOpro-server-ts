@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 
-import { ISocket } from "../../../../../src/shared/socket/domain/ISocket";
+import { ISocket } from "@shared/socket/domain/ISocket";
 
 export class SocketMock implements ISocket {
 	id = faker.string.uuid();

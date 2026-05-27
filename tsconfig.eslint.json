@@ -23,6 +23,9 @@
       ],
       "@ygopro/*": [
         "src/ygopro/*"
+      ],
+      "@test-support/*": [
+        "src/test-support/*"
       ]
     }
   },

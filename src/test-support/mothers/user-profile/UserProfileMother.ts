@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { UserProfile, UserProfileProperties } from "../../../../../src/shared/user-profile/domain/UserProfile";
+import { UserProfile, UserProfileProperties } from "@shared/user-profile/domain/UserProfile";
 
 export class UserProfileMother {
 	static create(params?: Partial<UserProfileProperties>): UserProfile {

@@ -13,6 +13,7 @@ import { YGOProRoom } from "./YGOProRoom";
 import { YGOProRoomState } from "./YGOProRoomState";
 import { YGOProClient } from "../../client/domain/YGOProClient";
 import { Team } from "@shared/room/Team";
+import { YGOProRoomMother } from "@test-support/mothers/room/YGOProRoomMother";
 
 // ---- helpers ----
 
@@ -24,18 +25,6 @@ const makeLogger = () => ({
 	debug: jest.fn(),
 });
 
-const makeMessageRepo = () => ({
-	joinGameMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
-	typeChangeMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
-	typeChangeMessageFromType: jest.fn().mockReturnValue(Buffer.alloc(0)),
-	playerEnterMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
-	playerChangeMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
-	spectatorCountMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
-	watchChangeMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
-	errorMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
-	selectHandMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
-});
-
 const makeSocket = () => ({
 	id: "sock-1",
 	send: jest.fn(),
@@ -44,16 +33,7 @@ const makeSocket = () => ({
 	remoteAddress: "127.0.0.1",
 });
 
-const createRoom = (): YGOProRoom =>
-	YGOProRoom.create(
-		1,
-		"TESTROOM",
-		makeLogger() as never,
-		new EventEmitter(),
-		{ name: "TestPlayer", password: "", previousMessage: Buffer.alloc(0) } as never,
-		"sock-test",
-		makeMessageRepo() as never,
-	);
+const createRoom = (): YGOProRoom => YGOProRoomMother.create();
 
 /** Expose toRPS for test — since it is protected we subclass. */
 class TestRoomState extends YGOProRoomState {
