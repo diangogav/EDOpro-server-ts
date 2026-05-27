@@ -1,4 +1,4 @@
-import { BufferToUTF16 } from "../../../src/utils/BufferToUTF16";
+import { BufferToUTF16 } from "./BufferToUTF16";
 
 describe("BufferToUTF16", () => {
   it("should convert buffer to UTF16 string correctly", () => {
