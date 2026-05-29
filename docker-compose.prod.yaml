@@ -59,6 +59,13 @@ services:
       WEBSOCKET_PORT: ${WEBSOCKET_PORT:-4000}
       YGOPRO_FOLDERS: ./resources/ygopro/base,./resources/ygopro/ocg,./resources/ygopro/alternatives
       YGOPRO_EXTRA_FOLDERS: ./resources/ygopro/prereleases-cdb,./resources/ygopro/cards-art
+      # WindBot (opt-in). The WindBot container is run separately (independent docker
+      # command). Off by default — set these in .env to enable. WINDBOT_MY_IP must be a
+      # host/IP the externally-run bot can reach back on; WINDBOT_ENDPOINT is the bot's HTTP API.
+      ENABLE_WINDBOT: ${ENABLE_WINDBOT:-false}
+      WINDBOT_ENDPOINT: ${WINDBOT_ENDPOINT:-}
+      WINDBOT_MY_IP: ${WINDBOT_MY_IP:-windbot}
+      WINDBOT_BOTLIST: ${WINDBOT_BOTLIST:-config/botlist.example.json}
     ports:
       - "${HOST_PORT:-7911}:${HOST_PORT:-7911}"
       - "${MERCURY_PORT:-7711}:${MERCURY_PORT:-7711}"

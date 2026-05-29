@@ -113,6 +113,12 @@ COPY --from=server-builder /server/dist ./
 COPY --from=server-builder /server/package.json ./package.json
 COPY --from=server-builder /server/node_modules ./node_modules
 
+# WindBot botlist (read at boot by FileBotlistRepository when ENABLE_WINDBOT=true).
+# tsc only emits dist/, so config/ must be copied explicitly or the server crashes
+# at boot with ENOENT when windbot is enabled. Replace botlist.example.json with a
+# curated botlist whose deck names match the WindBot image's bots.json.
+COPY --from=server-builder /server/config ./config
+
 # CoreIntegrator binaries
 COPY --from=core-builder /app/libocgcore.so ./core/libocgcore.so
 COPY --from=core-builder /app/CoreIntegrator ./core/CoreIntegrator
