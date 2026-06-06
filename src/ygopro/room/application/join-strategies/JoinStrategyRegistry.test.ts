@@ -1,5 +1,7 @@
 import { JoinContext, JoinStrategy } from "./JoinStrategy";
 import { JoinStrategyRegistry } from "./JoinStrategyRegistry";
+import { TicketJoinStrategy } from "./TicketJoinStrategy";
+import { DefaultJoinStrategy } from "./DefaultJoinStrategy";
 
 const makeCtx = (rawPass = ""): JoinContext =>
 	({
@@ -79,6 +81,55 @@ describe("JoinStrategyRegistry", () => {
 			JoinStrategyRegistry.reset();
 			const instance = JoinStrategyRegistry.getInstance();
 			expect(instance).toBeDefined();
+		});
+	});
+
+	describe("bootstrap — base chain [TicketJoinStrategy, DefaultJoinStrategy]", () => {
+		const makeCtxWithTicket = (rawPass = "ROOM"): JoinContext =>
+			({
+				rawPass,
+				command: rawPass.split("#")[0],
+				password: rawPass.split("#")[1] ?? "",
+				socket: { resolvedUserId: "some-user-id" },
+			} as unknown as JoinContext);
+
+		const makeCtxWithoutTicket = (rawPass = "ROOM"): JoinContext =>
+			({
+				rawPass,
+				command: rawPass.split("#")[0],
+				password: rawPass.split("#")[1] ?? "",
+				socket: { resolvedUserId: undefined },
+			} as unknown as JoinContext);
+
+		beforeEach(() => {
+			// Simulate the always-on base chain (what index.ts sets up without windbot)
+			JoinStrategyRegistry.setStrategies([
+				new TicketJoinStrategy(),
+				new DefaultJoinStrategy(),
+			]);
+		});
+
+		it("base chain contains TicketJoinStrategy and DefaultJoinStrategy", () => {
+			const instance = JoinStrategyRegistry.getInstance();
+			// Socket without resolvedUserId — TicketJoinStrategy should NOT match
+			// so the registry falls through to DefaultJoinStrategy
+			const ctx = makeCtxWithoutTicket();
+			const resolved = instance.resolve(ctx);
+			expect(resolved).toBeInstanceOf(DefaultJoinStrategy);
+		});
+
+		it("socket with resolvedUserId routes to TicketJoinStrategy", () => {
+			const instance = JoinStrategyRegistry.getInstance();
+			const ctx = makeCtxWithTicket();
+			const resolved = instance.resolve(ctx);
+			expect(resolved).toBeInstanceOf(TicketJoinStrategy);
+		});
+
+		it("socket without resolvedUserId routes to DefaultJoinStrategy", () => {
+			const instance = JoinStrategyRegistry.getInstance();
+			const ctx = makeCtxWithoutTicket();
+			const resolved = instance.resolve(ctx);
+			expect(resolved).toBeInstanceOf(DefaultJoinStrategy);
 		});
 	});
 });

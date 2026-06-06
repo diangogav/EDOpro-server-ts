@@ -26,6 +26,7 @@ import { JoinStrategyRegistry } from "./ygopro/room/application/join-strategies/
 import { AIJoinTokenStrategy } from "./ygopro/room/application/join-strategies/AIJoinTokenStrategy";
 import { WindBotJoinStrategy } from "./ygopro/room/application/join-strategies/WindBotJoinStrategy";
 import { DefaultJoinStrategy } from "./ygopro/room/application/join-strategies/DefaultJoinStrategy";
+import { TicketJoinStrategy } from "./ygopro/room/application/join-strategies/TicketJoinStrategy";
 
 // YGOPro protocol version (same as DuelRecord.ts — must stay in sync)
 const YGOPRO_VERSION = 0x1362;
@@ -65,8 +66,19 @@ async function start(): Promise<void> {
   hostServer.initialize();
   wsHostServer.initialize();
 
+  // Base strategy chain — always registered, with or without windbot.
+  // Priority order (no windbot):
+  //   1. TicketJoinStrategy — sockets with a resolved ticket userId (ranked-by-ticket)
+  //   2. DefaultJoinStrategy — game password / unranked fallback
+  const baseChain = [new TicketJoinStrategy(), new DefaultJoinStrategy()];
+  JoinStrategyRegistry.setStrategies(baseChain);
+
   // Windbot bootstrap — ONLY when ENABLE_WINDBOT=true.
-  // When disabled, this block is never entered: existing join behaviour is byte-for-byte unchanged.
+  // When enabled, AI/wind strategies are prepended to the base chain:
+  //   1. AIJoinTokenStrategy — AIJOIN# prefix (reverse-connecting bot)
+  //   2. WindBotJoinStrategy — blank / AI / AI#name (human requesting bot)
+  //   3. TicketJoinStrategy  — ticket-authenticated ranked join
+  //   4. DefaultJoinStrategy — game password / unranked fallback
   // config.windbot is parsed (and validated for fail-fast) at module load time in src/config/index.ts.
   if (config.windbot.enabled) {
     logger.info("Windbot enabled — initializing WindbotModule");
@@ -80,15 +92,11 @@ async function start(): Promise<void> {
     });
     WindbotModule.init({ enabled: true, repo, tokenStore, provider });
 
-    // Wire the strategy chain in priority order:
-    //   1. AIJoinTokenStrategy — AIJOIN# prefix (reverse-connecting bot)
-    //   2. WindBotJoinStrategy — blank / AI / AI#name (human requesting bot)
-    //   3. DefaultJoinStrategy — anything else (unchanged fallback)
     const module = WindbotModule.getInstance();
     JoinStrategyRegistry.setStrategies([
       new AIJoinTokenStrategy(module),
       new WindBotJoinStrategy(module),
-      new DefaultJoinStrategy(),
+      ...baseChain,
     ]);
     logger.info("WindbotModule and JoinStrategyRegistry initialised");
   }
