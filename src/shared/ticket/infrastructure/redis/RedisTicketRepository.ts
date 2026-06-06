@@ -27,8 +27,11 @@ export class RedisTicketRepository implements TicketRepository {
       return null;
     }
 
-    const userId = await redis.getdel(`ticket:${uuid}`);
-
-    return userId ?? null;
+    try {
+      const userId = await redis.getdel(`ticket:${uuid}`);
+      return userId ?? null;
+    } catch {
+      return null; // fail-closed: Redis error never grants ranked status
+    }
   }
 }

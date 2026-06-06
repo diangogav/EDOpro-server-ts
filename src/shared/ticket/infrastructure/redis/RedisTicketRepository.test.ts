@@ -66,5 +66,16 @@ describe("RedisTicketRepository", () => {
 
       expect(redisInstance.getdel).toHaveBeenCalledWith(`ticket:${VALID_UUID}`);
     });
+
+    it("returns null without propagating when getdel rejects (fail-closed on Redis error)", async () => {
+      const redisInstance = {
+        getdel: jest.fn().mockRejectedValue(new Error("ECONNREFUSED")),
+      };
+      (Redis.getInstance as jest.Mock).mockReturnValue(redisInstance);
+
+      const result = await repo.consume(VALID_UUID);
+
+      expect(result).toBeNull();
+    });
   });
 });
