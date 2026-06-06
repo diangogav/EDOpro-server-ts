@@ -50,6 +50,9 @@ describe("RankedUserResolver", () => {
       const result = await resolver.resolve(makePlayerInfo(), socket as any);
 
       expect(result).toBeNull();
+      // Defense-in-depth: a forged/non-existent id must never reach the ban check,
+      // because isBanned returns false for ids with no ban rows. findById gates it.
+      expect(userProfileRepo.isBanned).not.toHaveBeenCalled();
       expect(userAuth.run).not.toHaveBeenCalled();
     });
 
