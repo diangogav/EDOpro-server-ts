@@ -17,6 +17,16 @@ export class UserProfilePostgresRepository implements UserProfileRepository {
 		return UserProfile.from(userProfileEntity);
 	}
 
+	async findById(userId: string): Promise<UserProfile | null> {
+		const repository = dataSource.getRepository(UserProfileEntity);
+		const userProfileEntity = await repository.findOneBy({ id: userId });
+		if (!userProfileEntity) {
+			return null;
+		}
+
+		return UserProfile.from(userProfileEntity);
+	}
+
 	async create(userProfile: UserProfile): Promise<void> {
 		const repository = dataSource.getRepository(UserProfileEntity);
 		const userProfileEntity = repository.create({
