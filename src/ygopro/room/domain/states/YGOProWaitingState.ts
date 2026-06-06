@@ -1,8 +1,5 @@
 import { EventEmitter } from "stream";
 
-import { UserAuth } from "@shared/user-auth/application/UserAuth";
-import { UserProfile } from "@shared/user-profile/domain/UserProfile";
-
 import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
 
 import { Commands } from "@shared/messages/Commands";
@@ -13,6 +10,7 @@ import { ISocket } from "@shared/socket/domain/ISocket";
 
 import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { YGOProRoom } from "../YGOProRoom";
+import { RankedUserResolver } from "../../application/RankedUserResolver";
 
 import {
 	ErrorMessageType,
@@ -26,7 +24,7 @@ import MercuryBanListMemoryRepository from "@ygopro/ban-list/infrastructure/YGOP
 
 export class YGOProWaitingState extends YGOProRoomState {
 	constructor(
-		private readonly userAuth: UserAuth,
+		private readonly resolver: RankedUserResolver,
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
 		private readonly deckCreator: YGOProDeckCreator,
@@ -105,13 +103,13 @@ export class YGOProWaitingState extends YGOProRoomState {
 			let userId: string | null = null;
 
 			if (room.ranked) {
-				const user = await this.userAuth.run(playerInfoMessage);
-				if (!(user instanceof UserProfile)) {
+				const resolvedId = await this.resolver.resolve(playerInfoMessage, socket);
+				if (!resolvedId) {
 					socket.send(room.messageSender.errorMessage(ErrorMessageType.JOINERROR));
 
 					return null;
 				}
-				userId = user.id;
+				userId = resolvedId;
 			}
 
 			const player = room.createPlayerUnsafe(socket, playerInfoMessage.name, userId);
