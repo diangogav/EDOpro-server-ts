@@ -63,7 +63,7 @@ describe("Redis", () => {
       const instance = Redis.getInstance()!;
       instance.emit("ready");
 
-      expect(mockLogger.info).toHaveBeenCalledWith("Redis connection ready");
+      expect(mockLogger.info).toHaveBeenCalledWith("🟢 Redis connected");
     });
 
     it("calls logger.error when the error event fires", async () => {

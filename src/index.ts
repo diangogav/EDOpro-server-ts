@@ -37,6 +37,8 @@ void start();
 async function start(): Promise<void> {
   const logger = LoggerFactory.getLogger();
 
+  logger.info("🚀 Evolution server starting…");
+
   const server = new Server(logger);
   const ygoproServer = new YGOProServer(logger);
   const wsYgoproServer = new WSYGOProServer(logger, new HandshakeTicketAuthenticator(new RedisTicketRepository()));
@@ -55,15 +57,21 @@ async function start(): Promise<void> {
   const ygoProBanListLoader = new YGOProBanListLoader();
   await ygoProBanListLoader.load();
 
+  logger.info("🎴 YGOPro resources & ban lists loaded");
+
   await database.connect();
   await database.initialize();
+  logger.info("🗄️  SQLite connected");
+
   if (config.ranking.enabled) {
-    logger.info("Postgres database enabled!");
     const postgresDatabase = new PostgresTypeORM();
     await postgresDatabase.connect();
+    logger.info("🗄️  Postgres connected · ranking ON");
   }
+
   const redisDatabase = new Redis();
   await redisDatabase.connect();
+
   await server.initialize();
   WebSocketSingleton.getInstance();
   hostServer.initialize();
@@ -84,7 +92,6 @@ async function start(): Promise<void> {
   //   4. DefaultJoinStrategy — game password / unranked fallback
   // config.windbot is parsed (and validated for fail-fast) at module load time in src/config/index.ts.
   if (config.windbot.enabled) {
-    logger.info("Windbot enabled — initializing WindbotModule");
     const repo = new FileBotlistRepository(config.windbot.botlistPath);
     const tokenStore = new WindbotTokenStore();
     const provider = new HttpWindBotProvider({
@@ -101,9 +108,14 @@ async function start(): Promise<void> {
       new WindBotJoinStrategy(module),
       ...baseChain,
     ]);
-    logger.info("WindbotModule and JoinStrategyRegistry initialised");
+    logger.info("🤖 Windbot enabled");
   }
 
   ygoproServer.initialize();
   wsYgoproServer.initialize();
+
+  logger.info(`🔌 HTTP      → :${config.servers.http.port}`);
+  logger.info(`🔌 Mercury   → TCP :${config.servers.mercury.port} · WS :${config.servers.mercury.wsPort}`);
+  logger.info(`🔌 Host      → TCP :${config.servers.host.port} · WS :${config.servers.websocket.duelPort}`);
+  logger.info("✅ Evolution server ready");
 }

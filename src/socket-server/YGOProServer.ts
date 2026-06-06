@@ -32,9 +32,7 @@ export class YGOProServer {
 	}
 
 	initialize(): void {
-		this.server.listen(config.servers.mercury.port, () => {
-			this.logger.info(`Mercury server listen in port ${config.servers.mercury.port}`);
-		});
+		this.server.listen(config.servers.mercury.port);
 
 		this.server.on("connection", (socket: Socket) => {
 			this.address = socket.remoteAddress;

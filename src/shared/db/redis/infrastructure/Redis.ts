@@ -31,7 +31,7 @@ export class Redis implements Database {
 	async connect(): Promise<void> {
 		const redis = Redis.getInstance();
 		if (!redis) return; // not configured; getInstance() already logged
-		redis.on("ready", () => Redis.logger.info("Redis connection ready"));
+		redis.on("ready", () => Redis.logger.info("🟢 Redis connected"));
 		redis.on("error", (err: Error) => Redis.logger.error(`Redis connection error: ${err.message}`));
 		redis.on("reconnecting", () => Redis.logger.warn("Redis reconnecting"));
 	}

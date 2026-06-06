@@ -41,8 +41,6 @@ export class Server {
 
   async initialize(): Promise<void> {
     await createDirectoryIfNotExists("./config");
-    this.app.listen(config.servers.http.port, () => {
-      this.logger.info(`Server listen in port ${config.servers.http.port}`);
-    });
+    this.app.listen(config.servers.http.port);
   }
 }
