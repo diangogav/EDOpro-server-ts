@@ -108,17 +108,22 @@ export class WSYGOProServer {
 					? authHeader.slice(7)
 					: undefined;
 
+			let rejected = false;
 			if (bearer !== undefined) {
 				const userId = await this.ticketRepo.consume(bearer);
 				if (userId === null) {
 					ygoClientSocket.close();
+					rejected = true;
 				} else {
 					ygoClientSocket.resolvedUserId = userId;
 				}
 			}
 
-			// Ungate the pump — from this point any buffered or future message is processed
-			resolveReady();
+			// Ungate the pump — but never for a rejected connection, so a frame
+			// buffered during the ticket check is not dispatched to a closed socket.
+			if (!rejected) {
+				resolveReady();
+			}
 		});
 	}
 }

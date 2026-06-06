@@ -5,6 +5,7 @@ import { WebSocket, WebSocketServer } from "ws";
 import { Logger } from "@shared/logger/domain/Logger";
 import { TicketRepository } from "@shared/ticket/domain/TicketRepository";
 import { WebSocketClientSocket } from "../shared/socket/domain/WebSocketClientSocket";
+import { MessageEmitter } from "../edopro/MessageEmitter";
 import { WSYGOProServer } from "./WSYGOProServer";
 
 // --- Infrastructure mocks (prevent DB connections and port binding) ---
@@ -150,6 +151,26 @@ describe("WSYGOProServer", () => {
 
       resolveConsume("user-123");
       await handlerPromise;
+    });
+
+    it("does not pump buffered messages after rejecting an invalid ticket", async () => {
+      const handleMessage = jest.fn();
+      (MessageEmitter as unknown as jest.Mock).mockImplementation(() => ({ handleMessage }));
+      ticketRepo.consume.mockResolvedValue(null);
+
+      let pumpCallback!: (data: Buffer) => Promise<void>;
+      mockClientSocket.onMessage.mockImplementation((cb: (d: Buffer) => Promise<void>) => {
+        pumpCallback = cb;
+      });
+
+      await connectionCallback(makeRawSocket(), makeRequest(`Bearer ${VALID_UUID}`));
+
+      void pumpCallback(Buffer.from("00", "hex"));
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(mockClientSocket.close).toHaveBeenCalled();
+      expect(handleMessage).not.toHaveBeenCalled();
     });
   });
 });
