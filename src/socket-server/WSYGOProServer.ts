@@ -12,7 +12,7 @@ import { Logger } from "../shared/logger/domain/Logger";
 import { DisconnectHandler } from "../shared/room/application/DisconnectHandler";
 import { RoomFinder } from "../shared/room/application/RoomFinder";
 import { WebSocketClientSocket } from "../shared/socket/domain/WebSocketClientSocket";
-import { TicketRepository } from "../shared/ticket/domain/TicketRepository";
+import { HandshakeTicketAuthenticator } from "./HandshakeTicketAuthenticator";
 import { YGOProGameCreatorHandler } from "@ygopro/room/application/YGOProGameCreatorHandler";
 import { YGOProJoinHandler } from "@ygopro/room/application/YGOProJoinHandler";
 import { YGOProMessageRepository } from "@ygopro/room/infrastructure/YGOProMessageRepository";
@@ -23,11 +23,11 @@ export class WSYGOProServer {
 	private readonly roomFinder: RoomFinder;
 	private readonly userAuth: UserAuth;
 	private readonly checkIfUserCanJoin: CheckIfUseCanJoin;
-	private readonly ticketRepo: TicketRepository;
+	private readonly handshakeAuth: HandshakeTicketAuthenticator;
 
-	constructor(logger: Logger, ticketRepo: TicketRepository) {
+	constructor(logger: Logger, handshakeAuth: HandshakeTicketAuthenticator) {
 		this.logger = logger;
-		this.ticketRepo = ticketRepo;
+		this.handshakeAuth = handshakeAuth;
 		this.roomFinder = new RoomFinder();
 		const server = createServer();
 		this.wss = new WebSocketServer({ server });
@@ -100,28 +100,16 @@ export class WSYGOProServer {
 				disconnectHandler.run(address);
 			});
 
-			// Extract Bearer token from the HTTP upgrade request headers
-			const rawAuthHeader = request.headers["authorization"];
-			const authHeader = typeof rawAuthHeader === "string" ? rawAuthHeader : undefined;
-			const bearer =
-				authHeader !== undefined && authHeader.startsWith("Bearer ")
-					? authHeader.slice(7)
-					: undefined;
-
-			let rejected = false;
-			if (bearer !== undefined) {
-				const userId = await this.ticketRepo.consume(bearer);
-				if (userId === null) {
-					ygoClientSocket.close();
-					rejected = true;
-				} else {
-					ygoClientSocket.resolvedUserId = userId;
-				}
+			const auth = await this.handshakeAuth.authenticate(request);
+			if (auth.status === "authenticated") {
+				ygoClientSocket.resolvedUserId = auth.userId;
 			}
-
+			if (auth.status === "rejected") {
+				ygoClientSocket.close();
+			}
 			// Ungate the pump — but never for a rejected connection, so a frame
 			// buffered during the ticket check is not dispatched to a closed socket.
-			if (!rejected) {
+			if (auth.status !== "rejected") {
 				resolveReady();
 			}
 		});

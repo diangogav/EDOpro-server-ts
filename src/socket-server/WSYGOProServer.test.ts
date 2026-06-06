@@ -3,9 +3,9 @@ import { mock, MockProxy } from "jest-mock-extended";
 import { WebSocket, WebSocketServer } from "ws";
 
 import { Logger } from "@shared/logger/domain/Logger";
-import { TicketRepository } from "@shared/ticket/domain/TicketRepository";
 import { WebSocketClientSocket } from "../shared/socket/domain/WebSocketClientSocket";
 import { MessageEmitter } from "../edopro/MessageEmitter";
+import { HandshakeTicketAuthenticator } from "./HandshakeTicketAuthenticator";
 import { WSYGOProServer } from "./WSYGOProServer";
 
 // --- Infrastructure mocks (prevent DB connections and port binding) ---
@@ -28,8 +28,6 @@ jest.mock("@ygopro/room/infrastructure/YGOProMessageRepository");
 
 // ---------------------------------------------------------------------------
 
-const VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";
-
 const makeRawSocket = (): WebSocket =>
   ({
     on: jest.fn(),
@@ -40,15 +38,15 @@ const makeRawSocket = (): WebSocket =>
     readyState: 1, // WebSocket.OPEN
   } as unknown as WebSocket);
 
-const makeRequest = (authHeader?: string): IncomingMessage =>
+const makeRequest = (): IncomingMessage =>
   ({
-    headers: authHeader !== undefined ? { authorization: authHeader } : {},
+    headers: {},
   } as unknown as IncomingMessage);
 
 // ---------------------------------------------------------------------------
 
 describe("WSYGOProServer", () => {
-  let ticketRepo: MockProxy<TicketRepository>;
+  let handshakeAuth: MockProxy<HandshakeTicketAuthenticator>;
   let logger: MockProxy<Logger>;
   let mockClientSocket: {
     resolvedUserId?: string;
@@ -86,84 +84,86 @@ describe("WSYGOProServer", () => {
 
     logger = mock<Logger>();
     logger.child.mockReturnValue(logger);
-    ticketRepo = mock<TicketRepository>();
+    handshakeAuth = mock<HandshakeTicketAuthenticator>();
 
-    const server = new WSYGOProServer(logger, ticketRepo);
+    const server = new WSYGOProServer(logger, handshakeAuth);
     server.initialize();
   });
 
   describe("connection handler — ticket authentication", () => {
     it("sets resolvedUserId on the socket when Bearer token resolves to a userId", async () => {
-      ticketRepo.consume.mockResolvedValue("user-123");
+      handshakeAuth.authenticate.mockResolvedValue({ status: "authenticated", userId: "user-123" });
 
-      await connectionCallback(makeRawSocket(), makeRequest(`Bearer ${VALID_UUID}`));
+      await connectionCallback(makeRawSocket(), makeRequest());
 
-      expect(ticketRepo.consume).toHaveBeenCalledWith(VALID_UUID);
+      expect(handshakeAuth.authenticate).toHaveBeenCalled();
       expect(mockClientSocket.resolvedUserId).toBe("user-123");
       expect(mockClientSocket.close).not.toHaveBeenCalled();
     });
 
     it("closes the socket when consume returns null", async () => {
-      ticketRepo.consume.mockResolvedValue(null);
+      handshakeAuth.authenticate.mockResolvedValue({ status: "rejected" });
 
-      await connectionCallback(makeRawSocket(), makeRequest(`Bearer ${VALID_UUID}`));
+      await connectionCallback(makeRawSocket(), makeRequest());
 
       expect(mockClientSocket.close).toHaveBeenCalled();
       expect(mockClientSocket.resolvedUserId).toBeUndefined();
     });
 
     it("closes the socket when Bearer token is not a valid UUID (repo returns null per its contract)", async () => {
-      ticketRepo.consume.mockResolvedValue(null);
+      handshakeAuth.authenticate.mockResolvedValue({ status: "rejected" });
 
-      await connectionCallback(makeRawSocket(), makeRequest("Bearer not-a-uuid"));
+      await connectionCallback(makeRawSocket(), makeRequest());
 
       expect(mockClientSocket.close).toHaveBeenCalled();
     });
 
     it("closes the socket when Redis is unavailable (consume returns null fail-closed)", async () => {
-      ticketRepo.consume.mockResolvedValue(null);
+      handshakeAuth.authenticate.mockResolvedValue({ status: "rejected" });
 
-      await connectionCallback(makeRawSocket(), makeRequest(`Bearer ${VALID_UUID}`));
+      await connectionCallback(makeRawSocket(), makeRequest());
 
       expect(mockClientSocket.close).toHaveBeenCalled();
     });
 
-    it("does not call consume and does not close when Authorization header is absent", async () => {
+    it("does not call authenticate and does not close when Authorization header is absent", async () => {
+      handshakeAuth.authenticate.mockResolvedValue({ status: "anonymous" });
+
       await connectionCallback(makeRawSocket(), makeRequest());
 
-      expect(ticketRepo.consume).not.toHaveBeenCalled();
+      expect(handshakeAuth.authenticate).toHaveBeenCalled();
       expect(mockClientSocket.resolvedUserId).toBeUndefined();
       expect(mockClientSocket.close).not.toHaveBeenCalled();
     });
 
     it("registers the message pump before the ticket check resolves (no message-race)", async () => {
-      let resolveConsume!: (value: string | null) => void;
-      ticketRepo.consume.mockReturnValue(
-        new Promise<string | null>((resolve) => {
-          resolveConsume = resolve;
+      let resolveAuth!: (value: { status: "authenticated"; userId: string }) => void;
+      handshakeAuth.authenticate.mockReturnValue(
+        new Promise<{ status: "authenticated"; userId: string }>((resolve) => {
+          resolveAuth = resolve;
         })
       );
 
-      const handlerPromise = connectionCallback(makeRawSocket(), makeRequest(`Bearer ${VALID_UUID}`));
+      const handlerPromise = connectionCallback(makeRawSocket(), makeRequest());
 
-      // The pump must be registered synchronously before consume resolves
+      // The pump must be registered synchronously before authenticate resolves
       expect(mockClientSocket.onMessage).toHaveBeenCalled();
 
-      resolveConsume("user-123");
+      resolveAuth({ status: "authenticated", userId: "user-123" });
       await handlerPromise;
     });
 
     it("does not pump buffered messages after rejecting an invalid ticket", async () => {
       const handleMessage = jest.fn();
       (MessageEmitter as unknown as jest.Mock).mockImplementation(() => ({ handleMessage }));
-      ticketRepo.consume.mockResolvedValue(null);
+      handshakeAuth.authenticate.mockResolvedValue({ status: "rejected" });
 
       let pumpCallback!: (data: Buffer) => Promise<void>;
       mockClientSocket.onMessage.mockImplementation((cb: (d: Buffer) => Promise<void>) => {
         pumpCallback = cb;
       });
 
-      await connectionCallback(makeRawSocket(), makeRequest(`Bearer ${VALID_UUID}`));
+      await connectionCallback(makeRawSocket(), makeRequest());
 
       void pumpCallback(Buffer.from("00", "hex"));
       await Promise.resolve();
