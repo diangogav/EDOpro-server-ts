@@ -1,5 +1,5 @@
 import { randomUUID as uuidv4 } from "crypto";
-import { createServer } from "http";
+import { createServer, IncomingMessage } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { config } from "src/config";
 import { CheckIfUseCanJoin } from "src/shared/user-auth/application/CheckIfUserCanJoin";
@@ -12,6 +12,7 @@ import { Logger } from "../shared/logger/domain/Logger";
 import { DisconnectHandler } from "../shared/room/application/DisconnectHandler";
 import { RoomFinder } from "../shared/room/application/RoomFinder";
 import { WebSocketClientSocket } from "../shared/socket/domain/WebSocketClientSocket";
+import { TicketRepository } from "../shared/ticket/domain/TicketRepository";
 import { YGOProGameCreatorHandler } from "@ygopro/room/application/YGOProGameCreatorHandler";
 import { YGOProJoinHandler } from "@ygopro/room/application/YGOProJoinHandler";
 import { YGOProMessageRepository } from "@ygopro/room/infrastructure/YGOProMessageRepository";
@@ -22,9 +23,11 @@ export class WSYGOProServer {
 	private readonly roomFinder: RoomFinder;
 	private readonly userAuth: UserAuth;
 	private readonly checkIfUserCanJoin: CheckIfUseCanJoin;
+	private readonly ticketRepo: TicketRepository;
 
-	constructor(logger: Logger) {
+	constructor(logger: Logger, ticketRepo: TicketRepository) {
 		this.logger = logger;
+		this.ticketRepo = ticketRepo;
 		this.roomFinder = new RoomFinder();
 		const server = createServer();
 		this.wss = new WebSocketServer({ server });
@@ -39,7 +42,7 @@ export class WSYGOProServer {
 			this.logger.info(`Mercury WebSocket Server listen in port ${port}`);
 		});
 
-		this.wss.on("connection", (socket: WebSocket) => {
+		this.wss.on("connection", async (socket: WebSocket, request: IncomingMessage) => {
 			const ygoClientSocket = new WebSocketClientSocket(socket);
 			const eventEmitter = new EventEmitter();
 			const messageRepository = new YGOProMessageRepository();
@@ -75,10 +78,19 @@ export class WSYGOProServer {
 				joinGameListener,
 			);
 
-			ygoClientSocket.onMessage((data: Buffer) => {
+			// Gate: register the pump BEFORE awaiting the ticket check so that
+			// the first PlayerInfo / JoinGame binary frame is never dropped if it
+			// arrives while Redis is still being queried.
+			let resolveReady!: () => void;
+			const ready = new Promise<void>((resolve) => {
+				resolveReady = resolve;
+			});
+
+			ygoClientSocket.onMessage(async (data: Buffer) => {
 				connectionLogger.debug(
 					`Incoming message handle by Mercury WS Server: ${data.toString("hex")}`,
 				);
+				await ready;
 				messageEmitter.handleMessage(data);
 			});
 
@@ -87,6 +99,26 @@ export class WSYGOProServer {
 				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
 				disconnectHandler.run(address);
 			});
+
+			// Extract Bearer token from the HTTP upgrade request headers
+			const rawAuthHeader = request.headers["authorization"];
+			const authHeader = typeof rawAuthHeader === "string" ? rawAuthHeader : undefined;
+			const bearer =
+				authHeader !== undefined && authHeader.startsWith("Bearer ")
+					? authHeader.slice(7)
+					: undefined;
+
+			if (bearer !== undefined) {
+				const userId = await this.ticketRepo.consume(bearer);
+				if (userId === null) {
+					ygoClientSocket.close();
+				} else {
+					ygoClientSocket.resolvedUserId = userId;
+				}
+			}
+
+			// Ungate the pump — from this point any buffered or future message is processed
+			resolveReady();
 		});
 	}
 }

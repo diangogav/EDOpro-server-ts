@@ -15,6 +15,7 @@ import { HostServer } from "./socket-server/HostServer";
 import { WSHostServer } from "./socket-server/WSHostServer";
 import { YGOProServer } from "./socket-server/YGOProServer";
 import { WSYGOProServer } from "./socket-server/WSYGOProServer";
+import { RedisTicketRepository } from "./shared/ticket/infrastructure/redis/RedisTicketRepository";
 import WebSocketSingleton from "./web-socket-server/WebSocketSingleton";
 import { WindbotModule } from "./ygopro/windbot/application/WindbotModule";
 import { FileBotlistRepository } from "./ygopro/windbot/infrastructure/FileBotlistRepository";
@@ -35,7 +36,7 @@ async function start(): Promise<void> {
 
   const server = new Server(logger);
   const ygoproServer = new YGOProServer(logger);
-  const wsYgoproServer = new WSYGOProServer(logger);
+  const wsYgoproServer = new WSYGOProServer(logger, new RedisTicketRepository());
 
   const hostServer = new HostServer(logger);
   const wsHostServer = new WSHostServer(logger);
