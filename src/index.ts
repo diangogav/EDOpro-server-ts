@@ -16,6 +16,7 @@ import { WSHostServer } from "./socket-server/WSHostServer";
 import { YGOProServer } from "./socket-server/YGOProServer";
 import { WSYGOProServer } from "./socket-server/WSYGOProServer";
 import { HandshakeTicketAuthenticator } from "./socket-server/HandshakeTicketAuthenticator";
+import { Redis } from "@shared/db/redis/infrastructure/Redis";
 import { RedisTicketRepository } from "./shared/ticket/infrastructure/redis/RedisTicketRepository";
 import WebSocketSingleton from "./web-socket-server/WebSocketSingleton";
 import { WindbotModule } from "./ygopro/windbot/application/WindbotModule";
@@ -61,6 +62,8 @@ async function start(): Promise<void> {
     const postgresDatabase = new PostgresTypeORM();
     await postgresDatabase.connect();
   }
+  const redisDatabase = new Redis();
+  await redisDatabase.connect();
   await server.initialize();
   WebSocketSingleton.getInstance();
   hostServer.initialize();
