@@ -5,6 +5,7 @@ import { ISocket } from "@shared/socket/domain/ISocket";
 export class SocketMock implements ISocket {
 	id = faker.string.uuid();
 	roomId = 0;
+	resolvedUserId?: string;
 	remoteAddress = faker.internet.ip();
 	closed = false;
 
