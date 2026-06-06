@@ -5,6 +5,7 @@ import { ISocket } from "./ISocket";
 export class WebSocketClientSocket implements ISocket {
   id?: string;
   roomId?: number;
+  resolvedUserId?: string;
   private readonly socket: WebSocket;
   private isClosed = false;
   private messageCallback?: (data: WebSocket.Data) => void;
