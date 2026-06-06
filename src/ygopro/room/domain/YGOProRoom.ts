@@ -7,6 +7,7 @@ import { RoomState } from "@edopro/room/domain/RoomState";
 import { Team } from "@shared/room/Team";
 import { UserAuth } from "@shared/user-auth/application/UserAuth";
 import { UserProfilePostgresRepository } from "@shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
+import { RankedUserResolver } from "../application/RankedUserResolver";
 import { Logger } from "@shared/logger/domain/Logger";
 import { DeckRules, DuelState, YgoRoom } from "@shared/room/domain/YgoRoom";
 import { RoomType } from "@shared/room/domain/RoomType";
@@ -149,6 +150,7 @@ export class YGOProRoom extends YgoRoom {
     playerInfo: PlayerInfoMessage,
     createdBySocketId: string,
     messageRepository: MessageRepository,
+    rankedOverride?: boolean,
   ): YGOProRoom {
     let hostInfo: HostInfo = {
       lflist: MercuryBanListMemoryRepository.getFirstTCGIndex(),
@@ -220,7 +222,7 @@ export class YGOProRoom extends YgoRoom {
     });
 
     const teamCount = hostInfo.mode === GameMode.TAG ? 2 : 1;
-    const ranked = Boolean(playerInfo.password);
+    const ranked = rankedOverride ?? Boolean(playerInfo.password);
     const useExtendedCardPool = options.some((opt) => extendedCardPoolFormats.has(opt));
     const banList = MercuryBanListMemoryRepository.findLFListByIndex(
       hostInfo.lflist,
@@ -325,8 +327,13 @@ export class YGOProRoom extends YgoRoom {
 
   waiting(): void {
     this._roomState?.removeAllListener();
+    const userProfileRepo = new UserProfilePostgresRepository();
+    const resolver = new RankedUserResolver(
+      new UserAuth(userProfileRepo),
+      userProfileRepo,
+    );
     this._roomState = new YGOProWaitingState(
-      new UserAuth(new UserProfilePostgresRepository()),
+      resolver,
       this.emitter,
       this._logger,
       new YGOProDeckCreator(

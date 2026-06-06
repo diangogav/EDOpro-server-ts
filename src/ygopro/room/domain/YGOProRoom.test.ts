@@ -1,9 +1,15 @@
 import "reflect-metadata";
 
+import { EventEmitter } from "stream";
+
 import { GameMode } from "ygopro-msg-encode";
 import { YGOProRoomMother } from "@test-support/mothers/room/YGOProRoomMother";
+import { PlayerInfoMessageMother } from "@test-support/mothers/PlayerInfoMessageMother";
 import YGOProBanListMemoryRepository from "@ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository";
 import { YGOProBanList } from "@ygopro/ban-list/domain/YGOProBanList";
+import { YGOProRoom } from "./YGOProRoom";
+import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
+import { MessageRepositoryMock } from "@test-support/mocks/MessageRepositoryMock";
 
 function createBanList(name: string, hash: number): YGOProBanList {
   const banList = new YGOProBanList();
@@ -412,6 +418,36 @@ describe("YGOProRoom", () => {
       expect(room.hostInfo.duel_rule).toBe(2);
       expect(room.hostInfo.time_limit).toBe(450);
       expect(room.useExtendedCardPool).toBe(false);
+    });
+  });
+
+  describe("ranked override", () => {
+    it("creates a ranked room when rankedOverride is true even without a game password", () => {
+      const room = YGOProRoom.create(
+        1,
+        "TESTROOM",
+        new LoggerMock(),
+        new EventEmitter(),
+        PlayerInfoMessageMother.create(), // no password → ranked=false without override
+        "sock-1",
+        new MessageRepositoryMock(),
+        true, // rankedOverride
+      );
+      expect(room.ranked).toBe(true);
+    });
+
+    it("creates an unranked room when rankedOverride is absent and no game password", () => {
+      const room = YGOProRoom.create(
+        2,
+        "TESTROOM",
+        new LoggerMock(),
+        new EventEmitter(),
+        PlayerInfoMessageMother.create(), // no password → ranked=false
+        "sock-2",
+        new MessageRepositoryMock(),
+        // no rankedOverride
+      );
+      expect(room.ranked).toBe(false);
     });
   });
 
