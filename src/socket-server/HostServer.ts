@@ -42,9 +42,7 @@ export class HostServer {
 	}
 
 	initialize(): void {
-		this.server.listen(config.servers.host.port, () => {
-			this.logger.info(`Server listen in port ${config.servers.host.port}`);
-		});
+		this.server.listen(config.servers.host.port);
 		this.server.on("connection", (socket: Socket) => {
 			const tcpClientSocket = new TCPClientSocket(socket);
 			this.connectionHandler.handle(tcpClientSocket);

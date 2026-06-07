@@ -34,9 +34,7 @@ export class WSHostServer {
 	initialize(): void {
 		const port = config.servers.websocket.duelPort;
 		
-		this.wss.options.server?.listen(port, () => {
-			this.logger.info(`WebSocket Host Server listen in port ${port}`);
-		});
+		this.wss.options.server?.listen(port);
 
 		this.wss.on("connection", (socket: WebSocket) => {
 			const wsClientSocket = new WebSocketClientSocket(socket);

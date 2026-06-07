@@ -38,9 +38,7 @@ export class WSYGOProServer {
 	initialize(): void {
 		const port = config.servers.mercury.wsPort;
 
-		this.wss.options.server?.listen(port, () => {
-			this.logger.info(`Mercury WebSocket Server listen in port ${port}`);
-		});
+		this.wss.options.server?.listen(port);
 
 		this.wss.on("connection", async (socket: WebSocket, request: IncomingMessage) => {
 			const ygoClientSocket = new WebSocketClientSocket(socket);

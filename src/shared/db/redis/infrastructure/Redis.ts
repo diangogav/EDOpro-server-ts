@@ -23,7 +23,16 @@ export class Redis implements Database {
 		return Redis.instance;
 	}
 
+	/** Reset singleton — test use only. */
+	static resetForTests(): void {
+		Redis.instance = undefined;
+	}
+
 	async connect(): Promise<void> {
-		// do something
+		const redis = Redis.getInstance();
+		if (!redis) return; // not configured; getInstance() already logged
+		redis.on("ready", () => Redis.logger.info("🟢 Redis connected"));
+		redis.on("error", (err: Error) => Redis.logger.error(`Redis connection error: ${err.message}`));
+		redis.on("reconnecting", () => Redis.logger.warn("Redis reconnecting"));
 	}
 }
