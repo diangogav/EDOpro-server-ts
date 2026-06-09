@@ -19,6 +19,7 @@ import {
 import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
 import { YGOProDeckValidator } from "@ygopro/deck/domain/YGOProDeckValidator";
 import { DeckError } from "@shared/deck/domain/errors/DeckError";
+import { encodeDeckErrorCode } from "@shared/deck/domain/errors/encodeDeckErrorCode";
 import { YGOProRoomState } from "../YGOProRoomState";
 import MercuryBanListMemoryRepository from "@ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository";
 
@@ -214,7 +215,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 		if (deckOrError instanceof DeckError) {
 			this.logger.warn(`Deck build error: type=0x${deckOrError.type.toString(16)}, code=${deckOrError.code}, rule=${room.hostInfo.rule}, extendedPool=${room.useExtendedCardPool}`);
 			room.notReadyUnsafe(player);
-			player.sendMessageToClient(room.messageSender.errorMessage(ErrorMessageType.DECKERROR, deckOrError.type));
+			player.sendMessageToClient(room.messageSender.errorMessage(ErrorMessageType.DECKERROR, encodeDeckErrorCode(deckOrError.type, deckOrError.code)));
 			return;
 		}
 
@@ -232,7 +233,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 			const failedCard = deck.allCards.find((c) => Number(c.code) === hasError.code);
 			this.logger.warn(`Deck validation error: type=0x${hasError.type.toString(16)}, code=${hasError.code}, cardOt=${failedCard?.variant ?? "N/A"}, rule=${room.hostInfo.rule}, extendedPool=${room.useExtendedCardPool}`);
 			room.notReadyUnsafe(player);
-			player.sendMessageToClient(room.messageSender.errorMessage(ErrorMessageType.DECKERROR, hasError.type));
+			player.sendMessageToClient(room.messageSender.errorMessage(ErrorMessageType.DECKERROR, encodeDeckErrorCode(hasError.type, hasError.code)));
 			return;
 		}
 
