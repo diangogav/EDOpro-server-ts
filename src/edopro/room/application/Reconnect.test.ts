@@ -36,6 +36,7 @@ describe("Reconnect", () => {
 
     mockSocket = {
       id: "socket-id",
+      send: jest.fn(),
     } as unknown as jest.Mocked<ISocket>;
 
     mockPlayer = {

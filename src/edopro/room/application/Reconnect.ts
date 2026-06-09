@@ -7,6 +7,8 @@ import { Client } from "../../client/domain/Client";
 import { JoinGameMessage } from "../../messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
+import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientMessage";
+import { ErrorMessages } from "../../messages/server-to-client/error-messages/ErrorMessages";
 import { Room } from "../domain/Room";
 
 export class Reconnect {
@@ -20,15 +22,10 @@ export class Reconnect {
 		room: Room
 	): Promise<void> {
 		if (room.ranked && !(await this.checkIfUseCanJoin.check(playerInfoMessage, socket))) {
+			// CheckIfUseCanJoin no longer sends the JOINERROR itself (its wire format is
+			// client-specific). edopro/desktop clients use the @edopro ErrorClientMessage.
+			socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 			return;
-
-			// if (!player.socket.id || !player.socket.closed) {
-			// 	socket.send(ServerErrorClientMessage.create("Ya el jugador se encuentra en la partida."));
-			// 	socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
-			// 	socket.destroy();
-
-			// 	return;
-			// }
 		}
 
 		player.setSocket(socket, room.players as Client[], room);

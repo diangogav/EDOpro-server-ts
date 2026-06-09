@@ -81,6 +81,9 @@ export class JoinHandler implements JoinMessageHandler {
 
 		if (room.ranked) {
 			if (!(await this.checkIfUseCanJoin.check(playerInfoMessage, this.socket))) {
+				// CheckIfUseCanJoin no longer sends the JOINERROR itself (its wire format is
+				// client-specific). edopro/desktop clients use the @edopro ErrorClientMessage.
+				this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 				return;
 			}
 		}
