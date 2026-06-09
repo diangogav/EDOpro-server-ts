@@ -27,6 +27,11 @@ export class DefaultJoinStrategy implements JoinStrategy {
 		}
 
 		if (room.ranked && !(await ctx.checkIfUserCanJoin.check(ctx.playerInfo, ctx.socket))) {
+			// checkIfUserCanJoin already sent the JOIN_ERROR. Close the socket so the
+			// client gets a real disconnect instead of a live-but-useless connection it
+			// would keep reusing (the handshake — where the ticket travels — never re-runs
+			// otherwise). close() is graceful: the queued error frame is flushed first.
+			ctx.socket.close();
 			return;
 		}
 

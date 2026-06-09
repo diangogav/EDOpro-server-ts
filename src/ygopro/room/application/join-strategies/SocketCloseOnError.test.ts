@@ -1,19 +1,25 @@
 /**
- * socket.destroy() called after error sends.
+ * socket.close() called after error sends.
  *
- * WARNING-3 / SUGGESTION-3 from verify-pr4:
- * Both WindBotJoinStrategy and AIJoinTokenStrategy call ctx.socket.send(errorBuf)
- * on error paths but do NOT call ctx.socket.destroy(). The original DefaultJoinStrategy
- * wrong-password path calls socket.destroy(). This test enforces the fix.
+ * Invariant: error paths that send a message to the client (e.g. JOINERROR) MUST
+ * close the socket AFTER the send — using close() (graceful), NOT destroy().
+ *
+ * Why close() and not destroy():
+ *   destroy() → ws.terminate() is abrupt and can drop the queued error frame, so the
+ *   client never receives the JOINERROR it needs to react to. close() → ws.close()
+ *   performs the closing handshake and flushes queued frames first, so the error is
+ *   delivered AND the socket is torn down (no live-but-rejected connection the client
+ *   keeps reusing). Pure-rejection paths with no message (wrong password) still use
+ *   destroy() — see DefaultJoinStrategy / TicketJoinStrategy.
  *
  * Covered error paths:
  *   WindBotJoinStrategy:
- *     1. Tag-mode rejection → send + destroy
- *     2. requestBot failure → send + destroy
+ *     1. Tag-mode rejection → send + close
+ *     2. requestBot failure → send + close
  *
  *   AIJoinTokenStrategy:
- *     3. Invalid token → send + destroy
- *     4. Room disappeared (findById returns undefined) → send + destroy
+ *     3. Invalid token → send + close
+ *     4. Room disappeared (findById returns undefined) → send + close
  */
 
 import { EventEmitter } from "stream";
@@ -39,6 +45,7 @@ const makeLogger = () => ({
 
 const makeSocket = () => ({
 	id: "sock-test",
+	close: jest.fn(),
 	destroy: jest.fn(),
 	send: jest.fn(),
 	closed: false,
@@ -108,7 +115,7 @@ const makeCtx = (rawPass: string, overrides: Partial<JoinContext> = {}): JoinCon
 
 // ---------- tests ----------
 
-describe("socket.destroy() after error send (WARNING-3 fix)", () => {
+describe("socket.close() after error send", () => {
 	let waitingSpy: jest.SpyInstance;
 	let emitSpy: jest.SpyInstance;
 
@@ -128,7 +135,7 @@ describe("socket.destroy() after error send (WARNING-3 fix)", () => {
 	});
 
 	describe("WindBotJoinStrategy — error paths", () => {
-		it("calls socket.destroy() after send() on tag-mode rejection", async () => {
+		it("calls socket.close() after send() on tag-mode rejection", async () => {
 			const fakeRoom = {
 				isTag: true,
 				id: 42,
@@ -149,10 +156,11 @@ describe("socket.destroy() after error send (WARNING-3 fix)", () => {
 			await strategy.handle(ctx);
 
 			expect(socket.send).toHaveBeenCalled();
-			expect(socket.destroy).toHaveBeenCalled();
+			expect(socket.close).toHaveBeenCalled();
+			expect(socket.destroy).not.toHaveBeenCalled();
 		});
 
-		it("calls socket.destroy() after send() on requestBot failure", async () => {
+		it("calls socket.close() after send() on requestBot failure", async () => {
 			const provider = {
 				requestJoin: jest.fn().mockRejectedValue(new WindbotUnreachableError("Anna", 10)),
 			};
@@ -170,10 +178,11 @@ describe("socket.destroy() after error send (WARNING-3 fix)", () => {
 			await new Promise((r) => setImmediate(r));
 
 			expect(socket.send).toHaveBeenCalled();
-			expect(socket.destroy).toHaveBeenCalled();
+			expect(socket.close).toHaveBeenCalled();
+			expect(socket.destroy).not.toHaveBeenCalled();
 		});
 
-		it("destroy() is called AFTER send() on tag-mode rejection (order matters)", async () => {
+		it("close() is called AFTER send() on tag-mode rejection (order matters)", async () => {
 			const fakeRoom = {
 				isTag: true,
 				id: 42,
@@ -192,18 +201,18 @@ describe("socket.destroy() after error send (WARNING-3 fix)", () => {
 			const socket = {
 				...makeSocket(),
 				send: jest.fn().mockImplementation(() => { callOrder.push("send"); }),
-				destroy: jest.fn().mockImplementation(() => { callOrder.push("destroy"); }),
+				close: jest.fn().mockImplementation(() => { callOrder.push("close"); }),
 			};
 			const ctx = makeCtx("AI", { socket: socket as never });
 
 			await strategy.handle(ctx);
 
-			expect(callOrder).toEqual(["send", "destroy"]);
+			expect(callOrder).toEqual(["send", "close"]);
 		});
 	});
 
 	describe("AIJoinTokenStrategy — error paths", () => {
-		it("calls socket.destroy() after send() on invalid token", async () => {
+		it("calls socket.close() after send() on invalid token", async () => {
 			const mod = makeModule();
 			const strategy = new AIJoinTokenStrategy(mod);
 
@@ -213,10 +222,11 @@ describe("socket.destroy() after error send (WARNING-3 fix)", () => {
 			await strategy.handle(ctx);
 
 			expect(socket.send).toHaveBeenCalled();
-			expect(socket.destroy).toHaveBeenCalled();
+			expect(socket.close).toHaveBeenCalled();
+			expect(socket.destroy).not.toHaveBeenCalled();
 		});
 
-		it("calls socket.destroy() after send() when room not found", async () => {
+		it("calls socket.close() after send() when room not found", async () => {
 			const tokenStore = WindbotTokenStore.createForTests();
 			const token = tokenStore.register(99999, "Anna", "Anna.ydk");
 
@@ -230,10 +240,11 @@ describe("socket.destroy() after error send (WARNING-3 fix)", () => {
 			await strategy.handle(ctx);
 
 			expect(socket.send).toHaveBeenCalled();
-			expect(socket.destroy).toHaveBeenCalled();
+			expect(socket.close).toHaveBeenCalled();
+			expect(socket.destroy).not.toHaveBeenCalled();
 		});
 
-		it("destroy() is called AFTER send() on invalid token (order)", async () => {
+		it("close() is called AFTER send() on invalid token (order)", async () => {
 			const mod = makeModule();
 			const strategy = new AIJoinTokenStrategy(mod);
 
@@ -241,16 +252,16 @@ describe("socket.destroy() after error send (WARNING-3 fix)", () => {
 			const socket = {
 				...makeSocket(),
 				send: jest.fn().mockImplementation(() => { callOrder.push("send"); }),
-				destroy: jest.fn().mockImplementation(() => { callOrder.push("destroy"); }),
+				close: jest.fn().mockImplementation(() => { callOrder.push("close"); }),
 			};
 			const ctx = makeCtx("AIJOIN#nosuchtoken", { socket: socket as never });
 
 			await strategy.handle(ctx);
 
-			expect(callOrder).toEqual(["send", "destroy"]);
+			expect(callOrder).toEqual(["send", "close"]);
 		});
 
-		it("does NOT call socket.destroy() on the HAPPY path (valid token, room found)", async () => {
+		it("does NOT close the socket on the HAPPY path (valid token, room found)", async () => {
 			const tokenStore = WindbotTokenStore.createForTests();
 
 			// Create a real room in the list
@@ -283,8 +294,9 @@ describe("socket.destroy() after error send (WARNING-3 fix)", () => {
 
 			await strategy.handle(ctx);
 
-			// Happy path: no error sent, no destroy
+			// Happy path: no error sent, no close, no destroy
 			expect(socket.send).not.toHaveBeenCalled();
+			expect(socket.close).not.toHaveBeenCalled();
 			expect(socket.destroy).not.toHaveBeenCalled();
 		});
 	});

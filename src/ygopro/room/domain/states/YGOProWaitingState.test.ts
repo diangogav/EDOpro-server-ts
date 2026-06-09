@@ -246,6 +246,7 @@ describe("YGOProWaitingState.handleJoin", () => {
 			remoteAddress: "127.0.0.1",
 			closed: false,
 			send: jest.fn(),
+			close: jest.fn(),
 			destroy: jest.fn(),
 			removeAllListeners: jest.fn(),
 		} as unknown as jest.Mocked<ISocket>);
@@ -312,6 +313,41 @@ describe("YGOProWaitingState.handleJoin", () => {
 
 			expect(mockSocket.send).toHaveBeenCalled();
 			expect(mockRoom.createPlayerUnsafe).not.toHaveBeenCalled();
+		});
+
+		it("closes the socket when resolver returns null", async () => {
+			mockRoom = makeMockRoom(true);
+			mockResolver.resolve.mockResolvedValue(null);
+
+			await emitJoin(mockRoom, mockSocket);
+
+			expect(mockSocket.close).toHaveBeenCalled();
+		});
+
+		it("closes the socket AFTER sending JOINERROR (order matters)", async () => {
+			mockRoom = makeMockRoom(true);
+			mockResolver.resolve.mockResolvedValue(null);
+
+			const callOrder: string[] = [];
+			mockSocket.send.mockImplementation(() => {
+				callOrder.push("send");
+			});
+			mockSocket.close.mockImplementation(() => {
+				callOrder.push("close");
+			});
+
+			await emitJoin(mockRoom, mockSocket);
+
+			expect(callOrder).toEqual(["send", "close"]);
+		});
+
+		it("does NOT close the socket when resolver returns a userId", async () => {
+			mockRoom = makeMockRoom(true);
+			mockResolver.resolve.mockResolvedValue("user-123");
+
+			await emitJoin(mockRoom, mockSocket);
+
+			expect(mockSocket.close).not.toHaveBeenCalled();
 		});
 
 		it("creates the player with the userId returned by resolver", async () => {

@@ -106,6 +106,11 @@ export class YGOProWaitingState extends YGOProRoomState {
 				const resolvedId = await this.resolver.resolve(playerInfoMessage, socket);
 				if (!resolvedId) {
 					socket.send(room.messageSender.errorMessage(ErrorMessageType.JOINERROR));
+					// Close after the error is queued so the client disconnects cleanly and
+					// re-runs the handshake (with a fresh ticket) on retry, instead of staying
+					// stuck on a live socket the server has already rejected. close() flushes
+					// the JOINERROR frame before tearing down (unlike destroy()/terminate()).
+					socket.close();
 
 					return null;
 				}
