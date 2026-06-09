@@ -1,4 +1,5 @@
 import { Redis } from "@shared/db/redis/infrastructure/Redis";
+import LoggerFactory from "@shared/logger/infrastructure/LoggerFactory";
 import { TicketRepository } from "../../domain/TicketRepository";
 
 /**
@@ -15,22 +16,42 @@ const UUID_RE =
  *  - UUID format validated before any Redis call (prevents key injection)
  *  - GETDEL is atomic: reads and deletes in one operation (replay prevention)
  *  - Fail-closed: returns null whenever Redis is unavailable (ranked status never granted)
+ *
+ * Every rejection is logged with its reason so ranked-auth failures are
+ * diagnosable in production (the consume result is otherwise just null).
  */
 export class RedisTicketRepository implements TicketRepository {
+  private readonly logger = LoggerFactory.getLogger({ file: "RedisTicketRepository" });
+
   async consume(uuid: string): Promise<string | null> {
     if (!UUID_RE.test(uuid)) {
+      this.logger.warn("Ticket consume rejected: token is not a valid UUID v4", {
+        uuidPreview: uuid.slice(0, 8),
+      });
       return null;
     }
 
     const redis = Redis.getInstance();
     if (!redis) {
+      this.logger.warn("Ticket consume rejected: no Redis instance available");
       return null;
     }
 
     try {
       const userId = await redis.getdel(`ticket:${uuid}`);
-      return userId ?? null;
-    } catch {
+      if (userId == null) {
+        this.logger.warn(
+          "Ticket consume rejected: key not found (expired, already consumed, or issued against a different Redis)",
+          { key: `ticket:${uuid}` },
+        );
+        return null;
+      }
+      this.logger.info("Ticket consumed", { key: `ticket:${uuid}`, userId });
+      return userId;
+    } catch (error) {
+      this.logger.error("Ticket consume rejected: Redis error (fail-closed)", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return null; // fail-closed: Redis error never grants ranked status
     }
   }
