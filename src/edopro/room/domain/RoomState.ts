@@ -175,8 +175,15 @@ export abstract class RoomState {
 				: client.position;
 
 		const content = BufferToUTF16(message.data, message.data.length);
+		// STOC_CHAT (opcode 0x19) only carries player_type + msg — there is no name field,
+		// and every spectator shares player_type=7, so the client cannot tell which spectator
+		// spoke (it would fall back to a duelist's identity). Prefix the spectator's name into
+		// the text so the client can attribute the message to the right person.
+		const outgoing = client.isSpectator
+			? `${client.name.replace(/\0/g, "").trim()}: ${content}`
+			: content;
 		const chatMessage = Buffer.from(
-			new YGOProStocChat().fromPartial({ player_type: playerType, msg: content }).toFullPayload()
+			new YGOProStocChat().fromPartial({ player_type: playerType, msg: outgoing }).toFullPayload()
 		);
 
 		room.clients.forEach((_client: YgoClient) => {
