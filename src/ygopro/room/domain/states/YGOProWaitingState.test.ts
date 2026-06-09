@@ -12,6 +12,8 @@ import { YGOProWaitingState } from "./YGOProWaitingState";
 import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
 import { YGOProDeckValidator } from "@ygopro/deck/domain/YGOProDeckValidator";
 import { NotOfficialCardError } from "@shared/deck/domain/errors/NotOfficialCardError";
+import { BanListDeckError } from "@shared/deck/domain/errors/BanListDeckError";
+import { encodeDeckErrorCode } from "@shared/deck/domain/errors/encodeDeckErrorCode";
 import { RankedUserResolver } from "../../application/RankedUserResolver";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { ErrorMessageType } from "ygopro-msg-encode";
@@ -205,6 +207,42 @@ describe("YGOProWaitingState.handleUpdateDeck", () => {
 
 			expect(mockRoom.shouldValidateDeck).not.toHaveBeenCalled();
 			expect(mockDeckValidator.validate).not.toHaveBeenCalled();
+		});
+	});
+
+	describe("deck error code is encoded (DeckErrorType in high 4 bits)", () => {
+		const errorMessageMock = () =>
+			mockRoom.messageSender.errorMessage as unknown as jest.Mock;
+
+		it("sends DECKERROR with the encoded code when build returns a DeckError", async () => {
+			const deckError = new BanListDeckError(12345); // type=CARD_BANLISTED(1), code=12345
+			mockDeckCreator.build.mockResolvedValue(deckError as never);
+
+			await emitUpdateDeck(mockPlayer);
+
+			expect(errorMessageMock()).toHaveBeenCalledWith(
+				ErrorMessageType.DECKERROR,
+				encodeDeckErrorCode(deckError.type, deckError.code),
+			);
+			// Must NOT be the old bug (raw unshifted type)
+			expect(errorMessageMock()).not.toHaveBeenCalledWith(
+				ErrorMessageType.DECKERROR,
+				deckError.type,
+			);
+		});
+
+		it("sends DECKERROR with the encoded code when validation fails", async () => {
+			const fakeDeck = { allCards: [{ code: 12345 }] };
+			const deckError = new NotOfficialCardError(12345); // type=CARD_UNOFFICIAL(0xa), code=12345
+			mockDeckCreator.build.mockResolvedValue(fakeDeck as never);
+			mockDeckValidator.validate.mockReturnValue(deckError);
+
+			await emitUpdateDeck(mockPlayer);
+
+			expect(errorMessageMock()).toHaveBeenCalledWith(
+				ErrorMessageType.DECKERROR,
+				encodeDeckErrorCode(deckError.type, deckError.code),
+			);
 		});
 	});
 });
