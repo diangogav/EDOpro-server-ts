@@ -19,6 +19,7 @@ const makeLogger = () => ({
 const makeSocket = () => ({
 	id: "sock-1",
 	destroy: jest.fn(),
+	close: jest.fn(),
 	send: jest.fn(),
 });
 
@@ -138,6 +139,75 @@ describe("DefaultJoinStrategy", () => {
 			await strategy.handle(ctx);
 
 			expect(emitSpy).toHaveBeenCalledWith("JOIN", expect.anything(), ctx.socket);
+		});
+
+		it("closes the socket and does NOT emit JOIN when the ranked room rejects the user", async () => {
+			// Ranked room created via rankedOverride=true (8th arg)
+			const emitter = new EventEmitter();
+			const logger = makeLogger();
+			const messageRepo = makeMessageRepository();
+			const room = YGOProRoom.create(
+				7777,
+				"RANKEDROOM",
+				logger as never,
+				emitter,
+				{ name: "TestPlayer", password: "", previousMessage: Buffer.alloc(0) } as never,
+				"sock-original",
+				messageRepo as never,
+				true,
+			);
+			YGOProRoomList.addRoom(room);
+
+			const emitSpy = jest.spyOn(room, "emit").mockImplementation(() => undefined);
+
+			const socket = makeSocket();
+			const ctx = makeCtx({
+				rawPass: "RANKEDROOM",
+				command: "RANKEDROOM",
+				password: "",
+				socket: socket as never,
+				eventEmitter: emitter,
+				// check() returns false → user cannot join the ranked room
+				checkIfUserCanJoin: { check: jest.fn().mockResolvedValue(false) } as never,
+			});
+
+			await strategy.handle(ctx);
+
+			expect(socket.close).toHaveBeenCalled();
+			expect(emitSpy).not.toHaveBeenCalledWith("JOIN", expect.anything(), expect.anything());
+		});
+
+		it("does NOT close the socket on the happy ranked path (check passes)", async () => {
+			const emitter = new EventEmitter();
+			const logger = makeLogger();
+			const messageRepo = makeMessageRepository();
+			const room = YGOProRoom.create(
+				6666,
+				"RANKEDOK",
+				logger as never,
+				emitter,
+				{ name: "TestPlayer", password: "", previousMessage: Buffer.alloc(0) } as never,
+				"sock-original",
+				messageRepo as never,
+				true,
+			);
+			YGOProRoomList.addRoom(room);
+
+			jest.spyOn(room, "emit").mockImplementation(() => undefined);
+
+			const socket = makeSocket();
+			const ctx = makeCtx({
+				rawPass: "RANKEDOK",
+				command: "RANKEDOK",
+				password: "",
+				socket: socket as never,
+				eventEmitter: emitter,
+				checkIfUserCanJoin: { check: jest.fn().mockResolvedValue(true) } as never,
+			});
+
+			await strategy.handle(ctx);
+
+			expect(socket.close).not.toHaveBeenCalled();
 		});
 
 		it("creates a new room when none exists and adds it to the list", async () => {

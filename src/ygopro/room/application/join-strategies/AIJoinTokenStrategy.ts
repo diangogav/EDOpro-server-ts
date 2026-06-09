@@ -43,7 +43,9 @@ export class AIJoinTokenStrategy implements JoinStrategy {
 			// Invalid / expired / already-consumed token → reject, no new room
 			const errorBuf = ctx.messageRepository.errorMessage(ErrorMessageType.JOINERROR, 0);
 			ctx.socket.send(errorBuf);
-			ctx.socket.destroy();
+			// close() (not destroy()): flush the JOINERROR frame before tearing down,
+			// consistent with the other join error paths.
+			ctx.socket.close();
 			return;
 		}
 
@@ -52,7 +54,9 @@ export class AIJoinTokenStrategy implements JoinStrategy {
 			// Room disappeared (e.g. was destroyed during HTTP retry failure) — reject cleanly
 			const errorBuf = ctx.messageRepository.errorMessage(ErrorMessageType.JOINERROR, 0);
 			ctx.socket.send(errorBuf);
-			ctx.socket.destroy();
+			// close() (not destroy()): flush the JOINERROR frame before tearing down,
+			// consistent with the other join error paths.
+			ctx.socket.close();
 			return;
 		}
 

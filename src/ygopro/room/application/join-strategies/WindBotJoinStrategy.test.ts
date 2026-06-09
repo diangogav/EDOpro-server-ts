@@ -20,6 +20,7 @@ const makeLogger = () => ({
 
 const makeSocket = () => ({
 	id: "sock-test",
+	close: jest.fn(),
 	destroy: jest.fn(),
 	send: jest.fn(),
 });
@@ -368,7 +369,7 @@ describe("WindBotJoinStrategy", () => {
 		});
 
 		describe("requestBot failure path", () => {
-			it("sends error to human and destroys socket when requestBot throws", async () => {
+			it("sends error to human and closes socket when requestBot throws", async () => {
 				const provider = {
 					requestJoin: jest.fn().mockRejectedValue(new WindbotUnreachableError("Anna", 10)),
 				};

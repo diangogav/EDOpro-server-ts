@@ -63,7 +63,10 @@ export class WindBotJoinStrategy implements JoinStrategy {
 		if (room.isTag) {
 			const errorBuf = ctx.messageRepository.errorMessage(ErrorMessageType.JOINERROR, 0);
 			ctx.socket.send(errorBuf);
-			ctx.socket.destroy();
+			// close() (not destroy()): graceful close flushes the queued JOINERROR frame
+			// to the human before tearing the socket down. destroy()/terminate() is abrupt
+			// and can drop it. (destroy() stays only for message-less rejects, e.g. wrong password.)
+			ctx.socket.close();
 			// Room was NOT added to the list — no cleanup needed
 			return;
 		}
@@ -103,7 +106,8 @@ export class WindBotJoinStrategy implements JoinStrategy {
 
 				const errorBuf = ctx.messageRepository.errorMessage(ErrorMessageType.JOINERROR, 0);
 				ctx.socket.send(errorBuf);
-				ctx.socket.destroy();
+				// close() flushes the JOINERROR to the human before tearing down.
+				ctx.socket.close();
 			});
 	}
 }

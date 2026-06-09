@@ -20,6 +20,7 @@ const makeLogger = () => ({
 
 const makeSocket = () => ({
 	id: "sock-bot",
+	close: jest.fn(),
 	destroy: jest.fn(),
 	send: jest.fn(),
 });
