@@ -14,6 +14,11 @@ import YGOProRoomList from "../../infrastructure/YGOProRoomList";
  * - checkIfUserCanJoin is intentionally skipped: the ban-check happens
  *   later inside RankedUserResolver (injected in YGOProWaitingState).
  * - JOIN is emitted directly.
+ *
+ * The ticket only replaces the username:password LOGIN credential — it does
+ * NOT bypass the per-room password (the "command#password" room key). An
+ * existing room with a password must still be joined with the matching key,
+ * exactly like DefaultJoinStrategy, so private rooms stay private.
  */
 export class TicketJoinStrategy implements JoinStrategy {
 	matches(ctx: JoinContext): boolean {
@@ -22,12 +27,20 @@ export class TicketJoinStrategy implements JoinStrategy {
 
 	async handle(ctx: JoinContext): Promise<void> {
 		const room = this._findOrCreateRankedRoom(ctx);
+		if (!room) {
+			ctx.logger.info("JOIN_GAME rejected: wrong password");
+			ctx.socket.destroy();
+			return;
+		}
 		room.emit("JOIN", ctx.message, ctx.socket);
 	}
 
-	private _findOrCreateRankedRoom(ctx: JoinContext): YGOProRoom {
+	private _findOrCreateRankedRoom(ctx: JoinContext): YGOProRoom | null {
 		const existingRoom = YGOProRoomList.findByName(ctx.command);
 		if (existingRoom) {
+			if (existingRoom.password !== ctx.password) {
+				return null;
+			}
 			return existingRoom;
 		}
 
