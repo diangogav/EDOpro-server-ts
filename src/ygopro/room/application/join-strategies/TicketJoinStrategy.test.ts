@@ -179,7 +179,7 @@ describe("TicketJoinStrategy", () => {
 			emitSpy.mockRestore();
 		});
 
-		it("joins an existing room without password check", async () => {
+		it("joins an existing room when the room password matches (both empty)", async () => {
 			// Pre-create a ranked room
 			const emitter = new EventEmitter();
 			const { YGOProRoom } = await import("../../domain/YGOProRoom");
@@ -207,6 +207,78 @@ describe("TicketJoinStrategy", () => {
 			const ctx = makeCtx({
 				socket: makeSocket("ticket-user") as never,
 				eventEmitter: emitter,
+			});
+
+			await strategy.handle(ctx);
+
+			expect(emitSpy).toHaveBeenCalledWith("JOIN", expect.anything(), ctx.socket);
+		});
+
+		it("rejects the join when the existing room password does NOT match", async () => {
+			const { YGOProRoom } = await import("../../domain/YGOProRoom");
+			const { MessageRepositoryMock } = await import(
+				"@test-support/mocks/MessageRepositoryMock"
+			);
+			const { LoggerMock } = await import("@test-support/mocks/logger/LoggerMock");
+			const { PlayerInfoMessageMother } = await import(
+				"@test-support/mothers/PlayerInfoMessageMother"
+			);
+
+			const existingRoom = YGOProRoom.create(
+				7777,
+				"TESTROOM#secret",
+				new LoggerMock(),
+				new EventEmitter(),
+				PlayerInfoMessageMother.create(),
+				"sock-orig",
+				new MessageRepositoryMock(),
+				true,
+			);
+			YGOProRoomList.addRoom(existingRoom);
+			const emitSpy = jest.spyOn(existingRoom, "emit").mockImplementation(() => undefined);
+
+			const socket = makeSocket("ticket-user");
+			const ctx = makeCtx({
+				socket: socket as never,
+				command: "TESTROOM",
+				password: "",
+				rawPass: "TESTROOM",
+			});
+
+			await strategy.handle(ctx);
+
+			expect(socket.destroy).toHaveBeenCalled();
+			expect(emitSpy).not.toHaveBeenCalled();
+		});
+
+		it("joins an existing room when a non-empty room password matches", async () => {
+			const { YGOProRoom } = await import("../../domain/YGOProRoom");
+			const { MessageRepositoryMock } = await import(
+				"@test-support/mocks/MessageRepositoryMock"
+			);
+			const { LoggerMock } = await import("@test-support/mocks/logger/LoggerMock");
+			const { PlayerInfoMessageMother } = await import(
+				"@test-support/mothers/PlayerInfoMessageMother"
+			);
+
+			const existingRoom = YGOProRoom.create(
+				7778,
+				"TESTROOM#secret",
+				new LoggerMock(),
+				new EventEmitter(),
+				PlayerInfoMessageMother.create(),
+				"sock-orig",
+				new MessageRepositoryMock(),
+				true,
+			);
+			YGOProRoomList.addRoom(existingRoom);
+			const emitSpy = jest.spyOn(existingRoom, "emit").mockImplementation(() => undefined);
+
+			const ctx = makeCtx({
+				socket: makeSocket("ticket-user") as never,
+				command: "TESTROOM",
+				password: "secret",
+				rawPass: "TESTROOM#secret",
 			});
 
 			await strategy.handle(ctx);
