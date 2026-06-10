@@ -1,5 +1,7 @@
 import { EventEmitter } from "stream";
 
+import { ErrorMessageType } from "ygopro-msg-encode";
+
 import { JoinContext } from "./JoinStrategy";
 import { DefaultJoinStrategy } from "./DefaultJoinStrategy";
 import { YGOProRoom } from "../../domain/YGOProRoom";
@@ -175,6 +177,42 @@ describe("DefaultJoinStrategy", () => {
 
 			expect(socket.close).toHaveBeenCalled();
 			expect(emitSpy).not.toHaveBeenCalledWith("JOIN", expect.anything(), expect.anything());
+		});
+
+		it("sends the JOINERROR via messageRepository (ygopro 8-byte format) on ranked reject", async () => {
+			const emitter = new EventEmitter();
+			const room = YGOProRoom.create(
+				7778,
+				"RANKEDROOM2",
+				makeLogger() as never,
+				emitter,
+				{ name: "TestPlayer", password: "", previousMessage: Buffer.alloc(0) } as never,
+				"sock-original",
+				makeMessageRepository() as never,
+				true,
+			);
+			YGOProRoomList.addRoom(room);
+			jest.spyOn(room, "emit").mockImplementation(() => undefined);
+
+			const socket = makeSocket();
+			const ctxMessageRepo = makeMessageRepository();
+			const ctx = makeCtx({
+				rawPass: "RANKEDROOM2",
+				command: "RANKEDROOM2",
+				password: "",
+				socket: socket as never,
+				eventEmitter: emitter,
+				messageRepository: ctxMessageRepo as never,
+				checkIfUserCanJoin: { check: jest.fn().mockResolvedValue(false) } as never,
+			});
+
+			await strategy.handle(ctx);
+
+			// The reject must serialize the JOINERROR through the ygopro repository (same
+			// path as DECKERROR → YGOProStocErrorMsg, 8-byte body with code at offset 4),
+			// NOT the @edopro ErrorClientMessage (5-byte body) the web client cannot decode.
+			expect(ctxMessageRepo.errorMessage).toHaveBeenCalledWith(ErrorMessageType.JOINERROR, 0);
+			expect(socket.send).toHaveBeenCalled();
 		});
 
 		it("does NOT close the socket on the happy ranked path (check passes)", async () => {
