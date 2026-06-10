@@ -35,6 +35,7 @@ import {
   YGOProStocReplay,
   YGOProStocTeammateSurrender,
 } from "ygopro-msg-encode";
+import { EvrpSerializer } from "../replay/EvrpSerializer";
 import { GameOverDomainEvent } from "@shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 
@@ -534,6 +535,7 @@ export class YGOProDuelingState extends RoomState {
     this.removeAllListener();
     this.disposeCore();
     await this.sendAllReplays();
+    await this.sendAllEvrp();
     this.sendDuelEndAndDisconnect();
   }
 
@@ -552,6 +554,33 @@ export class YGOProDuelingState extends RoomState {
       if (!replayBuffer) continue;
 
       this.broadcastReplay(i + 1, duelRecords.length, replayBuffer);
+    }
+  }
+
+  /**
+   * Serialize all duel records into the .evrp envelope and broadcast the
+   * chunked frames to every connected client.
+   *
+   * Called AFTER sendAllReplays() so .yrp delivery is never interrupted (R2).
+   * Any serialization or send failure is caught and logged; it MUST NOT
+   * propagate to the caller (R2 failure isolation).
+   */
+  private async sendAllEvrp(): Promise<void> {
+    try {
+      const gz = EvrpSerializer.serialize(this.room, this.room.duelRecords);
+      const frames = EvrpSerializer.toFrames(gz);
+
+      this.logger.info(
+        `Sending EVRP export: ${frames.length} chunk(s), ~${gz.length} bytes gzip`,
+      );
+
+      for (const frame of frames) {
+        this.room.clients.forEach((client: YGOProClient) => {
+          client.sendMessageToClient(frame);
+        });
+      }
+    } catch (err) {
+      this.logger.error(String(err), { context: "sendAllEvrp" });
     }
   }
 

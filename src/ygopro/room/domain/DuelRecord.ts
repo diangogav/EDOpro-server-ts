@@ -166,6 +166,28 @@ export class DuelRecord {
         }
     }
 
+    /**
+     * Produces an omniscient frame stream for the .evrp envelope.
+     *
+     * Uses `toPlayback` with:
+     *  - identity callback (no per-recipient masking — messages are recorded raw)
+     *  - `includeResponse: false` (drops SELECT/response prompts)
+     *  - `includeNonObserver: true` (keeps player-private hints, MSG_MISSED_EFFECT, etc.)
+     *
+     * Each returned string is a base64-encoded `YGOProStocGameMsg.toFullPayload()` buffer.
+     * See design D1 for the rationale.
+     */
+    toEvrpFrames(): string[] {
+        const frames: string[] = [];
+        for (const stocMsg of this.toPlayback((msg) => msg, {
+            includeResponse: false,
+            includeNonObserver: true,
+        })) {
+            frames.push(Buffer.from(stocMsg.toFullPayload()).toString('base64'));
+        }
+        return frames;
+    }
+
     private resolveObserverWinMsg() {
         if (
             (this.winPosition !== 0 && this.winPosition !== 1) ||
