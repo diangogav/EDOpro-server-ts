@@ -36,7 +36,6 @@ cp -r "$REPOS/ygopro-format-alternatives" ./resources/ygopro/alternatives
 declare -A MAP=(
     ["2010.03 Edison(Pre Errata)"]="edison"
     ["2014.04 HAT (Pre Errata)"]="hat"
-    ["jtp-oficial"]="jtp"
     ["GOAT"]="goat"
     ["Rush"]="rush"
     ["Speed"]="speed"
@@ -51,5 +50,10 @@ for name in "${!MAP[@]}"; do
     [ -f "$src" ] || src="$REPOS/edopro-banlists-ignis/${name}.lflist.conf"
     cp "$src" "./resources/ygopro/alternatives/${MAP[$name]}/lflist.conf"
 done
+
+# JTP comes from evolution-assets: it lists BASE card codes, so alt-art
+# variants stay legal via their alias (the termitaklk list shipped variant
+# codes, which rejected the base cards in whitelist validation).
+cp "$REPOS/evolution-assets/lflist/jtp.lflist.conf" ./resources/ygopro/alternatives/jtp/lflist.conf
 
 echo "Resources assembled successfully."

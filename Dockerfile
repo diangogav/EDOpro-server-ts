@@ -12,6 +12,7 @@ RUN git clone --depth 1 --branch master https://github.com/ProjectIgnis/CardScri
     git clone --depth 1 --branch master https://github.com/ProjectIgnis/BabelCDB.git edopro-card-databases && \
     git clone --depth 1 --branch master https://github.com/ProjectIgnis/LFLists edopro-banlists-ignis && \
     git clone --depth 1 --branch main https://github.com/termitaklk/lflist edopro-banlists-evolution && \
+    git clone --depth 1 --branch main https://github.com/diangogav/evolution-assets evolution-assets && \
     # git clone --depth 1 https://code.moenext.com/nanahira/ygopro-scripts ygopro-scripts && \
     git clone --depth 1 https://github.com/Fluorohydride/ygopro-scripts ygopro-scripts && \
     git clone --depth 1 --branch master https://github.com/evolutionygo/pre-release-database-cdb ygopro-prereleases-cdb && \
@@ -20,12 +21,14 @@ RUN git clone --depth 1 --branch master https://github.com/ProjectIgnis/CardScri
     wget -O ygopro-lflist.conf https://cdntx.moecube.com/ygopro-database/zh-CN/lflist.conf && \
     wget -O ygopro-cards.cdb https://cdntx.moecube.com/ygopro-database/zh-CN/cards.cdb
 
-# Copy selected banlists into corresponding alternative folders
+# Copy selected banlists into corresponding alternative folders.
+# JTP comes from evolution-assets: it lists BASE card codes, so alt-art
+# variants stay legal via their alias (the termitaklk list shipped variant
+# codes, which rejected the base cards in whitelist validation).
 RUN bash -c 'set -e; \
     declare -A MAP=( \
     ["2010.03 Edison(Pre Errata)"]="edison" \
     ["2014.04 HAT (Pre Errata)"]="hat" \
-    ["jtp-oficial"]="jtp" \
     ["GOAT"]="goat" \
     ["Rush"]="rush" \
     ["Speed"]="speed" \
@@ -38,7 +41,8 @@ RUN bash -c 'set -e; \
     src="./edopro-banlists-evolution/${name}.lflist.conf"; \
     [ -f "$src" ] || src="./edopro-banlists-ignis/${name}.lflist.conf"; \
     cp "$src" "./ygopro-format-alternatives/${MAP[$name]}/lflist.conf"; \
-    done'
+    done; \
+    cp ./evolution-assets/lflist/jtp.lflist.conf ./ygopro-format-alternatives/jtp/lflist.conf'
 
 # Assemble final resources structure and strip .git dirs
 RUN find . -name ".git" -type d -exec rm -rf {} + 2>/dev/null; \
