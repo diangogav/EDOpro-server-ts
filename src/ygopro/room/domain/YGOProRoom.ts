@@ -222,7 +222,10 @@ export class YGOProRoom extends YgoRoom {
     });
 
     const teamCount = hostInfo.mode === GameMode.TAG ? 2 : 1;
-    const ranked = rankedOverride ?? Boolean(playerInfo.password);
+    // The host's explicit "casual" token wins over any ranked default — a
+    // ticket-authenticated user must be able to host unranked rooms.
+    const casual = options.includes("casual");
+    const ranked = casual ? false : (rankedOverride ?? Boolean(playerInfo.password));
     const useExtendedCardPool = options.some((opt) => extendedCardPoolFormats.has(opt));
     const banList = MercuryBanListMemoryRepository.findLFListByIndex(
       hostInfo.lflist,
@@ -769,6 +772,7 @@ export class YGOProRoom extends YgoRoom {
       })),
       maxPlayers,
       spectators: this._spectators.length,
+      ranked: this.ranked,
     };
   }
 

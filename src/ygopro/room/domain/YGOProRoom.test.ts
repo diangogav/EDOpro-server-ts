@@ -449,6 +449,45 @@ describe("YGOProRoom", () => {
       );
       expect(room.ranked).toBe(false);
     });
+
+    it("creates an unranked room when the command carries the casual token, even with rankedOverride", () => {
+      const room = YGOProRoom.create(
+        3,
+        "m,casual",
+        new LoggerMock(),
+        new EventEmitter(),
+        PlayerInfoMessageMother.create(),
+        "sock-3",
+        new MessageRepositoryMock(),
+        true, // ticket user explicitly hosting a casual room
+      );
+      expect(room.ranked).toBe(false);
+    });
+
+    it("exposes the ranked flag in the room list DTO", () => {
+      const ranked = YGOProRoom.create(
+        4,
+        "TESTROOM",
+        new LoggerMock(),
+        new EventEmitter(),
+        PlayerInfoMessageMother.create(),
+        "sock-4",
+        new MessageRepositoryMock(),
+        true,
+      );
+      const casual = YGOProRoom.create(
+        5,
+        "casual",
+        new LoggerMock(),
+        new EventEmitter(),
+        PlayerInfoMessageMother.create(),
+        "sock-5",
+        new MessageRepositoryMock(),
+        true,
+      );
+      expect(ranked.toRoomListDTO().ranked).toBe(true);
+      expect(casual.toRoomListDTO().ranked).toBe(false);
+    });
   });
 
   describe("GX Format", () => {
