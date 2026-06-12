@@ -434,7 +434,7 @@ export class YGOProRoom extends YgoRoom {
 
   addPlayerUnsafe(player: YGOProClient): void {
     player.sendMessageToClient(
-      this._messageRepository.joinGameMessage(this.hostInfo),
+      this._messageRepository.joinGameMessage(this.hostInfo, this.banListHash),
     );
     this._players.push(player);
     player.socket.roomId = this.id;
@@ -476,7 +476,7 @@ export class YGOProRoom extends YgoRoom {
 
   addSpectatorUnsafe(spectator: YGOProClient): void {
     spectator.sendMessageToClient(
-      this._messageRepository.joinGameMessage(this.hostInfo),
+      this._messageRepository.joinGameMessage(this.hostInfo, this.banListHash),
     );
 
     this._spectators.push(spectator);
@@ -676,7 +676,7 @@ export class YGOProRoom extends YgoRoom {
     player.setSocket(socket);
     player.reconnecting();
     player.sendMessageToClient(
-      this._messageRepository.joinGameMessage(this.hostInfo),
+      this._messageRepository.joinGameMessage(this.hostInfo, this.banListHash),
     );
     const type = player.host ? player.position | 0x10 : player.position;
     player.sendMessageToClient(

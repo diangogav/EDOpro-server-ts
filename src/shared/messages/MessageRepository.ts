@@ -3,7 +3,7 @@ import { HostInfo } from "@ygopro/room/domain/host-info/HostInfo";
 export abstract class MessageRepository {
     abstract errorMessage(type: number, code?: number): Buffer;
     abstract duelStartMessage(): Buffer;
-    abstract joinGameMessage(hostInfo: HostInfo): Buffer;
+    abstract joinGameMessage(hostInfo: HostInfo, banListHash: number): Buffer;
     abstract typeChangeMessage(position: number, isHost: boolean): Buffer;
     abstract typeChangeMessageFromType(type: number): Buffer;
     abstract playerEnterMessage(name: string, position: number): Buffer;

@@ -84,9 +84,9 @@ export class YGOProMessageRepository extends MessageRepository {
     return Buffer.from(message.toFullPayload());
   }
 
-  joinGameMessage(hostInfo: HostInfo): Buffer {
+  joinGameMessage(hostInfo: HostInfo, banListHash: number): Buffer {
     const message = new YGOProStocJoinGame().fromPartial({
-      info: hostInfo,
+      info: { ...hostInfo, lflist: banListHash },
     });
 
     return Buffer.from(message.toFullPayload());
