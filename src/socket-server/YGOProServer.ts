@@ -77,25 +77,22 @@ export class YGOProServer {
 				messageEmitter.handleMessage(data);
 			});
 
-			socket.on("end", () => {
-
-				connectionLogger.info(`${socket.remoteAddress} left in end event`);
-				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
-				disconnectHandler.run(this.address);
-			});
-
-			socket.on("close", () => {
-
+			// Cleanup runs only on `close` (via onClose), like the other servers.
+			// `end`/`error` fire before the socket is closed and `close` always
+			// follows, so wiring all three ran cleanup 2-3x with stale state;
+			// `end`/`error` below are logging only — do not re-add cleanup there.
+			ygoClientSocket.onClose(() => {
 				connectionLogger.info(`${socket.remoteAddress} left in close event`);
 				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
 				disconnectHandler.run(this.address);
 			});
 
-			socket.on("error", (_error) => {
+			socket.on("end", () => {
+				connectionLogger.info(`${socket.remoteAddress} left in end event`);
+			});
 
+			socket.on("error", (_error) => {
 				connectionLogger.info(`${socket.remoteAddress} left in error event`);
-				const disconnectHandler = new DisconnectHandler(ygoClientSocket, this.roomFinder);
-				disconnectHandler.run(this.address);
 			});
 		});
 	}

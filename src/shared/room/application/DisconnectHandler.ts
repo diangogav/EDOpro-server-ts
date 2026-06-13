@@ -40,7 +40,7 @@ export class DisconnectHandler {
 	}
 
 	private handle(room: Room, address?: string): void {
-		if (room.players.every((client) => client.socket.closed)) {
+		if (room.hasNoConnectedPlayers) {
 			RoomList.deleteRoom(room);
 			WebSocketSingleton.getInstance().broadcast({
 				action: "REMOVE-ROOM",
@@ -105,7 +105,9 @@ export class DisconnectHandler {
 	}
 
 	private handleYGOPro(room: YGOProRoom): void {
-		if (room.players.every((player) => player.socket.closed)) {
+		// On `close` the leaver's socket is already closed, so this also catches
+		// the last WAITING player leaving — finalize instead of leaking a zombie.
+		if (room.hasNoConnectedPlayers) {
 			FinalizeYGOProRoom.run(room);
 
 			return;
@@ -153,7 +155,7 @@ export class DisconnectHandler {
 			_client.sendMessage(message);
 		});
 
-		if (room.players.every((client) => client.socket.closed) && room.spectators.length === 0) {
+		if (room.hasNoConnectedPlayers && room.spectators.length === 0) {
 			RoomList.deleteRoom(room);
 			WebSocketSingleton.getInstance().broadcast({
 				action: "REMOVE-ROOM",

@@ -165,6 +165,11 @@ export abstract class YgoRoom {
 		return this._players;
 	}
 
+	// An empty room counts as "nobody connected" — `[].every()` is vacuously true.
+	get hasNoConnectedPlayers(): boolean {
+		return this.players.every((player) => player.socket.closed);
+	}
+
 	get spectators(): YgoClient[] {
 		return this._spectators;
 	}
