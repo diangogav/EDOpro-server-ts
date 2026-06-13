@@ -12,6 +12,8 @@ import {
 } from "ygopro-msg-encode";
 import { Team } from "@shared/room/Team";
 import { YGOProRoomState } from "../YGOProRoomState";
+import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
+import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
 
 export class YGOProRockPaperScissorState extends YGOProRoomState {
   private handResult = [0, 0];
@@ -32,6 +34,46 @@ export class YGOProRockPaperScissorState extends YGOProRoomState {
       (message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
         void this.handleJoin.bind(this)(message, room, socket),
     );
+    this.eventEmitter.on(
+      "EXPRESS_RECONNECT",
+      (message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
+        this.handleExpressReconnect.bind(this)(message, room, socket),
+    );
+  }
+
+  private handleExpressReconnect(
+    message: ClientMessage,
+    room: YGOProRoom,
+    socket: ISocket,
+  ): void {
+    this.logger.info("EXPRESS_RECONNECT");
+    const token = message.data.toString("utf8");
+
+    const player = ReconnectionTokenIssuer.resolve(
+      token,
+      room.id,
+      (client) => client instanceof YGOProClient,
+    ) as YGOProClient | null;
+    if (!player) {
+      this.logger.info(`EXPRESS_RECONNECT: no player for token ${token}`);
+      socket.send(ReconnectionAckMessage.failure());
+      socket.destroy();
+      return;
+    }
+
+    socket.send(ReconnectionAckMessage.success());
+    room.reconnect(player, socket);
+
+    // Re-sync mirrors the name-match reconnect for this phase (handleJoin).
+    player.sendMessageToClient(room.messageSender.duelStartMessage());
+    room.sendDeckCountMessage(player);
+    const hasSelected = this.handResult[player.team] !== 0;
+    if (player.isCaptain && !hasSelected) {
+      player.sendMessageToClient(room.messageSender.selectHandMessage());
+    }
+
+    player.sendMessageToClient(ReconnectionTokenIssuer.rotate(player, room.id));
+    player.clearReconnecting();
   }
 
   private handleJoin(

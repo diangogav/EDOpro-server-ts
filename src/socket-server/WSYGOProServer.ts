@@ -11,11 +11,14 @@ import { MessageEmitter } from "../edopro/MessageEmitter";
 import { Logger } from "../shared/logger/domain/Logger";
 import { DisconnectHandler } from "../shared/room/application/DisconnectHandler";
 import { RoomFinder } from "../shared/room/application/RoomFinder";
+import { ExpressReconnectHandler } from "../shared/room/application/reconnect/ExpressReconnectHandler";
 import { WebSocketClientSocket } from "../shared/socket/domain/WebSocketClientSocket";
 import { HandshakeTicketAuthenticator } from "./HandshakeTicketAuthenticator";
 import { YGOProGameCreatorHandler } from "@ygopro/room/application/YGOProGameCreatorHandler";
 import { YGOProJoinHandler } from "@ygopro/room/application/YGOProJoinHandler";
 import { YGOProMessageRepository } from "@ygopro/room/infrastructure/YGOProMessageRepository";
+import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
+import { YGOProClient } from "@ygopro/client/domain/YGOProClient";
 
 export class WSYGOProServer {
 	private readonly wss: WebSocketServer;
@@ -74,6 +77,17 @@ export class WSYGOProServer {
 				eventEmitter,
 				createGameListener,
 				joinGameListener,
+			);
+
+			// Bridge a token reconnect (0xfd) arriving on this fresh WS connection to
+			// its owning room as an EXPRESS_RECONNECT event. WS-only by construction:
+			// resolves against YGOProRoomList and only accepts YGOProClient tokens.
+			new ExpressReconnectHandler(
+				eventEmitter,
+				connectionLogger,
+				ygoClientSocket,
+				(roomId) => YGOProRoomList.findById(roomId) ?? undefined,
+				(client) => client instanceof YGOProClient,
 			);
 
 			// Gate: register the pump BEFORE awaiting the ticket check so that

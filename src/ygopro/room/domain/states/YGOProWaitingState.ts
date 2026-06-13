@@ -7,6 +7,7 @@ import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { YgoClient } from "@shared/client/domain/YgoClient";
 import { Logger } from "@shared/logger/domain/Logger";
 import { ISocket } from "@shared/socket/domain/ISocket";
+import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
 
 import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { YGOProRoom } from "../YGOProRoom";
@@ -149,6 +150,15 @@ export class YGOProWaitingState extends YGOProRoomState {
 		for (const player of room.clients) {
 			(player as YGOProClient).sendMessageToClient(room.messageSender.duelStartMessage());
 			room.sendDeckCountMessage(player as YGOProClient);
+		}
+
+		// Issue a per-player reconnection token at match start so every duel phase
+		// (RPS, choosing order, dueling, side-decking) supports token reconnect.
+		// WindBot rooms (noReconnect) are skipped — bots never reconnect.
+		if (!room.noReconnect) {
+			for (const player of room.players as YGOProClient[]) {
+				player.sendMessageToClient(ReconnectionTokenIssuer.issue(player, room.id));
+			}
 		}
 
 		this.toRPS(room);

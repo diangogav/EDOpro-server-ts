@@ -12,6 +12,8 @@ import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { Logger } from "@shared/logger/domain/Logger";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { Team } from "@shared/room/Team";
+import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
+import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
 
 import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { DuelRecord } from "../DuelRecord";
@@ -89,6 +91,12 @@ export class YGOProDuelingState extends RoomState {
       Commands.SURRENDER as unknown as string,
       (_message: ClientMessage, _room: YGOProRoom, client: YGOProClient) =>
         void this.handleSurrender.bind(this)(client),
+    );
+
+    this.eventEmitter.on(
+      "EXPRESS_RECONNECT",
+      (message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
+        void this.handleExpressReconnect.bind(this)(message, room, socket),
     );
   }
 
@@ -275,6 +283,15 @@ export class YGOProDuelingState extends RoomState {
       return;
     }
 
+    await this.resyncBoard(player);
+    player.clearReconnecting();
+  }
+
+  // Re-sends the full in-duel board state to a (re)connecting player. Reused by
+  // both the deck-resubmission reconnect (handleUpdateDeck) and the token-based
+  // express reconnect (handleExpressReconnect). The board re-sync is OCGCore
+  // specific and therefore intentionally NOT part of the shared reconnect layer.
+  private async resyncBoard(player: YGOProClient): Promise<void> {
     player.sendMessageToClient(
       Buffer.from(new YGOProStocDuelStart().toFullPayload()),
     );
@@ -285,6 +302,37 @@ export class YGOProDuelingState extends RoomState {
     await this.ocgCore.sendRefreshZonesMessages(player);
     await this.ocgCore.sendDeckReversedAndTopMessages(player);
     await this.ocgCore.sendReconnectTimeLimitAndResponseState(player);
+  }
+
+  private async handleExpressReconnect(
+    message: ClientMessage,
+    room: YGOProRoom,
+    socket: ISocket,
+  ): Promise<void> {
+    this.logger.info("EXPRESS_RECONNECT");
+    const token = message.data.toString("utf8");
+
+    const player = ReconnectionTokenIssuer.resolve(
+      token,
+      room.id,
+      (client) => client instanceof YGOProClient,
+    ) as YGOProClient | null;
+    if (!player) {
+      this.logger.info(`EXPRESS_RECONNECT: no player for token ${token}`);
+      socket.send(ReconnectionAckMessage.failure());
+      socket.destroy();
+      return;
+    }
+
+    // 1. Acknowledge success on the freshly reopened socket.
+    socket.send(ReconnectionAckMessage.success());
+    // 2. Re-associate the socket and replay the lobby/init frames (room.reconnect
+    //    mirrors the name-match reconnect path for ygopro).
+    room.reconnect(player, socket);
+    // 3. Replay the live board state.
+    await this.resyncBoard(player);
+    // 4. Rotate the token (single-use) and finish.
+    player.sendMessageToClient(ReconnectionTokenIssuer.rotate(player, room.id));
     player.clearReconnecting();
   }
 
