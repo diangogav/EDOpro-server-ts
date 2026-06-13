@@ -19,6 +19,7 @@ import { ErrorClientMessage } from "../../../../messages/server-to-client/ErrorC
 import { JoinGameClientMessage } from "../../../../messages/server-to-client/JoinGameClientMessage";
 import { RPSChooseClientMessage } from "../../../../messages/server-to-client/RPSChooseClientMessage";
 import { ServerErrorClientMessage } from "../../../../messages/server-to-client/ServerErrorMessageClientMessage";
+import { ReconnectionTokenIssuer } from "../../../../../shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";
 
@@ -163,6 +164,14 @@ export class WaitingState extends RoomState {
 			const rpsChooseMessage = RPSChooseClientMessage.create();
 			(t0Client as Client).sendMessage(rpsChooseMessage);
 			(t1Client as Client).sendMessage(rpsChooseMessage);
+
+			// Issue a per-player reconnection token at match start so every duel
+			// phase (RPS, choosing order, dueling, side-decking) supports reconnect
+			// by token. It is rotated after each successful reconnection, never
+			// re-issued per game.
+			room.players.forEach((client: Client) => {
+				client.sendMessage(ReconnectionTokenIssuer.issue(client, room.id));
+			});
 
 			room.createMatchUnsafe();
 			room.rpsUnsafe();

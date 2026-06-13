@@ -25,13 +25,13 @@ import { StartDuelClientMessage } from "../../../../messages/server-to-client/ga
 import { TimeLimitClientMessage } from "../../../../messages/server-to-client/game-messages/TimeLimitClientMessage";
 import { CatchUpClientMessage } from "../../../../messages/server-to-client/CatchUpClientMessage";
 import { PlayerChangeClientMessage } from "../../../../messages/server-to-client/PlayerChangeClientMessage";
-import { ReconnectionTokenClientMessage } from "../../../../messages/server-to-client/ReconnectionTokenClientMessage";
+import { ReconnectionTokenIssuer } from "../../../../../shared/room/application/reconnect/ReconnectionTokenIssuer";
+import { ReconnectionAckMessage } from "../../../../../shared/messages/server-to-client/ReconnectionAckMessage";
 import { ServerErrorClientMessage } from "../../../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { ServerMessageClientMessage } from "../../../../messages/server-to-client/ServerMessageClientMessage";
 import { FinishDuelHandler } from "../../../application/FinishDuelHandler";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";
-import { TokenIndex } from "../../../../../shared/room/domain/TokenIndex";
 import { DuelFinishReason } from "../../DuelFinishReason";
 import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";
@@ -220,12 +220,11 @@ export class DuelingState extends RoomState {
 
 		this.logger.info("Starting Duel");
 
+		// The reconnection token is issued once at match start (WaitingState), not
+		// per-game, so it survives across RPS, side-decking and every duel in a
+		// match. It is only rotated after each successful reconnection.
 		this.room.players.forEach((item) => {
 			item.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.STARTING_DUEL));
-			const reconnectionToken = crypto.randomBytes(16).toString("hex");
-			item.setReconnectionToken(reconnectionToken);
-			TokenIndex.getInstance().register(reconnectionToken, item, this.room.id);
-			item.socket.send(ReconnectionTokenClientMessage.create(reconnectionToken));
 		});
 
 		const core = spawn(
@@ -419,18 +418,9 @@ export class DuelingState extends RoomState {
 
 		player.sendMessage(CatchUpClientMessage.create({ catchingUp: false }));
 
-		const oldToken = player.reconnectionToken;
+		// Rotate the token after a successful reconnection (single-use).
 		player.clearReconnecting();
-		player.clearReconnectionToken();
-		if (oldToken) {
-			TokenIndex.getInstance().unregister(oldToken);
-		}
-
-		// Generate new token for future reconnections
-		const newToken = crypto.randomBytes(16).toString("hex");
-		player.setReconnectionToken(newToken);
-		TokenIndex.getInstance().register(newToken, player, this.room.id);
-		player.sendMessage(ReconnectionTokenClientMessage.create(newToken));
+		player.sendMessage(ReconnectionTokenIssuer.rotate(player, this.room.id));
 
 		if (player.cache) {
 			this.logger.info(`Sending last cached message to ${player.name} after reconnection`);
@@ -658,30 +648,22 @@ export class DuelingState extends RoomState {
 		const token = message.data.toString("utf8");
 		this.logger.info(`DUELING_STATE: Token received: ${token}`);
 
-		const entry = TokenIndex.getInstance().find(token);
-		if (!entry || !(entry.client instanceof Client) || entry.roomId !== room.id) {
+		const player = ReconnectionTokenIssuer.resolve(
+			token,
+			room.id,
+			(client) => client instanceof Client
+		) as Client | null;
+		if (!player) {
 			this.logger.info(`DUELING_STATE: Player not found for token ${token} or room mismatch`);
-			const type = Buffer.from([0xfd]);
-			const status = Buffer.from([0x01]);
-			const dataStatus = Buffer.concat([type, status]);
-			const size = Buffer.alloc(2);
-			size.writeUint16LE(dataStatus.length);
-			socket.send(Buffer.concat([size, dataStatus]));
+			socket.send(ReconnectionAckMessage.failure());
 			socket.destroy();
 			return;
 		}
 
-		const player = entry.client as Client;
-
 		this.logger.info(`DUELING_STATE: Match found for player ${player.name}. Restoring session.`);
 
 		// 1. Send success status
-		const type = Buffer.from([0xfd]);
-		const status = Buffer.from([0x00]);
-		const dataStatus = Buffer.concat([type, status]);
-		const size = Buffer.alloc(2);
-		size.writeUint16LE(dataStatus.length);
-		socket.send(Buffer.concat([size, dataStatus]));
+		socket.send(ReconnectionAckMessage.success());
 
 		// 2. Perform the reconnection logic (similar to handleReady but without waiting for READY)
 		player.setSocket(socket, room.players as Client[], room);

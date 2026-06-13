@@ -10,6 +10,7 @@ import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { UpdateDeckMessageParser } from "@edopro/deck/application/UpdateDeckMessageSizeCalculator";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { Commands } from "@shared/messages/Commands";
+import { TokenIndex } from "@shared/room/domain/TokenIndex";
 
 // Mocks
 jest.mock("@shared/logger/domain/Logger");
@@ -239,5 +240,57 @@ describe("SideDeckingState", () => {
     await new Promise(process.nextTick);
 
     expect(mockJoinToDuelAsSpectator.run).toHaveBeenCalled();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Characterization of the token-based express reconnect flow. Pins the CURRENT
+  // observable behavior before the shared reconnect layer is extracted.
+  // ---------------------------------------------------------------------------
+  describe("EXPRESS_RECONNECT (characterization)", () => {
+    const SUCCESS_ACK = Buffer.from([0x02, 0x00, 0xfd, 0x00]);
+    const FAILURE_ACK = Buffer.from([0x02, 0x00, 0xfd, 0x01]);
+
+    beforeEach(() => {
+      TokenIndex.getInstance().clear();
+      (mockRoom as any).id = 1;
+      Object.assign(mockClient, {
+        setSocket: jest.fn(),
+        reconnecting: jest.fn(),
+        setReconnectionToken: jest.fn(),
+        reconnectionToken: "old",
+      });
+    });
+
+    afterEach(() => {
+      TokenIndex.getInstance().clear();
+    });
+
+    it("valid token: success ack + setSocket + token rotated", () => {
+      TokenIndex.getInstance().register("old", mockClient, 1);
+      const message = { data: Buffer.from("old", "utf8") } as ClientMessage;
+
+      mockEmitter.emit("EXPRESS_RECONNECT", message, mockRoom, mockSocket);
+
+      expect(mockSocket.send).toHaveBeenCalledWith(SUCCESS_ACK);
+      expect(mockClient.setSocket).toHaveBeenCalled();
+      expect(mockClient.sendMessage).toHaveBeenCalled(); // DuelStart + SideDeck
+      expect(TokenIndex.getInstance().find("old")).toBeUndefined();
+      expect(mockClient.setReconnectionToken).toHaveBeenCalledWith(
+        expect.stringMatching(/^[0-9a-f]{32}$/),
+      );
+    });
+
+    it("unknown token: failure ack + socket destroyed", () => {
+      const failSocket = {
+        send: jest.fn(),
+        destroy: jest.fn(),
+      } as unknown as jest.Mocked<ISocket>;
+      const message = { data: Buffer.from("ghost", "utf8") } as ClientMessage;
+
+      mockEmitter.emit("EXPRESS_RECONNECT", message, mockRoom, failSocket);
+
+      expect(failSocket.send).toHaveBeenCalledWith(FAILURE_ACK);
+      expect(failSocket.destroy).toHaveBeenCalled();
+    });
   });
 });

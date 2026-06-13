@@ -20,10 +20,8 @@ import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectato
 import { Reconnect } from "../../../application/Reconnect";
 import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";
-import { TokenIndex } from "../../../../../shared/room/domain/TokenIndex";
-
-import { ReconnectionTokenClientMessage } from "../../../../messages/server-to-client/ReconnectionTokenClientMessage";
-import crypto from "crypto";
+import { ReconnectionTokenIssuer } from "../../../../../shared/room/application/reconnect/ReconnectionTokenIssuer";
+import { ReconnectionAckMessage } from "../../../../../shared/messages/server-to-client/ReconnectionAckMessage";
 
 export class SideDeckingState extends RoomState {
 	constructor(
@@ -64,47 +62,32 @@ export class SideDeckingState extends RoomState {
 		this.logger.info("SIDE_DECKING: EXPRESS_RECONNECT - START");
 		const token = message.data.toString("utf8");
 
-		const entry = TokenIndex.getInstance().find(token);
-		if (!entry || !(entry.client instanceof Client) || entry.roomId !== room.id) {
+		const player = ReconnectionTokenIssuer.resolve(
+			token,
+			room.id,
+			(client) => client instanceof Client
+		) as Client | null;
+		if (!player) {
 			this.logger.info(`SIDE_DECKING: Player not found for token ${token} or room mismatch`);
-			const type = Buffer.from([0xfd]);
-			const status = Buffer.from([0x01]);
-			const dataStatus = Buffer.concat([type, status]);
-			const size = Buffer.alloc(2);
-			size.writeUint16LE(dataStatus.length);
-			socket.send(Buffer.concat([size, dataStatus]));
+			socket.send(ReconnectionAckMessage.failure());
 			socket.destroy();
 			return;
 		}
 
-		const player = entry.client as Client;
 		this.logger.info(`SIDE_DECKING: MATCH! Reconnecting player ${player.name}`);
 
 		player.setSocket(socket, room.players as Client[], room);
 		player.reconnecting();
 
 		// Send success status
-		const type = Buffer.from([0xfd]);
-		const status = Buffer.from([0x00]);
-		const dataStatus = Buffer.concat([type, status]);
-		const size = Buffer.alloc(2);
-		size.writeUint16LE(dataStatus.length);
-		socket.send(Buffer.concat([size, dataStatus]));
+		socket.send(ReconnectionAckMessage.success());
 
 		// For Side-Decking, we just need to send the SideDeck message again
 		player.sendMessage(DuelStartClientMessage.create());
 		player.sendMessage(SideDeckClientMessage.create());
 
-		const oldToken = player.reconnectionToken;
-		if (oldToken) {
-			TokenIndex.getInstance().unregister(oldToken);
-		}
-
-		// Renew token
-		const newToken = crypto.randomBytes(16).toString("hex");
-		player.setReconnectionToken(newToken);
-		TokenIndex.getInstance().register(newToken, player, room.id);
-		player.sendMessage(ReconnectionTokenClientMessage.create(newToken));
+		// Rotate the token after a successful reconnection (single-use).
+		player.sendMessage(ReconnectionTokenIssuer.rotate(player, room.id));
 
 		player.clearReconnecting();
 	}

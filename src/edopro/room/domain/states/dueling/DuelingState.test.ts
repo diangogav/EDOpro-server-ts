@@ -14,6 +14,7 @@ import { ISocket } from "@shared/socket/domain/ISocket";
 import { spawn } from "child_process";
 import WebSocketSingleton from "../../../../../web-socket-server/WebSocketSingleton";
 import { Commands } from "@shared/messages/Commands";
+import { TokenIndex } from "@shared/room/domain/TokenIndex";
 
 // Mocks
 jest.mock("@shared/logger/domain/Logger");
@@ -330,5 +331,100 @@ describe("DuelingState", () => {
     expect(setImmediateSpy).toHaveBeenCalledTimes(1);
 
     setImmediateSpy.mockRestore();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Characterization of the token-based express reconnect flow. These pin the
+  // CURRENT observable behavior before the shared reconnect layer is extracted,
+  // so the refactor must keep them green (identical behavior).
+  // ---------------------------------------------------------------------------
+  describe("EXPRESS_RECONNECT (characterization)", () => {
+    const SUCCESS_ACK = Buffer.from([0x02, 0x00, 0xfd, 0x00]);
+    const FAILURE_ACK = Buffer.from([0x02, 0x00, 0xfd, 0x01]);
+
+    const makeRealClient = (overrides: Record<string, unknown> = {}): Client => {
+      const client = new Client({} as any) as any; // instanceof Client === true
+      Object.assign(client, {
+        name: "P1",
+        position: 0,
+        team: 0,
+        cache: null,
+        reconnectionToken: null,
+        sendMessage: jest.fn(),
+        setSocket: jest.fn(),
+        reconnecting: jest.fn(),
+        clearReconnecting: jest.fn(),
+        setCanReconnect: jest.fn(),
+        setReconnectionToken: jest.fn(),
+        clearReconnectionToken: jest.fn(),
+        ...overrides,
+      });
+      return client as Client;
+    };
+
+    beforeEach(() => {
+      TokenIndex.getInstance().clear();
+    });
+
+    afterEach(() => {
+      TokenIndex.getInstance().clear();
+    });
+
+    it("valid token: success ack + setSocket + REFRESH_FIELD to core", () => {
+      const player = makeRealClient();
+      TokenIndex.getInstance().register("tok", player, mockRoom.id);
+      const message = { data: Buffer.from("tok", "utf8") } as ClientMessage;
+
+      mockEmitter.emit("EXPRESS_RECONNECT", message, mockRoom, mockSocket);
+
+      expect(mockSocket.send).toHaveBeenCalledWith(SUCCESS_ACK);
+      expect(player.setSocket).toHaveBeenCalledWith(
+        mockSocket,
+        mockRoom.players,
+        mockRoom,
+      );
+      expect(player.reconnecting).toHaveBeenCalled();
+      expect(mockRoom.sendMessageToCpp).toHaveBeenCalledWith(
+        expect.stringContaining("REFRESH_FIELD"),
+      );
+    });
+
+    it("unknown token: failure ack + socket destroyed", () => {
+      const message = { data: Buffer.from("ghost", "utf8") } as ClientMessage;
+
+      mockEmitter.emit("EXPRESS_RECONNECT", message, mockRoom, mockSocket);
+
+      expect(mockSocket.send).toHaveBeenCalledWith(FAILURE_ACK);
+      expect(mockSocket.destroy).toHaveBeenCalled();
+    });
+
+    it("token registered to another room: failure ack + socket destroyed", () => {
+      const player = makeRealClient();
+      TokenIndex.getInstance().register("tok", player, mockRoom.id + 999);
+      const message = { data: Buffer.from("tok", "utf8") } as ClientMessage;
+
+      mockEmitter.emit("EXPRESS_RECONNECT", message, mockRoom, mockSocket);
+
+      expect(mockSocket.send).toHaveBeenCalledWith(FAILURE_ACK);
+      expect(mockSocket.destroy).toHaveBeenCalled();
+    });
+
+    it("core RECONNECT: rotates the token (old gone, new 32-hex issued)", () => {
+      const player = makeRealClient({ reconnectionToken: "old", position: 0 });
+      (mockRoom as any).players = [player];
+      TokenIndex.getInstance().register("old", player, mockRoom.id);
+
+      (state as any).handleCoreReconnect({
+        position: 0,
+        team: 0,
+        cacheable: false,
+      });
+
+      expect(TokenIndex.getInstance().find("old")).toBeUndefined();
+      expect(player.setReconnectionToken).toHaveBeenCalledWith(
+        expect.stringMatching(/^[0-9a-f]{32}$/),
+      );
+      expect(player.sendMessage).toHaveBeenCalled();
+    });
   });
 });

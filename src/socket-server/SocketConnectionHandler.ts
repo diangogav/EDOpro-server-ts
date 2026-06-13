@@ -5,7 +5,9 @@ import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 import { Commands } from "../shared/messages/Commands";
 import { MessageEmitter } from "../edopro/MessageEmitter";
-import { ExpressReconnectHandler } from "../edopro/room/application/ExpressReconnectHandler";
+import { ExpressReconnectHandler } from "../shared/room/application/reconnect/ExpressReconnectHandler";
+import RoomList from "../edopro/room/infrastructure/RoomList";
+import { Client } from "../edopro/client/domain/Client";
 import { GameCreatorHandler } from "../edopro/room/application/GameCreatorHandler";
 import { JoinHandler } from "../edopro/room/application/JoinHandler";
 import { Logger } from "../shared/logger/domain/Logger";
@@ -48,7 +50,13 @@ export class SocketConnectionHandler {
 			new JoinHandler(eventEmitter, connectionLogger, socket, this.checkIfUserCanJoin);
 		};
 
-		new ExpressReconnectHandler(eventEmitter, connectionLogger, socket);
+		new ExpressReconnectHandler(
+			eventEmitter,
+			connectionLogger,
+			socket,
+			(roomId) => RoomList.getRooms().find((room) => room.id === roomId),
+			(client) => client instanceof Client
+		);
 
 		const messageEmitter = new MessageEmitter(
 			connectionLogger,
