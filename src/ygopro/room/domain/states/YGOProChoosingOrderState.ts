@@ -10,6 +10,7 @@ import { Logger } from "../../../../shared/logger/domain/Logger";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { YGOProRoom } from "../YGOProRoom";
+import { findReconnectingPlayer } from "@shared/room/domain/findReconnectingPlayer";
 import { TurnPlayerResult, YGOProCtosTpResult, YGOProStocDuelStart } from "ygopro-msg-encode";
 import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
@@ -81,7 +82,12 @@ export class YGOProChoosingOrderState extends RoomState {
 		this.logger.info("handleJoin");
 
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
-		const playerAlreadyInRoom = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
+		const playerAlreadyInRoom = findReconnectingPlayer({
+			players: room.players,
+			name: playerInfoMessage.name,
+			remoteAddress: socket.remoteAddress,
+			ranked: room.ranked,
+		});
 
 		if (!(playerAlreadyInRoom instanceof YGOProClient)) {
 			const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name);

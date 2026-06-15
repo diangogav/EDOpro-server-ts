@@ -19,6 +19,7 @@ import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { DuelRecord } from "../DuelRecord";
 import { FinalizeYGOProRoom } from "../../application/FinalizeYGOProRoom";
 import { YGOProRoom } from "../YGOProRoom";
+import { findReconnectingPlayer } from "@shared/room/domain/findReconnectingPlayer";
 import { getMessageIdentifier } from "../../../utils/response-time-utils";
 
 import {
@@ -233,11 +234,12 @@ export class YGOProDuelingState extends RoomState {
       message.previousMessage,
       message.data.length,
     );
-    const playerAlreadyInRoom = this.playerAlreadyInRoom(
-      playerInfoMessage,
-      room,
-      socket,
-    );
+    const playerAlreadyInRoom = findReconnectingPlayer({
+      players: room.players,
+      name: playerInfoMessage.name,
+      remoteAddress: socket.remoteAddress,
+      ranked: room.ranked,
+    });
 
     if (!(playerAlreadyInRoom instanceof YGOProClient)) {
       const spectator = room.createSpectatorUnsafe(

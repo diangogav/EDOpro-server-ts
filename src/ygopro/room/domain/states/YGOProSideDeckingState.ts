@@ -15,6 +15,7 @@ import { ISocket } from "../../../../shared/socket/domain/ISocket";
 
 import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { YGOProRoom } from "../YGOProRoom";
+import { findReconnectingPlayer } from "@shared/room/domain/findReconnectingPlayer";
 import { config } from "../../../../config";
 import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
@@ -195,11 +196,12 @@ export class YGOProSideDeckingState extends RoomState {
 			message.previousMessage,
 			message.data.length,
 		);
-		const playerAlreadyInRoom = this.playerAlreadyInRoom(
-			playerInfoMessage,
-			room,
-			socket,
-		);
+		const playerAlreadyInRoom = findReconnectingPlayer({
+			players: room.players,
+			name: playerInfoMessage.name,
+			remoteAddress: socket.remoteAddress,
+			ranked: room.ranked,
+		});
 
 		if (!(playerAlreadyInRoom instanceof YGOProClient)) {
 			const spectator = room.createSpectatorUnsafe(

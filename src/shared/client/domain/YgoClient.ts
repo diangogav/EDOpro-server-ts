@@ -134,4 +134,11 @@ export abstract class YgoClient {
 	setCredential(credential: PlayerCredential): void {
 		this._credential = credential;
 	}
+
+	// Joined with a strong handshake ticket (evolution client). Such a player
+	// reconnects ONLY through its single-use token, so it must be unreachable
+	// through the weak by-name reconnect path.
+	get isStrongAuth(): boolean {
+		return this._credential?.kind === "verified";
+	}
 }
