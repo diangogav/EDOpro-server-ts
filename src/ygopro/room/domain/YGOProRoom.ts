@@ -828,6 +828,16 @@ export class YGOProRoom extends YgoRoom {
       maxPlayers,
       spectators: this._spectators.length,
       ranked: this.ranked,
+      league: this.league.type,
+    };
+  }
+
+  // Adds the room's league to the real-time broadcast so the client can place
+  // it in the right lobby section (verified / external / casual).
+  override toRealTimePresentation(): { [key: string]: unknown } {
+    return {
+      ...super.toRealTimePresentation(),
+      league: this.league.type,
     };
   }
 

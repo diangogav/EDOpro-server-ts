@@ -14,6 +14,14 @@ describe("RoomLeague", () => {
 		});
 	});
 
+	describe("type — the wire identifier exposed to the lobby", () => {
+		it("returns the league's identifier", () => {
+			expect(RoomLeague.Verified.type).toBe("verified");
+			expect(RoomLeague.External.type).toBe("external");
+			expect(RoomLeague.Casual.type).toBe("casual");
+		});
+	});
+
 	describe("determine — which league a room is born into", () => {
 		it("the explicit casual flag wins over everything", () => {
 			expect(

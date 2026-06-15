@@ -49,4 +49,14 @@ describe("YGOProRoom league", () => {
 		expect(create("ROOM", noPin).ranked).toBe(false);
 		expect(create("ROOM", noPin, true).ranked).toBe(true);
 	});
+
+	it("exposes the league type in toRoomListDTO", () => {
+		expect(create("ROOM", withPin).toRoomListDTO().league).toBe("external");
+		expect(create("ROOM", noPin, true).toRoomListDTO().league).toBe("verified");
+		expect(create("ROOM", noPin).toRoomListDTO().league).toBe("casual");
+	});
+
+	it("exposes the league type in toRealTimePresentation", () => {
+		expect(create("ROOM", noPin, true).toRealTimePresentation().league).toBe("verified");
+	});
 });
