@@ -5,6 +5,7 @@ import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoM
 import { RoomState } from "@edopro/room/domain/RoomState";
 
 import { Team } from "@shared/room/Team";
+import { RoomLeague } from "@shared/room/admission/domain/RoomLeague";
 import { UserAuth } from "@shared/user-auth/application/UserAuth";
 import { UserProfilePostgresRepository } from "@shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { RankedUserResolver } from "../application/RankedUserResolver";
@@ -55,6 +56,7 @@ const BEST_OF = {
 export class YGOProRoom extends YgoRoom {
   readonly name: string;
   readonly password: string;
+  readonly league: RoomLeague;
   readonly createdBySocketId: string;
   readonly banListHash: number;
   readonly useExtendedCardPool: boolean;
@@ -86,7 +88,7 @@ export class YGOProRoom extends YgoRoom {
     hostInfo,
     team0,
     team1,
-    ranked,
+    league,
     createdBySocketId,
     bestOf,
     startLp,
@@ -100,7 +102,7 @@ export class YGOProRoom extends YgoRoom {
     hostInfo: HostInfo;
     team0: number;
     team1: number;
-    ranked: boolean;
+    league: RoomLeague;
     createdBySocketId: string;
     bestOf: number;
     startLp: number;
@@ -111,7 +113,7 @@ export class YGOProRoom extends YgoRoom {
     super({
       team0,
       team1,
-      ranked,
+      ranked: league.isRanked,
       bestOf,
       startLp,
       id,
@@ -120,6 +122,7 @@ export class YGOProRoom extends YgoRoom {
     });
     this.name = name;
     this.password = password;
+    this.league = league;
     this._players = [];
     this._hostInfo = hostInfo;
     this._state = DuelState.WAITING;
@@ -225,7 +228,11 @@ export class YGOProRoom extends YgoRoom {
     // The host's explicit "casual" token wins over any ranked default — a
     // ticket-authenticated user must be able to host unranked rooms.
     const casual = options.includes("casual");
-    const ranked = casual ? false : (rankedOverride ?? Boolean(playerInfo.password));
+    const league = RoomLeague.determine({
+      casual,
+      rankedOverride,
+      hasPin: Boolean(playerInfo.password),
+    });
     const useExtendedCardPool = options.some((opt) => extendedCardPoolFormats.has(opt));
     const banList = MercuryBanListMemoryRepository.findLFListByIndex(
       hostInfo.lflist,
@@ -239,7 +246,7 @@ export class YGOProRoom extends YgoRoom {
       password,
       team0: teamCount,
       team1: teamCount,
-      ranked,
+      league,
       createdBySocketId,
       bestOf: hostInfo.best_of,
       startLp: hostInfo.start_lp,
