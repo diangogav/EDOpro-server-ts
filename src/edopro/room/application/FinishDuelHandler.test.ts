@@ -78,6 +78,7 @@ describe("FinishDuelHandler", () => {
       clearSpectatorCache: jest.fn(),
       players: [mockClient1, mockClient2],
       spectators: [mockSpectator],
+      clients: [mockClient1, mockClient2, mockSpectator],
       score: "0-0",
       firstToPlay: 0,
       replay: mockReplay,

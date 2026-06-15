@@ -34,6 +34,19 @@ export class ReconnectionTokenIssuer {
 		return this.issue(client, roomId);
 	}
 
+	// Revoke the client's current token: de-register it from the global index and
+	// clear it on the client. Idempotent — safe to call on a client with no token.
+	// Called on room teardown so tokens never outlive their room: TokenIndex is an
+	// in-memory singleton with no TTL, so without this every finished match would
+	// leak its players' tokens (and leave them pointing at destroyed clients).
+	static revoke(client: YgoClient): void {
+		const token = client.reconnectionToken;
+		if (token) {
+			TokenIndex.getInstance().unregister(token);
+		}
+		client.clearReconnectionToken();
+	}
+
 	// Resolve a token to its owning client, but only if it belongs to `roomId`
 	// and passes the subtree's client-type guard. Returns null otherwise so the
 	// caller can reject the reconnect attempt.

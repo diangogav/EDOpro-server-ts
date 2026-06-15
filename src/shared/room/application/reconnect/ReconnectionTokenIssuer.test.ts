@@ -9,6 +9,9 @@ const makeClient = (name = "P"): YgoClient => {
 		setReconnectionToken: jest.fn((value: string) => {
 			token = value;
 		}),
+		clearReconnectionToken: jest.fn(() => {
+			token = null;
+		}),
 		get reconnectionToken() {
 			return token;
 		},
@@ -68,6 +71,27 @@ describe("ReconnectionTokenIssuer", () => {
 			ReconnectionTokenIssuer.rotate(client, 3);
 
 			expect(client.reconnectionToken).toMatch(/^[0-9a-f]{32}$/);
+		});
+	});
+
+	describe("revoke", () => {
+		it("unregisters the client's token from the index and clears it on the client", () => {
+			const client = makeClient();
+			ReconnectionTokenIssuer.issue(client, 5);
+			const token = client.reconnectionToken!;
+			expect(TokenIndex.getInstance().find(token)).toBeDefined();
+
+			ReconnectionTokenIssuer.revoke(client);
+
+			expect(TokenIndex.getInstance().find(token)).toBeUndefined();
+			expect(client.reconnectionToken).toBeNull();
+		});
+
+		it("is a no-op when the client has no token", () => {
+			const client = makeClient();
+
+			expect(() => ReconnectionTokenIssuer.revoke(client)).not.toThrow();
+			expect(client.reconnectionToken).toBeNull();
 		});
 	});
 
