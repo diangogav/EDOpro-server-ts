@@ -50,6 +50,11 @@ export class RoomLeague {
 		return this.kind !== "casual";
 	}
 
+	/** Stable identifier exposed to the lobby so the client can group rooms by league. */
+	get type(): "verified" | "external" | "casual" {
+		return this.kind;
+	}
+
 	admitsAsPlayer(credential: PlayerCredential): boolean {
 		switch (this.kind) {
 			case "casual":
