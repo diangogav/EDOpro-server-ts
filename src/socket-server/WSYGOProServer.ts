@@ -2,9 +2,6 @@ import { randomUUID as uuidv4 } from "crypto";
 import { createServer, IncomingMessage } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { config } from "src/config";
-import { CheckIfUseCanJoin } from "src/shared/user-auth/application/CheckIfUserCanJoin";
-import { UserAuth } from "src/shared/user-auth/application/UserAuth";
-import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { EventEmitter } from "stream";
 
 import { MessageEmitter } from "../edopro/MessageEmitter";
@@ -24,8 +21,6 @@ export class WSYGOProServer {
 	private readonly wss: WebSocketServer;
 	private readonly logger: Logger;
 	private readonly roomFinder: RoomFinder;
-	private readonly userAuth: UserAuth;
-	private readonly checkIfUserCanJoin: CheckIfUseCanJoin;
 	private readonly handshakeAuth: HandshakeTicketAuthenticator;
 
 	constructor(logger: Logger, handshakeAuth: HandshakeTicketAuthenticator) {
@@ -34,8 +29,6 @@ export class WSYGOProServer {
 		this.roomFinder = new RoomFinder();
 		const server = createServer();
 		this.wss = new WebSocketServer({ server });
-		this.userAuth = new UserAuth(new UserProfilePostgresRepository());
-		this.checkIfUserCanJoin = new CheckIfUseCanJoin(this.userAuth);
 	}
 
 	initialize(): void {
@@ -67,7 +60,6 @@ export class WSYGOProServer {
 					eventEmitter,
 					connectionLogger,
 					ygoClientSocket,
-					this.checkIfUserCanJoin,
 					messageRepository,
 				);
 			};

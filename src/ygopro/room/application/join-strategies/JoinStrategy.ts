@@ -5,7 +5,6 @@ import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { Logger } from "@shared/logger/domain/Logger";
 import { MessageRepository } from "@shared/messages/MessageRepository";
-import { CheckIfUseCanJoin } from "@shared/user-auth/application/CheckIfUserCanJoin";
 
 /**
  * Everything handleJoinGame has available at the point it dispatches.
@@ -30,8 +29,6 @@ export interface JoinContext {
 	messageRepository: MessageRepository;
 	/** Logger (child already attached in the handler) */
 	logger: Logger;
-	/** Rank check dependency (passed through for ranked rooms) */
-	checkIfUserCanJoin: CheckIfUseCanJoin;
 	/** The original ClientMessage — needed to emit the JOIN event to the room state machine */
 	message: ClientMessage;
 }

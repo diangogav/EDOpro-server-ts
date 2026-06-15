@@ -1,6 +1,5 @@
 import { EventEmitter } from "stream";
 
-import { CheckIfUseCanJoin } from "@shared/user-auth/application/CheckIfUserCanJoin";
 import { Commands } from "@shared/messages/Commands";
 import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { Logger } from "@shared/logger/domain/Logger";
@@ -18,7 +17,6 @@ export class YGOProJoinHandler implements JoinMessageHandler {
 	private readonly logger: Logger;
 	private readonly socket: ISocket;
 	private readonly eventEmitter: EventEmitter;
-	private readonly checkIfUserCanJoin: CheckIfUseCanJoin;
 	private readonly messageRepository: MessageRepository;
 	private readonly registry: JoinStrategyRegistry;
 
@@ -26,14 +24,12 @@ export class YGOProJoinHandler implements JoinMessageHandler {
 		eventEmitter: EventEmitter,
 		logger: Logger,
 		socket: ISocket,
-		checkIfUserCanJoin: CheckIfUseCanJoin,
 		messageRepository: MessageRepository,
 		registry?: JoinStrategyRegistry,
 	) {
 		this.logger = logger.child({ file: "YGOProJoinHandler" });
 		this.socket = socket;
 		this.eventEmitter = eventEmitter;
-		this.checkIfUserCanJoin = checkIfUserCanJoin;
 		this.messageRepository = messageRepository;
 		this.registry = registry ?? JoinStrategyRegistry.getInstance();
 		this.eventEmitter.on(
@@ -64,7 +60,6 @@ export class YGOProJoinHandler implements JoinMessageHandler {
 			eventEmitter: this.eventEmitter,
 			messageRepository: this.messageRepository,
 			logger: this.logger,
-			checkIfUserCanJoin: this.checkIfUserCanJoin,
 			message,
 		};
 
