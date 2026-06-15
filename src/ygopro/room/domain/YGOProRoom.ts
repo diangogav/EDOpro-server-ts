@@ -6,9 +6,13 @@ import { RoomState } from "@edopro/room/domain/RoomState";
 
 import { Team } from "@shared/room/Team";
 import { RoomLeague } from "@shared/room/admission/domain/RoomLeague";
+import { Seat } from "@shared/room/admission/domain/Seat";
+import { PlayerCredential } from "@shared/room/admission/domain/PlayerCredential";
+import { AdmissionTarget, AdmitToRoom } from "@ygopro/room/admission/application/AdmitToRoom";
 import { UserAuth } from "@shared/user-auth/application/UserAuth";
 import { UserProfilePostgresRepository } from "@shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
-import { RankedUserResolver } from "../application/RankedUserResolver";
+import { CredentialResolver } from "@ygopro/room/admission/application/CredentialResolver";
+import { RoomAdmission } from "@shared/room/admission/domain/RoomAdmission";
 import { Logger } from "@shared/logger/domain/Logger";
 import { DeckRules, DuelState, YgoRoom } from "@shared/room/domain/YgoRoom";
 import { RoomType } from "@shared/room/domain/RoomType";
@@ -33,6 +37,7 @@ import { HostInfo } from "./host-info/HostInfo";
 import { getLobbyDuelInfo } from "./LobbyDuelFlags";
 
 import {
+  ErrorMessageType,
   GameMode,
   NetPlayerType,
   PlayerChangeState,
@@ -338,12 +343,12 @@ export class YGOProRoom extends YgoRoom {
   waiting(): void {
     this._roomState?.removeAllListener();
     const userProfileRepo = new UserProfilePostgresRepository();
-    const resolver = new RankedUserResolver(
-      new UserAuth(userProfileRepo),
-      userProfileRepo,
+    const admitToRoom = new AdmitToRoom(
+      new CredentialResolver(userProfileRepo, new UserAuth(userProfileRepo)),
+      new RoomAdmission(),
     );
     this._roomState = new YGOProWaitingState(
-      resolver,
+      admitToRoom,
       this.emitter,
       this._logger,
       new YGOProDeckCreator(
@@ -414,29 +419,70 @@ export class YGOProRoom extends YgoRoom {
     return client;
   }
 
+  // Adapter that lets AdmitToRoom apply its decision on this room without
+  // knowing about sockets or wire messages. Captures the connecting socket and
+  // player info so the use case only deals in domain values.
+  admissionTarget(socket: ISocket, playerInfo: PlayerInfoMessage): AdmissionTarget {
+    return {
+      league: this.league,
+      freeSeat: () => {
+        const place = this.calculatePlaceUnsafe();
+        return place ? new Seat(place.position, place.team) : null;
+      },
+      seatPlayer: async (credential: PlayerCredential, seat: Seat) => {
+        const userId = credential.kind === "guest" ? null : credential.userId;
+        const player = this.buildPlayer(
+          socket,
+          playerInfo.name,
+          userId,
+          seat.position,
+          seat.team,
+        );
+        this.addPlayerUnsafe(player);
+      },
+      admitSpectator: async () => {
+        const spectator = this.createSpectatorUnsafe(socket, playerInfo.name);
+        this.addSpectatorUnsafe(spectator);
+      },
+      rejectAdmission: () => {
+        socket.send(this.messageSender.errorMessage(ErrorMessageType.JOINERROR));
+        socket.close();
+      },
+    };
+  }
+
   createPlayerUnsafe(
     socket: ISocket,
     name: string,
     userId: string | null,
   ): YGOProClient | null {
-    const host = this._players.some((client: YGOProClient) => client.host);
     const place = this.calculatePlaceUnsafe();
     if (!place) {
       return null;
     }
 
-    const client = new YGOProClient({
+    return this.buildPlayer(socket, name, userId, place.position, place.team);
+  }
+
+  private buildPlayer(
+    socket: ISocket,
+    name: string,
+    userId: string | null,
+    position: number,
+    team: number,
+  ): YGOProClient {
+    const isHost = !this._players.some((client: YGOProClient) => client.host);
+
+    return new YGOProClient({
       name,
       socket,
       logger: this._logger,
-      position: place.position,
-      host: !host,
+      position,
+      host: isHost,
       id: userId,
-      team: place.team,
+      team,
       room: this,
     });
-
-    return client;
   }
 
   addPlayerUnsafe(player: YGOProClient): void {

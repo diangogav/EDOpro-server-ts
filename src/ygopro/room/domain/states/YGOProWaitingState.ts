@@ -11,7 +11,7 @@ import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/Reco
 
 import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { YGOProRoom } from "../YGOProRoom";
-import { RankedUserResolver } from "../../application/RankedUserResolver";
+import { AdmitToRoom } from "@ygopro/room/admission/application/AdmitToRoom";
 
 import {
 	ErrorMessageType,
@@ -26,7 +26,7 @@ import MercuryBanListMemoryRepository from "@ygopro/ban-list/infrastructure/YGOP
 
 export class YGOProWaitingState extends YGOProRoomState {
 	constructor(
-		private readonly resolver: RankedUserResolver,
+		private readonly admitToRoom: AdmitToRoom,
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
 		private readonly deckCreator: YGOProDeckCreator,
@@ -93,42 +93,12 @@ export class YGOProWaitingState extends YGOProRoomState {
 		}
 
 		await room.mutex.runExclusive(async () => {
-			const place = room.calculatePlaceUnsafe();
-
-			if (!place) {
-				const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name);
-				room.addSpectatorUnsafe(spectator);
-
-				return;
-			}
-
-			let userId: string | null = null;
-
-			if (room.ranked) {
-				const resolvedId = await this.resolver.resolve(playerInfoMessage, socket);
-				if (!resolvedId) {
-					socket.send(room.messageSender.errorMessage(ErrorMessageType.JOINERROR));
-					// Close after the error is queued so the client disconnects cleanly and
-					// re-runs the handshake (with a fresh ticket) on retry, instead of staying
-					// stuck on a live socket the server has already rejected. close() flushes
-					// the JOINERROR frame before tearing down (unlike destroy()/terminate()).
-					socket.close();
-
-					return null;
-				}
-				userId = resolvedId;
-			}
-
-			const player = room.createPlayerUnsafe(socket, playerInfoMessage.name, userId);
-			if (!player) {
-				const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name);
-				room.addSpectatorUnsafe(spectator);
-
-				return;
-			}
-
-			room.addPlayerUnsafe(player);
-		})
+			await this.admitToRoom.run(
+				socket,
+				playerInfoMessage,
+				room.admissionTarget(socket, playerInfoMessage),
+			);
+		});
 	}
 
 	private handleTryStart(

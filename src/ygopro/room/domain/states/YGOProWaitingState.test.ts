@@ -1,7 +1,5 @@
 import { EventEmitter } from "stream";
 
-import { mock, MockProxy } from "jest-mock-extended";
-
 import { Commands } from "@shared/messages/Commands";
 import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { Logger } from "@shared/logger/domain/Logger";
@@ -14,7 +12,7 @@ import { YGOProDeckValidator } from "@ygopro/deck/domain/YGOProDeckValidator";
 import { NotOfficialCardError } from "@shared/deck/domain/errors/NotOfficialCardError";
 import { BanListDeckError } from "@shared/deck/domain/errors/BanListDeckError";
 import { encodeDeckErrorCode } from "@shared/deck/domain/errors/encodeDeckErrorCode";
-import { RankedUserResolver } from "../../application/RankedUserResolver";
+import { AdmitToRoom } from "../../admission/application/AdmitToRoom";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { ErrorMessageType } from "ygopro-msg-encode";
 
@@ -59,10 +57,21 @@ const makeClientMessage = (data: Buffer): ClientMessage =>
 		previousMessage: Buffer.alloc(0),
 	} as unknown as ClientMessage);
 
+const makeAdmitToRoom = (): { run: jest.Mock } => ({ run: jest.fn() });
+
+const makeLogger = (): jest.Mocked<Logger> =>
+	({
+		child: jest.fn().mockReturnThis(),
+		info: jest.fn(),
+		warn: jest.fn(),
+		error: jest.fn(),
+		debug: jest.fn(),
+	} as unknown as jest.Mocked<Logger>);
+
 describe("YGOProWaitingState.handleUpdateDeck", () => {
 	let eventEmitter: EventEmitter;
 	let mockLogger: jest.Mocked<Logger>;
-	let mockResolver: MockProxy<RankedUserResolver>;
+	let mockAdmitToRoom: { run: jest.Mock };
 	let mockDeckCreator: jest.Mocked<YGOProDeckCreator>;
 	let mockDeckValidator: jest.Mocked<YGOProDeckValidator>;
 	let mockRoom: jest.Mocked<YGOProRoom>;
@@ -70,16 +79,8 @@ describe("YGOProWaitingState.handleUpdateDeck", () => {
 
 	beforeEach(() => {
 		eventEmitter = new EventEmitter();
-
-		mockLogger = {
-			child: jest.fn().mockReturnThis(),
-			info: jest.fn(),
-			warn: jest.fn(),
-			error: jest.fn(),
-			debug: jest.fn(),
-		} as unknown as jest.Mocked<Logger>;
-
-		mockResolver = mock<RankedUserResolver>();
+		mockLogger = makeLogger();
+		mockAdmitToRoom = makeAdmitToRoom();
 
 		mockDeckCreator = {
 			build: jest.fn(),
@@ -108,18 +109,12 @@ describe("YGOProWaitingState.handleUpdateDeck", () => {
 			isSpectator: false,
 			isInternal: false,
 			position: 0,
-			logger: {
-				child: jest.fn().mockReturnThis(),
-				info: jest.fn(),
-				warn: jest.fn(),
-				error: jest.fn(),
-				debug: jest.fn(),
-			},
+			logger: makeLogger(),
 			sendMessageToClient: jest.fn(),
 		} as unknown as jest.Mocked<YGOProClient>;
 
 		new YGOProWaitingState(
-			mockResolver,
+			mockAdmitToRoom as unknown as AdmitToRoom,
 			eventEmitter,
 			mockLogger,
 			mockDeckCreator,
@@ -250,37 +245,29 @@ describe("YGOProWaitingState.handleUpdateDeck", () => {
 describe("YGOProWaitingState.handleJoin", () => {
 	let eventEmitter: EventEmitter;
 	let mockLogger: jest.Mocked<Logger>;
-	let mockResolver: MockProxy<RankedUserResolver>;
+	let mockAdmitToRoom: { run: jest.Mock };
 	let mockDeckCreator: jest.Mocked<YGOProDeckCreator>;
 	let mockDeckValidator: jest.Mocked<YGOProDeckValidator>;
 	let mockRoom: jest.Mocked<YGOProRoom>;
 	let mockSocket: jest.Mocked<ISocket>;
+	let admissionTarget: object;
 
-	const makeMockRoom = (ranked: boolean): jest.Mocked<YGOProRoom> =>
+	const makeMockRoom = (): jest.Mocked<YGOProRoom> =>
 		({
+			ranked: false,
+			players: [],
 			mutex: {
 				runExclusive: jest.fn().mockImplementation(async (fn: () => Promise<void>) => fn()),
 			},
-			ranked,
-			players: [],
-			calculatePlaceUnsafe: jest.fn().mockReturnValue({ position: 0, team: 0 }),
-			createPlayerUnsafe: jest.fn().mockReturnValue({
-				name: "Jaden",
-				position: 0,
-				team: 0,
-			}),
-			addPlayerUnsafe: jest.fn(),
-			createSpectatorUnsafe: jest.fn().mockReturnValue({ name: "Jaden" }),
-			addSpectatorUnsafe: jest.fn(),
+			admissionTarget: jest.fn().mockReturnValue(admissionTarget),
 			messageSender: {
 				errorMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
 			},
 		} as unknown as jest.Mocked<YGOProRoom>);
 
-	const makeMockSocket = (resolvedUserId?: string): jest.Mocked<ISocket> =>
+	const makeMockSocket = (): jest.Mocked<ISocket> =>
 		({
 			id: "sock-test",
-			resolvedUserId,
 			remoteAddress: "127.0.0.1",
 			closed: false,
 			send: jest.fn(),
@@ -302,16 +289,9 @@ describe("YGOProWaitingState.handleJoin", () => {
 
 	beforeEach(() => {
 		eventEmitter = new EventEmitter();
-
-		mockLogger = {
-			child: jest.fn().mockReturnThis(),
-			info: jest.fn(),
-			warn: jest.fn(),
-			error: jest.fn(),
-			debug: jest.fn(),
-		} as unknown as jest.Mocked<Logger>;
-
-		mockResolver = mock<RankedUserResolver>();
+		mockLogger = makeLogger();
+		mockAdmitToRoom = makeAdmitToRoom();
+		admissionTarget = { league: "casual" };
 
 		mockDeckCreator = {
 			build: jest.fn(),
@@ -321,11 +301,11 @@ describe("YGOProWaitingState.handleJoin", () => {
 			validate: jest.fn().mockReturnValue(null),
 		} as unknown as jest.Mocked<YGOProDeckValidator>;
 
-		mockRoom = makeMockRoom(false);
+		mockRoom = makeMockRoom();
 		mockSocket = makeMockSocket();
 
 		new YGOProWaitingState(
-			mockResolver,
+			mockAdmitToRoom as unknown as AdmitToRoom,
 			eventEmitter,
 			mockLogger,
 			mockDeckCreator,
@@ -333,94 +313,27 @@ describe("YGOProWaitingState.handleJoin", () => {
 		);
 	});
 
-	describe("ranked room — resolver path", () => {
-		it("calls resolver.resolve() when the room is ranked", async () => {
-			mockRoom = makeMockRoom(true);
-			mockResolver.resolve.mockResolvedValue("user-123");
+	it("delegates the join to AdmitToRoom with the room's admission target", async () => {
+		await emitJoin(mockRoom, mockSocket);
 
-			await emitJoin(mockRoom, mockSocket);
-
-			expect(mockResolver.resolve).toHaveBeenCalled();
-		});
-
-		it("sends JOINERROR and skips player creation when resolver returns null", async () => {
-			mockRoom = makeMockRoom(true);
-			mockResolver.resolve.mockResolvedValue(null);
-
-			await emitJoin(mockRoom, mockSocket);
-
-			expect(mockSocket.send).toHaveBeenCalled();
-			expect(mockRoom.createPlayerUnsafe).not.toHaveBeenCalled();
-		});
-
-		it("closes the socket when resolver returns null", async () => {
-			mockRoom = makeMockRoom(true);
-			mockResolver.resolve.mockResolvedValue(null);
-
-			await emitJoin(mockRoom, mockSocket);
-
-			expect(mockSocket.close).toHaveBeenCalled();
-		});
-
-		it("closes the socket AFTER sending JOINERROR (order matters)", async () => {
-			mockRoom = makeMockRoom(true);
-			mockResolver.resolve.mockResolvedValue(null);
-
-			const callOrder: string[] = [];
-			mockSocket.send.mockImplementation(() => {
-				callOrder.push("send");
-			});
-			mockSocket.close.mockImplementation(() => {
-				callOrder.push("close");
-			});
-
-			await emitJoin(mockRoom, mockSocket);
-
-			expect(callOrder).toEqual(["send", "close"]);
-		});
-
-		it("does NOT close the socket when resolver returns a userId", async () => {
-			mockRoom = makeMockRoom(true);
-			mockResolver.resolve.mockResolvedValue("user-123");
-
-			await emitJoin(mockRoom, mockSocket);
-
-			expect(mockSocket.close).not.toHaveBeenCalled();
-		});
-
-		it("creates the player with the userId returned by resolver", async () => {
-			mockRoom = makeMockRoom(true);
-			mockResolver.resolve.mockResolvedValue("resolved-user");
-
-			await emitJoin(mockRoom, mockSocket);
-
-			expect(mockRoom.createPlayerUnsafe).toHaveBeenCalledWith(
-				mockSocket,
-				expect.any(String), // player name
-				"resolved-user",
-			);
-		});
+		expect(mockRoom.admissionTarget).toHaveBeenCalledWith(mockSocket, expect.anything());
+		expect(mockAdmitToRoom.run).toHaveBeenCalledWith(
+			mockSocket,
+			expect.anything(),
+			admissionTarget,
+		);
 	});
 
-	describe("unranked room — no resolver call", () => {
-		it("does not call resolver.resolve() when the room is not ranked", async () => {
-			mockRoom = makeMockRoom(false);
+	it("rejects a duplicate name without delegating to AdmitToRoom", async () => {
+		mockRoom = makeMockRoom();
+		(mockRoom as unknown as { players: unknown[] }).players = [
+			{ name: "Jaden", socket: { remoteAddress: "127.0.0.1", closed: true } },
+		];
 
-			await emitJoin(mockRoom, mockSocket);
+		await emitJoin(mockRoom, mockSocket);
 
-			expect(mockResolver.resolve).not.toHaveBeenCalled();
-		});
-
-		it("creates the player with null userId when room is not ranked", async () => {
-			mockRoom = makeMockRoom(false);
-
-			await emitJoin(mockRoom, mockSocket);
-
-			expect(mockRoom.createPlayerUnsafe).toHaveBeenCalledWith(
-				mockSocket,
-				expect.any(String),
-				null,
-			);
-		});
+		expect(mockAdmitToRoom.run).not.toHaveBeenCalled();
+		expect(mockSocket.send).toHaveBeenCalled();
+		expect(mockSocket.destroy).toHaveBeenCalled();
 	});
 });
