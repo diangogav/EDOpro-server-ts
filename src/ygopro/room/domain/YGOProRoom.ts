@@ -438,10 +438,12 @@ export class YGOProRoom extends YgoRoom {
           seat.position,
           seat.team,
         );
+        player.setCredential(credential);
         this.addPlayerUnsafe(player);
       },
-      admitSpectator: async () => {
+      admitSpectator: async (credential: PlayerCredential) => {
         const spectator = this.createSpectatorUnsafe(socket, playerInfo.name);
+        spectator.setCredential(credential);
         this.addSpectatorUnsafe(spectator);
       },
       rejectAdmission: () => {

@@ -53,13 +53,23 @@ describe("YGOProRoom.admissionTarget", () => {
 		expect(room.players[0].id).toBeNull();
 	});
 
-	it("admitSpectator adds a spectator", async () => {
+	it("admitSpectator adds a spectator carrying its credential", async () => {
 		const room = YGOProRoomMother.create();
 		const target = room.admissionTarget(makeSocket(), playerInfo("P"));
 
-		await target.admitSpectator();
+		await target.admitSpectator({ kind: "external", userId: "u-9" });
 
 		expect(room.spectators).toHaveLength(1);
+		expect(room.spectators[0].credential).toEqual({ kind: "external", userId: "u-9" });
+	});
+
+	it("seatPlayer stores the credential on the player", async () => {
+		const room = YGOProRoomMother.create();
+		const target = room.admissionTarget(makeSocket(), playerInfo("P"));
+
+		await target.seatPlayer({ kind: "verified", userId: "u-1" }, new Seat(0, 0));
+
+		expect(room.players[0].credential).toEqual({ kind: "verified", userId: "u-1" });
 	});
 
 	it("rejectAdmission sends an error and closes the socket", () => {

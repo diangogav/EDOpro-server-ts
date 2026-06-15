@@ -51,7 +51,7 @@ describe("AdmitToRoom", () => {
 
 		const result = await admit.run(socket, playerInfo, target);
 
-		expect(target.admitSpectator).toHaveBeenCalledTimes(1);
+		expect(target.admitSpectator).toHaveBeenCalledWith(external);
 		expect(target.seatPlayer).not.toHaveBeenCalled();
 		expect(result.kind).toBe("spectator");
 	});

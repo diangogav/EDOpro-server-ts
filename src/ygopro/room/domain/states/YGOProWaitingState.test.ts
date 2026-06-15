@@ -14,6 +14,8 @@ import { BanListDeckError } from "@shared/deck/domain/errors/BanListDeckError";
 import { encodeDeckErrorCode } from "@shared/deck/domain/errors/encodeDeckErrorCode";
 import { AdmitToRoom } from "../../admission/application/AdmitToRoom";
 import { ISocket } from "@shared/socket/domain/ISocket";
+import { RoomLeague } from "@shared/room/admission/domain/RoomLeague";
+import { PlayerCredential } from "@shared/room/admission/domain/PlayerCredential";
 import { ErrorMessageType } from "ygopro-msg-encode";
 
 // ---- helpers ----
@@ -335,5 +337,79 @@ describe("YGOProWaitingState.handleJoin", () => {
 		expect(mockAdmitToRoom.run).not.toHaveBeenCalled();
 		expect(mockSocket.send).toHaveBeenCalled();
 		expect(mockSocket.destroy).toHaveBeenCalled();
+	});
+});
+
+describe("YGOProWaitingState.handleToDuel (spectator -> player)", () => {
+	let eventEmitter: EventEmitter;
+
+	const makeRoom = (league: RoomLeague): jest.Mocked<YGOProRoom> =>
+		({
+			league,
+			mutex: {
+				runExclusive: jest.fn().mockImplementation((fn: () => void) => fn()),
+			},
+			spectatorToPlayerUnsafe: jest.fn(),
+			movePlayerToAnotherCellUnsafe: jest.fn(),
+		} as unknown as jest.Mocked<YGOProRoom>);
+
+	const makeSpectator = (credential: PlayerCredential | null): jest.Mocked<YGOProClient> =>
+		({
+			isSpectator: true,
+			credential,
+			name: "X",
+			logger: makeLogger(),
+		} as unknown as jest.Mocked<YGOProClient>);
+
+	const emitToDuel = (
+		room: jest.Mocked<YGOProRoom>,
+		player: jest.Mocked<YGOProClient>,
+	): Promise<void> =>
+		new Promise((resolve) => {
+			setImmediate(() => resolve());
+			eventEmitter.emit(
+				Commands.TO_DUEL as unknown as string,
+				makeClientMessage(Buffer.alloc(0)),
+				room,
+				player,
+			);
+		});
+
+	beforeEach(() => {
+		eventEmitter = new EventEmitter();
+		new YGOProWaitingState(
+			makeAdmitToRoom() as unknown as AdmitToRoom,
+			eventEmitter,
+			makeLogger(),
+			{ build: jest.fn() } as unknown as YGOProDeckCreator,
+			{ validate: jest.fn() } as unknown as YGOProDeckValidator,
+		);
+	});
+
+	it("does NOT seat a wrong-league spectator (external in a Verified room)", async () => {
+		const room = makeRoom(RoomLeague.Verified);
+		const spectator = makeSpectator({ kind: "external", userId: "u" });
+
+		await emitToDuel(room, spectator);
+
+		expect(room.spectatorToPlayerUnsafe).not.toHaveBeenCalled();
+	});
+
+	it("seats a matching-league spectator (verified in a Verified room)", async () => {
+		const room = makeRoom(RoomLeague.Verified);
+		const spectator = makeSpectator({ kind: "verified", userId: "u" });
+
+		await emitToDuel(room, spectator);
+
+		expect(room.spectatorToPlayerUnsafe).toHaveBeenCalledWith(spectator);
+	});
+
+	it("seats anyone in a casual room", async () => {
+		const room = makeRoom(RoomLeague.Casual);
+		const spectator = makeSpectator({ kind: "guest", name: "X" });
+
+		await emitToDuel(room, spectator);
+
+		expect(room.spectatorToPlayerUnsafe).toHaveBeenCalledWith(spectator);
 	});
 });

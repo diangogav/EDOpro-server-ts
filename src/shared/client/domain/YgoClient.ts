@@ -1,4 +1,5 @@
 import { Deck } from "@shared/deck/domain/Deck";
+import { PlayerCredential } from "@shared/room/admission/domain/PlayerCredential";
 import { ISocket } from "../../socket/domain/ISocket";
 
 export abstract class YgoClient {
@@ -13,6 +14,10 @@ export abstract class YgoClient {
 	protected _isReady: boolean;
 	protected _ipAddress: string | null;
 	protected _reconnectionToken: string | null = null;
+	// How this client authenticated when it joined. Remembered so a later
+	// spectator->player promotion can re-check league eligibility, and so the
+	// reconnection layer can tell strong (ticket) from weak (PIN) clients.
+	protected _credential: PlayerCredential | null = null;
 	protected _deck: Deck;
 
 
@@ -120,5 +125,13 @@ export abstract class YgoClient {
 
 	clearReconnectionToken(): void {
 		this._reconnectionToken = null;
+	}
+
+	get credential(): PlayerCredential | null {
+		return this._credential;
+	}
+
+	setCredential(credential: PlayerCredential): void {
+		this._credential = credential;
 	}
 }
