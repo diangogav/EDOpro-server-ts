@@ -46,10 +46,6 @@ const makeMessageRepository = () => ({
 	spectatorCountMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
 });
 
-const makeCheckIfUserCanJoin = () => ({
-	check: jest.fn().mockResolvedValue(true),
-});
-
 /**
  * Build a minimal JOIN_GAME ClientMessage payload.
  *
@@ -112,14 +108,12 @@ describe("YGOProJoinHandler — strategy chain integration", () => {
 
 		const socket = makeSocket();
 		const messageRepo = makeMessageRepository();
-		const checkJoin = makeCheckIfUserCanJoin();
 		const logger = makeLogger();
 
 		new YGOProJoinHandler(
 			emitter,
 			logger as never,
 			socket as never,
-			checkJoin as never,
 			messageRepo as never,
 		);
 
@@ -159,14 +153,12 @@ describe("YGOProJoinHandler — strategy chain integration", () => {
 
 		const socket = makeSocket();
 		const messageRepo = makeMessageRepository();
-		const checkJoin = makeCheckIfUserCanJoin();
 		const logger = makeLogger();
 
 		const handler = new YGOProJoinHandler(
 			emitter,
 			logger as never,
 			socket as never,
-			checkJoin as never,
 			messageRepo as never,
 			registry,
 		);
@@ -186,7 +178,6 @@ describe("YGOProJoinHandler — strategy chain integration", () => {
 	it("YGOProJoinHandler uses the default registry when none is injected", () => {
 		const socket = makeSocket();
 		const messageRepo = makeMessageRepository();
-		const checkJoin = makeCheckIfUserCanJoin();
 		const logger = makeLogger();
 
 		expect(() => {
@@ -194,7 +185,6 @@ describe("YGOProJoinHandler — strategy chain integration", () => {
 				emitter,
 				logger as never,
 				socket as never,
-				checkJoin as never,
 				messageRepo as never,
 			);
 		}).not.toThrow();

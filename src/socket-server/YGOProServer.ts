@@ -1,9 +1,6 @@
 import { randomUUID as uuidv4 } from "crypto";
 import net, { Socket } from "net";
 import { config } from "src/config";
-import { CheckIfUseCanJoin } from "src/shared/user-auth/application/CheckIfUserCanJoin";
-import { UserAuth } from "src/shared/user-auth/application/UserAuth";
-import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { EventEmitter } from "stream";
 
 import { MessageEmitter } from "../edopro/MessageEmitter";
@@ -20,15 +17,11 @@ export class YGOProServer {
 	private readonly logger: Logger;
 	private readonly roomFinder: RoomFinder;
 	private address?: string;
-	private readonly userAuth: UserAuth;
-	private readonly checkIfUserCanJoin: CheckIfUseCanJoin;
 
 	constructor(logger: Logger) {
 		this.logger = logger;
 		this.roomFinder = new RoomFinder();
 		this.server = net.createServer({ keepAlive: true });
-		this.userAuth = new UserAuth(new UserProfilePostgresRepository());
-		this.checkIfUserCanJoin = new CheckIfUseCanJoin(this.userAuth);
 	}
 
 	initialize(): void {
@@ -58,7 +51,6 @@ export class YGOProServer {
 					eventEmitter,
 					connectionLogger,
 					ygoClientSocket,
-					this.checkIfUserCanJoin,
 					messageRepository,
 				);
 			};

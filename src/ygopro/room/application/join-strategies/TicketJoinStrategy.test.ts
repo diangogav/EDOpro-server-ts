@@ -26,10 +26,6 @@ const makeMessageRepository = () => ({
 	errorMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
 });
 
-const makeCheckIfUserCanJoin = () => ({
-	check: jest.fn().mockResolvedValue(true),
-});
-
 const makeClientMessage = (): { data: Buffer; previousMessage: Buffer } => ({
 	data: Buffer.alloc(0),
 	previousMessage: Buffer.alloc(0),
@@ -50,7 +46,6 @@ const makeCtx = (overrides: Partial<JoinContext> = {}): JoinContext =>
 		eventEmitter: new EventEmitter(),
 		messageRepository: makeMessageRepository(),
 		logger: makeLogger(),
-		checkIfUserCanJoin: makeCheckIfUserCanJoin(),
 		message: makeClientMessage(),
 		...overrides,
 	} as unknown as JoinContext);
@@ -144,36 +139,6 @@ describe("TicketJoinStrategy", () => {
 			await strategy.handle(ctx);
 
 			expect(emitSpy).toHaveBeenCalledWith("JOIN", expect.anything(), ctx.socket);
-
-			waitingSpy.mockRestore();
-			emitSpy.mockRestore();
-		});
-
-		it("does NOT call checkIfUserCanJoin", async () => {
-			const emitter = new EventEmitter();
-			const waitingSpy = jest
-				.spyOn(
-					(await import("../../domain/YGOProRoom")).YGOProRoom.prototype,
-					"waiting",
-				)
-				.mockImplementation(() => undefined);
-			const emitSpy = jest
-				.spyOn(
-					(await import("../../domain/YGOProRoom")).YGOProRoom.prototype,
-					"emit",
-				)
-				.mockImplementation(() => undefined);
-
-			const checkIfUserCanJoin = makeCheckIfUserCanJoin();
-			const ctx = makeCtx({
-				socket: makeSocket("ticket-user") as never,
-				eventEmitter: emitter,
-				checkIfUserCanJoin: checkIfUserCanJoin as never,
-			});
-
-			await strategy.handle(ctx);
-
-			expect(checkIfUserCanJoin.check).not.toHaveBeenCalled();
 
 			waitingSpy.mockRestore();
 			emitSpy.mockRestore();

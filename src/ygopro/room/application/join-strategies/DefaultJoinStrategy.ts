@@ -1,7 +1,5 @@
 import { generateUniqueId } from "src/utils/generateUniqueId";
 
-import { ErrorMessageType } from "ygopro-msg-encode";
-
 import { JoinContext, JoinStrategy } from "./JoinStrategy";
 import { YGOProRoom } from "../../domain/YGOProRoom";
 import YGOProRoomList from "../../infrastructure/YGOProRoomList";
@@ -28,20 +26,8 @@ export class DefaultJoinStrategy implements JoinStrategy {
 			return;
 		}
 
-		if (room.ranked && !(await ctx.checkIfUserCanJoin.check(ctx.playerInfo, ctx.socket))) {
-			// Send the JOINERROR with the ygopro serializer (YGOProStocErrorMsg → 8-byte
-			// body, code at offset 4), the same path DECKERROR uses. checkIfUserCanJoin no
-			// longer sends it because the @edopro ErrorClientMessage it used has a 5-byte
-			// body the web client cannot decode ("Data too short: need 8 bytes, got 5").
-			ctx.socket.send(ctx.messageRepository.errorMessage(ErrorMessageType.JOINERROR, 0));
-			// Close the socket so the client gets a real disconnect instead of a
-			// live-but-useless connection it would keep reusing (the handshake — where the
-			// ticket travels — never re-runs otherwise). close() is graceful: the queued
-			// error frame is flushed first.
-			ctx.socket.close();
-			return;
-		}
-
+		// Admission — ranked auth and league segregation — is decided inside the
+		// room's WaitingState via AdmitToRoom. The strategy only routes the join.
 		room.emit("JOIN", ctx.message, ctx.socket);
 	}
 
