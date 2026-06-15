@@ -28,6 +28,8 @@ import { FinalizeYGOProRoom } from "./FinalizeYGOProRoom";
 import MercuryRoomList from "../infrastructure/YGOProRoomList";
 import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
 import { YGOProRoomMother } from "@test-support/mothers/room/YGOProRoomMother";
+import { TokenIndex } from "@shared/room/domain/TokenIndex";
+import { YgoClient } from "@shared/client/domain/YgoClient";
 
 // ---------- helpers ----------
 
@@ -60,12 +62,18 @@ const makeDeps = (overrides: Partial<WindbotModuleDeps> = {}): WindbotModuleDeps
 interface FakeClient {
 	socket: ReturnType<typeof makeSocket>;
 	destroy: jest.Mock;
+	reconnectionToken: string | null;
+	clearReconnectionToken: jest.Mock;
 }
 
 const makeClient = (socket = makeSocket()): FakeClient => {
 	const client: FakeClient = {
 		socket,
 		destroy: jest.fn(() => socket.destroy()),
+		reconnectionToken: null,
+		clearReconnectionToken: jest.fn(() => {
+			client.reconnectionToken = null;
+		}),
 	};
 	return client;
 };
@@ -87,11 +95,13 @@ describe("FinalizeYGOProRoom.run()", () => {
 
 	beforeEach(() => {
 		(mockInstance.broadcast as jest.Mock).mockClear();
+		TokenIndex.getInstance().clear();
 	});
 
 	afterEach(() => {
 		WindbotModule.resetForTests();
 		jest.restoreAllMocks();
+		TokenIndex.getInstance().clear();
 		const rooms = MercuryRoomList.getRooms();
 		while (rooms.length) {
 			MercuryRoomList.deleteRoom(rooms[0]);
@@ -168,5 +178,29 @@ describe("FinalizeYGOProRoom.run()", () => {
 	it("does not throw when windbot is not initialized", () => {
 		const room = createRoomInList();
 		expect(() => FinalizeYGOProRoom.run(room)).not.toThrow();
+	});
+
+	it("revokes every client's reconnection token from the global index", () => {
+		const client = makeClient(makeSocket(true));
+		const room = createRoomInList([client]);
+		const token = "deadbeefdeadbeefdeadbeefdeadbeef";
+		client.reconnectionToken = token;
+		TokenIndex.getInstance().register(token, client as unknown as YgoClient, room.id);
+
+		FinalizeYGOProRoom.run(room);
+
+		expect(TokenIndex.getInstance().find(token)).toBeUndefined();
+		expect(client.clearReconnectionToken).toHaveBeenCalled();
+	});
+
+	it("leaves tokens belonging to OTHER rooms untouched", () => {
+		const client = makeClient(makeSocket(true));
+		const room = createRoomInList([client]);
+		const otherToken = "cafebabecafebabecafebabecafebabe";
+		TokenIndex.getInstance().register(otherToken, makeClient() as unknown as YgoClient, 9999);
+
+		FinalizeYGOProRoom.run(room);
+
+		expect(TokenIndex.getInstance().find(otherToken)).toBeDefined();
 	});
 });
