@@ -40,9 +40,9 @@ describe("RoomAdmission.decide", () => {
 			expect(result).toEqual({ kind: "spectator" });
 		});
 
-		it("a verified (authenticated) in an External room only watches", () => {
+		it("seats a verified player in an External room (one-way cross-league)", () => {
 			const result = admission.decide(verified, { league: RoomLeague.External, freeSeat });
-			expect(result).toEqual({ kind: "spectator" });
+			expect(result).toEqual({ kind: "player", credential: verified, seat: freeSeat });
 		});
 	});
 

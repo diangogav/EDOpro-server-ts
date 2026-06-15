@@ -3,12 +3,13 @@ import { PlayerCredential } from "./PlayerCredential";
 /**
  * The "league" a room belongs to — it decides who may SIT DOWN to play.
  *
- * - `Verified`: ranked, only ticket-authenticated players.
- * - `External`: ranked, only PIN-authenticated players.
+ * - `Verified`: ranked, only ticket-authenticated players (tournament-grade).
+ * - `External`: ranked, PIN-authenticated players AND verified players who step down.
  * - `Casual`:   anyone may play.
  *
- * The two ranked leagues are SEGREGATED: a player only sits at the league that
- * matches how they authenticated. A mismatched-but-authenticated client is not
+ * The two ranked leagues are segregated, but the cross is ONE-WAY: a verified
+ * player may step down into an External room, while an external player never
+ * steps up into a Verified one. A mismatched client that cannot sit is not
  * rejected here — it falls back to spectating, a decision that belongs to
  * RoomAdmission, not to the league itself.
  */
@@ -62,7 +63,11 @@ export class RoomLeague {
 			case "verified":
 				return credential.kind === "verified";
 			case "external":
-				return credential.kind === "external";
+				// One-way cross-league: a verified (strong) player may step DOWN into an
+				// External room, but an external (PIN) player never steps UP into a
+				// Verified one. Verified rooms — used for tournaments — stay pure; the
+				// asymmetry is the trust signal that nudges externals to verify.
+				return credential.kind === "external" || credential.kind === "verified";
 		}
 	}
 }
