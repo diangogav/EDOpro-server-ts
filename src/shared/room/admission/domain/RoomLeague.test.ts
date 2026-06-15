@@ -14,6 +14,38 @@ describe("RoomLeague", () => {
 		});
 	});
 
+	describe("determine — which league a room is born into", () => {
+		it("the explicit casual flag wins over everything", () => {
+			expect(
+				RoomLeague.determine({ casual: true, rankedOverride: true, hasPin: true }),
+			).toBe(RoomLeague.Casual);
+		});
+
+		it("a ticket-created room is Verified", () => {
+			expect(
+				RoomLeague.determine({ casual: false, rankedOverride: true, hasPin: false }),
+			).toBe(RoomLeague.Verified);
+		});
+
+		it("an explicit non-ranked override is Casual (e.g. rooms vs bot)", () => {
+			expect(
+				RoomLeague.determine({ casual: false, rankedOverride: false, hasPin: true }),
+			).toBe(RoomLeague.Casual);
+		});
+
+		it("a PIN-created room (no override) is External", () => {
+			expect(
+				RoomLeague.determine({ casual: false, rankedOverride: undefined, hasPin: true }),
+			).toBe(RoomLeague.External);
+		});
+
+		it("no credential and no override is Casual", () => {
+			expect(
+				RoomLeague.determine({ casual: false, rankedOverride: undefined, hasPin: false }),
+			).toBe(RoomLeague.Casual);
+		});
+	});
+
 	describe("admitsAsPlayer", () => {
 		it("Casual admits anyone", () => {
 			expect(RoomLeague.Casual.admitsAsPlayer(verified)).toBe(true);

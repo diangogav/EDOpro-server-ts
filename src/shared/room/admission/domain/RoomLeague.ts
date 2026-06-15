@@ -19,6 +19,33 @@ export class RoomLeague {
 	static readonly External = new RoomLeague("external");
 	static readonly Casual = new RoomLeague("casual");
 
+	/**
+	 * Which league a room is born into, from how its host created it. Centralizes
+	 * the rule that used to live as `casual ? false : (rankedOverride ?? hasPin)`
+	 * and additionally distinguishes the ranked TYPE by its source:
+	 *   - explicit `casual` flag wins → Casual
+	 *   - ticket host (rankedOverride === true) → Verified
+	 *   - explicit non-ranked override (=== false) → Casual (e.g. rooms vs bot)
+	 *   - PIN host (no override) → External
+	 *   - otherwise → Casual
+	 */
+	static determine(input: {
+		casual: boolean;
+		rankedOverride: boolean | undefined;
+		hasPin: boolean;
+	}): RoomLeague {
+		if (input.casual) {
+			return RoomLeague.Casual;
+		}
+		if (input.rankedOverride === true) {
+			return RoomLeague.Verified;
+		}
+		if (input.rankedOverride === false) {
+			return RoomLeague.Casual;
+		}
+		return input.hasPin ? RoomLeague.External : RoomLeague.Casual;
+	}
+
 	get isRanked(): boolean {
 		return this.kind !== "casual";
 	}
