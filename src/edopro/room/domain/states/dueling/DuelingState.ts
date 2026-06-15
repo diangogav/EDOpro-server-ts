@@ -26,6 +26,7 @@ import { TimeLimitClientMessage } from "../../../../messages/server-to-client/ga
 import { CatchUpClientMessage } from "../../../../messages/server-to-client/CatchUpClientMessage";
 import { PlayerChangeClientMessage } from "../../../../messages/server-to-client/PlayerChangeClientMessage";
 import { ReconnectionTokenIssuer } from "../../../../../shared/room/application/reconnect/ReconnectionTokenIssuer";
+import { findReconnectingPlayer } from "../../../../../shared/room/domain/findReconnectingPlayer";
 import { ReconnectionAckMessage } from "../../../../../shared/messages/server-to-client/ReconnectionAckMessage";
 import { ServerErrorClientMessage } from "../../../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { ServerMessageClientMessage } from "../../../../messages/server-to-client/ServerMessageClientMessage";
@@ -743,7 +744,12 @@ export class DuelingState extends RoomState {
 
 			return;
 		}
-		const reconnectingPlayer = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
+		const reconnectingPlayer = findReconnectingPlayer({
+			players: room.players,
+			name: playerInfoMessage.name,
+			remoteAddress: socket.remoteAddress,
+			ranked: room.ranked,
+		});
 
 		if (!(reconnectingPlayer instanceof Client)) {
 			await this.joinToDuelAsSpectator.run(joinMessage, playerInfoMessage, socket, room);

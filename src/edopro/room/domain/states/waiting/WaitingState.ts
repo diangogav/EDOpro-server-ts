@@ -20,6 +20,7 @@ import { JoinGameClientMessage } from "../../../../messages/server-to-client/Joi
 import { RPSChooseClientMessage } from "../../../../messages/server-to-client/RPSChooseClientMessage";
 import { ServerErrorClientMessage } from "../../../../messages/server-to-client/ServerErrorMessageClientMessage";
 import { ReconnectionTokenIssuer } from "../../../../../shared/room/application/reconnect/ReconnectionTokenIssuer";
+import { isNameTaken } from "../../../../../shared/room/domain/isNameTaken";
 import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";
 
@@ -255,7 +256,7 @@ export class WaitingState extends RoomState {
 		this.logger.info("JOIN");
 
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
-		if (this.playerAlreadyInRoom(playerInfoMessage, room, socket)) {
+		if (isNameTaken(room.players, playerInfoMessage.name)) {
 			this.sendExistingPlayerErrorMessage(playerInfoMessage, socket);
 
 			return;

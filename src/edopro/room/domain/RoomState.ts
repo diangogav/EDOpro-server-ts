@@ -43,38 +43,6 @@ export abstract class RoomState {
 		this.eventEmitter.removeAllListeners();
 	}
 
-	protected playerAlreadyInRoom(
-		playerInfoMessage: PlayerInfoMessage,
-		room: YgoRoom,
-		socket: ISocket
-	): YgoClient | null {
-		if (!room.ranked) {
-			const player = room.players.find((client) => {
-				return (
-					client.socket.remoteAddress === socket.remoteAddress &&
-					client.socket.closed &&
-					playerInfoMessage.name === client.name
-				);
-			});
-
-			if (!player) {
-				return null;
-			}
-
-			return player;
-		}
-
-		const player = room.players.find((client) => {
-			return playerInfoMessage.name === client.name;
-		});
-
-		if (!player) {
-			return null;
-		}
-
-		return player;
-	}
-
 	protected validateVersion(message: Buffer, socket: ISocket): void {
 		const joinMessage = new YGOProJoinGameMessage(message);
 
