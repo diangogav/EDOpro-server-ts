@@ -11,6 +11,7 @@ import { UpdateDeckMessageParser } from "@edopro/deck/application/UpdateDeckMess
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { Commands } from "@shared/messages/Commands";
 import { TokenIndex } from "@shared/room/domain/TokenIndex";
+import { findReconnectingPlayer } from "@shared/room/domain/findReconnectingPlayer";
 
 // Mocks
 jest.mock("@shared/logger/domain/Logger");
@@ -24,6 +25,7 @@ jest.mock("@edopro/client/domain/Client");
 jest.mock(
   "@edopro/deck/application/UpdateDeckMessageSizeCalculator",
 );
+jest.mock("@shared/room/domain/findReconnectingPlayer");
 
 describe("SideDeckingState", () => {
   let state: SideDeckingState;
@@ -194,33 +196,8 @@ describe("SideDeckingState", () => {
       previousMessage: Buffer.alloc(40), // PlayerInfoMessage size
     } as ClientMessage;
 
-    // Mock RoomState.playerAlreadyInRoom
-    // Since RoomState is extended, we can mock the method on the instance if possible,
-    // or better: checking logic depends on `room.clients`.
-    // `playerAlreadyInRoom` checks `clients` for matching name/ip.
-
-    // Let's assume we mock `room.clients` to include a client with same name.
-    // Wait, `playerAlreadyInRoom` implementation is in `RoomState.ts`.
-    // We are not testing `RoomState.ts` logic here (it's abstract/base), but we rely on it.
-    // We can't easily mock the method on `state` because it's the SUT.
-    // But we can ensure `room.clients` has a match.
-
-    // RoomState.playerAlreadyInRoom logic:
-    // const player = room.clients.find((client) => client.name === playerInfoMessage.name);
-    // if (!player) return null;
-    // ... check ip ...
-
-    // We need to provide a JoinGameMessage buffer that parses to something usable?
-    // Or just mock `Room` behavior if `playerAlreadyInRoom` delegates?
-    // No, `playerAlreadyInRoom` is on `this`.
-
-    // Let's create a real-ish scenario.
-    // `playerInfoMessage` name comes from `message.previousMessage`.
-
-    // If we can't easily trigger `reconnectingPlayer` to be found without valid buffers/logic,
-    // we might mock `playerAlreadyInRoom` on the prototype or instance.
-
-    jest.spyOn(state as any, "playerAlreadyInRoom").mockReturnValue(mockClient);
+    // A reconnecting player is one that findReconnectingPlayer resolves to a Client.
+    (findReconnectingPlayer as jest.Mock).mockReturnValue(mockClient);
 
     mockEmitter.emit("JOIN", message, mockRoom, mockSocket);
     await new Promise(process.nextTick);
@@ -234,7 +211,7 @@ describe("SideDeckingState", () => {
       previousMessage: Buffer.alloc(40),
     } as ClientMessage;
 
-    jest.spyOn(state as any, "playerAlreadyInRoom").mockReturnValue(null);
+    (findReconnectingPlayer as jest.Mock).mockReturnValue(null);
 
     mockEmitter.emit("JOIN", message, mockRoom, mockSocket);
     await new Promise(process.nextTick);

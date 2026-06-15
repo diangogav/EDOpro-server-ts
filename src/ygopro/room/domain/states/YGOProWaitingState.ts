@@ -8,6 +8,7 @@ import { YgoClient } from "@shared/client/domain/YgoClient";
 import { Logger } from "@shared/logger/domain/Logger";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
+import { isNameTaken } from "@shared/room/domain/isNameTaken";
 
 import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { YGOProRoom } from "../YGOProRoom";
@@ -87,7 +88,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 			message.previousMessage,
 			message.data.length,
 		);
-		if (this.playerAlreadyInRoom(playerInfoMessage, room, socket)) {
+		if (isNameTaken(room.players, playerInfoMessage.name)) {
 			this.sendExistingPlayerErrorMessage(playerInfoMessage, socket);
 			return;
 		}

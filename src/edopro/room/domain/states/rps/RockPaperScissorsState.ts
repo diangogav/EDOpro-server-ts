@@ -17,6 +17,7 @@ import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";
 import { RpsChoiceCommandStrategy } from "./RpsChoiceCommandStrategy";
 import { ReconnectionTokenIssuer } from "../../../../../shared/room/application/reconnect/ReconnectionTokenIssuer";
+import { findReconnectingPlayer } from "../../../../../shared/room/domain/findReconnectingPlayer";
 import { ReconnectionAckMessage } from "../../../../../shared/messages/server-to-client/ReconnectionAckMessage";
 
 export class RockPaperScissorState extends RoomState {
@@ -114,7 +115,12 @@ export class RockPaperScissorState extends RoomState {
 		this.logger.info("JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const joinMessage = new JoinGameMessage(message.data);
-		const reconnectingPlayer = this.playerAlreadyInRoom(playerInfoMessage, room, socket);
+		const reconnectingPlayer = findReconnectingPlayer({
+			players: room.players,
+			name: playerInfoMessage.name,
+			remoteAddress: socket.remoteAddress,
+			ranked: room.ranked,
+		});
 
 		if (!(reconnectingPlayer instanceof Client)) {
 			await this.joinToDuelAsSpectator.run(joinMessage, playerInfoMessage, socket, room);
