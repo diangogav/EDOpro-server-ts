@@ -163,6 +163,14 @@ export class YGOProWaitingState extends YGOProRoomState {
 
 		room.mutex.runExclusive(() => {
 			if (player.isSpectator) {
+				// Taking a seat always passes admission: a spectator may only sit if
+				// the room's league accepts how it authenticated. A wrong-league
+				// spectator stays in the stands (closes the escalation through the
+				// stands door, mirroring the JOIN door).
+				const credential = player.credential ?? { kind: "guest" as const, name: player.name };
+				if (!room.league.admitsAsPlayer(credential)) {
+					return;
+				}
 				room.spectatorToPlayerUnsafe(player);
 
 				return;

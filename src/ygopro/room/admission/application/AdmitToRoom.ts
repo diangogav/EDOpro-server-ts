@@ -18,7 +18,7 @@ export interface AdmissionTarget {
 	readonly league: RoomLeague;
 	freeSeat(): Seat | null;
 	seatPlayer(credential: PlayerCredential, seat: Seat): Promise<void>;
-	admitSpectator(): Promise<void>;
+	admitSpectator(credential: PlayerCredential): Promise<void>;
 	rejectAdmission(reason: AdmissionRejection): void;
 }
 
@@ -52,7 +52,7 @@ export class AdmitToRoom {
 				await target.seatPlayer(result.credential, result.seat);
 				break;
 			case "spectator":
-				await target.admitSpectator();
+				await target.admitSpectator(credential);
 				break;
 			case "rejected":
 				target.rejectAdmission(result.reason);
