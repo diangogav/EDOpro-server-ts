@@ -67,10 +67,15 @@ describe("RoomLeague", () => {
 			expect(RoomLeague.Verified.admitsAsPlayer(guest)).toBe(false);
 		});
 
-		it("External admits ONLY external credentials", () => {
+		it("External admits external AND verified (one-way cross), but not guests", () => {
 			expect(RoomLeague.External.admitsAsPlayer(external)).toBe(true);
-			expect(RoomLeague.External.admitsAsPlayer(verified)).toBe(false);
+			expect(RoomLeague.External.admitsAsPlayer(verified)).toBe(true);
 			expect(RoomLeague.External.admitsAsPlayer(guest)).toBe(false);
+		});
+
+		it("the cross is one-way: a verified sits in External, but an external never sits in Verified", () => {
+			expect(RoomLeague.External.admitsAsPlayer(verified)).toBe(true);
+			expect(RoomLeague.Verified.admitsAsPlayer(external)).toBe(false);
 		});
 	});
 });
