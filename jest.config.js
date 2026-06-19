@@ -9,6 +9,6 @@ module.exports = {
 	roots: ["<rootDir>/src"],
 	maxWorkers: "50%",
 	transform: {
-		"^.+\\.tsx?$": "ts-jest",
+		"^.+\\.tsx?$": ["ts-jest", { tsconfig: "tsconfig.test.json" }],
 	},
 };
