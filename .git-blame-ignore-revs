@@ -1,7 +1,8 @@
 # Bulk reformat with Biome (2-space indentation -> tabs).
-# Format-only commit; safe to ignore for `git blame`.
+# Squash commit of the ESLint+Prettier -> Biome migration (#283): most of
+# its diff is the mechanical reflow, safe to ignore for `git blame`.
 #
 # Enable locally with:
 #   git config blame.ignoreRevsFile .git-blame-ignore-revs
 # GitHub applies this file automatically.
-c08c24693b4e5a50d0a946c8c588ded75bc5bf39
+b8bbc32ab6fd89f1ab955b6426cd13cd1095a772
