@@ -83,7 +83,7 @@
 				"noDuplicateEnumValues": "error",
 				"noDuplicateObjectKeys": "error",
 				"noDuplicateParameters": "error",
-				"noEmptyBlockStatements": "off",
+				"noEmptyBlockStatements": "error",
 				"noExplicitAny": "error",
 				"noExtraNonNullAssertion": "error",
 				"noFallthroughSwitchClause": "error",

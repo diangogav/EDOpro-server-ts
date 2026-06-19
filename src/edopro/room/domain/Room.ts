@@ -709,8 +709,6 @@ export class Room extends YgoRoom {
 
 		team0Players.find((p) => p.duelPosition === 0)?.turn();
 		team1Players.find((p) => p.duelPosition === 0)?.turn();
-
-		this.players.forEach((element: Client) => {});
 	}
 
 	nextTurn(team: number): void {
