@@ -4,6 +4,8 @@ import { ISocket } from "@shared/socket/domain/ISocket";
 
 import { YGOProRoomMother } from "@test-support/mothers/room/YGOProRoomMother";
 
+import { ChatColor, YGOProStocChat } from "ygopro-msg-encode";
+
 jest.mock("@ygopro/SimpleRoomMessageEmitter");
 
 const makeSocket = (): ISocket =>
@@ -18,8 +20,8 @@ const makeSocket = (): ISocket =>
 		closed: false,
 	}) as unknown as ISocket;
 
-const playerInfo = (name: string): PlayerInfoMessage =>
-	({ name, password: null }) as unknown as PlayerInfoMessage;
+const playerInfo = (name: string, password: string | null = null): PlayerInfoMessage =>
+	({ name, password }) as unknown as PlayerInfoMessage;
 
 describe("YGOProRoom.admissionTarget", () => {
 	it("exposes the room's league", () => {
@@ -81,5 +83,34 @@ describe("YGOProRoom.admissionTarget", () => {
 
 		expect(socket.send).toHaveBeenCalled();
 		expect(socket.close).toHaveBeenCalled();
+	});
+
+	it("rejectAdmission explains invalid credentials when the client supplied a PIN", () => {
+		const room = YGOProRoomMother.create();
+		const socket = makeSocket();
+		// password present → the client tried to authenticate with a PIN that did
+		// not resolve to a valid account, so it was turned away as a guest.
+		const target = room.admissionTarget(socket, playerInfo("P", "1313"));
+
+		target.rejectAdmission("ranked-requires-account");
+
+		const expectedChat = Buffer.from(
+			new YGOProStocChat()
+				.fromPartial({ player_type: ChatColor.RED, msg: "Invalid username or password." })
+				.toFullPayload(),
+		);
+		expect(socket.send).toHaveBeenNthCalledWith(1, expectedChat);
+		expect(socket.close).toHaveBeenCalled();
+	});
+
+	it("rejectAdmission does NOT send a credentials message when no PIN was supplied", () => {
+		const room = YGOProRoomMother.create();
+		const socket = makeSocket();
+		const target = room.admissionTarget(socket, playerInfo("P"));
+
+		target.rejectAdmission("ranked-requires-account");
+
+		// Only the generic JOINERROR — a genuine guest never sent credentials.
+		expect(socket.send).toHaveBeenCalledTimes(1);
 	});
 });

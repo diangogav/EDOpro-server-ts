@@ -1,4 +1,5 @@
 import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
+import { Logger } from "@shared/logger/domain/Logger";
 import { Admission, AdmissionRejection } from "@shared/room/admission/domain/Admission";
 import { PlayerCredential } from "@shared/room/admission/domain/PlayerCredential";
 import { RoomAdmission } from "@shared/room/admission/domain/RoomAdmission";
@@ -34,6 +35,7 @@ export class AdmitToRoom {
 	constructor(
 		private readonly resolver: CredentialResolver,
 		private readonly admission: RoomAdmission,
+		private readonly logger?: Logger,
 	) {}
 
 	async run(
@@ -46,6 +48,12 @@ export class AdmitToRoom {
 			league: target.league,
 			freeSeat: target.freeSeat(),
 		});
+
+		this.logger?.debug(
+			`admission/decision: credential=${credential.kind} league=${target.league.type} decision=${result.kind}${
+				result.kind === "rejected" ? ` reason=${result.reason}` : ""
+			}`,
+		);
 
 		switch (result.kind) {
 			case "player":

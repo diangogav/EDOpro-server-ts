@@ -37,11 +37,13 @@ import { HostInfo } from "./host-info/HostInfo";
 import { getLobbyDuelInfo } from "./LobbyDuelFlags";
 
 import {
+  ChatColor,
   ErrorMessageType,
   GameMode,
   NetPlayerType,
   PlayerChangeState,
   YGOProMsgBase,
+  YGOProStocChat,
   YGOProStocDeckCount,
   YGOProStocDeckCount_DeckInfo,
 } from "ygopro-msg-encode";
@@ -344,8 +346,13 @@ export class YGOProRoom extends YgoRoom {
     this._roomState?.removeAllListener();
     const userProfileRepo = new UserProfilePostgresRepository();
     const admitToRoom = new AdmitToRoom(
-      new CredentialResolver(userProfileRepo, new UserAuth(userProfileRepo)),
+      new CredentialResolver(
+        userProfileRepo,
+        new UserAuth(userProfileRepo),
+        this._logger,
+      ),
       new RoomAdmission(),
+      this._logger,
     );
     this._roomState = new YGOProWaitingState(
       admitToRoom,
@@ -447,6 +454,18 @@ export class YGOProRoom extends YgoRoom {
         this.addSpectatorUnsafe(spectator);
       },
       rejectAdmission: () => {
+        // A client that supplied a PIN but was still turned away authenticated
+        // as a guest — its PIN did not resolve to a valid account (wrong PIN,
+        // unknown user, or banned). Tell the player WHY before the generic join
+        // error, so a mistyped password isn't an opaque failure. Text is sent as
+        // a STOC_CHAT (the ygopro path's mechanism, matching the duel/side states).
+        if (playerInfo.password) {
+          const chat = new YGOProStocChat().fromPartial({
+            player_type: ChatColor.RED,
+            msg: "Invalid username or password.",
+          });
+          socket.send(Buffer.from(chat.toFullPayload()));
+        }
         socket.send(this.messageSender.errorMessage(ErrorMessageType.JOINERROR));
         socket.close();
       },
