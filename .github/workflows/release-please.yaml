@@ -19,7 +19,7 @@ jobs:
           release-type: node
       - name: Checkout 🛬
         if: ${{ steps.release.outputs.release_created }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Tag major and minor versions 🏷
         if: ${{ steps.release.outputs.release_created }}
         run: |
