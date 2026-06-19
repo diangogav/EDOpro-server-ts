@@ -7,13 +7,13 @@
  * returned; callers that receive null MUST reject the authenticated action.
  */
 export interface TicketRepository {
-  /**
-   * Consumes the ticket identified by the given UUID.
-   *
-   * Returns the userId associated with the ticket if it exists, or null if:
-   * - the uuid fails UUID format validation (no storage operation issued)
-   * - no ticket with that key exists in the store
-   * - the backing store is unavailable (fail-closed)
-   */
-  consume(uuid: string): Promise<string | null>;
+	/**
+	 * Consumes the ticket identified by the given UUID.
+	 *
+	 * Returns the userId associated with the ticket if it exists, or null if:
+	 * - the uuid fails UUID format validation (no storage operation issued)
+	 * - no ticket with that key exists in the store
+	 * - the backing store is unavailable (fail-closed)
+	 */
+	consume(uuid: string): Promise<string | null>;
 }

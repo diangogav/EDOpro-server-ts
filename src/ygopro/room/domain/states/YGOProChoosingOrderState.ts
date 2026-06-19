@@ -1,5 +1,3 @@
-
-
 import EventEmitter from "events";
 
 import { PlayerInfoMessage } from "../../../../edopro/messages/client-to-server/PlayerInfoMessage";
@@ -16,7 +14,10 @@ import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/Reco
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
 
 export class YGOProChoosingOrderState extends RoomState {
-	constructor(eventEmitter: EventEmitter, private readonly logger: Logger) {
+	constructor(
+		eventEmitter: EventEmitter,
+		private readonly logger: Logger,
+	) {
 		super(eventEmitter);
 
 		this.logger = logger.child({ file: "YGOProChoosingOrderState" });
@@ -24,17 +25,17 @@ export class YGOProChoosingOrderState extends RoomState {
 		this.eventEmitter.on(
 			"JOIN",
 			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
-				void this.handleJoin.bind(this)(message, room, socket)
+				void this.handleJoin.bind(this)(message, room, socket),
 		);
 		this.eventEmitter.on(
 			Commands.TURN_CHOICE as unknown as string,
 			(message: ClientMessage, room: YGOProRoom, client: YGOProClient) =>
-				this.handleTurnChoice.bind(this)(message, room, client)
+				this.handleTurnChoice.bind(this)(message, room, client),
 		);
 		this.eventEmitter.on(
 			"EXPRESS_RECONNECT",
 			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
-				this.handleExpressReconnect.bind(this)(message, room, socket)
+				this.handleExpressReconnect.bind(this)(message, room, socket),
 		);
 	}
 
@@ -45,7 +46,7 @@ export class YGOProChoosingOrderState extends RoomState {
 		const player = ReconnectionTokenIssuer.resolve(
 			token,
 			room.id,
-			(client) => client instanceof YGOProClient
+			(client) => client instanceof YGOProClient,
 		) as YGOProClient | null;
 		if (!player) {
 			this.logger.info(`EXPRESS_RECONNECT: no player for token ${token}`);
@@ -74,7 +75,7 @@ export class YGOProChoosingOrderState extends RoomState {
 		const data = new YGOProCtosTpResult().fromPayload(message.data);
 		const turn = data.res;
 
-		room.setPositionSwapped((turn === TurnPlayerResult.FIRST) !== (player.team === 0))
+		room.setPositionSwapped((turn === TurnPlayerResult.FIRST) !== (player.team === 0));
 		room.dueling();
 	}
 

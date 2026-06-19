@@ -1,3 +1,3 @@
-export * from './card-data-with-ot';
-export * from './card-storage';
-export * from './YGOProResourceLoader';
+export * from "./card-data-with-ot";
+export * from "./card-storage";
+export * from "./YGOProResourceLoader";

@@ -11,7 +11,7 @@ export class MessageEmitter {
 		private readonly logger: Logger,
 		private readonly eventEmitter: EventEmitter,
 		private readonly createGameListener: (roomId: number) => void,
-		private readonly joinGameListener: () => void
+		private readonly joinGameListener: () => void,
 	) {
 		this.messageProcessor = new MessageProcessor();
 		this.logger = logger.child({ file: "MessageEmitter" });
@@ -39,7 +39,7 @@ export class MessageEmitter {
 		if (this.messageProcessor.command === Commands.PLAYER_INFO) {
 			this.eventEmitter.emit(
 				this.messageProcessor.command as unknown as string,
-				this.messageProcessor.payload
+				this.messageProcessor.payload,
 			);
 		}
 
@@ -48,7 +48,7 @@ export class MessageEmitter {
 			this.createGameListener(roomId);
 			this.eventEmitter.emit(
 				this.messageProcessor.command as unknown as string,
-				this.messageProcessor.payload
+				this.messageProcessor.payload,
 			);
 		}
 
@@ -56,7 +56,7 @@ export class MessageEmitter {
 			this.joinGameListener();
 			this.eventEmitter.emit(
 				this.messageProcessor.command as unknown as string,
-				this.messageProcessor.payload
+				this.messageProcessor.payload,
 			);
 		}
 
@@ -64,7 +64,7 @@ export class MessageEmitter {
 			this.logger.info(`Emitting RECONNECT event for command ${Commands.RECONNECT}`);
 			this.eventEmitter.emit(
 				this.messageProcessor.command as unknown as string,
-				this.messageProcessor.payload
+				this.messageProcessor.payload,
 			);
 		}
 

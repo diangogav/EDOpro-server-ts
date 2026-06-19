@@ -45,9 +45,7 @@ describe("YGOProMessageRepository.joinGameMessage", () => {
 		const actual = repository.joinGameMessage(hostInfo, 0);
 
 		const expected = Buffer.from(
-			new YGOProStocJoinGame()
-				.fromPartial({ info: { ...hostInfo, lflist: 0 } })
-				.toFullPayload(),
+			new YGOProStocJoinGame().fromPartial({ info: { ...hostInfo, lflist: 0 } }).toFullPayload(),
 		);
 		expect(actual.equals(expected)).toBe(true);
 	});

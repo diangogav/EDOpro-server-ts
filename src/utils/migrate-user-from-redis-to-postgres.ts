@@ -65,7 +65,6 @@ async function run() {
 	const filteredKeys = userKeys.filter((key) => !key.includes(":duels"));
 
 	for (const key of filteredKeys) {
-
 		const userInfo: Record<string, string> = await redis.hgetall(key);
 
 		if (!userInfo.username || !userInfo.password) {
@@ -73,7 +72,6 @@ async function run() {
 			logger.error(`User key ${key} skipped due to missing username or password.`);
 			continue;
 		}
-
 
 		const { id: userId } = await userProfileCreator.run({
 			username: userInfo.username,
@@ -88,12 +86,11 @@ async function run() {
 
 		for (const match of matches) {
 			try {
-
 				const data: DuelResume = JSON.parse(match);
 				const playerName = key.split(":")[1];
 				const player = data.players.find((player) => player.name === playerName);
 				const opponent = data.players.find(
-					(element) => element.name !== playerName && element.team !== player?.team
+					(element) => element.name !== playerName && element.team !== player?.team,
 				);
 				const playerNames = data.players
 					.filter((item) => item.team === player?.team)
@@ -128,7 +125,6 @@ async function run() {
 				const games = player.games;
 				for (const game of games) {
 					try {
-
 						await duelResumeCreator.run({
 							userId,
 							gameId,
@@ -146,7 +142,7 @@ async function run() {
 					} catch (error) {
 						fs.appendFileSync(
 							failedDuelsFile,
-							`Failed to save duel for user key ${key}: ${JSON.stringify(game)}\n`
+							`Failed to save duel for user key ${key}: ${JSON.stringify(game)}\n`,
 						);
 						logger.error(`Failed to save duel for user key ${key}`);
 						logger.error(error as Error);
@@ -155,7 +151,7 @@ async function run() {
 			} catch (error) {
 				fs.appendFileSync(
 					failedMatchesFile,
-					`Failed to save match for user key ${key}: ${JSON.stringify(match)}\n`
+					`Failed to save match for user key ${key}: ${JSON.stringify(match)}\n`,
 				);
 				logger.error(`Failed to save match for user key ${key}`);
 				logger.error(error as Error);

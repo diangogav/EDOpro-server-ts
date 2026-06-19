@@ -26,23 +26,21 @@ const makeLogger = (): jest.Mocked<Logger> =>
 		warn: jest.fn(),
 		error: jest.fn(),
 		debug: jest.fn(),
-	} as unknown as jest.Mocked<Logger>);
+	}) as unknown as jest.Mocked<Logger>;
 
 const reconnectMessage = (token: string): ClientMessage =>
-	({ data: Buffer.from(token, "utf8") } as ClientMessage);
+	({ data: Buffer.from(token, "utf8") }) as ClientMessage;
 
 // A YGOProClient instance (passes `instanceof YGOProClient`) without running the
 // real constructor (which wires a socket + SimpleRoomMessageEmitter). Backing
 // fields are written directly because position/team/isReady/reconnectionToken/
 // isCaptain are getter-only on the prototype.
-const makeClient = (
-	{
-		team = 0,
-		isReady = false,
-		captain = false,
-		token = null as string | null,
-	} = {},
-): YGOProClient => {
+const makeClient = ({
+	team = 0,
+	isReady = false,
+	captain = false,
+	token = null as string | null,
+} = {}): YGOProClient => {
 	const client = Object.create(YGOProClient.prototype) as Record<string, unknown>;
 	client._team = team;
 	client._position = 0;
@@ -76,7 +74,7 @@ describe("YGOProWaitingState — reconnection token issuance at match start", ()
 			captain: jest.fn(),
 			sendMessageToClient: jest.fn(),
 			setReconnectionToken: jest.fn(),
-		} as unknown as jest.Mocked<YGOProClient>);
+		}) as unknown as jest.Mocked<YGOProClient>;
 
 	const makeRoom = (noReconnect: boolean): jest.Mocked<YGOProRoom> =>
 		({
@@ -93,7 +91,7 @@ describe("YGOProWaitingState — reconnection token issuance at match start", ()
 				duelStartMessage: jest.fn().mockReturnValue(Buffer.from([0x01, 0x00, 0x05])),
 				selectHandMessage: jest.fn().mockReturnValue(Buffer.from([0x01, 0x00, 0x06])),
 			},
-		} as unknown as jest.Mocked<YGOProRoom>);
+		}) as unknown as jest.Mocked<YGOProRoom>;
 
 	const emitTryStart = (): void => {
 		eventEmitter.emit(
@@ -113,13 +111,7 @@ describe("YGOProWaitingState — reconnection token issuance at match start", ()
 		eventEmitter = new EventEmitter();
 		host = buildPlayer(true);
 		guest = buildPlayer(false);
-		new YGOProWaitingState(
-			{} as never,
-			eventEmitter,
-			makeLogger(),
-			{} as never,
-			{} as never,
-		);
+		new YGOProWaitingState({} as never, eventEmitter, makeLogger(), {} as never, {} as never);
 	});
 
 	it("issues a reconnection token to every player when the match starts", () => {
@@ -128,9 +120,7 @@ describe("YGOProWaitingState — reconnection token issuance at match start", ()
 		emitTryStart();
 
 		for (const player of [host, guest]) {
-			expect(player.setReconnectionToken).toHaveBeenCalledWith(
-				expect.stringMatching(HEX32),
-			);
+			expect(player.setReconnectionToken).toHaveBeenCalledWith(expect.stringMatching(HEX32));
 			expect(tokenFramesSentTo(player)).toHaveLength(1);
 		}
 	});
@@ -212,11 +202,7 @@ describe("YGOProDuelingState.handleExpressReconnect", () => {
 	});
 
 	it("rejects an unknown token with a failure ack and destroys the socket", async () => {
-		await buildState(makeOcgCore()).handleExpressReconnect(
-			reconnectMessage("ghost"),
-			room,
-			socket,
-		);
+		await buildState(makeOcgCore()).handleExpressReconnect(reconnectMessage("ghost"), room, socket);
 
 		expect(socket.send).toHaveBeenCalledWith(FAILURE_ACK);
 		expect(socket.destroy).toHaveBeenCalled();
@@ -227,11 +213,7 @@ describe("YGOProDuelingState.handleExpressReconnect", () => {
 		const player = makeClient({ token: "tok" });
 		TokenIndex.getInstance().register("tok", player, 999);
 
-		await buildState(makeOcgCore()).handleExpressReconnect(
-			reconnectMessage("tok"),
-			room,
-			socket,
-		);
+		await buildState(makeOcgCore()).handleExpressReconnect(reconnectMessage("tok"), room, socket);
 
 		expect(socket.send).toHaveBeenCalledWith(FAILURE_ACK);
 		expect(socket.destroy).toHaveBeenCalled();
@@ -246,11 +228,7 @@ describe("YGOProSideDeckingState.handleExpressReconnect", () => {
 		const state = Object.create(YGOProSideDeckingState.prototype);
 		Object.assign(state, { logger: makeLogger() });
 		return state as {
-			handleExpressReconnect(
-				message: ClientMessage,
-				room: YGOProRoom,
-				socket: ISocket,
-			): void;
+			handleExpressReconnect(message: ClientMessage, room: YGOProRoom, socket: ISocket): void;
 		};
 	};
 
@@ -316,11 +294,7 @@ describe("YGOProRockPaperScissorState.handleExpressReconnect", () => {
 		const state = Object.create(YGOProRockPaperScissorState.prototype);
 		Object.assign(state, { logger: makeLogger(), handResult });
 		return state as {
-			handleExpressReconnect(
-				message: ClientMessage,
-				room: YGOProRoom,
-				socket: ISocket,
-			): void;
+			handleExpressReconnect(message: ClientMessage, room: YGOProRoom, socket: ISocket): void;
 		};
 	};
 
@@ -383,11 +357,7 @@ describe("YGOProChoosingOrderState.handleExpressReconnect", () => {
 		const state = Object.create(YGOProChoosingOrderState.prototype);
 		Object.assign(state, { logger: makeLogger() });
 		return state as {
-			handleExpressReconnect(
-				message: ClientMessage,
-				room: YGOProRoom,
-				socket: ISocket,
-			): void;
+			handleExpressReconnect(message: ClientMessage, room: YGOProRoom, socket: ISocket): void;
 		};
 	};
 
@@ -403,7 +373,7 @@ describe("YGOProChoosingOrderState.handleExpressReconnect", () => {
 				duelStartMessage: jest.fn().mockReturnValue(DUEL_START),
 				selectTpMessage: jest.fn().mockReturnValue(SELECT_TP),
 			},
-		} as unknown as jest.Mocked<YGOProRoom>);
+		}) as unknown as jest.Mocked<YGOProRoom>;
 
 	beforeEach(() => {
 		socket = { send: jest.fn(), destroy: jest.fn() } as unknown as jest.Mocked<ISocket>;

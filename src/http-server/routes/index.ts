@@ -1,5 +1,3 @@
- 
- 
 import { Express } from "express";
 
 import { Logger } from "../../shared/logger/domain/Logger";

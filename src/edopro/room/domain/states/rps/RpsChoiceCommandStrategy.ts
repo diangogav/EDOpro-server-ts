@@ -87,11 +87,11 @@ export class RpsChoiceCommandStrategy {
 		}
 
 		const player0Turn = room.players
-			.filter(p => p.team === 0)
+			.filter((p) => p.team === 0)
 			.sort((a, b) => a.position - b.position)[0];
 
 		const player1Turn = room.players
-			.filter(p => p.team === 1)
+			.filter((p) => p.team === 1)
 			.sort((a, b) => a.position - b.position)[0];
 
 		if (!player0Turn || !player1Turn) {

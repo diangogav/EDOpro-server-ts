@@ -12,14 +12,14 @@ import { ErrorMessages } from "../../messages/server-to-client/error-messages/Er
 import { Room } from "../domain/Room";
 
 export class Reconnect {
-	constructor(private readonly checkIfUseCanJoin: CheckIfUseCanJoin) { }
+	constructor(private readonly checkIfUseCanJoin: CheckIfUseCanJoin) {}
 
 	async run(
 		playerInfoMessage: PlayerInfoMessage,
 		player: Client,
 		joinMessage: JoinGameMessage,
 		socket: ISocket,
-		room: Room
+		room: Room,
 	): Promise<void> {
 		if (room.ranked && !(await this.checkIfUseCanJoin.check(playerInfoMessage, socket))) {
 			// CheckIfUseCanJoin no longer sends the JOINERROR itself (its wire format is
@@ -37,7 +37,7 @@ export class Reconnect {
 		room.players.forEach((_client) => {
 			const playerEnterClientMessage = PlayerEnterClientMessage.create(
 				_client.name,
-				_client.position
+				_client.position,
 			);
 			player.sendMessage(playerEnterClientMessage);
 		});

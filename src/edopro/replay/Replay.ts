@@ -1,13 +1,9 @@
- 
- 
- 
 import * as lzma from "lzma-native";
 import { promisify } from "util";
 
 import { UTF8ToUTF16 } from "../../utils/UTF8ToUTF16";
 import { Client } from "../client/domain/Client";
 
- 
 const lzmaCompress = promisify(lzma.compress);
 
 enum ReplayTypes {
@@ -170,15 +166,13 @@ export class Replay {
 		size += 4 + this._extraCards.length * 4;
 		size += this._responses.reduce(
 			(responseSize, response) => responseSize + response.length + 1,
-			0
+			0,
 		);
 
 		return size;
 	}
 
-	 
 	async compressData(data: Buffer): Promise<Buffer> {
-		 
 		return lzmaCompress(data, {
 			preset: 5,
 			dictSize: 1 << 24,

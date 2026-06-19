@@ -5,7 +5,10 @@ import { YGOProRoom } from "./room/domain/YGOProRoom";
 export class SimpleRoomMessageEmitter {
 	private readonly messageProcessor: MessageProcessor;
 
-	constructor(private readonly client: YGOProClient, private readonly room: YGOProRoom) {
+	constructor(
+		private readonly client: YGOProClient,
+		private readonly room: YGOProRoom,
+	) {
 		this.messageProcessor = new MessageProcessor();
 	}
 
@@ -23,7 +26,7 @@ export class SimpleRoomMessageEmitter {
 		this.room.emitRoomEvent(
 			this.messageProcessor.command as unknown as string,
 			this.messageProcessor.payload,
-			this.client
+			this.client,
 		);
 		// this.client.sendMessageToCore(this.messageProcessor.payload);
 		this.processMessage();

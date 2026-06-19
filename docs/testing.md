@@ -10,7 +10,7 @@ How we write tests in EDOpro-server-ts: where they live, how we build test data,
 2. **Build domain objects with a Mother.** Use (or create) an Object Mother for shared domain entities. Use a local `make*` factory only for stubs specific to that one suite.
 3. **Mock infra with the shared doubles.** `LoggerMock`, `SocketMock`, `MessageRepositoryMock` for ubiquitous interfaces; `jest.mock()` for module singletons; `mock<T>()` (jest-mock-extended) for one-off interface mocks.
 4. **Reset singletons** in `afterEach` (e.g. `WindbotModule.resetForTests()`, `JoinStrategyRegistry.reset()`).
-5. **Format:** 2-space indentation — your editor applies it via `.editorconfig`.
+5. **Format:** tab indentation — Biome applies it (`npm run format`), and your editor via `.editorconfig`.
 
 ## Where tests live
 
@@ -82,7 +82,7 @@ Always reset shared singleton state in `afterEach` so suites don't leak into eac
 
 | Topic | Decision |
 |-------|----------|
-| Indentation | **2 spaces** (no tabs), applied by editors via `.editorconfig`. Not CI-gated — the eslint config intentionally omits stylistic rules. |
+| Indentation | **Tabs**, enforced by Biome (`biome.json`) and auto-applied on commit via lint-staged (`biome check --write`). |
 | `describe` | The unit under test: `describe("WindbotModule")` or `describe("WindbotModule.requestBot()")`. |
 | `it` | Behavior, present tense, no "should": `it("throws when the token is missing")`. |
 | No scaffolding | No `PR-N` / `REQ-XXX` labels in comments or test names. Comments explain *why*, not *what*. |
@@ -92,7 +92,7 @@ Always reset shared singleton state in `afterEach` so suites don't leak into eac
 - [ ] Test is co-located in `src/`, next to its source.
 - [ ] Shared domain objects built via a Mother; local stubs via `make*` factories.
 - [ ] Infra mocked via shared Mock classes / `mock<T>()`; singletons reset in `afterEach`.
-- [ ] 2-space indentation; `describe`/`it` follow the naming convention.
+- [ ] Tab indentation; `describe`/`it` follow the naming convention.
 - [ ] `npm run lint` and the test suite pass.
 
 ## Migration targets (incremental)
@@ -103,5 +103,5 @@ Known consolidation work, done opportunistically as modules are touched:
 |--------|--------|
 | `YGOProRoom` built two ways | ✅ Consolidated onto `YGOProRoomMother`. |
 | Mothers & mocks under `tests/` | ✅ Moved to `src/test-support/`. |
-| 2-space formatting | ✅ `.editorconfig` added (editor-applied, not CI-gated). |
+| Tab formatting | ✅ Enforced by Biome (`biome check --write` on pre-commit via lint-staged). |
 | 26 legacy tests in `tests/` | ✅ Migrated to co-location; `tests/` removed and dropped from `jest roots`. |

@@ -20,7 +20,12 @@ rl.on("line", (line) => {
 
 	let parsed: { command?: string; id?: number; sentAtNs?: string; payload?: string };
 	try {
-		parsed = JSON.parse(line) as { command?: string; id?: number; sentAtNs?: string; payload?: string };
+		parsed = JSON.parse(line) as {
+			command?: string;
+			id?: number;
+			sentAtNs?: string;
+			payload?: string;
+		};
 	} catch (_error) {
 		writeFramedJson({
 			type: "ERROR",

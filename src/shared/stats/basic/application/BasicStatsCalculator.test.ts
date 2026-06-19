@@ -1,4 +1,3 @@
-
 import { faker } from "@faker-js/faker";
 import { mock, MockProxy } from "jest-mock-extended";
 import { Logger } from "@shared/logger/domain/Logger";
@@ -54,7 +53,7 @@ describe("BasicStatsCalculator", () => {
 			userProfileRepository,
 			playerStatsRepository,
 			matchResumeCreator,
-			duelResumeCreator
+			duelResumeCreator,
 		);
 		player = PlayerMother.create({
 			team: Team.PLAYER,
@@ -125,12 +124,12 @@ describe("BasicStatsCalculator", () => {
 		expect(playerStatsRepository.findByUserIdAndBanListName).toHaveBeenNthCalledWith(
 			1,
 			playerUserProfile.id,
-			"Global"
+			"Global",
 		);
 		expect(playerStatsRepository.findByUserIdAndBanListName).toHaveBeenNthCalledWith(
 			2,
 			opponentUserProfile.id,
-			"Global"
+			"Global",
 		);
 		expect(playerStatsRepository.save).toHaveBeenNthCalledWith(1, PlayerStats.from(playerStats));
 		expect(playerStatsRepository.save).toHaveBeenNthCalledWith(2, PlayerStats.from(opponentStats));

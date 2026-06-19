@@ -4,7 +4,10 @@ import path from "path";
 import { FileBotlistRepository } from "./FileBotlistRepository";
 
 const writeTempFile = (content: string): string => {
-	const tmpFile = path.join(os.tmpdir(), `botlist-test-${Date.now()}-${Math.random().toString(36).slice(2)}.json`);
+	const tmpFile = path.join(
+		os.tmpdir(),
+		`botlist-test-${Date.now()}-${Math.random().toString(36).slice(2)}.json`,
+	);
 	fs.writeFileSync(tmpFile, content, "utf-8");
 	return tmpFile;
 };
@@ -16,7 +19,7 @@ describe("FileBotlistRepository", () => {
 				JSON.stringify([
 					{ name: "Anna", deck: "Anna.ydk" },
 					{ name: "Gear", deck: "Gear.ydk" },
-				])
+				]),
 			);
 
 			const repo = new FileBotlistRepository(filePath);
@@ -29,7 +32,7 @@ describe("FileBotlistRepository", () => {
 			const filePath = writeTempFile(
 				JSON.stringify([
 					{ name: "Anna", deck: "Anna.ydk", dialog: "anna_dlg", hidden: false, deckcode: "abc" },
-				])
+				]),
 			);
 
 			const repo = new FileBotlistRepository(filePath);
@@ -47,25 +50,19 @@ describe("FileBotlistRepository", () => {
 		});
 
 		it("throws when an entry is missing the 'name' field", () => {
-			const filePath = writeTempFile(
-				JSON.stringify([{ deck: "Anna.ydk" }])
-			);
+			const filePath = writeTempFile(JSON.stringify([{ deck: "Anna.ydk" }]));
 
 			expect(() => new FileBotlistRepository(filePath)).toThrow();
 		});
 
 		it("throws when an entry is missing the 'deck' field", () => {
-			const filePath = writeTempFile(
-				JSON.stringify([{ name: "Anna" }])
-			);
+			const filePath = writeTempFile(JSON.stringify([{ name: "Anna" }]));
 
 			expect(() => new FileBotlistRepository(filePath)).toThrow();
 		});
 
 		it("throws when the root is not an array", () => {
-			const filePath = writeTempFile(
-				JSON.stringify({ name: "Anna", deck: "Anna.ydk" })
-			);
+			const filePath = writeTempFile(JSON.stringify({ name: "Anna", deck: "Anna.ydk" }));
 
 			expect(() => new FileBotlistRepository(filePath)).toThrow();
 		});
@@ -77,7 +74,7 @@ describe("FileBotlistRepository", () => {
 				JSON.stringify([
 					{ name: "Anna", deck: "Anna.ydk" },
 					{ name: "Gear", deck: "Gear.ydk" },
-				])
+				]),
 			);
 
 			const repo = new FileBotlistRepository(filePath);
@@ -87,9 +84,7 @@ describe("FileBotlistRepository", () => {
 		});
 
 		it("returns null when the name does not exist", () => {
-			const filePath = writeTempFile(
-				JSON.stringify([{ name: "Anna", deck: "Anna.ydk" }])
-			);
+			const filePath = writeTempFile(JSON.stringify([{ name: "Anna", deck: "Anna.ydk" }]));
 
 			const repo = new FileBotlistRepository(filePath);
 
@@ -97,9 +92,7 @@ describe("FileBotlistRepository", () => {
 		});
 
 		it("is case-insensitive: 'anna' matches 'Anna'", () => {
-			const filePath = writeTempFile(
-				JSON.stringify([{ name: "Anna", deck: "Anna.ydk" }])
-			);
+			const filePath = writeTempFile(JSON.stringify([{ name: "Anna", deck: "Anna.ydk" }]));
 
 			const repo = new FileBotlistRepository(filePath);
 
@@ -108,9 +101,7 @@ describe("FileBotlistRepository", () => {
 		});
 
 		it("is case-insensitive: 'JOEY' matches a bot registered as 'Joey'", () => {
-			const filePath = writeTempFile(
-				JSON.stringify([{ name: "Joey", deck: "Joey.ydk" }])
-			);
+			const filePath = writeTempFile(JSON.stringify([{ name: "Joey", deck: "Joey.ydk" }]));
 
 			const repo = new FileBotlistRepository(filePath);
 
@@ -119,9 +110,7 @@ describe("FileBotlistRepository", () => {
 		});
 
 		it("is case-insensitive: 'joey' matches a bot registered as 'Joey'", () => {
-			const filePath = writeTempFile(
-				JSON.stringify([{ name: "Joey", deck: "Joey.ydk" }])
-			);
+			const filePath = writeTempFile(JSON.stringify([{ name: "Joey", deck: "Joey.ydk" }]));
 
 			const repo = new FileBotlistRepository(filePath);
 
@@ -136,7 +125,7 @@ describe("FileBotlistRepository", () => {
 				JSON.stringify([
 					{ name: "Anna", deck: "Anna.ydk" },
 					{ name: "Hidden", deck: "Hidden.ydk", hidden: true },
-				])
+				]),
 			);
 
 			const repo = new FileBotlistRepository(filePath);
@@ -156,7 +145,7 @@ describe("FileBotlistRepository", () => {
 				JSON.stringify([
 					{ name: "Hidden1", deck: "h1.ydk", hidden: true },
 					{ name: "Hidden2", deck: "h2.ydk", hidden: true },
-				])
+				]),
 			);
 
 			const repo = new FileBotlistRepository(filePath);
@@ -177,7 +166,7 @@ describe("FileBotlistRepository", () => {
 				JSON.stringify([
 					{ name: "Anna", deck: "Anna.ydk" },
 					{ name: "Gear", deck: "Gear.ydk" },
-				])
+				]),
 			);
 
 			const repo = new FileBotlistRepository(filePath);

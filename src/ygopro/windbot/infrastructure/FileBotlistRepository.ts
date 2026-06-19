@@ -21,9 +21,7 @@ export class FileBotlistRepository implements WindbotBotlistRepository {
 		const parsed = JSON.parse(raw);
 		const result = BotlistSchema.safeParse(parsed);
 		if (!result.success) {
-			throw new Error(
-				`Invalid botlist at ${filePath}: ${result.error.message}`
-			);
+			throw new Error(`Invalid botlist at ${filePath}: ${result.error.message}`);
 		}
 		this.bots = result.data;
 	}

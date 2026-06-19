@@ -31,7 +31,7 @@ export class YGOProServer {
 			this.address = socket.remoteAddress;
 			const ygoClientSocket = new TCPClientSocket(socket);
 			const eventEmitter = new EventEmitter();
-			const messageRepository = new YGOProMessageRepository()
+			const messageRepository = new YGOProMessageRepository();
 
 			ygoClientSocket.id = uuidv4();
 
@@ -47,24 +47,19 @@ export class YGOProServer {
 				new YGOProGameCreatorHandler(eventEmitter, connectionLogger, messageRepository);
 			};
 			const joinGameListener = () => {
-				new YGOProJoinHandler(
-					eventEmitter,
-					connectionLogger,
-					ygoClientSocket,
-					messageRepository,
-				);
+				new YGOProJoinHandler(eventEmitter, connectionLogger, ygoClientSocket, messageRepository);
 			};
 
 			const messageEmitter = new MessageEmitter(
 				connectionLogger,
 				eventEmitter,
 				createGameListener,
-				joinGameListener
+				joinGameListener,
 			);
 
 			socket.on("data", (data: Buffer) => {
 				connectionLogger.debug(
-					`Incoming message handle by Mercury Server: ${data.toString("hex")}`
+					`Incoming message handle by Mercury Server: ${data.toString("hex")}`,
 				);
 				messageEmitter.handleMessage(data);
 			});

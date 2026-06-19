@@ -1,6 +1,3 @@
- 
-
-
 export interface JSONClientMessage {
 	data: string;
 	// previousMessage: Buffer;
@@ -31,9 +28,7 @@ export class JSONMessageProcessor {
 			// this._previousMessage = this._data;
 		}
 		this._size = this.buffer.readUint32LE(0);
-		this._data = this.buffer
-			.subarray(4, this._size + 4)
-			.toString("utf-8");
+		this._data = this.buffer.subarray(4, this._size + 4).toString("utf-8");
 		this.buffer = this.buffer.subarray(this._size + 4);
 	}
 

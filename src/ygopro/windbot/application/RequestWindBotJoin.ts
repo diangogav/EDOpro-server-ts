@@ -11,13 +11,13 @@ export type RequestWindBotJoinResult = {
 export class RequestWindBotJoin {
 	constructor(
 		private readonly repo: WindbotBotlistRepository,
-		private readonly tokenStore: WindbotTokenStore
+		private readonly tokenStore: WindbotTokenStore,
 	) {}
 
 	execute(
 		roomId: number,
 		botNameOrNull: string | null,
-		deckOverride?: string
+		deckOverride?: string,
 	): RequestWindBotJoinResult {
 		const bot = this._resolveBot(botNameOrNull);
 		const deck = deckOverride ?? bot.deck;

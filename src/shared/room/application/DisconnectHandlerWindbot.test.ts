@@ -30,7 +30,10 @@ jest.mock("../../../web-socket-server/WebSocketSingleton", () => {
 });
 
 import { EventEmitter } from "stream";
-import { WindbotModule, WindbotModuleDeps } from "../../../ygopro/windbot/application/WindbotModule";
+import {
+	WindbotModule,
+	WindbotModuleDeps,
+} from "../../../ygopro/windbot/application/WindbotModule";
 import { WindbotTokenStore } from "../../../ygopro/windbot/domain/WindbotTokenStore";
 import MercuryRoomList from "../../../ygopro/room/infrastructure/YGOProRoomList";
 import { YGOProRoom } from "../../../ygopro/room/domain/YGOProRoom";

@@ -209,11 +209,11 @@ export class Room extends YgoRoom {
 		});
 		this.resetReplay();
 		this.checkIfUserCanReconnect = new CheckIfUseCanJoin(
-			new UserAuth(new UserProfilePostgresRepository())
+			new UserAuth(new UserProfilePostgresRepository()),
 		);
 		this.notifier = new RoomClientNotifier(
 			() => this._players as Client[],
-			() => this._spectators as Client[]
+			() => this._spectators as Client[],
 		);
 	}
 
@@ -231,7 +231,7 @@ export class Room extends YgoRoom {
 		playerInfo: PlayerInfoMessage,
 		id: number,
 		emitter: EventEmitter,
-		logger: Logger
+		logger: Logger,
 	): Room {
 		const ranked = Room.isRanked(playerInfo.password);
 
@@ -290,7 +290,6 @@ export class Room extends YgoRoom {
 	}
 
 	resetReplay(): void {
-
 		if (this._replay) {
 			this._replay.reset();
 		}
@@ -563,7 +562,7 @@ export class Room extends YgoRoom {
 			this.emitter,
 			this.logger,
 			new UserAuth(new UserProfilePostgresRepository()),
-			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules, this.duelFlag)
+			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules, this.duelFlag),
 		);
 	}
 
@@ -577,7 +576,7 @@ export class Room extends YgoRoom {
 			new Reconnect(this.checkIfUserCanReconnect),
 			new JoinToDuelAsSpectator(),
 			this,
-			new JSONMessageProcessor()
+			new JSONMessageProcessor(),
 		);
 	}
 
@@ -589,7 +588,7 @@ export class Room extends YgoRoom {
 			this.logger,
 			new Reconnect(this.checkIfUserCanReconnect),
 			new JoinToDuelAsSpectator(),
-			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules, this.duelFlag)
+			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules, this.duelFlag),
 		);
 	}
 
@@ -606,7 +605,7 @@ export class Room extends YgoRoom {
 			this.emitter,
 			this.logger,
 			new Reconnect(this.checkIfUserCanReconnect),
-			new JoinToDuelAsSpectator()
+			new JoinToDuelAsSpectator(),
 		);
 	}
 
@@ -617,7 +616,7 @@ export class Room extends YgoRoom {
 			this.emitter,
 			this.logger,
 			new Reconnect(this.checkIfUserCanReconnect),
-			new JoinToDuelAsSpectator()
+			new JoinToDuelAsSpectator(),
 		);
 	}
 
@@ -688,16 +687,16 @@ export class Room extends YgoRoom {
 
 	prepareTurnOrder(): void {
 		const team0Players = this.players
-			.filter(p => p.team === 0)
+			.filter((p) => p.team === 0)
 			.sort((a, b) => a.position - b.position) as Client[];
 
 		const team1Players = this.players
-			.filter(p => p.team === 1)
+			.filter((p) => p.team === 1)
 			.sort((a, b) => a.position - b.position) as Client[];
 
 		// 0 = team0 empieza, 1 = team1 empieza
-		const offset0 = this.isRelay ? 0 : (this.firstToPlay === 1 ? 1 : 0);
-		const offset1 = this.isRelay ? 0 : (this.firstToPlay === 0 ? 1 : 0);
+		const offset0 = this.isRelay ? 0 : this.firstToPlay === 1 ? 1 : 0;
+		const offset1 = this.isRelay ? 0 : this.firstToPlay === 0 ? 1 : 0;
 
 		team0Players.forEach((p, idx) => {
 			p.clearTurn();
@@ -709,22 +708,20 @@ export class Room extends YgoRoom {
 			p.setDuelPosition((idx + offset1) % this.team1);
 		});
 
-		team0Players.find(p => p.duelPosition === 0)?.turn();
-		team1Players.find(p => p.duelPosition === 0)?.turn();
+		team0Players.find((p) => p.duelPosition === 0)?.turn();
+		team1Players.find((p) => p.duelPosition === 0)?.turn();
 
-
-		this.players.forEach((element: Client) => {
-		})
+		this.players.forEach((element: Client) => {});
 	}
 
 	nextTurn(team: number): void {
 		const teamPlayers = (this.players as Client[])
-			.filter(p => p.team === team)
+			.filter((p) => p.team === team)
 			.sort((a: Client, b: Client) => a.duelPosition - b.duelPosition);
 
 		if (teamPlayers.length === 0) return;
 
-		const currentIdx = teamPlayers.findIndex(p => p.inTurn);
+		const currentIdx = teamPlayers.findIndex((p) => p.inTurn);
 		if (currentIdx === -1) return;
 
 		const nextIdx = (currentIdx + 1) % teamPlayers.length;
@@ -858,7 +855,7 @@ export class Room extends YgoRoom {
 					JSON.stringify({
 						command: "DESTROY_DUEL",
 						data: {},
-					})
+					}),
 				);
 			}
 
@@ -958,7 +955,6 @@ export class Room extends YgoRoom {
 		}
 	}
 
-
 	private startIpcMetricsReporting(): void {
 		if (process.env.IPC_METRICS_ENABLED !== "true") {
 			return;
@@ -1010,8 +1006,6 @@ export class Room extends YgoRoom {
 
 		return match ? Number(match[1]) : undefined;
 	}
-
-
 
 	private nextSpectatorPositionUnsafe(): number {
 		if (this._spectators.length === 0) {

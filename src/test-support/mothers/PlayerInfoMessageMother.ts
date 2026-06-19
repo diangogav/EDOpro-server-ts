@@ -5,9 +5,9 @@ export class PlayerInfoMessageMother {
 		return new PlayerInfoMessage(
 			Buffer.from(
 				"4a006100640065006e00000000000000000000000000000000000000000000000000000000000000",
-				"hex"
+				"hex",
 			),
-			40
+			40,
 		);
 	}
 }

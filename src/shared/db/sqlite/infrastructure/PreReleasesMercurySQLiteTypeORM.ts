@@ -25,7 +25,7 @@ export class PreReleasesYGOProSQLiteTypeORM implements Database {
 
 	async load(cdbFiles: string[]): Promise<void> {
 		for (const file of cdbFiles) {
-			console.log("loading prerelease cdb file: ", file)
+			console.log("loading prerelease cdb file: ", file);
 			const filePath = join(this.mercuryPreReleasesDirectoryPath, file);
 
 			await this.merge(filePath);

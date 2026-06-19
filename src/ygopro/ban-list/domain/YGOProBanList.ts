@@ -1,6 +1,5 @@
 import { BanList } from "src/shared/ban-list/BanList";
 
-
 export class YGOProBanList extends BanList {
 	setHash(hash: number) {
 		this._hash = hash;

@@ -21,8 +21,8 @@ export class SocketConnectionHandler {
 		private readonly logger: Logger,
 		private readonly roomFinder: RoomFinder,
 		private readonly userAuth: UserAuth,
-		private readonly checkIfUserCanJoin: CheckIfUseCanJoin
-	) { }
+		private readonly checkIfUserCanJoin: CheckIfUseCanJoin,
+	) {}
 
 	handle(socket: ISocket): void {
 		const eventEmitter = new EventEmitter();
@@ -37,13 +37,7 @@ export class SocketConnectionHandler {
 		connectionLogger.info("Client connected");
 
 		const createGameListener = (roomId: number) => {
-			new GameCreatorHandler(
-				eventEmitter,
-				connectionLogger,
-				socket,
-				this.userAuth,
-				roomId
-			);
+			new GameCreatorHandler(eventEmitter, connectionLogger, socket, this.userAuth, roomId);
 		};
 
 		const joinGameListener = () => {
@@ -55,18 +49,20 @@ export class SocketConnectionHandler {
 			connectionLogger,
 			socket,
 			(roomId) => RoomList.getRooms().find((room) => room.id === roomId),
-			(client) => client instanceof Client
+			(client) => client instanceof Client,
 		);
 
 		const messageEmitter = new MessageEmitter(
 			connectionLogger,
 			eventEmitter,
 			createGameListener,
-			joinGameListener
+			joinGameListener,
 		);
 
 		socket.onMessage((data: Buffer) => {
-			connectionLogger.debug(`roomId: ${socket.roomId} - Incoming message: ${data.toString("hex")}`);
+			connectionLogger.debug(
+				`roomId: ${socket.roomId} - Incoming message: ${data.toString("hex")}`,
+			);
 
 			if (data.length >= 3) {
 				const command = data.readUInt8(2);

@@ -19,14 +19,14 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 		private readonly userProfileRepository: UserProfileRepository,
 		private readonly playerStatsRepository: PlayerStatsRepository,
 		private readonly matchResumeCreator: MatchResumeCreator,
-		private readonly duelResumeCreator: DuelResumeCreator
+		private readonly duelResumeCreator: DuelResumeCreator,
 	) {
 		this.logger = logger.child({ file: "BasicStatsCalculator" });
 	}
 
 	async handle(event: GameOverDomainEvent): Promise<void> {
 		this.logger.info(
-			`Duel finished for ${event.data.players.map((player) => player.name).join(" ")}`
+			`Duel finished for ${event.data.players.map((player) => player.name).join(" ")}`,
 		);
 
 		if (!event.data.ranked) {
@@ -37,7 +37,6 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 
 		const banList = BanListMemoryRepository.findByHash(event.data.banListHash);
 		const players = event.data.players.map((item) => new Player(item));
-
 
 		const gameId = randomUUID();
 
@@ -63,7 +62,7 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 			if (banList?.name) {
 				const playerStats = await this.playerStatsRepository.findByUserIdAndBanListName(
 					userProfile.id,
-					banList.name
+					banList.name,
 				);
 				playerStats.addPoints(points);
 				player.winner ? playerStats.increaseWins() : playerStats.increaseLosses();
@@ -72,7 +71,7 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 
 			const globalPlayerStats = await this.playerStatsRepository.findByUserIdAndBanListName(
 				userProfile.id,
-				"Global"
+				"Global",
 			);
 			globalPlayerStats.addPoints(points);
 			player.winner ? globalPlayerStats.increaseWins() : globalPlayerStats.increaseLosses();
@@ -97,7 +96,7 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 			});
 
 			this.logger.info(
-				`Match saved with id ${matchId} for user: ${userProfile.id} with name ${player.name}`
+				`Match saved with id ${matchId} for user: ${userProfile.id} with name ${player.name}`,
 			);
 
 			for (const game of player.games) {

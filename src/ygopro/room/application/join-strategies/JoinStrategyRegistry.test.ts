@@ -8,16 +8,17 @@ const makeCtx = (rawPass = ""): JoinContext =>
 		rawPass,
 		command: rawPass.split("#")[0],
 		password: rawPass.split("#")[1] ?? "",
-	} as unknown as JoinContext);
+	}) as unknown as JoinContext;
 
 const makeStrategy = (
 	matchResult: boolean,
-	kind: "handled" | "rejected" | "fall-through" = "handled"
-): JoinStrategy => ({
-	matches: jest.fn().mockReturnValue(matchResult),
-	handle: jest.fn().mockResolvedValue(undefined),
-	_kind: kind, // marker for test inspection
-} as unknown as JoinStrategy);
+	kind: "handled" | "rejected" | "fall-through" = "handled",
+): JoinStrategy =>
+	({
+		matches: jest.fn().mockReturnValue(matchResult),
+		handle: jest.fn().mockResolvedValue(undefined),
+		_kind: kind, // marker for test inspection
+	}) as unknown as JoinStrategy;
 
 describe("JoinStrategyRegistry", () => {
 	afterEach(() => {
@@ -91,7 +92,7 @@ describe("JoinStrategyRegistry", () => {
 				command: rawPass.split("#")[0],
 				password: rawPass.split("#")[1] ?? "",
 				socket: { resolvedUserId: "some-user-id" },
-			} as unknown as JoinContext);
+			}) as unknown as JoinContext;
 
 		const makeCtxWithoutTicket = (rawPass = "ROOM"): JoinContext =>
 			({
@@ -99,14 +100,11 @@ describe("JoinStrategyRegistry", () => {
 				command: rawPass.split("#")[0],
 				password: rawPass.split("#")[1] ?? "",
 				socket: { resolvedUserId: undefined },
-			} as unknown as JoinContext);
+			}) as unknown as JoinContext;
 
 		beforeEach(() => {
 			// Simulate the always-on base chain (what index.ts sets up without windbot)
-			JoinStrategyRegistry.setStrategies([
-				new TicketJoinStrategy(),
-				new DefaultJoinStrategy(),
-			]);
+			JoinStrategyRegistry.setStrategies([new TicketJoinStrategy(), new DefaultJoinStrategy()]);
 		});
 
 		it("base chain contains TicketJoinStrategy and DefaultJoinStrategy", () => {

@@ -200,8 +200,12 @@ describe("socket.close() after error send", () => {
 			const callOrder: string[] = [];
 			const socket = {
 				...makeSocket(),
-				send: jest.fn().mockImplementation(() => { callOrder.push("send"); }),
-				close: jest.fn().mockImplementation(() => { callOrder.push("close"); }),
+				send: jest.fn().mockImplementation(() => {
+					callOrder.push("send");
+				}),
+				close: jest.fn().mockImplementation(() => {
+					callOrder.push("close");
+				}),
 			};
 			const ctx = makeCtx("AI", { socket: socket as never });
 
@@ -251,8 +255,12 @@ describe("socket.close() after error send", () => {
 			const callOrder: string[] = [];
 			const socket = {
 				...makeSocket(),
-				send: jest.fn().mockImplementation(() => { callOrder.push("send"); }),
-				close: jest.fn().mockImplementation(() => { callOrder.push("close"); }),
+				send: jest.fn().mockImplementation(() => {
+					callOrder.push("send");
+				}),
+				close: jest.fn().mockImplementation(() => {
+					callOrder.push("close");
+				}),
 			};
 			const ctx = makeCtx("AIJOIN#nosuchtoken", { socket: socket as never });
 

@@ -1,3 +1,1 @@
-export abstract class BanListLoader {
-
-}
+export abstract class BanListLoader {}

@@ -9,7 +9,7 @@ const childPath = path.join(__dirname, "ipc-echo-child.ts");
 const child = spawn(
 	process.execPath,
 	["-r", "ts-node/register/transpile-only", "-r", "tsconfig-paths/register", childPath],
-	{ stdio: ["pipe", "pipe", "inherit"] }
+	{ stdio: ["pipe", "pipe", "inherit"] },
 );
 
 const payload = "x".repeat(payloadBytes);

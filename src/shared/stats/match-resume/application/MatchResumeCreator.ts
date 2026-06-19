@@ -4,7 +4,7 @@ import { MatchResume } from "../domain/MatchResume";
 import { MatchResumeRepository } from "../domain/MatchResumeRepository";
 
 export class MatchResumeCreator {
-	constructor(private readonly matchResumeRepository: MatchResumeRepository) { }
+	constructor(private readonly matchResumeRepository: MatchResumeRepository) {}
 
 	async run(payload: {
 		userId: string;

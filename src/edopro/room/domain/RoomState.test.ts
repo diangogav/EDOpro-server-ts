@@ -26,7 +26,7 @@ const makeMercuryRoom = (socket: { send: jest.Mock }) =>
 		roomType: RoomType.MERCURY,
 		isPositionSwapped: false,
 		clients: [{ socket }],
-	} as unknown as never);
+	}) as unknown as never;
 
 describe("RoomState — Mercury spectator chat (Option A: server prefixes name)", () => {
 	let eventEmitter: EventEmitter;
@@ -46,12 +46,7 @@ describe("RoomState — Mercury spectator chat (Option A: server prefixes name)"
 			team: 3,
 		} as unknown as never;
 
-		eventEmitter.emit(
-			Commands.CHAT as unknown as string,
-			makeChatMessage("hola"),
-			room,
-			spectator,
-		);
+		eventEmitter.emit(Commands.CHAT as unknown as string, makeChatMessage("hola"), room, spectator);
 
 		expect(socket.send).toHaveBeenCalled();
 		const sent = socket.send.mock.calls[0][0] as Buffer;
@@ -69,12 +64,7 @@ describe("RoomState — Mercury spectator chat (Option A: server prefixes name)"
 			team: 0,
 		} as unknown as never;
 
-		eventEmitter.emit(
-			Commands.CHAT as unknown as string,
-			makeChatMessage("hola"),
-			room,
-			player,
-		);
+		eventEmitter.emit(Commands.CHAT as unknown as string, makeChatMessage("hola"), room, player);
 
 		expect(socket.send).toHaveBeenCalled();
 		const sent = socket.send.mock.calls[0][0] as Buffer;

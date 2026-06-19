@@ -20,7 +20,6 @@ export abstract class YgoClient {
 	protected _credential: PlayerCredential | null = null;
 	protected _deck: Deck;
 
-
 	constructor({
 		name,
 		position,

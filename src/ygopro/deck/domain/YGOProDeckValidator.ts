@@ -22,7 +22,7 @@ export class YGOProDeckValidator {
 	constructor(
 		private readonly deckRules: DeckRules,
 		private readonly banList: EdoproBanList,
-	) { }
+	) {}
 
 	validate(deck: Deck): DeckError | null {
 		const chain = new DeckLimitsValidationHandler(this.deckRules);

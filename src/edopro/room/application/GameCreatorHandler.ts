@@ -31,7 +31,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 		logger: Logger,
 		socket: ISocket,
 		userAuth: UserAuth,
-		roomId: number
+		roomId: number,
 	) {
 		this.eventEmitter = eventEmitter;
 		this.logger = logger.child({ file: "GameCreatorHandler", roomId });
@@ -69,14 +69,14 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 	private async create(
 		message: CreateGameMessage,
 		playerInfoMessage: PlayerInfoMessage,
-		userId: string | null
+		userId: string | null,
 	): Promise<void> {
 		const room = Room.createFromCreateGameMessage(
 			message,
 			playerInfoMessage,
 			this.roomId,
 			this.eventEmitter,
-			this.logger
+			this.logger,
 		);
 
 		room.waiting();
@@ -99,19 +99,23 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 	}
 
 	private sendRankedMessage(): void {
-		this.socket.send(ServerMessageClientMessage.create(
-			`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS} - ${ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION}`
-		));
+		this.socket.send(
+			ServerMessageClientMessage.create(
+				`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS} - ${ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION}`,
+			),
+		);
 	}
 
 	private sendUnrankedMessage(): void {
-		this.socket.send(ServerMessageClientMessage.create(
-			`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.UN_RANKED_ROOM_CREATION_SUCCESS}`
-		));
+		this.socket.send(
+			ServerMessageClientMessage.create(
+				`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.UN_RANKED_ROOM_CREATION_SUCCESS}`,
+			),
+		);
 
 		if (!config.ranking.enabled) {
 			this.socket.send(
-				ServerMessageClientMessage.create(ServerInfoMessage.UNAVAILABLE_RANKING_SYSTEM)
+				ServerMessageClientMessage.create(ServerInfoMessage.UNAVAILABLE_RANKING_SYSTEM),
 			);
 		}
 	}

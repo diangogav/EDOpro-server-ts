@@ -1,5 +1,3 @@
-
-
 import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
 import { ServerInfoMessage } from "@edopro/messages/domain/ServerInfoMessage";
 import { spawn } from "child_process";
@@ -106,7 +104,7 @@ export class DuelingState extends RoomState {
 		private readonly reconnect: Reconnect,
 		private readonly joinToDuelAsSpectator: JoinToDuelAsSpectator,
 		private readonly room: Room,
-		private readonly jsonMessageProcessor: JSONMessageProcessor
+		private readonly jsonMessageProcessor: JSONMessageProcessor,
 	) {
 		super(eventEmitter);
 
@@ -117,37 +115,37 @@ export class DuelingState extends RoomState {
 		this.eventEmitter.on(
 			"JOIN" as unknown as string,
 			(message: ClientMessage, room: Room, socket: ISocket) =>
-				this.handleJoin.bind(this)(message, room, socket)
+				this.handleJoin.bind(this)(message, room, socket),
 		);
 
 		this.eventEmitter.on(
 			"EXPRESS_RECONNECT" as unknown as string,
 			(message: ClientMessage, room: Room, socket: ISocket) =>
-				this.handleExpressReconnect.bind(this)(message, room, socket)
+				this.handleExpressReconnect.bind(this)(message, room, socket),
 		);
 
 		this.eventEmitter.on(
 			Commands.SURRENDER as unknown as string,
 			(message: ClientMessage, _room: Room, client: Client) =>
-				this.handleSurrender.bind(this)(message, client)
+				this.handleSurrender.bind(this)(message, client),
 		);
 
 		this.eventEmitter.on(
 			Commands.RESPONSE as unknown as string,
 			(message: ClientMessage, _room: Room, client: Client) =>
-				this.handleResponse.bind(this)(message, client)
+				this.handleResponse.bind(this)(message, client),
 		);
 
 		this.eventEmitter.on(
 			Commands.READY as unknown as string,
 			(message: ClientMessage, room: Room, client: Client) =>
-				this.handleReady.bind(this)(message, room, client)
+				this.handleReady.bind(this)(message, room, client),
 		);
 
 		this.eventEmitter.on(
 			Commands.UPDATE_DECK as unknown as string,
 			(message: ClientMessage, room: Room, client: Client) =>
-				this.handleUpdateDeck.bind(this)(message, room, client)
+				this.handleUpdateDeck.bind(this)(message, room, client),
 		);
 	}
 
@@ -166,8 +164,8 @@ export class DuelingState extends RoomState {
 		if (completeCurrentDeck.length !== completeIncomingDeck.length) {
 			client.socket.send(
 				ServerErrorClientMessage.create(
-					"Por favor selecciona el mismo deck de la partida en curso para poder reconectar"
-				)
+					"Por favor selecciona el mismo deck de la partida en curso para poder reconectar",
+				),
 			);
 			const message = ErrorClientMessage.create(ErrorMessages.DECK_ERROR);
 			client.socket.send(message);
@@ -184,8 +182,8 @@ export class DuelingState extends RoomState {
 		if (!completeIncomingDeck.every((item) => completeCurrentDeck.includes(item))) {
 			client.socket.send(
 				ServerErrorClientMessage.create(
-					"Por favor selecciona el mismo deck de la partida en curso para poder reconectar"
-				)
+					"Por favor selecciona el mismo deck de la partida en curso para poder reconectar",
+				),
 			);
 
 			const message = ErrorClientMessage.create(ErrorMessages.DECK_ERROR);
@@ -247,7 +245,7 @@ export class DuelingState extends RoomState {
 			],
 			{
 				cwd: process.cwd(),
-			}
+			},
 		);
 
 		this.room.setDuel(core);
@@ -286,7 +284,7 @@ export class DuelingState extends RoomState {
 				this.logger.info(`payload:data ${payload.data}`);
 				this.logger.info(`payload:size ${payload.size}`);
 				this.logger.info(
-					`payload:buffer ${this.jsonMessageProcessor.currentBuffer.toString("hex")}`
+					`payload:buffer ${this.jsonMessageProcessor.currentBuffer.toString("hex")}`,
 				);
 				this.logger.info(`payload:buffer ${this.jsonMessageProcessor.currentBuffer.toString()}`);
 				this.logger.info(`score: ${this.room.score}`);
@@ -349,7 +347,7 @@ export class DuelingState extends RoomState {
 				this.processDuelMessage(
 					_coreMessage.message,
 					Buffer.from(_coreMessage.data, "hex"),
-					this.room
+					this.room,
 				);
 			}
 
@@ -431,16 +429,16 @@ export class DuelingState extends RoomState {
 		this.room.players.forEach((client: Client) => {
 			client.sendMessage(
 				ServerMessageClientMessage.create(
-					`${player.name} ${ServerInfoMessage.HAS_ENTERED_TO_THE_DUEL}`
-				)
+					`${player.name} ${ServerInfoMessage.HAS_ENTERED_TO_THE_DUEL}`,
+				),
 			);
 		});
 
 		this.room.spectators.forEach((spectator: Client) => {
 			spectator.sendMessage(
 				ServerMessageClientMessage.create(
-					`${player.name} ${ServerInfoMessage.HAS_ENTERED_TO_THE_DUEL}`
-				)
+					`${player.name} ${ServerInfoMessage.HAS_ENTERED_TO_THE_DUEL}`,
+				),
 			);
 		});
 	}
@@ -463,7 +461,7 @@ export class DuelingState extends RoomState {
 					position: player.position,
 					team: player.team,
 				},
-			})
+			}),
 		);
 	}
 
@@ -480,7 +478,7 @@ export class DuelingState extends RoomState {
 			JSON.stringify({
 				command: "DESTROY_DUEL",
 				data: {},
-			})
+			}),
 		);
 
 		this.room.finished();
@@ -544,7 +542,7 @@ export class DuelingState extends RoomState {
 
 		if (message.position) {
 			const player = [...this.room.players, ...this.room.spectators].find(
-				(player: Client) => player.position === message.position
+				(player: Client) => player.position === message.position,
 			);
 
 			(<Client | undefined>player)?.sendMessage(payload);
@@ -576,7 +574,7 @@ export class DuelingState extends RoomState {
 		}
 
 		const player = [...this.room.players, ...this.room.spectators].find(
-			(player: Client) => player.inTurn && player.team === message.receiver
+			(player: Client) => player.inTurn && player.team === message.receiver,
 		);
 
 		(<Client | undefined>player)?.sendMessage(payload);
@@ -636,14 +634,14 @@ export class DuelingState extends RoomState {
 			JSON.stringify({
 				command: "SET_DECKS",
 				data: {},
-			})
+			}),
 		);
 	}
 
 	private async handleExpressReconnect(
 		message: ClientMessage,
 		room: Room,
-		socket: ISocket
+		socket: ISocket,
 	): Promise<void> {
 		this.logger.info("DUELING_STATE: EXPRESS_RECONNECT - START");
 		const token = message.data.toString("utf8");
@@ -652,7 +650,7 @@ export class DuelingState extends RoomState {
 		const player = ReconnectionTokenIssuer.resolve(
 			token,
 			room.id,
-			(client) => client instanceof Client
+			(client) => client instanceof Client,
 		) as Client | null;
 		if (!player) {
 			this.logger.info(`DUELING_STATE: Player not found for token ${token} or room mismatch`);
@@ -682,7 +680,7 @@ export class DuelingState extends RoomState {
 				playerExtraDeckSize: room.playerExtraDeckSize,
 				opponentMainDeckSize: room.opponentMainDeckSize,
 				opponentExtraDeckSize: room.opponentExtraDeckSize,
-			})
+			}),
 		);
 		player.sendMessage(Buffer.from("0300012800", "hex")); // MSG_NEW_TURN (0)
 		if (room.lastPhaseMessage) {
@@ -696,7 +694,7 @@ export class DuelingState extends RoomState {
 					position: player.position,
 					team: player.team,
 				},
-			})
+			}),
 		);
 
 		this.logger.info("DUELING_STATE: EXPRESS_RECONNECT - COMPLETED");
@@ -717,7 +715,7 @@ export class DuelingState extends RoomState {
 				playerExtraDeckSize: room.playerExtraDeckSize,
 				opponentMainDeckSize: room.opponentMainDeckSize,
 				opponentExtraDeckSize: room.opponentExtraDeckSize,
-			})
+			}),
 		);
 		player.sendMessage(Buffer.from("0300012800", "hex"));
 		if (room.lastPhaseMessage) {
@@ -729,7 +727,7 @@ export class DuelingState extends RoomState {
 				data: {
 					position: player.position,
 				},
-			})
+			}),
 		);
 	}
 
@@ -773,7 +771,7 @@ export class DuelingState extends RoomState {
 			JSON.stringify({
 				command: "DESTROY_DUEL",
 				data: {},
-			})
+			}),
 		);
 
 		const finishDuelHandler = new FinishDuelHandler({
@@ -807,7 +805,7 @@ export class DuelingState extends RoomState {
 					replier: player.team,
 					message: data,
 				},
-			})
+			}),
 		);
 	}
 

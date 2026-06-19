@@ -5,8 +5,7 @@ import { YgoClient } from "../../client/domain/YgoClient";
 // token index BEFORE the shared reconnect layer is extracted. TokenIndex is an
 // in-memory singleton (tokens are lost on process restart — accepted caveat).
 describe("TokenIndex", () => {
-	const fakeClient = (name: string): YgoClient =>
-		({ name } as unknown as YgoClient);
+	const fakeClient = (name: string): YgoClient => ({ name }) as unknown as YgoClient;
 
 	beforeEach(() => {
 		TokenIndex.getInstance().clear();

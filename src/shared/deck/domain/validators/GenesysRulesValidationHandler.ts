@@ -13,7 +13,7 @@ export class GenesysRulesValidationHandler implements DeckValidationHandler {
 	private readonly nextHandler: DeckValidationHandler | null = null;
 	private readonly genesysMap = new Map(genesys.map((item) => [item.code.toString(), item.points]));
 
-	constructor(private readonly maxDeckPoints: number) { }
+	constructor(private readonly maxDeckPoints: number) {}
 
 	setNextHandler(handler: DeckValidationHandler): DeckValidationHandler {
 		throw new Error("Method not implemented.");

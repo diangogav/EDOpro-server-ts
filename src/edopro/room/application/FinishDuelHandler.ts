@@ -106,7 +106,7 @@ export class FinishDuelHandler {
 					date: new Date(),
 					banListHash: this.room.banListHash,
 					ranked: this.room.ranked,
-				})
+				}),
 			);
 
 			WebSocketSingleton.getInstance().broadcast({
@@ -123,14 +123,14 @@ export class FinishDuelHandler {
 
 		if (this.winner === 0) {
 			const looser = this.room.players.find(
-				(_client: Client) => _client.position % this.room.team1 === 0 && _client.team === 1
+				(_client: Client) => _client.position % this.room.team1 === 0 && _client.team === 1,
 			);
 			if (looser && looser instanceof Client) {
 				this.room.setClientWhoChoosesTurn(looser);
 			}
 		} else {
 			const looser = this.room.players.find(
-				(_client: Client) => _client.position % this.room.team0 === 0 && _client.team === 0
+				(_client: Client) => _client.position % this.room.team0 === 0 && _client.team === 0,
 			);
 			if (looser && looser instanceof Client) {
 				this.room.setClientWhoChoosesTurn(looser);

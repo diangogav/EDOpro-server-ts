@@ -312,12 +312,13 @@ export abstract class YgoRoom {
 	}
 
 	get score(): string {
-		return `Score: ${this.playerNames(0)}: ${this.matchScore().team0} - ${this.matchScore().team1
-			} ${this.playerNames(1)}`;
+		return `Score: ${this.playerNames(0)}: ${this.matchScore().team0} - ${
+			this.matchScore().team1
+		} ${this.playerNames(1)}`;
 	}
 
 	get allPlayersReady(): boolean {
-		return !this._players.some((client) => !client.isReady)
+		return !this._players.some((client) => !client.isReady);
 	}
 
 	isFirstDuel(): boolean {

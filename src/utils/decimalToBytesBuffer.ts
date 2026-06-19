@@ -7,7 +7,7 @@ export function decimalToBytesBuffer(decimal: number, numBytes: number): Buffer 
 		bytes
 			.split(" ")
 			.reverse()
-			.map((item) => Number(item))
+			.map((item) => Number(item)),
 	);
 }
 
@@ -21,7 +21,7 @@ export function decimalToBytesBufferSigned(decimal: number, numBytes: number): B
 			bytes
 				.split(" ")
 				.reverse()
-				.map((item) => Number(item))
+				.map((item) => Number(item)),
 		);
 	}
 	buffer.writeInt32BE(decimal, 0);
@@ -31,7 +31,7 @@ export function decimalToBytesBufferSigned(decimal: number, numBytes: number): B
 		bytes
 			.split(" ")
 			.reverse()
-			.map((item) => Number(item))
+			.map((item) => Number(item)),
 	);
 
 	return buffer;

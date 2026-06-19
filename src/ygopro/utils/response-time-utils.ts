@@ -9,11 +9,7 @@ export const canIncreaseTime = (gameMsg: number, response?: Buffer): boolean => 
 		case OcgcoreCommonConstants.MSG_SELECT_UNSELECT_CARD:
 			return false;
 		case OcgcoreCommonConstants.MSG_SELECT_CHAIN:
-			return (
-				response != null &&
-				response.length >= 4 &&
-				response.readInt32LE(0) !== -1
-			);
+			return response != null && response.length >= 4 && response.readInt32LE(0) !== -1;
 		case OcgcoreCommonConstants.MSG_SELECT_IDLECMD: {
 			if (response == null || response.length < 4) {
 				return false;

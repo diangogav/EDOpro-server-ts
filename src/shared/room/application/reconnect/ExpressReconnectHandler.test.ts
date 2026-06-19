@@ -21,7 +21,7 @@ describe("ExpressReconnectHandler (generic)", () => {
 
 	const client = { name: "Alice" } as unknown as YgoClient;
 	const reconnectMessage = (token: string): ClientMessage =>
-		({ data: Buffer.from(token, "utf8") } as ClientMessage);
+		({ data: Buffer.from(token, "utf8") }) as ClientMessage;
 
 	const emitReconnect = (message: ClientMessage) =>
 		emitter.emit(Commands.RECONNECT as unknown as string, message);

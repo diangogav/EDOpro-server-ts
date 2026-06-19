@@ -53,7 +53,7 @@ const makeCtx = (overrides: Partial<JoinContext> = {}): JoinContext =>
 		checkIfUserCanJoin: makeCheckIfUserCanJoin(),
 		message: makeClientMessage(),
 		...overrides,
-	} as unknown as JoinContext);
+	}) as unknown as JoinContext;
 
 // ---- tests ----
 
@@ -168,7 +168,9 @@ describe("DefaultJoinStrategy", () => {
 			const emitter = new EventEmitter();
 			const socket = makeSocket();
 
-			const waitingSpy = jest.spyOn(YGOProRoom.prototype, "waiting").mockImplementation(() => undefined);
+			const waitingSpy = jest
+				.spyOn(YGOProRoom.prototype, "waiting")
+				.mockImplementation(() => undefined);
 			const emitSpy = jest.spyOn(YGOProRoom.prototype, "emit").mockImplementation(() => undefined);
 
 			const ctx = makeCtx({

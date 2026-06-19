@@ -122,7 +122,7 @@ export class WindbotModule {
 	async requestBot(
 		roomId: number,
 		botNameOrNull: string | null,
-		isFinalizing: () => boolean
+		isFinalizing: () => boolean,
 	): Promise<{ token: string; bot: WindbotData }> {
 		const { token, bot } = this.requestJoinUseCase.execute(roomId, botNameOrNull);
 

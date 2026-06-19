@@ -7,7 +7,7 @@ import { Choose } from "../../rock-paper-scissor/RockPaperScissor";
 import { Room } from "../../room/domain/Room";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
 
-export class Listener { }
+export class Listener {}
 
 export class Client extends YgoClient {
 	public readonly listener: Listener;

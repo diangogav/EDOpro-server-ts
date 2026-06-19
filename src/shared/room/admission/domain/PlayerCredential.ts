@@ -9,6 +9,6 @@
  * strongly it was proven. `guest` carries no identity at all.
  */
 export type PlayerCredential =
-  | { readonly kind: "verified"; readonly userId: string }
-  | { readonly kind: "external"; readonly userId: string }
-  | { readonly kind: "guest"; readonly name: string };
+	| { readonly kind: "verified"; readonly userId: string }
+	| { readonly kind: "external"; readonly userId: string }
+	| { readonly kind: "guest"; readonly name: string };

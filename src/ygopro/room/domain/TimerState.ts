@@ -22,10 +22,7 @@ export class TimerState {
 		if (settleElapsed && this.runningPos != null) {
 			const elapsedMs = this.elapsedMs();
 			if (elapsedMs > 0) {
-				this.leftMs[this.runningPos] = Math.max(
-					0,
-					this.leftMs[this.runningPos] - elapsedMs,
-				);
+				this.leftMs[this.runningPos] = Math.max(0, this.leftMs[this.runningPos] - elapsedMs);
 			}
 		}
 		this.runningPos = undefined;
@@ -40,12 +37,7 @@ export class TimerState {
 		return Math.max(0, Date.now() - this.startedAtMs);
 	}
 
-	schedule(
-		player: number,
-		delayMs: number,
-		awaitingConfirm: boolean,
-		onTimeout: () => void,
-	): void {
+	schedule(player: number, delayMs: number, awaitingConfirm: boolean, onTimeout: () => void): void {
 		this.runningPos = player;
 		this.startedAtMs = Date.now();
 		this.awaitingConfirm = awaitingConfirm;

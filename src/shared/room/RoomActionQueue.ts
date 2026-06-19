@@ -1,4 +1,3 @@
- 
 export class RoomActionQueue {
 	private readonly queue: Array<() => void | Promise<void>> = [];
 	private processing = false;

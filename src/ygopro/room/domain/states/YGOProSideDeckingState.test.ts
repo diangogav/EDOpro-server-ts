@@ -35,7 +35,7 @@ const makeDeckPayload = (): Buffer => {
 };
 
 const makeClientMessage = (data: Buffer): ClientMessage =>
-	({ data, previousMessage: Buffer.alloc(0) } as unknown as ClientMessage);
+	({ data, previousMessage: Buffer.alloc(0) }) as unknown as ClientMessage;
 
 describe("YGOProSideDeckingState.handleUpdateDeck — deck error code is encoded", () => {
 	let eventEmitter: EventEmitter;
@@ -45,8 +45,7 @@ describe("YGOProSideDeckingState.handleUpdateDeck — deck error code is encoded
 	let mockRoom: jest.Mocked<YGOProRoom>;
 	let mockPlayer: jest.Mocked<YGOProClient>;
 
-	const errorMessageMock = () =>
-		mockRoom.messageSender.errorMessage as unknown as jest.Mock;
+	const errorMessageMock = () => mockRoom.messageSender.errorMessage as unknown as jest.Mock;
 
 	beforeEach(() => {
 		eventEmitter = new EventEmitter();

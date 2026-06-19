@@ -8,7 +8,10 @@ const PONG_COMMAND = 0xfe;
 export class RoomMessageEmitter {
 	private readonly messageProcessor: MessageProcessor;
 
-	constructor(private readonly client: Client, private readonly room: Room) {
+	constructor(
+		private readonly client: Client,
+		private readonly room: Room,
+	) {
 		this.messageProcessor = new MessageProcessor();
 	}
 
@@ -26,7 +29,7 @@ export class RoomMessageEmitter {
 		this.room.emitRoomEvent(
 			this.messageProcessor.command as unknown as string,
 			this.messageProcessor.payload,
-			this.client
+			this.client,
 		);
 		this.processMessage();
 	}

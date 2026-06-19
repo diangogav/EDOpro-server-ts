@@ -35,87 +35,94 @@ const YGOPRO_VERSION = 0x1362;
 void start();
 
 async function start(): Promise<void> {
-  const logger = LoggerFactory.getLogger();
+	const logger = LoggerFactory.getLogger();
 
-  logger.info("🚀 Evolution server starting…");
+	logger.info("🚀 Evolution server starting…");
 
-  const server = new Server(logger);
-  const ygoproServer = new YGOProServer(logger);
-  const wsYgoproServer = new WSYGOProServer(logger, new HandshakeTicketAuthenticator(new RedisTicketRepository()));
+	const server = new Server(logger);
+	const ygoproServer = new YGOProServer(logger);
+	const wsYgoproServer = new WSYGOProServer(
+		logger,
+		new HandshakeTicketAuthenticator(new RedisTicketRepository()),
+	);
 
-  const hostServer = new HostServer(logger);
-  const wsHostServer = new WSHostServer(logger);
+	const hostServer = new HostServer(logger);
+	const wsHostServer = new WSHostServer(logger);
 
-  const database = new EdoProSQLiteTypeORM();
-  const banListLoader = new EdoProBanListLoader();
-  await banListLoader.loadDirectory("resources/edopro/banlists-evolution");
-  await banListLoader.loadDirectory("resources/edopro/banlists-ignis");
+	const database = new EdoProSQLiteTypeORM();
+	const banListLoader = new EdoProBanListLoader();
+	await banListLoader.loadDirectory("resources/edopro/banlists-evolution");
+	await banListLoader.loadDirectory("resources/edopro/banlists-ignis");
 
-  await YGOProResourceLoader.start();
-  await YGOProResourceLoader.get().logLFLists()
+	await YGOProResourceLoader.start();
+	await YGOProResourceLoader.get().logLFLists();
 
-  const ygoProBanListLoader = new YGOProBanListLoader();
-  await ygoProBanListLoader.load();
+	const ygoProBanListLoader = new YGOProBanListLoader();
+	await ygoProBanListLoader.load();
 
-  logger.info("🎴 YGOPro resources & ban lists loaded");
+	logger.info("🎴 YGOPro resources & ban lists loaded");
 
-  await database.connect();
-  await database.initialize();
-  logger.info("🗄️  SQLite connected");
+	await database.connect();
+	await database.initialize();
+	logger.info("🗄️  SQLite connected");
 
-  if (config.ranking.enabled) {
-    const postgresDatabase = new PostgresTypeORM();
-    await postgresDatabase.connect();
-    logger.info("🗄️  Postgres connected · ranking ON");
-  }
+	if (config.ranking.enabled) {
+		const postgresDatabase = new PostgresTypeORM();
+		await postgresDatabase.connect();
+		logger.info("🗄️  Postgres connected · ranking ON");
+	}
 
-  const redisDatabase = new Redis();
-  await redisDatabase.connect();
+	const redisDatabase = new Redis();
+	await redisDatabase.connect();
 
-  await server.initialize();
-  WebSocketSingleton.getInstance();
-  hostServer.initialize();
-  wsHostServer.initialize();
+	await server.initialize();
+	WebSocketSingleton.getInstance();
+	hostServer.initialize();
+	wsHostServer.initialize();
 
-  // Base strategy chain — always registered, with or without windbot.
-  // Priority order (no windbot):
-  //   1. TicketJoinStrategy — sockets with a resolved ticket userId (ranked-by-ticket)
-  //   2. DefaultJoinStrategy — game password / unranked fallback
-  const baseChain = [new TicketJoinStrategy(), new DefaultJoinStrategy()];
-  JoinStrategyRegistry.setStrategies(baseChain);
+	// Base strategy chain — always registered, with or without windbot.
+	// Priority order (no windbot):
+	//   1. TicketJoinStrategy — sockets with a resolved ticket userId (ranked-by-ticket)
+	//   2. DefaultJoinStrategy — game password / unranked fallback
+	const baseChain = [new TicketJoinStrategy(), new DefaultJoinStrategy()];
+	JoinStrategyRegistry.setStrategies(baseChain);
 
-  // Windbot bootstrap — ONLY when ENABLE_WINDBOT=true.
-  // When enabled, AI/wind strategies are prepended to the base chain:
-  //   1. AIJoinTokenStrategy — AIJOIN# prefix (reverse-connecting bot)
-  //   2. WindBotJoinStrategy — explicit "ai" token, AI / AI#name (human requesting bot)
-  //   3. TicketJoinStrategy  — ticket-authenticated ranked join
-  //   4. DefaultJoinStrategy — game password / unranked fallback
-  // config.windbot is parsed (and validated for fail-fast) at module load time in src/config/index.ts.
-  if (config.windbot.enabled) {
-    const repo = new FileBotlistRepository(config.windbot.botlistPath);
-    const tokenStore = new WindbotTokenStore();
-    const provider = new HttpWindBotProvider({
-      endpoint: config.windbot.endpoint,
-      myIp: config.windbot.myIp,
-      serverPort: config.servers.mercury.port,
-      version: YGOPRO_VERSION,
-    });
-    WindbotModule.init({ enabled: true, repo, tokenStore, provider });
+	// Windbot bootstrap — ONLY when ENABLE_WINDBOT=true.
+	// When enabled, AI/wind strategies are prepended to the base chain:
+	//   1. AIJoinTokenStrategy — AIJOIN# prefix (reverse-connecting bot)
+	//   2. WindBotJoinStrategy — explicit "ai" token, AI / AI#name (human requesting bot)
+	//   3. TicketJoinStrategy  — ticket-authenticated ranked join
+	//   4. DefaultJoinStrategy — game password / unranked fallback
+	// config.windbot is parsed (and validated for fail-fast) at module load time in src/config/index.ts.
+	if (config.windbot.enabled) {
+		const repo = new FileBotlistRepository(config.windbot.botlistPath);
+		const tokenStore = new WindbotTokenStore();
+		const provider = new HttpWindBotProvider({
+			endpoint: config.windbot.endpoint,
+			myIp: config.windbot.myIp,
+			serverPort: config.servers.mercury.port,
+			version: YGOPRO_VERSION,
+		});
+		WindbotModule.init({ enabled: true, repo, tokenStore, provider });
 
-    const module = WindbotModule.getInstance();
-    JoinStrategyRegistry.setStrategies([
-      new AIJoinTokenStrategy(module),
-      new WindBotJoinStrategy(module),
-      ...baseChain,
-    ]);
-    logger.info("🤖 Windbot enabled");
-  }
+		const module = WindbotModule.getInstance();
+		JoinStrategyRegistry.setStrategies([
+			new AIJoinTokenStrategy(module),
+			new WindBotJoinStrategy(module),
+			...baseChain,
+		]);
+		logger.info("🤖 Windbot enabled");
+	}
 
-  ygoproServer.initialize();
-  wsYgoproServer.initialize();
+	ygoproServer.initialize();
+	wsYgoproServer.initialize();
 
-  logger.info(`🔌 HTTP      → :${config.servers.http.port}`);
-  logger.info(`🔌 Mercury   → TCP :${config.servers.mercury.port} · WS :${config.servers.mercury.wsPort}`);
-  logger.info(`🔌 Host      → TCP :${config.servers.host.port} · WS :${config.servers.websocket.duelPort}`);
-  logger.info("✅ Evolution server ready");
+	logger.info(`🔌 HTTP      → :${config.servers.http.port}`);
+	logger.info(
+		`🔌 Mercury   → TCP :${config.servers.mercury.port} · WS :${config.servers.mercury.wsPort}`,
+	);
+	logger.info(
+		`🔌 Host      → TCP :${config.servers.host.port} · WS :${config.servers.websocket.duelPort}`,
+	);
+	logger.info("✅ Evolution server ready");
 }

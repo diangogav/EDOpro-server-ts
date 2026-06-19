@@ -15,7 +15,10 @@ import { RoomFinder } from "./RoomFinder";
 import { FinalizeYGOProRoom } from "@ygopro/room/application/FinalizeYGOProRoom";
 
 export class DisconnectHandler {
-	constructor(private readonly socket: ISocket, private readonly roomFinder: RoomFinder) { }
+	constructor(
+		private readonly socket: ISocket,
+		private readonly roomFinder: RoomFinder,
+	) {}
 
 	run(address?: string): void {
 		if (!this.socket.id) {
@@ -89,16 +92,16 @@ export class DisconnectHandler {
 			room.players.forEach((client: Client) => {
 				client.sendMessage(
 					ServerMessageClientMessage.create(
-						`${player.name.replace(/\0/g, "").trim()} ${ServerInfoMessage.HAS_LEFT_THE_DUEL}`
-					)
+						`${player.name.replace(/\0/g, "").trim()} ${ServerInfoMessage.HAS_LEFT_THE_DUEL}`,
+					),
 				);
 			});
 
 			room.spectators.forEach((spectator: Client) => {
 				spectator.sendMessage(
 					ServerMessageClientMessage.create(
-						`${player.name.replace(/\0/g, "").trim()} ${ServerInfoMessage.HAS_LEFT_THE_DUEL}`
-					)
+						`${player.name.replace(/\0/g, "").trim()} ${ServerInfoMessage.HAS_LEFT_THE_DUEL}`,
+					),
 				);
 			});
 		}
