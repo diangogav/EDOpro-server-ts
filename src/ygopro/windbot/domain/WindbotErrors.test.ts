@@ -1,4 +1,8 @@
-import { WindbotNotFoundError, WindbotsExhaustedError, WindbotUnreachableError } from "./WindbotErrors";
+import {
+	WindbotNotFoundError,
+	WindbotsExhaustedError,
+	WindbotUnreachableError,
+} from "./WindbotErrors";
 
 describe("WindbotNotFoundError", () => {
 	it("produces the expected message with the bot name", () => {

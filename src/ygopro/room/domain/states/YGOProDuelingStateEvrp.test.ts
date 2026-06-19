@@ -18,104 +18,104 @@ import { DuelRecord } from "../DuelRecord";
 import { YGOProDuelingState } from "./YGOProDuelingState";
 
 const HOST_INFO = {
-  lflist: 0,
-  rule: 1,
-  start_lp: 8000,
-  start_hand: 5,
-  draw_count: 1,
+	lflist: 0,
+	rule: 1,
+	start_lp: 8000,
+	start_hand: 5,
+	draw_count: 1,
 };
 
 type SendAllEvrp = { sendAllEvrp(): Promise<void> };
 
 function makeClient() {
-  return { sendMessageToClient: jest.fn() };
+	return { sendMessageToClient: jest.fn() };
 }
 
 function makeRoom(overrides: Record<string, unknown> = {}) {
-  return {
-    players: [{ name: "P1" }, { name: "P2" }],
-    hostInfo: HOST_INFO,
-    duelRecords: [DuelRecordMother.create()],
-    clients: [makeClient()],
-    ...overrides,
-  };
+	return {
+		players: [{ name: "P1" }, { name: "P2" }],
+		hostInfo: HOST_INFO,
+		duelRecords: [DuelRecordMother.create()],
+		clients: [makeClient()],
+		...overrides,
+	};
 }
 
 // Bind room + logger onto a prototype instance and expose the private method,
 // skipping the OCGCore-heavy constructor entirely.
 function buildState(room: object, logger: Logger): SendAllEvrp {
-  const state = Object.create(YGOProDuelingState.prototype);
-  Object.assign(state, { room, logger });
-  return state as SendAllEvrp;
+	const state = Object.create(YGOProDuelingState.prototype);
+	Object.assign(state, { room, logger });
+	return state as SendAllEvrp;
 }
 
 describe("YGOProDuelingState.sendAllEvrp()", () => {
-  describe("broadcast", () => {
-    it("delivers at least one EVRP frame to a connected client", async () => {
-      const client = makeClient();
-      const room = makeRoom({ clients: [client] });
+	describe("broadcast", () => {
+		it("delivers at least one EVRP frame to a connected client", async () => {
+			const client = makeClient();
+			const room = makeRoom({ clients: [client] });
 
-      await buildState(room, mock<Logger>()).sendAllEvrp();
+			await buildState(room, mock<Logger>()).sendAllEvrp();
 
-      expect(client.sendMessageToClient).toHaveBeenCalled();
-    });
+			expect(client.sendMessageToClient).toHaveBeenCalled();
+		});
 
-    it("keeps every delivered frame within the 65535-byte ceiling", async () => {
-      const client = makeClient();
-      const room = makeRoom({ clients: [client] });
+		it("keeps every delivered frame within the 65535-byte ceiling", async () => {
+			const client = makeClient();
+			const room = makeRoom({ clients: [client] });
 
-      await buildState(room, mock<Logger>()).sendAllEvrp();
+			await buildState(room, mock<Logger>()).sendAllEvrp();
 
-      const frames = client.sendMessageToClient.mock.calls.map(([frame]: [Buffer]) => frame);
-      for (const frame of frames) {
-        expect(frame.length).toBeLessThanOrEqual(65535);
-      }
-    });
+			const frames = client.sendMessageToClient.mock.calls.map(([frame]: [Buffer]) => frame);
+			for (const frame of frames) {
+				expect(frame.length).toBeLessThanOrEqual(65535);
+			}
+		});
 
-    it("delivers the same frame count to every connected client", async () => {
-      const client1 = makeClient();
-      const client2 = makeClient();
-      const room = makeRoom({ clients: [client1, client2] });
+		it("delivers the same frame count to every connected client", async () => {
+			const client1 = makeClient();
+			const client2 = makeClient();
+			const room = makeRoom({ clients: [client1, client2] });
 
-      await buildState(room, mock<Logger>()).sendAllEvrp();
+			await buildState(room, mock<Logger>()).sendAllEvrp();
 
-      expect(client1.sendMessageToClient).toHaveBeenCalledTimes(
-        client2.sendMessageToClient.mock.calls.length,
-      );
-    });
-  });
+			expect(client1.sendMessageToClient).toHaveBeenCalledTimes(
+				client2.sendMessageToClient.mock.calls.length,
+			);
+		});
+	});
 
-  describe("failure isolation", () => {
-    function makeRoomWithBrokenRecord() {
-      const broken = DuelRecordMother.create();
-      jest.spyOn(broken, "toEvrpFrames").mockImplementation(() => {
-        throw new Error("serialization failure");
-      });
-      return makeRoom({ duelRecords: [broken as DuelRecord] });
-    }
+	describe("failure isolation", () => {
+		function makeRoomWithBrokenRecord() {
+			const broken = DuelRecordMother.create();
+			jest.spyOn(broken, "toEvrpFrames").mockImplementation(() => {
+				throw new Error("serialization failure");
+			});
+			return makeRoom({ duelRecords: [broken as DuelRecord] });
+		}
 
-    it("swallows a serialization error instead of propagating it", async () => {
-      await expect(
-        buildState(makeRoomWithBrokenRecord(), mock<Logger>()).sendAllEvrp(),
-      ).resolves.toBeUndefined();
-    });
+		it("swallows a serialization error instead of propagating it", async () => {
+			await expect(
+				buildState(makeRoomWithBrokenRecord(), mock<Logger>()).sendAllEvrp(),
+			).resolves.toBeUndefined();
+		});
 
-    it("logs the error when serialization throws", async () => {
-      const logger = mock<Logger>();
+		it("logs the error when serialization throws", async () => {
+			const logger = mock<Logger>();
 
-      await buildState(makeRoomWithBrokenRecord(), logger).sendAllEvrp();
+			await buildState(makeRoomWithBrokenRecord(), logger).sendAllEvrp();
 
-      expect(logger.error).toHaveBeenCalled();
-    });
+			expect(logger.error).toHaveBeenCalled();
+		});
 
-    it("delivers no frames when serialization throws", async () => {
-      const client = makeClient();
-      const room = makeRoomWithBrokenRecord();
-      room.clients = [client];
+		it("delivers no frames when serialization throws", async () => {
+			const client = makeClient();
+			const room = makeRoomWithBrokenRecord();
+			room.clients = [client];
 
-      await buildState(room, mock<Logger>()).sendAllEvrp();
+			await buildState(room, mock<Logger>()).sendAllEvrp();
 
-      expect(client.sendMessageToClient).not.toHaveBeenCalled();
-    });
-  });
+			expect(client.sendMessageToClient).not.toHaveBeenCalled();
+		});
+	});
 });

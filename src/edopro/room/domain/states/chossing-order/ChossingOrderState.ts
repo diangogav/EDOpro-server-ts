@@ -1,5 +1,3 @@
-
-
 import EventEmitter from "events";
 
 import { Logger } from "../../../../../shared/logger/domain/Logger";
@@ -24,7 +22,7 @@ export class ChossingOrderState extends RoomState {
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
 		private readonly reconnect: Reconnect,
-		private readonly joinToDuelAsSpectator: JoinToDuelAsSpectator
+		private readonly joinToDuelAsSpectator: JoinToDuelAsSpectator,
 	) {
 		super(eventEmitter);
 
@@ -33,25 +31,25 @@ export class ChossingOrderState extends RoomState {
 		this.eventEmitter.on(
 			"JOIN" as unknown as string,
 			(message: ClientMessage, room: Room, socket: ISocket) =>
-				this.handleJoin.bind(this)(message, room, socket)
+				this.handleJoin.bind(this)(message, room, socket),
 		);
 
 		this.eventEmitter.on(
 			Commands.READY as unknown as string,
 			(message: ClientMessage, room: Room, client: Client) =>
-				this.handleReady.bind(this)(message, room, client)
+				this.handleReady.bind(this)(message, room, client),
 		);
 
 		this.eventEmitter.on(
 			Commands.TURN_CHOICE as unknown as string,
 			(message: ClientMessage, room: Room, client: Client) =>
-				this.handle.bind(this)(message, room, client)
+				this.handle.bind(this)(message, room, client),
 		);
 
 		this.eventEmitter.on(
 			"EXPRESS_RECONNECT" as unknown as string,
 			(message: ClientMessage, room: Room, socket: ISocket) =>
-				this.handleExpressReconnect.bind(this)(message, room, socket)
+				this.handleExpressReconnect.bind(this)(message, room, socket),
 		);
 	}
 
@@ -62,7 +60,7 @@ export class ChossingOrderState extends RoomState {
 		const player = ReconnectionTokenIssuer.resolve(
 			token,
 			room.id,
-			(client) => client instanceof Client
+			(client) => client instanceof Client,
 		) as Client | null;
 		if (!player) {
 			this.logger.info(`CHOSSING_ORDER: no player for token ${token}`);

@@ -18,7 +18,6 @@ export class YGOProGameCreatorHandler implements GameCreatorMessageHandler {
 		});
 	}
 
-
 	async handleCreateGame(message: ClientMessage): Promise<void> {
 		this.logger.info("CREATE_GAME");
 		this.logger.debug(`Game Creator Message: ${message.data.toString("hex")}`);

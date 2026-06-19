@@ -53,9 +53,7 @@ describe("RoomList.deleteRoom", () => {
 
 		RoomList.deleteRoom(room);
 
-		expect(
-			TokenIndex.getInstance().find("deadbeefdeadbeefdeadbeefdeadbeef"),
-		).toBeUndefined();
+		expect(TokenIndex.getInstance().find("deadbeefdeadbeefdeadbeefdeadbeef")).toBeUndefined();
 		expect(client.clearReconnectionToken).toHaveBeenCalled();
 	});
 

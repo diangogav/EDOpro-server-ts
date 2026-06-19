@@ -1,5 +1,3 @@
- 
- 
 import * as cheerio from "cheerio";
 import { writeFile } from "fs/promises";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";

@@ -67,8 +67,8 @@ const makeJoinMessage = (pass: string): { data: Buffer; previousMessage: Buffer 
 	// Build join data according to actual BinaryField layout
 	const data = Buffer.alloc(48, 0);
 	data.writeUInt16LE(0x1362, 0); // version at offset 0
-	data.writeUInt16LE(0, 2);       // padding/gametype
-	data.writeUInt32LE(0, 4);       // gameid at offset 4
+	data.writeUInt16LE(0, 2); // padding/gametype
+	data.writeUInt32LE(0, 4); // gameid at offset 4
 
 	// pass at offset 8, max 20 UTF-16LE chars
 	const passChars = pass.slice(0, 20);
@@ -110,12 +110,7 @@ describe("YGOProJoinHandler — strategy chain integration", () => {
 		const messageRepo = makeMessageRepository();
 		const logger = makeLogger();
 
-		new YGOProJoinHandler(
-			emitter,
-			logger as never,
-			socket as never,
-			messageRepo as never,
-		);
+		new YGOProJoinHandler(emitter, logger as never, socket as never, messageRepo as never);
 
 		const { data, previousMessage } = makeJoinMessage("NORMALROOM");
 		emitter.emit(18 as unknown as string, { data, previousMessage });
@@ -181,12 +176,7 @@ describe("YGOProJoinHandler — strategy chain integration", () => {
 		const logger = makeLogger();
 
 		expect(() => {
-			new YGOProJoinHandler(
-				emitter,
-				logger as never,
-				socket as never,
-				messageRepo as never,
-			);
+			new YGOProJoinHandler(emitter, logger as never, socket as never, messageRepo as never);
 		}).not.toThrow();
 	});
 });

@@ -15,7 +15,7 @@ export class JoinToDuelAsSpectator {
 		joinMessage: JoinGameMessage,
 		playerInfoMessage: PlayerInfoMessage,
 		socket: ISocket,
-		room: Room
+		room: Room,
 	): Promise<void> {
 		const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name);
 		spectator.sendMessage(JoinGameClientMessage.createFromRoom(joinMessage, room));
@@ -40,20 +40,21 @@ export class JoinToDuelAsSpectator {
 			.map((item) => item.name.replace(/\0/g, "").trim());
 
 		socket.send(
-			ServerMessageClientMessage.create(`Welcome ${spectator.name.replace(/\0/g, "").trim()}`)
+			ServerMessageClientMessage.create(`Welcome ${spectator.name.replace(/\0/g, "").trim()}`),
 		);
 		socket.send(
 			ServerMessageClientMessage.create(
-				`Score: ${team0.join(",")}: ${room.matchScore().team0} vs ${team1.join(",")}: ${room.matchScore().team1
-				}`
-			)
+				`Score: ${team0.join(",")}: ${room.matchScore().team0} vs ${team1.join(",")}: ${
+					room.matchScore().team1
+				}`,
+			),
 		);
 
 		[...room.players, ...room.spectators].forEach((_client: Client) => {
 			_client.sendMessage(
 				ServerMessageClientMessage.create(
-					`${spectator.name} ${ServerInfoMessage.HAS_ENTERED_AS_A_SPECTATOR}`
-				)
+					`${spectator.name} ${ServerInfoMessage.HAS_ENTERED_AS_A_SPECTATOR}`,
+				),
 			);
 		});
 	}

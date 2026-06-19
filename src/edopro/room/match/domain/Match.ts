@@ -41,7 +41,7 @@ export class Match {
 	duelWinner(
 		winner: number,
 		turns: number,
-		ips: { name: string; ipAddress: string | null }[] = []
+		ips: { name: string; ipAddress: string | null }[] = [],
 	): void {
 		this._players.forEach((player) => {
 			const ipAddress = ips.find((data) => data.name === player.name)?.ipAddress ?? null;

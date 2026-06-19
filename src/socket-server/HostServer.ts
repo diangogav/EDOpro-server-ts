@@ -30,12 +30,12 @@ export class HostServer {
 		const roomFinder = new RoomFinder();
 		const userAuth = new UserAuth(new UserProfilePostgresRepository());
 		const checkIfUserCanJoin = new CheckIfUseCanJoin(userAuth);
-		
+
 		this.connectionHandler = new SocketConnectionHandler(
 			this.logger,
 			roomFinder,
 			userAuth,
-			checkIfUserCanJoin
+			checkIfUserCanJoin,
 		);
 
 		this.registerSubscribers();
@@ -59,16 +59,13 @@ export class HostServer {
 				new UserProfilePostgresRepository(),
 				new PlayerStatsPostgresRepository(),
 				new MatchResumeCreator(new MatchResumePostgresRepository()),
-				new DuelResumeCreator(new MatchResumePostgresRepository())
-			)
+				new DuelResumeCreator(new MatchResumePostgresRepository()),
+			),
 		);
 
 		eventBus.subscribe(
 			UnrankedMatchSaver.ListenTo,
-			new UnrankedMatchSaver(
-				this.logger,
-				new UnrankedMatchPostgresRepository()
-			)
+			new UnrankedMatchSaver(this.logger, new UnrankedMatchPostgresRepository()),
 		);
 	}
 }

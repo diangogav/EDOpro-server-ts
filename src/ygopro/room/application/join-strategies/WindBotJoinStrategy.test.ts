@@ -412,12 +412,18 @@ describe("WindBotJoinStrategy", () => {
 				// provider.requestJoin receives { token, bot, isFinalizing } — capture isFinalizing
 				let capturedIsFinalizing: (() => boolean) | undefined;
 				const provider = {
-					requestJoin: jest.fn().mockImplementation(
-						(params: { token: string; bot: { name: string; deck: string }; isFinalizing: () => boolean }) => {
-							capturedIsFinalizing = params.isFinalizing;
-							return Promise.resolve();
-						},
-					),
+					requestJoin: jest
+						.fn()
+						.mockImplementation(
+							(params: {
+								token: string;
+								bot: { name: string; deck: string };
+								isFinalizing: () => boolean;
+							}) => {
+								capturedIsFinalizing = params.isFinalizing;
+								return Promise.resolve();
+							},
+						),
 				};
 				const mod = makeModule({ provider: provider as never });
 				const strategy = new WindBotJoinStrategy(mod);
@@ -435,12 +441,18 @@ describe("WindBotJoinStrategy", () => {
 				// provider.requestJoin receives { token, bot, isFinalizing } — capture isFinalizing
 				let capturedIsFinalizing: (() => boolean) | undefined;
 				const provider = {
-					requestJoin: jest.fn().mockImplementation(
-						(params: { token: string; bot: { name: string; deck: string }; isFinalizing: () => boolean }) => {
-							capturedIsFinalizing = params.isFinalizing;
-							return Promise.resolve();
-						},
-					),
+					requestJoin: jest
+						.fn()
+						.mockImplementation(
+							(params: {
+								token: string;
+								bot: { name: string; deck: string };
+								isFinalizing: () => boolean;
+							}) => {
+								capturedIsFinalizing = params.isFinalizing;
+								return Promise.resolve();
+							},
+						),
 				};
 				const mod = makeModule({ provider: provider as never });
 				const strategy = new WindBotJoinStrategy(mod);

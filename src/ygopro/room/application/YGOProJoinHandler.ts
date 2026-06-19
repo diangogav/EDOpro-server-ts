@@ -34,7 +34,7 @@ export class YGOProJoinHandler implements JoinMessageHandler {
 		this.registry = registry ?? JoinStrategyRegistry.getInstance();
 		this.eventEmitter.on(
 			Commands.JOIN_GAME as unknown as string,
-			(message: ClientMessage) => void this.handleJoinGame(message)
+			(message: ClientMessage) => void this.handleJoinGame(message),
 		);
 	}
 

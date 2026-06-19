@@ -1,44 +1,29 @@
 {
-  "compilerOptions": {
-    "ignoreDeprecations": "6.0",
-    "baseUrl": ".",
-    "target": "ES2022",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "module": "commonjs",
-    "resolveJsonModule": true,
-    "outDir": "./dist",
-    "rootDir": ".",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": false,
-    "strictNullChecks": true,
-    "skipLibCheck": true,
-    "moduleResolution": "node",
-    "sourceMap": true,
-    "inlineSources": true,
-    "paths": {
-      "@edopro/*": [
-        "src/edopro/*"
-      ],
-      "@shared/*": [
-        "src/shared/*"
-      ],
-      "@ygopro/*": [
-        "src/ygopro/*"
-      ],
-      "@test-support/*": [
-        "src/test-support/*"
-      ]
-    }
-  },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/*.test.ts",
-    "src/test-support/**"
-  ]
+	"compilerOptions": {
+		"ignoreDeprecations": "6.0",
+		"baseUrl": ".",
+		"target": "ES2022",
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"module": "commonjs",
+		"resolveJsonModule": true,
+		"outDir": "./dist",
+		"rootDir": ".",
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"strict": false,
+		"strictNullChecks": true,
+		"skipLibCheck": true,
+		"moduleResolution": "node",
+		"sourceMap": true,
+		"inlineSources": true,
+		"paths": {
+			"@edopro/*": ["src/edopro/*"],
+			"@shared/*": ["src/shared/*"],
+			"@ygopro/*": ["src/ygopro/*"],
+			"@test-support/*": ["src/test-support/*"]
+		}
+	},
+	"include": ["src/**/*"],
+	"exclude": ["node_modules", "dist", "**/*.test.ts", "src/test-support/**"]
 }

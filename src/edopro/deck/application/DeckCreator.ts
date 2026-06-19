@@ -32,7 +32,6 @@ export class DeckCreator {
 		const placeRitualInExtraDeckEnabled = this.placeRitualInExtraDeckEnabled();
 
 		for (const code of main) {
-
 			const card = await this.cardRepository.findByCode(code.toString());
 			if (!card) {
 				continue;
@@ -46,7 +45,6 @@ export class DeckCreator {
 		}
 
 		for (const code of side) {
-
 			const card = await this.cardRepository.findByCode(code.toString());
 			if (!card) {
 				continue;

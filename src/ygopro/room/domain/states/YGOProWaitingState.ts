@@ -14,10 +14,7 @@ import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { YGOProRoom } from "../YGOProRoom";
 import { AdmitToRoom } from "@ygopro/room/admission/application/AdmitToRoom";
 
-import {
-	ErrorMessageType,
-	YGOProCtosUpdateDeck,
-} from "ygopro-msg-encode";
+import { ErrorMessageType, YGOProCtosUpdateDeck } from "ygopro-msg-encode";
 import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
 import { YGOProDeckValidator } from "@ygopro/deck/domain/YGOProDeckValidator";
 import { DeckError } from "@shared/deck/domain/errors/DeckError";
@@ -58,20 +55,12 @@ export class YGOProWaitingState extends YGOProRoomState {
 		this.eventEmitter.on(
 			Commands.UPDATE_DECK as unknown as string,
 			(message: ClientMessage, room: YGOProRoom, client: YgoClient) =>
-				void this.handleUpdateDeck.bind(this)(
-					message,
-					room,
-					client as YGOProClient,
-				),
+				void this.handleUpdateDeck.bind(this)(message, room, client as YGOProClient),
 		);
 		this.eventEmitter.on(
 			Commands.NOT_READY as unknown as string,
 			(message: ClientMessage, room: YGOProRoom, client: YgoClient) =>
-				void this.handleNotReady.bind(this)(
-					message,
-					room,
-					client as YGOProClient,
-				),
+				void this.handleNotReady.bind(this)(message, room, client as YGOProClient),
 		);
 	}
 
@@ -84,10 +73,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 
 		this.validateVersion(message.data, socket);
 
-		const playerInfoMessage = new PlayerInfoMessage(
-			message.previousMessage,
-			message.data.length,
-		);
+		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		if (isNameTaken(room.players, playerInfoMessage.name)) {
 			this.sendExistingPlayerErrorMessage(playerInfoMessage, socket);
 			return;
@@ -102,11 +88,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 		});
 	}
 
-	private handleTryStart(
-		_message: ClientMessage,
-		room: YGOProRoom,
-		player: YGOProClient,
-	): void {
+	private handleTryStart(_message: ClientMessage, room: YGOProRoom, player: YGOProClient): void {
 		player.logger.info("handleTryStart");
 
 		if (!player.host) {
@@ -114,9 +96,8 @@ export class YGOProWaitingState extends YGOProRoomState {
 		}
 
 		if (!room.allPlayersReady) {
-			return
+			return;
 		}
-
 
 		for (const player of room.clients) {
 			(player as YGOProClient).sendMessageToClient(room.messageSender.duelStartMessage());
@@ -137,11 +118,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 		room.rps();
 	}
 
-	private handleToObserver(
-		message: ClientMessage,
-		room: YGOProRoom,
-		player: YGOProClient,
-	): void {
+	private handleToObserver(message: ClientMessage, room: YGOProRoom, player: YGOProClient): void {
 		player.logger.info(`handleToObserver: ${message.data.toString("hex")}`);
 
 		room.mutex.runExclusive(() => {
@@ -155,11 +132,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 		});
 	}
 
-	private handleToDuel(
-		_message: ClientMessage,
-		room: YGOProRoom,
-		player: YGOProClient,
-	): void {
+	private handleToDuel(_message: ClientMessage, room: YGOProRoom, player: YGOProClient): void {
 		player.logger.info("handleToDuel");
 
 		room.mutex.runExclusive(() => {
@@ -186,9 +159,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 		room: YGOProRoom,
 		player: YGOProClient,
 	): Promise<void> {
-		player.logger.info(
-			`handleUpdateDeck: ${message.data.toString("hex")}`,
-		);
+		player.logger.info(`handleUpdateDeck: ${message.data.toString("hex")}`);
 
 		const updateDeckMessage = new YGOProCtosUpdateDeck().fromPayload(message.data);
 		if (player.isSpectator) {
@@ -202,9 +173,16 @@ export class YGOProWaitingState extends YGOProRoomState {
 		});
 
 		if (deckOrError instanceof DeckError) {
-			this.logger.warn(`Deck build error: type=0x${deckOrError.type.toString(16)}, code=${deckOrError.code}, rule=${room.hostInfo.rule}, extendedPool=${room.useExtendedCardPool}`);
+			this.logger.warn(
+				`Deck build error: type=0x${deckOrError.type.toString(16)}, code=${deckOrError.code}, rule=${room.hostInfo.rule}, extendedPool=${room.useExtendedCardPool}`,
+			);
 			room.notReadyUnsafe(player);
-			player.sendMessageToClient(room.messageSender.errorMessage(ErrorMessageType.DECKERROR, encodeDeckErrorCode(deckOrError.type, deckOrError.code)));
+			player.sendMessageToClient(
+				room.messageSender.errorMessage(
+					ErrorMessageType.DECKERROR,
+					encodeDeckErrorCode(deckOrError.type, deckOrError.code),
+				),
+			);
 			return;
 		}
 
@@ -220,9 +198,16 @@ export class YGOProWaitingState extends YGOProRoomState {
 		const hasError = room.shouldValidateDeck() && this.deckValidator.validate(deck);
 		if (hasError) {
 			const failedCard = deck.allCards.find((c) => Number(c.code) === hasError.code);
-			this.logger.warn(`Deck validation error: type=0x${hasError.type.toString(16)}, code=${hasError.code}, cardOt=${failedCard?.variant ?? "N/A"}, rule=${room.hostInfo.rule}, extendedPool=${room.useExtendedCardPool}`);
+			this.logger.warn(
+				`Deck validation error: type=0x${hasError.type.toString(16)}, code=${hasError.code}, cardOt=${failedCard?.variant ?? "N/A"}, rule=${room.hostInfo.rule}, extendedPool=${room.useExtendedCardPool}`,
+			);
 			room.notReadyUnsafe(player);
-			player.sendMessageToClient(room.messageSender.errorMessage(ErrorMessageType.DECKERROR, encodeDeckErrorCode(hasError.type, hasError.code)));
+			player.sendMessageToClient(
+				room.messageSender.errorMessage(
+					ErrorMessageType.DECKERROR,
+					encodeDeckErrorCode(hasError.type, hasError.code),
+				),
+			);
 			return;
 		}
 
@@ -231,15 +216,10 @@ export class YGOProWaitingState extends YGOProRoomState {
 		});
 	}
 
-	private async handleNotReady(
-		message: ClientMessage,
-		room: YGOProRoom,
-		player: YGOProClient,
-	) {
+	private async handleNotReady(message: ClientMessage, room: YGOProRoom, player: YGOProClient) {
 		player.logger.info(`handleNotReady: ${message.data.toString("hex")}`);
 
 		room.mutex.runExclusive(() => {
-
 			room.notReadyUnsafe(player);
 		});
 	}

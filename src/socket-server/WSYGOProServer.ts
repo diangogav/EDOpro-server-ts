@@ -56,12 +56,7 @@ export class WSYGOProServer {
 				new YGOProGameCreatorHandler(eventEmitter, connectionLogger, messageRepository);
 			};
 			const joinGameListener = () => {
-				new YGOProJoinHandler(
-					eventEmitter,
-					connectionLogger,
-					ygoClientSocket,
-					messageRepository,
-				);
+				new YGOProJoinHandler(eventEmitter, connectionLogger, ygoClientSocket, messageRepository);
 			};
 
 			const messageEmitter = new MessageEmitter(

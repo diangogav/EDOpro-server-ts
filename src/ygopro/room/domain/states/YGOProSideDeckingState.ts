@@ -47,19 +47,19 @@ export class YGOProSideDeckingState extends RoomState {
 		this.eventEmitter.on(
 			"JOIN",
 			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
-				void this.handleJoin.bind(this)(message, room, socket)
+				void this.handleJoin.bind(this)(message, room, socket),
 		);
 
 		this.eventEmitter.on(
 			Commands.UPDATE_DECK as unknown as string,
 			(message: ClientMessage, room: YGOProRoom, client: YGOProClient) =>
-				void this.handleUpdateDeck.bind(this)(message, room, client)
+				void this.handleUpdateDeck.bind(this)(message, room, client),
 		);
 
 		this.eventEmitter.on(
 			"EXPRESS_RECONNECT",
 			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
-				this.handleExpressReconnect.bind(this)(message, room, socket)
+				this.handleExpressReconnect.bind(this)(message, room, socket),
 		);
 
 		this.startTimeouts();
@@ -72,7 +72,7 @@ export class YGOProSideDeckingState extends RoomState {
 		const player = ReconnectionTokenIssuer.resolve(
 			token,
 			room.id,
-			(client) => client instanceof YGOProClient
+			(client) => client instanceof YGOProClient,
 		) as YGOProClient | null;
 		if (!player) {
 			this.logger.info(`EXPRESS_RECONNECT: no player for token ${token}`);
@@ -192,10 +192,7 @@ export class YGOProSideDeckingState extends RoomState {
 	private handleJoin(message: ClientMessage, room: YGOProRoom, socket: ISocket): void {
 		this.logger.info("handleJoin");
 
-		const playerInfoMessage = new PlayerInfoMessage(
-			message.previousMessage,
-			message.data.length,
-		);
+		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const playerAlreadyInRoom = findReconnectingPlayer({
 			players: room.players,
 			name: playerInfoMessage.name,
@@ -204,15 +201,10 @@ export class YGOProSideDeckingState extends RoomState {
 		});
 
 		if (!(playerAlreadyInRoom instanceof YGOProClient)) {
-			const spectator = room.createSpectatorUnsafe(
-				socket,
-				playerInfoMessage.name,
-			);
+			const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name);
 			room.addSpectatorUnsafe(spectator);
-			spectator.sendMessageToClient(
-				Buffer.from(new YGOProStocDuelStart().toFullPayload()),
-			);
-			spectator.sendMessageToClient(Buffer.from(new YGOProStocWaitingSide().toFullPayload()))
+			spectator.sendMessageToClient(Buffer.from(new YGOProStocDuelStart().toFullPayload()));
+			spectator.sendMessageToClient(Buffer.from(new YGOProStocWaitingSide().toFullPayload()));
 
 			return;
 		}
@@ -225,10 +217,12 @@ export class YGOProSideDeckingState extends RoomState {
 		playerAlreadyInRoom.clearReconnecting();
 	}
 
-	private async handleUpdateDeck(message: ClientMessage, room: YGOProRoom, player: YGOProClient): Promise<void> {
-		player.logger.info(
-			`handleUpdateDeck: ${message.data.toString("hex")}`,
-		);
+	private async handleUpdateDeck(
+		message: ClientMessage,
+		room: YGOProRoom,
+		player: YGOProClient,
+	): Promise<void> {
+		player.logger.info(`handleUpdateDeck: ${message.data.toString("hex")}`);
 
 		if (player.isSpectator) {
 			return;
@@ -247,9 +241,16 @@ export class YGOProSideDeckingState extends RoomState {
 		});
 
 		if (deckOrError instanceof DeckError) {
-			this.logger.warn(`Deck build error: type=0x${deckOrError.type.toString(16)}, code=${deckOrError.code}, rule=${room.hostInfo.rule}, extendedPool=${room.useExtendedCardPool}`);
+			this.logger.warn(
+				`Deck build error: type=0x${deckOrError.type.toString(16)}, code=${deckOrError.code}, rule=${room.hostInfo.rule}, extendedPool=${room.useExtendedCardPool}`,
+			);
 			room.notReadyUnsafe(player);
-			player.sendMessageToClient(room.messageSender.errorMessage(ErrorMessageType.DECKERROR, encodeDeckErrorCode(deckOrError.type, deckOrError.code)));
+			player.sendMessageToClient(
+				room.messageSender.errorMessage(
+					ErrorMessageType.DECKERROR,
+					encodeDeckErrorCode(deckOrError.type, deckOrError.code),
+				),
+			);
 			return;
 		}
 
@@ -257,9 +258,16 @@ export class YGOProSideDeckingState extends RoomState {
 		const hasError = room.shouldValidateDeck() && this.deckValidator.validate(deck);
 		if (hasError) {
 			const failedCard = deck.allCards.find((c) => Number(c.code) === hasError.code);
-			this.logger.warn(`Deck validation error: type=0x${hasError.type.toString(16)}, code=${hasError.code}, cardOt=${failedCard?.variant ?? "N/A"}, rule=${room.hostInfo.rule}, extendedPool=${room.useExtendedCardPool}`);
+			this.logger.warn(
+				`Deck validation error: type=0x${hasError.type.toString(16)}, code=${hasError.code}, cardOt=${failedCard?.variant ?? "N/A"}, rule=${room.hostInfo.rule}, extendedPool=${room.useExtendedCardPool}`,
+			);
 			room.notReadyUnsafe(player);
-			player.sendMessageToClient(room.messageSender.errorMessage(ErrorMessageType.DECKERROR, encodeDeckErrorCode(hasError.type, hasError.code)));
+			player.sendMessageToClient(
+				room.messageSender.errorMessage(
+					ErrorMessageType.DECKERROR,
+					encodeDeckErrorCode(hasError.type, hasError.code),
+				),
+			);
 			return;
 		}
 
@@ -274,7 +282,9 @@ export class YGOProSideDeckingState extends RoomState {
 		}
 
 		this.clearAllTimeouts();
-		(room.clientWhoChoosesTurn as YGOProClient).sendMessageToClient(room.messageSender.selectTpMessage());
+		(room.clientWhoChoosesTurn as YGOProClient).sendMessageToClient(
+			room.messageSender.selectTpMessage(),
+		);
 
 		room.choosingOrder();
 	}

@@ -10,7 +10,7 @@ import { PlayerRoomState } from "./PlayerRoomState";
 export class RoomClientNotifier {
 	constructor(
 		private readonly players: () => YgoClient[],
-		private readonly spectators: () => YgoClient[]
+		private readonly spectators: () => YgoClient[],
 	) {}
 
 	sendPlayerChange(player: Client, state: PlayerRoomState): void {

@@ -2,12 +2,14 @@ import { YgoClient } from "@shared/client/domain/YgoClient";
 
 import { findReconnectingPlayer } from "./findReconnectingPlayer";
 
-const player = (overrides: Partial<{
-	name: string;
-	isStrongAuth: boolean;
-	closed: boolean;
-	remoteAddress: string | null;
-}> = {}): YgoClient =>
+const player = (
+	overrides: Partial<{
+		name: string;
+		isStrongAuth: boolean;
+		closed: boolean;
+		remoteAddress: string | null;
+	}> = {},
+): YgoClient =>
 	({
 		name: overrides.name ?? "Jaden",
 		isStrongAuth: overrides.isStrongAuth ?? false,

@@ -8,7 +8,9 @@ const makeBot = (overrides: Partial<WindbotData> = {}): WindbotData => ({
 	...overrides,
 });
 
-const makeConfig = (overrides: Partial<HttpWindBotProviderConfig> = {}): HttpWindBotProviderConfig => ({
+const makeConfig = (
+	overrides: Partial<HttpWindBotProviderConfig> = {},
+): HttpWindBotProviderConfig => ({
 	endpoint: "http://windbot:7790",
 	myIp: "windbot",
 	serverPort: 7911,
@@ -19,11 +21,9 @@ const makeConfig = (overrides: Partial<HttpWindBotProviderConfig> = {}): HttpWin
 const notFinalizing = () => false;
 const alreadyFinalizing = () => true;
 
-const makeOkResponse = () =>
-	new Response(null, { status: 200 });
+const makeOkResponse = () => new Response(null, { status: 200 });
 
-const makeErrorResponse = () =>
-	new Response(null, { status: 500 });
+const makeErrorResponse = () => new Response(null, { status: 500 });
 
 describe("HttpWindBotProvider", () => {
 	let fetchMock: jest.Mock;
@@ -43,7 +43,11 @@ describe("HttpWindBotProvider", () => {
 
 			const provider = new HttpWindBotProvider(makeConfig());
 			await expect(
-				provider.requestJoin({ token: "abc123def456", bot: makeBot(), isFinalizing: notFinalizing })
+				provider.requestJoin({
+					token: "abc123def456",
+					bot: makeBot(),
+					isFinalizing: notFinalizing,
+				}),
 			).resolves.toBeUndefined();
 
 			expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -54,7 +58,11 @@ describe("HttpWindBotProvider", () => {
 
 			const config = makeConfig({ endpoint: "http://windbot:7790" });
 			const provider = new HttpWindBotProvider(config);
-			await provider.requestJoin({ token: "abc123def456", bot: makeBot(), isFinalizing: notFinalizing });
+			await provider.requestJoin({
+				token: "abc123def456",
+				bot: makeBot(),
+				isFinalizing: notFinalizing,
+			});
 
 			const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
 			expect(url).toMatch(/^http:\/\/windbot:7790\//);
@@ -64,7 +72,11 @@ describe("HttpWindBotProvider", () => {
 			fetchMock.mockResolvedValueOnce(makeOkResponse());
 
 			const provider = new HttpWindBotProvider(makeConfig());
-			await provider.requestJoin({ token: "abc123def456", bot: makeBot(), isFinalizing: notFinalizing });
+			await provider.requestJoin({
+				token: "abc123def456",
+				bot: makeBot(),
+				isFinalizing: notFinalizing,
+			});
 
 			const [, options] = fetchMock.mock.calls[0] as [string, RequestInit];
 			expect(options.method).toBe("GET");
@@ -74,7 +86,11 @@ describe("HttpWindBotProvider", () => {
 			fetchMock.mockResolvedValueOnce(makeOkResponse());
 
 			const provider = new HttpWindBotProvider(makeConfig());
-			await provider.requestJoin({ token: "tok123456789", bot: makeBot(), isFinalizing: notFinalizing });
+			await provider.requestJoin({
+				token: "tok123456789",
+				bot: makeBot(),
+				isFinalizing: notFinalizing,
+			});
 
 			const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
 			const params = new URL(url).searchParams;
@@ -115,7 +131,11 @@ describe("HttpWindBotProvider", () => {
 			fetchMock.mockResolvedValueOnce(makeOkResponse());
 
 			const provider = new HttpWindBotProvider(makeConfig());
-			await provider.requestJoin({ token: "abc123def456", bot: makeBot(), isFinalizing: notFinalizing });
+			await provider.requestJoin({
+				token: "abc123def456",
+				bot: makeBot(),
+				isFinalizing: notFinalizing,
+			});
 
 			const [, options] = fetchMock.mock.calls[0] as [string, RequestInit];
 			expect(options.signal).toBeDefined();
@@ -130,20 +150,26 @@ describe("HttpWindBotProvider", () => {
 
 			const provider = new HttpWindBotProvider(makeConfig());
 			await expect(
-				provider.requestJoin({ token: "abc123def456", bot: makeBot(), isFinalizing: notFinalizing })
+				provider.requestJoin({
+					token: "abc123def456",
+					bot: makeBot(),
+					isFinalizing: notFinalizing,
+				}),
 			).resolves.toBeUndefined();
 
 			expect(fetchMock).toHaveBeenCalledTimes(3);
 		});
 
 		it("retries on non-2xx response", async () => {
-			fetchMock
-				.mockResolvedValueOnce(makeErrorResponse())
-				.mockResolvedValueOnce(makeOkResponse());
+			fetchMock.mockResolvedValueOnce(makeErrorResponse()).mockResolvedValueOnce(makeOkResponse());
 
 			const provider = new HttpWindBotProvider(makeConfig());
 			await expect(
-				provider.requestJoin({ token: "abc123def456", bot: makeBot(), isFinalizing: notFinalizing })
+				provider.requestJoin({
+					token: "abc123def456",
+					bot: makeBot(),
+					isFinalizing: notFinalizing,
+				}),
 			).resolves.toBeUndefined();
 
 			expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -156,7 +182,11 @@ describe("HttpWindBotProvider", () => {
 
 			const provider = new HttpWindBotProvider(makeConfig());
 			await expect(
-				provider.requestJoin({ token: "abc123def456", bot: makeBot(), isFinalizing: notFinalizing })
+				provider.requestJoin({
+					token: "abc123def456",
+					bot: makeBot(),
+					isFinalizing: notFinalizing,
+				}),
 			).rejects.toThrow(WindbotUnreachableError);
 
 			expect(fetchMock).toHaveBeenCalledTimes(10);
@@ -167,7 +197,11 @@ describe("HttpWindBotProvider", () => {
 
 			const provider = new HttpWindBotProvider(makeConfig());
 			await expect(
-				provider.requestJoin({ token: "abc123def456", bot: makeBot(), isFinalizing: notFinalizing })
+				provider.requestJoin({
+					token: "abc123def456",
+					bot: makeBot(),
+					isFinalizing: notFinalizing,
+				}),
 			).rejects.toThrow(WindbotUnreachableError);
 
 			expect(fetchMock).toHaveBeenCalledTimes(10);
@@ -178,7 +212,11 @@ describe("HttpWindBotProvider", () => {
 
 			const provider = new HttpWindBotProvider(makeConfig());
 			const error = await provider
-				.requestJoin({ token: "abc123def456", bot: makeBot({ name: "Anna" }), isFinalizing: notFinalizing })
+				.requestJoin({
+					token: "abc123def456",
+					bot: makeBot({ name: "Anna" }),
+					isFinalizing: notFinalizing,
+				})
 				.catch((e: unknown) => e);
 
 			expect(error).toBeInstanceOf(WindbotUnreachableError);
@@ -193,7 +231,11 @@ describe("HttpWindBotProvider", () => {
 
 			const provider = new HttpWindBotProvider(makeConfig());
 			await expect(
-				provider.requestJoin({ token: "abc123def456", bot: makeBot(), isFinalizing: alreadyFinalizing })
+				provider.requestJoin({
+					token: "abc123def456",
+					bot: makeBot(),
+					isFinalizing: alreadyFinalizing,
+				}),
 			).rejects.toThrow(WindbotUnreachableError);
 
 			expect(fetchMock).toHaveBeenCalledTimes(0);
@@ -210,7 +252,7 @@ describe("HttpWindBotProvider", () => {
 
 			const provider = new HttpWindBotProvider(makeConfig());
 			await expect(
-				provider.requestJoin({ token: "abc123def456", bot: makeBot(), isFinalizing })
+				provider.requestJoin({ token: "abc123def456", bot: makeBot(), isFinalizing }),
 			).rejects.toThrow(WindbotUnreachableError);
 
 			// 1st attempt fires (isFinalizing returned false), then 2nd check = true → abort
@@ -228,7 +270,7 @@ describe("HttpWindBotProvider", () => {
 
 			const provider = new HttpWindBotProvider(makeConfig());
 			await expect(
-				provider.requestJoin({ token: "abc123def456", bot: makeBot(), isFinalizing })
+				provider.requestJoin({ token: "abc123def456", bot: makeBot(), isFinalizing }),
 			).rejects.toThrow(WindbotUnreachableError);
 
 			expect(fetchMock).toHaveBeenCalledTimes(2);

@@ -28,7 +28,7 @@ export class JoinHandler implements JoinMessageHandler {
 		eventEmitter: EventEmitter,
 		logger: Logger,
 		socket: ISocket,
-		checkIfUseCanJoin: CheckIfUseCanJoin
+		checkIfUseCanJoin: CheckIfUseCanJoin,
 	) {
 		this.eventEmitter = eventEmitter;
 		this.logger = logger.child({ file: "JoinHandler" });
@@ -36,7 +36,7 @@ export class JoinHandler implements JoinMessageHandler {
 		this.checkIfUseCanJoin = checkIfUseCanJoin;
 		this.eventEmitter.on(
 			Commands.JOIN_GAME as unknown as string,
-			(message: ClientMessage) => void this.handleJoinGame(message)
+			(message: ClientMessage) => void this.handleJoinGame(message),
 		);
 	}
 
@@ -45,7 +45,7 @@ export class JoinHandler implements JoinMessageHandler {
 		const joinMessage = new JoinGameMessage(message.data);
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		this.logger.info(
-			`player: ${playerInfoMessage.name} trying to join to room: ${joinMessage.id} with room pass: ${joinMessage.password}`
+			`player: ${playerInfoMessage.name} trying to join to room: ${joinMessage.id} with room pass: ${joinMessage.password}`,
 		);
 		const room = this.findRoom(joinMessage);
 
@@ -67,10 +67,10 @@ export class JoinHandler implements JoinMessageHandler {
 
 			if (attempts >= config.rateLimit.limit) {
 				this.logger.info(
-					`player: ${playerInfoMessage.name} with ip: ${ip} tried to join to room: ${room.id} and was already rate limited`
+					`player: ${playerInfoMessage.name} with ip: ${ip} tried to join to room: ${room.id} and was already rate limited`,
 				);
 				this.socket.send(
-					ServerErrorClientMessage.create("Too many attempts. Please try again in a few minutes.")
+					ServerErrorClientMessage.create("Too many attempts. Please try again in a few minutes."),
 				);
 				this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 				this.socket.destroy();
@@ -98,7 +98,7 @@ export class JoinHandler implements JoinMessageHandler {
 				}
 			}
 			this.logger.info(
-				`player: ${playerInfoMessage.name} tried to join to room: ${room.id} with wrong password: ${joinMessage.password}`
+				`player: ${playerInfoMessage.name} tried to join to room: ${room.id} with wrong password: ${joinMessage.password}`,
 			);
 			this.socket.send(ServerErrorClientMessage.create("Wrong password"));
 			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
@@ -113,7 +113,7 @@ export class JoinHandler implements JoinMessageHandler {
 		}
 
 		this.logger.info(
-			`player: ${playerInfoMessage.name} joined to room: ${room.id} with password: ${joinMessage.password}`
+			`player: ${playerInfoMessage.name} joined to room: ${room.id} with password: ${joinMessage.password}`,
 		);
 		room.emit("JOIN", message, this.socket);
 	}

@@ -1,5 +1,3 @@
-
-
 import EventEmitter from "events";
 
 import { Logger } from "../../../../../shared/logger/domain/Logger";
@@ -30,7 +28,7 @@ export class SideDeckingState extends RoomState {
 		private readonly logger: Logger,
 		private readonly reconnect: Reconnect,
 		private readonly joinToDuelAsSpectator: JoinToDuelAsSpectator,
-		private readonly deckCreator: DeckCreator
+		private readonly deckCreator: DeckCreator,
 	) {
 		super(eventEmitter);
 
@@ -39,26 +37,26 @@ export class SideDeckingState extends RoomState {
 		this.eventEmitter.on(
 			Commands.UPDATE_DECK as unknown as string,
 			(message: ClientMessage, room: Room, client: Client) =>
-				void this.handleUpdateDeck.bind(this)(message, room, client)
+				void this.handleUpdateDeck.bind(this)(message, room, client),
 		);
 
 		this.eventEmitter.on(
 			"JOIN" as unknown as string,
 			(message: ClientMessage, room: Room, socket: ISocket) =>
-				this.handle.bind(this)(message, room, socket)
+				this.handle.bind(this)(message, room, socket),
 		);
 
 		this.eventEmitter.on(
 			"EXPRESS_RECONNECT" as unknown as string,
 			(message: ClientMessage, room: Room, socket: ISocket) =>
-				void this.handleExpressReconnect.bind(this)(message, room, socket)
+				void this.handleExpressReconnect.bind(this)(message, room, socket),
 		);
 	}
 
 	private async handleExpressReconnect(
 		message: ClientMessage,
 		room: Room,
-		socket: ISocket
+		socket: ISocket,
 	): Promise<void> {
 		this.logger.info("SIDE_DECKING: EXPRESS_RECONNECT - START");
 		const token = message.data.toString("utf8");
@@ -66,7 +64,7 @@ export class SideDeckingState extends RoomState {
 		const player = ReconnectionTokenIssuer.resolve(
 			token,
 			room.id,
-			(client) => client instanceof Client
+			(client) => client instanceof Client,
 		) as Client | null;
 		if (!player) {
 			this.logger.info(`SIDE_DECKING: Player not found for token ${token} or room mismatch`);
@@ -116,7 +114,7 @@ export class SideDeckingState extends RoomState {
 	private async handleUpdateDeck(
 		message: ClientMessage,
 		room: Room,
-		player: Client
+		player: Client,
 	): Promise<void> {
 		player.logger.info("SIDE_DECKING: UPDATE_DECK");
 		const parser = new UpdateDeckMessageParser(message.data);

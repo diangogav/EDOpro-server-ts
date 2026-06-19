@@ -35,7 +35,7 @@ const makeJoinMessage = (): ClientMessage =>
 	({
 		data: makeJoinData(),
 		previousMessage: Buffer.from(PLAYER_INFO_HEX, "hex"),
-	} as unknown as ClientMessage);
+	}) as unknown as ClientMessage;
 
 const makeDeckPayload = (): Buffer => {
 	const main = [0x00000001, 0x00000002];
@@ -57,7 +57,7 @@ const makeClientMessage = (data: Buffer): ClientMessage =>
 	({
 		data,
 		previousMessage: Buffer.alloc(0),
-	} as unknown as ClientMessage);
+	}) as unknown as ClientMessage;
 
 const makeAdmitToRoom = (): { run: jest.Mock } => ({ run: jest.fn() });
 
@@ -68,7 +68,7 @@ const makeLogger = (): jest.Mocked<Logger> =>
 		warn: jest.fn(),
 		error: jest.fn(),
 		debug: jest.fn(),
-	} as unknown as jest.Mocked<Logger>);
+	}) as unknown as jest.Mocked<Logger>;
 
 describe("YGOProWaitingState.handleUpdateDeck", () => {
 	let eventEmitter: EventEmitter;
@@ -189,10 +189,7 @@ describe("YGOProWaitingState.handleUpdateDeck", () => {
 
 			await emitUpdateDeck(mockPlayer);
 
-			expect(mockRoom.setDecksToPlayerUnsafe).toHaveBeenCalledWith(
-				mockPlayer.position,
-				fakeDeck,
-			);
+			expect(mockRoom.setDecksToPlayerUnsafe).toHaveBeenCalledWith(mockPlayer.position, fakeDeck);
 		});
 
 		it("isInternal check happens before validator — validator never invoked regardless of shouldValidateDeck()", async () => {
@@ -208,8 +205,7 @@ describe("YGOProWaitingState.handleUpdateDeck", () => {
 	});
 
 	describe("deck error code is encoded (DeckErrorType in high 4 bits)", () => {
-		const errorMessageMock = () =>
-			mockRoom.messageSender.errorMessage as unknown as jest.Mock;
+		const errorMessageMock = () => mockRoom.messageSender.errorMessage as unknown as jest.Mock;
 
 		it("sends DECKERROR with the encoded code when build returns a DeckError", async () => {
 			const deckError = new BanListDeckError(12345); // type=CARD_BANLISTED(1), code=12345
@@ -265,7 +261,7 @@ describe("YGOProWaitingState.handleJoin", () => {
 			messageSender: {
 				errorMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
 			},
-		} as unknown as jest.Mocked<YGOProRoom>);
+		}) as unknown as jest.Mocked<YGOProRoom>;
 
 	const makeMockSocket = (): jest.Mocked<ISocket> =>
 		({
@@ -276,12 +272,9 @@ describe("YGOProWaitingState.handleJoin", () => {
 			close: jest.fn(),
 			destroy: jest.fn(),
 			removeAllListeners: jest.fn(),
-		} as unknown as jest.Mocked<ISocket>);
+		}) as unknown as jest.Mocked<ISocket>;
 
-	const emitJoin = (
-		room: jest.Mocked<YGOProRoom>,
-		socket: jest.Mocked<ISocket>,
-	): Promise<void> => {
+	const emitJoin = (room: jest.Mocked<YGOProRoom>, socket: jest.Mocked<ISocket>): Promise<void> => {
 		const message = makeJoinMessage();
 		return new Promise((resolve) => {
 			setImmediate(() => resolve());
@@ -351,7 +344,7 @@ describe("YGOProWaitingState.handleToDuel (spectator -> player)", () => {
 			},
 			spectatorToPlayerUnsafe: jest.fn(),
 			movePlayerToAnotherCellUnsafe: jest.fn(),
-		} as unknown as jest.Mocked<YGOProRoom>);
+		}) as unknown as jest.Mocked<YGOProRoom>;
 
 	const makeSpectator = (credential: PlayerCredential | null): jest.Mocked<YGOProClient> =>
 		({
@@ -359,7 +352,7 @@ describe("YGOProWaitingState.handleToDuel (spectator -> player)", () => {
 			credential,
 			name: "X",
 			logger: makeLogger(),
-		} as unknown as jest.Mocked<YGOProClient>);
+		}) as unknown as jest.Mocked<YGOProClient>;
 
 	const emitToDuel = (
 		room: jest.Mocked<YGOProRoom>,

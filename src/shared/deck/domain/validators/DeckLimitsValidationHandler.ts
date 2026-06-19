@@ -25,7 +25,7 @@ export class DeckLimitsValidationHandler implements DeckValidationHandler {
 			return new MainDeckLimitError(
 				deck.main.length,
 				this.deckRules.mainMin,
-				this.deckRules.mainMax
+				this.deckRules.mainMax,
 			);
 		}
 
@@ -33,7 +33,7 @@ export class DeckLimitsValidationHandler implements DeckValidationHandler {
 			return new SideDeckLimitError(
 				deck.side.length,
 				this.deckRules.sideMin,
-				this.deckRules.sideMax
+				this.deckRules.sideMax,
 			);
 		}
 
@@ -44,7 +44,7 @@ export class DeckLimitsValidationHandler implements DeckValidationHandler {
 			return new ExtraDeckLimitError(
 				deck.extra.length,
 				this.deckRules.extraMin,
-				this.deckRules.extraMax
+				this.deckRules.extraMax,
 			);
 		}
 

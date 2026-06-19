@@ -73,8 +73,7 @@ const makeClient = (socketId: string, closed = false): YGOProClient => {
 	return client;
 };
 
-const socketOf = (client: YGOProClient): MutableSocket =>
-	client.socket as unknown as MutableSocket;
+const socketOf = (client: YGOProClient): MutableSocket => client.socket as unknown as MutableSocket;
 
 /**
  * Creates a WAITING YGOProRoom backed by a mutable `clients` array. The
@@ -82,11 +81,7 @@ const socketOf = (client: YGOProClient): MutableSocket =>
  * playerLeave() is stubbed to splice from it synchronously (the real
  * removePlayer runs inside an async mutex that would not settle in a sync test).
  */
-const createRoom = (
-	id: number,
-	creatorSocketId: string,
-	clients: YGOProClient[],
-): YGOProRoom => {
+const createRoom = (id: number, creatorSocketId: string, clients: YGOProClient[]): YGOProRoom => {
 	const room = YGOProRoom.create(
 		id,
 		"ROOM",

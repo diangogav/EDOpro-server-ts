@@ -1,8 +1,5 @@
 import { faker } from "@faker-js/faker";
-import {
-	PlayerStats,
-	PlayerStatsProperties,
-} from "@shared/stats/player-stats/domain/PlayerStats";
+import { PlayerStats, PlayerStatsProperties } from "@shared/stats/player-stats/domain/PlayerStats";
 
 export class PlayerStatsMother {
 	static create(params?: Partial<PlayerStatsProperties>): PlayerStats {

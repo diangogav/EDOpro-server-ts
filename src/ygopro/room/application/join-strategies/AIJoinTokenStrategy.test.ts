@@ -42,7 +42,10 @@ const makeProvider = () => ({
 	requestJoin: jest.fn().mockResolvedValue(undefined),
 });
 
-const makeModule = (tokenStore: WindbotTokenStore, overrides: Partial<WindbotModuleDeps> = {}): WindbotModule =>
+const makeModule = (
+	tokenStore: WindbotTokenStore,
+	overrides: Partial<WindbotModuleDeps> = {},
+): WindbotModule =>
 	WindbotModule.createForTests({
 		enabled: true,
 		repo: makeRepo(),

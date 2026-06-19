@@ -58,6 +58,6 @@ process.stdout.write(
 			results: [jsonResult, framedResult],
 		},
 		null,
-		2
-	)}\n`
+		2,
+	)}\n`,
 );

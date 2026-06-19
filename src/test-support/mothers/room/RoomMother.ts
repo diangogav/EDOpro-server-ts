@@ -43,7 +43,7 @@ export class RoomMother {
 				ranked: params?.ranked ?? false,
 			},
 			new EventEmitter(),
-			logger
+			logger,
 		);
 
 		return room;

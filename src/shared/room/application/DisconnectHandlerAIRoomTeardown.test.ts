@@ -92,7 +92,7 @@ const createAIRoom = (
 };
 
 const makeRoomFinder = (room: YGOProRoom): RoomFinder =>
-	({ run: () => room } as unknown as RoomFinder);
+	({ run: () => room }) as unknown as RoomFinder;
 
 const runDisconnect = (room: YGOProRoom, humanSocketId: string): void => {
 	const socket = makeSocket(humanSocketId, true);
@@ -151,9 +151,7 @@ describe("DisconnectHandler.handleYGOPro() — AI room teardown", () => {
 			const room = createAIRoom(humanId, DuelState.WAITING, false, [human, other]);
 			const roomId = room.id;
 
-			const playerLeaveSpy = jest
-				.spyOn(room, "playerLeave")
-				.mockImplementation(() => undefined);
+			const playerLeaveSpy = jest.spyOn(room, "playerLeave").mockImplementation(() => undefined);
 
 			runDisconnect(room, humanId);
 

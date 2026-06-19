@@ -50,7 +50,9 @@ describe("WindbotModule", () => {
 	describe("requestBot()", () => {
 		it("registers token via RequestWindBotJoin and fires HTTP via provider", async () => {
 			const provider = makeProvider();
-			const mod = WindbotModule.createForTests(makeDeps({ provider: provider as unknown as WindbotModuleDeps["provider"] }));
+			const mod = WindbotModule.createForTests(
+				makeDeps({ provider: provider as unknown as WindbotModuleDeps["provider"] }),
+			);
 
 			const result = await mod.requestBot(42, "Anna", () => false);
 
@@ -62,7 +64,9 @@ describe("WindbotModule", () => {
 		it("passes isFinalizing callback to provider.requestJoin", async () => {
 			const provider = makeProvider();
 			const isFinalizing = jest.fn().mockReturnValue(false);
-			const mod = WindbotModule.createForTests(makeDeps({ provider: provider as unknown as WindbotModuleDeps["provider"] }));
+			const mod = WindbotModule.createForTests(
+				makeDeps({ provider: provider as unknown as WindbotModuleDeps["provider"] }),
+			);
 
 			await mod.requestBot(42, null, isFinalizing);
 
@@ -77,12 +81,16 @@ describe("WindbotModule", () => {
 			provider.requestJoin.mockRejectedValue(unreachable);
 
 			const tokenStore = WindbotTokenStore.createForTests();
-			const mod = WindbotModule.createForTests(makeDeps({
-				provider: provider as unknown as WindbotModuleDeps["provider"],
-				tokenStore,
-			}));
+			const mod = WindbotModule.createForTests(
+				makeDeps({
+					provider: provider as unknown as WindbotModuleDeps["provider"],
+					tokenStore,
+				}),
+			);
 
-			await expect(mod.requestBot(42, "Anna", () => false)).rejects.toThrow(WindbotUnreachableError);
+			await expect(mod.requestBot(42, "Anna", () => false)).rejects.toThrow(
+				WindbotUnreachableError,
+			);
 
 			// Token must be cleaned up — clearByRoom returns 0 because token was already removed
 			const cleaned = tokenStore.clearByRoom(42);
@@ -93,7 +101,9 @@ describe("WindbotModule", () => {
 			const unreachable = new WindbotUnreachableError("Anna", 10);
 			const provider = makeProvider();
 			provider.requestJoin.mockRejectedValue(unreachable);
-			const mod = WindbotModule.createForTests(makeDeps({ provider: provider as unknown as WindbotModuleDeps["provider"] }));
+			const mod = WindbotModule.createForTests(
+				makeDeps({ provider: provider as unknown as WindbotModuleDeps["provider"] }),
+			);
 
 			await expect(mod.requestBot(42, "Anna", () => false)).rejects.toBe(unreachable);
 		});
@@ -102,7 +112,9 @@ describe("WindbotModule", () => {
 			const provider = makeProvider();
 			const randomBot = makeBot({ name: "Gear", deck: "Gear.ydk" });
 			const repo = makeRepo({ pickRandom: jest.fn().mockReturnValue(randomBot) });
-			const mod = WindbotModule.createForTests(makeDeps({ provider: provider as unknown as WindbotModuleDeps["provider"], repo }));
+			const mod = WindbotModule.createForTests(
+				makeDeps({ provider: provider as unknown as WindbotModuleDeps["provider"], repo }),
+			);
 
 			const result = await mod.requestBot(1, null, () => false);
 

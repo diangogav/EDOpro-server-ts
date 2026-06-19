@@ -31,7 +31,7 @@ export class YGOProClient extends YgoClient {
 		room: YGOProRoom;
 		host: boolean;
 		id: string | null;
-		team: Team
+		team: Team;
 	}) {
 		super({ name, position, team, socket, host, id });
 		this.logger = logger.child({ clientName: name, roomId: room.id, file: "YGOProClient" });

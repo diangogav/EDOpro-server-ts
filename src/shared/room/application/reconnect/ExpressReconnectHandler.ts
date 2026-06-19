@@ -30,9 +30,8 @@ export class ExpressReconnectHandler {
 		private readonly resolveRoom: (roomId: number) => YgoRoom | undefined,
 		private readonly clientGuard: (client: YgoClient) => boolean,
 	) {
-		this.eventEmitter.on(
-			Commands.RECONNECT as unknown as string,
-			(message: ClientMessage) => this.handle(message),
+		this.eventEmitter.on(Commands.RECONNECT as unknown as string, (message: ClientMessage) =>
+			this.handle(message),
 		);
 	}
 

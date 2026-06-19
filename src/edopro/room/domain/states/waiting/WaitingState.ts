@@ -1,5 +1,3 @@
-
-
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 import { EventEmitter } from "stream";
@@ -29,56 +27,56 @@ export class WaitingState extends RoomState {
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
 		private readonly userAuth: UserAuth,
-		private readonly deckCreator: DeckCreator
+		private readonly deckCreator: DeckCreator,
 	) {
 		super(eventEmitter);
 		this.logger = this.logger.child({ file: "WaitingState" });
 		this.eventEmitter.on(
 			"JOIN",
 			(message: ClientMessage, room: Room, socket: ISocket) =>
-				void this.handle.bind(this)(message, room, socket)
+				void this.handle.bind(this)(message, room, socket),
 		);
 
 		this.eventEmitter.on(
 			Commands.UPDATE_DECK as unknown as string,
 			(message: ClientMessage, room: Room, client: Client) =>
-				void this.handleUpdateDeck.bind(this)(message, room, client)
+				void this.handleUpdateDeck.bind(this)(message, room, client),
 		);
 
 		this.eventEmitter.on(
 			Commands.NOT_READY as unknown as string,
 			(message: ClientMessage, room: Room, client: Client) =>
-				void this.handleNotReady.bind(this)(message, room, client)
+				void this.handleNotReady.bind(this)(message, room, client),
 		);
 
 		this.eventEmitter.on(
 			Commands.READY as unknown as string,
 			(message: ClientMessage, room: Room, client: Client) =>
-				this.handleReady.bind(this)(message, room, client)
+				this.handleReady.bind(this)(message, room, client),
 		);
 
 		this.eventEmitter.on(
 			Commands.TRY_START as unknown as string,
 			(message: ClientMessage, room: Room, client: Client) =>
-				this.tryStartHandler.bind(this)(message, room, client)
+				this.tryStartHandler.bind(this)(message, room, client),
 		);
 
 		this.eventEmitter.on(
 			Commands.OBSERVER as unknown as string,
 			(message: ClientMessage, room: Room, client: Client) =>
-				this.handleChangeToObserver.bind(this)(message, room, client)
+				this.handleChangeToObserver.bind(this)(message, room, client),
 		);
 
 		this.eventEmitter.on(
 			Commands.TO_DUEL as unknown as string,
 			(message: ClientMessage, room: Room, client: Client) =>
-				this.handleToDuel.bind(this)(message, room, client)
+				this.handleToDuel.bind(this)(message, room, client),
 		);
 
 		this.eventEmitter.on(
 			Commands.KICK as unknown as string,
 			(message: ClientMessage, room: Room, client: Client) =>
-				this.handleKick.bind(this)(message, room, client)
+				this.handleKick.bind(this)(message, room, client),
 		);
 	}
 
@@ -107,16 +105,16 @@ export class WaitingState extends RoomState {
 			room.players.forEach((_client: Client) => {
 				_client.sendMessage(
 					ServerErrorClientMessage.create(
-						`The player:${playerSelect.name} has been banned from this room, he can only enter as a spectator!!`
-					)
+						`The player:${playerSelect.name} has been banned from this room, he can only enter as a spectator!!`,
+					),
 				);
 			});
 
 			room.spectators.forEach((_client: Client) => {
 				_client.sendMessage(
 					ServerErrorClientMessage.create(
-						`The player:${playerSelect.name} has been banned from this room, he can only enter as a spectator!!`
-					)
+						`The player:${playerSelect.name} has been banned from this room, he can only enter as a spectator!!`,
+					),
 				);
 			});
 		});
@@ -210,7 +208,7 @@ export class WaitingState extends RoomState {
 	private async handleUpdateDeck(
 		message: ClientMessage,
 		room: Room,
-		player: Client
+		player: Client,
 	): Promise<void> {
 		player.logger.info("WaitingState: UPDATE_DECK");
 

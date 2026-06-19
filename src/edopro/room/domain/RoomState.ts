@@ -35,7 +35,7 @@ export abstract class RoomState {
 		this.eventEmitter.on(
 			Commands.CHAT as unknown as string,
 			(message: ClientMessage, room: YgoRoom, client: Client) =>
-				this.handleChat(message, room, client)
+				this.handleChat(message, room, client),
 		);
 	}
 
@@ -55,12 +55,12 @@ export abstract class RoomState {
 
 	protected sendExistingPlayerErrorMessage(
 		playerInfoMessage: PlayerInfoMessage,
-		socket: ISocket
+		socket: ISocket,
 	): void {
 		socket.send(
 			ServerErrorClientMessage.create(
-				`Already exists a player with the name :${playerInfoMessage.name}`
-			)
+				`Already exists a player with the name :${playerInfoMessage.name}`,
+			),
 		);
 		socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 		socket.destroy();
@@ -70,15 +70,19 @@ export abstract class RoomState {
 
 	protected sendWelcomeMessage(room: YgoRoom, socket: ISocket): void {
 		if (room.ranked) {
-			socket.send(YGOProPlayerChatMessage.create(
-				`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS} - ${ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION}`
-			));
+			socket.send(
+				YGOProPlayerChatMessage.create(
+					`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS} - ${ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION}`,
+				),
+			);
 			return;
 		}
 
-		socket.send(YGOProPlayerChatMessage.create(
-			`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.UN_RANKED_ROOM_CREATION_SUCCESS}`
-		));
+		socket.send(
+			YGOProPlayerChatMessage.create(
+				`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.UN_RANKED_ROOM_CREATION_SUCCESS}`,
+			),
+		);
 	}
 
 	protected processDuelMessage(messageType: CoreMessages, data: Buffer, room: YgoRoom): void {
@@ -151,7 +155,7 @@ export abstract class RoomState {
 			? `${client.name.replace(/\0/g, "").trim()}: ${content}`
 			: content;
 		const chatMessage = Buffer.from(
-			new YGOProStocChat().fromPartial({ player_type: playerType, msg: outgoing }).toFullPayload()
+			new YGOProStocChat().fromPartial({ player_type: playerType, msg: outgoing }).toFullPayload(),
 		);
 
 		room.clients.forEach((_client: YgoClient) => {
@@ -183,7 +187,7 @@ export abstract class RoomState {
 		if (client.isSpectator) {
 			const chatMessage = SpectatorMessageClientMessage.create(
 				client.name.replace(/\0/g, "").trim(),
-				message.data
+				message.data,
 			);
 			room.players.forEach((player: Client) => {
 				player.socket.send(chatMessage);
@@ -199,12 +203,12 @@ export abstract class RoomState {
 		const playerMessage = PlayerMessageClientMessage.create(
 			client.name.replace(/\0/g, "").trim(),
 			message.data,
-			client.team
+			client.team,
 		);
 		const opponentMessage = PlayerMessageClientMessage.create(
 			client.name.replace(/\0/g, "").trim(),
 			message.data,
-			Number(!client.team)
+			Number(!client.team),
 		);
 
 		room.players.forEach((player: YgoClient) => {

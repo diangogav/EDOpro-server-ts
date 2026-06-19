@@ -1,4 +1,4 @@
 export enum RoomType {
-  MERCURY = "mercury",
-  EDO = "edo",
+	MERCURY = "mercury",
+	EDO = "edo",
 }

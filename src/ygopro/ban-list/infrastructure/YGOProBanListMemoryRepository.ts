@@ -18,9 +18,7 @@ export default {
 	 */
 	getFirstTCGIndex(): number {
 		// Find the first banlist with " TCG" in the name (srvpro2 logic)
-		const tcgIndex = banLists.findIndex(
-			(list) => list.name && list.name.includes(" TCG"),
-		);
+		const tcgIndex = banLists.findIndex((list) => list.name && list.name.includes(" TCG"));
 		return tcgIndex >= 0 ? tcgIndex : 0;
 	},
 

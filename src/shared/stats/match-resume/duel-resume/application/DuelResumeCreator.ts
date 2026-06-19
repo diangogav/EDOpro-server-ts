@@ -4,7 +4,7 @@ import { MatchResumeRepository } from "../../domain/MatchResumeRepository";
 import { DuelResume } from "../domain/DuelResume";
 
 export class DuelResumeCreator {
-	constructor(private readonly matchResumeRepository: MatchResumeRepository) { }
+	constructor(private readonly matchResumeRepository: MatchResumeRepository) {}
 
 	async run(payload: {
 		userId: string;

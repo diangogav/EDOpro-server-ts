@@ -1,4 +1,3 @@
-
 import { createServer } from "http";
 import { config } from "src/config";
 import MercuryRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
@@ -23,7 +22,7 @@ class WebSocketSingleton {
 					data: [...RoomList.getRooms(), ...MercuryRoomList.getRooms()]
 						.filter((item) => item.turn !== 0)
 						.map((room) => room.toRealTimePresentation()),
-				})
+				}),
 			);
 		});
 		server.listen(port, () => {

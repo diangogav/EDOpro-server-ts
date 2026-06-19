@@ -48,7 +48,7 @@ const makeCtx = (overrides: Partial<JoinContext> = {}): JoinContext =>
 		logger: makeLogger(),
 		message: makeClientMessage(),
 		...overrides,
-	} as unknown as JoinContext);
+	}) as unknown as JoinContext;
 
 // ---- tests ----
 
@@ -89,16 +89,10 @@ describe("TicketJoinStrategy", () => {
 		it("creates a ranked room (ranked=true) for a socket with resolvedUserId", async () => {
 			const emitter = new EventEmitter();
 			const waitingSpy = jest
-				.spyOn(
-					(await import("../../domain/YGOProRoom")).YGOProRoom.prototype,
-					"waiting",
-				)
+				.spyOn((await import("../../domain/YGOProRoom")).YGOProRoom.prototype, "waiting")
 				.mockImplementation(() => undefined);
 			const emitSpy = jest
-				.spyOn(
-					(await import("../../domain/YGOProRoom")).YGOProRoom.prototype,
-					"emit",
-				)
+				.spyOn((await import("../../domain/YGOProRoom")).YGOProRoom.prototype, "emit")
 				.mockImplementation(() => undefined);
 
 			const ctx = makeCtx({
@@ -119,16 +113,10 @@ describe("TicketJoinStrategy", () => {
 		it("emits JOIN on the room", async () => {
 			const emitter = new EventEmitter();
 			const waitingSpy = jest
-				.spyOn(
-					(await import("../../domain/YGOProRoom")).YGOProRoom.prototype,
-					"waiting",
-				)
+				.spyOn((await import("../../domain/YGOProRoom")).YGOProRoom.prototype, "waiting")
 				.mockImplementation(() => undefined);
 			const emitSpy = jest
-				.spyOn(
-					(await import("../../domain/YGOProRoom")).YGOProRoom.prototype,
-					"emit",
-				)
+				.spyOn((await import("../../domain/YGOProRoom")).YGOProRoom.prototype, "emit")
 				.mockImplementation(() => undefined);
 
 			const ctx = makeCtx({
@@ -148,9 +136,7 @@ describe("TicketJoinStrategy", () => {
 			// Pre-create a ranked room
 			const emitter = new EventEmitter();
 			const { YGOProRoom } = await import("../../domain/YGOProRoom");
-			const { MessageRepositoryMock } = await import(
-				"@test-support/mocks/MessageRepositoryMock"
-			);
+			const { MessageRepositoryMock } = await import("@test-support/mocks/MessageRepositoryMock");
 			const { LoggerMock } = await import("@test-support/mocks/logger/LoggerMock");
 			const { PlayerInfoMessageMother } = await import(
 				"@test-support/mothers/PlayerInfoMessageMother"
@@ -181,9 +167,7 @@ describe("TicketJoinStrategy", () => {
 
 		it("rejects the join when the existing room password does NOT match", async () => {
 			const { YGOProRoom } = await import("../../domain/YGOProRoom");
-			const { MessageRepositoryMock } = await import(
-				"@test-support/mocks/MessageRepositoryMock"
-			);
+			const { MessageRepositoryMock } = await import("@test-support/mocks/MessageRepositoryMock");
 			const { LoggerMock } = await import("@test-support/mocks/logger/LoggerMock");
 			const { PlayerInfoMessageMother } = await import(
 				"@test-support/mothers/PlayerInfoMessageMother"
@@ -218,9 +202,7 @@ describe("TicketJoinStrategy", () => {
 
 		it("joins an existing room when a non-empty room password matches", async () => {
 			const { YGOProRoom } = await import("../../domain/YGOProRoom");
-			const { MessageRepositoryMock } = await import(
-				"@test-support/mocks/MessageRepositoryMock"
-			);
+			const { MessageRepositoryMock } = await import("@test-support/mocks/MessageRepositoryMock");
 			const { LoggerMock } = await import("@test-support/mocks/logger/LoggerMock");
 			const { PlayerInfoMessageMother } = await import(
 				"@test-support/mothers/PlayerInfoMessageMother"

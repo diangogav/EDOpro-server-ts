@@ -18,22 +18,22 @@ export class WSHostServer {
 		this.logger = logger;
 		const server = createServer();
 		this.wss = new WebSocketServer({ server });
-		
+
 		const roomFinder = new RoomFinder();
 		const userAuth = new UserAuth(new UserProfilePostgresRepository());
 		const checkIfUserCanJoin = new CheckIfUseCanJoin(userAuth);
-		
+
 		this.connectionHandler = new SocketConnectionHandler(
 			this.logger,
 			roomFinder,
 			userAuth,
-			checkIfUserCanJoin
+			checkIfUserCanJoin,
 		);
 	}
 
 	initialize(): void {
 		const port = config.servers.websocket.duelPort;
-		
+
 		this.wss.options.server?.listen(port);
 
 		this.wss.on("connection", (socket: WebSocket) => {

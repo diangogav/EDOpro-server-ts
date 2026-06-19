@@ -1,5 +1,5 @@
-import { HostInfo } from 'ygopro-msg-encode';
-import { OcgcoreDuelOptionFlag } from 'koishipro-core.js';
+import { HostInfo } from "ygopro-msg-encode";
+import { OcgcoreDuelOptionFlag } from "koishipro-core.js";
 
 /**
  * Calculate duel options from HostInfo
@@ -8,16 +8,16 @@ import { OcgcoreDuelOptionFlag } from 'koishipro-core.js';
  * @returns Duel options number
  */
 export function calculateDuelOptions(hostinfo: HostInfo): number {
-  // duel_rule is stored in high 16 bits
-  let opt = hostinfo.duel_rule << 16;
+	// duel_rule is stored in high 16 bits
+	let opt = hostinfo.duel_rule << 16;
 
-  if (hostinfo.no_shuffle_deck) {
-    opt |= OcgcoreDuelOptionFlag.PseudoShuffle;
-  }
+	if (hostinfo.no_shuffle_deck) {
+		opt |= OcgcoreDuelOptionFlag.PseudoShuffle;
+	}
 
-  if (hostinfo.mode & 0x2) {
-    opt |= OcgcoreDuelOptionFlag.TagMode;
-  }
+	if (hostinfo.mode & 0x2) {
+		opt |= OcgcoreDuelOptionFlag.TagMode;
+	}
 
-  return opt;
+	return opt;
 }
