@@ -1,0 +1,7 @@
+# Bulk reformat with Biome (2-space indentation -> tabs).
+# Format-only commit; safe to ignore for `git blame`.
+#
+# Enable locally with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# GitHub applies this file automatically.
+c08c24693b4e5a50d0a946c8c588ded75bc5bf39
