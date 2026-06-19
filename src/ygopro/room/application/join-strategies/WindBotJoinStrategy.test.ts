@@ -132,9 +132,9 @@ describe("WindBotJoinStrategy", () => {
 			expect(strategy.matches(makeCtx("AI#Anna"))).toBe(false);
 		});
 
-		it("returns true for blank password when enabled", () => {
+		it("returns false for blank password — blank routes to the default chain, not AI", () => {
 			const strategy = new WindBotJoinStrategy(makeModule());
-			expect(strategy.matches(makeCtx(""))).toBe(true);
+			expect(strategy.matches(makeCtx(""))).toBe(false);
 		});
 
 		it("returns true for 'AI' password when enabled", () => {
