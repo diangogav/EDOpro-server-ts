@@ -3,14 +3,12 @@ import { EventEmitter } from "stream";
 
 import { CreateRoomRequest } from "../../../http-server/controllers/CreateRoomController";
 import { Logger } from "../../../shared/logger/domain/Logger";
-import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { UTF8ToUTF16 } from "../../../utils/UTF8ToUTF16";
 import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
 import { Room } from "../domain/Room";
 import RoomList from "../infrastructure/RoomList";
 
 export class RoomCreator {
-	private readonly socket: ISocket;
 	constructor(private readonly logger: Logger) {}
 
 	create(payload: CreateRoomRequest): { password: string } {
