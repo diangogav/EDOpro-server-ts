@@ -87,7 +87,7 @@ async function start(): Promise<void> {
   // Windbot bootstrap — ONLY when ENABLE_WINDBOT=true.
   // When enabled, AI/wind strategies are prepended to the base chain:
   //   1. AIJoinTokenStrategy — AIJOIN# prefix (reverse-connecting bot)
-  //   2. WindBotJoinStrategy — blank / AI / AI#name (human requesting bot)
+  //   2. WindBotJoinStrategy — explicit "ai" token, AI / AI#name (human requesting bot)
   //   3. TicketJoinStrategy  — ticket-authenticated ranked join
   //   4. DefaultJoinStrategy — game password / unranked fallback
   // config.windbot is parsed (and validated for fail-fast) at module load time in src/config/index.ts.

@@ -8,10 +8,14 @@ import { YGOProRoom } from "../../domain/YGOProRoom";
 import YGOProRoomList from "../../infrastructure/YGOProRoomList";
 
 /**
- * WindBotJoinStrategy — handles blank / AI / AI#name join passwords.
+ * WindBotJoinStrategy — handles AI / AI#name join passwords (explicit "ai" token).
+ *
+ * A blank password is NOT an AI request — it falls through to the default chain
+ * and creates a normal room. Only an explicit "ai" token (any position,
+ * case-insensitive) routes here.
  *
  * Matches only when WindbotModule is enabled (falls through to DefaultJoinStrategy
- * when ENABLE_WINDBOT=false, so AI/blank become normal room names).
+ * when ENABLE_WINDBOT=false, so AI becomes a normal room name).
  *
  * Rejects tag-mode rooms BEFORE any room or token is created.
  * Sets windbot, noHost, noReconnect flags on the created room.
@@ -23,11 +27,6 @@ export class WindBotJoinStrategy implements JoinStrategy {
 	matches(ctx: JoinContext): boolean {
 		if (!this.module.isEnabled()) {
 			return false;
-		}
-
-		// Blank password routes to windbot when enabled
-		if (ctx.rawPass === "") {
-			return true;
 		}
 
 		// Extract config segment (everything before the first "#"), split by comma,
@@ -45,7 +44,6 @@ export class WindBotJoinStrategy implements JoinStrategy {
 		// "ai,jtp#Joey" → botName = "Joey"
 		// "nc,ns,ai#joey" → botName = "joey"
 		// "ai" / "nc,ai" (no "#") → botName = null (random)
-		// blank → null (random)
 		const botNameOrNull = ctx.password !== "" ? ctx.password : null;
 
 		// Create the room through the SAME path as the default flow

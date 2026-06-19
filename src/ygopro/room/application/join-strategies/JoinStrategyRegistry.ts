@@ -6,8 +6,8 @@ import { DefaultJoinStrategy } from "./DefaultJoinStrategy";
  *
  * Priority order (highest to lowest):
  *   1. AIJoinTokenStrategy  — catches reverse-connecting bot first (AIJOIN# prefix)
- *   2. WindBotJoinStrategy  — matches blank / AI / AI#name when windbot enabled
- *   3. DefaultJoinStrategy  — terminal fallback, always matches
+ *   2. WindBotJoinStrategy  — matches the explicit "ai" token (AI / AI#name) when windbot enabled
+ *   3. DefaultJoinStrategy  — terminal fallback, always matches (blank password lands here)
  *
  * Mirrors the YGOProRoomList module-level singleton pattern.
  *
