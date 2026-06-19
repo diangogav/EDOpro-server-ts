@@ -4,7 +4,6 @@ import { z } from "zod";
 import { ServerMessageClientMessage } from "../../edopro/messages/server-to-client/ServerMessageClientMessage";
 import RoomList from "../../edopro/room/infrastructure/RoomList";
 import MercuryRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
-import { Logger } from "../../shared/logger/domain/Logger";
 
 export const ServerMessageSchema = z.object({
 	message: z.string().min(1).max(500),
@@ -14,8 +13,6 @@ export const ServerMessageSchema = z.object({
 export type CreateMessageRequest = z.infer<typeof ServerMessageSchema>;
 
 export class ServerMessagesController {
-	constructor(private readonly logger: Logger) {}
-
 	async run(req: Request, response: Response): Promise<void> {
 		const validation = ServerMessageSchema.safeParse(req.body);
 

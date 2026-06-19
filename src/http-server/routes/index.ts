@@ -17,6 +17,6 @@ export function loadRoutes(app: Express, logger: Logger): void {
 	app.use("/api/admin", AuthAdminMiddleware);
 
 	app.post("/api/admin/message", async (req, res) => {
-		await new ServerMessagesController(logger).run(req, res);
+		await new ServerMessagesController().run(req, res);
 	});
 }

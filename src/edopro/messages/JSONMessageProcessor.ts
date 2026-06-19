@@ -7,9 +7,7 @@ export interface JSONClientMessage {
 export class JSONMessageProcessor {
 	private buffer: Buffer;
 	private _size: number;
-	private readonly _command: number;
 	private _data: string;
-	private readonly _previousMessage: Buffer;
 
 	constructor() {
 		this.buffer = Buffer.alloc(0);
@@ -23,9 +21,6 @@ export class JSONMessageProcessor {
 	process(): void {
 		if (!this.isMessageReady()) {
 			return;
-		}
-		if (this._data.length) {
-			// this._previousMessage = this._data;
 		}
 		this._size = this.buffer.readUint32LE(0);
 		this._data = this.buffer.subarray(4, this._size + 4).toString("utf-8");

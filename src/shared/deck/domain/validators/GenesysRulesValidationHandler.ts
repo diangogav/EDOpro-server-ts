@@ -1,4 +1,3 @@
-import { EdoproBanList } from "@edopro/ban-list/domain/BanList";
 import { CardTypes } from "@shared/card/domain/CardTypes";
 import genesys from "genesys.json";
 
@@ -9,7 +8,6 @@ import { MainDeckLimitError } from "../errors/MainDeckLimitError";
 import { DeckValidationHandler } from "./DeckValidationHandler";
 
 export class GenesysRulesValidationHandler implements DeckValidationHandler {
-	private readonly banList: EdoproBanList;
 	private readonly nextHandler: DeckValidationHandler | null = null;
 	private readonly genesysMap = new Map(genesys.map((item) => [item.code.toString(), item.points]));
 

@@ -116,7 +116,6 @@ export class Room extends YgoRoom {
 	private _playerExtraDeckSize: number;
 	private _opponentMainDeckSize: number;
 	private _opponentExtraDeckSize: number;
-	private readonly _turn = 0;
 	private readonly timers: Timer[];
 	private readonly roomTimer: Timer;
 	private roomState: RoomState | null = null;
