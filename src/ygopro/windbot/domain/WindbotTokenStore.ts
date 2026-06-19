@@ -9,8 +9,6 @@ export type WindbotTokenPayload = {
 export class WindbotTokenStore {
 	private readonly entries: Map<string, WindbotTokenPayload> = new Map();
 
-	constructor() {}
-
 	register(roomId: number, botName: string, deck: string): string {
 		const token = this._generateUniqueToken();
 		this.entries.set(token, { roomId, botName, deck });
