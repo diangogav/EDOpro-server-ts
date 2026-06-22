@@ -4,6 +4,7 @@ import { WebSocket, WebSocketServer } from "ws";
 
 import { Logger } from "@shared/logger/domain/Logger";
 import { WebSocketClientSocket } from "../shared/socket/domain/WebSocketClientSocket";
+import { Commands } from "../shared/messages/Commands";
 import { MessageEmitter } from "../edopro/MessageEmitter";
 import { HandshakeTicketAuthenticator } from "./HandshakeTicketAuthenticator";
 import { WSYGOProServer } from "./WSYGOProServer";
@@ -13,7 +14,7 @@ jest.mock("ws");
 jest.mock("http", () => ({ createServer: jest.fn().mockReturnValue({}) }));
 jest.mock("crypto", () => ({ randomUUID: jest.fn().mockReturnValue("test-socket-uuid") }));
 jest.mock("src/config", () => ({
-	config: { servers: { mercury: { wsPort: 7800 } } },
+	config: { servers: { mercury: { wsPort: 7800, wsHeartbeatIntervalMs: 30000 } } },
 }));
 jest.mock("src/shared/user-auth/application/CheckIfUserCanJoin");
 jest.mock("src/shared/user-auth/application/UserAuth");
@@ -35,6 +36,7 @@ const makeRawSocket = (): WebSocket =>
 		send: jest.fn(),
 		close: jest.fn(),
 		terminate: jest.fn(),
+		ping: jest.fn(),
 		readyState: 1, // WebSocket.OPEN
 	}) as unknown as WebSocket;
 
@@ -51,13 +53,20 @@ describe("WSYGOProServer", () => {
 	let mockClientSocket: {
 		resolvedUserId?: string;
 		close: jest.Mock;
+		send: jest.Mock;
 		onMessage: jest.Mock;
 		onClose: jest.Mock;
 		id?: string;
 		remoteAddress: string;
 	};
-	let mockWssInstance: { on: jest.Mock; options: { server: { listen: jest.Mock } } };
+	let mockWssInstance: {
+		on: jest.Mock;
+		options: { server: { listen: jest.Mock } };
+		clients: Set<WebSocket>;
+	};
 	let connectionCallback: (rawSocket: WebSocket, req: IncomingMessage) => Promise<void>;
+	let heartbeatTick: () => void;
+	let setIntervalSpy: jest.SpyInstance;
 
 	beforeEach(() => {
 		jest.clearAllMocks();
@@ -66,6 +75,7 @@ describe("WSYGOProServer", () => {
 		mockClientSocket = {
 			resolvedUserId: undefined,
 			close: jest.fn(),
+			send: jest.fn(),
 			onMessage: jest.fn(),
 			onClose: jest.fn(),
 			id: undefined,
@@ -79,8 +89,16 @@ describe("WSYGOProServer", () => {
 				if (event === "connection") connectionCallback = cb as typeof connectionCallback;
 			}),
 			options: { server: { listen: jest.fn() } },
+			clients: new Set<WebSocket>(),
 		};
 		(WebSocketServer as unknown as jest.Mock).mockImplementation(() => mockWssInstance);
+
+		// Capture the heartbeat sweep callback instead of running a real timer,
+		// so tests can drive it deterministically and no handle leaks between tests.
+		setIntervalSpy = jest.spyOn(global, "setInterval").mockImplementation(((cb: () => void) => {
+			heartbeatTick = cb;
+			return { unref: jest.fn() } as unknown as NodeJS.Timeout;
+		}) as unknown as typeof setInterval);
 
 		logger = mock<Logger>();
 		logger.child.mockReturnValue(logger);
@@ -88,6 +106,10 @@ describe("WSYGOProServer", () => {
 
 		const server = new WSYGOProServer(logger, handshakeAuth);
 		server.initialize();
+	});
+
+	afterEach(() => {
+		jest.restoreAllMocks();
 	});
 
 	describe("connection handler — ticket authentication", () => {
@@ -171,6 +193,112 @@ describe("WSYGOProServer", () => {
 
 			expect(mockClientSocket.close).toHaveBeenCalled();
 			expect(handleMessage).not.toHaveBeenCalled();
+		});
+	});
+
+	describe("heartbeat — liveness detection", () => {
+		type AliveSocket = WebSocket & { isAlive?: boolean };
+
+		const getPongHandler = (rawSocket: WebSocket): (() => void) => {
+			const call = (rawSocket.on as jest.Mock).mock.calls.find(([event]) => event === "pong");
+			return call[1] as () => void;
+		};
+
+		it("starts the sweep with the configured heartbeat interval", () => {
+			expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 30000);
+		});
+
+		it("marks the connection alive and registers a pong listener on connect", async () => {
+			const rawSocket = makeRawSocket();
+			handshakeAuth.authenticate.mockResolvedValue({ status: "anonymous" });
+
+			await connectionCallback(rawSocket, makeRequest());
+
+			expect((rawSocket as AliveSocket).isAlive).toBe(true);
+			expect(rawSocket.on).toHaveBeenCalledWith("pong", expect.any(Function));
+		});
+
+		it("re-marks the connection alive when a pong arrives", async () => {
+			const rawSocket = makeRawSocket();
+			handshakeAuth.authenticate.mockResolvedValue({ status: "anonymous" });
+
+			await connectionCallback(rawSocket, makeRequest());
+
+			(rawSocket as AliveSocket).isAlive = false;
+			getPongHandler(rawSocket)();
+
+			expect((rawSocket as AliveSocket).isAlive).toBe(true);
+		});
+
+		it("re-marks the connection alive on any inbound message (keeps active duels alive)", async () => {
+			const rawSocket = makeRawSocket();
+			handshakeAuth.authenticate.mockResolvedValue({ status: "authenticated", userId: "u1" });
+
+			let pumpCallback!: (data: Buffer) => Promise<void>;
+			mockClientSocket.onMessage.mockImplementation((cb: (d: Buffer) => Promise<void>) => {
+				pumpCallback = cb;
+			});
+
+			await connectionCallback(rawSocket, makeRequest());
+
+			(rawSocket as AliveSocket).isAlive = false;
+			await pumpCallback(Buffer.from("000022", "hex")); // CHAT, not a ping
+
+			expect((rawSocket as AliveSocket).isAlive).toBe(true);
+		});
+
+		it("terminates unresponsive clients and pings the responsive ones on each sweep", () => {
+			const dead = makeRawSocket() as AliveSocket;
+			const alive = makeRawSocket() as AliveSocket;
+			dead.isAlive = false;
+			alive.isAlive = true;
+			mockWssInstance.clients.add(dead);
+			mockWssInstance.clients.add(alive);
+
+			heartbeatTick();
+
+			expect(dead.terminate).toHaveBeenCalled();
+			expect(dead.ping).not.toHaveBeenCalled();
+			expect(alive.terminate).not.toHaveBeenCalled();
+			expect(alive.ping).toHaveBeenCalled();
+			expect(alive.isAlive).toBe(false);
+		});
+	});
+
+	describe("application-level ping (0xff) echo", () => {
+		const runPump = async (data: Buffer): Promise<void> => {
+			handshakeAuth.authenticate.mockResolvedValue({ status: "authenticated", userId: "u1" });
+			let pumpCallback!: (data: Buffer) => Promise<void>;
+			mockClientSocket.onMessage.mockImplementation((cb: (d: Buffer) => Promise<void>) => {
+				pumpCallback = cb;
+			});
+			await connectionCallback(makeRawSocket(), makeRequest());
+			await pumpCallback(data);
+		};
+
+		it("echoes a PING (0xff) back as PONG (0xfe) preserving the payload, without forwarding it", async () => {
+			const handleMessage = jest.fn();
+			(MessageEmitter as unknown as jest.Mock).mockImplementation(() => ({ handleMessage }));
+			const ping = Buffer.from([0x04, 0x00, Commands.PING, 0xde, 0xad, 0xbe]);
+
+			await runPump(ping);
+
+			expect(mockClientSocket.send).toHaveBeenCalledTimes(1);
+			const sent = mockClientSocket.send.mock.calls[0][0] as Buffer;
+			expect(sent.readUInt8(2)).toBe(0xfe);
+			expect(sent.subarray(3)).toEqual(ping.subarray(3));
+			expect(handleMessage).not.toHaveBeenCalled();
+		});
+
+		it("forwards non-ping frames to the message emitter", async () => {
+			const handleMessage = jest.fn();
+			(MessageEmitter as unknown as jest.Mock).mockImplementation(() => ({ handleMessage }));
+			const chat = Buffer.from([0x01, 0x00, Commands.CHAT]);
+
+			await runPump(chat);
+
+			expect(handleMessage).toHaveBeenCalledWith(chat);
+			expect(mockClientSocket.send).not.toHaveBeenCalled();
 		});
 	});
 });
