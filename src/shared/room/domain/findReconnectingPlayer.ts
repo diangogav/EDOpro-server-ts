@@ -9,12 +9,21 @@ import { YgoClient } from "@shared/client/domain/YgoClient";
  *   - the target is NOT strong-auth: ticket players reconnect through their
  *     single-use token, so they are unreachable here (closes the hijack of a
  *     verified player by name, with a stolen PIN or another ticket).
- *   - the target's socket is actually closed: a live session is never taken
- *     over (closes the in-flight hijack of a connected player).
- *   - the name matches, and — in casual rooms — the remote address too.
+ *   - the name matches.
  *
- * The remaining residual (knowing a legacy player's PIN while it is down) is
- * the accepted limit of the 4-char PIN, and never reaches a ticket player.
+ * In casual rooms it is additionally bound to the original location and only
+ * takes over a socket already known closed: casual rooms have no PIN, so the
+ * remote address is the only credential.
+ *
+ * Ranked (incl. external/PIN) rooms intentionally do NOT require the socket to
+ * be closed. Mobile clients on the raw-TCP path leave a half-open socket when
+ * backgrounded — no FIN/RST reaches the server, so `socket.closed` stays false
+ * indefinitely (the TCP path has no liveness heartbeat). Requiring it there
+ * locked legitimate players out of their own duel. The takeover is safe: the
+ * stale socket is destroyed when the new one is attached (Client.setSocket).
+ * The residual (someone knowing a legacy player's name takes their seat while
+ * it looks live) is the accepted limit of the legacy by-name path, and never
+ * reaches a ticket player.
  */
 export function findReconnectingPlayer(params: {
 	players: YgoClient[];
@@ -26,14 +35,16 @@ export function findReconnectingPlayer(params: {
 		if (client.isStrongAuth) {
 			return false;
 		}
-		if (!client.socket.closed) {
-			return false;
-		}
 		if (client.name !== params.name) {
 			return false;
 		}
-		if (!params.ranked && client.socket.remoteAddress !== params.remoteAddress) {
-			return false;
+		if (!params.ranked) {
+			if (client.socket.remoteAddress !== params.remoteAddress) {
+				return false;
+			}
+			if (!client.socket.closed) {
+				return false;
+			}
 		}
 		return true;
 	});

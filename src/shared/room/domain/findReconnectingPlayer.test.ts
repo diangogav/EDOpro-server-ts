@@ -42,13 +42,24 @@ describe("findReconnectingPlayer", () => {
 		expect(found).toBeNull();
 	});
 
-	it("NEVER matches a player whose socket is still open (live session)", () => {
+	it("matches even a still-open socket in a ranked room — a backgrounded mobile client leaves a half-open socket that never reports closed, so the by-name reconnect must take it over (last-join-wins)", () => {
 		const p = player({ closed: false });
 		const found = findReconnectingPlayer({
 			players: [p],
 			name: "Jaden",
-			remoteAddress: "1.1.1.1",
+			remoteAddress: "9.9.9.9",
 			ranked: true,
+		});
+		expect(found).toBe(p);
+	});
+
+	it("in a casual room NEVER takes over a still-open socket", () => {
+		const p = player({ closed: false, remoteAddress: "1.1.1.1" });
+		const found = findReconnectingPlayer({
+			players: [p],
+			name: "Jaden",
+			remoteAddress: "1.1.1.1",
+			ranked: false,
 		});
 		expect(found).toBeNull();
 	});
