@@ -143,6 +143,19 @@ describe("CdbCardSearchRepository", () => {
 		]);
 	});
 
+	it("skips an unreadable .cdb and still indexes the readable ones", async () => {
+		const valid = await buildCdb([{ id: 1, name: "Alpha" }]);
+		const corrupt = new Uint8Array([1, 2, 3, 4]);
+		const repository = new InMemoryCdbRepository([
+			cdbFile("/folders/valid.cdb", valid),
+			cdbFile("/folders/broken.cdb", corrupt),
+		]);
+
+		const results = await repository.searchByName("a", 10);
+
+		expect(results).toEqual([{ id: 1, name: "Alpha", source: "valid.cdb" }]);
+	});
+
 	it("resolves names for known ids and skips unknown ones", async () => {
 		const base = await buildCdb([
 			{ id: 1, name: "Alpha" },

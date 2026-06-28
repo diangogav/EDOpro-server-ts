@@ -4,6 +4,8 @@ import initSqlJs from "sql.js";
 
 import { CardCatalog, CardPage, CardSource } from "@shared/card/domain/CardCatalog";
 import { CardSearchRepository, CardSearchResult } from "@shared/card/domain/CardSearchRepository";
+import { Logger } from "@shared/logger/domain/Logger";
+import LoggerFactory from "@shared/logger/infrastructure/LoggerFactory";
 
 export interface CdbFile {
 	path: string;
@@ -19,6 +21,7 @@ const SELECT_NAMES = "SELECT id, name FROM texts WHERE name IS NOT NULL AND name
 
 export abstract class CdbCardSearchRepository implements CardSearchRepository, CardCatalog {
 	private readonly lastSourceWins: boolean;
+	private readonly logger: Logger = LoggerFactory.getLogger();
 	private index: Map<number, IndexedCard> | null = null;
 	private building: Promise<Map<number, IndexedCard>> | null = null;
 
@@ -141,7 +144,8 @@ export abstract class CdbCardSearchRepository implements CardSearchRepository, C
 				} finally {
 					db.close();
 				}
-			} catch {
+			} catch (error) {
+				this.logger.error(`Failed to read card database ${file.path}: ${error}`);
 				continue;
 			}
 		}
