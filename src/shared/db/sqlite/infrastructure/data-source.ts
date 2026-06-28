@@ -1,5 +1,5 @@
-import { CardEntity } from "@edopro/card/infrastructure/sqlite/CardEntity";
-import { CardTextEntity } from "@edopro/card/infrastructure/sqlite/CardTextEntity";
+import { CardEntity } from "./CardEntity";
+import { CardTextEntity } from "./CardTextEntity";
 import { DataSource, DataSourceOptions } from "typeorm";
 
 const options: DataSourceOptions = {

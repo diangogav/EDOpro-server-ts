@@ -3,7 +3,7 @@ import { join } from "path";
 import { DataSource } from "typeorm";
 
 import { Database } from "../../../../evolution-types/src/Database";
-import { mercuryDataSource } from "./data-source";
+import { mercuryDataSource } from "@shared/db/sqlite/infrastructure/data-source";
 
 export class PreReleasesYGOProSQLiteTypeORM implements Database {
 	private readonly dataSource: DataSource;
