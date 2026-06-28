@@ -1,7 +1,7 @@
 import { dataSource } from "../../../../shared/db/sqlite/infrastructure/data-source";
 import { Card } from "../../../../shared/card/domain/Card";
 import { CardRepository } from "../../../../shared/card/domain/CardRepository";
-import { CardEntity } from "./CardEntity";
+import { CardEntity } from "@shared/db/sqlite/infrastructure/CardEntity";
 
 export class CardSQLiteTYpeORMRepository implements CardRepository {
 	async findByCode(code: string): Promise<Card | null> {
