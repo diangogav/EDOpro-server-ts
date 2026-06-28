@@ -10,13 +10,13 @@ import {
 } from "ygopro-msg-encode";
 import { YGOProRoom } from "./YGOProRoom";
 import { calculateDuelOptions } from "@ygopro/utils/calculate-duel-options";
+import { YGOPRO_PROTOCOL_VERSION } from "@ygopro/ygopro/protocol-version";
 
 // Constants from ygopro
 const REPLAY_COMPRESSED = 0x1;
 const REPLAY_TAG = 0x2;
 const REPLAY_UNIFORM = 0x10;
 const REPLAY_ID_YRP2 = 0x32707279;
-const PRO_VERSION = 0x1362;
 
 export class DuelRecord {
 	constructor(
@@ -69,7 +69,7 @@ export class DuelRecord {
 		// Create replay header
 		const header = new ReplayHeader();
 		header.id = REPLAY_ID_YRP2;
-		header.version = PRO_VERSION;
+		header.version = YGOPRO_PROTOCOL_VERSION;
 		header.flag = REPLAY_COMPRESSED | REPLAY_UNIFORM;
 		if (isTag) {
 			header.flag |= REPLAY_TAG;
