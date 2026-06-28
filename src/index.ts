@@ -28,9 +28,7 @@ import { AIJoinTokenStrategy } from "./ygopro/room/application/join-strategies/A
 import { WindBotJoinStrategy } from "./ygopro/room/application/join-strategies/WindBotJoinStrategy";
 import { DefaultJoinStrategy } from "./ygopro/room/application/join-strategies/DefaultJoinStrategy";
 import { TicketJoinStrategy } from "./ygopro/room/application/join-strategies/TicketJoinStrategy";
-
-// YGOPro protocol version (same as DuelRecord.ts — must stay in sync)
-const YGOPRO_VERSION = 0x1362;
+import { YGOPRO_PROTOCOL_VERSION } from "./ygopro/ygopro/protocol-version";
 
 void start();
 
@@ -101,7 +99,7 @@ async function start(): Promise<void> {
 			endpoint: config.windbot.endpoint,
 			myIp: config.windbot.myIp,
 			serverPort: config.servers.mercury.port,
-			version: YGOPRO_VERSION,
+			version: YGOPRO_PROTOCOL_VERSION,
 		});
 		WindbotModule.init({ enabled: true, repo, tokenStore, provider });
 
