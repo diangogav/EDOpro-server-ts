@@ -1,22 +1,17 @@
 import "reflect-metadata";
 import "src/shared/error-handler/error-handler";
 
-import { EdoProBanListLoader } from "src/edopro/ban-list/infrastructure/BanListLoader";
-import BanListMemoryRepository from "src/edopro/ban-list/infrastructure/BanListMemoryRepository";
-import { EdoProSQLiteTypeORM } from "src/shared/db/sqlite/infrastructure/EdoProSQLiteTypeORM";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 
 import { config } from "./config";
-import { PostgresTypeORM } from "./evolution-types/src/PostgresTypeORM";
+import { bootstrapResources } from "./bootstrap/bootstrapResources";
+import { bootstrapPersistence } from "./bootstrap/bootstrapPersistence";
 import { Server } from "./http-server/Server";
-import { YGOProBanListLoader } from "./ygopro/ban-list/infrastructure/YGOProBanListLoader";
-import { YGOProResourceLoader } from "./ygopro/ygopro/YGOProResourceLoader";
 import { HostServer } from "./socket-server/HostServer";
 import { WSHostServer } from "./socket-server/WSHostServer";
 import { YGOProServer } from "./socket-server/YGOProServer";
 import { WSYGOProServer } from "./socket-server/WSYGOProServer";
 import { HandshakeTicketAuthenticator } from "./socket-server/HandshakeTicketAuthenticator";
-import { Redis } from "@shared/db/redis/infrastructure/Redis";
 import { RedisTicketRepository } from "./shared/ticket/infrastructure/redis/RedisTicketRepository";
 import WebSocketSingleton from "./web-socket-server/WebSocketSingleton";
 import { bootstrapWindbot } from "./ygopro/windbot/infrastructure/bootstrapWindbot";
@@ -40,31 +35,8 @@ async function start(): Promise<void> {
 	const hostServer = new HostServer(logger);
 	const wsHostServer = new WSHostServer(logger);
 
-	const database = new EdoProSQLiteTypeORM();
-	const banListLoader = new EdoProBanListLoader();
-	await banListLoader.loadDirectory("resources/edopro/banlists-evolution");
-	await banListLoader.loadDirectory("resources/edopro/banlists-ignis");
-
-	await YGOProResourceLoader.start();
-	await YGOProResourceLoader.get().logLFLists();
-
-	const ygoProBanListLoader = new YGOProBanListLoader();
-	await ygoProBanListLoader.load();
-
-	logger.info("🎴 YGOPro resources & ban lists loaded");
-
-	await database.connect();
-	await database.initialize();
-	logger.info("🗄️  SQLite connected");
-
-	if (config.ranking.enabled) {
-		const postgresDatabase = new PostgresTypeORM();
-		await postgresDatabase.connect();
-		logger.info("🗄️  Postgres connected · ranking ON");
-	}
-
-	const redisDatabase = new Redis();
-	await redisDatabase.connect();
+	await bootstrapResources(logger);
+	await bootstrapPersistence(logger);
 
 	await server.initialize();
 	WebSocketSingleton.getInstance();
