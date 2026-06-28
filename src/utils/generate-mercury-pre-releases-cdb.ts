@@ -1,4 +1,4 @@
-import { PreReleasesYGOProSQLiteTypeORM } from "src/shared/db/sqlite/infrastructure/PreReleasesMercurySQLiteTypeORM";
+import { PreReleasesYGOProSQLiteTypeORM } from "src/ygopro/card/infrastructure/sqlite/PreReleasesMercurySQLiteTypeORM";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 
 const database = new PreReleasesYGOProSQLiteTypeORM();

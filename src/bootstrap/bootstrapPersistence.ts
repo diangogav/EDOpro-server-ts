@@ -1,5 +1,5 @@
 import { Redis } from "@shared/db/redis/infrastructure/Redis";
-import { EdoProSQLiteTypeORM } from "@shared/db/sqlite/infrastructure/EdoProSQLiteTypeORM";
+import { EdoProSQLiteTypeORM } from "@edopro/card/infrastructure/sqlite/EdoProSQLiteTypeORM";
 import { Logger } from "@shared/logger/domain/Logger";
 
 import { config } from "src/config";

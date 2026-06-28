@@ -3,7 +3,7 @@ import { join } from "path";
 import { DataSource } from "typeorm";
 
 import { Database } from "../../../../evolution-types/src/Database";
-import { dataSource } from "./data-source";
+import { dataSource } from "@shared/db/sqlite/infrastructure/data-source";
 
 export class EdoProSQLiteTypeORM implements Database {
 	private readonly dataSource: DataSource;
