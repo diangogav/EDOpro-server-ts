@@ -80,6 +80,8 @@ npm install
 cp .env.example .env
 ```
 
+> 📁 `setup_resources.sh` assembles each run into `resources/releases/<id>/` and points `resources/current` (a symlink) at it. Everything is read through `resources/current/…`, so refreshing resources is an atomic symlink swap — no restart needed. In Docker the `resources-updater` sidecar automates this on a schedule.
+
 Now choose which engine(s) you want to run 👇
 
 ---
@@ -104,7 +106,7 @@ WEBSOCKET_PORT=4000
 **Resource structure used:**
 
 ```
-📂 resources/edopro/
+📂 resources/current/edopro/
 ├── 📜 scripts/            # ProjectIgnis/CardScripts
 ├── 🗄️ databases/          # ProjectIgnis/BabelCDB
 ├── 📋 banlists-ignis/     # ProjectIgnis/LFLists
@@ -135,13 +137,13 @@ The YGOPro engine uses srvpro2-compatible protocol. Players connect using Koishi
 YGOPRO_PORT=7711
 HTTP_PORT=7922
 WEBSOCKET_PORT=4000
-YGOPRO_FOLDERS=./resources/ygopro/base
+YGOPRO_FOLDERS=./resources/current/ygopro/base
 ```
 
 **Resource structure used:**
 
 ```
-📂 resources/ygopro/
+📂 resources/current/ygopro/
 ├── 📜 base/               # Core scripts + lflist + cards.cdb (loaded by all modes)
 ├── 🌏 ocg/                # OCG-specific banlist
 ├── 🃏 alternatives/       # Format variants (Edison, GOAT, HAT, etc.)
@@ -154,8 +156,8 @@ YGOPRO_FOLDERS=./resources/ygopro/base
 To enable all formats and pre-releases, set:
 
 ```env
-YGOPRO_FOLDERS=./resources/ygopro/base,./resources/ygopro/ocg,./resources/ygopro/alternatives
-YGOPRO_EXTRA_FOLDERS=./resources/ygopro/prereleases-cdb,./resources/ygopro/cards-art
+YGOPRO_FOLDERS=./resources/current/ygopro/base,./resources/current/ygopro/ocg,./resources/current/ygopro/alternatives
+YGOPRO_EXTRA_FOLDERS=./resources/current/ygopro/prereleases-cdb,./resources/current/ygopro/cards-art
 ```
 
 ```bash
@@ -175,8 +177,8 @@ HOST_PORT=7911
 YGOPRO_PORT=7711
 HTTP_PORT=7922
 WEBSOCKET_PORT=4000
-YGOPRO_FOLDERS=./resources/ygopro/base,./resources/ygopro/ocg,./resources/ygopro/alternatives
-YGOPRO_EXTRA_FOLDERS=./resources/ygopro/prereleases-cdb,./resources/ygopro/cards-art
+YGOPRO_FOLDERS=./resources/current/ygopro/base,./resources/current/ygopro/ocg,./resources/current/ygopro/alternatives
+YGOPRO_EXTRA_FOLDERS=./resources/current/ygopro/prereleases-cdb,./resources/current/ygopro/cards-art
 ```
 
 ```bash

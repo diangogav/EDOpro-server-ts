@@ -4,10 +4,12 @@ import { DataSource } from "typeorm";
 
 import { Database } from "../../../../evolution-types/src/Database";
 import { mercuryDataSource } from "@shared/db/sqlite/infrastructure/data-source";
+import { config } from "src/config";
 
 export class PreReleasesYGOProSQLiteTypeORM implements Database {
 	private readonly dataSource: DataSource;
-	private readonly mercuryPreReleasesDirectoryPath = "./resources/ygopro/prereleases/databases";
+	private readonly mercuryPreReleasesDirectoryPath =
+		`${config.resources.dir}/ygopro/prereleases/databases`;
 
 	constructor() {
 		this.dataSource = mercuryDataSource;
