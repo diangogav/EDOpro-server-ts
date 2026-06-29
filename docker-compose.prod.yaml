@@ -77,39 +77,13 @@ services:
         condition: service_healthy
       valkey:
         condition: service_healthy
-      resources-updater:
-        condition: service_healthy
     restart: unless-stopped
-    volumes:
-      - resources_data:/app/resources:ro
-    networks:
-      - evolutionygo-network
-
-  resources-updater:
-    build:
-      context: .
-      dockerfile: Dockerfile.updater
-    container_name: evolutionygo-resources-updater
-    environment:
-      RESOURCES_REFRESH_SECONDS: ${RESOURCES_REFRESH_SECONDS:-600}
-    volumes:
-      - resources_data:/app/resources
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "test -e /app/resources/current"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      # First boot on an empty volume must clone hundreds of MB before `current`
-      # exists; without a grace period the server's depends_on would deadlock.
-      start_period: 900s
     networks:
       - evolutionygo-network
 
 volumes:
   postgres_data:
   valkey_data:
-  resources_data:
 
 networks:
   evolutionygo-network:

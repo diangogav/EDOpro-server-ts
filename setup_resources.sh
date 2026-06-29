@@ -18,9 +18,6 @@ KEEP="${RESOURCES_KEEP_RELEASES:-2}"
 
 echo "Assembling resources into $STAGING ..."
 
-# Strip .git dirs from the clones (smaller, and we never pull from inside a release)
-find "$REPOS" -name ".git" -type d -exec rm -rf {} + 2>/dev/null || true
-
 mkdir -p "$STAGING"
 
 # === EDOPro ===
@@ -69,6 +66,9 @@ done
 # variants stay legal via their alias (the termitaklk list shipped variant
 # codes, which rejected the base cards in whitelist validation).
 cp "$REPOS/evolution-assets/lflist/jtp.lflist.conf" "$STAGING/ygopro/alternatives/jtp/lflist.conf"
+
+# Strip .git from the assembled release (keep it in repositories/ so refreshes can pull deltas)
+find "$STAGING" -name ".git" -type d -exec rm -rf {} + 2>/dev/null || true
 
 # === Atomic publish: repoint resources/current -> releases/<id> ===
 # Build the symlink under a temp name, then rename over the live one.

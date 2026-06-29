@@ -8,8 +8,8 @@ RUN apt-get update -y && \
 WORKDIR /build
 
 # Resource layout is owned by clone_repositories.sh + setup_resources.sh — the
-# single source of truth, shared with local dev (README) and the runtime updater
-# sidecar. This produces /build/resources/releases/<id> and a current symlink.
+# single source of truth, shared with local dev (README) and the runtime refresh
+# loop (entrypoint). This produces /build/resources/releases/<id> and a current symlink.
 COPY clone_repositories.sh setup_resources.sh ./
 RUN bash clone_repositories.sh && bash setup_resources.sh
 
@@ -55,7 +55,7 @@ RUN npm run build && \
 FROM public.ecr.aws/docker/library/node:24.11.0-slim
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl liblua5.3-dev libsqlite3-dev libevent-dev dumb-init && \
+    apt-get install -y --no-install-recommends curl wget git ca-certificates liblua5.3-dev libsqlite3-dev libevent-dev dumb-init && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -75,8 +75,12 @@ COPY --from=server-builder /server/config ./config
 COPY --from=core-builder /app/libocgcore.so ./core/libocgcore.so
 COPY --from=core-builder /app/CoreIntegrator ./core/CoreIntegrator
 
-# All resources (assembled in Stage 1): releases/<id> + current symlink.
-# Seeds the resources_data volume on first run; the updater sidecar maintains it.
+# All resources (assembled in Stage 1): releases/<id> + current symlink — the
+# baked seed so the server boots immediately. The entrypoint's background loop
+# then refreshes resources/current in place and the in-memory reload picks it up.
 COPY --from=resources-builder /build/resources ./resources
 
-CMD ["dumb-init", "node", "./src/index.js"]
+# Provisioning scripts (single source of truth) + entrypoint, reused at runtime.
+COPY clone_repositories.sh setup_resources.sh resources-updater.sh entrypoint.sh ./
+
+CMD ["dumb-init", "bash", "entrypoint.sh"]

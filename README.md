@@ -80,7 +80,7 @@ npm install
 cp .env.example .env
 ```
 
-> 📁 `setup_resources.sh` assembles each run into `resources/releases/<id>/` and points `resources/current` (a symlink) at it. Everything is read through `resources/current/…`, so refreshing resources is an atomic symlink swap — no restart needed. In Docker the `resources-updater` sidecar automates this on a schedule.
+> 📁 `setup_resources.sh` assembles each run into `resources/releases/<id>/` and points `resources/current` (a symlink) at it. Everything is read through `resources/current/…`, so refreshing resources is an atomic symlink swap — no restart needed. In Docker the container runs this refresh loop in the background (see `entrypoint.sh` + `resources-updater.sh`), so card/banlist updates are picked up live.
 
 Now choose which engine(s) you want to run 👇
 
