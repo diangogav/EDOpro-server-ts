@@ -1,5 +1,4 @@
-import { createHash } from "node:crypto";
-import { readdir, readFile, rm } from "node:fs/promises";
+import { readdir, rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { DataSource } from "typeorm";
 
@@ -12,6 +11,7 @@ import { config } from "src/config";
 import { EdoProSQLiteTypeORM } from "./EdoProSQLiteTypeORM";
 
 const RELOAD_INTERVAL_MS = 10 * 60 * 1000;
+const DISPOSE_GRACE_MS = 60 * 1000;
 
 // Wires the EDOPro card DB into the generic CardDbReloader: fingerprints the .cdb
 // directory, rebuilds into a fresh file, swaps the datasource holder, and disposes
@@ -47,15 +47,21 @@ export class EdoProCardDbHotReload {
 		}, RELOAD_INTERVAL_MS);
 	}
 
+	// Fingerprint from each file's size + mtime instead of hashing contents, so the
+	// periodic check never reads/hashes hundreds of MB on the shared event loop.
 	private async fingerprint(): Promise<string> {
-		const hash = createHash("sha512");
 		const files = (await readdir(this.directory)).filter((file) => file.endsWith(".cdb")).sort();
+		const parts: string[] = [];
 		for (const file of files) {
-			hash.update(file);
-			hash.update(await readFile(join(this.directory, file)));
+			try {
+				const { size, mtimeMs } = await stat(join(this.directory, file));
+				parts.push(`${file}:${size}:${mtimeMs}`);
+			} catch {
+				// file vanished between readdir and stat — skip it
+			}
 		}
 
-		return hash.digest("hex");
+		return parts.join("|");
 	}
 
 	private async buildNext(): Promise<DataSource> {
@@ -67,7 +73,17 @@ export class EdoProCardDbHotReload {
 		return dataSource;
 	}
 
-	private async dispose(previous: DataSource): Promise<void> {
+	private dispose(previous: DataSource): Promise<void> {
+		const stale = this.fileToDelete;
+		this.fileToDelete = undefined;
+		// Defer the close + file deletion so in-flight findByCode calls on the old
+		// datasource can finish before its connection and file disappear.
+		setTimeout(() => void this.retire(previous, stale), DISPOSE_GRACE_MS).unref();
+
+		return Promise.resolve();
+	}
+
+	private async retire(previous: DataSource, stale?: string): Promise<void> {
 		try {
 			await previous.destroy();
 		} catch (error) {
@@ -75,10 +91,13 @@ export class EdoProCardDbHotReload {
 			this.logger.error(error);
 		}
 
-		const stale = this.fileToDelete;
-		this.fileToDelete = undefined;
 		if (stale) {
-			await rm(stale, { force: true }).catch(() => undefined);
+			try {
+				await rm(stale, { force: true });
+			} catch (error) {
+				this.logger.error(`Failed deleting stale EDOPro card DB file ${stale}`);
+				this.logger.error(error);
+			}
 		}
 	}
 }

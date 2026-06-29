@@ -1,4 +1,4 @@
-import { readdir } from "fs/promises";
+import { readdir, rm } from "fs/promises";
 import { join } from "path";
 import { DataSource } from "typeorm";
 
@@ -29,10 +29,19 @@ export class EdoProSQLiteTypeORM implements Database {
 	// rebuild can run while the current one is still serving lookups.
 	async build(databaseFile: string): Promise<DataSource> {
 		const dataSource = buildCardDataSource(databaseFile);
-		await dataSource.initialize();
-		await this.mergeAll(dataSource);
+		try {
+			await dataSource.initialize();
+			await this.mergeAll(dataSource);
 
-		return dataSource;
+			return dataSource;
+		} catch (error) {
+			// A half-built datasource would otherwise leak its connection + file.
+			if (dataSource.isInitialized) {
+				await dataSource.destroy().catch(() => undefined);
+			}
+			await rm(databaseFile, { force: true }).catch(() => undefined);
+			throw error;
+		}
 	}
 
 	private async mergeAll(dataSource: DataSource): Promise<void> {
