@@ -58,7 +58,7 @@ services:
       HTTP_PORT: ${HTTP_PORT:-7922}
       WEBSOCKET_PORT: ${WEBSOCKET_PORT:-4000}
       RESOURCES_DIR: ./resources/current
-      YGOPRO_FOLDERS: ./resources/current/ygopro/base,./resources/current/ygopro/ocg,./resources/current/ygopro/alternatives
+      YGOPRO_FOLDERS: ./resources/current/ygopro/base,./resources/current/ygopro/ocg,./resources/current/ygopro/alternatives/edison,./resources/current/ygopro/alternatives/genesys,./resources/current/ygopro/alternatives/hat,./resources/current/ygopro/alternatives/jtp,./resources/current/ygopro/alternatives/md,./resources/current/ygopro/alternatives/tengu,./resources/current/ygopro/alternatives/world
       YGOPRO_EXTRA_FOLDERS: ./resources/current/ygopro/prereleases-cdb,./resources/current/ygopro/cards-art
       # WindBot (opt-in). The WindBot container is run separately (independent docker
       # command). Off by default — set these in .env to enable. WINDBOT_MY_IP must be a
