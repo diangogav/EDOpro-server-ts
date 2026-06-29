@@ -12,7 +12,7 @@ set -e
 
 REPOS=./repositories
 RELEASES=./resources/releases
-ID="$(date +%Y%m%d-%H%M%S)"
+ID="$(date +%Y%m%d-%H%M%S-%N)"
 STAGING="$RELEASES/$ID"
 KEEP="${RESOURCES_KEEP_RELEASES:-2}"
 
@@ -74,6 +74,11 @@ cp "$REPOS/evolution-assets/lflist/jtp.lflist.conf" "$STAGING/ygopro/alternative
 # Build the symlink under a temp name, then rename over the live one.
 # rename(2) is atomic on the same filesystem, so readers never observe a
 # missing or half-updated current.
+# If a previous build left `current` as a real directory (e.g. a Docker COPY that
+# dereferenced the symlink), drop it so the atomic symlink swap can land.
+if [ -d "./resources/current" ] && [ ! -L "./resources/current" ]; then
+    rm -rf "./resources/current"
+fi
 ln -sfn "releases/$ID" "./resources/.current.tmp"
 mv -T "./resources/.current.tmp" "./resources/current"
 echo "Published resources/current -> releases/$ID"
