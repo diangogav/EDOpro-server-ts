@@ -5,9 +5,12 @@ import {
 	CdbCardSearchRepository,
 	CdbFile,
 } from "@shared/card/infrastructure/cdb/CdbCardSearchRepository";
+import { config } from "src/config";
 
 export class EdoProCardSearchRepository extends CdbCardSearchRepository {
-	constructor(private readonly directoryPaths: string[] = ["./resources/edopro/databases"]) {
+	constructor(
+		private readonly directoryPaths: string[] = [`${config.resources.dir}/edopro/databases`],
+	) {
 		super({ lastSourceWins: true });
 	}
 

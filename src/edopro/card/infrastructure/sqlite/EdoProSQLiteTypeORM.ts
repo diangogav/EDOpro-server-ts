@@ -4,6 +4,7 @@ import { DataSource } from "typeorm";
 
 import { Database } from "../../../../evolution-types/src/Database";
 import { dataSource } from "@shared/db/sqlite/infrastructure/data-source";
+import { config } from "src/config";
 
 export class EdoProSQLiteTypeORM implements Database {
 	private readonly dataSource: DataSource;
@@ -11,7 +12,7 @@ export class EdoProSQLiteTypeORM implements Database {
 
 	constructor(directoryPaths?: string[]) {
 		this.dataSource = dataSource;
-		this.directoryPaths = directoryPaths ?? ["./resources/edopro/databases"];
+		this.directoryPaths = directoryPaths ?? [`${config.resources.dir}/edopro/databases`];
 	}
 
 	async connect(): Promise<void> {
