@@ -1,11 +1,11 @@
-import { dataSource } from "../../../../shared/db/sqlite/infrastructure/data-source";
+import { getCardDataSource } from "../../../../shared/db/sqlite/infrastructure/data-source";
 import { Card } from "../../../../shared/card/domain/Card";
 import { CardRepository } from "../../../../shared/card/domain/CardRepository";
 import { CardEntity } from "@shared/db/sqlite/infrastructure/CardEntity";
 
 export class CardSQLiteTYpeORMRepository implements CardRepository {
 	async findByCode(code: string): Promise<Card | null> {
-		const repository = dataSource.getRepository(CardEntity);
+		const repository = getCardDataSource().getRepository(CardEntity);
 		const card = await repository.findOneBy({ id: code });
 		if (!card) {
 			return null;

@@ -1,4 +1,5 @@
 import { Redis } from "@shared/db/redis/infrastructure/Redis";
+import { EdoProCardDbHotReload } from "@edopro/card/infrastructure/sqlite/EdoProCardDbHotReload";
 import { EdoProSQLiteTypeORM } from "@edopro/card/infrastructure/sqlite/EdoProSQLiteTypeORM";
 import { Logger } from "@shared/logger/domain/Logger";
 
@@ -12,6 +13,10 @@ export async function bootstrapPersistence(logger: Logger): Promise<void> {
 	await sqlite.connect();
 	await sqlite.initialize();
 	logger.info("🗄️  SQLite connected");
+
+	// Hot-reload the EDOPro card DB: rebuild a fresh datasource and swap it in when
+	// the .cdb files change at runtime, with no restart.
+	await new EdoProCardDbHotReload().start();
 
 	if (config.ranking.enabled) {
 		const postgres = new PostgresTypeORM();

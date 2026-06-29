@@ -3,33 +3,49 @@ import { join } from "path";
 import { DataSource } from "typeorm";
 
 import { Database } from "../../../../evolution-types/src/Database";
-import { dataSource } from "@shared/db/sqlite/infrastructure/data-source";
+import {
+	buildCardDataSource,
+	getCardDataSource,
+} from "@shared/db/sqlite/infrastructure/data-source";
 import { config } from "src/config";
 
 export class EdoProSQLiteTypeORM implements Database {
-	private readonly dataSource: DataSource;
 	private readonly directoryPaths: string[];
 
 	constructor(directoryPaths?: string[]) {
-		this.dataSource = dataSource;
 		this.directoryPaths = directoryPaths ?? [`${config.resources.dir}/edopro/databases`];
 	}
 
 	async connect(): Promise<void> {
-		await this.dataSource.initialize();
+		await getCardDataSource().initialize();
 	}
 
 	async initialize(): Promise<void> {
-		for (const dirPath of this.directoryPaths) {
-			const files = await readdir(dirPath);
+		await this.mergeAll(getCardDataSource());
+	}
+
+	// Build a fresh datasource backed by `databaseFile`, merge every .cdb into it,
+	// and return it ready to be swapped in. Never touches the live datasource, so a
+	// rebuild can run while the current one is still serving lookups.
+	async build(databaseFile: string): Promise<DataSource> {
+		const dataSource = buildCardDataSource(databaseFile);
+		await dataSource.initialize();
+		await this.mergeAll(dataSource);
+
+		return dataSource;
+	}
+
+	private async mergeAll(dataSource: DataSource): Promise<void> {
+		for (const directoryPath of this.directoryPaths) {
+			const files = await readdir(directoryPath);
 			const cdbFiles = files.filter((file) => file.endsWith(".cdb"));
 			for (const file of cdbFiles) {
-				await this.merge(join(dirPath, file));
+				await this.merge(dataSource, join(directoryPath, file));
 			}
 		}
 	}
 
-	private async merge(path: string): Promise<void> {
+	private async merge(dataSource: DataSource, path: string): Promise<void> {
 		const queryRunner = dataSource.createQueryRunner();
 		await queryRunner.connect();
 		await queryRunner.startTransaction();
