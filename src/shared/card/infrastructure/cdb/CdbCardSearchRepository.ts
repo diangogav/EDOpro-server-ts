@@ -18,15 +18,21 @@ interface IndexedCard {
 }
 
 const SELECT_NAMES = "SELECT id, name FROM texts WHERE name IS NOT NULL AND name <> ''";
+const DEFAULT_INDEX_TTL_MS = 10 * 60 * 1000;
 
 export abstract class CdbCardSearchRepository implements CardSearchRepository, CardCatalog {
 	private readonly lastSourceWins: boolean;
+	private readonly ttlMs: number;
+	private readonly now: () => number;
 	private readonly logger: Logger = LoggerFactory.getLogger();
 	private index: Map<number, IndexedCard> | null = null;
 	private building: Promise<Map<number, IndexedCard>> | null = null;
+	private builtAt = 0;
 
-	constructor(options: { lastSourceWins?: boolean } = {}) {
+	constructor(options: { lastSourceWins?: boolean; ttlMs?: number; now?: () => number } = {}) {
 		this.lastSourceWins = options.lastSourceWins ?? false;
+		this.ttlMs = options.ttlMs ?? DEFAULT_INDEX_TTL_MS;
+		this.now = options.now ?? Date.now;
 	}
 
 	protected abstract cdbFiles(): AsyncIterable<CdbFile>;
@@ -97,8 +103,10 @@ export abstract class CdbCardSearchRepository implements CardSearchRepository, C
 		return names;
 	}
 
+	// Cache the index but rebuild it once the TTL lapses, so the inspection page
+	// reflects hot-reloaded .cdb files instead of serving a process-lifetime cache.
 	private async getIndex(): Promise<Map<number, IndexedCard>> {
-		if (this.index) {
+		if (this.index !== null && this.now() - this.builtAt < this.ttlMs) {
 			return this.index;
 		}
 
@@ -106,6 +114,7 @@ export abstract class CdbCardSearchRepository implements CardSearchRepository, C
 			this.building = this.buildIndex()
 				.then((index) => {
 					this.index = index;
+					this.builtAt = this.now();
 
 					return index;
 				})
