@@ -1,5 +1,6 @@
 #include "../includes/duel.h"
 #include <stdexcept>
+#include <cstdlib>
 
 template <>
 constexpr LocInfo Read(const uint8_t *&ptr) noexcept
@@ -60,7 +61,11 @@ void Duel::destroy()
 void Duel::load_scripts()
 {
   std::filesystem::path current_path = std::filesystem::current_path();
-  std::filesystem::path scripts_path = current_path / "resources/edopro/scripts";
+  // Resources live under RESOURCES_DIR (default resources/current — the symlink
+  // maintained by the resource refresh), matching the TS config.resources.dir.
+  const char *resources_dir = std::getenv("RESOURCES_DIR");
+  std::filesystem::path scripts_path =
+      current_path / (resources_dir ? resources_dir : "resources/current") / "edopro/scripts";
   const char *path = scripts_path.c_str();
 
   std::vector<char> constants_buffer = this->file_reader.read(path, "constant.lua");
