@@ -1,4 +1,5 @@
 import { Redis } from "@shared/db/redis/infrastructure/Redis";
+import { EdoProCardDbHotReload } from "@edopro/card/infrastructure/sqlite/EdoProCardDbHotReload";
 import { EdoProSQLiteTypeORM } from "@edopro/card/infrastructure/sqlite/EdoProSQLiteTypeORM";
 import { Logger } from "@shared/logger/domain/Logger";
 
@@ -13,11 +14,9 @@ export async function bootstrapPersistence(logger: Logger): Promise<void> {
 	await sqlite.initialize();
 	logger.info("🗄️  SQLite connected");
 
-	// EDOPro card DB hot-reload is intentionally disabled: the C++ core opens the
-	// fixed path evolution_cards.db (core CardSqliteRepository), and the previous
-	// reloader swapped to a timestamped file and deleted evolution_cards.db, leaving
-	// the core to crash mid-duel with "no such table: datas". Re-enable only once the
-	// reload refreshes evolution_cards.db in place (atomic rename at the fixed path).
+	// Hot-reload the EDOPro card DB when the .cdb files change at runtime, refreshing
+	// evolution_cards.db in place so the C++ core (which opens that fixed path) sees it.
+	await new EdoProCardDbHotReload().start();
 
 	if (config.ranking.enabled) {
 		const postgres = new PostgresTypeORM();
