@@ -34,14 +34,3 @@ export function swapCardDataSource(next: DataSource): DataSource {
 
 	return previous;
 }
-
-const mercuryOptions: DataSourceOptions = {
-	type: "better-sqlite3",
-	database: "./resources/ygopro/prereleases/tcg/cards.cdb",
-	synchronize: true,
-	logging: false,
-	entities: [CardEntity, CardTextEntity],
-	subscribers: [],
-	migrations: [],
-};
-export const mercuryDataSource = new DataSource(mercuryOptions);
