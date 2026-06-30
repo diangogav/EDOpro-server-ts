@@ -26,14 +26,17 @@ const cdbFile = (path: string, body: Uint8Array): CdbFile => ({
 });
 
 class InMemoryCdbRepository extends CdbCardSearchRepository {
+	builds = 0;
+
 	constructor(
 		private readonly files: CdbFile[],
-		lastSourceWins = false,
+		options: { lastSourceWins?: boolean; ttlMs?: number; now?: () => number } = {},
 	) {
-		super({ lastSourceWins });
+		super(options);
 	}
 
 	protected async *cdbFiles(): AsyncIterable<CdbFile> {
+		this.builds++;
 		for (const file of this.files) {
 			yield file;
 		}
@@ -97,12 +100,32 @@ describe("CdbCardSearchRepository", () => {
 		const overlapping = await buildCdb([{ id: 1, name: "Card From Extra" }]);
 		const repository = new InMemoryCdbRepository(
 			[cdbFile("/folders/base.cdb", base), cdbFile("/extra/overlap.cdb", overlapping)],
-			true,
+			{ lastSourceWins: true },
 		);
 
 		const result = await repository.findById(1);
 
 		expect(result?.source).toBe("overlap.cdb");
+	});
+
+	it("serves the cached index within the TTL and rebuilds after it lapses", async () => {
+		let clock = 0;
+		const body = await buildCdb([{ id: 1, name: "Alpha" }]);
+		const repository = new InMemoryCdbRepository([cdbFile("/folders/base.cdb", body)], {
+			ttlMs: 1000,
+			now: () => clock,
+		});
+
+		await repository.searchByName("a", 10); // first build at t=0
+		expect(repository.builds).toBe(1);
+
+		clock = 999;
+		await repository.searchByName("a", 10); // still fresh → cached
+		expect(repository.builds).toBe(1);
+
+		clock = 1000;
+		await repository.searchByName("a", 10); // TTL lapsed → rebuild
+		expect(repository.builds).toBe(2);
 	});
 
 	it("lists each .cdb source with its card count", async () => {
