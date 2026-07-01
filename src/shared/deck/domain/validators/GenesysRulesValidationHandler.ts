@@ -1,5 +1,4 @@
 import { CardTypes } from "@shared/card/domain/CardTypes";
-import genesys from "genesys.json";
 
 import { Deck } from "../Deck";
 import { BanListDeckError } from "../errors/BanListDeckError";
@@ -9,9 +8,11 @@ import { DeckValidationHandler } from "./DeckValidationHandler";
 
 export class GenesysRulesValidationHandler implements DeckValidationHandler {
 	private readonly nextHandler: DeckValidationHandler | null = null;
-	private readonly genesysMap = new Map(genesys.map((item) => [item.code.toString(), item.points]));
 
-	constructor(private readonly maxDeckPoints: number) {}
+	constructor(
+		private readonly maxDeckPoints: number,
+		private readonly points: Map<number, number>,
+	) {}
 
 	setNextHandler(handler: DeckValidationHandler): DeckValidationHandler {
 		throw new Error("Method not implemented.");
@@ -30,7 +31,9 @@ export class GenesysRulesValidationHandler implements DeckValidationHandler {
 
 		const points = deck.allCards.reduce((sum, card) => {
 			const cardPoint =
-				this.genesysMap.get(card.code) ?? (card.alias ? this.genesysMap.get(card.alias) : 0) ?? 0;
+				this.points.get(Number(card.code)) ??
+				(card.alias ? this.points.get(Number(card.alias)) : 0) ??
+				0;
 
 			return sum + cardPoint;
 		}, 0);

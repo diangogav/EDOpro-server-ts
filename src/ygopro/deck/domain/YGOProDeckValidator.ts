@@ -7,6 +7,8 @@ import { SemiLimitedCardValidationHandler } from "@shared/deck/domain/validators
 import { LimitedCardValidationHandler } from "@shared/deck/domain/validators/LimitedCardValidationHandler";
 import { NoLimitedCardValidationHandler } from "@shared/deck/domain/validators/NoLimitedCardValidationHandler";
 import { AvailableCardValidationHandler } from "@shared/deck/domain/validators/AvailableCardValidationHandler";
+import { GenesysRulesValidationHandler } from "@shared/deck/domain/validators/GenesysRulesValidationHandler";
+import { MaxCopiesValidationHandler } from "@shared/deck/domain/validators/MaxCopiesValidationHandler";
 import { EdoproBanList } from "@edopro/ban-list/domain/BanList";
 import { CardAvailabilityValidationHandler } from "./validators/CardAvailabilityValidationHandler";
 
@@ -26,6 +28,16 @@ export class YGOProDeckValidator {
 
 	validate(deck: Deck): DeckError | null {
 		const chain = new DeckLimitsValidationHandler(this.deckRules);
+
+		if (this.banList.isGenesys()) {
+			chain
+				.setNextHandler(new MaxCopiesValidationHandler())
+				.setNextHandler(
+					new GenesysRulesValidationHandler(this.deckRules.maxDeckPoints, this.banList.points),
+				);
+
+			return chain.validate(deck);
+		}
 
 		chain
 			.setNextHandler(new ForbiddenCardValidationHandler(this.banList))

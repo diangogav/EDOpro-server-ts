@@ -1,10 +1,11 @@
 export abstract class BanList {
-	abstract add(cardId: number, quantity: number): void;
+	abstract add(cardId: number, quantity: number, points?: number): void;
 
 	readonly forbidden: number[] = [];
 	readonly limited: number[] = [];
 	readonly semiLimited: number[] = [];
 	readonly all: number[] = [];
+	readonly points = new Map<number, number>();
 	protected _name: string | null = null;
 	protected _hash = 0x7dfcee6a;
 	private _whitelisted = false;

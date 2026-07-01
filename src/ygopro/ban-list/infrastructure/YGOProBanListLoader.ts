@@ -1,6 +1,7 @@
 import { YGOProResourceLoader } from "../../ygopro/YGOProResourceLoader";
 import { YGOProBanList } from "../domain/YGOProBanList";
 import YGOProBanListMemoryRepository from "./YGOProBanListMemoryRepository";
+import { parseBanListEntry } from "src/shared/ban-list/parseBanListEntry";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 
 /**
@@ -52,29 +53,17 @@ export class YGOProBanListLoader {
 
 	/**
 	 * ygopro-lflist-encode only parses entries with limit 0-2.
-	 * Whitelist banlists also list unrestricted cards (limit >= 3) that the
-	 * library silently discards. We parse them from the raw text.
+	 * Whitelist and Genesys banlists also list cards with limit >= 3 (Genesys
+	 * cards are always 3 copies) that the library silently discards, along with
+	 * their point costs. We parse them from the raw text.
 	 */
 	private parseUnrestrictedEntries(text: string, banList: YGOProBanList): void {
 		for (const line of text.split("\n")) {
-			const trimmed = line.trim();
-			if (
-				!trimmed ||
-				trimmed.startsWith("#") ||
-				trimmed.startsWith("!") ||
-				trimmed.startsWith("$") ||
-				trimmed.startsWith("-")
-			) {
+			const entry = parseBanListEntry(line);
+			if (!entry || entry.limit < 3) {
 				continue;
 			}
-			const match = trimmed.match(/^(\d+)\s+(\d+)/);
-			if (!match) {
-				continue;
-			}
-			const limit = parseInt(match[2], 10);
-			if (limit >= 3) {
-				banList.add(parseInt(match[1], 10), limit);
-			}
+			banList.add(entry.code, entry.limit, entry.points);
 		}
 	}
 
@@ -98,7 +87,7 @@ export class YGOProBanListLoader {
 
 			lflist.entries.forEach((entry) => banList.add(entry.code, entry.limit));
 
-			if (isWhitelist) {
+			if (isWhitelist || banList.isGenesys()) {
 				this.parseUnrestrictedEntries(text, banList);
 			}
 

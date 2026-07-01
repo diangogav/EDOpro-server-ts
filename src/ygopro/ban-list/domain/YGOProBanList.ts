@@ -5,7 +5,7 @@ export class YGOProBanList extends BanList {
 		this._hash = hash;
 	}
 
-	add(cardId: number, quantity: number): void {
+	add(cardId: number, quantity: number, points?: number): void {
 		switch (quantity) {
 			case 0:
 				this.forbidden.push(cardId);
@@ -19,6 +19,10 @@ export class YGOProBanList extends BanList {
 			default:
 				this.all.push(cardId);
 				break;
+		}
+
+		if (points !== undefined && !isNaN(points)) {
+			this.points.set(cardId, points);
 		}
 	}
 }

@@ -26,6 +26,9 @@ cp -r "$REPOS/edopro-card-scripts" "$STAGING/edopro/scripts"
 cp -r "$REPOS/edopro-card-databases" "$STAGING/edopro/databases"
 cp -r "$REPOS/edopro-banlists-ignis" "$STAGING/edopro/banlists-ignis"
 cp -r "$REPOS/edopro-banlists-evolution" "$STAGING/edopro/banlists-evolution"
+# Genesys comes from evolution-assets (generated point list), overriding whatever
+# the termitaklk list shipped for it.
+cp "$REPOS/evolution-assets/lflist/genesys.lflist.conf" "$STAGING/edopro/banlists-evolution/Genesys.lflist.conf"
 
 # === YGOPro Base (scripts + cards.cdb + lflist propagate to all variants) ===
 mkdir -p "$STAGING/ygopro/base"
@@ -53,7 +56,6 @@ declare -A MAP=(
     ["Tengu.Plant"]="tengu"
     ["World"]="world"
     ["MD.2025.03"]="md"
-    ["Genesys"]="genesys"
 )
 
 for name in "${!MAP[@]}"; do
@@ -66,6 +68,9 @@ done
 # variants stay legal via their alias (the termitaklk list shipped variant
 # codes, which rejected the base cards in whitelist validation).
 cp "$REPOS/evolution-assets/lflist/jtp.lflist.conf" "$STAGING/ygopro/alternatives/jtp/lflist.conf"
+
+# Genesys also comes from evolution-assets (generated point list, see EDOPro block).
+cp "$REPOS/evolution-assets/lflist/genesys.lflist.conf" "$STAGING/ygopro/alternatives/genesys/lflist.conf"
 
 # Strip .git from the assembled release (keep it in repositories/ so refreshes can pull deltas)
 find "$STAGING" -name ".git" -type d -exec rm -rf {} + 2>/dev/null || true
