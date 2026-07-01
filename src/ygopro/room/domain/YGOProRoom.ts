@@ -146,6 +146,7 @@ export class YGOProRoom extends YgoRoom {
 			sideMin: 0,
 			sideMax: 15,
 			rule: this._hostInfo.rule,
+			maxDeckPoints: this._hostInfo.max_deck_points,
 		});
 		banListHash;
 		const banList = MercuryBanListMemoryRepository.findByHash(banListHash);

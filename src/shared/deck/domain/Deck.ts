@@ -7,6 +7,7 @@ import { DeckRuleValidationHandler } from "./validators/DeckRuleValidationHandle
 import { ForbiddenCardValidationHandler } from "./validators/ForbbidenCardValidationHandler";
 import { GenesysRulesValidationHandler } from "./validators/GenesysRulesValidationHandler";
 import { LimitedCardValidationHandler } from "./validators/LimitedCardValidationHandler";
+import { MaxCopiesValidationHandler } from "./validators/MaxCopiesValidationHandler";
 import { NoLimitedCardValidationHandler } from "./validators/NoLimitedCardValidationHandler";
 import { OfficialCardValidationHandler } from "./validators/OfficialCardsValidationHandler";
 import { PrereleaseValidationHandler } from "./validators/PrereleaseValidationHandler";
@@ -89,8 +90,10 @@ export class Deck {
 				.setNextHandler(new DeckRuleValidationHandler(this.deckRules))
 				.setNextHandler(new OfficialCardValidationHandler(this.deckRules))
 				.setNextHandler(new PrereleaseValidationHandler(this.deckRules))
-				.setNextHandler(new NoLimitedCardValidationHandler(this.banList))
-				.setNextHandler(new GenesysRulesValidationHandler(this.deckRules.maxDeckPoints));
+				.setNextHandler(new MaxCopiesValidationHandler())
+				.setNextHandler(
+					new GenesysRulesValidationHandler(this.deckRules.maxDeckPoints, this.banList.points),
+				);
 		}
 
 		return handleValidations.validate(this);
