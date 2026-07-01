@@ -56,6 +56,35 @@ describe("EdoproBanList", () => {
 		});
 	});
 
+	describe("points (Genesys third column)", () => {
+		it("should store the point cost when provided", () => {
+			const cardId = 21044178;
+			banList.add(cardId, 3, 100);
+			expect(banList.points.get(cardId)).toBe(100);
+			expect(banList.all).toContain(cardId);
+		});
+
+		it("should not store points when the third column is absent", () => {
+			const cardId = 456;
+			banList.add(cardId, 3);
+			expect(banList.points.has(cardId)).toBe(false);
+		});
+
+		it("should ignore a non-numeric point value", () => {
+			const cardId = 789;
+			banList.add(cardId, 3, NaN);
+			expect(banList.points.has(cardId)).toBe(false);
+		});
+
+		it("should not let points affect the hash", () => {
+			const withPoints = new EdoproBanList();
+			const withoutPoints = new EdoproBanList();
+			withPoints.add(123, 3, 50);
+			withoutPoints.add(123, 3);
+			expect(withPoints.hash).toBe(withoutPoints.hash);
+		});
+	});
+
 	describe("isGenesys", () => {
 		it("should return true if name is Genesys", () => {
 			banList.setName("Genesys");

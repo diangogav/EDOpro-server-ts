@@ -5,6 +5,7 @@ import { join } from "path";
 import { EdoproBanList } from "../domain/BanList";
 import BanListMemoryRepository from "./BanListMemoryRepository";
 import { BanListLoader } from "src/shared/ban-list/BanListLoader";
+import { parseBanListEntry } from "src/shared/ban-list/parseBanListEntry";
 
 export class EdoProBanListLoader extends BanListLoader {
 	async loadDirectory(path: string): Promise<void> {
@@ -38,16 +39,16 @@ export class EdoProBanListLoader extends BanListLoader {
 				banList.setName(line.substring(1));
 			}
 
-			if (!line.includes(" ")) {
-				continue;
-			}
-
 			if (banList.name === null) {
 				continue;
 			}
 
-			const [cardId, quantity] = line.split(" ");
-			banList.add(Number(cardId), Number(quantity));
+			const entry = parseBanListEntry(line);
+			if (!entry) {
+				continue;
+			}
+
+			banList.add(entry.code, entry.limit, entry.points);
 		}
 
 		BanListMemoryRepository.add(banList);
