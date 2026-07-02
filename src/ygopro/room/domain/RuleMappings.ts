@@ -505,9 +505,14 @@ export const formatRuleMappings: RuleMappings = {
 				max_deck_points = 100;
 			}
 
+			const genesysIndex = MercuryBanListMemoryRepository.findIndexByAlias("genesys");
+			if (genesysIndex === -1) {
+				throw new Error("Genesys ban list is not loaded");
+			}
+
 			return {
 				rule: 1,
-				lflist: 0,
+				lflist: genesysIndex,
 				duel_rule: 5,
 				max_deck_points,
 				time_limit: 450,
