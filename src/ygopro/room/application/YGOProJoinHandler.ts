@@ -7,7 +7,7 @@ import { JoinMessageHandler } from "@shared/room/domain/JoinMessageHandler";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
 
-import { YGOProCtosJoinGame } from "ygopro-msg-encode";
+import { ErrorMessageType, YGOProCtosJoinGame } from "ygopro-msg-encode";
 import { MessageRepository } from "@shared/messages/MessageRepository";
 
 import { JoinStrategyRegistry } from "./join-strategies/JoinStrategyRegistry";
@@ -64,6 +64,15 @@ export class YGOProJoinHandler implements JoinMessageHandler {
 		};
 
 		const strategy = this.registry.resolve(ctx);
-		await strategy.handle(ctx);
+		try {
+			await strategy.handle(ctx);
+		} catch (error) {
+			this.logger.error(`JOIN_GAME rejected: ${error instanceof Error ? error.message : error}`);
+			const errorBuf = this.messageRepository.errorMessage(ErrorMessageType.JOINERROR, 0);
+			this.socket.send(errorBuf);
+			// close() (not destroy()): flush the JOINERROR frame before tearing down,
+			// consistent with the other join error paths.
+			this.socket.close();
+		}
 	}
 }

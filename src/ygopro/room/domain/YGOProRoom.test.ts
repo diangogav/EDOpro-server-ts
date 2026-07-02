@@ -296,11 +296,25 @@ describe("YGOProRoom", () => {
 	});
 
 	describe("Genesys Format", () => {
+		const GENESYS_HASH = 999;
+
+		beforeEach(() => {
+			YGOProBanListMemoryRepository.clear();
+			YGOProBanListMemoryRepository.add(createBanList("2026.04 OCG", 100));
+			YGOProBanListMemoryRepository.add(createBanList("2026.05 TCG", 200));
+			YGOProBanListMemoryRepository.add(createBanList("Genesys", GENESYS_HASH));
+		});
+
+		afterEach(() => {
+			YGOProBanListMemoryRepository.clear();
+		});
+
 		it("Should create a room with Genesys format if command contains genesys and the default points should be 100", () => {
 			const room = YGOProRoomMother.create({ command: "genesys#123" });
 
 			expect(room.hostInfo.rule).toBe(1);
-			expect(room.hostInfo.lflist).toBe(0);
+			expect(room.banListHash).toBe(GENESYS_HASH);
+			expect(room.hostInfo.max_deck_points).toBe(100);
 			expect(room.hostInfo.time_limit).toBe(450);
 			expect(room.hostInfo.duel_rule).toBe(5);
 		});
@@ -309,7 +323,8 @@ describe("YGOProRoom", () => {
 			const room = YGOProRoomMother.create({ command: "genesys250#123" });
 
 			expect(room.hostInfo.rule).toBe(1);
-			expect(room.hostInfo.lflist).toBe(0);
+			expect(room.banListHash).toBe(GENESYS_HASH);
+			expect(room.hostInfo.max_deck_points).toBe(250);
 			expect(room.hostInfo.time_limit).toBe(450);
 			expect(room.hostInfo.duel_rule).toBe(5);
 		});
@@ -317,7 +332,8 @@ describe("YGOProRoom", () => {
 		it("Should create a room with Genesys format if command contains g and the default points should be 100", () => {
 			const room = YGOProRoomMother.create({ command: "g#123" });
 			expect(room.hostInfo.rule).toBe(1);
-			expect(room.hostInfo.lflist).toBe(0);
+			expect(room.banListHash).toBe(GENESYS_HASH);
+			expect(room.hostInfo.max_deck_points).toBe(100);
 			expect(room.hostInfo.time_limit).toBe(450);
 			expect(room.hostInfo.duel_rule).toBe(5);
 		});
@@ -326,9 +342,19 @@ describe("YGOProRoom", () => {
 			const room = YGOProRoomMother.create({ command: "G300#123" });
 
 			expect(room.hostInfo.rule).toBe(1);
-			expect(room.hostInfo.lflist).toBe(0);
+			expect(room.banListHash).toBe(GENESYS_HASH);
+			expect(room.hostInfo.max_deck_points).toBe(300);
 			expect(room.hostInfo.time_limit).toBe(450);
 			expect(room.hostInfo.duel_rule).toBe(5);
+		});
+
+		it("Should throw when creating a Genesys room and the Genesys ban list is not loaded", () => {
+			YGOProBanListMemoryRepository.clear();
+			YGOProBanListMemoryRepository.add(createBanList("2026.04 OCG", 100));
+
+			expect(() => YGOProRoomMother.create({ command: "genesys#123" })).toThrow(
+				"Genesys ban list is not loaded",
+			);
 		});
 	});
 
