@@ -23,6 +23,9 @@ sync_repo() {
 		echo "  update failed for $dir — re-cloning"
 		rm -rf "$dir"
 	fi
+	# Directory exists but is not a git repo (populated out-of-band, or FF above
+	# removed it already): start clean so git clone won't abort on a non-empty dir.
+	[ -d "$dir" ] && rm -rf "$dir"
 	if [ -n "$branch" ]; then
 		git clone --depth 1 --branch "$branch" "$url" "$dir"
 	else
