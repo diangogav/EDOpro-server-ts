@@ -84,6 +84,7 @@ const PAGE = `<!DOCTYPE html>
 		.mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; color: var(--gold-soft); font-size: .82rem; min-width: 100px; }
 		.cname { flex: 1; }
 		.src { font-size: .72rem; color: var(--muted); background: rgba(255,255,255,.05); padding: .12rem .5rem; border-radius: 6px; }
+		.pts { font-size: .72rem; color: var(--gold-soft); background: rgba(230,192,116,.12); border: 1px solid var(--border); padding: .12rem .5rem; border-radius: 6px; font-variant-numeric: tabular-nums; }
 		.tag { font-size: .66rem; text-transform: uppercase; letter-spacing: .05em; padding: .14rem .5rem; border-radius: 6px; font-weight: 600; }
 		.tag-edopro { color: #1a1206; background: var(--gold); }
 		.tag-ygopro { color: #0b1220; background: var(--violet); }
@@ -163,6 +164,7 @@ const PAGE = `<!DOCTYPE html>
 			var row = el("div", "card-row");
 			row.appendChild(el("span", "mono", card.id));
 			row.appendChild(el("span", "cname", card.name));
+			if (card.points != null) row.appendChild(el("span", "pts", card.points + " pts"));
 			if (card.source) row.appendChild(el("span", "src", card.source));
 			if (card.engine) row.appendChild(engineTag(card.engine));
 			return row;
@@ -198,7 +200,7 @@ const PAGE = `<!DOCTYPE html>
 			["edopro", "ygopro"].forEach(function (engine) {
 				if (state.engineFilter && state.engineFilter !== engine) return;
 				(state.banlists[engine] || []).forEach(function (b) {
-					var count = b.forbidden + b.limited + b.semiLimited;
+					var count = b.forbidden + b.limited + b.semiLimited + b.whitelisted;
 					banlists.appendChild(navItem(engine, b.name, String(count), function () { selectBanlist(engine, b.name); }));
 				});
 				(state.databases[engine] || []).forEach(function (s) {
@@ -242,7 +244,7 @@ const PAGE = `<!DOCTYPE html>
 			if (!entries || !entries.length) return null;
 			var sec = el("div", "ban-sec " + cssClass);
 			sec.appendChild(el("h4", null, title + " \\u00b7 " + entries.length));
-			entries.forEach(function (e) { sec.appendChild(cardRow({ id: e.id, name: e.name || "(unknown card)" })); });
+			entries.forEach(function (e) { sec.appendChild(cardRow({ id: e.id, name: e.name || "(unknown card)", points: e.points })); });
 			return sec;
 		}
 
@@ -257,7 +259,7 @@ const PAGE = `<!DOCTYPE html>
 					banSection("Forbidden", "sec-forbidden", data.forbidden),
 					banSection("Limited", "sec-limited", data.limited),
 					banSection("Semi-Limited", "sec-semi", data.semiLimited),
-					banSection("Whitelisted", "sec-white", data.whitelisted)
+					banSection(data.isGenesys ? "Point List" : "Whitelisted", "sec-white", data.whitelisted)
 				];
 				sections.forEach(function (s) { if (s) list.appendChild(s); });
 				if (!list.children.length) list.appendChild(el("p", "muted", "This ban list has no entries."));

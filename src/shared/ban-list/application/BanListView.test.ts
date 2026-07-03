@@ -38,7 +38,18 @@ describe("toBanListViews", () => {
 		banList.add(444, 2);
 
 		expect(toBanListViews([banList])).toEqual([
-			{ name: "2024.10 TCG", forbidden: 2, limited: 1, semiLimited: 1 },
+			{ name: "2024.10 TCG", forbidden: 2, limited: 1, semiLimited: 1, whitelisted: 0 },
+		]);
+	});
+
+	it("counts 3-copy cards (whitelist / Genesys point list) as whitelisted", () => {
+		const banList = buildBanList("Genesys");
+		banList.add(111, 3);
+		banList.add(222, 3);
+		banList.add(333, 3);
+
+		expect(toBanListViews([banList])).toEqual([
+			{ name: "Genesys", forbidden: 0, limited: 0, semiLimited: 0, whitelisted: 3 },
 		]);
 	});
 

@@ -60,4 +60,25 @@ describe("toBanListDetail", () => {
 			{ id: 555, name: null },
 		]);
 	});
+
+	it("exposes the Genesys point list with costs, sorted by cost descending", () => {
+		const banList = new FakeBanList();
+		banList.setName("Genesys");
+		banList.add(111, 3);
+		banList.add(222, 3);
+		banList.add(333, 3);
+		banList.points.set(111, 50);
+		banList.points.set(222, 81);
+		banList.points.set(333, 10);
+
+		const detail = toBanListDetail(banList, resolve);
+
+		expect(detail.isGenesys).toBe(true);
+		expect(detail.isWhitelist).toBe(false);
+		expect(detail.whitelisted).toEqual([
+			{ id: 222, name: "Limited One", points: 81 },
+			{ id: 111, name: "Forbidden One", points: 50 },
+			{ id: 333, name: "Semi One", points: 10 },
+		]);
+	});
 });
