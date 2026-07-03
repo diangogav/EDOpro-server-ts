@@ -26,9 +26,9 @@ cp -r "$REPOS/edopro-card-scripts" "$STAGING/edopro/scripts"
 cp -r "$REPOS/edopro-card-databases" "$STAGING/edopro/databases"
 cp -r "$REPOS/edopro-banlists-ignis" "$STAGING/edopro/banlists-ignis"
 cp -r "$REPOS/edopro-banlists-evolution" "$STAGING/edopro/banlists-evolution"
-# Genesys comes from evolution-assets (generated point list), overriding whatever
-# the termitaklk list shipped for it.
-cp "$REPOS/evolution-assets/lflist/genesys.lflist.conf" "$STAGING/edopro/banlists-evolution/Genesys.lflist.conf"
+# Lowercase filename required: it overwrites the shipped genesys.lflist.conf in
+# place instead of adding a duplicate on a case-sensitive FS.
+cp "$REPOS/evolution-assets/lflist/genesys.lflist.conf" "$STAGING/edopro/banlists-evolution/genesys.lflist.conf"
 
 # === YGOPro Base (scripts + cards.cdb + lflist propagate to all variants) ===
 mkdir -p "$STAGING/ygopro/base"
@@ -64,12 +64,10 @@ for name in "${!MAP[@]}"; do
     cp "$src" "$STAGING/ygopro/alternatives/${MAP[$name]}/lflist.conf"
 done
 
-# JTP comes from evolution-assets: it lists BASE card codes, so alt-art
-# variants stay legal via their alias (the termitaklk list shipped variant
-# codes, which rejected the base cards in whitelist validation).
+# JTP list from evolution-assets uses base card codes so alt-art variants stay
+# legal via their alias.
 cp "$REPOS/evolution-assets/lflist/jtp.lflist.conf" "$STAGING/ygopro/alternatives/jtp/lflist.conf"
 
-# Genesys also comes from evolution-assets (generated point list, see EDOPro block).
 cp "$REPOS/evolution-assets/lflist/genesys.lflist.conf" "$STAGING/ygopro/alternatives/genesys/lflist.conf"
 
 # Strip .git from the assembled release (keep it in repositories/ so refreshes can pull deltas)
