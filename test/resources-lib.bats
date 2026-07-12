@@ -202,28 +202,28 @@ teardown() {
 # ============================================================
 
 @test "RSM-002 whole-source: copies entire source dir to target" {
-  run apply_rule "$REPOS/source-a" "" "" "" "$STAGING/whole-target" ""
+  run apply_rule "$REPOS/source-a" "" "" "" "$STAGING/whole-target"
   [ "$status" -eq 0 ]
   [ -f "$STAGING/whole-target/file-a.txt" ]
   [ -f "$STAGING/whole-target/file-b.txt" ]
 }
 
 @test "RSM-002 dir-only: copies named subdirectory to target" {
-  run apply_rule "$REPOS/source-with-dir" "subdir" "" "" "$STAGING/dir-target" ""
+  run apply_rule "$REPOS/source-with-dir" "subdir" "" "" "$STAGING/dir-target"
   [ "$status" -eq 0 ]
   [ -f "$STAGING/dir-target/dir-file.txt" ]
   [ ! -f "$STAGING/dir-target/root-file.txt" ]
 }
 
 @test "RSM-002 single-file: copies named file to target path" {
-  run apply_rule "$REPOS/source-a" "" "file-a.txt" "" "$STAGING/out/file-a.txt" ""
+  run apply_rule "$REPOS/source-a" "" "file-a.txt" "" "$STAGING/out/file-a.txt"
   [ "$status" -eq 0 ]
   [ -f "$STAGING/out/file-a.txt" ]
 }
 
 @test "RSM-002 only-glob: copies matching files, handles spaces+parens in names" {
   mkdir -p "$STAGING/glob-target"
-  run apply_rule "$REPOS/source-a" "" "" "*.txt" "$STAGING/glob-target" ""
+  run apply_rule "$REPOS/source-a" "" "" "*.txt" "$STAGING/glob-target"
   [ "$status" -eq 0 ]
   [ -f "$STAGING/glob-target/file-a.txt" ]
   [ -f "$STAGING/glob-target/file-b.txt" ]
@@ -232,14 +232,14 @@ teardown() {
 
 @test "RSM-002 empty-glob: no match is non-fatal (exit 0)" {
   mkdir -p "$STAGING/empty-glob-target"
-  run apply_rule "$REPOS/source-a" "" "" "*.nosuchext" "$STAGING/empty-glob-target" ""
+  run apply_rule "$REPOS/source-a" "" "" "*.nosuchext" "$STAGING/empty-glob-target"
   [ "$status" -eq 0 ]
   result=$(find "$STAGING/empty-glob-target" -maxdepth 1 -type f | wc -l)
   [ "$result" -eq 0 ]
 }
 
 @test "RSM-002 dir+only: copies matching files from subdir, handles spaces+parens" {
-  run apply_rule "$REPOS/source-with-dir" "subdir" "" "*.lflist.conf" "$STAGING/dir-only-target" ""
+  run apply_rule "$REPOS/source-with-dir" "subdir" "" "*.lflist.conf" "$STAGING/dir-only-target"
   [ "$status" -eq 0 ]
   [ -f "$STAGING/dir-only-target/Rush.lflist.conf" ]
   [ -f "$STAGING/dir-only-target/2014.04 HAT (Pre Errata).lflist.conf" ]
@@ -248,29 +248,29 @@ teardown() {
 }
 
 @test "RSM-002 missing single-file: apply_rule exits non-zero" {
-  run apply_rule "$REPOS/source-a" "" "no-such-file.txt" "" "$STAGING/out/nope.txt" ""
+  run apply_rule "$REPOS/source-a" "" "no-such-file.txt" "" "$STAGING/out/nope.txt"
   [ "$status" -ne 0 ]
   [[ "$output" == *"no-such-file.txt"* ]]
 }
 
 @test "RSM-002 missing dir subdirectory: apply_rule exits non-zero (hard failure)" {
-  run apply_rule "$REPOS/source-with-dir" "no-such-subdir" "" "" "$STAGING/missing-dir-target" ""
+  run apply_rule "$REPOS/source-with-dir" "no-such-subdir" "" "" "$STAGING/missing-dir-target"
   [ "$status" -ne 0 ]
   [[ "$output" == *"no-such-subdir"* ]]
 }
 
 @test "RSM-002 missing dir subdirectory with only-glob: apply_rule exits non-zero" {
-  run apply_rule "$REPOS/source-with-dir" "no-such-subdir" "" "*.conf" "$STAGING/missing-dir-glob-target" ""
+  run apply_rule "$REPOS/source-with-dir" "no-such-subdir" "" "*.conf" "$STAGING/missing-dir-glob-target"
   [ "$status" -ne 0 ]
   [[ "$output" == *"no-such-subdir"* ]]
 }
 
 @test "RSM-002 overwrite: second apply_rule call wins at the same target" {
   # First source-a/file-a.txt, then source-b content overwrites the same target
-  run apply_rule "$REPOS/source-a" "" "file-a.txt" "" "$STAGING/out/dup.txt" ""
+  run apply_rule "$REPOS/source-a" "" "file-a.txt" "" "$STAGING/out/dup.txt"
   [ "$status" -eq 0 ]
   [ "$(cat "$STAGING/out/dup.txt")" = "file-a content" ]
-  run apply_rule "$REPOS/source-b" "" "file-c.txt" "" "$STAGING/out/dup.txt" ""
+  run apply_rule "$REPOS/source-b" "" "file-c.txt" "" "$STAGING/out/dup.txt"
   [ "$status" -eq 0 ]
   [ "$(cat "$STAGING/out/dup.txt")" = "file-c content" ]
 }
@@ -342,4 +342,63 @@ teardown() {
   run jq '.assembly | length' "$REPO_ROOT/resources.manifest.json"
   [ "$status" -eq 0 ]
   [ "$output" -eq 22 ]
+}
+
+# ============================================================
+# JD hardening — structural guards and robustness (PR1b)
+# ============================================================
+
+@test "hardening: sources not an array aborts with exit 1 naming the violation" {
+  MANIFEST_PATH="$MANIFEST_FIXTURES/sources-not-array.json"
+  run validate_manifest "$MANIFEST_PATH"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"sources"* ]]
+}
+
+@test "hardening: assembly not an array aborts with exit 1 naming the violation" {
+  MANIFEST_PATH="$MANIFEST_FIXTURES/assembly-not-array.json"
+  run validate_manifest "$MANIFEST_PATH"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"assembly"* ]]
+}
+
+@test "hardening: unknown type field as integer (jq crash path) does not silently pass" {
+  # A .type value of 5 (integer) triggers (.type|tostring) safely — must still
+  # report an unknown-type violation, not silently pass.
+  local bad_manifest
+  bad_manifest="$(mktemp)"
+  printf '{"sources":[{"id":"s","type":5,"url":"http://x"}],"assembly":[]}' \
+    > "$bad_manifest"
+  run validate_manifest "$bad_manifest"
+  rm -f "$bad_manifest"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"unknown"* ]] || [[ "$output" == *"type"* ]]
+}
+
+@test "hardening: http_integrity_check accepts uppercase .CDB extension" {
+  # Case-insensitive .cdb match — an uppercase .CDB file must trigger the
+  # SQLite header check, not be treated as a plain non-cdb file.
+  local upper_cdb
+  upper_cdb="$(mktemp /tmp/test-XXXXXX.CDB)"
+  printf 'SQLite format 3\x00' > "$upper_cdb"
+  run http_integrity_check "$upper_cdb" "src-upper" "http://example.com"
+  rm -f "$upper_cdb"
+  [ "$status" -eq 0 ]
+}
+
+@test "hardening: http_integrity_check rejects corrupt uppercase .CDB" {
+  local upper_cdb
+  upper_cdb="$(mktemp /tmp/test-XXXXXX.CDB)"
+  printf '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' \
+    > "$upper_cdb"
+  run http_integrity_check "$upper_cdb" "src-upper-corrupt" "http://example.com"
+  rm -f "$upper_cdb"
+  [ "$status" -eq 1 ]
+}
+
+@test "hardening: apply_rule whole-source (5 args, no vestigial 6th arg)" {
+  # Confirm that apply_rule works correctly with exactly 5 arguments.
+  run apply_rule "$REPOS/source-a" "" "" "" "$STAGING/five-arg-target"
+  [ "$status" -eq 0 ]
+  [ -f "$STAGING/five-arg-target/file-a.txt" ]
 }

@@ -54,6 +54,19 @@ validate_manifest() {
     return 1
   fi
 
+  # (structural guard) sources and assembly must be arrays
+  local sources_type assembly_type
+  sources_type=$(jq -r '(.sources | type)' "$manifest" 2>/dev/null)
+  if [ $? -ne 0 ] || [ "$sources_type" != "array" ]; then
+    echo "[resources][ERROR] Manifest validation failed (structural): .sources must be an array, got ${sources_type:-error}" >&2
+    return 1
+  fi
+  assembly_type=$(jq -r '(.assembly | type)' "$manifest" 2>/dev/null)
+  if [ $? -ne 0 ] || [ "$assembly_type" != "array" ]; then
+    echo "[resources][ERROR] Manifest validation failed (structural): .assembly must be an array, got ${assembly_type:-error}" >&2
+    return 1
+  fi
+
   # (RSM-001) sources[] field validation
   # (1) every source id must be non-empty
   local empty_ids
@@ -96,9 +109,18 @@ validate_manifest() {
     return 1
   fi
 
-  # (b) No unknown source types — only "git" and "http" are allowed
-  local bad_types
-  bad_types=$(jq -r '[.sources[] | select(.type != "git" and .type != "http")] | map(.id + " (type=" + .type + ")") | .[]' "$manifest" 2>/dev/null)
+  # (b) No unknown source types — only "git" and "http" are allowed.
+  # Use (.type|tostring) so non-string type values (e.g. integers) are safely
+  # converted rather than causing jq to error. Capture jq exit status explicitly
+  # so a jq crash (non-zero exit) is treated as a hard validation failure
+  # instead of silently passing (fail-open prevention).
+  local bad_types jq_rc
+  bad_types=$(jq -r '[.sources[] | select((.type|tostring) != "git" and (.type|tostring) != "http")] | map(.id + " (type=" + (.type|tostring) + ")") | .[]' "$manifest" 2>/dev/null)
+  jq_rc=$?
+  if [ $jq_rc -ne 0 ]; then
+    echo "[resources][ERROR] Manifest validation failed (b): jq error while checking source types (exit $jq_rc)" >&2
+    return 1
+  fi
   if [ -n "$bad_types" ]; then
     echo "[resources][ERROR] Manifest validation failed (b): unknown source type(s): $bad_types" >&2
     return 1
@@ -178,12 +200,13 @@ http_integrity_check() {
     return 1
   fi
 
-  # (b) For .cdb files: first 16 bytes must be the SQLite3 magic header
+  # (b) For .cdb files: first 16 bytes must be the SQLite3 magic header.
+  #     Case-insensitive match (${filepath,,}) so both .cdb and .CDB trigger the check.
   #     (D4) Binary comparison via cmp — command substitution strips the trailing
   #     NUL byte, so string comparison would only check 15 of 16 magic bytes and
   #     accept a file truncated to exactly "SQLite format 3". cmp compares the raw
   #     first 16 bytes; a file shorter than 16 bytes fails because cmp reports EOF.
-  case "$filepath" in
+  case "${filepath,,}" in
     *.cdb)
       if ! head -c 16 "$filepath" | cmp -s - <(printf 'SQLite format 3\000'); then
         echo "[resources][ERROR] Integrity check failed for $src_id ($url): not a valid SQLite3 .cdb (bad magic header)" >&2
