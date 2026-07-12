@@ -109,6 +109,29 @@ validate_manifest() {
     return 1
   fi
 
+  # (6) An http source resolves to a flat file under repositories/ (its "source
+  #     dir" is repositories/ itself), so a rule referencing an http source
+  #     without a `file` key would copy the whole repositories/ tree. Reject any
+  #     rule whose from (string or any array element) points at an http source
+  #     when the rule has no `file`. Name the offending rule target.
+  local http_no_file
+  http_no_file=$(jq -r '
+    (.sources | map(select(.type == "http") | .id)) as $http |
+    [
+      .assembly[] |
+      select(has("file") | not) |
+      .target as $t |
+      .from as $from |
+      (if ($from | type) == "array" then $from[] else $from end) |
+      select(. as $f | ($http | index($f)) != null) |
+      $t
+    ] | unique | .[]
+  ' "$manifest" 2>/dev/null)
+  if [ -n "$http_no_file" ]; then
+    echo "[resources][ERROR] Manifest validation failed (RSM-001): rule(s) referencing an http source without a file key (whole-source/dir/only over a flat http file unsupported): $http_no_file" >&2
+    return 1
+  fi
+
   # (b) No unknown source types — only "git" and "http" are allowed.
   # Use (.type|tostring) so non-string type values (e.g. integers) are safely
   # converted rather than causing jq to error. Capture jq exit status explicitly
@@ -326,7 +349,10 @@ sync_repo() {
   local id="$1"
   local url="$2"
   local branch="$3"
-  local dir="repositories/$id"
+  # Checkout root honors REPOS_ROOT (default ./repositories), matching
+  # setup_resources.sh, so both stages agree on where sources land.
+  local repos_root="${REPOS_ROOT:-./repositories}"
+  local dir="$repos_root/$id"
 
   if [ -d "$dir/.git" ]; then
     if [ -n "$branch" ]; then

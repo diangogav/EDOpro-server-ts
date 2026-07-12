@@ -36,6 +36,21 @@ mkdir -p "$STAGING"
 
 rule_count=$(manifest_get '.assembly | length')
 
+# Resolve source directory for a given source id.
+# git sources land at repositories/<id>; http sources land as a flat file
+# at repositories/<filename>, so their "source dir" is repositories/ itself.
+# Defined once before the loop; src_id is passed via jq --arg to avoid string
+# interpolation into the filter.
+_resolve_src_dir() {
+  local src_id="$1"
+  local src_type
+  src_type=$(jq -r --arg id "$src_id" '.sources[] | select(.id == $id) | .type' "$MANIFEST_PATH")
+  case "$src_type" in
+    http) echo "$REPOS" ;;
+    *)    echo "$REPOS/$src_id" ;;
+  esac
+}
+
 i=0
 while [ "$i" -lt "$rule_count" ]; do
   rule_target=$(manifest_get ".assembly[$i].target")
@@ -46,19 +61,6 @@ while [ "$i" -lt "$rule_count" ]; do
   rule_only=$(manifest_get ".assembly[$i].only // \"\"")
 
   full_target="$STAGING/$rule_target"
-
-  # Resolve source directory for a given source id.
-  # git sources land at repositories/<id>; http sources land as a flat file
-  # at repositories/<filename>, so their "source dir" is repositories/ itself.
-  _resolve_src_dir() {
-    local src_id="$1"
-    local src_type
-    src_type=$(manifest_get ".sources[] | select(.id == \"$src_id\") | .type")
-    case "$src_type" in
-      http) echo "$REPOS" ;;
-      *)    echo "$REPOS/$src_id" ;;
-    esac
-  }
 
   if [ "$rule_from_type" = "array" ]; then
     # RSM-003 fallback chain — from is an array; a file key is required
@@ -100,7 +102,7 @@ RESOURCES_DIR="$(dirname "$RELEASES")"
 if [ -d "$RESOURCES_DIR/current" ] && [ ! -L "$RESOURCES_DIR/current" ]; then
   rm -rf "$RESOURCES_DIR/current"
 fi
-ln -sfn "releases/$ID" "$RESOURCES_DIR/.current.tmp"
+ln -sfn "$(basename "$RELEASES")/$ID" "$RESOURCES_DIR/.current.tmp"
 mv -T "$RESOURCES_DIR/.current.tmp" "$RESOURCES_DIR/current"
 echo "Published $RESOURCES_DIR/current -> releases/$ID"
 

@@ -18,7 +18,10 @@ validate_manifest "$MANIFEST_PATH" || exit 1
 
 echo "Fetching sources..."
 
-mkdir -p repositories
+# Support test override for repos root; default matches setup_resources.sh.
+REPOS="${REPOS_ROOT:-./repositories}"
+
+mkdir -p "$REPOS"
 
 # Iterate all sources from the manifest
 source_count=$(manifest_get '.sources | length')
@@ -38,7 +41,7 @@ while [ "$i" -lt "$source_count" ]; do
       ;;
     http)
       src_filename=$(manifest_get ".sources[$i].filename")
-      local_path="repositories/$src_filename"
+      local_path="$REPOS/$src_filename"
       echo "  [http] $src_id -> $local_path"
       wget -qO "$local_path" "$src_url" || fail "wget failed for $src_id ($src_url)"
       http_integrity_check "$local_path" "$src_id" "$src_url" \
