@@ -2,7 +2,7 @@
 FROM public.ecr.aws/docker/library/node:24.11.0-bullseye-slim AS resources-builder
 
 RUN apt-get update -y && \
-    apt-get install -y --no-install-recommends wget git ca-certificates && \
+    apt-get install -y --no-install-recommends wget git ca-certificates jq && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
@@ -10,7 +10,7 @@ WORKDIR /build
 # Resource layout is owned by clone_repositories.sh + setup_resources.sh — the
 # single source of truth, shared with local dev (README) and the runtime refresh
 # loop (entrypoint). This produces /build/resources/releases/<id> and a current symlink.
-COPY clone_repositories.sh setup_resources.sh ./
+COPY clone_repositories.sh setup_resources.sh resources-lib.sh resources.manifest.json ./
 RUN bash clone_repositories.sh && bash setup_resources.sh
 
 
@@ -55,7 +55,7 @@ RUN npm run build && \
 FROM public.ecr.aws/docker/library/node:24.11.0-slim
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl wget git ca-certificates liblua5.3-dev libsqlite3-dev libevent-dev dumb-init && \
+    apt-get install -y --no-install-recommends curl wget git ca-certificates jq liblua5.3-dev libsqlite3-dev libevent-dev dumb-init && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -81,6 +81,6 @@ COPY --from=core-builder /app/CoreIntegrator ./core/CoreIntegrator
 COPY --from=resources-builder /build/resources ./resources
 
 # Provisioning scripts (single source of truth) + entrypoint, reused at runtime.
-COPY clone_repositories.sh setup_resources.sh resources-updater.sh entrypoint.sh ./
+COPY clone_repositories.sh setup_resources.sh resources-lib.sh resources.manifest.json resources-updater.sh entrypoint.sh ./
 
 CMD ["dumb-init", "bash", "entrypoint.sh"]
