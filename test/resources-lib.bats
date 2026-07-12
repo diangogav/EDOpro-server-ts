@@ -3,26 +3,66 @@
 # Bats test suite for resources-lib.sh
 # Covers: RSM-002, RSM-003, RSM-004, RSM-005, RSM-006, RSM-012
 #
+# Self-contained: all fixtures are generated in setup() — no binary files
+# in git (avoids *repositories/ and *.cdb gitignore patterns).
+#
 # Run from repo root:
 #   tools/bats-core/bin/bats test/resources-lib.bats
 
 REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 LIB="$REPO_ROOT/resources-lib.sh"
-FIXTURES="$REPO_ROOT/test/fixtures"
-REPOS="$FIXTURES/repositories"
+MANIFEST_FIXTURES="$REPO_ROOT/test/fixtures/manifests"
 
-# --- helpers ---
-
+# ---------------------------------------------------------------------------
+# setup — create a fresh temp dir tree for each test
+# ---------------------------------------------------------------------------
 setup() {
-  # Each test gets its own temp staging dir
-  STAGING="$(mktemp -d)"
-  # Source the lib; override MANIFEST_PATH per test as needed
-  MANIFEST_PATH="$FIXTURES/manifests/valid-minimal.json"
+  WORK="$(mktemp -d)"
+  STAGING="$WORK/staging"
+  REPOS="$WORK/repositories"
+  mkdir -p "$STAGING"
+
+  # --- fixture source directories (generated, not stored in git) ---
+
+  # source-a: plain files + a filename with spaces and parentheses
+  mkdir -p "$REPOS/source-a"
+  printf 'file-a content' > "$REPOS/source-a/file-a.txt"
+  printf 'file-b content' > "$REPOS/source-a/file-b.txt"
+  printf 'hat data'       > "$REPOS/source-a/2014.04 HAT (Pre Errata).lflist.conf.txt"
+
+  # source-b: fallback source (file-c only in source-b; file-b also here but different content)
+  mkdir -p "$REPOS/source-b"
+  printf 'fallback content' > "$REPOS/source-b/file-b.txt"
+  printf 'file-c content'   > "$REPOS/source-b/file-c.txt"
+
+  # source-with-dir: source that has a subdirectory
+  mkdir -p "$REPOS/source-with-dir/subdir"
+  printf 'dir-file content'  > "$REPOS/source-with-dir/subdir/dir-file.txt"
+  printf 'root-file content' > "$REPOS/source-with-dir/root-file.txt"
+
+  # http-source: crafted binary/text files for integrity check tests
+  mkdir -p "$REPOS/http-source"
+
+  # Valid SQLite3 magic: "SQLite format 3\x00" (exactly 16 bytes)
+  printf 'SQLite format 3\x00' > "$REPOS/http-source/valid.cdb"
+
+  # Empty file (fails non-empty check)
+  > "$REPOS/http-source/empty.cdb"
+
+  # Corrupt: 16 null bytes (fails SQLite magic check)
+  printf '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' \
+    > "$REPOS/http-source/corrupt.cdb"
+
+  # Non-cdb: only non-empty check applies
+  printf 'some lflist content\n' > "$REPOS/http-source/valid.conf"
+
+  # Source the library; allow MANIFEST_PATH override per test
+  MANIFEST_PATH="$MANIFEST_FIXTURES/valid-minimal.json"
   source "$LIB"
 }
 
 teardown() {
-  rm -rf "$STAGING"
+  rm -rf "$WORK"
 }
 
 # ============================================================
@@ -30,40 +70,40 @@ teardown() {
 # ============================================================
 
 @test "RSM-005a: malformed JSON aborts with exit 1" {
-  MANIFEST_PATH="$FIXTURES/manifests/malformed.json"
+  MANIFEST_PATH="$MANIFEST_FIXTURES/malformed.json"
   run validate_manifest "$MANIFEST_PATH"
   [ "$status" -eq 1 ]
 }
 
 @test "RSM-005b: unknown source type aborts with exit 1" {
-  MANIFEST_PATH="$FIXTURES/manifests/unknown-type.json"
+  MANIFEST_PATH="$MANIFEST_FIXTURES/unknown-type.json"
   run validate_manifest "$MANIFEST_PATH"
   [ "$status" -eq 1 ]
   [[ "$output" == *"ftp"* ]] || [[ "$output" == *"type"* ]]
 }
 
 @test "RSM-005c: dangling from-id aborts with exit 1" {
-  MANIFEST_PATH="$FIXTURES/manifests/dangling-from.json"
+  MANIFEST_PATH="$MANIFEST_FIXTURES/dangling-from.json"
   run validate_manifest "$MANIFEST_PATH"
   [ "$status" -eq 1 ]
   [[ "$output" == *"missing-src"* ]] || [[ "$output" == *"dangling"* ]] || [[ "$output" == *"from"* ]]
 }
 
 @test "RSM-005d: file+dir combo aborts with exit 1" {
-  MANIFEST_PATH="$FIXTURES/manifests/file-dir-combo.json"
+  MANIFEST_PATH="$MANIFEST_FIXTURES/file-dir-combo.json"
   run validate_manifest "$MANIFEST_PATH"
   [ "$status" -eq 1 ]
 }
 
 @test "RSM-005e: target collision without overwrite aborts with exit 1" {
-  MANIFEST_PATH="$FIXTURES/manifests/collision-no-overwrite.json"
+  MANIFEST_PATH="$MANIFEST_FIXTURES/collision-no-overwrite.json"
   run validate_manifest "$MANIFEST_PATH"
   [ "$status" -eq 1 ]
   [[ "$output" == *"out/lflist.conf"* ]] || [[ "$output" == *"collision"* ]] || [[ "$output" == *"overwrite"* ]]
 }
 
 @test "RSM-005 all-checks-pass: valid manifest exits 0" {
-  MANIFEST_PATH="$FIXTURES/manifests/valid-minimal.json"
+  MANIFEST_PATH="$MANIFEST_FIXTURES/valid-minimal.json"
   run validate_manifest "$MANIFEST_PATH"
   [ "$status" -eq 0 ]
 }
@@ -102,7 +142,6 @@ teardown() {
 # ============================================================
 
 @test "RSM-002 whole-source: copies entire source dir to target" {
-  mkdir -p "$STAGING"
   run apply_rule "$REPOS/source-a" "" "" "" "$STAGING/whole-target" ""
   [ "$status" -eq 0 ]
   [ -f "$STAGING/whole-target/file-a.txt" ]
@@ -110,7 +149,6 @@ teardown() {
 }
 
 @test "RSM-002 dir-only: copies named subdirectory to target" {
-  mkdir -p "$STAGING"
   run apply_rule "$REPOS/source-with-dir" "subdir" "" "" "$STAGING/dir-target" ""
   [ "$status" -eq 0 ]
   [ -f "$STAGING/dir-target/dir-file.txt" ]
@@ -118,7 +156,6 @@ teardown() {
 }
 
 @test "RSM-002 single-file: copies named file to target path" {
-  mkdir -p "$STAGING"
   run apply_rule "$REPOS/source-a" "" "file-a.txt" "" "$STAGING/out/file-a.txt" ""
   [ "$status" -eq 0 ]
   [ -f "$STAGING/out/file-a.txt" ]
@@ -128,7 +165,6 @@ teardown() {
   mkdir -p "$STAGING/glob-target"
   run apply_rule "$REPOS/source-a" "" "" "*.txt" "$STAGING/glob-target" ""
   [ "$status" -eq 0 ]
-  # files matching *.txt including the one with spaces and parens
   [ -f "$STAGING/glob-target/file-a.txt" ]
   [ -f "$STAGING/glob-target/file-b.txt" ]
   [ -f "$STAGING/glob-target/2014.04 HAT (Pre Errata).lflist.conf.txt" ]
@@ -138,7 +174,6 @@ teardown() {
   mkdir -p "$STAGING/empty-glob-target"
   run apply_rule "$REPOS/source-a" "" "" "*.nosuchext" "$STAGING/empty-glob-target" ""
   [ "$status" -eq 0 ]
-  # Target dir exists but is empty (no files copied)
   result=$(find "$STAGING/empty-glob-target" -maxdepth 1 -type f | wc -l)
   [ "$result" -eq 0 ]
 }
@@ -148,51 +183,49 @@ teardown() {
 # ============================================================
 
 @test "RSM-003 first-source-wins: takes file from first available source" {
-  mkdir -p "$STAGING"
-  # file-b.txt exists in both source-a and source-b; first source wins
-  run apply_rule_with_fallback "file-b.txt" "$STAGING/out/file-b.txt" "$REPOS/source-a" "$REPOS/source-b"
+  # file-b.txt exists in both sources; first source wins
+  run apply_rule_with_fallback "file-b.txt" "$STAGING/out/file-b.txt" \
+    "$REPOS/source-a" "$REPOS/source-b"
   [ "$status" -eq 0 ]
-  # Content should be from source-a
   [ "$(cat "$STAGING/out/file-b.txt")" = "file-b content" ]
 }
 
 @test "RSM-003 fallback-to-second: uses second source when file absent from first" {
-  mkdir -p "$STAGING"
   # file-c.txt is only in source-b
-  run apply_rule_with_fallback "file-c.txt" "$STAGING/out/file-c.txt" "$REPOS/source-a" "$REPOS/source-b"
+  run apply_rule_with_fallback "file-c.txt" "$STAGING/out/file-c.txt" \
+    "$REPOS/source-a" "$REPOS/source-b"
   [ "$status" -eq 0 ]
   [ -f "$STAGING/out/file-c.txt" ]
 }
 
 @test "RSM-003 chain-exhausted: aborts when file missing from all sources" {
-  mkdir -p "$STAGING"
-  run apply_rule_with_fallback "no-such-file.txt" "$STAGING/out/nosuch.txt" "$REPOS/source-a" "$REPOS/source-b"
+  run apply_rule_with_fallback "no-such-file.txt" "$STAGING/out/nosuch.txt" \
+    "$REPOS/source-a" "$REPOS/source-b"
   [ "$status" -eq 1 ]
 }
 
 # ============================================================
-# RSM-004 — Collision detection (validate_manifest checks; overwrite pass)
+# RSM-004 — Collision detection (validate_manifest handles it)
 # ============================================================
 
 @test "RSM-004 collision-without-overwrite: validate_manifest catches it" {
-  MANIFEST_PATH="$FIXTURES/manifests/collision-no-overwrite.json"
+  MANIFEST_PATH="$MANIFEST_FIXTURES/collision-no-overwrite.json"
   run validate_manifest "$MANIFEST_PATH"
   [ "$status" -eq 1 ]
 }
 
 @test "RSM-004 intentional-overwrite: valid manifest with overwrite passes validation" {
-  # valid-minimal.json has two rules targeting 'out/overwritten', second has overwrite:true
-  MANIFEST_PATH="$FIXTURES/manifests/valid-minimal.json"
+  # valid-minimal.json has two rules for 'out/overwritten', second has overwrite:true
+  MANIFEST_PATH="$MANIFEST_FIXTURES/valid-minimal.json"
   run validate_manifest "$MANIFEST_PATH"
   [ "$status" -eq 0 ]
 }
 
 # ============================================================
-# RSM-012 — Unused files not present
+# RSM-012 — Unused files not present in manifest
 # ============================================================
 
-@test "RSM-012: unused evolution-assets files not in manifest sources assembly" {
-  # The four unused files must not appear as file: values anywhere in the initial manifest
+@test "RSM-012: unused evolution-assets files not referenced in initial manifest" {
   local manifest="$REPO_ROOT/resources.manifest.json"
   run bash -c "jq -r '[.assembly[].file // empty] | .[]' \"$manifest\""
   [ "$status" -eq 0 ]
