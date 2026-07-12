@@ -1,0 +1,6 @@
+{
+  "sources": [
+    { "id": "http-src", "type": "http", "url": "https://example.com/b.cdb" }
+  ],
+  "assembly": []
+}

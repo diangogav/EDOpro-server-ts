@@ -122,16 +122,16 @@
 		},
 
 		{
+			"comment": "YGOPro format directories (repo as-is) — was ygopro/alternatives",
+			"target": "ygopro/formats",
+			"from": "format-alts"
+		},
+
+		{
 			"comment": "YGOPro OCG lflist (from ignis) — now under formats/",
 			"target": "ygopro/formats/ocg/lflist.conf",
 			"from": "ignis-lflists",
 			"file": "OCG.lflist.conf"
-		},
-
-		{
-			"comment": "YGOPro format directories (repo as-is) — was ygopro/alternatives",
-			"target": "ygopro/formats",
-			"from": "format-alts"
 		},
 
 		{

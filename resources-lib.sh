@@ -54,6 +54,48 @@ validate_manifest() {
     return 1
   fi
 
+  # (RSM-001) sources[] field validation
+  # (1) every source id must be non-empty
+  local empty_ids
+  empty_ids=$(jq -r '[.sources[] | select((.id // "") == "")] | length' "$manifest" 2>/dev/null)
+  if [ "$empty_ids" != "0" ]; then
+    echo "[resources][ERROR] Manifest validation failed (RSM-001): source with empty/missing id in $manifest" >&2
+    return 1
+  fi
+
+  # (2) source ids must be unique
+  local dup_ids
+  dup_ids=$(jq -r '[.sources[].id] | (group_by(.) | map(select(length > 1) | .[0])) | .[]' "$manifest" 2>/dev/null)
+  if [ -n "$dup_ids" ]; then
+    echo "[resources][ERROR] Manifest validation failed (RSM-001): duplicate source id(s): $dup_ids" >&2
+    return 1
+  fi
+
+  # (3) every source url must be non-empty
+  local empty_urls
+  empty_urls=$(jq -r '[.sources[] | select((.url // "") == "") | .id] | .[]' "$manifest" 2>/dev/null)
+  if [ -n "$empty_urls" ]; then
+    echo "[resources][ERROR] Manifest validation failed (RSM-001): empty/missing url in source(s): $empty_urls" >&2
+    return 1
+  fi
+
+  # (4) http sources must include a non-empty filename
+  local missing_filename
+  missing_filename=$(jq -r '[.sources[] | select(.type == "http") | select((.filename // "") == "") | .id] | .[]' "$manifest" 2>/dev/null)
+  if [ -n "$missing_filename" ]; then
+    echo "[resources][ERROR] Manifest validation failed (RSM-001): http source(s) missing filename: $missing_filename" >&2
+    return 1
+  fi
+
+  # (5) whole-source fallback is unsupported in this slice — an assembly rule
+  #     whose from is an array MUST specify a file
+  local array_no_file
+  array_no_file=$(jq -r '[.assembly[] | select((.from | type) == "array") | select(has("file") | not) | .target] | .[]' "$manifest" 2>/dev/null)
+  if [ -n "$array_no_file" ]; then
+    echo "[resources][ERROR] Manifest validation failed (RSM-001): array from without file (whole-source fallback unsupported) in rule(s): $array_no_file" >&2
+    return 1
+  fi
+
   # (b) No unknown source types — only "git" and "http" are allowed
   local bad_types
   bad_types=$(jq -r '[.sources[] | select(.type != "git" and .type != "http")] | map(.id + " (type=" + .type + ")") | .[]' "$manifest" 2>/dev/null)
@@ -137,13 +179,13 @@ http_integrity_check() {
   fi
 
   # (b) For .cdb files: first 16 bytes must be the SQLite3 magic header
+  #     (D4) Binary comparison via cmp — command substitution strips the trailing
+  #     NUL byte, so string comparison would only check 15 of 16 magic bytes and
+  #     accept a file truncated to exactly "SQLite format 3". cmp compares the raw
+  #     first 16 bytes; a file shorter than 16 bytes fails because cmp reports EOF.
   case "$filepath" in
     *.cdb)
-      local expected
-      expected=$(printf 'SQLite format 3\x00')
-      local actual
-      actual=$(head -c 16 "$filepath")
-      if [ "$actual" != "$expected" ]; then
+      if ! head -c 16 "$filepath" | cmp -s - <(printf 'SQLite format 3\000'); then
         echo "[resources][ERROR] Integrity check failed for $src_id ($url): not a valid SQLite3 .cdb (bad magic header)" >&2
         return 1
       fi
@@ -155,16 +197,20 @@ http_integrity_check() {
 
 # ---------------------------------------------------------------------------
 # apply_rule — RSM-002/003 assembly rule executor
-# Usage: apply_rule <src_dir> <dir> <file> <only> <target> <overwrite>
+# Usage: apply_rule <src_dir> <dir> <file> <only> <target>
 #   src_dir   : resolved source directory (repositories/<id>)
 #   dir       : subdirectory within source (may be empty)
 #   file      : single file path within source (may be empty)
 #   only      : glob pattern for find -name (may be empty)
 #   target    : destination path relative to staging root (caller provides full path)
-#   overwrite : "true" or "" (collision legality already enforced at validate time)
 #
 # All four rule shapes (whole-source / dir / file / only-glob) are handled.
 # find -name is used for glob to handle filenames with spaces and parentheses.
+# Overwrite legality is enforced at validate time (RSM-004); at copy time cp
+# overwrites unconditionally, so no per-rule overwrite flag is consumed here.
+# A missing single-file, or a missing named subdirectory, is a hard failure
+# (exit 1) — distinct from an empty glob match in an existing dir, which is a
+# non-fatal exit 0 per RSM-002.
 # ---------------------------------------------------------------------------
 apply_rule() {
   local src_dir="$1"
@@ -172,11 +218,14 @@ apply_rule() {
   local file="$3"
   local only="$4"
   local target="$5"
-  local overwrite="$6"
 
   if [ -n "$file" ]; then
     # Single-file copy — target is the full destination file path (including name)
     local src_file="$src_dir/$file"
+    if [ ! -f "$src_file" ]; then
+      echo "[resources][ERROR] apply_rule: file '$file' not found in source '$src_dir'" >&2
+      return 1
+    fi
     mkdir -p "$(dirname "$target")"
     cp "$src_file" "$target"
 
@@ -185,6 +234,11 @@ apply_rule() {
     local search_root="$src_dir"
     if [ -n "$dir" ]; then
       search_root="$src_dir/$dir"
+      # Missing named subdirectory is a hard failure (distinct from empty glob)
+      if [ ! -d "$search_root" ]; then
+        echo "[resources][ERROR] apply_rule: subdirectory '$dir' not found in source '$src_dir'" >&2
+        return 1
+      fi
     fi
     mkdir -p "$target"
     # find copies nothing when there are no matches — non-fatal per RSM-002
@@ -193,6 +247,10 @@ apply_rule() {
   elif [ -n "$dir" ]; then
     # Directory-only copy
     local src_subdir="$src_dir/$dir"
+    if [ ! -d "$src_subdir" ]; then
+      echo "[resources][ERROR] apply_rule: subdirectory '$dir' not found in source '$src_dir'" >&2
+      return 1
+    fi
     mkdir -p "$target"
     cp -r "$src_subdir/." "$target/"
 

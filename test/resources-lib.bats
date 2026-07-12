@@ -39,6 +39,10 @@ setup() {
   mkdir -p "$REPOS/source-with-dir/subdir"
   printf 'dir-file content'  > "$REPOS/source-with-dir/subdir/dir-file.txt"
   printf 'root-file content' > "$REPOS/source-with-dir/root-file.txt"
+  # glob-matchable files inside the subdir, including spaces + parentheses
+  printf 'sub conf content'  > "$REPOS/source-with-dir/subdir/Rush.lflist.conf"
+  printf 'sub hat content'   > "$REPOS/source-with-dir/subdir/2014.04 HAT (Pre Errata).lflist.conf"
+  printf 'sub other content' > "$REPOS/source-with-dir/subdir/note.txt"
 
   # http-source: crafted binary/text files for integrity check tests
   mkdir -p "$REPOS/http-source"
@@ -52,6 +56,11 @@ setup() {
   # Corrupt: 16 null bytes (fails SQLite magic check)
   printf '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' \
     > "$REPOS/http-source/corrupt.cdb"
+
+  # Truncated: "SQLite format 3" (15 bytes, no trailing NUL) — must be rejected.
+  # A naive string comparison via command substitution strips the NUL and would
+  # accept this file; the binary cmp comparison rejects it (only 15 of 16 bytes).
+  printf 'SQLite format 3' > "$REPOS/http-source/truncated.cdb"
 
   # Non-cdb: only non-empty check applies
   printf 'some lflist content\n' > "$REPOS/http-source/valid.conf"
@@ -73,6 +82,9 @@ teardown() {
   MANIFEST_PATH="$MANIFEST_FIXTURES/malformed.json"
   run validate_manifest "$MANIFEST_PATH"
   [ "$status" -eq 1 ]
+  # Message must name the violation (malformed JSON) and the manifest, not just exit
+  [[ "$output" == *"malformed JSON"* ]]
+  [[ "$output" == *"malformed.json"* ]]
 }
 
 @test "RSM-005b: unknown source type aborts with exit 1" {
@@ -86,7 +98,8 @@ teardown() {
   MANIFEST_PATH="$MANIFEST_FIXTURES/dangling-from.json"
   run validate_manifest "$MANIFEST_PATH"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"missing-src"* ]] || [[ "$output" == *"dangling"* ]] || [[ "$output" == *"from"* ]]
+  # Must name the specific offending id, not just generic wording
+  [[ "$output" == *"missing-src"* ]]
 }
 
 @test "RSM-005d: file+dir combo aborts with exit 1" {
@@ -99,7 +112,47 @@ teardown() {
   MANIFEST_PATH="$MANIFEST_FIXTURES/collision-no-overwrite.json"
   run validate_manifest "$MANIFEST_PATH"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"out/lflist.conf"* ]] || [[ "$output" == *"collision"* ]] || [[ "$output" == *"overwrite"* ]]
+  # Must name the specific colliding target, not just generic wording
+  [[ "$output" == *"out/lflist.conf"* ]]
+}
+
+# ============================================================
+# RSM-001 — sources[] field validation
+# ============================================================
+
+@test "RSM-001: empty source id aborts with exit 1" {
+  MANIFEST_PATH="$MANIFEST_FIXTURES/empty-id.json"
+  run validate_manifest "$MANIFEST_PATH"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"empty"* ]]
+}
+
+@test "RSM-001: duplicate source id aborts with exit 1 naming the id" {
+  MANIFEST_PATH="$MANIFEST_FIXTURES/duplicate-id.json"
+  run validate_manifest "$MANIFEST_PATH"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"dup-src"* ]]
+}
+
+@test "RSM-001: empty source url aborts with exit 1 naming the id" {
+  MANIFEST_PATH="$MANIFEST_FIXTURES/empty-url.json"
+  run validate_manifest "$MANIFEST_PATH"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"no-url-src"* ]]
+}
+
+@test "RSM-001: http source without filename aborts with exit 1 naming the id" {
+  MANIFEST_PATH="$MANIFEST_FIXTURES/http-no-filename.json"
+  run validate_manifest "$MANIFEST_PATH"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"http-src"* ]]
+}
+
+@test "RSM-001: array from without file aborts with exit 1 naming the target" {
+  MANIFEST_PATH="$MANIFEST_FIXTURES/array-from-no-file.json"
+  run validate_manifest "$MANIFEST_PATH"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"out/dir"* ]]
 }
 
 @test "RSM-005 all-checks-pass: valid manifest exits 0" {
@@ -129,6 +182,13 @@ teardown() {
 
 @test "RSM-006: .cdb without SQLite magic fails magic check" {
   run http_integrity_check "$REPOS/http-source/corrupt.cdb" "src-corrupt" "http://example.com"
+  [ "$status" -eq 1 ]
+}
+
+@test "RSM-006: .cdb truncated to 15 bytes (no trailing NUL) fails magic check" {
+  # "SQLite format 3" without the 16th NUL byte must be rejected. A string
+  # comparison via command substitution would strip the NUL and wrongly accept it.
+  run http_integrity_check "$REPOS/http-source/truncated.cdb" "src-truncated" "http://example.com"
   [ "$status" -eq 1 ]
 }
 
@@ -176,6 +236,43 @@ teardown() {
   [ "$status" -eq 0 ]
   result=$(find "$STAGING/empty-glob-target" -maxdepth 1 -type f | wc -l)
   [ "$result" -eq 0 ]
+}
+
+@test "RSM-002 dir+only: copies matching files from subdir, handles spaces+parens" {
+  run apply_rule "$REPOS/source-with-dir" "subdir" "" "*.lflist.conf" "$STAGING/dir-only-target" ""
+  [ "$status" -eq 0 ]
+  [ -f "$STAGING/dir-only-target/Rush.lflist.conf" ]
+  [ -f "$STAGING/dir-only-target/2014.04 HAT (Pre Errata).lflist.conf" ]
+  # note.txt does not match the glob and must be excluded
+  [ ! -f "$STAGING/dir-only-target/note.txt" ]
+}
+
+@test "RSM-002 missing single-file: apply_rule exits non-zero" {
+  run apply_rule "$REPOS/source-a" "" "no-such-file.txt" "" "$STAGING/out/nope.txt" ""
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"no-such-file.txt"* ]]
+}
+
+@test "RSM-002 missing dir subdirectory: apply_rule exits non-zero (hard failure)" {
+  run apply_rule "$REPOS/source-with-dir" "no-such-subdir" "" "" "$STAGING/missing-dir-target" ""
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"no-such-subdir"* ]]
+}
+
+@test "RSM-002 missing dir subdirectory with only-glob: apply_rule exits non-zero" {
+  run apply_rule "$REPOS/source-with-dir" "no-such-subdir" "" "*.conf" "$STAGING/missing-dir-glob-target" ""
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"no-such-subdir"* ]]
+}
+
+@test "RSM-002 overwrite: second apply_rule call wins at the same target" {
+  # First source-a/file-a.txt, then source-b content overwrites the same target
+  run apply_rule "$REPOS/source-a" "" "file-a.txt" "" "$STAGING/out/dup.txt" ""
+  [ "$status" -eq 0 ]
+  [ "$(cat "$STAGING/out/dup.txt")" = "file-a content" ]
+  run apply_rule "$REPOS/source-b" "" "file-c.txt" "" "$STAGING/out/dup.txt" ""
+  [ "$status" -eq 0 ]
+  [ "$(cat "$STAGING/out/dup.txt")" = "file-c content" ]
 }
 
 # ============================================================

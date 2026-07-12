@@ -1,0 +1,7 @@
+{
+  "sources": [
+    { "id": "dup-src", "type": "git", "url": "https://example.com/a" },
+    { "id": "dup-src", "type": "git", "url": "https://example.com/b" }
+  ],
+  "assembly": []
+}
