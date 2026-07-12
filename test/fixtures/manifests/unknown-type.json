@@ -1,0 +1,6 @@
+{
+  "sources": [
+    { "id": "src-a", "type": "ftp", "url": "ftp://example.com/foo" }
+  ],
+  "assembly": []
+}

@@ -1,0 +1,10 @@
+{
+  "sources": [
+    { "id": "src-a", "type": "git", "url": "https://example.com/a" },
+    { "id": "src-b", "type": "git", "url": "https://example.com/b" }
+  ],
+  "assembly": [
+    { "target": "out/lflist.conf", "from": "src-a" },
+    { "target": "out/lflist.conf", "from": "src-b" }
+  ]
+}

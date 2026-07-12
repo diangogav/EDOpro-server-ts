@@ -16,7 +16,8 @@
 			"!resources/**",
 			"!src/evolution-types/**",
 			"!**/*.config.js",
-			"!**/*.config.mjs"
+			"!**/*.config.mjs",
+			"!test/fixtures/**"
 		]
 	},
 	"formatter": {

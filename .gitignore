@@ -66,4 +66,7 @@ dependencies/
 build/
 
 mycard
-resources/ 
+resources/
+
+# Local bats-core installation (not a repo dependency)
+tools/
