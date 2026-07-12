@@ -1,17 +1,29 @@
-#!/bin/bash
-
-set -e
-
-# Assembles a fresh resource set into resources/releases/<id> and atomically
+#!/usr/bin/env bash
+# setup_resources.sh — ASSEMBLE + PUBLISH stage.
+#
+# Builds a fresh resource set into resources/releases/<id>, then atomically
 # repoints resources/current at it. Safe to run while the server is reading
 # resources/current: the swap is a single atomic rename, and in-flight reads
 # keep their old release via open file handles (POSIX). Old releases are GC'd.
 #
 # Single source of truth for the resource layout — used by local dev, the
 # Docker build (seed), and the runtime updater sidecar.
+#
+# CWD invariant (D1): runs from repo root; all paths are repo-root-relative.
+# No cd into subdirs. Sources are read exclusively from resources.manifest.json
+# (RSM-010). Assembly rules from manifest assembly[] (RSM-002/003/004).
+#
+# Usage: bash setup_resources.sh
 
-REPOS=./repositories
-RELEASES=./resources/releases
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/resources-lib.sh"
+
+# Support test overrides for repos root and releases root.
+REPOS="${REPOS_ROOT:-./repositories}"
+RELEASES="${RELEASES_ROOT:-./resources/releases}"
+
 ID="$(date +%Y%m%d-%H%M%S-%N)"
 STAGING="$RELEASES/$ID"
 KEEP="${RESOURCES_KEEP_RELEASES:-2}"
@@ -20,71 +32,77 @@ echo "Assembling resources into $STAGING ..."
 
 mkdir -p "$STAGING"
 
-# === EDOPro ===
-mkdir -p "$STAGING/edopro"
-cp -r "$REPOS/edopro-card-scripts" "$STAGING/edopro/scripts"
-cp -r "$REPOS/edopro-card-databases" "$STAGING/edopro/databases"
-cp -r "$REPOS/edopro-banlists-ignis" "$STAGING/edopro/banlists-ignis"
-cp -r "$REPOS/edopro-banlists-evolution" "$STAGING/edopro/banlists-evolution"
-# Lowercase filename required: it overwrites the shipped genesys.lflist.conf in
-# place instead of adding a duplicate on a case-sensitive FS.
-cp "$REPOS/evolution-assets/lflist/genesys.lflist.conf" "$STAGING/edopro/banlists-evolution/genesys.lflist.conf"
+# === ASSEMBLE: iterate assembly[] rules from the manifest ===
 
-# === YGOPro Base (scripts + cards.cdb + lflist propagate to all variants) ===
-mkdir -p "$STAGING/ygopro/base"
-cp -r "$REPOS/ygopro-scripts" "$STAGING/ygopro/base/script"
-cp "$REPOS/ygopro-lflist.conf" "$STAGING/ygopro/base/lflist.conf"
-cp "$REPOS/ygopro-cards.cdb" "$STAGING/ygopro/base/cards.cdb"
+rule_count=$(manifest_get '.assembly | length')
 
-# === YGOPro Prereleases / art (each repo as its own independent folder) ===
-cp -r "$REPOS/ygopro-prereleases-cdb" "$STAGING/ygopro/prereleases-cdb"
-cp -r "$REPOS/ygopro-cards-art" "$STAGING/ygopro/cards-art"
+i=0
+while [ "$i" -lt "$rule_count" ]; do
+  rule_target=$(manifest_get ".assembly[$i].target")
+  rule_from=$(manifest_get ".assembly[$i].from")
+  rule_from_type=$(manifest_get ".assembly[$i].from | type")
+  rule_dir=$(manifest_get ".assembly[$i].dir // \"\"")
+  rule_file=$(manifest_get ".assembly[$i].file // \"\"")
+  rule_only=$(manifest_get ".assembly[$i].only // \"\"")
 
-# === YGOPro OCG (only own lflist) ===
-mkdir -p "$STAGING/ygopro/ocg"
-cp "$REPOS/edopro-banlists-ignis/OCG.lflist.conf" "$STAGING/ygopro/ocg/lflist.conf"
+  full_target="$STAGING/$rule_target"
 
-# === YGOPro Alternatives (repo as-is + banlists) ===
-cp -r "$REPOS/ygopro-format-alternatives" "$STAGING/ygopro/alternatives"
+  # Resolve source directory for a given source id.
+  # git sources land at repositories/<id>; http sources land as a flat file
+  # at repositories/<filename>, so their "source dir" is repositories/ itself.
+  _resolve_src_dir() {
+    local src_id="$1"
+    local src_type
+    src_type=$(manifest_get ".sources[] | select(.id == \"$src_id\") | .type")
+    case "$src_type" in
+      http) echo "$REPOS" ;;
+      *)    echo "$REPOS/$src_id" ;;
+    esac
+  }
 
-declare -A MAP=(
-    ["2010.03 Edison(Pre Errata)"]="edison"
-    ["2014.04 HAT (Pre Errata)"]="hat"
-    ["GOAT"]="goat"
-    ["Rush"]="rush"
-    ["Speed"]="speed"
-    ["Tengu.Plant"]="tengu"
-    ["World"]="world"
-    ["MD.2025.03"]="md"
-)
+  if [ "$rule_from_type" = "array" ]; then
+    # RSM-003 fallback chain — from is an array; a file key is required
+    # (validated at manifest-validation time).
+    # Build list of source dirs in order.
+    from_count=$(manifest_get ".assembly[$i].from | length")
+    src_dirs=()
+    j=0
+    while [ "$j" -lt "$from_count" ]; do
+      from_id=$(manifest_get ".assembly[$i].from[$j]")
+      src_dirs+=("$(_resolve_src_dir "$from_id")")
+      j=$((j + 1))
+    done
+    apply_rule_with_fallback "$rule_file" "$full_target" "${src_dirs[@]}" \
+      || fail "Assembly rule $i (target=$rule_target): fallback chain exhausted"
+  else
+    # Single source — from is a string source id
+    src_dir="$(_resolve_src_dir "$rule_from")"
+    apply_rule "$src_dir" "$rule_dir" "$rule_file" "$rule_only" "$full_target" \
+      || fail "Assembly rule $i (target=$rule_target) failed"
+  fi
 
-for name in "${!MAP[@]}"; do
-    src="$REPOS/edopro-banlists-evolution/${name}.lflist.conf"
-    [ -f "$src" ] || src="$REPOS/edopro-banlists-ignis/${name}.lflist.conf"
-    cp "$src" "$STAGING/ygopro/alternatives/${MAP[$name]}/lflist.conf"
+  i=$((i + 1))
 done
 
-# JTP list from evolution-assets uses base card codes so alt-art variants stay
-# legal via their alias.
-cp "$REPOS/evolution-assets/lflist/jtp.lflist.conf" "$STAGING/ygopro/alternatives/jtp/lflist.conf"
+# === PUBLISH: strip .git, atomic swap, GC ===
 
-cp "$REPOS/evolution-assets/lflist/genesys.lflist.conf" "$STAGING/ygopro/alternatives/genesys/lflist.conf"
-
-# Strip .git from the assembled release (keep it in repositories/ so refreshes can pull deltas)
+# Strip .git from the assembled release (keep it in repositories/ so
+# refreshes can pull deltas).
 find "$STAGING" -name ".git" -type d -exec rm -rf {} + 2>/dev/null || true
 
-# === Atomic publish: repoint resources/current -> releases/<id> ===
+# Atomic publish: repoint resources/current -> releases/<id>.
 # Build the symlink under a temp name, then rename over the live one.
 # rename(2) is atomic on the same filesystem, so readers never observe a
 # missing or half-updated current.
-# If a previous build left `current` as a real directory (e.g. a Docker COPY that
-# dereferenced the symlink), drop it so the atomic symlink swap can land.
-if [ -d "./resources/current" ] && [ ! -L "./resources/current" ]; then
-    rm -rf "./resources/current"
+# If a previous build left `current` as a real directory (e.g. a Docker COPY
+# that dereferenced the symlink), drop it so the atomic symlink swap can land.
+RESOURCES_DIR="$(dirname "$RELEASES")"
+if [ -d "$RESOURCES_DIR/current" ] && [ ! -L "$RESOURCES_DIR/current" ]; then
+  rm -rf "$RESOURCES_DIR/current"
 fi
-ln -sfn "releases/$ID" "./resources/.current.tmp"
-mv -T "./resources/.current.tmp" "./resources/current"
-echo "Published resources/current -> releases/$ID"
+ln -sfn "releases/$ID" "$RESOURCES_DIR/.current.tmp"
+mv -T "$RESOURCES_DIR/.current.tmp" "$RESOURCES_DIR/current"
+echo "Published $RESOURCES_DIR/current -> releases/$ID"
 
 # === GC: keep only the newest $KEEP releases ===
 # The just-published release is the newest, so current is always retained.

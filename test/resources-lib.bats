@@ -544,3 +544,113 @@ MANIFEST
   run grep -E '^[[:space:]]*cd[[:space:]]' "$script"
   [ "$status" -ne 0 ]
 }
+
+# ============================================================
+# T-006 — setup_resources.sh control flow (PR1b)
+# Tests use a minimal manifest + pre-populated repositories/ dir
+# under WORK to avoid network. Runs in isolated temp tree.
+# ============================================================
+
+# Helper: build a minimal working tree under $WORK so setup_resources.sh
+# can run end-to-end without network. Called from each setup test.
+_setup_minimal_tree() {
+  # Create a repositories dir with one git source and one http source
+  mkdir -p "$WORK/repositories/src-a"
+  printf 'content-a\n' > "$WORK/repositories/src-a/data.txt"
+  # Simulate a .git dir that must be stripped
+  mkdir -p "$WORK/repositories/src-a/.git"
+  printf 'fake git' > "$WORK/repositories/src-a/.git/HEAD"
+
+  mkdir -p "$WORK/repositories"
+  printf 'hello conf\n' > "$WORK/repositories/list.conf"
+
+  # Write a minimal manifest
+  cat > "$WORK/test.manifest.json" <<'MANIFEST'
+{
+  "sources": [
+    { "id": "src-a", "type": "git",  "url": "https://example.com/a.git", "branch": "main" },
+    { "id": "src-http", "type": "http", "url": "https://example.com/list.conf", "filename": "list.conf" }
+  ],
+  "assembly": [
+    { "target": "mydir/data.txt", "from": "src-a", "file": "data.txt" },
+    { "target": "mydir/list.conf", "from": "src-http", "file": "list.conf" }
+  ]
+}
+MANIFEST
+}
+
+@test "setup: assembles files from manifest rules into a new release" {
+  _setup_minimal_tree
+  MANIFEST_PATH="$WORK/test.manifest.json" \
+  REPOS_ROOT="$WORK/repositories" \
+  RELEASES_ROOT="$WORK/resources/releases" \
+    run bash "$REPO_ROOT/setup_resources.sh"
+  [ "$status" -eq 0 ]
+  # At least one release dir was created and resources/current symlink exists
+  [ -L "$WORK/resources/current" ]
+  local release_dir
+  release_dir="$(readlink "$WORK/resources/current")"
+  [ -f "$WORK/$release_dir/mydir/data.txt" ] || \
+    [ -f "$WORK/resources/current/mydir/data.txt" ]
+}
+
+@test "setup: .git directories are stripped from staging before publish" {
+  _setup_minimal_tree
+  MANIFEST_PATH="$WORK/test.manifest.json" \
+  REPOS_ROOT="$WORK/repositories" \
+  RELEASES_ROOT="$WORK/resources/releases" \
+    run bash "$REPO_ROOT/setup_resources.sh"
+  [ "$status" -eq 0 ]
+  # No .git directory must exist anywhere under resources/current
+  run find "$WORK/resources/current" -name ".git" -type d
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "setup: aborts before swap when assembly rule fails (missing file)" {
+  _setup_minimal_tree
+  # Add a rule referencing a file that does not exist
+  cat > "$WORK/bad.manifest.json" <<'MANIFEST'
+{
+  "sources": [
+    { "id": "src-a", "type": "git", "url": "https://example.com/a.git", "branch": "main" }
+  ],
+  "assembly": [
+    { "target": "mydir/no-such.txt", "from": "src-a", "file": "no-such.txt" }
+  ]
+}
+MANIFEST
+  local before_count
+  before_count=$(ls "$WORK/resources/releases" 2>/dev/null | wc -l || echo 0)
+
+  MANIFEST_PATH="$WORK/bad.manifest.json" \
+  REPOS_ROOT="$WORK/repositories" \
+  RELEASES_ROOT="$WORK/resources/releases" \
+    run bash "$REPO_ROOT/setup_resources.sh"
+  [ "$status" -ne 0 ]
+  # No new release dir must have been published (symlink not created/updated)
+  [ ! -L "$WORK/resources/current" ]
+}
+
+@test "setup: GC keeps only RESOURCES_KEEP_RELEASES newest releases" {
+  _setup_minimal_tree
+  # Run 3 times; with KEEP=2, only 2 releases must survive
+  for _ in 1 2 3; do
+    MANIFEST_PATH="$WORK/test.manifest.json" \
+    REPOS_ROOT="$WORK/repositories" \
+    RELEASES_ROOT="$WORK/resources/releases" \
+    RESOURCES_KEEP_RELEASES=2 \
+      bash "$REPO_ROOT/setup_resources.sh" >/dev/null 2>&1
+    sleep 0.01  # ensure unique timestamp IDs
+  done
+  local count
+  count=$(ls "$WORK/resources/releases" | wc -l)
+  [ "$count" -le 2 ]
+}
+
+@test "setup: no hardcoded source paths in setup_resources.sh (RSM-010)" {
+  # The script must not contain any literal cp or path referencing old repo names
+  local script="$REPO_ROOT/setup_resources.sh"
+  run grep -E '(edopro-card-scripts|edopro-card-databases|edopro-banlists|ygopro-format-alternatives|ygopro-prereleases|ygopro-cards-art|evolution-assets|ygopro-scripts|ygopro-lflist\.conf|ygopro-cards\.cdb)' "$script"
+  [ "$status" -ne 0 ]
+}
