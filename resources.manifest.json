@@ -1,0 +1,192 @@
+{
+	"comment": "Declarative resource manifest. Edit this file to add, remove, or change sources. See docs for schema.",
+	"sources": [
+		{
+			"id": "babel-cdb",
+			"type": "git",
+			"url": "https://github.com/ProjectIgnis/BabelCDB.git",
+			"branch": "master"
+		},
+		{
+			"id": "ignis-lflists",
+			"type": "git",
+			"url": "https://github.com/ProjectIgnis/LFLists",
+			"branch": "master"
+		},
+		{
+			"id": "evolution-banlists",
+			"type": "git",
+			"url": "https://github.com/termitaklk/lflist",
+			"branch": "main"
+		},
+		{
+			"id": "evolution-assets",
+			"type": "git",
+			"url": "https://github.com/diangogav/evolution-assets",
+			"branch": "main"
+		},
+		{
+			"id": "prereleases-cdb",
+			"type": "git",
+			"url": "https://github.com/evolutionygo/pre-release-database-cdb",
+			"branch": "master"
+		},
+		{
+			"id": "cards-art",
+			"type": "git",
+			"url": "https://github.com/evolutionygo/cards-art-server",
+			"branch": "main"
+		},
+		{
+			"id": "format-alts",
+			"type": "git",
+			"url": "https://github.com/evolutionygo/server-formats-cdb.git",
+			"branch": "main"
+		},
+		{
+			"id": "card-scripts",
+			"type": "git",
+			"url": "https://github.com/ProjectIgnis/CardScripts.git",
+			"branch": "master"
+		},
+		{
+			"id": "ygopro-scripts",
+			"type": "git",
+			"url": "https://github.com/Fluorohydride/ygopro-scripts"
+		},
+		{
+			"id": "moecube-cdb",
+			"type": "http",
+			"url": "https://cdntx.moecube.com/ygopro-database/zh-CN/cards.cdb",
+			"filename": "moecube-cards.cdb"
+		},
+		{
+			"id": "moecube-lflist",
+			"type": "http",
+			"url": "https://cdntx.moecube.com/ygopro-database/zh-CN/lflist.conf",
+			"filename": "moecube-lflist.conf"
+		}
+	],
+	"assembly": [
+		{ "comment": "EDOPro databases", "target": "edopro/databases", "from": "babel-cdb" },
+		{
+			"comment": "EDOPro ignis banlists",
+			"target": "edopro/banlists-ignis",
+			"from": "ignis-lflists"
+		},
+		{
+			"comment": "EDOPro evolution banlists",
+			"target": "edopro/banlists-evolution",
+			"from": "evolution-banlists"
+		},
+		{
+			"comment": "Genesys banlist overlay (lowercase, overwrites in place)",
+			"target": "edopro/banlists-evolution/genesys.lflist.conf",
+			"from": "evolution-assets",
+			"file": "lflist/genesys.lflist.conf",
+			"overwrite": true
+		},
+		{
+			"comment": "EDOPro card scripts (replaces setup_resources.sh:25 cp -r)",
+			"target": "edopro/scripts",
+			"from": "card-scripts"
+		},
+
+		{
+			"comment": "YGOPro base lflist",
+			"target": "ygopro/base/lflist.conf",
+			"from": "moecube-lflist",
+			"file": "moecube-lflist.conf"
+		},
+		{
+			"comment": "YGOPro base cards.cdb",
+			"target": "ygopro/base/cards.cdb",
+			"from": "moecube-cdb",
+			"file": "moecube-cards.cdb"
+		},
+		{
+			"comment": "YGOPro base scripts (replaces setup_resources.sh:35 cp -r)",
+			"target": "ygopro/base/script",
+			"from": "ygopro-scripts"
+		},
+
+		{
+			"comment": "YGOPro prereleases (extended pool only)",
+			"target": "ygopro/extensions/prereleases",
+			"from": "prereleases-cdb"
+		},
+		{
+			"comment": "YGOPro cards art (extended pool only)",
+			"target": "ygopro/extensions/cards-art",
+			"from": "cards-art"
+		},
+
+		{
+			"comment": "YGOPro OCG lflist (from ignis) — now under formats/",
+			"target": "ygopro/formats/ocg/lflist.conf",
+			"from": "ignis-lflists",
+			"file": "OCG.lflist.conf"
+		},
+
+		{
+			"comment": "YGOPro format directories (repo as-is) — was ygopro/alternatives",
+			"target": "ygopro/formats",
+			"from": "format-alts"
+		},
+
+		{
+			"comment": "Per-format lflists: evolution->ignis fallback",
+			"target": "ygopro/formats/edison/lflist.conf",
+			"from": ["evolution-banlists", "ignis-lflists"],
+			"file": "2010.03 Edison(Pre Errata).lflist.conf"
+		},
+		{
+			"target": "ygopro/formats/hat/lflist.conf",
+			"from": ["evolution-banlists", "ignis-lflists"],
+			"file": "2014.04 HAT (Pre Errata).lflist.conf"
+		},
+		{
+			"target": "ygopro/formats/goat/lflist.conf",
+			"from": ["evolution-banlists", "ignis-lflists"],
+			"file": "GOAT.lflist.conf"
+		},
+		{
+			"target": "ygopro/formats/rush/lflist.conf",
+			"from": ["evolution-banlists", "ignis-lflists"],
+			"file": "Rush.lflist.conf"
+		},
+		{
+			"target": "ygopro/formats/speed/lflist.conf",
+			"from": ["evolution-banlists", "ignis-lflists"],
+			"file": "Speed.lflist.conf"
+		},
+		{
+			"target": "ygopro/formats/tengu/lflist.conf",
+			"from": ["evolution-banlists", "ignis-lflists"],
+			"file": "Tengu.Plant.lflist.conf"
+		},
+		{
+			"target": "ygopro/formats/world/lflist.conf",
+			"from": ["evolution-banlists", "ignis-lflists"],
+			"file": "World.lflist.conf"
+		},
+		{
+			"target": "ygopro/formats/md/lflist.conf",
+			"from": ["evolution-banlists", "ignis-lflists"],
+			"file": "MD.2025.03.lflist.conf"
+		},
+
+		{
+			"comment": "JTP lflist from evolution-assets",
+			"target": "ygopro/formats/jtp/lflist.conf",
+			"from": "evolution-assets",
+			"file": "lflist/jtp.lflist.conf"
+		},
+		{
+			"comment": "Genesys alt lflist from evolution-assets",
+			"target": "ygopro/formats/genesys/lflist.conf",
+			"from": "evolution-assets",
+			"file": "lflist/genesys.lflist.conf"
+		}
+	]
+}
