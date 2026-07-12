@@ -7,6 +7,6 @@
     { "target": "out/content", "from": "src-a" },
     { "target": "out/b.cdb",   "from": "src-b", "file": "b.cdb" },
     { "target": "out/overwritten", "from": "src-a" },
-    { "target": "out/overwritten", "from": "src-b", "overwrite": true }
+    { "target": "out/overwritten", "from": "src-b", "file": "b.cdb", "overwrite": true }
   ]
 }

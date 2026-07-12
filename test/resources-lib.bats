@@ -155,6 +155,17 @@ teardown() {
   [[ "$output" == *"out/dir"* ]]
 }
 
+@test "RSM-001: http source in rule without file key aborts with exit 1 naming the target" {
+  # An http source resolves to a flat file under repositories/, so a rule that
+  # references it without a `file` key (dir/only/whole-source) would copy the
+  # whole repositories/ tree. Validation must reject it and name the target.
+  MANIFEST_PATH="$MANIFEST_FIXTURES/http-source-no-file.json"
+  run validate_manifest "$MANIFEST_PATH"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"out/dir"* ]]
+  [[ "$output" == *"http"* ]]
+}
+
 @test "RSM-005 all-checks-pass: valid manifest exits 0" {
   MANIFEST_PATH="$MANIFEST_FIXTURES/valid-minimal.json"
   run validate_manifest "$MANIFEST_PATH"
@@ -458,12 +469,25 @@ STUB
 }
 MANIFEST
 
-  MANIFEST_PATH="$test_manifest" CALL_LOG="$call_log" PATH="$stub_dir:$PATH" \
+  # REPOS_ROOT isolates the checkout into $WORK so we never touch the real
+  # repositories/ dir and always hit the clean-clone path (no stale .git).
+  MANIFEST_PATH="$test_manifest" CALL_LOG="$call_log" REPOS_ROOT="$WORK/repositories" \
+  PATH="$stub_dir:$PATH" \
     run bash "$REPO_ROOT/clone_repositories.sh"
   rm -f "$test_manifest"
+  # Capture the log before tearing the stub dir down so assertions are load-bearing.
+  local log_content=""
+  [ -f "$call_log" ] && log_content="$(cat "$call_log")"
   rm -rf "$stub_dir"
-  # sync_repo calls git clone --depth 1 --branch main url dir
+
   [ "$status" -eq 0 ]
+  # The git stub recorded its invocations; the log must exist and pin the
+  # control flow: sync_repo must have shelled out to `git clone --depth 1`
+  # with `--branch main` for the branched source (first checkout, no prior .git).
+  [ -n "$log_content" ]
+  [[ "$log_content" == *"clone --depth 1"* ]]
+  [[ "$log_content" == *"--branch main"* ]]
+  [[ "$log_content" == *"https://example.com/repo.git"* ]]
 }
 
 @test "clone: http source triggers wget then integrity check" {
@@ -493,7 +517,7 @@ STUB
 }
 MANIFEST
 
-  MANIFEST_PATH="$test_manifest" PATH="$stub_dir:$PATH" \
+  MANIFEST_PATH="$test_manifest" REPOS_ROOT="$WORK/repositories" PATH="$stub_dir:$PATH" \
     run bash "$REPO_ROOT/clone_repositories.sh"
   rm -f "$test_manifest"
   rm -rf "$stub_dir"
@@ -524,7 +548,7 @@ STUB
 }
 MANIFEST
 
-  MANIFEST_PATH="$test_manifest" PATH="$stub_dir:$PATH" \
+  MANIFEST_PATH="$test_manifest" REPOS_ROOT="$WORK/repositories" PATH="$stub_dir:$PATH" \
     run bash "$REPO_ROOT/clone_repositories.sh"
   rm -f "$test_manifest"
   rm -rf "$stub_dir"
@@ -573,7 +597,8 @@ _setup_minimal_tree() {
   ],
   "assembly": [
     { "target": "mydir/data.txt", "from": "src-a", "file": "data.txt" },
-    { "target": "mydir/list.conf", "from": "src-http", "file": "list.conf" }
+    { "target": "mydir/list.conf", "from": "src-http", "file": "list.conf" },
+    { "target": "whole", "from": "src-a" }
   ]
 }
 MANIFEST
@@ -601,8 +626,15 @@ MANIFEST
   RELEASES_ROOT="$WORK/resources/releases" \
     run bash "$REPO_ROOT/setup_resources.sh"
   [ "$status" -eq 0 ]
-  # No .git directory must exist anywhere under resources/current
-  run find "$WORK/resources/current" -name ".git" -type d
+  # Sanity: the fixture has a whole-source rule over the git source (no file
+  # key), so .git would land in staging unless the publish step strips it.
+  # This makes the assertion below load-bearing (a file-only fixture never
+  # brings .git into staging, so the check would pass vacuously).
+  #
+  # -L follows the resources/current symlink into the published release; without
+  # it find would stop at the symlink itself and never descend, silently missing
+  # any .git under the release.
+  run find -L "$WORK/resources/current" -name ".git" -type d
   [ "$status" -eq 0 ]
   [ -z "$output" ]
 }

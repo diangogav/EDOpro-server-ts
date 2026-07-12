@@ -1,0 +1,8 @@
+{
+  "sources": [
+    { "id": "http-src", "type": "http", "url": "https://example.com/list.conf", "filename": "list.conf" }
+  ],
+  "assembly": [
+    { "target": "out/dir", "from": "http-src", "dir": "sub" }
+  ]
+}
