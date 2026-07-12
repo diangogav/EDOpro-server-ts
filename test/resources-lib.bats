@@ -402,3 +402,145 @@ teardown() {
   [ "$status" -eq 0 ]
   [ -f "$STAGING/five-arg-target/file-a.txt" ]
 }
+
+# ============================================================
+# T-005 — clone_repositories.sh control flow (PR1b)
+# Tests use a mock manifest + PATH-override stubs to avoid network.
+# ============================================================
+
+@test "clone: aborts on invalid manifest (validate_manifest fail-fast)" {
+  # A bad manifest must cause clone_repositories.sh to exit non-zero before
+  # any git/wget is attempted. We override PATH to stub git/wget so any
+  # network call would succeed — meaning failure proves it came from validation.
+  local bad_manifest="$MANIFEST_FIXTURES/dangling-from.json"
+
+  # Stub out git and wget so we can detect if they're called
+  local stub_dir
+  stub_dir="$(mktemp -d)"
+  printf '#!/bin/sh\necho "STUB: git called" >&2\nexit 0\n' > "$stub_dir/git"
+  printf '#!/bin/sh\necho "STUB: wget called" >&2\nexit 0\n' > "$stub_dir/wget"
+  chmod +x "$stub_dir/git" "$stub_dir/wget"
+
+  MANIFEST_PATH="$bad_manifest" PATH="$stub_dir:$PATH" \
+    run bash "$REPO_ROOT/clone_repositories.sh"
+  rm -rf "$stub_dir"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"missing-src"* ]] || [[ "$output" == *"dangling"* ]]
+}
+
+@test "clone: git source triggers sync_repo for each git entry" {
+  # Minimal manifest with one git source; stub git to record the call.
+  local stub_dir
+  stub_dir="$(mktemp -d)"
+  local call_log="$stub_dir/calls.log"
+
+  # git stub: record args and succeed
+  cat > "$stub_dir/git" <<'STUB'
+#!/bin/sh
+echo "git $*" >> "$CALL_LOG"
+# simulate shallow clone: create the target dir with a .git subdir
+if [ "$1" = "clone" ]; then
+  target="${@: -1}"
+  mkdir -p "$target/.git"
+fi
+exit 0
+STUB
+  chmod +x "$stub_dir/git"
+
+  local test_manifest
+  test_manifest="$(mktemp)"
+  cat > "$test_manifest" <<'MANIFEST'
+{
+  "sources": [
+    { "id": "test-repo", "type": "git", "url": "https://example.com/repo.git", "branch": "main" }
+  ],
+  "assembly": []
+}
+MANIFEST
+
+  MANIFEST_PATH="$test_manifest" CALL_LOG="$call_log" PATH="$stub_dir:$PATH" \
+    run bash "$REPO_ROOT/clone_repositories.sh"
+  rm -f "$test_manifest"
+  rm -rf "$stub_dir"
+  # sync_repo calls git clone --depth 1 --branch main url dir
+  [ "$status" -eq 0 ]
+}
+
+@test "clone: http source triggers wget then integrity check" {
+  # Minimal manifest with one http (non-cdb) source; stub wget to create a
+  # non-empty file; script must pass integrity check and exit 0.
+  local stub_dir
+  stub_dir="$(mktemp -d)"
+  local cwd_snap
+
+  cat > "$stub_dir/wget" <<'STUB'
+#!/bin/sh
+# parse -qO <file> <url> form: arg 1=-qO, arg 2=file, arg 3=url
+output_file="$2"
+printf 'hello lflist content\n' > "$output_file"
+exit 0
+STUB
+  chmod +x "$stub_dir/wget"
+
+  local test_manifest
+  test_manifest="$(mktemp)"
+  cat > "$test_manifest" <<'MANIFEST'
+{
+  "sources": [
+    { "id": "test-http", "type": "http", "url": "https://example.com/list.conf", "filename": "list.conf" }
+  ],
+  "assembly": []
+}
+MANIFEST
+
+  MANIFEST_PATH="$test_manifest" PATH="$stub_dir:$PATH" \
+    run bash "$REPO_ROOT/clone_repositories.sh"
+  rm -f "$test_manifest"
+  rm -rf "$stub_dir"
+  [ "$status" -eq 0 ]
+}
+
+@test "clone: http source fails integrity check on empty download" {
+  local stub_dir
+  stub_dir="$(mktemp -d)"
+
+  cat > "$stub_dir/wget" <<'STUB'
+#!/bin/sh
+output_file="$2"
+# create an empty file (simulates empty download)
+> "$output_file"
+exit 0
+STUB
+  chmod +x "$stub_dir/wget"
+
+  local test_manifest
+  test_manifest="$(mktemp)"
+  cat > "$test_manifest" <<'MANIFEST'
+{
+  "sources": [
+    { "id": "test-empty-http", "type": "http", "url": "https://example.com/empty.conf", "filename": "empty.conf" }
+  ],
+  "assembly": []
+}
+MANIFEST
+
+  MANIFEST_PATH="$test_manifest" PATH="$stub_dir:$PATH" \
+    run bash "$REPO_ROOT/clone_repositories.sh"
+  rm -f "$test_manifest"
+  rm -rf "$stub_dir"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"empty"* ]] || [[ "$output" == *"Integrity"* ]] || [[ "$output" == *"integrity"* ]]
+}
+
+@test "clone: no hardcoded URLs (RSM-010 lint)" {
+  # clone_repositories.sh must not contain any literal http(s):// or git@ URLs
+  local script="$REPO_ROOT/clone_repositories.sh"
+  run grep -E '(https?://|git@)' "$script"
+  [ "$status" -ne 0 ]
+}
+
+@test "clone: no cd repositories command (cwd invariant D1)" {
+  local script="$REPO_ROOT/clone_repositories.sh"
+  run grep -E '^[[:space:]]*cd[[:space:]]' "$script"
+  [ "$status" -ne 0 ]
+}

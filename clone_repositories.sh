@@ -1,51 +1,55 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# clone_repositories.sh — FETCH stage: validate manifest, then fetch all sources.
+#
+# Stage: VALIDATE (RSM-005) then FETCH (RSM-006, RSM-007).
+# Runs from repo root (D1 cwd invariant — no cd into subdirs).
+# All checkout dirs are keyed by source id: repositories/<id> (D8).
+# Sources are read exclusively from resources.manifest.json (RSM-010).
+#
+# Usage: bash clone_repositories.sh
 
 set -e
 
-echo "Syncing repositories..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/resources-lib.sh"
+
+echo "Validating manifest..."
+validate_manifest "$MANIFEST_PATH" || exit 1
+
+echo "Fetching sources..."
 
 mkdir -p repositories
-cd repositories
 
-# Clone on first run; on later runs fast-forward the existing shallow clone so a
-# refresh pulls only deltas instead of re-downloading everything. Any failure
-# falls back to a fresh clone, so the worst case equals the original behavior.
-sync_repo() {
-	local dir="$1" url="$2" branch="$3"
-	if [ -d "$dir/.git" ]; then
-		if [ -n "$branch" ]; then
-			git -C "$dir" fetch --depth 1 origin "$branch" >/dev/null 2>&1 &&
-				git -C "$dir" reset --hard FETCH_HEAD >/dev/null 2>&1 && return 0
-		else
-			git -C "$dir" fetch --depth 1 >/dev/null 2>&1 &&
-				git -C "$dir" reset --hard "@{u}" >/dev/null 2>&1 && return 0
-		fi
-		echo "  update failed for $dir — re-cloning"
-		rm -rf "$dir"
-	fi
-	# Directory exists but is not a git repo (populated out-of-band, or FF above
-	# removed it already): start clean so git clone won't abort on a non-empty dir.
-	[ -d "$dir" ] && rm -rf "$dir"
-	if [ -n "$branch" ]; then
-		git clone --depth 1 --branch "$branch" "$url" "$dir"
-	else
-		git clone --depth 1 "$url" "$dir"
-	fi
-}
+# Iterate all sources from the manifest
+source_count=$(manifest_get '.sources | length')
 
-sync_repo edopro-card-scripts        https://github.com/ProjectIgnis/CardScripts.git           master
-sync_repo edopro-card-databases      https://github.com/ProjectIgnis/BabelCDB.git              master
-sync_repo edopro-banlists-ignis      https://github.com/ProjectIgnis/LFLists                   master
-sync_repo edopro-banlists-evolution  https://github.com/termitaklk/lflist                      main
-sync_repo evolution-assets           https://github.com/diangogav/evolution-assets            main
-# ygopro-scripts uses its repo default branch. moenext mirror kept for reference:
-# https://code.moenext.com/nanahira/ygopro-scripts
-sync_repo ygopro-scripts             https://github.com/Fluorohydride/ygopro-scripts           ""
-sync_repo ygopro-prereleases-cdb     https://github.com/evolutionygo/pre-release-database-cdb  master
-sync_repo ygopro-cards-art           https://github.com/evolutionygo/cards-art-server          main
-sync_repo ygopro-format-alternatives https://github.com/evolutionygo/server-formats-cdb.git    main
+i=0
+while [ "$i" -lt "$source_count" ]; do
+  src_id=$(manifest_get ".sources[$i].id")
+  src_type=$(manifest_get ".sources[$i].type")
+  src_url=$(manifest_get ".sources[$i].url")
 
-wget -qO ygopro-lflist.conf https://cdntx.moecube.com/ygopro-database/zh-CN/lflist.conf
-wget -qO ygopro-cards.cdb https://cdntx.moecube.com/ygopro-database/zh-CN/cards.cdb
+  case "$src_type" in
+    git)
+      # Optional branch — jq returns "null" when the field is absent
+      src_branch=$(manifest_get ".sources[$i].branch // \"\"")
+      echo "  [git] $src_id"
+      sync_repo "$src_id" "$src_url" "$src_branch"
+      ;;
+    http)
+      src_filename=$(manifest_get ".sources[$i].filename")
+      local_path="repositories/$src_filename"
+      echo "  [http] $src_id -> $local_path"
+      wget -qO "$local_path" "$src_url" || fail "wget failed for $src_id ($src_url)"
+      http_integrity_check "$local_path" "$src_id" "$src_url" \
+        || fail "Integrity check failed for $src_id — aborting fetch stage"
+      ;;
+    *)
+      fail "Unknown source type '$src_type' for source '$src_id'"
+      ;;
+  esac
+
+  i=$((i + 1))
+done
 
 echo "Repositories synced."
