@@ -43,6 +43,7 @@ export const config = {
 	},
 	resources: {
 		dir: process.env.RESOURCES_DIR ?? "./resources/current",
+		manifestPath: process.env.MANIFEST_PATH ?? "./resources.manifest.json",
 		ygopro: {
 			folders: process.env?.YGOPRO_FOLDERS?.split(",") ?? [],
 			extraFolders: process.env?.YGOPRO_EXTRA_FOLDERS?.split(",") ?? [],
