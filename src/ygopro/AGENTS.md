@@ -51,7 +51,7 @@ This module implements the srvpro2-compatible server for YGOPro clients (Koishi,
 
 1. Add the format to `formatRuleMappings` in `RuleMappings.ts` with correct `rule`, `duel_rule`, `lflist`, `time_limit`.
 2. If it needs pre-release/art cards, add the format name to `extendedCardPoolFormats`.
-3. Add a banlist `lflist.conf` to the corresponding `resources/ygopro/alternatives/<format>/` directory.
+3. Add a banlist `lflist.conf` to the corresponding `resources/ygopro/formats/<format>/` directory.
 4. Add tests in `YGOProRoom.test.ts`.
 
 ### [SOP-YGO-002] Adding a New Message Handler

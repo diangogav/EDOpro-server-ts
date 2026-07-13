@@ -50,12 +50,15 @@ For when you want full control, or Docker isn't an option.
 - [Node.js](https://nodejs.org) >= 24
 - [CMake](https://cmake.org/download/) >= 3.18
 - A C++ compiler (g++ or clang++)
+- [jq](https://jqlang.github.io/jq/) >= 1.6 — required by `clone_repositories.sh` and `setup_resources.sh` to read the resource manifest
 
 On Ubuntu/Debian, the provided script installs everything you need:
 
 ```bash
 sudo bash install_dependencies.sh
 ```
+
+> 💡 To install `jq` manually: `sudo apt-get install -y jq` (Debian/Ubuntu) or `brew install jq` (macOS).
 
 ### 📦 Step by step
 
@@ -81,6 +84,8 @@ cp .env.example .env
 ```
 
 > 📁 `setup_resources.sh` assembles each run into `resources/releases/<id>/` and points `resources/current` (a symlink) at it. Everything is read through `resources/current/…`, so refreshing resources is an atomic symlink swap — no restart needed. In Docker the container runs this refresh loop in the background (see `entrypoint.sh` + `resources-updater.sh`), so card/banlist updates are picked up live.
+
+> ⚠️ **Operator migration note (resource layout change):** The resource directory layout was updated in this release. If you have a local `.env` that was **not** copied from `.env.example` (i.e. a hand-edited file from an older deployment), you must update `YGOPRO_FOLDERS` and `YGOPRO_EXTRA_FOLDERS` manually to the new enumerated leaf-directory paths shown above. The old paths (`ygopro/alternatives`, `ygopro/prereleases-cdb`, `ygopro/cards-art`) no longer exist under `resources/current/` after running the updated resource scripts. Copy the values from `.env.example` as your baseline.
 
 Now choose which engine(s) you want to run 👇
 
@@ -144,11 +149,11 @@ YGOPRO_FOLDERS=./resources/current/ygopro/base
 
 ```
 📂 resources/current/ygopro/
-├── 📜 base/               # Core scripts + lflist + cards.cdb (loaded by all modes)
-├── 🌏 ocg/                # OCG-specific banlist
-├── 🃏 alternatives/       # Format variants (Edison, GOAT, HAT, etc.)
-├── 🆕 prereleases-cdb/    # Pre-release card databases + scripts (extra folder)
-└── 🎨 cards-art/          # Custom card art databases (extra folder)
+├── 📜 base/                    # Core scripts + lflist + cards.cdb (loaded by all modes)
+├── 🌏 formats/ocg/             # OCG-specific banlist
+├── 🃏 formats/<name>/          # Format variants (Edison, HAT, JTP, MD, Tengu, World, Genesys, …)
+├── 🆕 extensions/prereleases/  # Pre-release card databases + scripts (extra folder)
+└── 🎨 extensions/cards-art/    # Custom card art databases (extra folder)
 ```
 
 **Standard card pool** (`YGOPRO_FOLDERS`) is loaded for all rooms. **Extra folders** (`YGOPRO_EXTRA_FOLDERS`) — which can contain cdbs, scripts, and other card assets — are only available in rooms that use PRE or ART formats. Standard rooms cannot use those cards.
@@ -156,8 +161,8 @@ YGOPRO_FOLDERS=./resources/current/ygopro/base
 To enable all formats and pre-releases, set:
 
 ```env
-YGOPRO_FOLDERS=./resources/current/ygopro/base,./resources/current/ygopro/ocg,./resources/current/ygopro/alternatives
-YGOPRO_EXTRA_FOLDERS=./resources/current/ygopro/prereleases-cdb,./resources/current/ygopro/cards-art
+YGOPRO_FOLDERS=./resources/current/ygopro/base,./resources/current/ygopro/formats/ocg,./resources/current/ygopro/formats/edison,./resources/current/ygopro/formats/genesys,./resources/current/ygopro/formats/hat,./resources/current/ygopro/formats/jtp,./resources/current/ygopro/formats/md,./resources/current/ygopro/formats/tengu,./resources/current/ygopro/formats/world
+YGOPRO_EXTRA_FOLDERS=./resources/current/ygopro/extensions/prereleases,./resources/current/ygopro/extensions/cards-art
 ```
 
 ```bash
@@ -177,8 +182,8 @@ HOST_PORT=7911
 YGOPRO_PORT=7711
 HTTP_PORT=7922
 WEBSOCKET_PORT=4000
-YGOPRO_FOLDERS=./resources/current/ygopro/base,./resources/current/ygopro/ocg,./resources/current/ygopro/alternatives
-YGOPRO_EXTRA_FOLDERS=./resources/current/ygopro/prereleases-cdb,./resources/current/ygopro/cards-art
+YGOPRO_FOLDERS=./resources/current/ygopro/base,./resources/current/ygopro/formats/ocg,./resources/current/ygopro/formats/edison,./resources/current/ygopro/formats/genesys,./resources/current/ygopro/formats/hat,./resources/current/ygopro/formats/jtp,./resources/current/ygopro/formats/md,./resources/current/ygopro/formats/tengu,./resources/current/ygopro/formats/world
+YGOPRO_EXTRA_FOLDERS=./resources/current/ygopro/extensions/prereleases,./resources/current/ygopro/extensions/cards-art
 ```
 
 ```bash
