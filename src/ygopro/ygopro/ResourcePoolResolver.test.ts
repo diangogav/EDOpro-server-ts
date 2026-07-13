@@ -1,0 +1,360 @@
+import path from "node:path";
+import fs from "node:fs";
+import os from "node:os";
+import { resolvePools, type ResourcePoolResolverOptions } from "./ResourcePoolResolver";
+import type { Logger } from "src/shared/logger/domain/Logger";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function makeLogger(): jest.Mocked<Logger> {
+	return {
+		debug: jest.fn(),
+		error: jest.fn(),
+		info: jest.fn(),
+		warn: jest.fn(),
+		child: jest.fn().mockReturnThis(),
+	};
+}
+
+/** Write a manifest JSON file into a temp directory and return the path. */
+function writeManifest(dir: string, data: unknown, filename = "resources.manifest.json"): string {
+	const p = path.join(dir, filename);
+	fs.writeFileSync(p, JSON.stringify(data, null, 2), "utf-8");
+	return p;
+}
+
+/** Build a ResourcePoolResolverOptions object with defaults filled in. */
+function opts(
+	overrides: Partial<ResourcePoolResolverOptions> & { manifestPath: string; resourcesDir: string },
+): ResourcePoolResolverOptions {
+	return {
+		env: {},
+		logger: makeLogger(),
+		...overrides,
+	};
+}
+
+// ---------------------------------------------------------------------------
+// Fixtures
+// ---------------------------------------------------------------------------
+
+const STANDARD_LEAVES = [
+	"base",
+	"formats/ocg",
+	"formats/edison",
+	"formats/genesys",
+	"formats/hat",
+	"formats/jtp",
+	"formats/md",
+	"formats/tengu",
+	"formats/world",
+];
+
+const EXTENDED_LEAVES = ["extensions/prereleases", "extensions/cards-art"];
+
+const VALID_MANIFEST = {
+	sources: [{ id: "s", type: "git", url: "https://example.com" }],
+	assembly: [{ target: "t", from: "s" }],
+	runtime: {
+		ygopro: {
+			standard: STANDARD_LEAVES,
+			extended: EXTENDED_LEAVES,
+		},
+	},
+};
+
+// ---------------------------------------------------------------------------
+// RFD-003 — standard pool, extended pool, ordering
+// ---------------------------------------------------------------------------
+
+describe("ResourcePoolResolver — RFD-003 (ordering and pools)", () => {
+	let tmpDir: string;
+
+	beforeEach(() => {
+		tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "rfd-003-"));
+	});
+
+	afterEach(() => {
+		fs.rmSync(tmpDir, { recursive: true, force: true });
+	});
+
+	it("derives standard pool in exact manifest order (base first)", () => {
+		const manifestPath = writeManifest(tmpDir, VALID_MANIFEST);
+		const resourcesDir = "/test/resources/current";
+
+		const { standard } = resolvePools(opts({ manifestPath, resourcesDir }));
+
+		const expected = STANDARD_LEAVES.map((leaf) =>
+			path.join(path.resolve(resourcesDir), "ygopro", leaf),
+		);
+		expect(standard).toEqual(expected);
+	});
+
+	it("derives extended pool as standard + extension leaves appended", () => {
+		const manifestPath = writeManifest(tmpDir, VALID_MANIFEST);
+		const resourcesDir = "/test/resources/current";
+
+		const { standard, extended } = resolvePools(opts({ manifestPath, resourcesDir }));
+
+		const extensionPaths = EXTENDED_LEAVES.map((leaf) =>
+			path.join(path.resolve(resourcesDir), "ygopro", leaf),
+		);
+		expect(extended).toEqual([...standard, ...extensionPaths]);
+	});
+
+	it("standard pool has base as first element", () => {
+		const manifestPath = writeManifest(tmpDir, VALID_MANIFEST);
+		const resourcesDir = "/test/resources/current";
+
+		const { standard } = resolvePools(opts({ manifestPath, resourcesDir }));
+
+		expect(standard[0]).toBe(path.join(path.resolve(resourcesDir), "ygopro", "base"));
+	});
+
+	it("omitted formats are absent from both pools", () => {
+		const manifestPath = writeManifest(tmpDir, VALID_MANIFEST);
+		const resourcesDir = "/test/resources/current";
+
+		const { standard, extended } = resolvePools(opts({ manifestPath, resourcesDir }));
+
+		const omitted = ["goat", "rush", "speed", "gx", "mdc"];
+		for (const format of omitted) {
+			for (const pool of [standard, extended]) {
+				for (const p of pool) {
+					expect(p).not.toContain(format);
+				}
+			}
+		}
+	});
+
+	it("extensions are absent from standard pool but present in extended pool", () => {
+		const manifestPath = writeManifest(tmpDir, VALID_MANIFEST);
+		const resourcesDir = "/test/resources/current";
+
+		const { standard, extended } = resolvePools(opts({ manifestPath, resourcesDir }));
+
+		const extPaths = EXTENDED_LEAVES.map((leaf) =>
+			path.join(path.resolve(resourcesDir), "ygopro", leaf),
+		);
+		for (const ep of extPaths) {
+			expect(standard).not.toContain(ep);
+			expect(extended).toContain(ep);
+		}
+	});
+});
+
+// ---------------------------------------------------------------------------
+// RFD-004 — env override wins, deprecation warning
+// ---------------------------------------------------------------------------
+
+describe("ResourcePoolResolver — RFD-004 (env override)", () => {
+	let tmpDir: string;
+	let logger: jest.Mocked<Logger>;
+
+	beforeEach(() => {
+		tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "rfd-004-"));
+		logger = makeLogger();
+	});
+
+	afterEach(() => {
+		fs.rmSync(tmpDir, { recursive: true, force: true });
+	});
+
+	it("YGOPRO_FOLDERS override is used as-is and emits one warn", () => {
+		const manifestPath = writeManifest(tmpDir, VALID_MANIFEST);
+		const envFolders = "/override/standard/a,/override/standard/b";
+
+		const { standard } = resolvePools(
+			opts({
+				manifestPath,
+				resourcesDir: "/ignored",
+				env: { YGOPRO_FOLDERS: envFolders },
+				logger,
+			}),
+		);
+
+		expect(standard).toEqual(["/override/standard/a", "/override/standard/b"]);
+		// Must emit exactly one deprecation warning for YGOPRO_FOLDERS
+		const warnCalls = logger.warn.mock.calls;
+		const foldersWarnings = warnCalls.filter((args) => String(args[0]).includes("YGOPRO_FOLDERS"));
+		expect(foldersWarnings).toHaveLength(1);
+	});
+
+	it("YGOPRO_EXTRA_FOLDERS override is used as-is and emits one warn", () => {
+		const manifestPath = writeManifest(tmpDir, VALID_MANIFEST);
+		const envExtra = "/override/ext/pre,/override/ext/art";
+
+		const { standard, extended } = resolvePools(
+			opts({
+				manifestPath,
+				resourcesDir: "/test/resources/current",
+				env: { YGOPRO_EXTRA_FOLDERS: envExtra },
+				logger,
+			}),
+		);
+
+		// standard is derived (no YGOPRO_FOLDERS set)
+		const expectedStandard = STANDARD_LEAVES.map((leaf) =>
+			path.join(path.resolve("/test/resources/current"), "ygopro", leaf),
+		);
+		expect(standard).toEqual(expectedStandard);
+
+		// extended = derived standard + overridden extra
+		expect(extended).toEqual([...expectedStandard, "/override/ext/pre", "/override/ext/art"]);
+
+		const warnCalls = logger.warn.mock.calls;
+		const extraWarnings = warnCalls.filter((args) =>
+			String(args[0]).includes("YGOPRO_EXTRA_FOLDERS"),
+		);
+		expect(extraWarnings).toHaveLength(1);
+	});
+
+	it("derivation default: no warnings when env vars are unset", () => {
+		const manifestPath = writeManifest(tmpDir, VALID_MANIFEST);
+
+		resolvePools(
+			opts({
+				manifestPath,
+				resourcesDir: "/test/resources/current",
+				env: {},
+				logger,
+			}),
+		);
+
+		expect(logger.warn).not.toHaveBeenCalled();
+	});
+
+	it("mixed: YGOPRO_FOLDERS set, YGOPRO_EXTRA_FOLDERS empty => standard from env, extended from derivation", () => {
+		const manifestPath = writeManifest(tmpDir, VALID_MANIFEST);
+		const envFolders = "/manual/base,/manual/formats/ocg";
+
+		const { standard, extended } = resolvePools(
+			opts({
+				manifestPath,
+				resourcesDir: "/test/resources/current",
+				env: { YGOPRO_FOLDERS: envFolders },
+				logger,
+			}),
+		);
+
+		expect(standard).toEqual(["/manual/base", "/manual/formats/ocg"]);
+
+		// extended = overridden standard + derived extended leaves
+		const derivedExtLeafPaths = EXTENDED_LEAVES.map((leaf) =>
+			path.join(path.resolve("/test/resources/current"), "ygopro", leaf),
+		);
+		expect(extended).toEqual([...standard, ...derivedExtLeafPaths]);
+
+		const warnCalls = logger.warn.mock.calls;
+		const foldersWarnings = warnCalls.filter((args) => String(args[0]).includes("YGOPRO_FOLDERS"));
+		expect(foldersWarnings).toHaveLength(1);
+		// No warning for YGOPRO_EXTRA_FOLDERS since it was not set
+		const extraWarnings = warnCalls.filter((args) =>
+			String(args[0]).includes("YGOPRO_EXTRA_FOLDERS"),
+		);
+		expect(extraWarnings).toHaveLength(0);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// RFD-005 — failure modes keep the server up
+// ---------------------------------------------------------------------------
+
+describe("ResourcePoolResolver — RFD-005 (failure modes)", () => {
+	let tmpDir: string;
+	let logger: jest.Mocked<Logger>;
+
+	beforeEach(() => {
+		tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "rfd-005-"));
+		logger = makeLogger();
+	});
+
+	afterEach(() => {
+		fs.rmSync(tmpDir, { recursive: true, force: true });
+	});
+
+	it("manifest file missing: logs error, returns empty pools, does not throw", () => {
+		const manifestPath = path.join(tmpDir, "does-not-exist.json");
+
+		const result = resolvePools(opts({ manifestPath, resourcesDir: "/test", logger }));
+
+		expect(result.standard).toEqual([]);
+		expect(result.extended).toEqual([]);
+		const errorCalls = logger.error.mock.calls;
+		expect(errorCalls.length).toBeGreaterThanOrEqual(1);
+		const errorMessages = errorCalls.map((c) => String(c[0]));
+		expect(errorMessages.some((m) => m.includes(manifestPath))).toBe(true);
+	});
+
+	it("malformed JSON: logs error, returns empty pools, does not throw", () => {
+		const manifestPath = path.join(tmpDir, "bad.json");
+		fs.writeFileSync(manifestPath, "{ this is not json ", "utf-8");
+
+		const result = resolvePools(opts({ manifestPath, resourcesDir: "/test", logger }));
+
+		expect(result.standard).toEqual([]);
+		expect(result.extended).toEqual([]);
+		expect(logger.error).toHaveBeenCalled();
+	});
+
+	it("valid JSON but missing runtime.ygopro.standard: logs error, empty standard", () => {
+		const manifestPath = writeManifest(tmpDir, {
+			sources: [{ id: "s", type: "git", url: "https://example.com" }],
+			assembly: [{ target: "t", from: "s" }],
+		});
+
+		const result = resolvePools(opts({ manifestPath, resourcesDir: "/test", logger }));
+
+		expect(result.standard).toEqual([]);
+		expect(result.extended).toEqual([]);
+		expect(logger.error).toHaveBeenCalled();
+	});
+
+	it("runtime.ygopro.extended missing: standard derived normally, extended falls back to standard", () => {
+		const manifestPath = writeManifest(tmpDir, {
+			sources: [{ id: "s", type: "git", url: "https://example.com" }],
+			assembly: [{ target: "t", from: "s" }],
+			runtime: {
+				ygopro: {
+					standard: STANDARD_LEAVES,
+					// extended intentionally absent
+				},
+			},
+		});
+		const resourcesDir = "/test/resources/current";
+
+		const { standard, extended } = resolvePools(opts({ manifestPath, resourcesDir, logger }));
+
+		const expectedStandard = STANDARD_LEAVES.map((leaf) =>
+			path.join(path.resolve(resourcesDir), "ygopro", leaf),
+		);
+		expect(standard).toEqual(expectedStandard);
+		expect(extended).toEqual(expectedStandard);
+		// No error for just-missing extended (graceful fallback)
+		expect(logger.error).not.toHaveBeenCalled();
+	});
+
+	it("malformed extended with valid standard: standard pool is valid, extended falls back to standard", () => {
+		const manifestPath = writeManifest(tmpDir, {
+			sources: [{ id: "s", type: "git", url: "https://example.com" }],
+			assembly: [{ target: "t", from: "s" }],
+			runtime: {
+				ygopro: {
+					standard: STANDARD_LEAVES,
+					extended: "not-an-array",
+				},
+			},
+		});
+		const resourcesDir = "/test/resources/current";
+
+		const { standard, extended } = resolvePools(opts({ manifestPath, resourcesDir, logger }));
+
+		const expectedStandard = STANDARD_LEAVES.map((leaf) =>
+			path.join(path.resolve(resourcesDir), "ygopro", leaf),
+		);
+		expect(standard).toEqual(expectedStandard);
+		expect(extended).toEqual(expectedStandard);
+	});
+});
