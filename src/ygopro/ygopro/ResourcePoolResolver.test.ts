@@ -1,7 +1,11 @@
 import path from "node:path";
 import fs from "node:fs";
 import os from "node:os";
-import { resolvePools, type ResourcePoolResolverOptions } from "./ResourcePoolResolver";
+import {
+	resolvePools,
+	__resetResolverWarnings,
+	type ResourcePoolResolverOptions,
+} from "./ResourcePoolResolver";
 import type { Logger } from "src/shared/logger/domain/Logger";
 
 // ---------------------------------------------------------------------------
@@ -375,6 +379,7 @@ describe("ResourcePoolResolver — Diagnostic 1 (missing pool dir warn)", () => 
 	let logger: jest.Mocked<Logger>;
 
 	beforeEach(() => {
+		__resetResolverWarnings();
 		tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "rfd-dx1-"));
 		logger = makeLogger();
 	});
@@ -468,6 +473,7 @@ describe("ResourcePoolResolver — Diagnostic 2 (duplicate cdb basename warn)", 
 	let logger: jest.Mocked<Logger>;
 
 	beforeEach(() => {
+		__resetResolverWarnings();
 		tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "rfd-dx2-"));
 		logger = makeLogger();
 	});
@@ -564,5 +570,83 @@ describe("ResourcePoolResolver — Diagnostic 2 (duplicate cdb basename warn)", 
 		const msg = String(dupWarns[0][0]);
 		expect(msg).toContain(path.join(path.resolve(tmpDir), "ygopro", "classic"));
 		expect(msg).toContain(path.join(path.resolve(tmpDir), "ygopro", "base"));
+	});
+});
+
+// ---------------------------------------------------------------------------
+// One-shot diagnostics — warnings must fire exactly once across repeated calls
+// ---------------------------------------------------------------------------
+
+describe("ResourcePoolResolver — one-shot diagnostics", () => {
+	let tmpDir: string;
+
+	beforeEach(() => {
+		__resetResolverWarnings();
+		tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "rfd-oneshot-"));
+	});
+
+	afterEach(() => {
+		fs.rmSync(tmpDir, { recursive: true, force: true });
+	});
+
+	it("missing-dir warn fires exactly once when resolvePools is called twice with the same absent path", () => {
+		const logger = makeLogger();
+		const manifestPath = writeManifest(tmpDir, {
+			runtime: { ygopro: { standard: ["jtp"], extended: [] } },
+		});
+
+		resolvePools(opts({ manifestPath, resourcesDir: tmpDir, logger }));
+		resolvePools(opts({ manifestPath, resourcesDir: tmpDir, logger }));
+
+		const missingWarns = logger.warn.mock.calls.filter((args) =>
+			String(args[0]).includes("does not exist"),
+		);
+		expect(missingWarns).toHaveLength(1);
+	});
+
+	it("missing-dir warn still fires for a DIFFERENT absent path on a subsequent call", () => {
+		const logger = makeLogger();
+
+		// First call — "jtp" is absent
+		const manifestPath1 = writeManifest(tmpDir, {
+			runtime: { ygopro: { standard: ["jtp"], extended: [] } },
+		});
+		resolvePools(opts({ manifestPath: manifestPath1, resourcesDir: tmpDir, logger }));
+
+		// Second call — "world" is absent (different path, different key)
+		const manifestPath2 = writeManifest(tmpDir, {
+			runtime: { ygopro: { standard: ["world"], extended: [] } },
+		});
+		resolvePools(opts({ manifestPath: manifestPath2, resourcesDir: tmpDir, logger }));
+
+		const missingWarns = logger.warn.mock.calls.filter((args) =>
+			String(args[0]).includes("does not exist"),
+		);
+		// Both "jtp" and "world" must have warned (one each, different keys)
+		expect(missingWarns).toHaveLength(2);
+	});
+
+	it("duplicate-basename warn fires exactly once when resolvePools is called twice with the same dup", () => {
+		const logger = makeLogger();
+
+		// Create two pool dirs with the same .cdb basename
+		const classicDir = path.join(tmpDir, "ygopro", "classic");
+		const baseDir = path.join(tmpDir, "ygopro", "base");
+		fs.mkdirSync(classicDir, { recursive: true });
+		fs.mkdirSync(baseDir, { recursive: true });
+		fs.writeFileSync(path.join(classicDir, "cards.cdb"), "", "utf-8");
+		fs.writeFileSync(path.join(baseDir, "cards.cdb"), "", "utf-8");
+
+		const manifestPath = writeManifest(tmpDir, {
+			runtime: { ygopro: { standard: ["classic", "base"], extended: [] } },
+		});
+
+		resolvePools(opts({ manifestPath, resourcesDir: tmpDir, logger }));
+		resolvePools(opts({ manifestPath, resourcesDir: tmpDir, logger }));
+
+		const dupWarns = logger.warn.mock.calls.filter((args) =>
+			String(args[0]).includes("duplicate cdb basename"),
+		);
+		expect(dupWarns).toHaveLength(1);
 	});
 });

@@ -2,6 +2,19 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Logger } from "src/shared/logger/domain/Logger";
 
+// ---------------------------------------------------------------------------
+// One-shot diagnostic dedup state
+// Keys: absPath for missing-dir warns; "dup:<basename>" for cdb-dup warns.
+// Module-level so repeated resolvePools calls within the same process stay silent
+// after the first occurrence. __resetResolverWarnings() is exported for tests only.
+// ---------------------------------------------------------------------------
+const _warnedKeys = new Set<string>();
+
+/** Test-only helper — resets one-shot warning state between test cases. */
+export function __resetResolverWarnings(): void {
+	_warnedKeys.clear();
+}
+
 /** Shape of the runtime.ygopro section inside resources.manifest.json. */
 interface ManifestRuntimeYGOPro {
 	standard?: unknown;
@@ -188,6 +201,13 @@ function deriveExtended(manifest: Manifest | null, ygoproBase: string): string[]
 function warnMissingPoolDirs(pools: string[], logger: Logger): void {
 	for (const absPath of pools) {
 		if (!fs.existsSync(absPath) || !fs.statSync(absPath).isDirectory()) {
+			// One-shot: emit this warning at most once per process per missing path.
+			const key = `missing:${absPath}`;
+			if (_warnedKeys.has(key)) {
+				continue;
+			}
+			_warnedKeys.add(key);
+
 			// Derive the leaf from the path for a friendlier message.
 			// The leaf is whatever comes after /ygopro/ in the resolved path.
 			const ygoproMarker = `${path.sep}ygopro${path.sep}`;
@@ -237,6 +257,13 @@ function warnDuplicateCdbBasenames(pools: string[], logger: Logger): void {
 
 	for (const [basename, folders] of basenameToFolders) {
 		if (folders.length >= 2) {
+			// One-shot: emit this warning at most once per process per duplicate basename.
+			const key = `dup:${basename}`;
+			if (_warnedKeys.has(key)) {
+				continue;
+			}
+			_warnedKeys.add(key);
+
 			logger.warn(
 				`ResourcePoolResolver: duplicate cdb basename "${basename}" in pool folders` +
 					` [${folders.join(", ")}]` +

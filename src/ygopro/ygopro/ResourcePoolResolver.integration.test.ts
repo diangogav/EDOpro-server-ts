@@ -236,6 +236,30 @@ describe("ResourcePoolResolver integration — RFD-007", () => {
 		return CardStorage.fromCards(cards);
 	}
 
+	/**
+	 * Same dedup logic as loadCardsFromPaths, but loads WITH texts so that
+	 * CardDataEntry.name is populated. Used only to assert content (which wins).
+	 */
+	async function loadCardsWithNames(paths: string[]): Promise<CardDataEntry[]> {
+		const { searchYGOProResource } = await import("koishipro-core.js");
+		const cards: CardDataEntry[] = [];
+		const seen = new Set<number>();
+		for await (const file of searchYGOProResource(...paths)) {
+			if (!file.path.endsWith(".cdb")) continue;
+			const cdbBody = await file.read();
+			// No .noTexts() — load text columns so .name is available
+			const cdb = new YGOProCdb(new SQL.Database(cdbBody));
+			for (const card of cdb.step()) {
+				const cardId = (card.code ?? 0) >>> 0;
+				if (cardId === 0 || seen.has(cardId)) continue;
+				seen.add(cardId);
+				cards.push(card);
+			}
+			cdb.finalize();
+		}
+		return cards;
+	}
+
 	describe("card loading (inlined CardLoadWorker logic)", () => {
 		it("standard pool loads base card and ocg card", async () => {
 			const { standard } = resolvePools({
@@ -278,6 +302,12 @@ describe("ResourcePoolResolver integration — RFD-007", () => {
 			// Only 2 unique cards: 1001 (base) and 2001 (ocg). The duplicate 1001 in ocg is dropped.
 			expect(storage.readCard(CODE_BASE)).toBeDefined();
 			expect(storage.size).toBe(2);
+
+			// The FIRST-occurrence (base) must win by content: load with texts and assert name.
+			const cards = await loadCardsWithNames(standard);
+			const baseCard = cards.find((c) => (c.code ?? 0) >>> 0 === CODE_BASE);
+			expect(baseCard).toBeDefined();
+			expect(baseCard?.name).toBe("Base Card");
 		});
 
 		it("prerelease card is absent from standard but present in extended pool", async () => {
