@@ -9,6 +9,7 @@ import { CardLoadWorker } from "./card-load-worker";
 import { Logger } from "src/shared/logger/domain/Logger";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 import { config } from "src/config";
+import { resolvePools } from "./ResourcePoolResolver";
 
 const CARD_STORAGE_RELOAD_INTERVAL_MS = 10 * 60 * 1000;
 
@@ -46,9 +47,20 @@ export class YGOProResourceLoader {
 		return _sharedInstance !== null;
 	}
 
-	ygoproPaths = config.resources.ygopro.folders;
+	private readonly resolvedPools = resolvePools({
+		manifestPath: config.resources.manifestPath,
+		resourcesDir: config.resources.dir,
+		env: process.env,
+		logger: LoggerFactory.getLogger(),
+	});
 
-	extraFolderPaths = config.resources.ygopro.extraFolders;
+	ygoproPaths = this.resolvedPools.standard;
+
+	extraFolderPaths = (() => {
+		const { standard, extended } = this.resolvedPools;
+		// extraFolderPaths = extensions delta only (extended minus standard)
+		return extended.slice(standard.length);
+	})();
 
 	extraScriptPaths = config.resources.ygopro.extraScripts;
 
