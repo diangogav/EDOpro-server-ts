@@ -188,5 +188,22 @@
 			"from": "evolution-assets",
 			"file": "lflist/genesys.lflist.conf"
 		}
-	]
+	],
+	"runtime": {
+		"comment": "TS loader pool membership. standard = base + served formats (load order; base first for FIRST-occurrence dedup). extended = extra members appended after standard. Formats assembled but omitted here (goat, rush, speed, gx, mdc) are assembled-but-not-served by design.",
+		"ygopro": {
+			"standard": [
+				"base",
+				"formats/ocg",
+				"formats/edison",
+				"formats/genesys",
+				"formats/hat",
+				"formats/jtp",
+				"formats/md",
+				"formats/tengu",
+				"formats/world"
+			],
+			"extended": ["extensions/prereleases", "extensions/cards-art"]
+		}
+	}
 }
