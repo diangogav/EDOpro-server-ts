@@ -211,7 +211,7 @@ describe("ResourcePoolResolver — RFD-004 (env override)", () => {
 		expect(extraWarnings).toHaveLength(1);
 	});
 
-	it("derivation default: no warnings when env vars are unset", () => {
+	it("derivation default: no env-deprecation warnings when env vars are unset", () => {
 		const manifestPath = writeManifest(tmpDir, VALID_MANIFEST);
 
 		resolvePools(
@@ -223,7 +223,14 @@ describe("ResourcePoolResolver — RFD-004 (env override)", () => {
 			}),
 		);
 
-		expect(logger.warn).not.toHaveBeenCalled();
+		// No deprecation warnings for env overrides (diagnostic warns for missing dirs are separate)
+		const warnCalls = logger.warn.mock.calls;
+		const deprecationWarnings = warnCalls.filter(
+			(args) =>
+				String(args[0]).includes("YGOPRO_FOLDERS") ||
+				String(args[0]).includes("YGOPRO_EXTRA_FOLDERS"),
+		);
+		expect(deprecationWarnings).toHaveLength(0);
 	});
 
 	it("mixed: YGOPRO_FOLDERS set, YGOPRO_EXTRA_FOLDERS empty => standard from env, extended from derivation", () => {
@@ -356,5 +363,206 @@ describe("ResourcePoolResolver — RFD-005 (failure modes)", () => {
 		);
 		expect(standard).toEqual(expectedStandard);
 		expect(extended).toEqual(expectedStandard);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// RFD-DX1 — Diagnostic: warn on manifest-derived pool paths that do not exist
+// ---------------------------------------------------------------------------
+
+describe("ResourcePoolResolver — Diagnostic 1 (missing pool dir warn)", () => {
+	let tmpDir: string;
+	let logger: jest.Mocked<Logger>;
+
+	beforeEach(() => {
+		tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "rfd-dx1-"));
+		logger = makeLogger();
+	});
+
+	afterEach(() => {
+		fs.rmSync(tmpDir, { recursive: true, force: true });
+	});
+
+	it("warns with leaf+path when a manifest-derived standard path does not exist on disk", () => {
+		const manifestPath = writeManifest(tmpDir, {
+			runtime: { ygopro: { standard: ["jtp"], extended: [] } },
+		});
+		// resourcesDir is tmpDir but we do NOT create the ygopro/jtp subdirectory
+
+		resolvePools(opts({ manifestPath, resourcesDir: tmpDir, logger }));
+
+		const warnCalls = logger.warn.mock.calls;
+		const missingWarns = warnCalls.filter((args) => String(args[0]).includes("does not exist"));
+		expect(missingWarns).toHaveLength(1);
+		expect(String(missingWarns[0][0])).toContain('"jtp"');
+		expect(String(missingWarns[0][0])).toContain(path.join(path.resolve(tmpDir), "ygopro", "jtp"));
+	});
+
+	it("does not warn when all manifest-derived standard paths exist on disk", () => {
+		// Create the actual directory tree
+		const ygoproDir = path.join(tmpDir, "ygopro");
+		const leafDir = path.join(ygoproDir, "base");
+		fs.mkdirSync(leafDir, { recursive: true });
+
+		const manifestPath = writeManifest(tmpDir, {
+			runtime: { ygopro: { standard: ["base"], extended: [] } },
+		});
+
+		resolvePools(opts({ manifestPath, resourcesDir: tmpDir, logger }));
+
+		const warnCalls = logger.warn.mock.calls;
+		const missingWarns = warnCalls.filter((args) => String(args[0]).includes("does not exist"));
+		expect(missingWarns).toHaveLength(0);
+	});
+
+	it("warns for each missing path individually", () => {
+		const manifestPath = writeManifest(tmpDir, {
+			runtime: { ygopro: { standard: ["base", "formats/ocg"], extended: [] } },
+		});
+		// Neither directory exists
+
+		resolvePools(opts({ manifestPath, resourcesDir: tmpDir, logger }));
+
+		const warnCalls = logger.warn.mock.calls;
+		const missingWarns = warnCalls.filter((args) => String(args[0]).includes("does not exist"));
+		expect(missingWarns).toHaveLength(2);
+	});
+
+	it("does NOT warn for env-override standard paths that do not exist (env path is caller's responsibility)", () => {
+		const manifestPath = writeManifest(tmpDir, {
+			runtime: { ygopro: { standard: ["base"], extended: [] } },
+		});
+		const envFolders = "/nonexistent/override/a,/nonexistent/override/b";
+
+		resolvePools(
+			opts({
+				manifestPath,
+				resourcesDir: tmpDir,
+				env: { YGOPRO_FOLDERS: envFolders },
+				logger,
+			}),
+		);
+
+		const warnCalls = logger.warn.mock.calls;
+		const missingWarns = warnCalls.filter((args) => String(args[0]).includes("does not exist"));
+		expect(missingWarns).toHaveLength(0);
+	});
+
+	it("returns the path even when the directory is missing (non-fatal)", () => {
+		const manifestPath = writeManifest(tmpDir, {
+			runtime: { ygopro: { standard: ["jtp"], extended: [] } },
+		});
+
+		const { standard } = resolvePools(opts({ manifestPath, resourcesDir: tmpDir, logger }));
+
+		expect(standard).toEqual([path.join(path.resolve(tmpDir), "ygopro", "jtp")]);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// RFD-DX2 — Diagnostic: warn on duplicate .cdb basenames across pool folders
+// ---------------------------------------------------------------------------
+
+describe("ResourcePoolResolver — Diagnostic 2 (duplicate cdb basename warn)", () => {
+	let tmpDir: string;
+	let logger: jest.Mocked<Logger>;
+
+	beforeEach(() => {
+		tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "rfd-dx2-"));
+		logger = makeLogger();
+	});
+
+	afterEach(() => {
+		fs.rmSync(tmpDir, { recursive: true, force: true });
+	});
+
+	/** Create a directory and write empty .cdb files in it. */
+	function createPoolDir(base: string, leaf: string, cdbNames: string[]): string {
+		const dir = path.join(base, "ygopro", leaf);
+		fs.mkdirSync(dir, { recursive: true });
+		for (const name of cdbNames) {
+			fs.writeFileSync(path.join(dir, name), "", "utf-8");
+		}
+		return dir;
+	}
+
+	it("warns when two pool folders share the same .cdb basename", () => {
+		createPoolDir(tmpDir, "classic", ["cards.cdb"]);
+		createPoolDir(tmpDir, "base", ["cards.cdb"]);
+
+		const manifestPath = writeManifest(tmpDir, {
+			runtime: { ygopro: { standard: ["classic", "base"], extended: [] } },
+		});
+
+		resolvePools(opts({ manifestPath, resourcesDir: tmpDir, logger }));
+
+		const warnCalls = logger.warn.mock.calls;
+		const dupWarns = warnCalls.filter((args) => String(args[0]).includes("duplicate cdb basename"));
+		expect(dupWarns).toHaveLength(1);
+		expect(String(dupWarns[0][0])).toContain('"cards.cdb"');
+	});
+
+	it("does not warn when all .cdb basenames are distinct across pool folders", () => {
+		createPoolDir(tmpDir, "classic", ["classic.cdb"]);
+		createPoolDir(tmpDir, "base", ["base.cdb"]);
+
+		const manifestPath = writeManifest(tmpDir, {
+			runtime: { ygopro: { standard: ["classic", "base"], extended: [] } },
+		});
+
+		resolvePools(opts({ manifestPath, resourcesDir: tmpDir, logger }));
+
+		const warnCalls = logger.warn.mock.calls;
+		const dupWarns = warnCalls.filter((args) => String(args[0]).includes("duplicate cdb basename"));
+		expect(dupWarns).toHaveLength(0);
+	});
+
+	it("warns once per duplicate basename (not once per pair)", () => {
+		createPoolDir(tmpDir, "a", ["cards.cdb", "extra.cdb"]);
+		createPoolDir(tmpDir, "b", ["cards.cdb", "extra.cdb"]);
+		createPoolDir(tmpDir, "c", ["cards.cdb"]);
+
+		const manifestPath = writeManifest(tmpDir, {
+			runtime: { ygopro: { standard: ["a", "b", "c"], extended: [] } },
+		});
+
+		resolvePools(opts({ manifestPath, resourcesDir: tmpDir, logger }));
+
+		const warnCalls = logger.warn.mock.calls;
+		const dupWarns = warnCalls.filter((args) => String(args[0]).includes("duplicate cdb basename"));
+		// One warn for "cards.cdb", one warn for "extra.cdb"
+		expect(dupWarns).toHaveLength(2);
+	});
+
+	it("skips unreadable pool folder silently (does not throw)", () => {
+		createPoolDir(tmpDir, "base", ["base.cdb"]);
+
+		const manifestPath = writeManifest(tmpDir, {
+			runtime: {
+				ygopro: {
+					standard: ["base", "nonexistent-dir"],
+					extended: [],
+				},
+			},
+		});
+
+		expect(() => resolvePools(opts({ manifestPath, resourcesDir: tmpDir, logger }))).not.toThrow();
+	});
+
+	it("warns naming both folders that share the basename", () => {
+		createPoolDir(tmpDir, "classic", ["cards.cdb"]);
+		createPoolDir(tmpDir, "base", ["cards.cdb"]);
+
+		const manifestPath = writeManifest(tmpDir, {
+			runtime: { ygopro: { standard: ["classic", "base"], extended: [] } },
+		});
+
+		resolvePools(opts({ manifestPath, resourcesDir: tmpDir, logger }));
+
+		const warnCalls = logger.warn.mock.calls;
+		const dupWarns = warnCalls.filter((args) => String(args[0]).includes("duplicate cdb basename"));
+		const msg = String(dupWarns[0][0]);
+		expect(msg).toContain(path.join(path.resolve(tmpDir), "ygopro", "classic"));
+		expect(msg).toContain(path.join(path.resolve(tmpDir), "ygopro", "base"));
 	});
 });

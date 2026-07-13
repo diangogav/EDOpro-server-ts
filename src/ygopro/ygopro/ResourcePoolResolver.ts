@@ -94,6 +94,18 @@ export function resolvePools(options: ResourcePoolResolverOptions): ResolvedPool
 
 	const extended = [...standard, ...extendedDelta];
 
+	// --- Diagnostic 1: warn on manifest-derived paths that do not exist on disk ---
+	// Only checked when derivation is used (not env-override), to avoid noise on the
+	// deprecated escape hatch (those paths are the caller's responsibility).
+	if (!envFolders || envFolders.trim() === "") {
+		warnMissingPoolDirs(standard, logger);
+	}
+
+	// --- Diagnostic 2: warn on duplicate .cdb basenames across standard pool folders ---
+	// Scanned on the standard pool (extended = standard + delta; scanning standard avoids
+	// double-counting the overlapping directories). Best-effort: unreadable dirs skipped.
+	warnDuplicateCdbBasenames(standard, logger);
+
 	return { standard, extended };
 }
 
@@ -163,4 +175,74 @@ function deriveExtended(manifest: Manifest | null, ygoproBase: string): string[]
 	return extendedLeaves
 		.filter((leaf): leaf is string => typeof leaf === "string" && leaf.length > 0)
 		.map((leaf) => path.join(ygoproBase, leaf));
+}
+
+/**
+ * Diagnostic 1 — warn for each manifest-derived pool path that does not exist as a
+ * directory on disk. Non-fatal: the path is still returned to the caller.
+ *
+ * Decision: only applied to manifest-derived paths. Env-override paths (YGOPRO_FOLDERS /
+ * YGOPRO_EXTRA_FOLDERS) are a deprecated escape hatch and are the caller's responsibility;
+ * warning on them would add noise without actionable guidance.
+ */
+function warnMissingPoolDirs(pools: string[], logger: Logger): void {
+	for (const absPath of pools) {
+		if (!fs.existsSync(absPath) || !fs.statSync(absPath).isDirectory()) {
+			// Derive the leaf from the path for a friendlier message.
+			// The leaf is whatever comes after /ygopro/ in the resolved path.
+			const ygoproMarker = `${path.sep}ygopro${path.sep}`;
+			const markerIdx = absPath.indexOf(ygoproMarker);
+			const leaf = markerIdx >= 0 ? absPath.slice(markerIdx + ygoproMarker.length) : absPath;
+			logger.warn(
+				`ResourcePoolResolver: pool entry "${leaf}" resolves to "${absPath}" which does not exist` +
+					` — check the runtime.ygopro entry matches an assembled directory (e.g. "formats/<name>")`,
+			);
+		}
+	}
+}
+
+/**
+ * Diagnostic 2 — warn when two or more standard pool folders contain a .cdb file with the
+ * same basename. Duplicate basenames cause the databases listing to merge them into a single
+ * entry (keyed by filename), making one source invisible.
+ *
+ * Scan scope: top-level .cdb files in each pool directory (non-recursive). This matches how
+ * the game engine reads cdbs. Best-effort: unreadable folders are silently skipped.
+ *
+ * Decision: scanned on the standard pool only (not extended), because extended = standard +
+ * delta; scanning both would double-count the standard directories.
+ */
+function warnDuplicateCdbBasenames(pools: string[], logger: Logger): void {
+	// Map: basename → list of pool dirs that contain it
+	const basenameToFolders = new Map<string, string[]>();
+
+	for (const folder of pools) {
+		let entries: string[];
+		try {
+			entries = fs.readdirSync(folder);
+		} catch {
+			// Unreadable — skip silently
+			continue;
+		}
+
+		for (const entry of entries) {
+			if (!entry.endsWith(".cdb")) {
+				continue;
+			}
+			const existing = basenameToFolders.get(entry) ?? [];
+			existing.push(folder);
+			basenameToFolders.set(entry, existing);
+		}
+	}
+
+	for (const [basename, folders] of basenameToFolders) {
+		if (folders.length >= 2) {
+			logger.warn(
+				`ResourcePoolResolver: duplicate cdb basename "${basename}" in pool folders` +
+					` [${folders.join(", ")}]` +
+					` — they merge into one entry in the databases listing;` +
+					` rename one (e.g. ${basename.replace(".cdb", "")}-classic.cdb) to list them separately`,
+			);
+		}
+	}
 }
