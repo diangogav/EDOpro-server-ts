@@ -90,7 +90,7 @@ done
 
 # Strip .git from the assembled release (keep it in repositories/ so
 # refreshes can pull deltas).
-find "$STAGING" -name ".git" -type d -exec rm -rf {} + 2>/dev/null || true
+find "$STAGING" -name ".git" -type d -exec rm -rf {} +
 
 # Atomic publish: repoint resources/current -> releases/<id>.
 # Build the symlink under a temp name, then rename over the live one.

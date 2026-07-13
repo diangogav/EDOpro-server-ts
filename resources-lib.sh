@@ -67,6 +67,15 @@ validate_manifest() {
     return 1
   fi
 
+  # (RSM-001) assembly[] target must be non-empty — a rule with a missing/empty
+  # target resolves to a literal "null/" (or bare) publish dir. Name the rule index.
+  local empty_targets
+  empty_targets=$(jq -r '[.assembly | to_entries[] | select((.value.target // "") == "") | .key] | .[]' "$manifest" 2>/dev/null)
+  if [ -n "$empty_targets" ]; then
+    echo "[resources][ERROR] Manifest validation failed (RSM-001): assembly rule(s) with empty/missing target at index: $empty_targets" >&2
+    return 1
+  fi
+
   # (RSM-001) sources[] field validation
   # (1) every source id must be non-empty
   local empty_ids
@@ -129,6 +138,31 @@ validate_manifest() {
   ' "$manifest" 2>/dev/null)
   if [ -n "$http_no_file" ]; then
     echo "[resources][ERROR] Manifest validation failed (RSM-001): rule(s) referencing an http source without a file key (whole-source/dir/only over a flat http file unsupported): $http_no_file" >&2
+    return 1
+  fi
+
+  # (7) An http source lands as a flat file named <filename> under repositories/,
+  #     so a rule whose resolved from (string or array element) is an http source
+  #     MUST reference that exact file via `file` == source.filename. A mismatch
+  #     would look for a non-existent file. Name the rule target + source id.
+  local http_file_mismatch
+  http_file_mismatch=$(jq -r '
+    (.sources | map(select(.type == "http") | {id, filename})) as $http |
+    ($http | map(.id)) as $http_ids |
+    [
+      .assembly[] |
+      .target as $t |
+      (.file // "") as $rfile |
+      .from as $from |
+      (if ($from | type) == "array" then $from[] else $from end) |
+      select(. as $f | ($http_ids | index($f)) != null) as $sid |
+      ($http[] | select(.id == $sid)) as $src |
+      select($rfile != $src.filename) |
+      ($t + " (source " + $sid + ": file=\"" + $rfile + "\" != filename=\"" + ($src.filename // "") + "\")")
+    ] | unique | .[]
+  ' "$manifest" 2>/dev/null)
+  if [ -n "$http_file_mismatch" ]; then
+    echo "[resources][ERROR] Manifest validation failed (RSM-001): rule file must equal http source filename: $http_file_mismatch" >&2
     return 1
   fi
 
