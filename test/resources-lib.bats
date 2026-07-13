@@ -166,6 +166,25 @@ teardown() {
   [[ "$output" == *"http"* ]]
 }
 
+@test "RSM-001: assembly rule with missing target aborts with exit 1 naming the index" {
+  # A rule with no target resolves to a literal null/ publish dir — must be rejected.
+  MANIFEST_PATH="$MANIFEST_FIXTURES/missing-target.json"
+  run validate_manifest "$MANIFEST_PATH"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"target"* ]]
+  [[ "$output" == *"index"* ]]
+}
+
+@test "RSM-001: http rule file must equal source filename, else exit 1 naming target+source" {
+  # The rule references an http source but its file key differs from the source
+  # filename — validation must reject it and name the target + source id.
+  MANIFEST_PATH="$MANIFEST_FIXTURES/http-file-mismatch.json"
+  run validate_manifest "$MANIFEST_PATH"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"out/list.conf"* ]]
+  [[ "$output" == *"http-src"* ]]
+}
+
 @test "RSM-005 all-checks-pass: valid manifest exits 0" {
   MANIFEST_PATH="$MANIFEST_FIXTURES/valid-minimal.json"
   run validate_manifest "$MANIFEST_PATH"
@@ -447,7 +466,7 @@ teardown() {
 
   # git stub: record args and succeed
   cat > "$stub_dir/git" <<'STUB'
-#!/bin/sh
+#!/usr/bin/env bash
 echo "git $*" >> "$CALL_LOG"
 # simulate shallow clone: create the target dir with a .git subdir
 if [ "$1" = "clone" ]; then
@@ -560,6 +579,15 @@ MANIFEST
   # clone_repositories.sh must not contain any literal http(s):// or git@ URLs
   local script="$REPO_ROOT/clone_repositories.sh"
   run grep -E '(https?://|git@)' "$script"
+  [ "$status" -ne 0 ]
+}
+
+@test "lib: no hardcoded source URLs (RSM-010 lint)" {
+  # resources-lib.sh must not contain any literal github.com/moecube source URLs;
+  # all sources come from the manifest. grep exiting non-zero (no match) is the
+  # pass condition — the lib is currently clean.
+  local script="$REPO_ROOT/resources-lib.sh"
+  run grep -E 'github\.com|moecube' "$script"
   [ "$status" -ne 0 ]
 }
 
