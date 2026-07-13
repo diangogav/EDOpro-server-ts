@@ -1,0 +1,8 @@
+{
+  "sources": [
+    { "id": "src-a", "type": "git", "url": "https://example.com/a.git" }
+  ],
+  "assembly": [
+    "not-an-object"
+  ]
+}

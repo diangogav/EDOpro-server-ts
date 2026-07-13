@@ -67,6 +67,16 @@ validate_manifest() {
     return 1
   fi
 
+  # (structural guard) every assembly[] element must be an object — a bare string,
+  # number, or null would pass the array check but silently produce wrong behaviour
+  # when later jq queries assume object keys (.target, .from, etc.). Name the index.
+  local non_object_elements
+  non_object_elements=$(jq -r '[.assembly | to_entries[] | select((.value | type) != "object") | .key] | .[]' "$manifest" 2>/dev/null)
+  if [ -n "$non_object_elements" ]; then
+    echo "[resources][ERROR] Manifest validation failed (structural): assembly element(s) at index ${non_object_elements} must be objects, not $(jq -r ".assembly[${non_object_elements}] | type" "$manifest" 2>/dev/null)" >&2
+    return 1
+  fi
+
   # (RSM-001) assembly[] target must be non-empty — a rule with a missing/empty
   # target resolves to a literal "null/" (or bare) publish dir. Name the rule index.
   local empty_targets

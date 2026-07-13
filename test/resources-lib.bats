@@ -714,3 +714,18 @@ MANIFEST
   run grep -E '(edopro-card-scripts|edopro-card-databases|edopro-banlists|ygopro-format-alternatives|ygopro-prereleases|ygopro-cards-art|evolution-assets|ygopro-scripts|ygopro-lflist\.conf|ygopro-cards\.cdb)' "$script"
   [ "$status" -ne 0 ]
 }
+
+# ============================================================
+# JD round-3 hardening — non-object assembly element (PR1c)
+# ============================================================
+
+@test "hardening: non-object assembly element aborts with exit 1 naming the index" {
+  # An assembly[] element that is not an object (e.g. a plain string) must be
+  # rejected before any processing.  validate_manifest must exit 1 and name the
+  # offending array index in the error message.
+  MANIFEST_PATH="$MANIFEST_FIXTURES/assembly-element-not-object.json"
+  run validate_manifest "$MANIFEST_PATH"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"assembly"* ]]
+  [[ "$output" == *"0"* ]]
+}
