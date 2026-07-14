@@ -75,6 +75,17 @@ export class YGOProResourceLoader {
 
 	private reloadTimerRegistered = false;
 
+	// Hex of the SHA-512 over the loaded standard/extended card pools, or null before a
+	// pool has been loaded. Read by the resource-version endpoint to report what the
+	// server has loaded so clients can detect drift.
+	get standardSha512Hex(): string | null {
+		return this.standardSha512?.toString("hex") ?? null;
+	}
+
+	get extendedSha512Hex(): string | null {
+		return this.extendedSha512?.toString("hex") ?? null;
+	}
+
 	get hasExtraFolderPaths(): boolean {
 		return this.extraFolderPaths.length > 0;
 	}

@@ -30,6 +30,12 @@ export class CardDbReloader {
 		this.currentFingerprint = await this.ports.fingerprint();
 	}
 
+	// The fingerprint of the currently loaded .cdb files, or null before the first
+	// prime(). Read by the resource-version endpoint to report what the server has loaded.
+	get currentFingerprintValue(): string | null {
+		return this.currentFingerprint;
+	}
+
 	async reloadIfChanged(): Promise<boolean> {
 		return this.lock.acquire(async () => {
 			const nextFingerprint = await this.ports.fingerprint();
