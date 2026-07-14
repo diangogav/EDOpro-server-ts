@@ -153,7 +153,6 @@ describe("ResourcePoolResolver integration — RFD-007", () => {
 			const { standard } = resolvePools({
 				manifestPath,
 				resourcesDir: tmpDir,
-				env: {},
 				logger: LoggerFactory.getLogger(),
 			});
 
@@ -177,7 +176,6 @@ describe("ResourcePoolResolver integration — RFD-007", () => {
 			const { extended } = resolvePools({
 				manifestPath,
 				resourcesDir: tmpDir,
-				env: {},
 				logger: LoggerFactory.getLogger(),
 			});
 
@@ -196,7 +194,6 @@ describe("ResourcePoolResolver integration — RFD-007", () => {
 			const { standard, extended } = resolvePools({
 				manifestPath,
 				resourcesDir: tmpDir,
-				env: {},
 				logger: LoggerFactory.getLogger(),
 			});
 
@@ -265,7 +262,6 @@ describe("ResourcePoolResolver integration — RFD-007", () => {
 			const { standard } = resolvePools({
 				manifestPath,
 				resourcesDir: tmpDir,
-				env: {},
 				logger: LoggerFactory.getLogger(),
 			});
 
@@ -280,7 +276,6 @@ describe("ResourcePoolResolver integration — RFD-007", () => {
 			const { standard } = resolvePools({
 				manifestPath,
 				resourcesDir: tmpDir,
-				env: {},
 				logger: LoggerFactory.getLogger(),
 			});
 
@@ -293,7 +288,6 @@ describe("ResourcePoolResolver integration — RFD-007", () => {
 			const { standard } = resolvePools({
 				manifestPath,
 				resourcesDir: tmpDir,
-				env: {},
 				logger: LoggerFactory.getLogger(),
 			});
 
@@ -314,7 +308,6 @@ describe("ResourcePoolResolver integration — RFD-007", () => {
 			const { standard, extended } = resolvePools({
 				manifestPath,
 				resourcesDir: tmpDir,
-				env: {},
 				logger: LoggerFactory.getLogger(),
 			});
 
@@ -352,7 +345,6 @@ describe("ResourcePoolResolver integration — RFD-007", () => {
 			const { standard } = resolvePools({
 				manifestPath,
 				resourcesDir: tmpDir,
-				env: {},
 				logger: LoggerFactory.getLogger(),
 			});
 

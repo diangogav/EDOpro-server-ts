@@ -34,12 +34,7 @@ export interface ResourcePoolResolverOptions {
 	manifestPath: string;
 	/** Absolute or relative path to RESOURCES_DIR (e.g. ./resources/current). */
 	resourcesDir: string;
-	/**
-	 * Environment variable bag. In production pass `process.env`.
-	 * Injected as a parameter so tests can override without touching globals.
-	 */
-	env: NodeJS.ProcessEnv | Record<string, string | undefined>;
-	/** Logger for deprecation warnings and error reporting. */
+	/** Logger for error reporting and diagnostic warnings. */
 	logger: Logger;
 }
 
@@ -53,66 +48,32 @@ export interface ResolvedPools {
 /**
  * Derive ordered absolute-path pools from the manifest runtime section.
  *
- * Resolution rules (per RFD-003, RFD-004, RFD-005):
- * 1. If YGOPRO_FOLDERS is set and non-empty: use it as-is for standard + warn.
- * 2. If YGOPRO_EXTRA_FOLDERS is set and non-empty: use it as-is for extended delta + warn.
- * 3. Otherwise derive from manifest runtime.ygopro.standard / .extended.
- * 4. On any manifest read/parse error or missing standard: log error, return empty pools.
- * 5. Missing extended (but valid standard): extended falls back to standard (no error).
+ * Resolution rules (per RFD-003, RFD-005):
+ * 1. Derive standard pool from manifest runtime.ygopro.standard.
+ * 2. Derive extended pool as standard + runtime.ygopro.extended delta.
+ * 3. On any manifest read/parse error or missing standard: log error, return empty pools.
+ * 4. Missing extended (but valid standard): extended falls back to standard (no error).
  */
 export function resolvePools(options: ResourcePoolResolverOptions): ResolvedPools {
-	const { manifestPath, resourcesDir, env, logger } = options;
+	const { manifestPath, resourcesDir, logger } = options;
 
 	const resolvedResourcesDir = path.resolve(resourcesDir);
 	const ygoproBase = path.join(resolvedResourcesDir, "ygopro");
 
-	// --- Parse manifest (used only when env override is absent for that pool) ---
-	let manifest: Manifest | null = null;
-
-	const envFolders = env["YGOPRO_FOLDERS"];
-	const envExtra = env["YGOPRO_EXTRA_FOLDERS"];
-
-	const needsManifest =
-		!envFolders || envFolders.trim() === "" || !envExtra || envExtra.trim() === "";
-
-	if (needsManifest) {
-		manifest = readManifest(manifestPath, logger);
-	}
+	// --- Parse manifest (always required; manifest is the sole source of pool membership) ---
+	const manifest = readManifest(manifestPath, logger);
 
 	// --- Standard pool ---
-	let standard: string[];
-
-	if (envFolders && envFolders.trim() !== "") {
-		logger.warn(
-			`YGOPRO_FOLDERS is set — using env value as-is instead of deriving from manifest. ` +
-				`YGOPRO_FOLDERS is deprecated; derivation from runtime.ygopro.standard is the supported path.`,
-		);
-		standard = envFolders.split(",").filter((p) => p.length > 0);
-	} else {
-		standard = deriveStandard(manifest, ygoproBase, manifestPath, logger);
-	}
+	const standard = deriveStandard(manifest, ygoproBase, manifestPath, logger);
 
 	// --- Extended delta (extensions beyond standard) ---
-	let extendedDelta: string[];
-
-	if (envExtra && envExtra.trim() !== "") {
-		logger.warn(
-			`YGOPRO_EXTRA_FOLDERS is set — using env value as-is instead of deriving from manifest. ` +
-				`YGOPRO_EXTRA_FOLDERS is deprecated; derivation from runtime.ygopro.extended is the supported path.`,
-		);
-		extendedDelta = envExtra.split(",").filter((p) => p.length > 0);
-	} else {
-		extendedDelta = deriveExtended(manifest, ygoproBase);
-	}
+	const extendedDelta = deriveExtended(manifest, ygoproBase);
 
 	const extended = [...standard, ...extendedDelta];
 
 	// --- Diagnostic 1: warn on manifest-derived paths that do not exist on disk ---
-	// Only checked when derivation is used (not env-override), to avoid noise on the
-	// deprecated escape hatch (those paths are the caller's responsibility).
-	if (!envFolders || envFolders.trim() === "") {
-		warnMissingPoolDirs(standard, logger);
-	}
+	// All pool paths are manifest-derived; check all of them.
+	warnMissingPoolDirs(standard, logger);
 
 	// --- Diagnostic 2: warn on duplicate .cdb basenames across standard pool folders ---
 	// Scanned on the standard pool (extended = standard + delta; scanning standard avoids
@@ -191,12 +152,8 @@ function deriveExtended(manifest: Manifest | null, ygoproBase: string): string[]
 }
 
 /**
- * Diagnostic 1 — warn for each manifest-derived pool path that does not exist as a
- * directory on disk. Non-fatal: the path is still returned to the caller.
- *
- * Decision: only applied to manifest-derived paths. Env-override paths (YGOPRO_FOLDERS /
- * YGOPRO_EXTRA_FOLDERS) are a deprecated escape hatch and are the caller's responsibility;
- * warning on them would add noise without actionable guidance.
+ * Diagnostic 1 — warn for each pool path that does not exist as a directory on disk.
+ * All pool paths are manifest-derived. Non-fatal: the path is still returned to the caller.
  */
 function warnMissingPoolDirs(pools: string[], logger: Logger): void {
 	for (const absPath of pools) {

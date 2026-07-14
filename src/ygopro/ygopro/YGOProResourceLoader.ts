@@ -50,7 +50,6 @@ export class YGOProResourceLoader {
 	private readonly resolvedPools = resolvePools({
 		manifestPath: config.resources.manifestPath,
 		resourcesDir: config.resources.dir,
-		env: process.env,
 		logger: LoggerFactory.getLogger(),
 	});
 

@@ -13,7 +13,6 @@ export class YGOProCardSearchRepository extends CdbCardSearchRepository {
 		const { extended } = resolvePools({
 			manifestPath: config.resources.manifestPath,
 			resourcesDir: config.resources.dir,
-			env: process.env,
 			logger: LoggerFactory.getLogger(),
 		});
 

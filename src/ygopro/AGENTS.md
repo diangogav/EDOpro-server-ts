@@ -29,8 +29,8 @@ This module implements the srvpro2-compatible server for YGOPro clients (Koishi,
 ### 3. Card Database Architecture
 
 - `YGOProResourceLoader` (singleton) loads two `CardStorage` instances at startup.
-- **Standard pool** (`YGOPRO_FOLDERS`): Available to all rooms.
-- **Extended pool** (`YGOPRO_FOLDERS` + `YGOPRO_EXTRA_FOLDERS`): Only for PRE/ART formats.
+- **Standard pool** (`runtime.ygopro.standard` in manifest): Available to all rooms.
+- **Extended pool** (standard + `runtime.ygopro.extended` in manifest): Only for PRE/ART formats.
 - `CardYGOProRepository` resolves the correct pool based on the room's `useExtendedCardPool` flag.
 - Unknown cards return `UnknownCardError` — never silently ignored.
 

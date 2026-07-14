@@ -34,7 +34,6 @@ function opts(
 	overrides: Partial<ResourcePoolResolverOptions> & { manifestPath: string; resourcesDir: string },
 ): ResourcePoolResolverOptions {
 	return {
-		env: {},
 		logger: makeLogger(),
 		...overrides,
 	};
@@ -146,126 +145,6 @@ describe("ResourcePoolResolver — RFD-003 (ordering and pools)", () => {
 			expect(standard).not.toContain(ep);
 			expect(extended).toContain(ep);
 		}
-	});
-});
-
-// ---------------------------------------------------------------------------
-// RFD-004 — env override wins, deprecation warning
-// ---------------------------------------------------------------------------
-
-describe("ResourcePoolResolver — RFD-004 (env override)", () => {
-	let tmpDir: string;
-	let logger: jest.Mocked<Logger>;
-
-	beforeEach(() => {
-		tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "rfd-004-"));
-		logger = makeLogger();
-	});
-
-	afterEach(() => {
-		fs.rmSync(tmpDir, { recursive: true, force: true });
-	});
-
-	it("YGOPRO_FOLDERS override is used as-is and emits one warn", () => {
-		const manifestPath = writeManifest(tmpDir, VALID_MANIFEST);
-		const envFolders = "/override/standard/a,/override/standard/b";
-
-		const { standard } = resolvePools(
-			opts({
-				manifestPath,
-				resourcesDir: "/ignored",
-				env: { YGOPRO_FOLDERS: envFolders },
-				logger,
-			}),
-		);
-
-		expect(standard).toEqual(["/override/standard/a", "/override/standard/b"]);
-		// Must emit exactly one deprecation warning for YGOPRO_FOLDERS
-		const warnCalls = logger.warn.mock.calls;
-		const foldersWarnings = warnCalls.filter((args) => String(args[0]).includes("YGOPRO_FOLDERS"));
-		expect(foldersWarnings).toHaveLength(1);
-	});
-
-	it("YGOPRO_EXTRA_FOLDERS override is used as-is and emits one warn", () => {
-		const manifestPath = writeManifest(tmpDir, VALID_MANIFEST);
-		const envExtra = "/override/ext/pre,/override/ext/art";
-
-		const { standard, extended } = resolvePools(
-			opts({
-				manifestPath,
-				resourcesDir: "/test/resources/current",
-				env: { YGOPRO_EXTRA_FOLDERS: envExtra },
-				logger,
-			}),
-		);
-
-		// standard is derived (no YGOPRO_FOLDERS set)
-		const expectedStandard = STANDARD_LEAVES.map((leaf) =>
-			path.join(path.resolve("/test/resources/current"), "ygopro", leaf),
-		);
-		expect(standard).toEqual(expectedStandard);
-
-		// extended = derived standard + overridden extra
-		expect(extended).toEqual([...expectedStandard, "/override/ext/pre", "/override/ext/art"]);
-
-		const warnCalls = logger.warn.mock.calls;
-		const extraWarnings = warnCalls.filter((args) =>
-			String(args[0]).includes("YGOPRO_EXTRA_FOLDERS"),
-		);
-		expect(extraWarnings).toHaveLength(1);
-	});
-
-	it("derivation default: no env-deprecation warnings when env vars are unset", () => {
-		const manifestPath = writeManifest(tmpDir, VALID_MANIFEST);
-
-		resolvePools(
-			opts({
-				manifestPath,
-				resourcesDir: "/test/resources/current",
-				env: {},
-				logger,
-			}),
-		);
-
-		// No deprecation warnings for env overrides (diagnostic warns for missing dirs are separate)
-		const warnCalls = logger.warn.mock.calls;
-		const deprecationWarnings = warnCalls.filter(
-			(args) =>
-				String(args[0]).includes("YGOPRO_FOLDERS") ||
-				String(args[0]).includes("YGOPRO_EXTRA_FOLDERS"),
-		);
-		expect(deprecationWarnings).toHaveLength(0);
-	});
-
-	it("mixed: YGOPRO_FOLDERS set, YGOPRO_EXTRA_FOLDERS empty => standard from env, extended from derivation", () => {
-		const manifestPath = writeManifest(tmpDir, VALID_MANIFEST);
-		const envFolders = "/manual/base,/manual/formats/ocg";
-
-		const { standard, extended } = resolvePools(
-			opts({
-				manifestPath,
-				resourcesDir: "/test/resources/current",
-				env: { YGOPRO_FOLDERS: envFolders },
-				logger,
-			}),
-		);
-
-		expect(standard).toEqual(["/manual/base", "/manual/formats/ocg"]);
-
-		// extended = overridden standard + derived extended leaves
-		const derivedExtLeafPaths = EXTENDED_LEAVES.map((leaf) =>
-			path.join(path.resolve("/test/resources/current"), "ygopro", leaf),
-		);
-		expect(extended).toEqual([...standard, ...derivedExtLeafPaths]);
-
-		const warnCalls = logger.warn.mock.calls;
-		const foldersWarnings = warnCalls.filter((args) => String(args[0]).includes("YGOPRO_FOLDERS"));
-		expect(foldersWarnings).toHaveLength(1);
-		// No warning for YGOPRO_EXTRA_FOLDERS since it was not set
-		const extraWarnings = warnCalls.filter((args) =>
-			String(args[0]).includes("YGOPRO_EXTRA_FOLDERS"),
-		);
-		expect(extraWarnings).toHaveLength(0);
 	});
 });
 
@@ -431,26 +310,6 @@ describe("ResourcePoolResolver — Diagnostic 1 (missing pool dir warn)", () => 
 		const warnCalls = logger.warn.mock.calls;
 		const missingWarns = warnCalls.filter((args) => String(args[0]).includes("does not exist"));
 		expect(missingWarns).toHaveLength(2);
-	});
-
-	it("does NOT warn for env-override standard paths that do not exist (env path is caller's responsibility)", () => {
-		const manifestPath = writeManifest(tmpDir, {
-			runtime: { ygopro: { standard: ["base"], extended: [] } },
-		});
-		const envFolders = "/nonexistent/override/a,/nonexistent/override/b";
-
-		resolvePools(
-			opts({
-				manifestPath,
-				resourcesDir: tmpDir,
-				env: { YGOPRO_FOLDERS: envFolders },
-				logger,
-			}),
-		);
-
-		const warnCalls = logger.warn.mock.calls;
-		const missingWarns = warnCalls.filter((args) => String(args[0]).includes("does not exist"));
-		expect(missingWarns).toHaveLength(0);
 	});
 
 	it("returns the path even when the directory is missing (non-fatal)", () => {

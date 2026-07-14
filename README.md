@@ -85,8 +85,6 @@ cp .env.example .env
 
 > 📁 `setup_resources.sh` assembles each run into `resources/releases/<id>/` and points `resources/current` (a symlink) at it. Everything is read through `resources/current/…`, so refreshing resources is an atomic symlink swap — no restart needed. In Docker the container runs this refresh loop in the background (see `entrypoint.sh` + `resources-updater.sh`), so card/banlist updates are picked up live.
 
-> ⚠️ **Operator migration note — resource folder derivation:** `YGOPRO_FOLDERS` and `YGOPRO_EXTRA_FOLDERS` are no longer required in `.env`. The server now derives both pools automatically from `resources.manifest.json` (`runtime.ygopro.standard` / `.extended`). Remove these variables from your `.env` to use derivation. If you need to override (e.g. for rollback), set them as before — the old comma-list format still works and emits a deprecation warning at startup. The old leaf-directory paths (`ygopro/alternatives`, `ygopro/prereleases-cdb`, `ygopro/custom-cards`) were removed in the prior release; derivation uses the current layout under `resources/current/ygopro/`.
-
 Now choose which engine(s) you want to run 👇
 
 ---
@@ -157,13 +155,7 @@ RESOURCES_DIR=./resources/current
 
 **Standard card pool** (base + all served formats) is loaded for all rooms. **Extended pool** (standard + extension dirs) is only available in rooms that use PRE or ART formats. Standard rooms cannot use those cards.
 
-Both pools are now **derived automatically** from `resources.manifest.json` (`runtime.ygopro.standard` / `.extended`). No `YGOPRO_FOLDERS` variable is needed. To override for rollback only:
-
-```env
-# Override (deprecated — use derivation; set only if you need to force specific paths)
-# YGOPRO_FOLDERS=./resources/current/ygopro/base,...
-# YGOPRO_EXTRA_FOLDERS=./resources/current/ygopro/extensions/prereleases,...
-```
+Both pools are **derived automatically** from `resources.manifest.json` (`runtime.ygopro.standard` / `.extended`). No environment variable is needed or supported for pool membership — the manifest is the sole source.
 
 ```bash
 npm run dev
@@ -199,8 +191,8 @@ The YGOPro engine maintains **two separate card pools** in memory:
 
 | Pool | Loaded from | Available to |
 |------|-------------|--------------|
-| **Standard** | `runtime.ygopro.standard` in `resources.manifest.json` (or `YGOPRO_FOLDERS` override) | All rooms |
-| **Extended** | standard + `runtime.ygopro.extended` in `resources.manifest.json` (or `YGOPRO_EXTRA_FOLDERS` override) | PRE/ART rooms only |
+| **Standard** | `runtime.ygopro.standard` in `resources.manifest.json` | All rooms |
+| **Extended** | standard + `runtime.ygopro.extended` in `resources.manifest.json` | PRE/ART rooms only |
 
 When a player creates a room with a format like `PRE`, `TCGPRE`, `OCGPRE`, `TCGART`, or `OCGART`, the server uses the **extended** card pool for both deck validation and the duel engine. Standard rooms (`M`, `TCG`, `OT`, `GOAT`, etc.) use only the **standard** pool — any card not in that pool is rejected as unknown.
 
@@ -218,8 +210,6 @@ Both pools are loaded at startup and refreshed every 10 minutes if the underlyin
 | `WEBSOCKET_PORT` | WebSocket port | `4000` |
 | `RESOURCES_DIR` | Root of the assembled resource tree (symlink target) | `./resources/current` |
 | `MANIFEST_PATH` | Path to `resources.manifest.json` used for pool derivation | `./resources.manifest.json` |
-| `YGOPRO_FOLDERS` | Override: comma-separated standard pool dirs (deprecated — use derivation; set only for rollback) | *(derived from manifest)* |
-| `YGOPRO_EXTRA_FOLDERS` | Override: comma-separated extended delta dirs (deprecated — use derivation; set only for rollback) | *(derived from manifest)* |
 | `RANK_ENABLED` | Enable ranking system (requires PostgreSQL) | `false` |
 | `POSTGRES_HOST` | PostgreSQL host | `localhost` |
 | `POSTGRES_PORT` | PostgreSQL port | `5432` |
@@ -239,8 +229,7 @@ Run this manually before deploying to production to confirm the derived pools ma
 # 1. Assemble resources (must be done at least once)
 bash clone_repositories.sh && bash setup_resources.sh
 
-# 2. Start the server with no YGOPRO_FOLDERS override
-#    (RESOURCES_DIR and MANIFEST_PATH use their defaults)
+# 2. Start the server (RESOURCES_DIR and MANIFEST_PATH use their defaults)
 npm run dev
 ```
 
