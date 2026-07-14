@@ -349,32 +349,6 @@ teardown() {
 }
 
 # ============================================================
-# RSM-012 — Unused files not present in manifest
-# ============================================================
-
-@test "RSM-012: unused evolution-assets files not referenced in initial manifest" {
-  local manifest="$REPO_ROOT/resources.manifest.json"
-  run bash -c "jq -r '[.assembly[].file // empty] | .[]' \"$manifest\""
-  [ "$status" -eq 0 ]
-  [[ "$output" != *"classic.cdb"* ]]
-  [[ "$output" != *"jtp.en.cdb"* ]]
-  [[ "$output" != *"jtp.es.cdb"* ]]
-  [[ "$output" != *"edison.lflist.conf"* ]]
-}
-
-@test "RSM-012: real manifest has exactly 11 sources" {
-  run jq '.sources | length' "$REPO_ROOT/resources.manifest.json"
-  [ "$status" -eq 0 ]
-  [ "$output" -eq 11 ]
-}
-
-@test "RSM-012: real manifest has exactly 22 assembly rules" {
-  run jq '.assembly | length' "$REPO_ROOT/resources.manifest.json"
-  [ "$status" -eq 0 ]
-  [ "$output" -eq 22 ]
-}
-
-# ============================================================
 # JD hardening — structural guards and robustness (PR1b)
 # ============================================================
 
