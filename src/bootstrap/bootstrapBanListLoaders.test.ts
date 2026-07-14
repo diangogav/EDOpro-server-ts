@@ -1,4 +1,4 @@
-// Tests for the re-callable loader functions extracted from bootstrap (REQ-302, REQ-303).
+// Tests for the re-callable loader functions extracted from bootstrap.
 // The functions are pure builders: they parse into a local temp array and do NOT touch
 // the live BanListMemoryRepository. Mocking at the class level to avoid fs / ygopro deps.
 
@@ -41,7 +41,7 @@ function makeYgoList(name: string): YGOProBanList {
 	return list;
 }
 
-describe("loadEdoproBanLists (REQ-302)", () => {
+describe("loadEdoproBanLists", () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 	});
@@ -97,7 +97,7 @@ describe("loadEdoproBanLists (REQ-302)", () => {
 	});
 });
 
-describe("loadYgoproBanLists (REQ-302)", () => {
+describe("loadYgoproBanLists", () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 	});
@@ -129,7 +129,7 @@ describe("loadYgoproBanLists (REQ-302)", () => {
 	});
 });
 
-describe("REQ-303 — edopro loader called before ygopro loader", () => {
+describe("edopro loader called before ygopro loader", () => {
 	it("edopro load completes before ygopro load begins", async () => {
 		const callOrder: string[] = [];
 
@@ -147,7 +147,7 @@ describe("REQ-303 — edopro loader called before ygopro loader", () => {
 			getLoaded: () => [],
 		}));
 
-		// Caller must always call edopro first, then ygopro (REQ-303 ordering).
+		// Caller must always call edopro first, then ygopro.
 		await loadEdoproBanLists();
 		await loadYgoproBanLists();
 

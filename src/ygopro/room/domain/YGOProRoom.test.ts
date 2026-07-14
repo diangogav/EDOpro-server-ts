@@ -624,10 +624,10 @@ describe("YGOProRoom", () => {
 		});
 	});
 
-	// REQ-306: a ban-list hot-reload must NOT affect rooms already constructed. A room
-	// snapshots its edopro ban-list hash as a primitive at construction (YGOProRoom.ts:154),
-	// so a later replaceAll() on the repositories cannot mutate an in-flight room's value.
-	describe("ban-list hot-reload invariant (REQ-306)", () => {
+	// A ban-list hot-reload must NOT affect rooms already constructed. A room snapshots
+	// its edopro ban-list hash as a primitive at construction, so a later replaceAll()
+	// on the repositories cannot mutate an in-flight room's value.
+	describe("ban-list hot-reload invariant", () => {
 		// EdoproBanList derives its hash from added cards (no setHash); distinct cardIds
 		// yield distinct hashes, which is what a real banlist edit produces.
 		function makeEdoList(name: string, cardId: number): EdoproBanList {

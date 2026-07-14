@@ -30,7 +30,7 @@ describe("EdoproBanListMemoryRepository.replaceAll", () => {
 		BanListMemoryRepository.replaceAll([]);
 	});
 
-	describe("REQ-301 — basic replacement", () => {
+	describe("basic replacement", () => {
 		it("replaceAll([a, b]) → get() returns [a, b]", () => {
 			const a = makeList("List A");
 			const b = makeList("List B");
@@ -60,7 +60,7 @@ describe("EdoproBanListMemoryRepository.replaceAll", () => {
 		});
 	});
 
-	describe("REQ-305 (ATOMICITY) — synchronous swap invariant", () => {
+	describe("atomicity — synchronous swap invariant", () => {
 		it("get() returns the new list immediately after replaceAll returns — no empty window", () => {
 			// This test asserts the synchronous contract.
 			// replaceAll MUST NOT contain any await between emptying and refilling the array.

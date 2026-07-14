@@ -1,15 +1,9 @@
-// Re-callable pure builders for edopro and ygopro ban lists (REQ-302).
+// Re-callable pure builders for edopro and ygopro ban lists.
 //
 // These functions parse ban lists into a local temporary array and do NOT touch
 // the live BanListMemoryRepository or YGOProBanListMemoryRepository. The caller
 // (bootstrapBanListReloader) is responsible for atomically swapping the repo via
 // replaceAll() once both arrays are successfully built.
-//
-// Ordering invariant (REQ-303): callers MUST always call loadEdoproBanLists() and
-// await its result BEFORE calling loadYgoproBanLists(). YGOProRoom resolves
-// _edoBanListHash from BanListMemoryRepository by name at room construction time,
-// so edopro banlists must be present in the repo before ygopro banlists are loaded.
-// The reloader in bootstrapBanListReloader.ts enforces this order explicitly.
 
 import { EdoProBanListLoader } from "@edopro/ban-list/infrastructure/BanListLoader";
 import { EdoproBanList } from "@edopro/ban-list/domain/BanList";
@@ -35,8 +29,8 @@ export async function loadEdoproBanLists(): Promise<EdoproBanList[]> {
  * Does NOT write to YGOProBanListMemoryRepository.
  * Throws on parse error — callers are responsible for error handling.
  *
- * Precondition (REQ-303): edopro ban lists must already be present in
- * BanListMemoryRepository before this is called (YGOProRoom cross-references them).
+ * Precondition: edopro ban lists must already be present in BanListMemoryRepository
+ * before this is called — YGOProRoom cross-references them by name at construction.
  */
 export async function loadYgoproBanLists(): Promise<YGOProBanList[]> {
 	const tmp: YGOProBanList[] = [];

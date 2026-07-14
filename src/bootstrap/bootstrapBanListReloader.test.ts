@@ -1,6 +1,5 @@
-// Tests for the ban-list reloader core cycle (REQ-304, REQ-305, REQ-307, REQ-308).
-// reloadBanListsOnce is exercised directly with injected ports so no filesystem,
-// timers, or singletons are touched.
+// Tests for the ban-list reloader core cycle. reloadBanListsOnce is exercised
+// directly with injected ports so no filesystem, timers, or singletons are touched.
 
 jest.mock("src/config", () => ({
 	config: { resources: { dir: "/fake/resources" } },
@@ -87,7 +86,7 @@ function makePorts(overrides: Partial<BanListReloaderPorts> & { recorder?: Recor
 	return { ports, recorder };
 }
 
-describe("reloadBanListsOnce — change detection (REQ-304)", () => {
+describe("reloadBanListsOnce — change detection", () => {
 	it("skips the rebuild when the fingerprint is unchanged", async () => {
 		const { ports, recorder } = makePorts({
 			fingerprint: jest.fn().mockResolvedValue("fp-same"),
@@ -112,7 +111,7 @@ describe("reloadBanListsOnce — change detection (REQ-304)", () => {
 	});
 });
 
-describe("reloadBanListsOnce — atomic swap ordering (REQ-305)", () => {
+describe("reloadBanListsOnce — atomic swap ordering", () => {
 	it("replaces edopro before ygopro", async () => {
 		const { ports, recorder } = makePorts();
 
@@ -125,7 +124,7 @@ describe("reloadBanListsOnce — atomic swap ordering (REQ-305)", () => {
 	});
 });
 
-describe("reloadBanListsOnce — empty-result safety (REQ-308)", () => {
+describe("reloadBanListsOnce — empty-result safety", () => {
 	it("keeps previous lists and does NOT swap when edopro rebuild is empty", async () => {
 		const { ports, recorder } = makePorts({
 			loadEdopro: jest.fn().mockResolvedValue([]),
@@ -153,7 +152,7 @@ describe("reloadBanListsOnce — empty-result safety (REQ-308)", () => {
 	});
 });
 
-describe("reloadBanListsOnce — error propagation (REQ-307)", () => {
+describe("reloadBanListsOnce — error propagation", () => {
 	it("propagates loader errors so the scheduler can keep previous lists", async () => {
 		const { ports } = makePorts({
 			loadEdopro: jest.fn().mockRejectedValue(new Error("parse boom")),
@@ -163,7 +162,7 @@ describe("reloadBanListsOnce — error propagation (REQ-307)", () => {
 	});
 });
 
-describe("getBanListReloadedAt (REQ-304 — timestamp)", () => {
+describe("getBanListReloadedAt — timestamp", () => {
 	it("advances after a successful reload", async () => {
 		const { ports } = makePorts({ now: () => "2026-07-14T15:30:00.000Z" });
 

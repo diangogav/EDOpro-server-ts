@@ -36,7 +36,7 @@ export default {
 	/**
 	 * Atomically replaces the entire banlist array with a new one.
 	 * Uses a synchronous in-place swap (no await between truncation and fill)
-	 * so no concurrent HTTP request can observe an empty-list window (REQ-305).
+	 * so no concurrent HTTP request can observe an empty-list window.
 	 */
 	replaceAll(next: EdoproBanList[]): void {
 		banLists.length = 0;

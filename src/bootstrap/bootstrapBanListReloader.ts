@@ -1,4 +1,4 @@
-// Periodic ban-list hot-reload (REQ-304, REQ-305, REQ-307, REQ-308).
+// Periodic ban-list hot-reload.
 //
 // Ban lists are loaded once at boot (bootstrapEdoproResources / bootstrapYgoproResources).
 // The resources sidecar refreshes the underlying .conf files on disk, but the Node
@@ -33,7 +33,7 @@ const DEFAULT_INTERVAL_MS = (Number(process.env.RESOURCES_REFRESH_SECONDS) || 60
 
 // Timestamp of when the in-memory ban lists were last (re)loaded. Set at reloader
 // start (lists are current as of boot) and updated on every successful reload.
-// TODO(P4): expose via GET /api/resources/version (banlists.reloadedAt).
+// Exposed via getBanListReloadedAt() for a future resource-version endpoint.
 let reloadedAt: string | null = null;
 
 export function getBanListReloadedAt(): string | null {

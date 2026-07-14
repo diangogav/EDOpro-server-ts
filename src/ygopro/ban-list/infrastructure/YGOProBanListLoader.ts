@@ -14,8 +14,8 @@ export class YGOProBanListLoader {
 
 	/**
 	 * When a target array is provided, parsed banlists are pushed into it instead
-	 * of the shared YGOProBanListMemoryRepository. Enables re-callable pure-builder
-	 * pattern used by loadYgoproBanLists() for hot-reload (REQ-302).
+	 * of the shared YGOProBanListMemoryRepository. This lets the loader build into a
+	 * temporary buffer so callers can swap it into the repository atomically.
 	 */
 	constructor(target?: YGOProBanList[]) {
 		this._target = target ?? null;
