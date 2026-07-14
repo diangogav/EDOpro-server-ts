@@ -64,4 +64,23 @@ describe("CardDbReloader", () => {
 		expect(await reloader.reloadIfChanged()).toBe(false);
 		expect(ports.builds).toBe(1);
 	});
+
+	it("exposes null as the current fingerprint before priming", () => {
+		const reloader = new CardDbReloader(new FakePorts());
+
+		expect(reloader.currentFingerprintValue).toBeNull();
+	});
+
+	it("exposes the primed fingerprint, and updates it after a reload", async () => {
+		const ports = new FakePorts();
+		const reloader = new CardDbReloader(ports);
+		await reloader.prime();
+
+		expect(reloader.currentFingerprintValue).toBe("a");
+
+		ports.fp = "b";
+		await reloader.reloadIfChanged();
+
+		expect(reloader.currentFingerprintValue).toBe("b");
+	});
 });
