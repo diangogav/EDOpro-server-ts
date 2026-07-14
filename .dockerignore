@@ -61,8 +61,9 @@ mercury/pre-releases/tcg/*
 # Git Submodules & Repositories
 *repositories/
 
-# Scripts
+# Scripts — exclude the directory but re-include the .sh files for the build
 scripts/
+!scripts/*.sh
 
 # Miscellaneous Directories
 core/dependencies/
@@ -75,5 +76,5 @@ Dockerfile
 docker-compose*.yaml
 README.md
 CHANGELOG.md
-CONTRIBUTING.md
-CODE_OF_CONDUCT.md
+.github/CONTRIBUTING.md
+.github/CODE_OF_CONDUCT.md

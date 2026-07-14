@@ -29,8 +29,8 @@ This module implements the srvpro2-compatible server for YGOPro clients (Koishi,
 ### 3. Card Database Architecture
 
 - `YGOProResourceLoader` (singleton) loads two `CardStorage` instances at startup.
-- **Standard pool** (`YGOPRO_FOLDERS`): Available to all rooms.
-- **Extended pool** (`YGOPRO_FOLDERS` + `YGOPRO_EXTRA_FOLDERS`): Only for PRE/ART formats.
+- **Standard pool** (`runtime.ygopro.standard` in manifest): Available to all rooms.
+- **Extended pool** (standard + `runtime.ygopro.extended` in manifest): Only for PRE/ART formats.
 - `CardYGOProRepository` resolves the correct pool based on the room's `useExtendedCardPool` flag.
 - Unknown cards return `UnknownCardError` — never silently ignored.
 
@@ -51,7 +51,7 @@ This module implements the srvpro2-compatible server for YGOPro clients (Koishi,
 
 1. Add the format to `formatRuleMappings` in `RuleMappings.ts` with correct `rule`, `duel_rule`, `lflist`, `time_limit`.
 2. If it needs pre-release/art cards, add the format name to `extendedCardPoolFormats`.
-3. Add a banlist `lflist.conf` to the corresponding `resources/ygopro/alternatives/<format>/` directory.
+3. Add a banlist `lflist.conf` to the corresponding `resources/ygopro/formats/<format>/` directory.
 4. Add tests in `YGOProRoom.test.ts`.
 
 ### [SOP-YGO-002] Adding a New Message Handler

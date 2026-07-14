@@ -6,8 +6,8 @@ import { config } from "src/config";
 // read by the ygopro path (see bootstrapYgoproResources), not only by edopro.
 export async function bootstrapEdoproResources(logger: Logger): Promise<void> {
 	const banLists = new EdoProBanListLoader();
-	await banLists.loadDirectory(`${config.resources.dir}/edopro/banlists-evolution`);
-	await banLists.loadDirectory(`${config.resources.dir}/edopro/banlists-ignis`);
+	await banLists.loadDirectory(`${config.resources.dir}/edopro/evolution-lflists`);
+	await banLists.loadDirectory(`${config.resources.dir}/edopro/lflists`);
 
 	logger.info("🎴 EdoPro ban lists loaded");
 }

@@ -34,3 +34,21 @@ jobs:
 
       - name: Test
         run: npm test
+
+  bash-resources-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Update submodules
+        run: git submodule update --init --recursive
+
+      - name: Install jq and bats
+        run: sudo apt-get update && sudo apt-get install -y jq bats
+
+      - name: Run bash resource tests
+        run: bats test/*.bats

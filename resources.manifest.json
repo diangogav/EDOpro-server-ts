@@ -1,0 +1,196 @@
+{
+	"comment": "Declarative resource manifest. Edit this file to add, remove, or change sources. See docs for schema.",
+	"sources": [
+		{
+			"id": "edopro-cdbs",
+			"type": "git",
+			"url": "https://github.com/ProjectIgnis/BabelCDB.git",
+			"branch": "master"
+		},
+		{
+			"id": "edopro-scripts",
+			"type": "git",
+			"url": "https://github.com/ProjectIgnis/CardScripts.git",
+			"branch": "master"
+		},
+		{
+			"id": "edopro-lflists",
+			"type": "git",
+			"url": "https://github.com/ProjectIgnis/LFLists",
+			"branch": "master"
+		},
+		{
+			"id": "evolution-lflists",
+			"type": "git",
+			"url": "https://github.com/termitaklk/lflist",
+			"branch": "main"
+		},
+		{
+			"id": "evolution-assets",
+			"type": "git",
+			"url": "https://github.com/diangogav/evolution-assets",
+			"branch": "main"
+		},
+		{
+			"id": "ygopro-moecube-cdb",
+			"type": "http",
+			"url": "https://cdntx.moecube.com/ygopro-database/zh-CN/cards.cdb",
+			"filename": "ygopro-moecube-cards.cdb"
+		},
+		{
+			"id": "ygopro-fluorohydride-scripts",
+			"type": "git",
+			"url": "https://github.com/Fluorohydride/ygopro-scripts"
+		},
+		{
+			"id": "moecube-lflist",
+			"type": "http",
+			"url": "https://cdntx.moecube.com/ygopro-database/zh-CN/lflist.conf",
+			"filename": "moecube-lflist.conf"
+		},
+		{
+			"id": "ygopro-moecube-prereleases",
+			"type": "git",
+			"url": "https://github.com/evolutionygo/pre-release-database-cdb",
+			"branch": "master"
+		},
+		{
+			"id": "custom-cards",
+			"type": "git",
+			"url": "https://github.com/evolutionygo/cards-art-server",
+			"branch": "main"
+		}
+	],
+	"assembly": [
+		{
+			"comment": "EDOPro lflists",
+			"target": "edopro/lflists",
+			"from": "edopro-lflists"
+		},
+		{
+			"comment": "EDOPro evolution lflists",
+			"target": "edopro/evolution-lflists",
+			"from": "evolution-lflists"
+		},
+		{
+			"comment": "EDOPro databases",
+			"target": "edopro/databases",
+			"from": "edopro-cdbs"
+		},
+		{
+			"comment": "EDOPro card scripts",
+			"target": "edopro/scripts",
+			"from": "edopro-scripts"
+		},
+		{
+			"comment": "YGOPro base lflist",
+			"target": "ygopro/base/lflist.conf",
+			"from": "moecube-lflist",
+			"file": "moecube-lflist.conf"
+		},
+		{
+			"comment": "JTP lflist from evolution-assets",
+			"target": "ygopro/formats/jtp/lflist.conf",
+			"from": "evolution-assets",
+			"file": "lflist/jtp.lflist.conf"
+		},
+		{
+			"comment": "Genesys lflist from evolution-assets",
+			"target": "ygopro/formats/genesys/lflist.conf",
+			"from": "evolution-assets",
+			"file": "lflist/genesys.lflist.conf"
+		},
+		{
+			"comment": "Edison lflist from evolution-assets",
+			"target": "ygopro/formats/edison/lflist.conf",
+			"from": "evolution-assets",
+			"file": "lflist/edison.lflist.conf"
+		},
+		{
+			"target": "ygopro/formats/md/lflist.conf",
+			"from": "evolution-lflists",
+			"file": "MD.2025.03.lflist.conf"
+		},
+		{
+			"target": "ygopro/formats/world/lflist.conf",
+			"from": "edopro-lflists",
+			"file": "World.lflist.conf"
+		},
+		{
+			"target": "ygopro/formats/tengu/lflist.conf",
+			"from": "evolution-lflists",
+			"file": "Tengu.Plant.lflist.conf"
+		},
+		{
+			"target": "ygopro/formats/speed/lflist.conf",
+			"from": "edopro-lflists",
+			"file": "Speed.lflist.conf"
+		},
+		{
+			"target": "ygopro/formats/rush/lflist.conf",
+			"from": "edopro-lflists",
+			"file": "Rush.lflist.conf"
+		},
+		{
+			"target": "ygopro/formats/goat/lflist.conf",
+			"from": "edopro-lflists",
+			"file": "GOAT.lflist.conf"
+		},
+		{
+			"target": "ygopro/formats/ocg/lflist.conf",
+			"from": "edopro-lflists",
+			"file": "OCG.lflist.conf"
+		},
+		{
+			"comment": "YGOPro base cards.cdb",
+			"target": "ygopro/base/cards.cdb",
+			"from": "ygopro-moecube-cdb",
+			"file": "ygopro-moecube-cards.cdb"
+		},
+		{
+			"comment": "YGOPro base scripts",
+			"target": "ygopro/base/script",
+			"from": "ygopro-fluorohydride-scripts"
+		},
+		{
+			"comment": "Classic (pre-errata) variants for edison/hat — alt-coded cards, format legality via lflists",
+			"target": "ygopro/classic/classic.cdb",
+			"from": "evolution-assets",
+			"file": "cdb/classic.cdb"
+		},
+		{
+			"comment": "Scripts for classic pre-errata alt-coded cards",
+			"target": "ygopro/classic/script",
+			"from": "evolution-assets",
+			"dir": "card-scripts/classic"
+		},
+		{
+			"comment": "YGOPro Moecube prereleases (extended pool only)",
+			"target": "ygopro/extensions/prereleases",
+			"from": "ygopro-moecube-prereleases"
+		},
+		{
+			"comment": "YGOPro cards art (extended pool only)",
+			"target": "ygopro/extensions/custom-cards",
+			"from": "custom-cards"
+		}
+	],
+	"runtime": {
+		"comment": "TS loader pool membership. standard = base + served formats (load order; base first for FIRST-occurrence dedup). extended = extra members appended after standard. Formats assembled but omitted here (goat, rush, speed, gx, mdc) are assembled-but-not-served by design.",
+		"ygopro": {
+			"standard": [
+				"base",
+				"classic",
+				"formats/jtp",
+				"formats/genesys",
+				"formats/md",
+				"formats/world",
+				"formats/tengu",
+				"formats/edison",
+				"formats/hat",
+				"formats/ocg"
+			],
+			"extended": ["extensions/prereleases", "extensions/custom-cards"]
+		}
+	}
+}

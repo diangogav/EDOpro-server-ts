@@ -1,0 +1,8 @@
+{
+  "sources": [
+    { "id": "src-a", "type": "git", "url": "https://example.com/a" }
+  ],
+  "assembly": [
+    { "target": "out/file.txt", "from": "src-a", "file": "foo.txt", "dir": "subdir" }
+  ]
+}

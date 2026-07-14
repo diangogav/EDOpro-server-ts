@@ -8,6 +8,6 @@
 
 set -u
 
-bash resources-updater.sh &
+bash scripts/resources-updater.sh &
 
 exec node ./src/index.js

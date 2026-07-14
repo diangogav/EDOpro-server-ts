@@ -15,7 +15,7 @@ INTERVAL="${RESOURCES_REFRESH_SECONDS:-600}"
 
 while true; do
 	echo "[updater] refreshing resources..."
-	if bash clone_repositories.sh && bash setup_resources.sh; then
+	if bash scripts/clone_repositories.sh && bash scripts/setup_resources.sh; then
 		echo "[updater] refresh ok"
 	else
 		echo "[updater] refresh FAILED — keeping previous resources/current" >&2
