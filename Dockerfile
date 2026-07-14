@@ -7,11 +7,12 @@ RUN apt-get update -y && \
 
 WORKDIR /build
 
-# Resource layout is owned by clone_repositories.sh + setup_resources.sh — the
+# Resource layout is owned by scripts/clone_repositories.sh + scripts/setup_resources.sh — the
 # single source of truth, shared with local dev (README) and the runtime refresh
 # loop (entrypoint). This produces /build/resources/releases/<id> and a current symlink.
-COPY clone_repositories.sh setup_resources.sh resources-lib.sh resources.manifest.json ./
-RUN bash clone_repositories.sh && bash setup_resources.sh
+COPY scripts/ ./scripts/
+COPY resources.manifest.json ./
+RUN bash scripts/clone_repositories.sh && bash scripts/setup_resources.sh
 
 
 # Stage 2: Build CoreIntegrator (C++)
@@ -80,7 +81,8 @@ COPY --from=core-builder /app/CoreIntegrator ./core/CoreIntegrator
 # then refreshes resources/current in place and the in-memory reload picks it up.
 COPY --from=resources-builder /build/resources ./resources
 
-# Provisioning scripts (single source of truth) + entrypoint, reused at runtime.
-COPY clone_repositories.sh setup_resources.sh resources-lib.sh resources.manifest.json resources-updater.sh entrypoint.sh ./
+# Provisioning scripts (scripts/) + manifest — single source of truth, reused at runtime.
+COPY scripts/ ./scripts/
+COPY resources.manifest.json ./
 
-CMD ["dumb-init", "bash", "entrypoint.sh"]
+CMD ["dumb-init", "bash", "scripts/entrypoint.sh"]

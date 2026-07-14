@@ -8,7 +8,7 @@
 #   tools/bats-core/bin/bats test/manifest-runtime-tolerance.bats
 
 REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
-LIB="$REPO_ROOT/resources-lib.sh"
+LIB="$REPO_ROOT/scripts/resources-lib.sh"
 
 setup() {
   WORK="$(mktemp -d)"

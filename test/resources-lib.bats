@@ -10,7 +10,7 @@
 #   tools/bats-core/bin/bats test/resources-lib.bats
 
 REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
-LIB="$REPO_ROOT/resources-lib.sh"
+LIB="$REPO_ROOT/scripts/resources-lib.sh"
 MANIFEST_FIXTURES="$REPO_ROOT/test/fixtures/manifests"
 
 # ---------------------------------------------------------------------------
@@ -452,7 +452,7 @@ teardown() {
   chmod +x "$stub_dir/git" "$stub_dir/wget"
 
   MANIFEST_PATH="$bad_manifest" PATH="$stub_dir:$PATH" \
-    run bash "$REPO_ROOT/clone_repositories.sh"
+    run bash "$REPO_ROOT/scripts/clone_repositories.sh"
   rm -rf "$stub_dir"
   [ "$status" -ne 0 ]
   [[ "$output" == *"missing-src"* ]] || [[ "$output" == *"dangling"* ]]
@@ -492,7 +492,7 @@ MANIFEST
   # repositories/ dir and always hit the clean-clone path (no stale .git).
   MANIFEST_PATH="$test_manifest" CALL_LOG="$call_log" REPOS_ROOT="$WORK/repositories" \
   PATH="$stub_dir:$PATH" \
-    run bash "$REPO_ROOT/clone_repositories.sh"
+    run bash "$REPO_ROOT/scripts/clone_repositories.sh"
   rm -f "$test_manifest"
   # Capture the log before tearing the stub dir down so assertions are load-bearing.
   local log_content=""
@@ -537,7 +537,7 @@ STUB
 MANIFEST
 
   MANIFEST_PATH="$test_manifest" REPOS_ROOT="$WORK/repositories" PATH="$stub_dir:$PATH" \
-    run bash "$REPO_ROOT/clone_repositories.sh"
+    run bash "$REPO_ROOT/scripts/clone_repositories.sh"
   rm -f "$test_manifest"
   rm -rf "$stub_dir"
   [ "$status" -eq 0 ]
@@ -568,7 +568,7 @@ STUB
 MANIFEST
 
   MANIFEST_PATH="$test_manifest" REPOS_ROOT="$WORK/repositories" PATH="$stub_dir:$PATH" \
-    run bash "$REPO_ROOT/clone_repositories.sh"
+    run bash "$REPO_ROOT/scripts/clone_repositories.sh"
   rm -f "$test_manifest"
   rm -rf "$stub_dir"
   [ "$status" -ne 0 ]
@@ -577,7 +577,7 @@ MANIFEST
 
 @test "clone: no hardcoded URLs (RSM-010 lint)" {
   # clone_repositories.sh must not contain any literal http(s):// or git@ URLs
-  local script="$REPO_ROOT/clone_repositories.sh"
+  local script="$REPO_ROOT/scripts/clone_repositories.sh"
   run grep -E '(https?://|git@)' "$script"
   [ "$status" -ne 0 ]
 }
@@ -586,13 +586,13 @@ MANIFEST
   # resources-lib.sh must not contain any literal github.com/moecube source URLs;
   # all sources come from the manifest. grep exiting non-zero (no match) is the
   # pass condition — the lib is currently clean.
-  local script="$REPO_ROOT/resources-lib.sh"
+  local script="$REPO_ROOT/scripts/resources-lib.sh"
   run grep -E 'github\.com|moecube' "$script"
   [ "$status" -ne 0 ]
 }
 
 @test "clone: no cd repositories command (cwd invariant D1)" {
-  local script="$REPO_ROOT/clone_repositories.sh"
+  local script="$REPO_ROOT/scripts/clone_repositories.sh"
   run grep -E '^[[:space:]]*cd[[:space:]]' "$script"
   [ "$status" -ne 0 ]
 }
@@ -637,7 +637,7 @@ MANIFEST
   MANIFEST_PATH="$WORK/test.manifest.json" \
   REPOS_ROOT="$WORK/repositories" \
   RELEASES_ROOT="$WORK/resources/releases" \
-    run bash "$REPO_ROOT/setup_resources.sh"
+    run bash "$REPO_ROOT/scripts/setup_resources.sh"
   [ "$status" -eq 0 ]
   # At least one release dir was created and resources/current symlink exists
   [ -L "$WORK/resources/current" ]
@@ -652,7 +652,7 @@ MANIFEST
   MANIFEST_PATH="$WORK/test.manifest.json" \
   REPOS_ROOT="$WORK/repositories" \
   RELEASES_ROOT="$WORK/resources/releases" \
-    run bash "$REPO_ROOT/setup_resources.sh"
+    run bash "$REPO_ROOT/scripts/setup_resources.sh"
   [ "$status" -eq 0 ]
   # Sanity: the fixture has a whole-source rule over the git source (no file
   # key), so .git would land in staging unless the publish step strips it.
@@ -686,7 +686,7 @@ MANIFEST
   MANIFEST_PATH="$WORK/bad.manifest.json" \
   REPOS_ROOT="$WORK/repositories" \
   RELEASES_ROOT="$WORK/resources/releases" \
-    run bash "$REPO_ROOT/setup_resources.sh"
+    run bash "$REPO_ROOT/scripts/setup_resources.sh"
   [ "$status" -ne 0 ]
   # No new release dir must have been published (symlink not created/updated)
   [ ! -L "$WORK/resources/current" ]
@@ -700,7 +700,7 @@ MANIFEST
     REPOS_ROOT="$WORK/repositories" \
     RELEASES_ROOT="$WORK/resources/releases" \
     RESOURCES_KEEP_RELEASES=2 \
-      bash "$REPO_ROOT/setup_resources.sh" >/dev/null 2>&1
+      bash "$REPO_ROOT/scripts/setup_resources.sh" >/dev/null 2>&1
     sleep 0.01  # ensure unique timestamp IDs
   done
   local count
@@ -710,7 +710,7 @@ MANIFEST
 
 @test "setup: no hardcoded source paths in setup_resources.sh (RSM-010)" {
   # The script must not contain any literal cp or path referencing old repo names
-  local script="$REPO_ROOT/setup_resources.sh"
+  local script="$REPO_ROOT/scripts/setup_resources.sh"
   run grep -E '(edopro-card-scripts|edopro-card-databases|edopro-banlists|ygopro-format-alternatives|ygopro-prereleases|ygopro-cards-art|evolution-assets|ygopro-scripts|ygopro-lflist\.conf|ygopro-cards\.cdb)' "$script"
   [ "$status" -ne 0 ]
 }

@@ -16,11 +16,13 @@ fail() {
 }
 
 # ---------------------------------------------------------------------------
-# Default manifest path — resolved relative to this script's directory so
-# it works regardless of caller cwd (D1 cwd invariant).
+# Default manifest path — resolved relative to CWD (repo root).
+# All resource scripts must run from repo root (D1 cwd invariant).
+# The manifest lives at repo root; scripts now live in scripts/ but the
+# manifest stays at root, so a CWD-relative default is correct here.
 # Callers may override by setting MANIFEST_PATH before sourcing.
 # ---------------------------------------------------------------------------
-MANIFEST_PATH="${MANIFEST_PATH:-$(dirname "${BASH_SOURCE[0]}")/resources.manifest.json}"
+MANIFEST_PATH="${MANIFEST_PATH:-resources.manifest.json}"
 
 # ---------------------------------------------------------------------------
 # jq preflight — fail fast with a clear message if jq is not available

@@ -50,12 +50,12 @@ For when you want full control, or Docker isn't an option.
 - [Node.js](https://nodejs.org) >= 24
 - [CMake](https://cmake.org/download/) >= 3.18
 - A C++ compiler (g++ or clang++)
-- [jq](https://jqlang.github.io/jq/) >= 1.6 — required by `clone_repositories.sh` and `setup_resources.sh` to read the resource manifest
+- [jq](https://jqlang.github.io/jq/) >= 1.6 — required by `scripts/clone_repositories.sh` and `scripts/setup_resources.sh` to read the resource manifest
 
 On Ubuntu/Debian, the provided script installs everything you need:
 
 ```bash
-sudo bash install_dependencies.sh
+sudo bash scripts/install_dependencies.sh
 ```
 
 > 💡 To install `jq` manually: `sudo apt-get install -y jq` (Debian/Ubuntu) or `brew install jq` (macOS).
@@ -68,13 +68,13 @@ git clone https://github.com/diangogav/EDOpro-server-ts
 cd EDOpro-server-ts
 
 # 2️⃣ Clone card scripts, databases, and banlists
-bash clone_repositories.sh
+bash scripts/clone_repositories.sh
 
 # 3️⃣ Organize everything into resources/
-bash setup_resources.sh
+bash scripts/setup_resources.sh
 
 # 4️⃣ Build the C++ duel core (used by the EDOPro engine)
-bash build_core_integrator.sh
+bash scripts/build_core_integrator.sh
 
 # 5️⃣ Install Node.js dependencies
 npm install
@@ -83,7 +83,7 @@ npm install
 cp .env.example .env
 ```
 
-> 📁 `setup_resources.sh` assembles each run into `resources/releases/<id>/` and points `resources/current` (a symlink) at it. Everything is read through `resources/current/…`, so refreshing resources is an atomic symlink swap — no restart needed. In Docker the container runs this refresh loop in the background (see `entrypoint.sh` + `resources-updater.sh`), so card/banlist updates are picked up live.
+> 📁 `scripts/setup_resources.sh` assembles each run into `resources/releases/<id>/` and points `resources/current` (a symlink) at it. Everything is read through `resources/current/…`, so refreshing resources is an atomic symlink swap — no restart needed. In Docker the container runs this refresh loop in the background (see `scripts/entrypoint.sh` + `scripts/resources-updater.sh`), so card/banlist updates are picked up live.
 
 Now choose which engine(s) you want to run 👇
 
@@ -227,7 +227,7 @@ Run this manually before deploying to production to confirm the derived pools ma
 
 ```bash
 # 1. Assemble resources (must be done at least once)
-bash clone_repositories.sh && bash setup_resources.sh
+bash scripts/clone_repositories.sh && bash scripts/setup_resources.sh
 
 # 2. Start the server (RESOURCES_DIR and MANIFEST_PATH use their defaults)
 npm run dev
