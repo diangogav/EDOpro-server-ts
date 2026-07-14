@@ -55,4 +55,13 @@ export default {
 	clear(): void {
 		banLists.length = 0;
 	},
+
+	/**
+	 * Atomically replaces the entire banlist array with a new one.
+	 * Symmetric with EdoproBanListMemoryRepository.replaceAll (REQ-301, REQ-305).
+	 */
+	replaceAll(next: YGOProBanList[]): void {
+		banLists.length = 0;
+		banLists.push(...next);
+	},
 };
