@@ -23,8 +23,11 @@ import { YGOProBanList } from "@ygopro/ban-list/domain/YGOProBanList";
 // Import the functions AFTER mocks are set up
 import { loadEdoproBanLists, loadYgoproBanLists } from "./bootstrapBanListLoaders";
 
-const MockEdoProBanListLoader = EdoProBanListLoader as jest.MockedClass<typeof EdoProBanListLoader>;
-const MockYGOProBanListLoader = YGOProBanListLoader as jest.MockedClass<typeof YGOProBanListLoader>;
+// Cast to jest.Mock so we can control the constructor's returned instance via mockImplementation.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const MockEdoProBanListLoader = EdoProBanListLoader as jest.Mock<any>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const MockYGOProBanListLoader = YGOProBanListLoader as jest.Mock<any>;
 
 function makeEdoList(name: string): EdoproBanList {
 	const list = new EdoproBanList();

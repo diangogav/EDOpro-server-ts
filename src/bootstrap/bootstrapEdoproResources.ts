@@ -1,13 +1,13 @@
-import { EdoProBanListLoader } from "@edopro/ban-list/infrastructure/BanListLoader";
 import { Logger } from "@shared/logger/domain/Logger";
-import { config } from "src/config";
+import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
+import { loadEdoproBanLists } from "./bootstrapBanListLoaders";
 
-// Loads edopro ban lists into BanListMemoryRepository. Note: these are also
-// read by the ygopro path (see bootstrapYgoproResources), not only by edopro.
+// Loads edopro ban lists into BanListMemoryRepository via loadEdoproBanLists().
+// Note: these are also read by the ygopro path (see bootstrapYgoproResources),
+// not only by edopro.
 export async function bootstrapEdoproResources(logger: Logger): Promise<void> {
-	const banLists = new EdoProBanListLoader();
-	await banLists.loadDirectory(`${config.resources.dir}/edopro/evolution-lflists`);
-	await banLists.loadDirectory(`${config.resources.dir}/edopro/lflists`);
+	const tmp = await loadEdoproBanLists();
+	BanListMemoryRepository.replaceAll(tmp);
 
 	logger.info("🎴 EdoPro ban lists loaded");
 }
