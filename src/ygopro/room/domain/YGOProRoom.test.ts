@@ -7,6 +7,8 @@ import { YGOProRoomMother } from "@test-support/mothers/room/YGOProRoomMother";
 import { PlayerInfoMessageMother } from "@test-support/mothers/PlayerInfoMessageMother";
 import YGOProBanListMemoryRepository from "@ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository";
 import { YGOProBanList } from "@ygopro/ban-list/domain/YGOProBanList";
+import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
+import { EdoproBanList } from "@edopro/ban-list/domain/BanList";
 import { YGOProRoom } from "./YGOProRoom";
 import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
 import { MessageRepositoryMock } from "@test-support/mocks/MessageRepositoryMock";
@@ -619,6 +621,46 @@ describe("YGOProRoom", () => {
 			const room = YGOProRoomMother.create({ command: "bo5,m#123" });
 			expect(room.hostInfo.mode).toBe(GameMode.MATCH);
 			expect(room.hostInfo.best_of).toBe(5);
+		});
+	});
+
+	// REQ-306: a ban-list hot-reload must NOT affect rooms already constructed. A room
+	// snapshots its edopro ban-list hash as a primitive at construction (YGOProRoom.ts:154),
+	// so a later replaceAll() on the repositories cannot mutate an in-flight room's value.
+	describe("ban-list hot-reload invariant (REQ-306)", () => {
+		// EdoproBanList derives its hash from added cards (no setHash); distinct cardIds
+		// yield distinct hashes, which is what a real banlist edit produces.
+		function makeEdoList(name: string, cardId: number): EdoproBanList {
+			const list = new EdoproBanList();
+			list.setName(name);
+			list.add(cardId, 0); // a forbidden entry → deterministic non-zero hash
+			return list;
+		}
+
+		afterEach(() => {
+			YGOProBanListMemoryRepository.replaceAll([]);
+			BanListMemoryRepository.replaceAll([]);
+		});
+
+		it("keeps a constructed room's edoBanListHash after the repositories are reloaded", () => {
+			// Seed so the room resolves a concrete edopro hash at construction:
+			// ygopro list at index 0 → its name → matching edopro list.
+			const original = makeEdoList("Format A", 10000);
+			const originalHash = original.hash;
+			YGOProBanListMemoryRepository.replaceAll([createBanList("Format A", 111)]);
+			BanListMemoryRepository.replaceAll([original]);
+
+			const room = YGOProRoomMother.create({ command: "m#123" });
+			expect(room.edoBanListHash).toBe(originalHash);
+
+			// A hot-reload swaps in a same-named list with DIFFERENT content (different hash).
+			const reloaded = makeEdoList("Format A", 20000);
+			expect(reloaded.hash).not.toBe(originalHash); // sanity: edit changed the hash
+			BanListMemoryRepository.replaceAll([reloaded]);
+
+			// The already-constructed room keeps its snapshot; only the repo changed.
+			expect(room.edoBanListHash).toBe(originalHash);
+			expect(BanListMemoryRepository.findByName("Format A")?.hash).toBe(reloaded.hash);
 		});
 	});
 });
