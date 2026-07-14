@@ -6,6 +6,7 @@ import { GetBanListDetailController } from "../controllers/GetBanListDetailContr
 import { GetBanListsController } from "../controllers/GetBanListsController";
 import { GetDatabaseCardsController } from "../controllers/GetDatabaseCardsController";
 import { GetDatabasesController } from "../controllers/GetDatabasesController";
+import { GetResourceVersionController } from "../controllers/GetResourceVersionController";
 import { GetRoomListController } from "../controllers/GetRoomListController";
 import { InspectPageController } from "../controllers/InspectPageController";
 import { RoomListController } from "../controllers/RoomListController";
@@ -34,6 +35,10 @@ export function loadRoutes(app: Express, logger: Logger): void {
 	app.get("/api/databases", RateLimitMiddleware, async (req, res) => {
 		await new GetDatabasesController().run(req, res);
 	});
+
+	app.get("/api/resources/version", RateLimitMiddleware, (req, res) =>
+		new GetResourceVersionController().run(req, res),
+	);
 
 	app.get("/api/databases/cards", RateLimitMiddleware, async (req, res) => {
 		await new GetDatabaseCardsController().run(req, res);
