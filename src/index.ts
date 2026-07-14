@@ -6,6 +6,7 @@ import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 import { config } from "./config";
 import { bootstrapResources } from "./bootstrap/bootstrapResources";
 import { bootstrapPersistence } from "./bootstrap/bootstrapPersistence";
+import { bootstrapBanListReloader } from "./bootstrap/bootstrapBanListReloader";
 import { Server } from "./http-server/Server";
 import { HostServer } from "./socket-server/HostServer";
 import { WSHostServer } from "./socket-server/WSHostServer";
@@ -37,6 +38,10 @@ async function start(): Promise<void> {
 
 	await bootstrapResources(logger);
 	await bootstrapPersistence(logger);
+
+	// Keep in-memory ban lists fresh without a restart: re-read them on an interval
+	// when the on-disk .conf files change (see bootstrapBanListReloader).
+	await bootstrapBanListReloader(logger);
 
 	await server.initialize();
 	WebSocketSingleton.getInstance();

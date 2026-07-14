@@ -32,4 +32,14 @@ export default {
 	getOnlyWithName(): string[] {
 		return banLists.filter((banList) => banList.name).map((item) => item.name as string);
 	},
+
+	/**
+	 * Atomically replaces the entire banlist array with a new one.
+	 * Uses a synchronous in-place swap (no await between truncation and fill)
+	 * so no concurrent HTTP request can observe an empty-list window.
+	 */
+	replaceAll(next: EdoproBanList[]): void {
+		banLists.length = 0;
+		banLists.push(...next);
+	},
 };

@@ -8,6 +8,19 @@ import { BanListLoader } from "src/shared/ban-list/BanListLoader";
 import { parseBanListEntry } from "src/shared/ban-list/parseBanListEntry";
 
 export class EdoProBanListLoader extends BanListLoader {
+	/**
+	 * When a target array is provided, parsed banlists are pushed into it instead
+	 * of the shared BanListMemoryRepository. This enables the re-callable pure-builder
+	 * pattern used by loadEdoproBanLists() (bootstrapBanListLoaders.ts) for hot-reload.
+	 */
+	private readonly _target: EdoproBanList[] | null;
+	private readonly _loaded: EdoproBanList[] = [];
+
+	constructor(target?: EdoproBanList[]) {
+		super();
+		this._target = target ?? null;
+	}
+
 	async loadDirectory(path: string): Promise<void> {
 		const directoryPath = path;
 		const files = await readdir(directoryPath);
@@ -16,6 +29,11 @@ export class EdoProBanListLoader extends BanListLoader {
 			const filePath = join(directoryPath, file);
 			this.load(filePath);
 		}
+	}
+
+	/** Returns all banlists parsed by this loader instance. */
+	getLoaded(): EdoproBanList[] {
+		return this._loaded;
 	}
 
 	private load(path: string): void {
@@ -51,6 +69,12 @@ export class EdoProBanListLoader extends BanListLoader {
 			banList.add(entry.code, entry.limit, entry.points);
 		}
 
-		BanListMemoryRepository.add(banList);
+		this._loaded.push(banList);
+
+		if (this._target !== null) {
+			this._target.push(banList);
+		} else {
+			BanListMemoryRepository.add(banList);
+		}
 	}
 }

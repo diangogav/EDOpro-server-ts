@@ -55,4 +55,13 @@ export default {
 	clear(): void {
 		banLists.length = 0;
 	},
+
+	/**
+	 * Atomically replaces the entire banlist array with a new one.
+	 * Synchronous in-place swap so no concurrent read observes an empty-list window.
+	 */
+	replaceAll(next: YGOProBanList[]): void {
+		banLists.length = 0;
+		banLists.push(...next);
+	},
 };

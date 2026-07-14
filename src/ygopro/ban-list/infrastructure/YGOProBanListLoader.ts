@@ -9,6 +9,22 @@ import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
  */
 export class YGOProBanListLoader {
 	private readonly logger = LoggerFactory.getLogger();
+	private readonly _target: YGOProBanList[] | null;
+	private readonly _loaded: YGOProBanList[] = [];
+
+	/**
+	 * When a target array is provided, parsed banlists are pushed into it instead
+	 * of the shared YGOProBanListMemoryRepository. This lets the loader build into a
+	 * temporary buffer so callers can swap it into the repository atomically.
+	 */
+	constructor(target?: YGOProBanList[]) {
+		this._target = target ?? null;
+	}
+
+	/** Returns all banlists parsed by this loader instance. */
+	getLoaded(): YGOProBanList[] {
+		return this._loaded;
+	}
 
 	/**
 	 * Normalizes lflist names from library to match expected format.
@@ -91,9 +107,17 @@ export class YGOProBanListLoader {
 				this.parseUnrestrictedEntries(text, banList);
 			}
 
-			YGOProBanListMemoryRepository.add(banList);
+			this._loaded.push(banList);
+
+			if (this._target !== null) {
+				this._target.push(banList);
+			} else {
+				YGOProBanListMemoryRepository.add(banList);
+			}
 		}
 
-		this.logger.info(`Loaded ${YGOProBanListMemoryRepository.get().length} ban lists`);
+		const count =
+			this._target !== null ? this._loaded.length : YGOProBanListMemoryRepository.get().length;
+		this.logger.info(`Loaded ${count} ban lists`);
 	}
 }
