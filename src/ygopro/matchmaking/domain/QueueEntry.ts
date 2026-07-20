@@ -8,6 +8,14 @@
 export const QUEUE_TTL_MS = 8_000;
 export const BOT_FALLBACK_MS = 15_000;
 export const CLEANUP_INTERVAL_MS = 2_000;
+/**
+ * Grace window a matched entry is retained after pairing. Within it, a client
+ * that re-polls still gets its `matched` result (idempotency); once it elapses
+ * the sweep drops the entry and frees the user so they can queue again — even if
+ * the client never polled the final result. This only reaps the QUEUE bookkeeping;
+ * the created room is owned/reaped separately by MatchmakingRoomReaper.
+ */
+export const MATCHED_GRACE_MS = 30_000;
 
 /** v1 supports a single format/queue combination. Kept as constants so the
  * pairing predicate (same format) is explicit rather than magic strings. */
@@ -33,6 +41,9 @@ export interface QueueEntry {
 	/** Refreshed on every status poll; the TTL sweep drops entries that fall behind. */
 	lastPollAt: number;
 	state: QueueEntryState;
+	/** Set when the entry transitions to `matched`; drives the grace-window sweep
+	 * that frees the user (MATCHED_GRACE_MS) regardless of client polling. */
+	matchedAt?: number;
 	/** Set once matched — the exact string the client sends in CTOS_JOIN_GAME { pass }. */
 	roomPassword?: string;
 	opponentType?: OpponentType;

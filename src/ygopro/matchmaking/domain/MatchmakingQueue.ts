@@ -1,6 +1,7 @@
 import {
 	BOT_FALLBACK_MS,
 	CLEANUP_INTERVAL_MS,
+	MATCHED_GRACE_MS,
 	MatchmakingFormat,
 	QUEUE_TTL_MS,
 	QueueEntry,
@@ -210,7 +211,22 @@ export class MatchmakingQueue {
 
 	private expireStale(now: number): void {
 		for (const entry of this.entries.values()) {
+			// Searching entries that fell behind the poll heartbeat are dropped.
 			if (entry.state === "searching" && now - entry.lastPollAt > QUEUE_TTL_MS) {
+				this.entries.delete(entry.ticketId);
+				this.usersInQueue.delete(entry.userId);
+				continue;
+			}
+
+			// Matched entries are retained for a grace window so a re-poll still gets
+			// the `matched` result (idempotency), then reaped to free the user — even
+			// if the client never polled the final result. This only cleans up the
+			// QUEUE entry; the created room is reaped separately by MatchmakingRoomReaper.
+			if (
+				entry.state === "matched" &&
+				entry.matchedAt !== undefined &&
+				now - entry.matchedAt > MATCHED_GRACE_MS
+			) {
 				this.entries.delete(entry.ticketId);
 				this.usersInQueue.delete(entry.userId);
 			}
@@ -279,6 +295,7 @@ export class MatchmakingQueue {
 		opponentName?: string,
 	): void {
 		entry.state = "matched";
+		entry.matchedAt = this.deps.now();
 		entry.roomPassword = roomPassword;
 		entry.opponentType = opponentType;
 		entry.rated = rated;

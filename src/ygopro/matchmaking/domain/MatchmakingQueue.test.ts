@@ -1,4 +1,4 @@
-import { BOT_FALLBACK_MS, QUEUE_TTL_MS, SUPPORTED_FORMAT } from "./QueueEntry";
+import { BOT_FALLBACK_MS, MATCHED_GRACE_MS, QUEUE_TTL_MS, SUPPORTED_FORMAT } from "./QueueEntry";
 import { MatchmakingQueue, MatchmakingQueueDeps } from "./MatchmakingQueue";
 
 // ---- helpers ----
@@ -403,6 +403,77 @@ describe("MatchmakingQueue", () => {
 
 			expect(queue.get("t1")).toBeDefined();
 			expect(queue.get("t2")).toBeDefined();
+		});
+	});
+
+	describe("tick — matched grace-window cleanup", () => {
+		it("frees the user after MATCHED_GRACE_MS so the SAME userId can enqueue again", () => {
+			const clock = { t: 0 };
+			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t }));
+			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t2", "user-2");
+			queue.tick(); // pairs both → matched
+
+			// Grace window elapses, then a tick sweeps the matched entries.
+			clock.t = MATCHED_GRACE_MS + 1;
+			queue.tick();
+
+			// Entries and their user mappings are gone.
+			expect(queue.get("t1")).toBeUndefined();
+			expect(queue.get("t2")).toBeUndefined();
+			// The same users can enqueue again with fresh tickets (Quick Match works again).
+			expect(() => enqueue(queue, "t3", "user-1")).not.toThrow();
+			expect(() => enqueue(queue, "t4", "user-2")).not.toThrow();
+		});
+
+		it("keeps returning the matched result while re-polling within the grace window (idempotent)", () => {
+			const clock = { t: 0 };
+			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t }));
+			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t2", "user-2");
+			queue.tick(); // pairs both → matched
+
+			// Re-poll several times within the grace window: each still gets `matched`.
+			clock.t = 1_000;
+			expect(queue.poll("t1")).toMatchObject({ state: "matched", opponentType: "human" });
+			clock.t = MATCHED_GRACE_MS - 1;
+			expect(queue.poll("t1")).toMatchObject({ state: "matched", opponentType: "human" });
+			// Still present because we did not delete on first poll.
+			expect(queue.get("t1")?.state).toBe("matched");
+		});
+
+		it("does NOT drop a matched entry before the grace window elapses", () => {
+			const clock = { t: 0 };
+			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t }));
+			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t2", "user-2");
+			queue.tick(); // pairs both → matched
+
+			clock.t = MATCHED_GRACE_MS - 1;
+			queue.tick();
+
+			expect(queue.get("t1")).toBeDefined();
+			expect(queue.get("t2")).toBeDefined();
+			// User still held → cannot enqueue again yet.
+			expect(() => enqueue(queue, "t3", "user-1")).toThrow();
+		});
+
+		it("frees a bot-matched user after the grace window too", () => {
+			const clock = { t: 0 };
+			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t }));
+			enqueue(queue, "t1", "user-1");
+
+			clock.t = QUEUE_TTL_MS - 1;
+			queue.poll("t1");
+			clock.t = BOT_FALLBACK_MS + 1;
+			queue.tick(); // matched to a bot
+			expect(queue.get("t1")?.state).toBe("matched");
+
+			clock.t = BOT_FALLBACK_MS + 1 + MATCHED_GRACE_MS + 1;
+			queue.tick();
+
+			expect(queue.get("t1")).toBeUndefined();
+			expect(() => enqueue(queue, "t2", "user-1")).not.toThrow();
 		});
 	});
 
