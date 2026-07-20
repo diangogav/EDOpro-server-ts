@@ -29,6 +29,9 @@ export interface MatchmakingQueueDeps {
 	spawnBot: (roomId: number) => void;
 	/** Whether bot fallback is currently possible (windbot initialized + enabled). */
 	botAvailable?: () => boolean;
+	/** Optional sink for per-entry room-creation failures. Injected so the queue
+	 * domain stays free of a concrete logger; the composition root logs. */
+	onRoomCreationError?: (error: unknown) => void;
 }
 
 export interface EnqueueInput {
@@ -228,9 +231,17 @@ export class MatchmakingQueue {
 			for (let i = 0; i + 1 < bucket.length; i += 2) {
 				const a = bucket[i];
 				const b = bucket[i + 1];
-				const { roomPassword } = this.deps.createRankedRoom();
-				this.markMatched(a, roomPassword, "human", true, b.userId);
-				this.markMatched(b, roomPassword, "human", true, a.userId);
+				// A synchronous throw from the room-creation port must not abort the
+				// whole sweep or bubble a 500 to an unrelated enqueue/poll caller.
+				// On failure, leave BOTH entries searching (a retry next tick, or a
+				// bot fallback / TTL drop, will resolve them) and move on.
+				try {
+					const { roomPassword } = this.deps.createRankedRoom();
+					this.markMatched(a, roomPassword, "human", true, b.userId);
+					this.markMatched(b, roomPassword, "human", true, a.userId);
+				} catch (error) {
+					this.deps.onRoomCreationError?.(error);
+				}
 			}
 		}
 	}
@@ -247,9 +258,16 @@ export class MatchmakingQueue {
 			if (entry.state !== "searching") continue;
 			if (now - entry.enteredAt <= BOT_FALLBACK_MS) continue;
 
-			const { roomPassword, roomId } = this.deps.createBotRoom();
-			this.markMatched(entry, roomPassword, "bot", false);
-			this.deps.spawnBot(roomId);
+			// A synchronous throw from createBotRoom/spawnBot must not abort the sweep
+			// or 500 an unrelated caller. On failure, leave THIS entry searching (a
+			// later tick retries, or the TTL sweep drops it) and continue with the rest.
+			try {
+				const { roomPassword, roomId } = this.deps.createBotRoom();
+				this.markMatched(entry, roomPassword, "bot", false);
+				this.deps.spawnBot(roomId);
+			} catch (error) {
+				this.deps.onRoomCreationError?.(error);
+			}
 		}
 	}
 

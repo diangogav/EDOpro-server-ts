@@ -75,6 +75,21 @@ describe("MatchmakingQueue", () => {
 			expect(queue.poll("nope")).toBeNull();
 		});
 
+		it("does NOT advance the whole-queue tick for an unknown ticketId", () => {
+			// A garbage/unknown ticket poll must short-circuit (404) WITHOUT driving an
+			// O(n) sweep or side-effecting room creation on behalf of nobody.
+			const queue = MatchmakingQueue.createForTests(makeDeps());
+			enqueue(queue, "t1", "user-1"); // a lone waiting entry
+			const tickSpy = jest.spyOn(queue, "tick");
+
+			expect(queue.poll("garbage")).toBeNull();
+
+			// The unknown poll short-circuited: the sweep was never run.
+			expect(tickSpy).not.toHaveBeenCalled();
+			expect(queue.get("t1")?.state).toBe("searching");
+			tickSpy.mockRestore();
+		});
+
 		it("returns the matched payload once paired", () => {
 			const clock = { t: 0 };
 			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t }));
@@ -240,6 +255,112 @@ describe("MatchmakingQueue", () => {
 			expect(createBotRoom).not.toHaveBeenCalled();
 			// graceful: entry keeps waiting rather than crashing
 			expect(queue.get("t1")?.state).toBe("searching");
+		});
+	});
+
+	describe("tick — room-creation port failures", () => {
+		it("does not bubble a throwing createRankedRoom out of the sweep", () => {
+			const createRankedRoom = jest.fn(() => {
+				throw new Error("room boom");
+			});
+			const onRoomCreationError = jest.fn();
+			const queue = MatchmakingQueue.createForTests(
+				makeDeps({ createRankedRoom, onRoomCreationError }),
+			);
+			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t2", "user-2");
+
+			// The opportunistic enqueue tick already hit the throwing port; an explicit
+			// tick must also stay contained rather than propagating a 500 to the caller.
+			expect(() => queue.tick()).not.toThrow();
+			expect(onRoomCreationError).toHaveBeenCalled();
+			// The failed pair is left searching for a later retry, not corrupted.
+			expect(queue.get("t1")?.state).toBe("searching");
+			expect(queue.get("t2")?.state).toBe("searching");
+		});
+
+		it("continues the sweep for other pairs when one createRankedRoom throws", () => {
+			// The first pair's room creation throws; the second pair must still match.
+			let call = 0;
+			const createRankedRoom = jest.fn(() => {
+				call += 1;
+				if (call === 1) throw new Error("first pair boom");
+				return { roomPassword: `to,mm-r${call}#pw${call}` };
+			});
+			const queue = MatchmakingQueue.createForTests(
+				makeDeps({ createRankedRoom, onRoomCreationError: jest.fn() }),
+			);
+			// Four same-format searching entries → two pairs in a single sweep. The
+			// opportunistic enqueue ticks fire the throwing port on the first pair each
+			// time (they stay searching); a final explicit sweep pairs a surviving pair.
+			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t2", "user-2");
+			enqueue(queue, "t3", "user-3");
+			enqueue(queue, "t4", "user-4");
+			queue.tick();
+
+			// The throwing port kept firing but never aborted a sweep; once it returns a
+			// room (any call after the first) a pair matches — so at least two entries
+			// end matched while the sweep never threw.
+			const matched = ["t1", "t2", "t3", "t4"]
+				.map((t) => queue.get(t)?.state)
+				.filter((s) => s === "matched").length;
+			expect(matched).toBeGreaterThanOrEqual(2);
+			expect(createRankedRoom.mock.calls.length).toBeGreaterThanOrEqual(2);
+		});
+
+		it("does not bubble a throwing createBotRoom out of the sweep", () => {
+			const clock = { t: 0 };
+			const createBotRoom = jest.fn(() => {
+				throw new Error("bot room boom");
+			});
+			const onRoomCreationError = jest.fn();
+			const spawnBot = jest.fn();
+			const queue = MatchmakingQueue.createForTests(
+				makeDeps({ now: () => clock.t, createBotRoom, spawnBot, onRoomCreationError }),
+			);
+			enqueue(queue, "t1", "user-1");
+
+			clock.t = QUEUE_TTL_MS - 1;
+			queue.poll("t1");
+			clock.t = BOT_FALLBACK_MS + 1;
+
+			expect(() => queue.tick()).not.toThrow();
+			expect(onRoomCreationError).toHaveBeenCalled();
+			expect(spawnBot).not.toHaveBeenCalled();
+			// Entry left searching (retried next tick / TTL-dropped), not corrupted.
+			expect(queue.get("t1")?.state).toBe("searching");
+		});
+
+		it("throwing createBotRoom for one entry does not stop the others (lone-entry retries survive)", () => {
+			// A single lone entry hits the throwing bot port past the fallback window;
+			// the sweep neither throws nor corrupts it, and the entry remains eligible
+			// for a later retry once the port recovers.
+			const clock = { t: 0 };
+			let call = 0;
+			const createBotRoom = jest.fn(() => {
+				call += 1;
+				if (call === 1) throw new Error("first bot boom");
+				return { roomPassword: `to,mm-b${call}#pw${call}`, roomId: 5000 + call };
+			});
+			const spawnBot = jest.fn();
+			const queue = MatchmakingQueue.createForTests(
+				makeDeps({ now: () => clock.t, createBotRoom, spawnBot, onRoomCreationError: jest.fn() }),
+			);
+			enqueue(queue, "t1", "user-1"); // lone → bot-fallback candidate
+
+			clock.t = QUEUE_TTL_MS - 1;
+			queue.poll("t1");
+			clock.t = BOT_FALLBACK_MS + 1;
+
+			// First tick: bot port throws, entry stays searching, no crash.
+			expect(() => queue.tick()).not.toThrow();
+			expect(queue.get("t1")?.state).toBe("searching");
+
+			// Second tick: port recovers, entry now matches to a bot.
+			expect(() => queue.tick()).not.toThrow();
+			expect(queue.get("t1")?.state).toBe("matched");
+			expect(spawnBot).toHaveBeenCalledWith(5000 + call);
 		});
 	});
 

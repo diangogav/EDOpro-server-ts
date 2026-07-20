@@ -28,9 +28,11 @@ export function loadRoutes(app: Express, logger: Logger, tickets: TicketReposito
 		new EnqueueMatchmakingController(logger, tickets).run(req, res),
 	);
 
-	app.get("/api/matchmaking/status", (req, res) => new MatchmakingStatusController().run(req, res));
+	app.get("/api/matchmaking/status", RateLimitMiddleware, (req, res) =>
+		new MatchmakingStatusController().run(req, res),
+	);
 
-	app.delete("/api/matchmaking/queue", (req, res) =>
+	app.delete("/api/matchmaking/queue", RateLimitMiddleware, (req, res) =>
 		new CancelMatchmakingController().run(req, res),
 	);
 

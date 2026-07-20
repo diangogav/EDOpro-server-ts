@@ -3,7 +3,10 @@ import { EventEmitter } from "stream";
 import { Logger } from "@shared/logger/domain/Logger";
 
 import { createMatchmakingRoom } from "@ygopro/matchmaking/application/MatchmakingRoomFactory";
+import { MatchmakingRoomReaper } from "@ygopro/matchmaking/application/MatchmakingRoomReaper";
+import { CLEANUP_INTERVAL_MS } from "@ygopro/matchmaking/domain/QueueEntry";
 import { MatchmakingQueue } from "@ygopro/matchmaking/domain/MatchmakingQueue";
+import { FinalizeYGOProRoom } from "@ygopro/room/application/FinalizeYGOProRoom";
 import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import { WindbotModule } from "@ygopro/windbot/application/WindbotModule";
 
@@ -18,6 +21,14 @@ import { WindbotModule } from "@ygopro/windbot/application/WindbotModule";
 export function bootstrapMatchmaking(logger: Logger): void {
 	const mmLogger = logger.child({ file: "Matchmaking" });
 
+	// Reaps matchmaking-created rooms that are never joined (rage-quit before join,
+	// ticket expiry between match and WS handshake, network drop). Reuses the SAME
+	// canonical teardown as every other reap path.
+	const reaper = new MatchmakingRoomReaper({
+		now: () => Date.now(),
+		finalize: (room) => FinalizeYGOProRoom.run(room),
+	});
+
 	MatchmakingQueue.init({
 		now: () => Date.now(),
 
@@ -26,6 +37,7 @@ export function bootstrapMatchmaking(logger: Logger): void {
 				rankedOverride: true,
 				logger: mmLogger,
 				emitter: new EventEmitter(),
+				onRoomCreated: (room) => reaper.track(room),
 			});
 			return { roomPassword };
 		},
@@ -35,6 +47,7 @@ export function bootstrapMatchmaking(logger: Logger): void {
 				rankedOverride: false,
 				logger: mmLogger,
 				emitter: new EventEmitter(),
+				onRoomCreated: (room) => reaper.track(room),
 			});
 			return { roomPassword, roomId: room.id };
 		},
@@ -67,7 +80,22 @@ export function bootstrapMatchmaking(logger: Logger): void {
 		// Bot fallback only makes sense when windbot is up; otherwise entries keep
 		// waiting for a human (or TTL-drop) instead of dead-ending on a bot game.
 		botAvailable: () => WindbotModule.isInitialized() && WindbotModule.getInstance().isEnabled(),
+
+		// A synchronous room-creation failure is caught inside the queue's sweep so
+		// it never aborts the sweep or 500s an unrelated poller; log it here.
+		onRoomCreationError: (error: unknown) => {
+			mmLogger.error(
+				`Matchmaking room creation failed during sweep: ${
+					error instanceof Error ? error.message : String(error)
+				}`,
+			);
+		},
 	});
 
 	MatchmakingQueue.getInstance().start();
+
+	// Drive the empty-room sweep on its own unref'd timer so it never keeps the
+	// process alive. Reuses the queue's cleanup cadence.
+	const sweepTimer = setInterval(() => reaper.sweep(), CLEANUP_INTERVAL_MS);
+	sweepTimer.unref();
 }

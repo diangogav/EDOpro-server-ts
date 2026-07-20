@@ -15,6 +15,13 @@ export interface CreateMatchmakingRoomInput {
 	rankedOverride: boolean;
 	logger: Logger;
 	emitter: EventEmitter;
+	/**
+	 * Invoked with the freshly created room BEFORE it is returned. The composition
+	 * root uses this to register the room with the empty-room reaper so a room that
+	 * is never joined (rage-quit, ticket expiry, network drop) is torn down instead
+	 * of leaking forever. Optional so tests can create rooms without a reaper.
+	 */
+	onRoomCreated?: (room: YGOProRoom) => void;
 }
 
 export interface MatchmakingRoomHandle {
@@ -65,6 +72,10 @@ export function createMatchmakingRoom(input: CreateMatchmakingRoomInput): Matchm
 
 	YGOProRoomList.addRoom(room);
 	room.waiting();
+
+	// Register with the empty-room reaper (if wired) so an unjoined room does not
+	// leak: nothing else reaps a matchmaking room that never sees a real socket.
+	input.onRoomCreated?.(room);
 
 	return { room, roomPassword: `${room.name}#${room.password}` };
 }
