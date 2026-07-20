@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomInt } from "crypto";
 import { EventEmitter } from "stream";
 
 import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
@@ -46,13 +46,46 @@ export interface MatchmakingRoomHandle {
  * create() path is left untouched.
  *
  * Command token "to" → rule 1 + first TCG banlist (strict TCG). A unique
- * "mm-<uuid>" token is appended purely to make the room name/join-string unique;
- * it matches no rule mapping, so the parser ignores it.
+ * "mm<base36>" token is appended purely to make the room name/join-string
+ * unique; its "mm" prefix guarantees it never matches a rule mapping validator
+ * (all rule tokens are exact strings or anchored regexes that never start with
+ * "mm"), so the parser ignores it.
+ *
+ * CRITICAL — wire-field budget: the client encodes CTOS_JOIN_GAME { pass } as a
+ * FIXED utf16[20] field (ygopro-msg-encode: BinaryField("utf16", 8, 20)). Any
+ * join string longer than the field is silently truncated on encode, which
+ * destroys the "#password" segment and makes the human's join fail the password
+ * check. The full "<name>#<password>" string MUST therefore stay <= 19 chars
+ * (19 is the safe ceiling: it leaves one wchar of margin for a terminator; 20
+ * is the hard cap where the field is completely full with no terminator).
+ *
+ * Layout within the 19-char budget:
+ *   "to," (3) + "mm" + 5 base36 (7) + "#" (1) + 7 base36 (7) = 18 chars.
  */
+const NAME_ENTROPY_CHARS = 5;
+const PASSWORD_CHARS = 7;
+
+function randomBase36(length: number): string {
+	let out = "";
+	for (let i = 0; i < length; i++) {
+		out += randomInt(36).toString(36);
+	}
+
+	return out;
+}
+
 export function createMatchmakingRoom(input: CreateMatchmakingRoomInput): MatchmakingRoomHandle {
-	const unique = randomUUID().replace(/-/g, "").slice(0, 12);
-	const password = randomUUID().replace(/-/g, "").slice(0, 16);
-	const command = `to,mm-${unique}#${password}`;
+	// "mm"-prefixed base36 suffix: collision-proof against rule tokens and unique
+	// enough that a clash in YGOProRoomList is astronomically rare — but we still
+	// regenerate on the off chance a live room already owns the name so both
+	// matched players resolve to the SAME room via findByName.
+	let unique = `mm${randomBase36(NAME_ENTROPY_CHARS)}`;
+	while (YGOProRoomList.findByName(`to,${unique}`)) {
+		unique = `mm${randomBase36(NAME_ENTROPY_CHARS)}`;
+	}
+
+	const password = randomBase36(PASSWORD_CHARS);
+	const command = `to,${unique}#${password}`;
 
 	// Empty buffer → name "", password null. Never surfaced to a client because
 	// nobody has joined this room yet; each real player supplies their own name.
