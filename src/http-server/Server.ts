@@ -2,6 +2,7 @@ import express, { Express } from "express";
 import { config } from "src/config";
 
 import { Logger } from "../shared/logger/domain/Logger";
+import { TicketRepository } from "../shared/ticket/domain/TicketRepository";
 import { createDirectoryIfNotExists } from "../utils";
 import { loadRoutes } from "./routes";
 
@@ -9,7 +10,7 @@ export class Server {
 	private readonly app: Express;
 	private readonly logger: Logger;
 
-	constructor(logger: Logger) {
+	constructor(logger: Logger, tickets: TicketRepository) {
 		this.logger = logger;
 		this.app = express();
 		this.app.use(express.json());
@@ -32,7 +33,7 @@ export class Server {
 				next();
 			}
 		});
-		loadRoutes(this.app, this.logger);
+		loadRoutes(this.app, this.logger, tickets);
 	}
 
 	async initialize(): Promise<void> {
