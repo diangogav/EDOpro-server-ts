@@ -5,6 +5,7 @@ import { Logger } from "@shared/logger/domain/Logger";
 import { createMatchmakingRoom } from "@ygopro/matchmaking/application/MatchmakingRoomFactory";
 import { MatchmakingRoomReaper } from "@ygopro/matchmaking/application/MatchmakingRoomReaper";
 import { CLEANUP_INTERVAL_MS } from "@ygopro/matchmaking/domain/QueueEntry";
+import { pickRandomTcgBotDeck } from "@ygopro/matchmaking/domain/MatchmakingTcgBotDecks";
 import { MatchmakingQueue } from "@ygopro/matchmaking/domain/MatchmakingQueue";
 import { FinalizeYGOProRoom } from "@ygopro/room/application/FinalizeYGOProRoom";
 import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
@@ -59,11 +60,17 @@ export function bootstrapMatchmaking(logger: Logger): void {
 			const room = YGOProRoomList.findById(roomId);
 			if (!room) return;
 
+			// Matchmaking v1 rooms are TCG (rule 1 + TCG banlist). The server botlist
+			// is format-blind, so pick a curated TCG-legal deck here and pass it as a
+			// deckOverride — otherwise a non-TCG bot deck fails the deck-check and the
+			// human is ejected before the duel can start.
+			const tcgDeck = pickRandomTcgBotDeck();
+
 			// Fire-and-forget, mirroring WindBotJoinStrategy: abort retries once the
 			// room begins teardown. On failure, tear the empty bot room down so it
 			// does not linger in the lobby.
 			void WindbotModule.getInstance()
-				.requestBot(roomId, null, () => room.finalizing)
+				.requestBot(roomId, null, () => room.finalizing, tcgDeck)
 				.then(({ bot }) => {
 					room.windbot = { name: bot.name, deck: bot.deck };
 				})

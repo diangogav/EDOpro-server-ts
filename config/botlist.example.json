@@ -6,5 +6,33 @@
 	{
 		"name": "Yugi",
 		"deck": "Yugi"
+	},
+	{
+		"name": "Salamangreat Bot",
+		"deck": "Salamangreat"
+	},
+	{
+		"name": "Sky Striker Bot",
+		"deck": "SkyStriker"
+	},
+	{
+		"name": "Labrynth Bot",
+		"deck": "Labrynth"
+	},
+	{
+		"name": "Yubel Bot",
+		"deck": "Yubel"
+	},
+	{
+		"name": "Swordsoul Bot",
+		"deck": "Swordsoul"
+	},
+	{
+		"name": "Ryzeal Bot",
+		"deck": "Ryzeal"
+	},
+	{
+		"name": "Maliss Bot",
+		"deck": "Maliss"
 	}
 ]
