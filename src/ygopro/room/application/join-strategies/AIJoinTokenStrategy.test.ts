@@ -217,6 +217,26 @@ describe("AIJoinTokenStrategy", () => {
 				expect(roomEmitSpy).toHaveBeenCalledWith("JOIN", expect.anything(), ctx.socket);
 			});
 
+			it("marks the room as an AI room (noHost + noReconnect) so it tears down when the human leaves", async () => {
+				const { room, emitter } = createRoomInList();
+				const token = tokenStore.register(room.id, "Anna", "Anna.ydk");
+
+				jest.spyOn(room, "emit").mockImplementation(() => undefined);
+
+				const mod = makeModule(tokenStore);
+				const strategy = new AIJoinTokenStrategy(mod);
+
+				const ctx = makeCtx(`AIJOIN#${token}`, {
+					eventEmitter: emitter,
+					messageRepository: makeMessageRepository() as never,
+				});
+
+				expect(room.noHost).toBe(false);
+				await strategy.handle(ctx);
+				expect(room.noHost).toBe(true);
+				expect(room.noReconnect).toBe(true);
+			});
+
 			it("finds the room by roomId from the token payload", async () => {
 				const { room, emitter } = createRoomInList();
 				const token = tokenStore.register(room.id, "Anna", "Anna.ydk");
