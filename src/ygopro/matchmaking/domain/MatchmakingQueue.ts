@@ -222,11 +222,12 @@ export class MatchmakingQueue {
 			// the `matched` result (idempotency), then reaped to free the user — even
 			// if the client never polled the final result. This only cleans up the
 			// QUEUE entry; the created room is reaped separately by MatchmakingRoomReaper.
-			if (
-				entry.state === "matched" &&
-				entry.matchedAt !== undefined &&
-				now - entry.matchedAt > MATCHED_GRACE_MS
-			) {
+			//
+			// The grace is measured from lastPollAt (refreshed on every poll, including
+			// polls of matched entries), NOT matchedAt: an actively-polling client (e.g.
+			// a slow join) is never dropped mid-flow, while a client that stopped polling
+			// (already joined) expires MATCHED_GRACE_MS after its last contact.
+			if (entry.state === "matched" && now - entry.lastPollAt > MATCHED_GRACE_MS) {
 				this.entries.delete(entry.ticketId);
 				this.usersInQueue.delete(entry.userId);
 			}

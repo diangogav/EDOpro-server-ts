@@ -31,4 +31,11 @@ describe("pickRandomTcgBotDeck", () => {
 			MATCHMAKING_TCG_BOT_DECKS[MATCHMAKING_TCG_BOT_DECKS.length - 1],
 		);
 	});
+
+	it("clamps to the last deck when random() returns exactly 1.0", () => {
+		// Math.floor(1.0 * len) === len → out-of-range/undefined without the clamp.
+		const deck = pickRandomTcgBotDeck(() => 1);
+		expect(deck).toBe(MATCHMAKING_TCG_BOT_DECKS[MATCHMAKING_TCG_BOT_DECKS.length - 1]);
+		expect(MATCHMAKING_TCG_BOT_DECKS).toContain(deck);
+	});
 });

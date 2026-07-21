@@ -30,6 +30,9 @@ export const MATCHMAKING_TCG_BOT_DECKS: readonly string[] = [
  * bootstrap wiring stays declarative and the selection is unit-testable.
  */
 export function pickRandomTcgBotDeck(random: () => number = Math.random): string {
-	const index = Math.floor(random() * MATCHMAKING_TCG_BOT_DECKS.length);
+	const len = MATCHMAKING_TCG_BOT_DECKS.length;
+	// Clamp to the last valid index: Math.floor(random() * len) would yield `len`
+	// (an out-of-range, undefined element) if random() ever returns exactly 1.0.
+	const index = Math.min(Math.floor(random() * len), len - 1);
 	return MATCHMAKING_TCG_BOT_DECKS[index];
 }

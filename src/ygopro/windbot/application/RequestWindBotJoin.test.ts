@@ -76,6 +76,32 @@ describe("RequestWindBotJoin", () => {
 			const payload = tokenStore.consume(token);
 			expect(payload.deck).toBe("CustomDeck.ydk");
 		});
+
+		it("clears deckcode on override so windbot cannot ignore the override deck", () => {
+			// windbot honors `deckcode` over `deck`. If the source bot carries a
+			// deckcode, the returned bot MUST drop it so the override actually applies
+			// (otherwise the bot plays its original, possibly non-TCG deck → deck-check
+			// ejection). See RequestWindBotJoin W1 fix.
+			const bot = makeBot({ deck: "Anna.ydk", deckcode: "SomeBase64OriginalDeck" });
+			const repo = makeRepo({ findByName: jest.fn().mockReturnValue(bot) });
+			const useCase = new RequestWindBotJoin(repo, tokenStore);
+
+			const result = useCase.execute(1, "Anna", "CustomDeck.ydk");
+
+			expect(result.bot.deck).toBe("CustomDeck.ydk");
+			expect(result.bot.deckcode).toBeUndefined();
+		});
+
+		it("preserves deckcode when no override is provided", () => {
+			// The no-override path must NOT mutate the source bot's deckcode.
+			const bot = makeBot({ deck: "Anna.ydk", deckcode: "SomeBase64OriginalDeck" });
+			const repo = makeRepo({ findByName: jest.fn().mockReturnValue(bot) });
+			const useCase = new RequestWindBotJoin(repo, tokenStore);
+
+			const result = useCase.execute(1, "Anna");
+
+			expect(result.bot.deckcode).toBe("SomeBase64OriginalDeck");
+		});
 	});
 
 	describe("random bot selection", () => {

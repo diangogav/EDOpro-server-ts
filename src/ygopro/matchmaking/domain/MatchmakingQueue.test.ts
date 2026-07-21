@@ -458,6 +458,46 @@ describe("MatchmakingQueue", () => {
 			expect(() => enqueue(queue, "t3", "user-1")).toThrow();
 		});
 
+		it("keeps a matched entry alive while it is still being polled (grace measured from last poll)", () => {
+			// W3: a slow-joining client that keeps polling its matched result must NOT
+			// be dropped mid-flow, even long after matchedAt + MATCHED_GRACE_MS. The
+			// grace is measured from lastPollAt, which poll() refreshes on every call.
+			const clock = { t: 0 };
+			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t }));
+			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t2", "user-2");
+			queue.tick(); // pairs both → matched at t=0
+
+			// Well past matchedAt + grace, but the client kept polling.
+			clock.t = MATCHED_GRACE_MS * 3;
+			expect(queue.poll("t1")).toMatchObject({ state: "matched" });
+			queue.tick();
+
+			// Still present: last poll was at clock.t, so grace has not elapsed since.
+			expect(queue.get("t1")?.state).toBe("matched");
+		});
+
+		it("expires a matched entry MATCHED_GRACE_MS after it STOPS polling (joined)", () => {
+			// W3: once the client stops polling (it joined the room), the entry is
+			// reaped a grace window after its LAST contact — not after matchedAt.
+			const clock = { t: 0 };
+			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t }));
+			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t2", "user-2");
+			queue.tick(); // pairs both → matched at t=0
+
+			// Client polls once, later, then stops (joined).
+			clock.t = 10_000;
+			expect(queue.poll("t1")).toMatchObject({ state: "matched" });
+
+			// Grace elapses from the LAST poll, then a tick reaps it.
+			clock.t = 10_000 + MATCHED_GRACE_MS + 1;
+			queue.tick();
+
+			expect(queue.get("t1")).toBeUndefined();
+			expect(() => enqueue(queue, "t3", "user-1")).not.toThrow();
+		});
+
 		it("frees a bot-matched user after the grace window too", () => {
 			const clock = { t: 0 };
 			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t }));
