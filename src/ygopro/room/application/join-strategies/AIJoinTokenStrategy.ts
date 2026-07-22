@@ -60,6 +60,15 @@ export class AIJoinTokenStrategy implements JoinStrategy {
 			return;
 		}
 
+		// A bot has joined — this room is now an AI room. Mark it noHost so the
+		// DisconnectHandler tears it down when the (only) human leaves, and
+		// noReconnect since a bot practice game is not reconnectable. Mirrors
+		// WindBotJoinStrategy: the classic vs-AI path sets these at creation, but
+		// matchmaking bot rooms are created generically and only become AI rooms
+		// when the windbot connects here.
+		room.noHost = true;
+		room.noReconnect = true;
+
 		// Emit JOIN for the bot client — the waiting state will call createPlayerUnsafe + addPlayerUnsafe
 		// (or createSpectatorUnsafe if slots are full, but for a windbot room there should be a free slot).
 		// handleJoin queues the player creation on room.mutex.

@@ -123,8 +123,9 @@ export class WindbotModule {
 		roomId: number,
 		botNameOrNull: string | null,
 		isFinalizing: () => boolean,
+		deckOverride?: string,
 	): Promise<{ token: string; bot: WindbotData }> {
-		const { token, bot } = this.requestJoinUseCase.execute(roomId, botNameOrNull);
+		const { token, bot } = this.requestJoinUseCase.execute(roomId, botNameOrNull, deckOverride);
 
 		try {
 			await this.deps.provider.requestJoin({ token, bot, isFinalizing });

@@ -7,6 +7,7 @@ import { config } from "./config";
 import { bootstrapResources } from "./bootstrap/bootstrapResources";
 import { bootstrapPersistence } from "./bootstrap/bootstrapPersistence";
 import { bootstrapBanListReloader } from "./bootstrap/bootstrapBanListReloader";
+import { bootstrapMatchmaking } from "./bootstrap/bootstrapMatchmaking";
 import { Server } from "./http-server/Server";
 import { HostServer } from "./socket-server/HostServer";
 import { WSHostServer } from "./socket-server/WSHostServer";
@@ -26,11 +27,12 @@ async function start(): Promise<void> {
 
 	logger.info("🚀 Evolution server starting…");
 
-	const server = new Server(logger);
+	const ticketRepository = new RedisTicketRepository();
+	const server = new Server(logger, ticketRepository);
 	const ygoproServer = new YGOProServer(logger);
 	const wsYgoproServer = new WSYGOProServer(
 		logger,
-		new HandshakeTicketAuthenticator(new RedisTicketRepository()),
+		new HandshakeTicketAuthenticator(ticketRepository),
 	);
 
 	const hostServer = new HostServer(logger);
@@ -56,6 +58,9 @@ async function start(): Promise<void> {
 	if (windbotModule) {
 		logger.info("🤖 Windbot enabled");
 	}
+
+	// After windbot so the queue's bot-fallback availability check reflects it.
+	bootstrapMatchmaking(logger);
 
 	ygoproServer.initialize();
 	wsYgoproServer.initialize();

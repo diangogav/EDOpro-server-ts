@@ -19,8 +19,17 @@ export class RequestWindBotJoin {
 		botNameOrNull: string | null,
 		deckOverride?: string,
 	): RequestWindBotJoinResult {
-		const bot = this._resolveBot(botNameOrNull);
-		const deck = deckOverride ?? bot.deck;
+		const resolved = this._resolveBot(botNameOrNull);
+		const deck = deckOverride ?? resolved.deck;
+		// The override must reach BOTH the token store AND the bot the provider
+		// fires to windbot (buildUrl reads bot.deck for the `deck=` query param),
+		// otherwise the bot would still play its original, possibly non-TCG deck.
+		// We MUST also clear deckcode: windbot honors `deckcode` over `deck`, so a
+		// source bot carrying a deckcode would ignore the override and play its
+		// original (possibly non-TCG) deck, failing the room's deck-check.
+		const bot: WindbotData = deckOverride
+			? { ...resolved, deck: deckOverride, deckcode: undefined }
+			: resolved;
 		const token = this.tokenStore.register(roomId, bot.name, deck);
 		return { token, bot };
 	}
