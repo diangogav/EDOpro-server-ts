@@ -1,7 +1,6 @@
 import type { Request, Response } from "express";
 
 import { MatchmakingQueue } from "@ygopro/matchmaking/domain/MatchmakingQueue";
-import { SUPPORTED_FORMAT } from "@ygopro/matchmaking/domain/QueueEntry";
 
 import { CancelMatchmakingController } from "./CancelMatchmakingController";
 
@@ -55,7 +54,7 @@ describe("CancelMatchmakingController", () => {
 		MatchmakingQueue.getInstance().enqueue({
 			ticketId: "t1",
 			userId: "user-1",
-			format: SUPPORTED_FORMAT,
+			format: "tcg",
 		});
 
 		const out = run({ ticketId: "t1" });

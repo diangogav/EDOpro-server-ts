@@ -2,8 +2,9 @@ import { EventEmitter } from "stream";
 
 import { RoomLeague } from "@shared/room/admission/domain/RoomLeague";
 
+import { MATCHMAKING_FORMATS } from "../domain/QueueEntry";
 import YGOProRoomList from "../../room/infrastructure/YGOProRoomList";
-import { createMatchmakingRoom } from "./MatchmakingRoomFactory";
+import { createMatchmakingRoom, FORMAT_ROOM_TOKEN } from "./MatchmakingRoomFactory";
 
 const makeLogger = () =>
 	({
@@ -66,21 +67,27 @@ describe("createMatchmakingRoom", () => {
 		expect(room.password).toBe(password);
 	});
 
-	it("produces a join string that fits the CTOS_JOIN_GAME pass field (<= 19 chars)", () => {
-		// The client encodes CTOS_JOIN_GAME { pass } as a FIXED utf16[20] field
-		// (ygopro-msg-encode: BinaryField("utf16", 8, 20)). A join string longer
-		// than the field is silently truncated on the wire, destroying the
-		// password segment and breaking the human join. 19 is the safe ceiling
-		// (leaves one wchar of margin for a terminator); 20 is the hard cap.
-		for (let i = 0; i < 200; i++) {
+	// The client encodes CTOS_JOIN_GAME { pass } as a FIXED utf16[20] field
+	// (ygopro-msg-encode: BinaryField("utf16", 8, 20)). A join string longer
+	// than the field is silently truncated on the wire, destroying the
+	// password segment and breaking the human join. 19 is the safe ceiling
+	// (leaves one wchar of margin for a terminator); 20 is the hard cap.
+	//
+	// This guard exercises the REAL generator for EVERY format (including "jtp",
+	// the 19-char boundary case) over many iterations, so it catches any drift in
+	// the actual token / entropy / password segment lengths — no modeled arithmetic.
+	it.each(
+		MATCHMAKING_FORMATS,
+	)("produces a join string that fits the CTOS_JOIN_GAME pass field (<= 19 chars) for format %s", (format) => {
+		for (let i = 0; i < 500; i++) {
 			const { roomPassword } = createMatchmakingRoom({
+				format,
 				rankedOverride: true,
 				logger: makeLogger(),
 				emitter: new EventEmitter(),
 			});
 
 			expect(roomPassword.length).toBeLessThanOrEqual(19);
-			expect(roomPassword.length).toBeLessThanOrEqual(20);
 		}
 	});
 
@@ -147,5 +154,20 @@ describe("createMatchmakingRoom", () => {
 				emitter: new EventEmitter(),
 			}),
 		).not.toThrow();
+	});
+});
+
+describe("FORMAT_ROOM_TOKEN", () => {
+	it("has a token for every format in MATCHMAKING_FORMATS", () => {
+		for (const fmt of MATCHMAKING_FORMATS) {
+			const token = FORMAT_ROOM_TOKEN[fmt];
+			expect(typeof token).toBe("string");
+			expect(token.length).toBeGreaterThan(0);
+		}
+	});
+
+	it('maps tcg to the "to" token and jtp to the "jtp" token', () => {
+		expect(FORMAT_ROOM_TOKEN.tcg).toBe("to");
+		expect(FORMAT_ROOM_TOKEN.jtp).toBe("jtp");
 	});
 });

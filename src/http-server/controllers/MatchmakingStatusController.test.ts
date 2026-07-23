@@ -1,7 +1,6 @@
 import type { Request, Response } from "express";
 
 import { MatchmakingQueue } from "@ygopro/matchmaking/domain/MatchmakingQueue";
-import { SUPPORTED_FORMAT } from "@ygopro/matchmaking/domain/QueueEntry";
 
 import { MatchmakingStatusController } from "./MatchmakingStatusController";
 
@@ -55,7 +54,7 @@ describe("MatchmakingStatusController", () => {
 		MatchmakingQueue.getInstance().enqueue({
 			ticketId: "t1",
 			userId: "user-1",
-			format: SUPPORTED_FORMAT,
+			format: "tcg",
 		});
 
 		const out = run({ ticketId: "t1" });
@@ -65,8 +64,8 @@ describe("MatchmakingStatusController", () => {
 
 	it("returns 200 matched once paired", () => {
 		const q = MatchmakingQueue.getInstance();
-		q.enqueue({ ticketId: "t1", userId: "user-1", format: SUPPORTED_FORMAT });
-		q.enqueue({ ticketId: "t2", userId: "user-2", format: SUPPORTED_FORMAT });
+		q.enqueue({ ticketId: "t1", userId: "user-1", format: "tcg" });
+		q.enqueue({ ticketId: "t2", userId: "user-2", format: "tcg" });
 
 		const out = run({ ticketId: "t1" });
 		expect(out.status()).toBe(200);

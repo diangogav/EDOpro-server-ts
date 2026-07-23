@@ -23,11 +23,11 @@ export interface BotRoomHandle extends RankedRoomHandle {
 export interface MatchmakingQueueDeps {
 	now: () => number;
 	/** Creates a ranked (Verified) room for a human pair. */
-	createRankedRoom: () => RankedRoomHandle;
+	createRankedRoom: (format: MatchmakingFormat) => RankedRoomHandle;
 	/** Creates a casual (unrated) room for a bot game and returns its id for the spawn. */
-	createBotRoom: () => BotRoomHandle;
+	createBotRoom: (format: MatchmakingFormat) => BotRoomHandle;
 	/** Fires the windbot join for the given room (fire-and-forget). */
-	spawnBot: (roomId: number) => void;
+	spawnBot: (roomId: number, format: MatchmakingFormat) => void;
 	/** Whether bot fallback is currently possible (windbot initialized + enabled). */
 	botAvailable?: () => boolean;
 	/** Optional sink for per-entry room-creation failures. Injected so the queue
@@ -253,7 +253,7 @@ export class MatchmakingQueue {
 				// On failure, leave BOTH entries searching (a retry next tick, or a
 				// bot fallback / TTL drop, will resolve them) and move on.
 				try {
-					const { roomPassword } = this.deps.createRankedRoom();
+					const { roomPassword } = this.deps.createRankedRoom(a.format);
 					this.markMatched(a, roomPassword, "human", true, b.userId);
 					this.markMatched(b, roomPassword, "human", true, a.userId);
 				} catch (error) {
@@ -279,9 +279,9 @@ export class MatchmakingQueue {
 			// or 500 an unrelated caller. On failure, leave THIS entry searching (a
 			// later tick retries, or the TTL sweep drops it) and continue with the rest.
 			try {
-				const { roomPassword, roomId } = this.deps.createBotRoom();
+				const { roomPassword, roomId } = this.deps.createBotRoom(entry.format);
 				this.markMatched(entry, roomPassword, "bot", false);
-				this.deps.spawnBot(roomId);
+				this.deps.spawnBot(roomId, entry.format);
 			} catch (error) {
 				this.deps.onRoomCreationError?.(error);
 			}

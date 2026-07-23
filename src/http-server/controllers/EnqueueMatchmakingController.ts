@@ -10,10 +10,10 @@ import {
 	DuplicateQueueEntryError,
 	MatchmakingQueue,
 } from "@ygopro/matchmaking/domain/MatchmakingQueue";
-import { SUPPORTED_FORMAT, SUPPORTED_QUEUE } from "@ygopro/matchmaking/domain/QueueEntry";
+import { MATCHMAKING_FORMATS, SUPPORTED_QUEUE } from "@ygopro/matchmaking/domain/QueueEntry";
 
 export const EnqueueMatchmakingSchema = z.object({
-	format: z.literal(SUPPORTED_FORMAT),
+	format: z.enum(MATCHMAKING_FORMATS),
 	queue: z.literal(SUPPORTED_QUEUE),
 	ticket: z.string().min(1),
 });

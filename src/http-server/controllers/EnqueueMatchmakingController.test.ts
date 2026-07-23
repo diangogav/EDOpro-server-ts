@@ -82,6 +82,34 @@ describe("EnqueueMatchmakingController", () => {
 		expect(out.status()).toBe(400);
 	});
 
+	it("accepts jtp format (200) — valid JTP enqueue", async () => {
+		const out = await run(
+			{ format: "jtp", queue: "ranked", ticket: "the-ticket" },
+			makeTickets("user-jtp"),
+		);
+		expect(out.status()).toBe(200);
+		const body = out.body() as { ticketId: string };
+		expect(typeof body.ticketId).toBe("string");
+		// The queued entry must carry the requested format, not silently fall back to tcg.
+		expect(MatchmakingQueue.getInstance().get(body.ticketId)?.format).toBe("jtp");
+	});
+
+	it("rejects genesys format (400) — Genesys format rejected", async () => {
+		const out = await run(
+			{ format: "genesys", queue: "ranked", ticket: "the-ticket" },
+			makeTickets("user-1"),
+		);
+		expect(out.status()).toBe(400);
+	});
+
+	it("rejects unknown format string (400) — Unknown format rejected", async () => {
+		const out = await run(
+			{ format: "arbitrary-unknown", queue: "ranked", ticket: "the-ticket" },
+			makeTickets("user-1"),
+		);
+		expect(out.status()).toBe(400);
+	});
+
 	it("rejects when the ticket does not resolve to a user (401)", async () => {
 		const out = await run(
 			{ format: "tcg", queue: "ranked", ticket: "bad-ticket" },

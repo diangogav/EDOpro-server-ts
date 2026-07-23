@@ -1,6 +1,7 @@
 // Verifies the composition-root wiring: the spawnBot dependency injected into
-// MatchmakingQueue must request a bot with a deckOverride taken from the curated
-// TCG pool, so a bot dropped into a TCG matchmaking room plays a TCG-legal deck.
+// MatchmakingQueue must request a bot using a (name, deck) identity pair from the
+// per-format roster. The bot is requested with an EXPLICIT name and a deckOverride
+// equal to the roster pair's deck.
 //
 // All singleton collaborators are mocked so no timers, sockets, or real windbot
 // are touched. We capture the deps object passed to MatchmakingQueue.init and
@@ -8,8 +9,12 @@
 
 import { Logger } from "@shared/logger/domain/Logger";
 
-import { MatchmakingQueue } from "@ygopro/matchmaking/domain/MatchmakingQueue";
-import { MATCHMAKING_TCG_BOT_DECKS } from "@ygopro/matchmaking/domain/MatchmakingTcgBotDecks";
+import {
+	MatchmakingQueue,
+	MatchmakingQueueDeps,
+} from "@ygopro/matchmaking/domain/MatchmakingQueue";
+import { MATCHMAKING_BOT_ROSTER } from "@ygopro/matchmaking/domain/MatchmakingBotRoster";
+import { MatchmakingFormat } from "@ygopro/matchmaking/domain/QueueEntry";
 import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import { WindbotModule } from "@ygopro/windbot/application/WindbotModule";
 
@@ -34,15 +39,17 @@ function fakeLogger(): Logger {
 	return logger;
 }
 
-describe("bootstrapMatchmaking — spawnBot TCG deck wiring", () => {
+describe("bootstrapMatchmaking — spawnBot roster identity-pair wiring", () => {
 	afterEach(() => {
 		jest.restoreAllMocks();
 	});
 
-	function captureSpawnBot(): (roomId: number) => void {
-		const captured: { spawnBot?: (roomId: number) => void } = {};
+	function captureSpawnBot(): (roomId: number, format: MatchmakingFormat) => void {
+		const captured: { spawnBot?: (roomId: number, format: MatchmakingFormat) => void } = {};
 		jest.spyOn(MatchmakingQueue, "init").mockImplementation((d) => {
-			captured.spawnBot = (d as unknown as { spawnBot: (roomId: number) => void }).spawnBot;
+			captured.spawnBot = (
+				d as unknown as { spawnBot: (roomId: number, format: MatchmakingFormat) => void }
+			).spawnBot;
 		});
 		jest
 			.spyOn(MatchmakingQueue, "getInstance")
@@ -54,8 +61,10 @@ describe("bootstrapMatchmaking — spawnBot TCG deck wiring", () => {
 		return captured.spawnBot;
 	}
 
-	it("requests a bot with a deckOverride from the TCG pool", () => {
-		const requestBot = jest.fn().mockResolvedValue({ bot: { name: "Bot", deck: "x" } });
+	it("requests a TCG bot with explicit name and deckOverride from the TCG roster", () => {
+		const requestBot = jest
+			.fn()
+			.mockResolvedValue({ bot: { name: "Salamangreat Bot", deck: "Salamangreat" } });
 		jest.spyOn(WindbotModule, "isInitialized").mockReturnValue(true);
 		jest.spyOn(WindbotModule, "getInstance").mockReturnValue({
 			isEnabled: () => true,
@@ -68,14 +77,52 @@ describe("bootstrapMatchmaking — spawnBot TCG deck wiring", () => {
 			>);
 
 		const spawnBot = captureSpawnBot();
-		spawnBot(123);
+		spawnBot(123, "tcg");
 
 		expect(requestBot).toHaveBeenCalledTimes(1);
 		const [roomId, botName, isFinalizing, deckOverride] = requestBot.mock.calls[0];
 		expect(roomId).toBe(123);
-		expect(botName).toBeNull();
+		// Explicit name from the roster (not null)
+		expect(typeof botName).toBe("string");
+		expect(botName.length).toBeGreaterThan(0);
 		expect(typeof isFinalizing).toBe("function");
-		expect(MATCHMAKING_TCG_BOT_DECKS).toContain(deckOverride);
+		// deckOverride must be from the TCG roster
+		const tcgDecks = MATCHMAKING_BOT_ROSTER.tcg.map((p) => p.deck);
+		expect(tcgDecks).toContain(deckOverride);
+		// name and deck must come from the SAME pair
+		const pair = MATCHMAKING_BOT_ROSTER.tcg.find((p) => p.name === botName);
+		expect(pair).toBeDefined();
+		expect(pair?.deck).toBe(deckOverride);
+	});
+
+	it("requests a JTP bot with explicit name and deckOverride from the JTP roster", () => {
+		const requestBot = jest.fn().mockResolvedValue({ bot: { name: "Joey", deck: "JTP" } });
+		jest.spyOn(WindbotModule, "isInitialized").mockReturnValue(true);
+		jest.spyOn(WindbotModule, "getInstance").mockReturnValue({
+			isEnabled: () => true,
+			requestBot,
+		} as unknown as WindbotModule);
+		jest
+			.spyOn(YGOProRoomList, "findById")
+			.mockReturnValue({ finalizing: false } as unknown as ReturnType<
+				typeof YGOProRoomList.findById
+			>);
+
+		const spawnBot = captureSpawnBot();
+		spawnBot(456, "jtp");
+
+		expect(requestBot).toHaveBeenCalledTimes(1);
+		const [roomId, botName, isFinalizing, deckOverride] = requestBot.mock.calls[0];
+		expect(roomId).toBe(456);
+		expect(typeof botName).toBe("string");
+		expect(typeof isFinalizing).toBe("function");
+		// deckOverride must be from the JTP roster
+		const jtpDecks = MATCHMAKING_BOT_ROSTER.jtp.map((p) => p.deck);
+		expect(jtpDecks).toContain(deckOverride);
+		// name and deck must come from the SAME pair
+		const pair = MATCHMAKING_BOT_ROSTER.jtp.find((p) => p.name === botName);
+		expect(pair).toBeDefined();
+		expect(pair?.deck).toBe(deckOverride);
 	});
 
 	it("is a no-op when windbot is not initialized", () => {
@@ -83,7 +130,7 @@ describe("bootstrapMatchmaking — spawnBot TCG deck wiring", () => {
 		const getInstance = jest.spyOn(WindbotModule, "getInstance");
 
 		const spawnBot = captureSpawnBot();
-		spawnBot(123);
+		spawnBot(123, "tcg");
 
 		expect(getInstance).not.toHaveBeenCalled();
 	});
