@@ -1,4 +1,4 @@
-import { BOT_FALLBACK_MS, MATCHED_GRACE_MS, QUEUE_TTL_MS, SUPPORTED_FORMAT } from "./QueueEntry";
+import { BOT_FALLBACK_MS, MATCHED_GRACE_MS, QUEUE_TTL_MS } from "./QueueEntry";
 import { MatchmakingQueue, MatchmakingQueueDeps } from "./MatchmakingQueue";
 
 // ---- helpers ----
@@ -21,7 +21,7 @@ const makeDeps = (overrides: Partial<MatchmakingQueueDeps> = {}): MatchmakingQue
 };
 
 const enqueue = (queue: MatchmakingQueue, ticketId: string, userId: string) =>
-	queue.enqueue({ ticketId, userId, format: SUPPORTED_FORMAT });
+	queue.enqueue({ ticketId, userId, format: "tcg" });
 
 describe("MatchmakingQueue", () => {
 	afterEach(() => {
@@ -195,7 +195,7 @@ describe("MatchmakingQueue", () => {
 			expect(e1?.opponentType).toBe("bot");
 			expect(e1?.rated).toBe(false);
 			expect(e1?.roomPassword).toBe("to,mm-b1#pw1");
-			expect(spawnBot).toHaveBeenCalledWith(4242, SUPPORTED_FORMAT);
+			expect(spawnBot).toHaveBeenCalledWith(4242, "tcg");
 		});
 
 		it("does not trigger bot fallback before the window elapses", () => {
@@ -360,7 +360,7 @@ describe("MatchmakingQueue", () => {
 			// Second tick: port recovers, entry now matches to a bot.
 			expect(() => queue.tick()).not.toThrow();
 			expect(queue.get("t1")?.state).toBe("matched");
-			expect(spawnBot).toHaveBeenCalledWith(5000 + call, SUPPORTED_FORMAT);
+			expect(spawnBot).toHaveBeenCalledWith(5000 + call, "tcg");
 		});
 	});
 

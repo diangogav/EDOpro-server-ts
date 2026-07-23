@@ -22,9 +22,6 @@ export const MATCHED_GRACE_MS = 30_000;
 export const MATCHMAKING_FORMATS = ["tcg", "jtp"] as const;
 export const SUPPORTED_QUEUE = "ranked" as const;
 
-/** @deprecated Use MATCHMAKING_FORMATS. Kept for backwards-compat with existing tests. */
-export const SUPPORTED_FORMAT = "tcg" as const;
-
 export type MatchmakingFormat = (typeof MATCHMAKING_FORMATS)[number];
 
 export type OpponentType = "human" | "bot";
