@@ -6,11 +6,27 @@ import { Logger } from "@shared/logger/domain/Logger";
 
 import { generateUniqueId } from "src/utils/generateUniqueId";
 
+import { MatchmakingFormat } from "@ygopro/matchmaking/domain/QueueEntry";
 import { YGOProMessageRepository } from "../../room/infrastructure/YGOProMessageRepository";
 import { YGOProRoom } from "../../room/domain/YGOProRoom";
 import YGOProRoomList from "../../room/infrastructure/YGOProRoomList";
 
+/**
+ * Per-format room command token. Governs the banlist/rule set applied to the room.
+ *
+ * WIRE-BUDGET CONSTRAINT: the full join string "<token>,mm<5>#{7}" must be ≤ 19
+ * UTF-16 chars. Any token here must satisfy: token.length + 16 ≤ 19, i.e. ≤ 3 chars.
+ * "to" (2) and "jtp" (3) both satisfy this. See matchmakingRoomToken.test.ts.
+ */
+export const FORMAT_ROOM_TOKEN: Record<MatchmakingFormat, string> = {
+	tcg: "to",
+	jtp: "jtp",
+};
+
 export interface CreateMatchmakingRoomInput {
+	/** Format determines the room command token (banlist/rule set). Defaults to "tcg"
+	 * for backwards compatibility when callers do not supply it. */
+	format?: MatchmakingFormat;
 	/** true → ranked (Verified) human pair; false → unrated (Casual) bot game. */
 	rankedOverride: boolean;
 	logger: Logger;
@@ -75,17 +91,19 @@ function randomBase36(length: number): string {
 }
 
 export function createMatchmakingRoom(input: CreateMatchmakingRoomInput): MatchmakingRoomHandle {
+	const token = FORMAT_ROOM_TOKEN[input.format ?? "tcg"];
+
 	// "mm"-prefixed base36 suffix: collision-proof against rule tokens and unique
 	// enough that a clash in YGOProRoomList is astronomically rare — but we still
 	// regenerate on the off chance a live room already owns the name so both
 	// matched players resolve to the SAME room via findByName.
 	let unique = `mm${randomBase36(NAME_ENTROPY_CHARS)}`;
-	while (YGOProRoomList.findByName(`to,${unique}`)) {
+	while (YGOProRoomList.findByName(`${token},${unique}`)) {
 		unique = `mm${randomBase36(NAME_ENTROPY_CHARS)}`;
 	}
 
 	const password = randomBase36(PASSWORD_CHARS);
-	const command = `to,${unique}#${password}`;
+	const command = `${token},${unique}#${password}`;
 
 	// Empty buffer → name "", password null. Never surfaced to a client because
 	// nobody has joined this room yet; each real player supplies their own name.

@@ -195,7 +195,7 @@ describe("MatchmakingQueue", () => {
 			expect(e1?.opponentType).toBe("bot");
 			expect(e1?.rated).toBe(false);
 			expect(e1?.roomPassword).toBe("to,mm-b1#pw1");
-			expect(spawnBot).toHaveBeenCalledWith(4242);
+			expect(spawnBot).toHaveBeenCalledWith(4242, SUPPORTED_FORMAT);
 		});
 
 		it("does not trigger bot fallback before the window elapses", () => {
@@ -360,7 +360,7 @@ describe("MatchmakingQueue", () => {
 			// Second tick: port recovers, entry now matches to a bot.
 			expect(() => queue.tick()).not.toThrow();
 			expect(queue.get("t1")?.state).toBe("matched");
-			expect(spawnBot).toHaveBeenCalledWith(5000 + call);
+			expect(spawnBot).toHaveBeenCalledWith(5000 + call, SUPPORTED_FORMAT);
 		});
 	});
 
