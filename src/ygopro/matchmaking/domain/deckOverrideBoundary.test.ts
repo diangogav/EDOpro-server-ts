@@ -13,7 +13,7 @@ import { WindbotBotlistRepository } from "@ygopro/windbot/domain/WindbotBotlistR
 import { WindbotData } from "@ygopro/windbot/domain/WindbotData";
 import { WindbotTokenStore } from "@ygopro/windbot/domain/WindbotTokenStore";
 
-import { pickBotFromRoster } from "../MatchmakingBotRoster";
+import { pickBotFromRoster } from "./MatchmakingBotRoster";
 
 function makeRepo(bot: WindbotData): WindbotBotlistRepository {
 	return {

@@ -16,7 +16,8 @@ import YGOProRoomList from "../../room/infrastructure/YGOProRoomList";
  *
  * WIRE-BUDGET CONSTRAINT: the full join string "<token>,mm<5>#{7}" must be ≤ 19
  * UTF-16 chars. Any token here must satisfy: token.length + 16 ≤ 19, i.e. ≤ 3 chars.
- * "to" (2) and "jtp" (3) both satisfy this. See matchmakingRoomToken.test.ts.
+ * "to" (2) and "jtp" (3) both satisfy this; "jtp" is the 19-char boundary with
+ * zero slack. See MatchmakingRoomFactory.test.ts.
  */
 export const FORMAT_ROOM_TOKEN: Record<MatchmakingFormat, string> = {
 	tcg: "to",
@@ -61,11 +62,12 @@ export interface MatchmakingRoomHandle {
  * and the seat name comes from each player's own join later). The existing
  * create() path is left untouched.
  *
- * Command token "to" → rule 1 + first TCG banlist (strict TCG). A unique
- * "mm<base36>" token is appended purely to make the room name/join-string
- * unique; its "mm" prefix guarantees it never matches a rule mapping validator
- * (all rule tokens are exact strings or anchored regexes that never start with
- * "mm"), so the parser ignores it.
+ * The per-format command token comes from FORMAT_ROOM_TOKEN and governs the
+ * rule set + banlist (tcg → "to" → rule 1 + first TCG banlist; jtp → "jtp").
+ * A unique "mm<base36>" token is appended purely to make the room name/join-
+ * string unique; its "mm" prefix guarantees it never matches a rule mapping
+ * validator (all rule tokens are exact strings or anchored regexes that never
+ * start with "mm"), so the parser ignores it.
  *
  * CRITICAL — wire-field budget: the client encodes CTOS_JOIN_GAME { pass } as a
  * FIXED utf16[20] field (ygopro-msg-encode: BinaryField("utf16", 8, 20)). Any
@@ -76,7 +78,12 @@ export interface MatchmakingRoomHandle {
  * is the hard cap where the field is completely full with no terminator).
  *
  * Layout within the 19-char budget:
- *   "to," (3) + "mm" + 5 base36 (7) + "#" (1) + 7 base36 (7) = 18 chars.
+ *   "<token>," + "mm" + 5 base36 (7) + "#" (1) + 7 base36 (7)
+ *   = token.length + 1 + 7 + 1 + 7 = token.length + 16.
+ * The longest token is "jtp" (3), so the WORST CASE is jtp at exactly 19 chars —
+ * ZERO slack. Growing any segment (token length, name entropy, or password
+ * length) is forbidden unless another segment shrinks to keep the jtp join at
+ * <= 19. See MatchmakingRoomFactory.test.ts for the per-format wire-budget guard.
  */
 const NAME_ENTROPY_CHARS = 5;
 const PASSWORD_CHARS = 7;

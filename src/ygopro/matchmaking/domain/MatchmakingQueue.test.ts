@@ -169,6 +169,22 @@ describe("MatchmakingQueue", () => {
 			expect(createRankedRoom).not.toHaveBeenCalled();
 			expect(queue.get("t1")?.state).toBe("searching");
 		});
+
+		it("never pairs entries of different formats (tcg and jtp stay isolated)", () => {
+			// Cross-format isolation: a tcg entry and a jtp entry must NOT be paired
+			// with each other. Pairing buckets by format, so one lone entry per format
+			// leaves both searching and no room is created.
+			const createRankedRoom = jest.fn();
+			const queue = MatchmakingQueue.createForTests(makeDeps({ createRankedRoom }));
+			queue.enqueue({ ticketId: "t1", userId: "user-tcg", format: "tcg" });
+			queue.enqueue({ ticketId: "t2", userId: "user-jtp", format: "jtp" });
+
+			queue.tick();
+
+			expect(createRankedRoom).not.toHaveBeenCalled();
+			expect(queue.get("t1")?.state).toBe("searching");
+			expect(queue.get("t2")?.state).toBe("searching");
+		});
 	});
 
 	describe("tick — bot fallback", () => {

@@ -90,6 +90,8 @@ describe("EnqueueMatchmakingController", () => {
 		expect(out.status()).toBe(200);
 		const body = out.body() as { ticketId: string };
 		expect(typeof body.ticketId).toBe("string");
+		// The queued entry must carry the requested format, not silently fall back to tcg.
+		expect(MatchmakingQueue.getInstance().get(body.ticketId)?.format).toBe("jtp");
 	});
 
 	it("rejects genesys format (400) — Genesys format rejected", async () => {

@@ -1,5 +1,5 @@
-import { MATCHMAKING_FORMATS } from "../QueueEntry";
-import { pickBotFromRoster, MATCHMAKING_BOT_ROSTER } from "../MatchmakingBotRoster";
+import { MATCHMAKING_FORMATS } from "./QueueEntry";
+import { pickBotFromRoster, MATCHMAKING_BOT_ROSTER } from "./MatchmakingBotRoster";
 
 describe("MATCHMAKING_BOT_ROSTER", () => {
 	it("has a roster for every format in MATCHMAKING_FORMATS", () => {
