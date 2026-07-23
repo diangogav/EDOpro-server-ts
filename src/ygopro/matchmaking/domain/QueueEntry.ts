@@ -17,12 +17,15 @@ export const CLEANUP_INTERVAL_MS = 2_000;
  */
 export const MATCHED_GRACE_MS = 30_000;
 
-/** v1 supports a single format/queue combination. Kept as constants so the
- * pairing predicate (same format) is explicit rather than magic strings. */
-export const SUPPORTED_FORMAT = "tcg" as const;
+/** All accepted matchmaking formats. Used as the single source of truth for the
+ * Zod enum, type derivation, and per-format record maps. */
+export const MATCHMAKING_FORMATS = ["tcg", "jtp"] as const;
 export const SUPPORTED_QUEUE = "ranked" as const;
 
-export type MatchmakingFormat = typeof SUPPORTED_FORMAT;
+/** @deprecated Use MATCHMAKING_FORMATS. Kept for backwards-compat with existing tests. */
+export const SUPPORTED_FORMAT = "tcg" as const;
+
+export type MatchmakingFormat = (typeof MATCHMAKING_FORMATS)[number];
 
 export type OpponentType = "human" | "bot";
 
