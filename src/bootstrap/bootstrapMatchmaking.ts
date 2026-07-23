@@ -4,8 +4,8 @@ import { Logger } from "@shared/logger/domain/Logger";
 
 import { createMatchmakingRoom } from "@ygopro/matchmaking/application/MatchmakingRoomFactory";
 import { MatchmakingRoomReaper } from "@ygopro/matchmaking/application/MatchmakingRoomReaper";
-import { CLEANUP_INTERVAL_MS } from "@ygopro/matchmaking/domain/QueueEntry";
-import { pickRandomTcgBotDeck } from "@ygopro/matchmaking/domain/MatchmakingTcgBotDecks";
+import { pickBotFromRoster } from "@ygopro/matchmaking/domain/MatchmakingBotRoster";
+import { CLEANUP_INTERVAL_MS, MatchmakingFormat } from "@ygopro/matchmaking/domain/QueueEntry";
 import { MatchmakingQueue } from "@ygopro/matchmaking/domain/MatchmakingQueue";
 import { FinalizeYGOProRoom } from "@ygopro/room/application/FinalizeYGOProRoom";
 import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
@@ -16,8 +16,10 @@ import { WindbotModule } from "@ygopro/windbot/application/WindbotModule";
  * background sweep. Kept in the composition root so the queue domain stays free
  * of YGOProRoom, windbot, and Date.now dependencies.
  *
- * - createRankedRoom / createBotRoom → additive YGOProRoom factory (matchmaking seam).
- * - spawnBot → windbot fire-and-forget, guarded by WindbotModule.isInitialized().
+ * - createRankedRoom(format) / createBotRoom(format) → additive YGOProRoom factory
+ *   (matchmaking seam), now format-aware via FORMAT_ROOM_TOKEN.
+ * - spawnBot(roomId, format) → windbot fire-and-forget, using a (name, deck) identity
+ *   pair from MATCHMAKING_BOT_ROSTER so name and deck always come from the same pair.
  */
 export function bootstrapMatchmaking(logger: Logger): void {
 	const mmLogger = logger.child({ file: "Matchmaking" });
@@ -33,8 +35,9 @@ export function bootstrapMatchmaking(logger: Logger): void {
 	MatchmakingQueue.init({
 		now: () => Date.now(),
 
-		createRankedRoom: () => {
+		createRankedRoom: (format: MatchmakingFormat) => {
 			const { roomPassword } = createMatchmakingRoom({
+				format,
 				rankedOverride: true,
 				logger: mmLogger,
 				emitter: new EventEmitter(),
@@ -43,8 +46,9 @@ export function bootstrapMatchmaking(logger: Logger): void {
 			return { roomPassword };
 		},
 
-		createBotRoom: () => {
+		createBotRoom: (format: MatchmakingFormat) => {
 			const { room, roomPassword } = createMatchmakingRoom({
+				format,
 				rankedOverride: false,
 				logger: mmLogger,
 				emitter: new EventEmitter(),
@@ -53,24 +57,24 @@ export function bootstrapMatchmaking(logger: Logger): void {
 			return { roomPassword, roomId: room.id };
 		},
 
-		spawnBot: (roomId: number) => {
+		spawnBot: (roomId: number, format: MatchmakingFormat) => {
 			if (!WindbotModule.isInitialized() || !WindbotModule.getInstance().isEnabled()) {
 				return;
 			}
 			const room = YGOProRoomList.findById(roomId);
 			if (!room) return;
 
-			// Matchmaking v1 rooms are TCG (rule 1 + TCG banlist). The server botlist
-			// is format-blind, so pick a curated TCG-legal deck here and pass it as a
-			// deckOverride — otherwise a non-TCG bot deck fails the deck-check and the
-			// human is ejected before the duel can start.
-			const tcgDeck = pickRandomTcgBotDeck();
+			// Pick an identity pair from the per-format roster. Name and deck always
+			// come from the same pair (identity coherence). Pass the explicit name so
+			// requestBot finds the right bot by name, and pass deck as deckOverride so
+			// windbot uses the correct deck and deckcode is cleared.
+			const pair = pickBotFromRoster(format);
 
 			// Fire-and-forget, mirroring WindBotJoinStrategy: abort retries once the
 			// room begins teardown. On failure, tear the empty bot room down so it
 			// does not linger in the lobby.
 			void WindbotModule.getInstance()
-				.requestBot(roomId, null, () => room.finalizing, tcgDeck)
+				.requestBot(roomId, pair.name, () => room.finalizing, pair.deck)
 				.then(({ bot }) => {
 					room.windbot = { name: bot.name, deck: bot.deck };
 				})
