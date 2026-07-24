@@ -35,8 +35,9 @@ describe("createMatchmakingRoom", () => {
 
 		expect(room.league).toBe(RoomLeague.Verified);
 		expect(room.ranked).toBe(true);
-		// rule 1 = strict TCG (from the "to" token)
-		expect(room.hostInfo.rule).toBe(1);
+		// rule 5 = open pool, TCG banlist (from the "tt" token — toot alias):
+		// the TCG format is banlist-defined, so OCG-only printings stay playable.
+		expect(room.hostInfo.rule).toBe(5);
 		expect(room.isMatchmaking).toBe(true);
 		expect(YGOProRoomList.findById(room.id)).toBe(room);
 	});
@@ -100,9 +101,9 @@ describe("createMatchmakingRoom", () => {
 		});
 
 		const [name, password] = roomPassword.split("#");
-		// The name must still start with the shortest TCG-only token so the room
-		// resolves to rule 1 + TCG banlist.
-		expect(name.startsWith("to,")).toBe(true);
+		// The name must still start with the short toot alias so the room
+		// resolves to rule 5 (open pool) + TCG banlist.
+		expect(name.startsWith("tt,")).toBe(true);
 		// A non-empty password keeps the room private (needpass: true) so random
 		// players in the open list cannot join a matchmaking room.
 		expect(password.length).toBeGreaterThan(0);
@@ -167,8 +168,8 @@ describe("FORMAT_ROOM_TOKEN", () => {
 		}
 	});
 
-	it('maps tcg to the "to" token and jtp to the "jtp" token', () => {
-		expect(FORMAT_ROOM_TOKEN.tcg).toBe("to");
+	it('maps tcg to the "tt" token (toot alias: rule 5 + TCG lflist) and jtp to "jtp"', () => {
+		expect(FORMAT_ROOM_TOKEN.tcg).toBe("tt");
 		expect(FORMAT_ROOM_TOKEN.jtp).toBe("jtp");
 	});
 });
