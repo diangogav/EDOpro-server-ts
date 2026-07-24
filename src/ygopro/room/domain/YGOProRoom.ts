@@ -82,6 +82,9 @@ export class YGOProRoom extends YgoRoom {
 	windbot?: { name: string; deck: string };
 	noHost: boolean = false;
 	noReconnect: boolean = false;
+	/** True only for rooms pre-created by the matchmaking queue. Their WAITING
+	 * lifecycle is atomic: if either participant leaves, the reservation aborts. */
+	isMatchmaking: boolean = false;
 
 	// Set to true when the room begins teardown (removeRoom entry point in YGOProDuelingState).
 	// The WindBotJoinStrategy retry-abort callback reads this to stop retrying when the room

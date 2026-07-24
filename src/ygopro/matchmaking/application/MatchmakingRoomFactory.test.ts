@@ -37,6 +37,7 @@ describe("createMatchmakingRoom", () => {
 		expect(room.ranked).toBe(true);
 		// rule 1 = strict TCG (from the "to" token)
 		expect(room.hostInfo.rule).toBe(1);
+		expect(room.isMatchmaking).toBe(true);
 		expect(YGOProRoomList.findById(room.id)).toBe(room);
 	});
 

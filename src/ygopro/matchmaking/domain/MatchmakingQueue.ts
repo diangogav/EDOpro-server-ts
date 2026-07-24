@@ -10,6 +10,8 @@ import {
 export interface RankedRoomHandle {
 	/** The exact string a client sends in CTOS_JOIN_GAME { pass } to land in this room. */
 	roomPassword: string;
+	/** Concrete room id used to invalidate both reservations if the lobby aborts. */
+	roomId: number;
 }
 
 export interface BotRoomHandle extends RankedRoomHandle {
@@ -191,9 +193,25 @@ export class MatchmakingQueue {
 		if (!entry) {
 			return false;
 		}
-		this.entries.delete(ticketId);
-		this.usersInQueue.delete(entry.userId);
+		this.removeEntry(entry);
 		return true;
+	}
+
+	/**
+	 * Release every matched reservation owned by an incomplete room.
+	 *
+	 * The room lifecycle calls this before finalizing a matchmaking lobby. Both
+	 * users are freed together so the connected survivor can immediately obtain
+	 * a fresh ticket and re-enter the pool instead of receiving HTTP 409.
+	 */
+	abortRoom(roomId: number): number {
+		let removed = 0;
+		for (const entry of [...this.entries.values()]) {
+			if (entry.roomId !== roomId) continue;
+			this.removeEntry(entry);
+			removed += 1;
+		}
+		return removed;
 	}
 
 	get(ticketId: string): QueueEntry | undefined {
@@ -253,9 +271,9 @@ export class MatchmakingQueue {
 				// On failure, leave BOTH entries searching (a retry next tick, or a
 				// bot fallback / TTL drop, will resolve them) and move on.
 				try {
-					const { roomPassword } = this.deps.createRankedRoom(a.format);
-					this.markMatched(a, roomPassword, "human", true, b.userId);
-					this.markMatched(b, roomPassword, "human", true, a.userId);
+					const { roomPassword, roomId } = this.deps.createRankedRoom(a.format);
+					this.markMatched(a, roomPassword, "human", true, b.userId, roomId);
+					this.markMatched(b, roomPassword, "human", true, a.userId, roomId);
 				} catch (error) {
 					this.deps.onRoomCreationError?.(error);
 				}
@@ -280,7 +298,7 @@ export class MatchmakingQueue {
 			// later tick retries, or the TTL sweep drops it) and continue with the rest.
 			try {
 				const { roomPassword, roomId } = this.deps.createBotRoom(entry.format);
-				this.markMatched(entry, roomPassword, "bot", false);
+				this.markMatched(entry, roomPassword, "bot", false, undefined, roomId);
 				this.deps.spawnBot(roomId, entry.format);
 			} catch (error) {
 				this.deps.onRoomCreationError?.(error);
@@ -294,12 +312,19 @@ export class MatchmakingQueue {
 		opponentType: "human" | "bot",
 		rated: boolean,
 		opponentName?: string,
+		roomId?: number,
 	): void {
 		entry.state = "matched";
 		entry.matchedAt = this.deps.now();
 		entry.roomPassword = roomPassword;
+		entry.roomId = roomId;
 		entry.opponentType = opponentType;
 		entry.rated = rated;
 		entry.opponentName = opponentName;
+	}
+
+	private removeEntry(entry: QueueEntry): void {
+		this.entries.delete(entry.ticketId);
+		this.usersInQueue.delete(entry.userId);
 	}
 }

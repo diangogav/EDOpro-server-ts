@@ -46,6 +46,9 @@ export interface QueueEntry {
 	matchedAt?: number;
 	/** Set once matched — the exact string the client sends in CTOS_JOIN_GAME { pass }. */
 	roomPassword?: string;
+	/** Server room owning this reservation. Used to release both users atomically
+	 * when an incomplete matchmaking lobby is aborted. */
+	roomId?: number;
 	opponentType?: OpponentType;
 	opponentName?: string;
 	rated?: boolean;

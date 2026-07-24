@@ -129,6 +129,7 @@ export function createMatchmakingRoom(input: CreateMatchmakingRoomInput): Matchm
 	);
 
 	YGOProRoomList.addRoom(room);
+	room.isMatchmaking = true;
 	room.waiting();
 
 	// Register with the empty-room reaper (if wired) so an unjoined room does not

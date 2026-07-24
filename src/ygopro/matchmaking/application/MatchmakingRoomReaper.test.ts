@@ -7,7 +7,7 @@ import {
 
 // A minimal room stand-in — the reaper only reads `id` and `playersCount`.
 const makeRoom = (id: number, playersCount = 0): YGOProRoom =>
-	({ id, playersCount }) as unknown as YGOProRoom;
+	({ id, playersCount, finalizing: false }) as unknown as YGOProRoom;
 
 const makeReaper = (overrides: Partial<MatchmakingRoomReaperDeps> = {}) => {
 	const clock = { t: 0 };
@@ -34,20 +34,55 @@ describe("MatchmakingRoomReaper", () => {
 		expect(reaper.size).toBe(0);
 	});
 
-	it("does NOT finalize a room that has been joined (playersCount > 0)", () => {
+	it("keeps tracking a partially joined room before the grace window", () => {
 		const clock = { t: 0 };
 		const finalize = jest.fn();
 		const reaper = new MatchmakingRoomReaper({ now: () => clock.t, finalize });
-		// Room object whose playersCount flips to 1 after a client joins.
 		const room = { id: 2, playersCount: 0 } as unknown as YGOProRoom;
 
 		reaper.track(room);
 		(room as unknown as { playersCount: number }).playersCount = 1;
+		clock.t = MATCHMAKING_ROOM_JOIN_GRACE_MS - 1;
+		reaper.sweep();
+
+		expect(finalize).not.toHaveBeenCalled();
+		expect(reaper.size).toBe(1);
+	});
+
+	it("finalizes a partially joined room after the grace window", () => {
+		const { reaper, finalize, clock } = makeReaper();
+		const room = makeRoom(5, 1);
+
+		reaper.track(room);
+		clock.t = MATCHMAKING_ROOM_JOIN_GRACE_MS + 1;
+		reaper.sweep();
+
+		expect(finalize).toHaveBeenCalledTimes(1);
+		expect(finalize).toHaveBeenCalledWith(room);
+		expect(reaper.size).toBe(0);
+	});
+
+	it("stops tracking a room only after both players join", () => {
+		const { reaper, finalize, clock } = makeReaper();
+		const room = makeRoom(6, 2);
+
+		reaper.track(room);
 		clock.t = MATCHMAKING_ROOM_JOIN_GRACE_MS + 1;
 		reaper.sweep();
 
 		expect(finalize).not.toHaveBeenCalled();
-		// Ownership handed back to the normal lifecycle: no longer tracked.
+		expect(reaper.size).toBe(0);
+	});
+
+	it("drops an already finalized room without finalizing it twice", () => {
+		const { reaper, finalize } = makeReaper();
+		const room = makeRoom(7, 1);
+		room.finalizing = true;
+
+		reaper.track(room);
+		reaper.sweep();
+
+		expect(finalize).not.toHaveBeenCalled();
 		expect(reaper.size).toBe(0);
 	});
 
