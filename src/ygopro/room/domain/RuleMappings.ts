@@ -155,7 +155,9 @@ export const priorityRuleMappings: RuleMappings = {
 			return value === "otto";
 		},
 	},
-	// TCG with TCG and OCG cards allowed
+	// TCG with TCG and OCG cards allowed. "tt" is the short alias used by the
+	// matchmaking room factory, whose join string must fit the utf16[20] wire
+	// field (token <= 3 chars — see MatchmakingRoomFactory).
 	toot: {
 		get: () => {
 			return {
@@ -164,7 +166,7 @@ export const priorityRuleMappings: RuleMappings = {
 			};
 		},
 		validate: (value) => {
-			return value === "toot";
+			return value === "toot" || value === "tt";
 		},
 	},
 

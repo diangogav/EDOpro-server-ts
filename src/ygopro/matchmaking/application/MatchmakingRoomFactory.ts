@@ -16,11 +16,15 @@ import YGOProRoomList from "../../room/infrastructure/YGOProRoomList";
  *
  * WIRE-BUDGET CONSTRAINT: the full join string "<token>,mm<5>#{7}" must be ≤ 19
  * UTF-16 chars. Any token here must satisfy: token.length + 16 ≤ 19, i.e. ≤ 3 chars.
- * "to" (2) and "jtp" (3) both satisfy this; "jtp" is the 19-char boundary with
+ * "tt" (2) and "jtp" (3) both satisfy this; "jtp" is the 19-char boundary with
  * zero slack. See MatchmakingRoomFactory.test.ts.
+ *
+ * "tt" is the short alias of "toot" (RuleMappings): rule 5 + first TCG lflist —
+ * TCG banlist over an OPEN pool. The old "to" (rule 1, scoped pool) bounced
+ * cards without a TCG release (recent OCG printings, ot=0x9) at join.
  */
 export const FORMAT_ROOM_TOKEN: Record<MatchmakingFormat, string> = {
-	tcg: "to",
+	tcg: "tt",
 	jtp: "jtp",
 };
 

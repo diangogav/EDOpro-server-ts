@@ -107,6 +107,14 @@ describe("YGOProRoom", () => {
 		expect(room.useExtendedCardPool).toBe(false);
 	});
 
+	it("Should treat tt as the toot alias (rule 5, TCG banlist) — matchmaking's wire-budget token", () => {
+		const toot = YGOProRoomMother.create({ command: "toot#123" });
+		const tt = YGOProRoomMother.create({ command: "tt#123" });
+		expect(tt.hostInfo.rule).toBe(5);
+		expect(tt.hostInfo.rule).toBe(toot.hostInfo.rule);
+		expect(tt.hostInfo.lflist).toBe(toot.hostInfo.lflist);
+	});
+
 	it("Should create room with timelimit of 300 segs (for values between 1 and 60 should be covert to seconds) if the command is tm5#123", () => {
 		const room = YGOProRoomMother.create({ command: "tm5#123" });
 		expect(room.hostInfo.time_limit).toBe(300);
