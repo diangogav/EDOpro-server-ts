@@ -21,6 +21,9 @@ import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/Reco
  */
 export class FinalizeYGOProRoom {
 	static run(room: YGOProRoom): void {
+		// Matchmaking's join reaper and socket disconnect handler can observe the
+		// same abort on adjacent turns. Teardown is a single terminal transition.
+		if (room.finalizing) return;
 		room.finalizing = true;
 
 		WindbotModule.cleanupRoomIfEnabled(room.id);

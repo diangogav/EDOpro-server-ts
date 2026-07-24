@@ -37,7 +37,7 @@ function fakeResponse(): { res: Response; body: () => unknown; status: () => num
 
 const makeDeps = () => ({
 	now: () => 0,
-	createRankedRoom: () => ({ roomPassword: "to,mm-r#pw" }),
+	createRankedRoom: () => ({ roomId: 1, roomPassword: "to,mm-r#pw" }),
 	createBotRoom: () => ({ roomPassword: "to,mm-b#pw", roomId: 1 }),
 	spawnBot: jest.fn(),
 });

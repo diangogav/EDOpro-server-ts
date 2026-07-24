@@ -13,6 +13,7 @@ import { ISocket } from "../../socket/domain/ISocket";
 import { DuelState } from "../domain/YgoRoom";
 import { RoomFinder } from "./RoomFinder";
 import { FinalizeYGOProRoom } from "@ygopro/room/application/FinalizeYGOProRoom";
+import { AbortMatchmakingRoom } from "@ygopro/matchmaking/application/AbortMatchmakingRoom";
 
 export class DisconnectHandler {
 	constructor(
@@ -108,6 +109,14 @@ export class DisconnectHandler {
 	}
 
 	private handleYGOPro(room: YGOProRoom): void {
+		// A matchmaking reservation owns the whole two-player WAITING lobby. If
+		// either socket leaves, close the room and release both queue identities;
+		// the connected survivor will immediately re-enter the pool client-side.
+		if (room.isMatchmaking && room.duelState === DuelState.WAITING) {
+			AbortMatchmakingRoom.run(room);
+			return;
+		}
+
 		// On `close` the leaver's socket is already closed, so this also catches
 		// the last WAITING player leaving — finalize instead of leaking a zombie.
 		if (room.hasNoConnectedPlayers) {

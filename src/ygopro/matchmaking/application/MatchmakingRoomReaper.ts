@@ -28,10 +28,9 @@ export interface MatchmakingRoomReaperDeps {
  * player connects. If no real client ever joins (rage-quit, ticket expiry, network
  * drop), nothing else reaps it — the normal reap paths key off a real socket.
  *
- * On each sweep, any tracked room still empty (playersCount === 0) past the grace
- * window is torn down via the injected finalize (the existing FinalizeYGOProRoom
- * path in production). A room that has since been joined is left alone and dropped
- * from tracking — its own lifecycle now owns teardown.
+ * On each sweep, any room that still lacks one of its two participants past the
+ * grace window is torn down via the injected finalize callback. Ownership is
+ * handed to the normal room lifecycle only after both participants have joined.
  */
 export class MatchmakingRoomReaper {
 	private readonly tracked = new Map<number, TrackedRoom>();
@@ -46,13 +45,17 @@ export class MatchmakingRoomReaper {
 		this.tracked.set(room.id, { room, registeredAt: this.deps.now() });
 	}
 
-	/** Reap every tracked room still empty past the grace window; stop tracking any
-	 * room that has been joined (its own lifecycle owns teardown from here). */
+	/** Reap every incomplete room past the grace window; stop tracking only once
+	 * both matchmaking participants have joined. */
 	sweep(): void {
 		const now = this.deps.now();
 		for (const [id, tracked] of this.tracked) {
-			if (tracked.room.playersCount > 0) {
-				// A real client joined — hand ownership back to the normal lifecycle.
+			if (tracked.room.finalizing) {
+				this.tracked.delete(id);
+				continue;
+			}
+			if (tracked.room.playersCount >= 2) {
+				// Both clients joined — hand ownership back to the normal lifecycle.
 				this.tracked.delete(id);
 				continue;
 			}

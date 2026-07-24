@@ -175,6 +175,17 @@ describe("FinalizeYGOProRoom.run()", () => {
 		);
 	});
 
+	it("is idempotent when overlapping lifecycle owners finalize the same room", () => {
+		const openClient = makeClient(makeSocket(false));
+		const room = createRoomInList([openClient]);
+
+		FinalizeYGOProRoom.run(room);
+		FinalizeYGOProRoom.run(room);
+
+		expect(openClient.destroy).toHaveBeenCalledTimes(1);
+		expect(mockInstance.broadcast).toHaveBeenCalledTimes(1);
+	});
+
 	it("does not throw when windbot is not initialized", () => {
 		const room = createRoomInList();
 		expect(() => FinalizeYGOProRoom.run(room)).not.toThrow();

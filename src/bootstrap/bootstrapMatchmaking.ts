@@ -4,10 +4,10 @@ import { Logger } from "@shared/logger/domain/Logger";
 
 import { createMatchmakingRoom } from "@ygopro/matchmaking/application/MatchmakingRoomFactory";
 import { MatchmakingRoomReaper } from "@ygopro/matchmaking/application/MatchmakingRoomReaper";
+import { AbortMatchmakingRoom } from "@ygopro/matchmaking/application/AbortMatchmakingRoom";
 import { pickBotFromRoster } from "@ygopro/matchmaking/domain/MatchmakingBotRoster";
 import { CLEANUP_INTERVAL_MS, MatchmakingFormat } from "@ygopro/matchmaking/domain/QueueEntry";
 import { MatchmakingQueue } from "@ygopro/matchmaking/domain/MatchmakingQueue";
-import { FinalizeYGOProRoom } from "@ygopro/room/application/FinalizeYGOProRoom";
 import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import { WindbotModule } from "@ygopro/windbot/application/WindbotModule";
 
@@ -29,21 +29,21 @@ export function bootstrapMatchmaking(logger: Logger): void {
 	// canonical teardown as every other reap path.
 	const reaper = new MatchmakingRoomReaper({
 		now: () => Date.now(),
-		finalize: (room) => FinalizeYGOProRoom.run(room),
+		finalize: (room) => AbortMatchmakingRoom.run(room),
 	});
 
 	MatchmakingQueue.init({
 		now: () => Date.now(),
 
 		createRankedRoom: (format: MatchmakingFormat) => {
-			const { roomPassword } = createMatchmakingRoom({
+			const { room, roomPassword } = createMatchmakingRoom({
 				format,
 				rankedOverride: true,
 				logger: mmLogger,
 				emitter: new EventEmitter(),
 				onRoomCreated: (room) => reaper.track(room),
 			});
-			return { roomPassword };
+			return { roomId: room.id, roomPassword };
 		},
 
 		createBotRoom: (format: MatchmakingFormat) => {
@@ -84,7 +84,7 @@ export function bootstrapMatchmaking(logger: Logger): void {
 							error instanceof Error ? error.message : String(error)
 						}`,
 					);
-					YGOProRoomList.deleteRoom(room);
+					AbortMatchmakingRoom.run(room);
 				});
 		},
 

@@ -9,7 +9,7 @@ const makeDeps = (overrides: Partial<MatchmakingQueueDeps> = {}): MatchmakingQue
 		now: () => 0,
 		createRankedRoom: () => {
 			roomSeq += 1;
-			return { roomPassword: `to,mm-r${roomSeq}#pw${roomSeq}` };
+			return { roomId: roomSeq, roomPassword: `to,mm-r${roomSeq}#pw${roomSeq}` };
 		},
 		createBotRoom: () => {
 			roomSeq += 1;
@@ -126,9 +126,34 @@ describe("MatchmakingQueue", () => {
 		});
 	});
 
+	describe("abortRoom", () => {
+		it("releases both users from an aborted matched room so they can queue again", () => {
+			const queue = MatchmakingQueue.createForTests(
+				makeDeps({
+					createRankedRoom: () => ({
+						roomId: 4242,
+						roomPassword: "to,mm-r1#pw1",
+					}),
+				}),
+			);
+			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t2", "user-2");
+
+			expect(queue.get("t1")?.state).toBe("matched");
+			expect(queue.get("t2")?.state).toBe("matched");
+
+			expect(queue.abortRoom(4242)).toBe(2);
+			expect(queue.get("t1")).toBeUndefined();
+			expect(queue.get("t2")).toBeUndefined();
+			expect(() => enqueue(queue, "t3", "user-1")).not.toThrow();
+		});
+	});
+
 	describe("tick — pairing", () => {
 		it("pairs two searching entries of the same format into one ranked room", () => {
-			const createRankedRoom = jest.fn().mockReturnValue({ roomPassword: "to,mm-r1#pw1" });
+			const createRankedRoom = jest
+				.fn()
+				.mockReturnValue({ roomId: 1, roomPassword: "to,mm-r1#pw1" });
 			const queue = MatchmakingQueue.createForTests(makeDeps({ createRankedRoom }));
 			enqueue(queue, "t1", "user-1");
 			enqueue(queue, "t2", "user-2");
@@ -148,7 +173,9 @@ describe("MatchmakingQueue", () => {
 		});
 
 		it("does not pair an already matched entry again", () => {
-			const createRankedRoom = jest.fn().mockReturnValue({ roomPassword: "to,mm-r1#pw1" });
+			const createRankedRoom = jest
+				.fn()
+				.mockReturnValue({ roomId: 1, roomPassword: "to,mm-r1#pw1" });
 			const queue = MatchmakingQueue.createForTests(makeDeps({ createRankedRoom }));
 			enqueue(queue, "t1", "user-1");
 			enqueue(queue, "t2", "user-2");
@@ -233,7 +260,9 @@ describe("MatchmakingQueue", () => {
 
 		it("prefers pairing two humans over a bot even past the fallback window", () => {
 			const clock = { t: 0 };
-			const createRankedRoom = jest.fn().mockReturnValue({ roomPassword: "to,mm-r1#pw1" });
+			const createRankedRoom = jest
+				.fn()
+				.mockReturnValue({ roomId: 1, roomPassword: "to,mm-r1#pw1" });
 			const createBotRoom = jest.fn();
 			const queue = MatchmakingQueue.createForTests(
 				makeDeps({ now: () => clock.t, createRankedRoom, createBotRoom }),
@@ -301,7 +330,7 @@ describe("MatchmakingQueue", () => {
 			const createRankedRoom = jest.fn(() => {
 				call += 1;
 				if (call === 1) throw new Error("first pair boom");
-				return { roomPassword: `to,mm-r${call}#pw${call}` };
+				return { roomId: call, roomPassword: `to,mm-r${call}#pw${call}` };
 			});
 			const queue = MatchmakingQueue.createForTests(
 				makeDeps({ createRankedRoom, onRoomCreationError: jest.fn() }),

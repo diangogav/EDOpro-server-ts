@@ -28,6 +28,7 @@ import { YGOProClient } from "@ygopro/client/domain/YGOProClient";
 import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
 import MercuryRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
+import { MatchmakingQueue } from "@ygopro/matchmaking/domain/MatchmakingQueue";
 
 // ---------- helpers ----------
 
@@ -110,6 +111,7 @@ describe("DisconnectHandler.handleYGOPro() — AI room teardown", () => {
 	});
 
 	afterEach(() => {
+		MatchmakingQueue.resetForTests();
 		jest.restoreAllMocks();
 		const rooms = MercuryRoomList.getRooms();
 		while (rooms.length) {
@@ -163,6 +165,37 @@ describe("DisconnectHandler.handleYGOPro() — AI room teardown", () => {
 			expect(mockInstance.broadcast).not.toHaveBeenCalledWith(
 				expect.objectContaining({ action: "REMOVE-ROOM" }),
 			);
+		});
+
+		it("aborts a matchmaking lobby, closes the survivor, and frees both queue users", () => {
+			const leaverId = "sock-matchmaking-leaver";
+			const leaver = makeClient(leaverId, true);
+			const survivor = makeClient("sock-matchmaking-survivor", false);
+			const room = createAIRoom(leaverId, DuelState.WAITING, false, [leaver, survivor]);
+			room.isMatchmaking = true;
+
+			MatchmakingQueue.init({
+				now: () => 0,
+				createRankedRoom: () => ({
+					roomId: room.id,
+					roomPassword: `${room.name}#${room.password}`,
+				}),
+				createBotRoom: () => ({
+					roomId: 9999,
+					roomPassword: "to,bot#pw",
+				}),
+				spawnBot: jest.fn(),
+			});
+			const queue = MatchmakingQueue.getInstance();
+			queue.enqueue({ ticketId: "ticket-a", userId: "user-a", format: "tcg" });
+			queue.enqueue({ ticketId: "ticket-b", userId: "user-b", format: "tcg" });
+
+			runDisconnect(room, leaverId);
+
+			expect(queue.get("ticket-a")).toBeUndefined();
+			expect(queue.get("ticket-b")).toBeUndefined();
+			expect((survivor as unknown as { destroy: jest.Mock }).destroy).toHaveBeenCalledTimes(1);
+			expect(MercuryRoomList.findById(room.id)).toBeNull();
 		});
 	});
 });
