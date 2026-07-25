@@ -64,7 +64,7 @@ describe("bootstrapMatchmaking — spawnBot roster identity-pair wiring", () => 
 	it("requests a TCG bot with explicit name and deckOverride from the TCG roster", () => {
 		const requestBot = jest
 			.fn()
-			.mockResolvedValue({ bot: { name: "Salamangreat Bot", deck: "Salamangreat" } });
+			.mockResolvedValue({ bot: { name: "Salamangreat", deck: "Salamangreat" } });
 		jest.spyOn(WindbotModule, "isInitialized").mockReturnValue(true);
 		jest.spyOn(WindbotModule, "getInstance").mockReturnValue({
 			isEnabled: () => true,
