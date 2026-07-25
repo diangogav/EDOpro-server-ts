@@ -44,6 +44,21 @@ export abstract class YgoClient {
 		this._ipAddress = socket.remoteAddress ?? null;
 	}
 
+	// -Infinity so the FIRST emote is always allowed, whatever `now` is (a 0
+	// seed would block emotes sent within `cooldownMs` of the epoch).
+	private _lastEmoteAt = Number.NEGATIVE_INFINITY;
+
+	/**
+	 * Emote rate-limit gate: returns true (and records `now`) when the cooldown
+	 * has elapsed since the last accepted emote, false otherwise. Kept on the
+	 * client so the window survives room state transitions.
+	 */
+	tryEmote(now: number, cooldownMs: number): boolean {
+		if (now - this._lastEmoteAt < cooldownMs) return false;
+		this._lastEmoteAt = now;
+		return true;
+	}
+
 	get position(): number {
 		return this._position;
 	}
