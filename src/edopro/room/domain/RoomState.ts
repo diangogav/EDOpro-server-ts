@@ -25,6 +25,12 @@ import { VersionErrorClientMessage } from "../../messages/server-to-client/Versi
 import { RoomType } from "src/shared/room/domain/RoomType";
 import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
 import { NetPlayerType, YGOProStocChat, YGOProStocSelectHand } from "ygopro-msg-encode";
+import {
+	EMOTE_COOLDOWN_MS,
+	MAX_ID_LENGTH,
+	buildStocEmoteFrame,
+	isValidEmoteId,
+} from "@ygopro/emote/emote-protocol";
 
 export abstract class RoomState {
 	protected readonly eventEmitter: EventEmitter;
@@ -36,6 +42,12 @@ export abstract class RoomState {
 			Commands.CHAT as unknown as string,
 			(message: ClientMessage, room: YgoRoom, client: Client) =>
 				this.handleChat(message, room, client),
+		);
+
+		this.eventEmitter.on(
+			Commands.EMOTE as unknown as string,
+			(message: ClientMessage, room: YgoRoom, client: Client) =>
+				this.handleEmote(message, room, client),
 		);
 	}
 
@@ -160,6 +172,38 @@ export abstract class RoomState {
 
 		room.clients.forEach((_client: YgoClient) => {
 			_client.socket.send(chatMessage);
+		});
+	}
+
+	/**
+	 * Relay an emote (custom CTOS 0xfc) to the whole room as STOC 0xfc. Mercury
+	 * rooms only — the opcode is understood solely by this project's client, and
+	 * a standard ygopro client would neither send nor decode it. Validates the
+	 * id against the catalog and rate-limits per client before broadcasting.
+	 */
+	private handleEmote(message: ClientMessage, room: YgoRoom, client: YgoClient): void {
+		if (room.roomType !== RoomType.MERCURY) return;
+
+		// Byte-length pre-check before the utf-8 conversion, so a garbage frame
+		// (megabytes of body) can't force a large string allocation just to fail.
+		if (message.data.length === 0 || message.data.length > MAX_ID_LENGTH) return;
+
+		const emoteId = message.data.toString("utf8");
+		if (!isValidEmoteId(emoteId)) return;
+		if (!client.tryEmote(Date.now(), EMOTE_COOLDOWN_MS)) return;
+
+		// Seat resolution mirrors handleMercuryChat so the client maps the sender
+		// to the correct HUD side (accounting for a swapped board).
+		const ygoproRoom = room as YGOProRoom;
+		const playerType = client.isSpectator
+			? NetPlayerType.OBSERVER
+			: ygoproRoom.isPositionSwapped
+				? client.position ^ 1
+				: client.position;
+
+		const frame = buildStocEmoteFrame(playerType, emoteId);
+		room.clients.forEach((c: YgoClient) => {
+			c.socket.send(frame);
 		});
 	}
 

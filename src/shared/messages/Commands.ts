@@ -17,4 +17,5 @@ export enum Commands {
 	TO_DUEL = 32,
 	PING = 0xff,
 	RECONNECT = 0xfd,
+	EMOTE = 0xfc,
 }
