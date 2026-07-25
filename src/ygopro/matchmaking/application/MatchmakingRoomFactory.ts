@@ -28,10 +28,28 @@ export const FORMAT_ROOM_TOKEN: Record<MatchmakingFormat, string> = {
 	jtp: "jtp",
 };
 
+/**
+ * Per-format MATCH (best-of-3) token, used for human pairs. Same banlist/rule
+ * set as FORMAT_ROOM_TOKEN plus mode=MATCH + best_of=3 (RuleMappings: "tmr",
+ * "jm"). "tmr" (3) sits at the 19-char wire ceiling like "jtp"; "jm" (2) has
+ * one char of slack.
+ */
+export const FORMAT_ROOM_TOKEN_MATCH: Record<MatchmakingFormat, string> = {
+	tcg: "tmr",
+	jtp: "jm",
+};
+
 export interface CreateMatchmakingRoomInput {
 	/** Format determines the room command token (banlist/rule set). Defaults to "tcg"
 	 * for backwards compatibility when callers do not supply it. */
 	format?: MatchmakingFormat;
+	/**
+	 * true → best-of-3 MATCH room (human pairs). Defaults to false (single duel)
+	 * because bot fallback rooms MUST stay best-of-1: windbot never submits a
+	 * side deck, so a MATCH room would stall in side-decking until the timeout
+	 * kicks the bot mid-match.
+	 */
+	matchMode?: boolean;
 	/** true → ranked (Verified) human pair; false → unrated (Casual) bot game. */
 	rankedOverride: boolean;
 	logger: Logger;
@@ -102,7 +120,8 @@ function randomBase36(length: number): string {
 }
 
 export function createMatchmakingRoom(input: CreateMatchmakingRoomInput): MatchmakingRoomHandle {
-	const token = FORMAT_ROOM_TOKEN[input.format ?? "tcg"];
+	const tokens = input.matchMode ? FORMAT_ROOM_TOKEN_MATCH : FORMAT_ROOM_TOKEN;
+	const token = tokens[input.format ?? "tcg"];
 
 	// "mm"-prefixed base36 suffix: collision-proof against rule tokens and unique
 	// enough that a clash in YGOProRoomList is astronomically rare — but we still

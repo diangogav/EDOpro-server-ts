@@ -350,6 +350,7 @@ export const priorityRuleMappings: RuleMappings = {
 				rule: 0,
 				lflist: 0,
 				mode: GameMode.MATCH,
+				best_of: 3,
 			};
 		},
 		validate: (value) => {
@@ -363,6 +364,7 @@ export const priorityRuleMappings: RuleMappings = {
 				rule: 5,
 				lflist: 0,
 				mode: GameMode.MATCH,
+				best_of: 3,
 			};
 		},
 		validate: (value) => {
@@ -376,6 +378,7 @@ export const priorityRuleMappings: RuleMappings = {
 				rule: 1,
 				lflist: MercuryBanListMemoryRepository.getFirstTCGIndex(),
 				mode: GameMode.MATCH,
+				best_of: 3,
 			};
 		},
 		validate: (value) => {
@@ -389,6 +392,7 @@ export const priorityRuleMappings: RuleMappings = {
 				rule: 5,
 				lflist: MercuryBanListMemoryRepository.getFirstTCGIndex(),
 				mode: GameMode.MATCH,
+				best_of: 3,
 			};
 		},
 		validate: (value) => {
@@ -461,6 +465,23 @@ export const formatRuleMappings: RuleMappings = {
 		},
 		validate: (value) => {
 			return value === "jtp";
+		},
+	},
+	// "jtp" + best-of-3 match. Kept to 2 chars because it is the matchmaking
+	// MATCH token for the jtp queue, whose join string must fit the utf16[20]
+	// wire field (token <= 3 chars — see MatchmakingRoomFactory).
+	jm: {
+		get: () => {
+			return {
+				rule: 5,
+				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("jtp")),
+				duel_rule: 2,
+				mode: GameMode.MATCH,
+				best_of: 3,
+			};
+		},
+		validate: (value) => {
+			return value === "jm";
 		},
 	},
 	gx: {

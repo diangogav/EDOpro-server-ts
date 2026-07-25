@@ -4,7 +4,11 @@ import { RoomLeague } from "@shared/room/admission/domain/RoomLeague";
 
 import { MATCHMAKING_FORMATS } from "../domain/QueueEntry";
 import YGOProRoomList from "../../room/infrastructure/YGOProRoomList";
-import { createMatchmakingRoom, FORMAT_ROOM_TOKEN } from "./MatchmakingRoomFactory";
+import {
+	createMatchmakingRoom,
+	FORMAT_ROOM_TOKEN,
+	FORMAT_ROOM_TOKEN_MATCH,
+} from "./MatchmakingRoomFactory";
 
 const makeLogger = () =>
 	({
@@ -53,6 +57,48 @@ describe("createMatchmakingRoom", () => {
 		expect(room.ranked).toBe(false);
 	});
 
+	it("creates a best-of-3 MATCH room for ranked human pairs (matchMode)", () => {
+		const { room } = createMatchmakingRoom({
+			rankedOverride: true,
+			matchMode: true,
+			logger: makeLogger(),
+			emitter: new EventEmitter(),
+		});
+
+		expect(room.bestOf).toBe(3);
+		expect(room.isMatch).toBe(true);
+		// "tmr" = same rule set as "tt" (rule 5 + first TCG lflist) + best-of-3 MATCH.
+		expect(room.name.startsWith("tmr,")).toBe(true);
+		expect(room.hostInfo.rule).toBe(5);
+	});
+
+	it('uses the "jm" token for jtp MATCH rooms (jtp rules + best-of-3)', () => {
+		const { room } = createMatchmakingRoom({
+			format: "jtp",
+			rankedOverride: true,
+			matchMode: true,
+			logger: makeLogger(),
+			emitter: new EventEmitter(),
+		});
+
+		expect(room.bestOf).toBe(3);
+		expect(room.isMatch).toBe(true);
+		expect(room.name.startsWith("jm,")).toBe(true);
+		expect(room.hostInfo.rule).toBe(5);
+	});
+
+	it("keeps rooms best-of-1 when matchMode is omitted (bot fallback — windbot cannot side-deck)", () => {
+		const { room } = createMatchmakingRoom({
+			rankedOverride: false,
+			logger: makeLogger(),
+			emitter: new EventEmitter(),
+		});
+
+		expect(room.bestOf).toBe(1);
+		expect(room.isMatch).toBe(false);
+		expect(room.name.startsWith("tt,")).toBe(true);
+	});
+
 	it("returns roomPassword as the exact command#password join string", () => {
 		const { room, roomPassword } = createMatchmakingRoom({
 			rankedOverride: true,
@@ -85,6 +131,24 @@ describe("createMatchmakingRoom", () => {
 			const { roomPassword } = createMatchmakingRoom({
 				format,
 				rankedOverride: true,
+				logger: makeLogger(),
+				emitter: new EventEmitter(),
+			});
+
+			expect(roomPassword.length).toBeLessThanOrEqual(19);
+		}
+	});
+
+	// Same guard over the MATCH tokens. "tmr" (3 chars) fills the budget to the
+	// 19-char total (token + 16-char "mm<5>#<7>" suffix), exactly like "jtp".
+	it.each(
+		MATCHMAKING_FORMATS,
+	)("produces a join string that fits the pass field (<= 19 chars) for MATCH rooms, format %s", (format) => {
+		for (let i = 0; i < 500; i++) {
+			const { roomPassword } = createMatchmakingRoom({
+				format,
+				rankedOverride: true,
+				matchMode: true,
 				logger: makeLogger(),
 				emitter: new EventEmitter(),
 			});
@@ -171,5 +235,22 @@ describe("FORMAT_ROOM_TOKEN", () => {
 	it('maps tcg to the "tt" token (toot alias: rule 5 + TCG lflist) and jtp to "jtp"', () => {
 		expect(FORMAT_ROOM_TOKEN.tcg).toBe("tt");
 		expect(FORMAT_ROOM_TOKEN.jtp).toBe("jtp");
+	});
+});
+
+describe("FORMAT_ROOM_TOKEN_MATCH", () => {
+	it("has a MATCH token for every format in MATCHMAKING_FORMATS", () => {
+		for (const fmt of MATCHMAKING_FORMATS) {
+			const token = FORMAT_ROOM_TOKEN_MATCH[fmt];
+			expect(typeof token).toBe("string");
+			expect(token.length).toBeGreaterThan(0);
+			// Wire budget: token.length + 16 <= 19 (see the factory doc comment).
+			expect(token.length).toBeLessThanOrEqual(3);
+		}
+	});
+
+	it('maps tcg to "tmr" (tt rules + best-of-3) and jtp to "jm"', () => {
+		expect(FORMAT_ROOM_TOKEN_MATCH.tcg).toBe("tmr");
+		expect(FORMAT_ROOM_TOKEN_MATCH.jtp).toBe("jm");
 	});
 });
