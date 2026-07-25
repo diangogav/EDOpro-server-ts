@@ -38,6 +38,8 @@ export function bootstrapMatchmaking(logger: Logger): void {
 		createRankedRoom: (format: MatchmakingFormat) => {
 			const { room, roomPassword } = createMatchmakingRoom({
 				format,
+				// Ranked human pairs play best-of-3 (MATCH room with side-decking).
+				matchMode: true,
 				rankedOverride: true,
 				logger: mmLogger,
 				emitter: new EventEmitter(),
@@ -49,6 +51,9 @@ export function bootstrapMatchmaking(logger: Logger): void {
 		createBotRoom: (format: MatchmakingFormat) => {
 			const { room, roomPassword } = createMatchmakingRoom({
 				format,
+				// Bot fallback stays best-of-1: windbot has no side-deck support,
+				// so a MATCH room would stall in side-decking until the timeout.
+				matchMode: false,
 				rankedOverride: false,
 				logger: mmLogger,
 				emitter: new EventEmitter(),
