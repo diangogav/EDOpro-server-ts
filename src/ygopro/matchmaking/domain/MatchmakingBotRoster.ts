@@ -14,13 +14,13 @@ export interface BotIdentity {
  * could mix identities (e.g. "Yugi" playing a Salamangreat deck).
  *
  * TCG names and decks are verified against config/botlist.example.json:
- *   - "Salamangreat Bot" ↔ AI_Salamangreat.ydk
- *   - "Sky Striker Bot"  ↔ AI_SkyStriker.ydk
- *   - "Labrynth Bot"     ↔ AI_Labrynth.ydk
- *   - "Yubel Bot"        ↔ AI_Yubel.ydk
- *   - "Swordsoul Bot"    ↔ AI_Swordsoul.ydk
- *   - "Ryzeal Bot"       ↔ AI_Ryzeal.ydk
- *   - "Maliss Bot"       ↔ AI_Maliss.ydk
+ *   - "Salamangreat" ↔ AI_Salamangreat.ydk
+ *   - "Sky Striker"  ↔ AI_SkyStriker.ydk
+ *   - "Labrynth"     ↔ AI_Labrynth.ydk
+ *   - "Yubel"        ↔ AI_Yubel.ydk
+ *   - "Swordsoul"    ↔ AI_Swordsoul.ydk
+ *   - "Ryzeal"       ↔ AI_Ryzeal.ydk
+ *   - "Maliss"       ↔ AI_Maliss.ydk
  *
  * JTP roster: Joey plays JTP, Yugi plays Yugi. Both are in the server botlist
  * (config/botlist.example.json) so requestBot will find them by name.
@@ -30,13 +30,13 @@ export interface BotIdentity {
  */
 export const MATCHMAKING_BOT_ROSTER: Record<MatchmakingFormat, readonly BotIdentity[]> = {
 	tcg: [
-		{ name: "Salamangreat Bot", deck: "Salamangreat" },
-		{ name: "Sky Striker Bot", deck: "SkyStriker" },
-		{ name: "Labrynth Bot", deck: "Labrynth" },
-		{ name: "Yubel Bot", deck: "Yubel" },
-		{ name: "Swordsoul Bot", deck: "Swordsoul" },
-		{ name: "Ryzeal Bot", deck: "Ryzeal" },
-		{ name: "Maliss Bot", deck: "Maliss" },
+		{ name: "Salamangreat", deck: "Salamangreat" },
+		{ name: "Sky Striker", deck: "SkyStriker" },
+		{ name: "Labrynth", deck: "Labrynth" },
+		{ name: "Yubel", deck: "Yubel" },
+		{ name: "Swordsoul", deck: "Swordsoul" },
+		{ name: "Ryzeal", deck: "Ryzeal" },
+		{ name: "Maliss", deck: "Maliss" },
 	],
 	jtp: [
 		{ name: "Joey", deck: "JTP" },

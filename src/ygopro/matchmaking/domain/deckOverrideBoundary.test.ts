@@ -29,7 +29,7 @@ function makeTokenStore(): WindbotTokenStore {
 
 describe("deckOverride boundary — roster pair clears deckcode in RequestWindBotJoin", () => {
 	it("deckOverride set to pair.deck clears deckcode (TCG pair)", () => {
-		const pair = pickBotFromRoster("tcg", () => 0); // Salamangreat Bot
+		const pair = pickBotFromRoster("tcg", () => 0); // Salamangreat
 		// Simulate a source bot that has a deckcode field (e.g. from botlist.json)
 		const sourceBot: WindbotData = { name: pair.name, deck: pair.deck, deckcode: "some-code-123" };
 
