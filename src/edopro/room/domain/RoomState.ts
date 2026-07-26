@@ -184,6 +184,11 @@ export abstract class RoomState {
 	private handleEmote(message: ClientMessage, room: YgoRoom, client: YgoClient): void {
 		if (room.roomType !== RoomType.MERCURY) return;
 
+		// Only seated duelists may emote. Spectators watch and receive emotes but
+		// cannot send them — reject here (the authoritative gate; the client also
+		// hides the picker for spectators).
+		if (client.isSpectator) return;
+
 		// Byte-length pre-check before the utf-8 conversion, so a garbage frame
 		// (megabytes of body) can't force a large string allocation just to fail.
 		if (message.data.length === 0 || message.data.length > MAX_ID_LENGTH) return;
@@ -195,11 +200,7 @@ export abstract class RoomState {
 		// Seat resolution mirrors handleMercuryChat so the client maps the sender
 		// to the correct HUD side (accounting for a swapped board).
 		const ygoproRoom = room as YGOProRoom;
-		const playerType = client.isSpectator
-			? NetPlayerType.OBSERVER
-			: ygoproRoom.isPositionSwapped
-				? client.position ^ 1
-				: client.position;
+		const playerType = ygoproRoom.isPositionSwapped ? client.position ^ 1 : client.position;
 
 		const frame = buildStocEmoteFrame(playerType, emoteId);
 		room.clients.forEach((c: YgoClient) => {
