@@ -23,6 +23,7 @@ import { findReconnectingPlayer } from "@shared/room/domain/findReconnectingPlay
 import { getMessageIdentifier } from "../../../utils/response-time-utils";
 
 import {
+	ChatColor,
 	OcgcoreScriptConstants,
 	YGOProCtosUpdateDeck,
 	YGOProMsgDamage,
@@ -608,7 +609,7 @@ export class YGOProDuelingState extends RoomState {
 
 	private broadcastReplay(index: number, total: number, replayBuffer: Buffer): void {
 		const hintMsg = new YGOProStocChat().fromPartial({
-			player_type: 0,
+			player_type: ChatColor.LIGHTBLUE,
 			msg: `#{replay_hint_part1}${index}#{replay_hint_part2}`,
 		});
 		const hintBuffer = Buffer.from(hintMsg.toFullPayload());
