@@ -1,5 +1,6 @@
 import { GameMode } from "ygopro-msg-encode";
 
+import MercuryBanListMemoryRepository from "../../ban-list/infrastructure/YGOProBanListMemoryRepository";
 import { formatRuleMappings, priorityRuleMappings } from "./RuleMappings";
 
 describe("match-mode shortcut mappings", () => {
@@ -26,5 +27,24 @@ describe("jm mapping (jtp best-of-3, used by matchmaking)", () => {
 		expect(formatRuleMappings.jm.validate("jm")).toBe(true);
 		expect(formatRuleMappings.jm.validate("jmx")).toBe(false);
 		expect(formatRuleMappings.jm.validate("jtp")).toBe(false);
+	});
+});
+
+describe("jtp-2007-03 mapping (JTP Advanced March 2007)", () => {
+	it("maps the historical JTP variant to MR2 over the open JTP pool", () => {
+		const findIndex = jest
+			.spyOn(MercuryBanListMemoryRepository, "findIndexByAlias")
+			.mockReturnValue(7);
+		const rule = formatRuleMappings["jtp-2007-03"].get("jtp-2007-03");
+		expect(rule.rule).toBe(5);
+		expect(rule.duel_rule).toBe(2);
+		expect(rule.lflist).toBe(7);
+		expect(findIndex).toHaveBeenCalledWith("adv2007-03");
+		findIndex.mockRestore();
+	});
+
+	it("validates only the exact token", () => {
+		expect(formatRuleMappings["jtp-2007-03"].validate("jtp-2007-03")).toBe(true);
+		expect(formatRuleMappings["jtp-2007-03"].validate("jtp")).toBe(false);
 	});
 });

@@ -467,6 +467,18 @@ export const formatRuleMappings: RuleMappings = {
 			return value === "jtp";
 		},
 	},
+	"jtp-2007-03": {
+		get: () => {
+			return {
+				rule: 5,
+				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("adv2007-03")),
+				duel_rule: 2,
+			};
+		},
+		validate: (value) => {
+			return value === "jtp-2007-03";
+		},
+	},
 	// "jtp" + best-of-3 match. Kept to 2 chars because it is the matchmaking
 	// MATCH token for the jtp queue, whose join string must fit the utf16[20]
 	// wire field (token <= 3 chars — see MatchmakingRoomFactory).

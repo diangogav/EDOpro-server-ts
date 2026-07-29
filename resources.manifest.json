@@ -95,6 +95,12 @@
 			"file": "lflist/jtp.lflist.conf"
 		},
 		{
+			"comment": "JTP Advanced March 2007 lflist from evolution-assets",
+			"target": "ygopro/formats/jtp-adv-2007-03/lflist.conf",
+			"from": "evolution-assets",
+			"file": "lflist/jtp-advanced-marzo-2007.lflist.conf"
+		},
+		{
 			"comment": "Genesys lflist from evolution-assets",
 			"target": "ygopro/formats/genesys/lflist.conf",
 			"from": "evolution-assets",
@@ -182,6 +188,7 @@
 				"base",
 				"classic",
 				"formats/jtp",
+				"formats/jtp-adv-2007-03",
 				"formats/genesys",
 				"formats/md",
 				"formats/world",
