@@ -18,6 +18,7 @@ import { Commands } from "../../../../../shared/messages/Commands";
 import { JSONMessageProcessor } from "../../../../messages/JSONMessageProcessor";
 import { ClientMessage } from "../../../../../shared/messages/MessageProcessor";
 import { ErrorMessages } from "../../../../messages/server-to-client/error-messages/ErrorMessages";
+import { serializeCoreLaunchPayload } from "./serialize-core-launch-payload";
 import { ErrorClientMessage } from "../../../../messages/server-to-client/ErrorClientMessage";
 import { StartDuelClientMessage } from "../../../../messages/server-to-client/game-messages/StartDuelClientMessage";
 import { TimeLimitClientMessage } from "../../../../messages/server-to-client/game-messages/TimeLimitClientMessage";
@@ -229,10 +230,10 @@ export class DuelingState extends RoomState {
 		const core = spawn(
 			`./core/CoreIntegrator`,
 			[
-				JSON.stringify({
+				serializeCoreLaunchPayload({
 					config: {
 						startLp: this.room.startLp.toString(),
-						seeds: seeds.map((seed) => Number(seed)),
+						seeds,
 						flags: Number(this.room.duelFlag),
 						lp: this.room.startLp,
 						startingDrawCount: this.room.startHand,
