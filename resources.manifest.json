@@ -171,6 +171,18 @@
 			"dir": "card-scripts/classic"
 		},
 		{
+			"comment": "Edison pre-errata card database (alt-coded cards with 2010 ruling fixes)",
+			"target": "ygopro/formats/edison/edison-pre-errata.cdb",
+			"from": "evolution-assets",
+			"file": "cdb/edison-pre-errata.cdb"
+		},
+		{
+			"comment": "Scripts for Edison pre-errata alt-coded cards",
+			"target": "ygopro/formats/edison/script",
+			"from": "evolution-assets",
+			"dir": "card-scripts/edison"
+		},
+		{
 			"comment": "YGOPro Moecube prereleases (extended pool only)",
 			"target": "ygopro/extensions/prereleases",
 			"from": "ygopro-moecube-prereleases"

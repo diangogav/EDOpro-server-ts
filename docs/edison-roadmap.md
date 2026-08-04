@@ -60,16 +60,46 @@ Rule semantics below verified by reading the core source
 - [~] Era rules the core does NOT gate by `duel_rule` (single modern
       implementation — whether it matches 2010 must be tested per rule; source:
       edisonformat.com/edison-rule-differences.html):
-  - [ ] **CONFIRMED GAP** (2026-07-31): Two Attack Position 0 ATK monsters
-        battling should destroy each other — the core implements MODERN behavior
-        (neither destroyed), identical under duel_rule 1 and 5. Documented as
-        `it.failing` in `zero-atk-battle.integration.test.ts`; fixing requires
-        the core-fork escape hatch below
+  - [x] **RESOLVED via fork** (2026-08-03): Two Attack Position 0 ATK monsters
+        battling now destroy each other. Was MODERN (neither destroyed);
+        `field::calculate_battle_damage` guarded mutual destruction with
+        `if(attacker_value != 0)` → gated to `|| core.duel_rule <= 1`. The
+        0-ATK-vs-0-DEF sub-rule (sibling defense branch) is untouched.
+        `zero-atk-battle.integration.test.ts` now a core-differential test
+        (2010 on fork, modern on stock, duelRule-5 guard proves the gate)
+  - [x] **RESOLVED at script level** (2026-08-01, initially misdiagnosed as a
+        core gap): mid-chain `Duel.Summon` is deferred by the core to after the
+        chain ends (libduel.cpp `core.summon_reserved` — modern "immediately
+        after this effect resolves" semantics), where the summon-negation
+        window opens. Summon proc case 12 skips that window when the summoned
+        card has `EFFECT_CANNOT_DISABLE_SUMMON` — registering it FIELD-type +
+        `IGNORE_RANGE+SET_AVAILABLE` scoped to the card (s.summon2010 in
+        `c511003023.lua`) enforces the 2010 UO ruling: Solemn gets NO window.
+        (The first experiment used a SINGLE-type effect with RESETS_STANDARD,
+        which dies when the card hits the field — hence the false "not fixable
+        in Lua".) Same recipe applies to Mausoleum of the Emperor. Verified by
+        `ultimate-offering.integration.test.ts` (now a passing test)
   - Trigger recognition mid-chain / triggers activating from outside their location
-  - LP maintenance costs cannot drop a player to 0 (card self-destructs instead)
-  - No responses allowed to the end-of-turn hand-size discard
+    (verified partial: `ladd-activation-offers.integration.test.ts`)
+  - [x] **RESOLVED via fork** (2026-08-03): LP costs cannot drop a player to 0.
+        `field::check_lp_cost` strict `val < lp` under `duel_rule <= 1` (was `<=`)
+        → cost reaching exactly 0 is unpayable; mandatory pay-or-destroy scripts
+        self-destruct automatically. `lp-cost-limit.integration.test.ts` (diff)
+  - [x] **VERIFIED** (2026-08-03): No responses allowed to the end-of-turn
+        hand-size discard — core opens no chain window (`end-phase-discard.integration.test.ts`)
   - Phase-dependent mandatory trigger effects re-activate if their ACTIVATION was negated
-  - Union rule: a monster can only be equipped with 1 Union Monster at a time
+    (covered by the LADD tests)
+  - [x] **RESOLVED via fork** (2026-08-03): Union rule — a monster can only be
+        equipped with 1 Union Monster at a time. The core enforces NOTHING under
+        any duel_rule (limit was pure script-side, only Gearframe fixed). Fixed
+        centrally in `card::get_union_count`/`get_old_union_count`: under
+        `duel_rule <= 1` both fold modern+old into the total, so the shared Lua
+        `Auxiliary` equip filter (`old_count==0`) blocks a 2nd union on any
+        monster — ZERO per-card edits, covers all ~44 union cards.
+        `union-limit.integration.test.ts` (3-way differential). Sub-rule "only 6
+        unions keep the destroy-substitute protection" is per-card text — separate audit
+  - **VERIFIED** (2026-08-03): SEGOC ordering (TP-mandatory before NTP-mandatory)
+    matches 2010 — `segoc.integration.test.ts`
 - [~] **MR1 behavior test suite** against the shipped WASM (`koishipro-core.js`).
       Source reading confirms the gated semantics; the suite confirms the pinned
       binary matches the source, settles the ungated era rules above, and guards
@@ -90,16 +120,36 @@ Rule semantics below verified by reading the core source
         window masking correct — SET Rush Recklessly offered in substeps 1-3,
         SET MST masked inside the Damage Step, both live in the Battle Step;
         Honest resolution math verified (resolution-time ATK copy, exact battle
-        damage). ONE script-level era gap: Honest's 2010 "during damage
-        calculation" (substep 4) window is NOT implemented — the script's
-        `Duel.IsDamageCalculated()` condition closes it (modern PSCT behavior);
-        documented as `it.failing` → belongs to the §4 script audit
+        damage). Honest's 2010 "during damage calculation" window: RESOLVED
+        (2026-08-01) via the pre-errata copy 910003001 (formats/edison pool).
+        Assertions pin the observable signature: 6 pre-MSG_BATTLE chain windows
+        always; pre-errata offered in 3 (incl. the damage-cal window, the last
+        one), official in 2 and never in the last. Confirmed end-to-end in live
+        duels (both Honest-war regimes, winner inversion)
   This suite doubles as the regression guard for koishipro-core version bumps
   (currently pinned `^1.5.2`, `1.5.3` available).
 
 Escape hatch if a core behavior is wrong for 2010: fork `purerosefallen/ygopro-core`,
 compile with Emscripten, inject via `ocgcoreWasmPath` (`card-load-worker.ts:42`).
-Not expected to be needed.
+
+**ACTIVATED 2026-08-02** for Soul Exchange (optional tribute has no stock
+primitive): additive `EFFECT_EXTRA_RELEASE_OPT` (10159) patch. Reproducible
+build (bit-identical): `src/test-support/ocgcore/wasm/` — patch file, README
+with the full recipe (upstream @973672d + Lua 5.4.8 + premake5 beta8 +
+emsdk 3.1.7 docker, config=release_wasm_cjs), and the built
+`libocgcore-edison-fork.wasm` (ABI-compatible with the vendored glue; only the
+.wasm swaps). Tests run against it via `HeadlessDuel` `wasmPath` /
+`OCGCORE_WASM` env; the full ocgcore suite must stay green on BOTH binaries.
+
+**EXTENDED 2026-08-03** — three more `duel_rule <= 1`-gated patches added in one
+rebuild (new sha256 `4272eb0d077702fea3e9fb1e5255653a99079ec82e06d45448aa438c6a302f23`,
+still reproducible): #13 0-ATK mutual destruction (`processor.cpp
+calculate_battle_damage`), #10 LP-cost-to-0 refusal (`field.cpp check_lp_cost`),
+#3 Union 1-per-monster (`card.cpp get_union_count`/`get_old_union_count`). Each
+is a modern-safe gate (proven by full-suite green on both binaries + explicit
+duelRule-5 guards in the differential tests). The patch now holds 4 features.
+PENDING: durable fork repo home; production rooms still run the stock WASM
+(wire `ocgcoreWasmPath` for Edison rooms when smoke-tested).
 
 ## 2. Banlist — TCG March 1, 2010
 
@@ -123,14 +173,21 @@ edisonformat.com/legal-sets.html:
 - Side sets through **Duelist Pack: Kaiba** (DPKB, Apr 20 2010)
 - Structure decks through **Machina Mayhem** (SDMM, Feb 23 2010)
 - Turbo Pack 2 (TU02), WC10 game promos
-- The Shining Darkness main set NOT legal. **Starlight Road**: our lflist has it
-  at 3 (line 2249), matching FormatLibrary; edisonformat.com's legal-sets page
-  appears to exclude it — source discrepancy, resolve during the audit
+- The Shining Darkness main set NOT legal. **Starlight Road**: RESOLVED
+  (2026-08-01) — LEGAL. First TCG print is Duelist Pack: Yusei 3
+  (DP10-EN025, Mar 5 2010), same side-set category as DPKB and pre-cutoff.
+  Our lflist (3) and FormatLibrary are correct
 
 - [x] Whitelist pins the pool (unlisted card → forbidden, shown with badge)
 - [x] `classic.cdb` serves deck builder (`cdbVariant: 'classic'`) and server runtime
-- [ ] **Pool audit**: cross-check whitelist contents against the legal-sets list
-      above, card by card (sets → passcodes → diff vs lflist)
+- [x] **Pool audit** (2026-08-01): 3672 whitelist entries vs YGOPRODeck
+      tcg_date ≤ 2010-04-24, both directions. Zero violations: 4 apparent
+      late-date entries are all YGOPRODeck reprint-date errors on JUMP promos
+      (Exodius, Darkness Neosphere, Orichalcos Shunoros, Genesis Dragon — all
+      promo-printed pre-cutoff); 27 "missing" cards are all Duel Terminal 1,
+      correctly excluded (DT01/GLD3 not in edisonformat.com legal sets). All
+      whitelist codes exist in classic.cdb. 25 entries use OCG alt passcodes,
+      all resolve correctly
 - [ ] English-name search gap: `classic.cdb` names are Spanish only; searching
       "Ultimate Offering" finds nothing ("Ofrenda Final"). Bilingual search index
       or `.en` overlay pending (see prerelease per-language overlay pattern,
@@ -138,8 +195,15 @@ edisonformat.com/legal-sets.html:
 
 ## 4. Pre-errata cards — 2010 card text
 
-Cards errata'd after March 2010 must play with their original text via a
-511*-namespace copy: cdb entry + Lua script + lflist entry + image.
+Cards errata'd after March 2010 must play with their original text. TWO
+patterns exist:
+
+- **Legacy**: 511* copies inside the classic pool (the 11 below)
+- **Current** (2026-08-01): dedicated `formats/edison` pool
+  (`edison-pre-errata.cdb` + own script dir). Code allocation: borrow EDOPro's
+  exact 511* code when their pre-errata exists; otherwise our own 910003001+
+  range. Per-card status, workflow and review log: **`docs/edison-erratas.md`**
+  (source of truth for this section)
 
 Present today (11):
 
@@ -159,11 +223,18 @@ Present today (11):
 
 - [x] The 11 above: cdb + script + lflist wired, deck builder renders them correctly
 - [~] Card images resolve for 511* codes (spot-checked in deck builder; not audited)
-- [ ] **25 missing functional erratas** — authoritative list:
-      edisonformat.com/functional-errata.html names **36 cards**; we cover 11.
-      Confirmed bug: **Ultimate Offering** sits in our lflist under its official
-      code `80604091` (modern text) — needs a pre-errata copy. Missing:
-  - Ultimate Offering, Armory Arm, Ancient Fairy Dragon, Black Garden,
+- [ ] **22 missing functional erratas** (audited 2026-08-01; was 25 — 3 are
+      already wired outside the 511* pattern: Ancient Fairy Dragon `25862691`,
+      Red-Eyes Darkness Metal Dragon `88264988` (both alias-mapped copies, done)
+      and Elemental HERO Prisma `89312388` — but Prisma's classic script is
+      DEAD at runtime, see §5 precedence bug. Authoritative list:
+      edisonformat.com/functional-errata.html names **36 cards**; we cover 13
+      (11 legacy 511* + Honest `910003001` ✅ + Ultimate Offering `511003023` 🧪).
+      **Ultimate Offering: WIRED** (2026-08-01) as `511003023` (EDOPro borrow,
+      ported to the classic WASM API), 🧪 ENGINE-OK, smoke pending; the 2010
+      Solemn ruling is fully enforced at script level (see §1). For the rest of the backlog
+      almost no EDOPro pre-errata scripts exist — most must be written. Missing:
+  - Armory Arm, Ancient Fairy Dragon, Black Garden,
     Cyber Phoenix, D.D. Survivor, Dark End Dragon, Destiny End Dragoon,
     Elemental Hero Prisma, Fortune Lady Light, Jade Knight,
     Light and Darkness Dragon, Light End Dragon, Lumina Lightsworn Summoner,
@@ -171,19 +242,20 @@ Present today (11):
     My Body as a Shield, Quickdraw Synchron, Red-Eyes Darkness Metal Dragon,
     Soul Exchange, Strike Ninja, Susa Soldier, Swap Frog, Urgent Tuning
   - **Priority tier** — edisonformat.net/rules/errata.json curates the 18 most
-    commonly played erratas; the 9 of those we lack: Ultimate Offering,
+    commonly played erratas; the 7 of those we still lack (UO wired, REDMD done):
     Elemental HERO Prisma, Light and Darkness Dragon, Machina Gearframe,
-    Quickdraw Synchron, Red-Eyes Darkness Metal Dragon, Black Garden,
-    Mausoleum of the Emperor, Soul Exchange. Do these first
+    Quickdraw Synchron, Black Garden, Mausoleum of the Emperor, Soul Exchange.
+    Do these first
   - Caveat: some are PSCT-interpretation differences rather than printed
     erratas — for each card decide whether the fix is a 511* copy (cdb + Lua +
     lflist + image) or whether the existing script already behaves per 2010.
     EDOPro's official pre-errata script set is the first place to borrow from
-  - Discovered by the MR1 suite (2026-07-31): **Honest** (`c37742478.lua`) has
-    a 2010-ruling gap — it cannot activate during damage calculation (substep
-    4) because of its `Duel.IsDamageCalculated()` condition; 2010 rulings
-    allowed it (removed by modern PSCT). Same class of fix as this list;
-    `it.failing` in `damage-step.integration.test.ts` tracks it
+  - **Honest: ✅ DONE** (2026-08-01) as `910003001` in the formats/edison pool —
+    the first card through the full new workflow: 2010 ruling source-verified
+    (UDE verbatim: substeps 1, 3 AND 4; the damage-cal restriction is a
+    2014-03-21 OCG RULING change, not a text errata), engine tests pin the
+    3-vs-2 window signature, manual smoke verified both Honest-war regimes in
+    live duels. Base `c37742478.lua` reverted to pristine modern behavior
 - [ ] For each card needing a copy: add 511* cdb row, Lua script, lflist entry, image
 
 ## 5. Server wiring
@@ -191,20 +263,60 @@ Present today (11):
 - [x] `formatRuleMappings.edison` — rule 5, lflist by alias, `duel_rule: 1`, 450s clock
 - [x] Banlist assembled into resource tree via `resources.manifest.json`
 - [x] Pre-errata scripts load from `evolution-assets/card-scripts/classic` (manifest-wired)
+- [ ] **CRITICAL — script precedence bug** (found 2026-08-01 during the Honest
+      fix): `DirScriptReaderEx` is first-match-wins and both the test harness
+      and production resolve `[base, classic, formats/…]` — **base always wins**.
+      Any classic script that shares a filename with a base script is dead code
+      (confirmed: `c89312388.lua` Prisma override never loads). 511* scripts are
+      unaffected (unique names). MITIGATED (2026-08-01): the formats/edison pool
+      pattern sidesteps this entirely — pre-errata copies use unique codes
+      (511*/910*) so base can never shadow them, and the Honest base-script edit
+      was reverted (the fix now lives in `c910003001.lua`). Decision remains
+      only for the legacy same-name overrides (Prisma, Soul Exchange): migrate
+      them to the formats/edison pattern (preferred) rather than flipping
+      precedence
 - [ ] **Drift**: `server-formats-cdb/edison/{cards.cdb,script}/` exists on disk but is
       NOT in the manifest. It holds 3 non-511 scripts (`c25862691`, `c88264988`,
       `c89312388`) that never reach runtime. Decide: wire it in or delete it
-- [ ] `511002980.lua` lacks the `c` filename prefix — verify the loader picks it up
+- [ ] **Treeborn Frog `511002980` has TWO bugs** (audited 2026-08-01): filename
+      lacks the `c` prefix (`511002980.lua` in every location; all other copies
+      are `c511*.lua`) AND its cdb row has `alias = 0` instead of `12538374` —
+      the loader almost certainly never picks it up. Fix both together
 
 ## 6. Client UX
 
 - [x] Edison selectable and default format (`roomCommand.ts:64`, `MR1 · 2010` label)
 - [x] Deck builder: whitelist pool, limit badges, pre-errata display
+- [x] Edison deck builder loads the pre-errata pool (2026-08-01): new
+      CdbVariant `edison` composes `cdb:classic` + `cdb:edison-pre-errata`
+      (overlay wins). Both the new cdb resource AND the edison lflist are
+      pinned to the evolution-assets `edison-pre-errata` branch via
+      `EDISON_PRE_ERRATA_REF` — flip back to `main` after that branch merges
+- [ ] CDN art aliases for custom pre-errata codes: `CUSTOM_ART_ALIASES` map in
+      evolution-card-cdn (`910003001`→Honest, `910003002`→Black Garden,
+      `25862691`→AFD art, fixing a pre-existing 404) — implemented, **pending
+      `wrangler deploy`**
+- [ ] **TOKEN GAP — live prod bug** (found 2026-08-02 during the Black Garden
+      smoke): `classic.cdb`, `jtp.en.cdb` and `jtp.es.cdb` contain ZERO token
+      entries (base has 258), and the client composes per-format cdbs WITHOUT
+      base — so EVERY token (Sheep, Fluff, Rose…) shows an empty hover/preview
+      in Edison and JTP duels, in prod, since forever. Server unaffected (its
+      pool includes base). Fix ready to apply ON MAIN of evolution-assets
+      (additive, deck-builder-invisible): copy the 258 token rows from base.es
+      into classic.cdb, and from base.en/base.es into jtp.en/jtp.es. Main CI
+      regenerates .gz + version-manifest → prod clients pick it up via
+      manifest freshness (works, unlike branch-ref resources)
+- [x] Damage-step smoke tooling: `DUEL_DEBUG_DS_WINDOWS=1` traces every chain
+      window (player, candidates, damage-cal boundary) from
+      `YGOProDuelingState.registerDamageStepWindowTrace`
 - [ ] **MR1 board layout**: `board-layout.ts` is a fixed constant — Extra Monster
       Zones (monster slots 5/6) and Pendulum S/T slots always render. Hide or
       repurpose them when `duel_rule = 1`; the 2010 field is 5+5+field
 - [ ] Era affordances (optional): surface the priority window in the UI so players
-      understand why the turn player acts first after a summon
+      understand why the turn player acts first after a summon. Era-UX note from
+      the Honest smoke (2026-08-01): the substep-1 damage-step chain window ships
+      `specialCount=0` from the core, so default smart-chain auto-declines it —
+      faithful to era ygopro (chain-always surfaces it); document, don't "fix"
 
 ## 7. Matchmaking & bots
 
@@ -224,6 +336,23 @@ Present today (11):
 3. **MR1 board layout** (§6): most visible correctness gap in the client
 4. **Wiring cleanup** (§5): small, removes drift risk
 5. **Matchmaking + bots** (§7): new scope, reuses the July multi-format infra
+
+## Ruleset target: pre-UTW (era-authentic 2010)
+
+UTW = "Ultimate Time Wizard", Konami's official Edison tournament series
+(YCS/WCQ side events replaying April 2010). It split the community's rulings
+into two schools: **pre-UTW** (edisonformat.com — the historical UDE/Konami
+rulings as actually applied in 2010) and **post-UTW** (edisonformat.net —
+modern Konami policy + "Edison-accurate PSCT" applied to the 2010 pool at
+official events; by judges Mika & eva). edisonrul.ing aggregates both;
+tournament convention prefers .net on conflict.
+
+THIS PROJECT TARGETS PRE-UTW (era-authentic), per the goal at the top of this
+file — e.g. Honest's damage-calculation window (910003001) is pre-UTW-only
+behavior; a post-UTW event would deny it. The functional-errata card list
+(both schools share it) remains the prioritization source. When a card's two
+schools diverge, implement pre-UTW and note the divergence in
+docs/edison-erratas.md.
 
 ## References (checked 2026-07-31)
 

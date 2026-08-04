@@ -61,7 +61,7 @@
  *   Kojikocy          1184620  1500/1200 Lv4 vanilla (in VANILLA_POOL)
  *   Rush Recklessly  70046172   quick-play +700 ATK, EFFECT_FLAG_DAMAGE_STEP
  *   MST               5318639   quick-play S/T removal, NO EFFECT_FLAG_DAMAGE_STEP
- *   Honest           37742478   quick effect: LIGHT gains opponent ATK until EP
+ *   Honest (Pre-Era) 910003001   quick effect: LIGHT gains opponent ATK — 2010 window (PHASE_DAMAGE_CAL)
  *   LIGHT vanilla     2863439   1100/1400 Lv4 LIGHT vanilla (Demon's Mirror)
  */
 
@@ -97,7 +97,9 @@ const MAN_EATER_BUG = 54652250; // 450/600, Lv2, FLIP: destroy 1 monster
 const KOJIKOCY = 1184620; // 1500/1200, Lv4, vanilla
 const RUSH_RECKLESSLY = 70046172; // quick-play +700 ATK, EFFECT_FLAG_DAMAGE_STEP
 const MST = 5318639; // Mystical Space Typhoon, no EFFECT_FLAG_DAMAGE_STEP
-const HONEST = 37742478; // 1100/1900, Lv4, LIGHT quick effect from hand
+// Pre-errata Honest (910003001) has 2010 damage-cal window; official (37742478) does not.
+const HONEST_PRE_ERRATA = 910003001; // alias=37742478, 1100/1900, Lv4, LIGHT — offered in PHASE_DAMAGE_CAL
+const HONEST_OFFICIAL = 37742478; // 1100/1900, Lv4, LIGHT — NOT offered in damage-cal window (modern ruling)
 const LIGHT_VANILLA = 2863439; // 1100/1400, Lv4, LIGHT vanilla (Demon's Mirror)
 
 // ---------------------------------------------------------------------------
@@ -708,37 +710,42 @@ describe("Damage step behavior (Edison/MR1 era probe — Slice 5)", () => {
 	// ────────────────────────────────────────────────────────────────────────
 	//
 	// ============================================================================
-	// HONEST VERDICT (from Lua script analysis):
+	// HONEST VERDICT (2010 Edison era, post-fix):
 	//
-	//   Condition: `phase~=PHASE_DAMAGE or Duel.IsDamageCalculated()`
-	//   Interpretation: returns FALSE (effect IS available) only when
-	//     IN PHASE_DAMAGE AND damage NOT yet calculated.
+	//   Lua script: c910003001.lua — resources/current/ygopro/formats/edison/script/
+	//   (assembled from evolution-assets/card-scripts/edison/c910003001.lua).
+	//   The base script c37742478.lua was REVERTED to pristine modern behavior.
+	//     - Pre-errata copy (910003001) has EFFECT_FLAG_DAMAGE_CAL + TIMING_DAMAGE_CAL.
+	//     - Condition updated to allow PHASE_DAMAGE (substeps 1-3) AND PHASE_DAMAGE_CAL
+	//       (during damage calculation).
 	//
-	//   → Honest is available ONLY in substep windows BEFORE MSG_BATTLE
-	//     (the damage calculation event).
-	//   → After MSG_BATTLE (IsDamageCalculated() returns true), Honest
-	//     is no longer offered.
+	//   ENGINE BEHAVIOR (empirically verified via window-count probe, 2026-08-01):
+	//     The pre-MSG_BATTLE slice always contains 6 chain windows (3 pairs) —
+	//     EFFECT_FLAG_DAMAGE_CAL does NOT insert an extra window pair. What the
+	//     flag changes is Honest's ELIGIBILITY: the pre-errata copy is offered in
+	//     3 of those windows (the last one, right before MSG_BATTLE, is the
+	//     damage-calculation window), while the official copy is offered in only
+	//     2 and never in that last window. The 3-vs-2 offer count and the
+	//     last-window offer are the observable 2010 difference.
 	//
-	//   2010 TCG ruling allowed Honest "during damage calculation" (substep 4),
-	//   but the engine script uses IsDamageCalculated() which returns true
-	//   ONCE damage calc happens. So substep 4 (the MSG_BATTLE window) is
-	//   ambiguous — the Honest window fires BEFORE MSG_BATTLE is emitted.
+	//   2010 TCG ruling: Honest can be activated "during damage calculation."
+	//   In the engine this is PHASE_DAMAGE_CAL, which occurs in the pre-MSG_BATTLE
+	//   cluster. After MSG_BATTLE, Honest is no longer offered (IsDamageCalculated()
+	//   returns true in PHASE_DAMAGE; PHASE_DAMAGE_CAL window has already closed).
 	//
-	//   OBSERVED (to be filled by test run):
-	//     - If Honest appears ONLY in pre-MSG_BATTLE windows → MODERN behavior
-	//     - If Honest also appears post-MSG_BATTLE → 2010 behavior
-	//
-	//   The it.failing test below asserts the 2010-correct expectation
-	//   (Honest available post-MSG_BATTLE). If the engine implements this,
-	//   remove .failing(). If the engine is MODERN (Honest only pre-calc),
-	//   the failing test correctly fails.
+	//   VERDICT:
+	//     - Honest is offered in at least one pre-MSG_BATTLE chain window.
+	//       (This was true with EFFECT_FLAG_DAMAGE_STEP alone, and remains true with
+	//       the additional EFFECT_FLAG_DAMAGE_CAL window — the engine adds an extra
+	//       chain opportunity in PHASE_DAMAGE_CAL before emitting MSG_BATTLE.)
+	//     - Honest is NOT offered in post-MSG_BATTLE windows (substeps 5-6).
 	// ============================================================================
 	describe("Test 3: Honest era probe — activation window observation", () => {
 		let duel: HeadlessDuel;
 
-		// P0: LIGHT_VANILLA (1100 ATK) at [0], Honest at [1] → both in opening hand
+		// P0: LIGHT_VANILLA (1100 ATK) at [0], Honest (Pre-Errata 910003001) at [1] → both in opening hand
 		// P1: Kojikocy (1500 ATK) at [0]
-		const P0_DECK = buildDeck([LIGHT_VANILLA, HONEST]);
+		const P0_DECK = buildDeck([LIGHT_VANILLA, HONEST_PRE_ERRATA]);
 		const P1_DECK = buildDeck([KOJIKOCY]);
 
 		beforeEach(async () => {
@@ -753,7 +760,7 @@ describe("Damage step behavior (Edison/MR1 era probe — Slice 5)", () => {
 			await duel.cleanup();
 		});
 
-		it("Honest is offered in at least one pre-MSG_BATTLE damage-step window (modern behavior)", async () => {
+		it("Honest is offered in at least one pre-MSG_BATTLE damage-step window (substeps 1-3 AND damage-cal window)", async () => {
 			// T1 P0: Summon LIGHT_VANILLA (Honest stays in hand), end turn
 			await driveT1Summon(duel, LIGHT_VANILLA);
 
@@ -769,53 +776,117 @@ describe("Damage step behavior (Edison/MR1 era probe — Slice 5)", () => {
 			expect(dsEndIdx).toBeGreaterThan(dsStartIdx);
 			expect(battleMsgIdx).toBeGreaterThan(dsStartIdx);
 
-			// Chain windows inside DS but BEFORE MSG_BATTLE (pre-calculation substeps)
+			// Chain windows inside DS but BEFORE MSG_BATTLE.
+			// This cluster includes substeps 1-3 (EFFECT_FLAG_DAMAGE_STEP windows) AND
+			// the PHASE_DAMAGE_CAL window (added by EFFECT_FLAG_DAMAGE_CAL per 2010 ruling).
+			// The engine fires PHASE_DAMAGE_CAL before emitting MSG_BATTLE.
 			const preCalcChains = battleMessages
 				.slice(dsStartIdx + 1, battleMsgIdx)
 				.filter((m): m is YGOProMsgSelectChain => m instanceof YGOProMsgSelectChain);
 
-			// Chain windows inside DS but AFTER MSG_BATTLE (post-calculation substeps)
+			// Chain windows inside DS but AFTER MSG_BATTLE (substeps 5-6).
+			// Honest is NOT offered here — IsDamageCalculated() returns true in
+			// PHASE_DAMAGE once MSG_BATTLE has been emitted, and PHASE_DAMAGE_CAL
+			// window is closed.
 			const postCalcChains = battleMessages
 				.slice(battleMsgIdx + 1, dsEndIdx)
 				.filter((m): m is YGOProMsgSelectChain => m instanceof YGOProMsgSelectChain);
 
-			const honestInPreCalc = preCalcChains.some((m) => m.chains.some((c) => c.code === HONEST));
-			const honestInPostCalc = postCalcChains.some((m) => m.chains.some((c) => c.code === HONEST));
+			const honestInPreCalc = preCalcChains.some((m) =>
+				m.chains.some((c) => c.code === HONEST_PRE_ERRATA),
+			);
+			const honestInPostCalc = postCalcChains.some((m) =>
+				m.chains.some((c) => c.code === HONEST_PRE_ERRATA),
+			);
 
-			// MODERN behavior: Honest available before damage calc
-			// This assertion documents the OBSERVED engine behavior.
+			// 2010 behavior: Honest offered in pre-MSG_BATTLE windows
+			// (includes both substeps 1-3 and the PHASE_DAMAGE_CAL chain window).
 			expect(honestInPreCalc).toBe(true);
 
-			// OBSERVED: document whether Honest leaks into post-calc windows
-			// (expected false under modern script logic)
+			// Honest is NOT offered in post-MSG_BATTLE substep 5-6 windows.
+			// The PHASE_DAMAGE_CAL window fires before MSG_BATTLE, not after.
 			expect(honestInPostCalc).toBe(false);
 		});
 
-		// eslint-disable-next-line jest/no-disabled-tests
-		it.failing("Honest should also be offered in the substep-4 window (during damage calculation) — 2010 TCG ruling — currently unimplemented", async () => {
-			// 2010 TCG ruling: Honest can be activated "during damage calculation"
-			// which corresponds to the substep-4 window coinciding with MSG_BATTLE.
-			// The current engine script condition `Duel.IsDamageCalculated()` returns
-			// true once damage calc is processed, so Honest is NOT offered here.
-			// This test marks that gap: when a future core implements the 2010 ruling,
-			// remove .failing() and this will turn green.
+		it("Honest is offered in the damage-calculation window (2010 TCG ruling — PHASE_DAMAGE_CAL, pre-MSG_BATTLE)", async () => {
+			// 2010 TCG ruling: Honest can be activated "during damage calculation."
+			// Engine implementation (probe-verified 2026-08-01): the pre-MSG_BATTLE
+			// cluster always has 6 chain windows (3 pairs) regardless of the flag —
+			// EFFECT_FLAG_DAMAGE_CAL does NOT add a window pair. It extends Honest's
+			// eligibility into the LAST pre-MSG_BATTLE window (the damage-calculation
+			// window): pre-errata is offered in 3 owner windows, official in only 2.
+			//
+			// NOTE: The previous it.failing checked for Honest in post-MSG_BATTLE windows —
+			// that was the wrong window encoding. The damage-cal chain window fires
+			// before MSG_BATTLE, not after.
 
 			await driveT1Summon(duel, LIGHT_VANILLA);
 			const { battleCmd } = await driveT2SummonToBP(duel, KOJIKOCY);
 			const { battleMessages } = await declareAttackAndCollect(duel, battleCmd, KOJIKOCY);
 
+			const dsStartIdx = battleMessages.findIndex((m) => m instanceof YGOProMsgDamageStepStart);
 			const battleMsgIdx = battleMessages.findIndex((m) => m instanceof YGOProMsgBattle);
-			const dsEndIdx = battleMessages.findIndex((m) => m instanceof YGOProMsgDamageStepEnd);
 
-			// 2010-era-correct: Honest offered in at least one post-MSG_BATTLE window
-			const postCalcChains = battleMessages
-				.slice(battleMsgIdx + 1, dsEndIdx)
+			expect(dsStartIdx).toBeGreaterThanOrEqual(0);
+			expect(battleMsgIdx).toBeGreaterThan(dsStartIdx);
+
+			// All pre-MSG_BATTLE in-DS chain windows (substeps 1-3 plus PHASE_DAMAGE_CAL)
+			const preCalcChains = battleMessages
+				.slice(dsStartIdx + 1, battleMsgIdx)
 				.filter((m): m is YGOProMsgSelectChain => m instanceof YGOProMsgSelectChain);
 
-			const honestInPostCalc = postCalcChains.some((m) => m.chains.some((c) => c.code === HONEST));
+			// 3 window pairs; EFFECT_FLAG_DAMAGE_CAL inserts NO extra pair (probe-verified).
+			expect(preCalcChains.length).toBe(6);
 
-			// This should be true for 2010 behavior — currently fails (modern engine)
-			expect(honestInPostCalc).toBe(true);
+			// Pre-errata Honest is offered in 3 pre-MSG_BATTLE windows. The official
+			// copy gets only 2 (see the guard test below) — the extra offer IS the
+			// 2010 ruling made observable.
+			const honestWindowCount = preCalcChains.filter((m) =>
+				m.chains.some((c) => c.code === HONEST_PRE_ERRATA),
+			).length;
+			expect(honestWindowCount).toBe(3);
+
+			// The LAST pre-MSG_BATTLE chain window is the damage-calculation window;
+			// the pre-errata copy must be offered there.
+			const lastWindow = preCalcChains[preCalcChains.length - 1];
+			expect(lastWindow.chains.some((c) => c.code === HONEST_PRE_ERRATA)).toBe(true);
+		});
+
+		it("official Honest (37742478, modern script) is NOT offered in the damage-calculation window — 2 offers vs pre-errata's 3", async () => {
+			// Guard test: verifies Task A revert — base c37742478.lua is pristine (PHASE_DAMAGE only, not PHASE_DAMAGE_CAL).
+			// Observable difference (probe-verified): both copies see the same 6 pre-MSG_BATTLE
+			// windows, but the official copy is offered in only 2 of them and NEVER in the
+			// last one (the damage-calculation window). If this fails, the base script was
+			// not properly reverted.
+			const P0_DECK_OFFICIAL = buildDeck([LIGHT_VANILLA, HONEST_OFFICIAL]);
+			const P1_DECK = buildDeck([KOJIKOCY]);
+			const duel = await HeadlessDuel.create({
+				decks: [{ main: P0_DECK_OFFICIAL }, { main: P1_DECK }],
+				duelRule: 1,
+				seed: FIXED_SEED,
+			});
+			await driveT1Summon(duel, LIGHT_VANILLA);
+			const { battleCmd } = await driveT2SummonToBP(duel, KOJIKOCY);
+			const { battleMessages } = await declareAttackAndCollect(duel, battleCmd, KOJIKOCY);
+			const dsStartIdx = battleMessages.findIndex((m) => m instanceof YGOProMsgDamageStepStart);
+			const battleIdx = battleMessages.findIndex((m) => m instanceof YGOProMsgBattle);
+			expect(dsStartIdx).toBeGreaterThanOrEqual(0);
+			expect(battleIdx).toBeGreaterThan(dsStartIdx);
+			// Pre-MSG_BATTLE in-DS chain windows
+			const preCalcChains = battleMessages
+				.slice(dsStartIdx + 1, battleIdx)
+				.filter((m): m is YGOProMsgSelectChain => m instanceof YGOProMsgSelectChain);
+			// Same 6 windows as pre-errata — the flag never changes the window count.
+			expect(preCalcChains.length).toBe(6);
+			// Official Honest: offered in only 2 windows, never in the last
+			// (damage-calculation) one. Pre-errata gets 3 including the last.
+			const honestWindowCount = preCalcChains.filter((m) =>
+				m.chains.some((c) => c.code === HONEST_OFFICIAL),
+			).length;
+			expect(honestWindowCount).toBe(2);
+			const lastWindow = preCalcChains[preCalcChains.length - 1];
+			expect(lastWindow.chains.some((c) => c.code === HONEST_OFFICIAL)).toBe(false);
+			await duel.cleanup();
 		});
 	});
 
@@ -834,9 +905,9 @@ describe("Damage step behavior (Edison/MR1 era probe — Slice 5)", () => {
 	describe("Test 4: Honest resolution math — ATK gain + battle outcome + damage value", () => {
 		let duel: HeadlessDuel;
 
-		// P0: LIGHT_VANILLA (1100 ATK) at [0], Honest at [1] → both in opening hand
+		// P0: LIGHT_VANILLA (1100 ATK) at [0], Honest (Pre-Errata 910003001) at [1] → both in opening hand
 		// P1: Kojikocy (1500 ATK) at [0]
-		const P0_DECK = buildDeck([LIGHT_VANILLA, HONEST]);
+		const P0_DECK = buildDeck([LIGHT_VANILLA, HONEST_PRE_ERRATA]);
 		const P1_DECK = buildDeck([KOJIKOCY]);
 
 		// Track whether we activated Honest
@@ -855,7 +926,7 @@ describe("Damage step behavior (Edison/MR1 era probe — Slice 5)", () => {
 						const chain = msg as YGOProMsgSelectChain;
 						// Only activate for P0 (controller 0)
 						if (chain.player === 0) {
-							const honestEntry = chain.chains.find((c) => c.code === HONEST);
+							const honestEntry = chain.chains.find((c) => c.code === HONEST_PRE_ERRATA);
 							if (honestEntry) {
 								honestActivated = true;
 								return chain.prepareResponse({

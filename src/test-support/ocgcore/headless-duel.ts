@@ -110,6 +110,15 @@ export interface HeadlessDuelOptions {
 	drawCount?: number;
 
 	/**
+	 * Path to an alternative libocgcore.wasm binary. When provided, the harness
+	 * boots the wrapper with this binary instead of the vendored one — same
+	 * injection mechanism production uses on the ygopro path (CardLoadWorker
+	 * reads `<cwd>/ocgcore-worker` into CardStorage; OcgcoreWorker boots the
+	 * wrapper with it). Used to test patched core builds.
+	 */
+	wasmPath?: string;
+
+	/**
 	 * Auto-responder override. When provided, replaces the built-in auto-responder
 	 * for messages that require a response. Return undefined to fall back to the
 	 * built-in logic, or return a Uint8Array to supply a custom response.
@@ -131,10 +140,12 @@ const REPO_ROOT = path.resolve(__dirname, "../../../");
 const DEFAULT_CDB_PATHS = [
 	path.join(REPO_ROOT, "resources/current/ygopro/base/cards.cdb"),
 	path.join(REPO_ROOT, "resources/current/ygopro/classic/classic.cdb"),
+	path.join(REPO_ROOT, "resources/current/ygopro/formats/edison/edison-pre-errata.cdb"),
 ];
 const DEFAULT_SCRIPT_PATHS = [
 	path.join(REPO_ROOT, "resources/current/ygopro/base"),
 	path.join(REPO_ROOT, "resources/current/ygopro/classic"),
+	path.join(REPO_ROOT, "resources/current/ygopro/formats/edison"),
 ];
 
 /**
@@ -256,8 +267,14 @@ export class HeadlessDuel {
 		const startHand = options.startHand ?? 5;
 		const drawCount = options.drawCount ?? 1;
 
-		// Boot WASM core
-		const wrapper = await createOcgcoreWrapper();
+		// Boot WASM core. OCGCORE_WASM lets a full suite run against an
+		// alternative core build without touching each test.
+		const wasmPath = options.wasmPath ?? process.env.OCGCORE_WASM;
+		const wrapper = wasmPath
+			? await createOcgcoreWrapper({
+					wasmBinary: new Uint8Array(fs.readFileSync(wasmPath)),
+				})
+			: await createOcgcoreWrapper();
 
 		// Set up script reader (silently skips missing files — acceptable for test slice)
 		const scriptReader = await DirScriptReaderEx(...scriptPaths);

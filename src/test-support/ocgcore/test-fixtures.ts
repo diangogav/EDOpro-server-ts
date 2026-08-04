@@ -5,7 +5,9 @@
  *   VANILLA_POOL  — 22 Lv4 vanilla normal monsters verified in classic.cdb, used to pad decks.
  *   FIXED_SEED    — 8-element uint32 seed for PseudoShuffle; keeps deck order deterministic.
  *   buildDeck     — build a 40-card (or custom-size) deck with specific cards at the top.
+ *   makeDiscardPadsResponder — auto-responder that keeps end-phase discards off scenario cards.
  */
+import { YGOProMsgSelectCard } from "ygopro-msg-encode";
 
 /**
  * Pool of vanilla normal monsters verified present in
@@ -22,6 +24,35 @@ export const VANILLA_POOL: number[] = [
  * identical across runs. 8 × uint32 as required by createDuelV2.
  */
 export const FIXED_SEED: number[] = [0xdeadbeef, 0xcafebabe, 0x12345678, 0xabcdef01, 0, 0, 0, 0];
+
+const LOCATION_HAND = 0x02;
+
+/**
+ * Auto-responder factory for end-phase hand-limit discards. Those arrive as a
+ * SelectCard over HAND cards, and the built-in responder would discard the
+ * FIRST card — always a scenario card, because buildDeck puts specifics
+ * first (this red herring once burned a full debugging session). Prefer a pad
+ * vanilla; return undefined for every other window so the built-in handles it.
+ */
+export function makeDiscardPadsResponder(
+	specificCards: number[],
+): (msg: unknown) => Uint8Array | undefined {
+	return (msg: unknown) => {
+		if (!(msg instanceof YGOProMsgSelectCard)) return undefined;
+		const allHand = msg.cards.every((c) => c.location === LOCATION_HAND);
+		if (!allHand) return undefined;
+		const pad = msg.cards.find((c) => !specificCards.includes(c.code));
+		if (!pad) return undefined;
+		return msg.prepareResponse([
+			{
+				code: pad.code,
+				controller: pad.controller,
+				location: pad.location,
+				sequence: pad.sequence,
+			},
+		]);
+	};
+}
 
 /**
  * Build a deck of `totalSize` cards (default 40) where `specificCards` occupy
