@@ -165,10 +165,10 @@
 			"file": "cdb/classic.cdb"
 		},
 		{
-			"comment": "Edison pre-errata card database (alt-coded cards with 2010 ruling fixes)",
-			"target": "ygopro/formats/edison/edison-pre-errata.cdb",
+			"comment": "Edison pre-errata pool (bilingual .es/.en; server loads .es — engine is language-neutral)",
+			"target": "ygopro/formats/edison/pre-errata.es.cdb",
 			"from": "evolution-assets",
-			"file": "cdb/edison-pre-errata.cdb"
+			"file": "cdb/pre-errata.es.cdb"
 		},
 		{
 			"comment": "YGOPro Moecube prereleases (extended pool only)",
@@ -186,7 +186,6 @@
 		"ygopro": {
 			"standard": [
 				"base",
-				"classic",
 				"formats/jtp",
 				"formats/jtp-adv-2007-03",
 				"formats/genesys",

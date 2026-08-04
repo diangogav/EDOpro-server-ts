@@ -140,7 +140,7 @@ const REPO_ROOT = path.resolve(__dirname, "../../../");
 const DEFAULT_CDB_PATHS = [
 	path.join(REPO_ROOT, "resources/current/ygopro/base/cards.cdb"),
 	path.join(REPO_ROOT, "resources/current/ygopro/classic/classic.cdb"),
-	path.join(REPO_ROOT, "resources/current/ygopro/formats/edison/edison-pre-errata.cdb"),
+	path.join(REPO_ROOT, "resources/current/ygopro/formats/edison/pre-errata.es.cdb"),
 ];
 const DEFAULT_SCRIPT_PATHS = [
 	path.join(REPO_ROOT, "resources/current/ygopro/base"),

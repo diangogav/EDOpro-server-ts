@@ -72,3 +72,4 @@ resources/
 tools/
 resources.manifest.private.json
 resources.manifest.effective.json
+resources.manifest.private.json.*
