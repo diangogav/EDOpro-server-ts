@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Stage 1: Clone repositories and assemble resources
 FROM public.ecr.aws/docker/library/node:24.11.0-bullseye-slim AS resources-builder
 
@@ -11,8 +12,16 @@ WORKDIR /build
 # single source of truth, shared with local dev (README) and the runtime refresh
 # loop (entrypoint). This produces /build/resources/releases/<id> and a current symlink.
 COPY scripts/ ./scripts/
-COPY resources.manifest.json ./
-RUN bash scripts/clone_repositories.sh && bash scripts/setup_resources.sh
+# resources.manifest*.json = public base + (optional, gitignored) private override + example.
+COPY resources.manifest*.json ./
+# Private manifest sources (any private GitHub repo) need a read-only token, passed as a
+# BuildKit secret:  docker build --secret id=gh_private_token,src=<token-file> ...
+# No secret + no override → public sources only. The token is read only inside this RUN and
+# never persists to an image layer.
+RUN --mount=type=secret,id=gh_private_token \
+    export GH_PRIVATE_TOKEN="$(cat /run/secrets/gh_private_token 2>/dev/null || true)" && \
+    bash scripts/setup-git-credentials.sh && \
+    bash scripts/clone_repositories.sh && bash scripts/setup_resources.sh
 
 
 # Stage 2: Build CoreIntegrator (C++)
@@ -81,8 +90,11 @@ COPY --from=core-builder /app/CoreIntegrator ./core/CoreIntegrator
 # then refreshes resources/current in place and the in-memory reload picks it up.
 COPY --from=resources-builder /build/resources ./resources
 
-# Provisioning scripts (scripts/) + manifest — single source of truth, reused at runtime.
+# Provisioning scripts (scripts/) + manifest(s) — single source of truth, reused at runtime.
+# The gitignored private override (if present in the build context) ships too so the runtime
+# resources-updater loop knows the private sources; their token comes from the container env
+# (--env-file). git-credentials is set up by the entrypoint before the loop starts.
 COPY scripts/ ./scripts/
-COPY resources.manifest.json ./
+COPY resources.manifest*.json ./
 
 CMD ["dumb-init", "bash", "scripts/entrypoint.sh"]

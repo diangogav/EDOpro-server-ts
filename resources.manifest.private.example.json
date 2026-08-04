@@ -1,0 +1,25 @@
+{
+	"comment": "PRIVATE manifest override — TEMPLATE. Copy to resources.manifest.private.json (gitignored) and set the real repo url(s). resources-lib.sh merges this over the public base manifest (append sources + assembly) at build and runtime, so PRIVATE git sources never appear in the public base. Add ANY private source here — not just pre-errata scripts. Auth: HTTPS url + a read-only GH_PRIVATE_TOKEN (build: docker build --secret id=gh_private_token,src=<file>; runtime: --env-file), or an SSH url + a key. See docs/pre-errata-store-design.md.",
+	"sources": [
+		{
+			"id": "my-private-source",
+			"type": "git",
+			"url": "https://github.com/YOUR_ORG/YOUR_PRIVATE_REPO.git",
+			"branch": "main"
+		}
+	],
+	"assembly": [
+		{
+			"comment": "Example: Edison pre-errata card scripts served from the private repo.",
+			"target": "ygopro/formats/edison/script",
+			"from": "my-private-source",
+			"dir": "card-scripts/edison"
+		},
+		{
+			"comment": "Example: classic pre-errata card scripts served from the private repo.",
+			"target": "ygopro/classic/script",
+			"from": "my-private-source",
+			"dir": "card-scripts/classic"
+		}
+	]
+}

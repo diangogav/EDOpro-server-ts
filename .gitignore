@@ -70,3 +70,5 @@ resources/
 
 # Local bats-core installation (not a repo dependency)
 tools/
+resources.manifest.private.json
+resources.manifest.effective.json

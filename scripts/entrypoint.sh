@@ -8,6 +8,11 @@
 
 set -u
 
+# Configure git to authenticate private manifest sources (read-only token from
+# GH_PRIVATE_TOKEN in the container env / --env-file). No-op when unset. Must run
+# before the updater loop, which re-clones sources.
+bash scripts/setup-git-credentials.sh
+
 bash scripts/resources-updater.sh &
 
 exec node ./src/index.js
