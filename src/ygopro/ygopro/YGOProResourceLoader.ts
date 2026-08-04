@@ -10,6 +10,7 @@ import { Logger } from "src/shared/logger/domain/Logger";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 import { config } from "src/config";
 import { resolvePools } from "./ResourcePoolResolver";
+import { edisonCorePath } from "./edisonCore";
 
 const CARD_STORAGE_RELOAD_INTERVAL_MS = 10 * 60 * 1000;
 
@@ -245,10 +246,8 @@ export class YGOProResourceLoader {
 	}
 
 	private async loadCardStorageFromPaths(paths: string[], label: string) {
-		const ocgcoreWasmPathConfig = "./ocgcore-worker";
-		const ocgcoreWasmPath = ocgcoreWasmPathConfig
-			? path.resolve(process.cwd(), ocgcoreWasmPathConfig)
-			: undefined;
+		// Shared with the boot-time verifier so the resolved path can't drift.
+		const ocgcoreWasmPath = edisonCorePath();
 		const { cardStorage, dbCount, failedFiles, sha512 } = await runInWorker(
 			CardLoadWorker,
 			(worker) => worker.load(),
