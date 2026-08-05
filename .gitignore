@@ -73,3 +73,7 @@ tools/
 resources.manifest.private.json
 resources.manifest.effective.json
 resources.manifest.private.json.*
+
+# Local session + fetched core artifact (not versioned)
+.claude/
+/ocgcore-worker
