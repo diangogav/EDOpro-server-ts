@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
 import { Logger } from "src/shared/logger/domain/Logger";
 import { Player } from "src/shared/player/domain/Player";
 import { UserProfileRepository } from "src/shared/user-profile/domain/UserProfileRepository";
@@ -35,7 +34,7 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 			return;
 		}
 
-		const banList = BanListMemoryRepository.findByHash(event.data.banListHash);
+		const banListName = event.data.banListName;
 		const players = event.data.players.map((item) => new Player(item));
 
 		const gameId = randomUUID();
@@ -59,10 +58,10 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 				.map((element) => element.id);
 			const points = player.calculateMatchPoints();
 			this.logger.info(`Player ${player.name} and id: ${userProfile.id} gain ${points} points`);
-			if (banList?.name) {
+			if (banListName && banListName !== "N/A") {
 				const playerStats = await this.playerStatsRepository.findByUserIdAndBanListName(
 					userProfile.id,
-					banList.name,
+					banListName,
 				);
 				playerStats.addPoints(points);
 				player.winner ? playerStats.increaseWins() : playerStats.increaseLosses();
@@ -86,7 +85,7 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 				playerIds: playerIds.filter((id): id is string => id !== null),
 				opponentIds: opponentIds.filter((id): id is string => id !== null),
 				date: event.data.date,
-				banListName: banList?.name ?? "N/A",
+				banListName: banListName,
 				banListHash: event.data.banListHash.toString(),
 				playerScore: player.wins,
 				opponentScore: player.losses,
@@ -106,7 +105,7 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 					playerNames,
 					opponentNames,
 					date: event.data.date,
-					banListName: banList?.name ?? "N/A",
+					banListName: banListName,
 					banListHash: event.data.banListHash.toString(),
 					result: game.result,
 					turns: game.turns,

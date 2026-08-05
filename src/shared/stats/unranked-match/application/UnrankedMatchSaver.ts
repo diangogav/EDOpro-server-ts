@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
 import { DomainEventSubscriber } from "src/shared/event-bus/EventBus";
 import { Logger } from "src/shared/logger/domain/Logger";
 import { GameOverDomainEvent } from "src/shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
@@ -36,8 +35,7 @@ export class UnrankedMatchSaver implements DomainEventSubscriber<GameOverDomainE
 		);
 
 		const gameId = randomUUID();
-		const banList = BanListMemoryRepository.findByHash(event.data.banListHash);
-		const banListName = banList?.name ?? "N/A";
+		const banListName = event.data.banListName;
 		const banListHash = event.data.banListHash.toString();
 
 		// Use the first player of Team 0 as reference for scores and result

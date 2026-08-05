@@ -13,6 +13,7 @@ export class GameOverDomainEventMother {
 			date: faker.date.past(),
 			players: [PlayerMother.create().toPresentation(), PlayerMother.create().toPresentation()],
 			banListHash: faker.number.int(),
+			banListName: faker.helpers.arrayElement(["2010.03 Edison", "TCG", "Global"]),
 			ranked: faker.datatype.boolean(),
 			...params,
 		});

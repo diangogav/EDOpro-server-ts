@@ -25,6 +25,7 @@ describe("UnrankedMatchSaver", () => {
 			bestOf: 1,
 			date: new Date(),
 			banListHash: 123,
+			banListName: "N/A",
 		});
 
 		await unrankedMatchSaver.handle(event);
@@ -70,6 +71,7 @@ describe("UnrankedMatchSaver", () => {
 			bestOf: 1,
 			date: new Date(),
 			banListHash: 123,
+			banListName: "2010.03 Edison",
 		});
 
 		await unrankedMatchSaver.handle(event);
@@ -83,12 +85,13 @@ describe("UnrankedMatchSaver", () => {
 		expect(capturedMatch.winnerTeam).toBe(0);
 		expect(capturedMatch.playerNames).toContain("Player0");
 		expect(capturedMatch.opponentNames).toContain("Player1");
+		expect(capturedMatch.banListName).toBe("2010.03 Edison");
 
 		const capturedDuel = unrankedMatchRepository.saveDuel.mock.calls[0][0];
 		expect(capturedDuel.team0Score).toBe(1);
 		expect(capturedDuel.team1Score).toBe(0);
 		expect(capturedDuel.winnerTeam).toBe(0);
-		expect(capturedDuel.banListName).toBe("N/A");
+		expect(capturedDuel.banListName).toBe("2010.03 Edison");
 	});
 
 	it("should NOT save if players are missing from one team", async () => {
@@ -107,6 +110,7 @@ describe("UnrankedMatchSaver", () => {
 			bestOf: 1,
 			date: new Date(),
 			banListHash: 123,
+			banListName: "N/A",
 		});
 
 		await unrankedMatchSaver.handle(event);
