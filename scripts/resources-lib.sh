@@ -33,6 +33,27 @@ _check_jq() {
 _check_jq
 
 # ---------------------------------------------------------------------------
+# Private override merge — keeps PRIVATE git sources (private repos, e.g. the
+# pre-errata scripts moat) OUT of the public base manifest. When the caller uses
+# the default base manifest AND a private override file exists, merge base +
+# override (append sources + assembly) into an effective manifest and use it.
+# Prod/CI provide resources.manifest.private.json (gitignored) + a read-only
+# GH_PRIVATE_TOKEN (or SSH) for the private repos. Generic: add any private
+# source here. See resources.manifest.private.example.json.
+# An explicitly-set MANIFEST_PATH (e.g. tests) skips the merge.
+# ---------------------------------------------------------------------------
+MANIFEST_OVERRIDE="${MANIFEST_OVERRIDE:-resources.manifest.private.json}"
+if [ "$MANIFEST_PATH" = "resources.manifest.json" ] && [ -f "$MANIFEST_OVERRIDE" ]; then
+  MANIFEST_EFFECTIVE="${MANIFEST_EFFECTIVE:-resources.manifest.effective.json}"
+  jq -s '.[0] as $b | .[1] as $o | $b
+      | .sources = ($b.sources + ($o.sources // []))
+      | .assembly = ($b.assembly + ($o.assembly // []))' \
+    "$MANIFEST_PATH" "$MANIFEST_OVERRIDE" > "$MANIFEST_EFFECTIVE" \
+    || fail "failed to merge private manifest override into $MANIFEST_EFFECTIVE"
+  MANIFEST_PATH="$MANIFEST_EFFECTIVE"
+fi
+
+# ---------------------------------------------------------------------------
 # manifest_get — wrapper around jq queries on the manifest
 # Usage: manifest_get <jq-filter> [manifest-path]
 # ---------------------------------------------------------------------------

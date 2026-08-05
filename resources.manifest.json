@@ -59,6 +59,13 @@
 			"type": "git",
 			"url": "https://github.com/evolutionygo/cards-art-server",
 			"branch": "main"
+		},
+		{
+			"comment": "ocgcore fork WASM — runtime add-on; the loader logs whether the fork or the stock core is active",
+			"id": "edison-core",
+			"type": "http",
+			"url": "https://github.com/diangogav/evolution-ygopro-core/releases/download/v1.0.0-edison/libocgcore-edison-fork.wasm",
+			"filename": "ocgcore-worker"
 		}
 	],
 	"assembly": [
@@ -113,6 +120,12 @@
 			"file": "lflist/edison.lflist.conf"
 		},
 		{
+			"comment": "ocgcore fork WASM — placed at ygopro/core/ocgcore-worker; read once at boot by YGOProResourceLoader",
+			"target": "ygopro/core/ocgcore-worker",
+			"from": "edison-core",
+			"file": "ocgcore-worker"
+		},
+		{
 			"target": "ygopro/formats/md/lflist.conf",
 			"from": "evolution-lflists",
 			"file": "MD.2025.03.lflist.conf"
@@ -165,10 +178,10 @@
 			"file": "cdb/classic.cdb"
 		},
 		{
-			"comment": "Scripts for classic pre-errata alt-coded cards",
-			"target": "ygopro/classic/script",
+			"comment": "Edison pre-errata pool (bilingual .es/.en; server loads .es — engine is language-neutral)",
+			"target": "ygopro/formats/edison/pre-errata.es.cdb",
 			"from": "evolution-assets",
-			"dir": "card-scripts/classic"
+			"file": "cdb/pre-errata.es.cdb"
 		},
 		{
 			"comment": "YGOPro Moecube prereleases (extended pool only)",
@@ -186,7 +199,6 @@
 		"ygopro": {
 			"standard": [
 				"base",
-				"classic",
 				"formats/jtp",
 				"formats/jtp-adv-2007-03",
 				"formats/genesys",

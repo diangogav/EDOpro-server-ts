@@ -10,6 +10,7 @@ import { Logger } from "src/shared/logger/domain/Logger";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 import { config } from "src/config";
 import { resolvePools } from "./ResourcePoolResolver";
+import { resolveForkCorePath } from "./ocgcoreFork";
 
 const CARD_STORAGE_RELOAD_INTERVAL_MS = 10 * 60 * 1000;
 
@@ -17,6 +18,8 @@ let _sharedInstance: YGOProResourceLoader | null = null;
 
 export class YGOProResourceLoader {
 	private readonly logger: Logger;
+	private forkCorePath: string | undefined;
+	private forkCoreResolved = false;
 
 	constructor() {
 		this.logger = LoggerFactory.getLogger();
@@ -244,11 +247,18 @@ export class YGOProResourceLoader {
 		});
 	}
 
+	// Resolve the fork-vs-stock core path once (logged once); the card-load worker
+	// still re-reads the binary on each (re)load to pick up a refreshed fork.
+	private resolvedForkCorePath(): string | undefined {
+		if (!this.forkCoreResolved) {
+			this.forkCorePath = resolveForkCorePath(this.logger);
+			this.forkCoreResolved = true;
+		}
+		return this.forkCorePath;
+	}
+
 	private async loadCardStorageFromPaths(paths: string[], label: string) {
-		const ocgcoreWasmPathConfig = "./ocgcore-worker";
-		const ocgcoreWasmPath = ocgcoreWasmPathConfig
-			? path.resolve(process.cwd(), ocgcoreWasmPathConfig)
-			: undefined;
+		const ocgcoreWasmPath = this.resolvedForkCorePath();
 		const { cardStorage, dbCount, failedFiles, sha512 } = await runInWorker(
 			CardLoadWorker,
 			(worker) => worker.load(),

@@ -10,6 +10,7 @@
  */
 
 import { mock } from "jest-mock-extended";
+import { ChatColor, YGOProStocChat } from "ygopro-msg-encode";
 
 import { Logger } from "@shared/logger/domain/Logger";
 import { DuelRecordMother } from "@test-support/mothers/room/DuelRecordMother";
@@ -25,7 +26,10 @@ const HOST_INFO = {
 	draw_count: 1,
 };
 
-type SendAllEvrp = { sendAllEvrp(): Promise<void> };
+type TestableDuelingState = {
+	sendAllEvrp(): Promise<void>;
+	broadcastReplay(index: number, total: number, replayBuffer: Buffer): void;
+};
 
 function makeClient() {
 	return { sendMessageToClient: jest.fn() };
@@ -43,10 +47,10 @@ function makeRoom(overrides: Record<string, unknown> = {}) {
 
 // Bind room + logger onto a prototype instance and expose the private method,
 // skipping the OCGCore-heavy constructor entirely.
-function buildState(room: object, logger: Logger): SendAllEvrp {
+function buildState(room: object, logger: Logger): TestableDuelingState {
 	const state = Object.create(YGOProDuelingState.prototype);
 	Object.assign(state, { room, logger });
-	return state as SendAllEvrp;
+	return state as TestableDuelingState;
 }
 
 describe("YGOProDuelingState.sendAllEvrp()", () => {
@@ -117,5 +121,18 @@ describe("YGOProDuelingState.sendAllEvrp()", () => {
 
 			expect(client.sendMessageToClient).not.toHaveBeenCalled();
 		});
+	});
+});
+
+describe("YGOProDuelingState.broadcastReplay()", () => {
+	it("marks the replay hint as a system chat message", () => {
+		const client = makeClient();
+		const state = buildState(makeRoom({ clients: [client] }), mock<Logger>());
+
+		state.broadcastReplay(1, 1, Buffer.from([0x17]));
+
+		const hintFrame = client.sendMessageToClient.mock.calls[0]?.[0] as Buffer;
+		const hint = new YGOProStocChat().fromPayload(hintFrame.subarray(3));
+		expect(hint.player_type).toBe(ChatColor.LIGHTBLUE);
 	});
 });
