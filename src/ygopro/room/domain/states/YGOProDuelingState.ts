@@ -26,14 +26,10 @@ import {
 	ChatColor,
 	OcgcoreScriptConstants,
 	YGOProCtosUpdateDeck,
-	YGOProMsgBattle,
 	YGOProMsgDamage,
-	YGOProMsgDamageStepEnd,
-	YGOProMsgDamageStepStart,
 	YGOProMsgNewTurn,
 	YGOProMsgPayLpCost,
 	YGOProMsgRecover,
-	YGOProMsgSelectChain,
 	YGOProMsgStart,
 	YGOProMsgWin,
 	YGOProStocChat,
@@ -48,15 +44,9 @@ import { GameOverDomainEvent } from "@shared/room/domain/match/domain/domain-eve
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 
 export class YGOProDuelingState extends RoomState {
-	// Diagnostic trace for damage-step chain windows (pre-errata card smoke
-	// tests). Opt-in via env because it logs every chain window inside every
-	// damage step of every duel on the server.
-	private static readonly DAMAGE_STEP_WINDOW_LOG = process.env.DUEL_DEBUG_DS_WINDOWS === "1";
 	private readonly eventBus: EventBus;
 	private readonly ocgCore: OCGCore;
 	private readonly pendingSurrenders = new Set<number>();
-	private insideDamageStep = false;
-	private damageStepWindowCount = 0;
 
 	constructor(
 		private readonly room: YGOProRoom,
@@ -156,10 +146,6 @@ export class YGOProDuelingState extends RoomState {
 			this.broadcastRoomUpdate();
 			return msg;
 		});
-
-		if (YGOProDuelingState.DAMAGE_STEP_WINDOW_LOG) {
-			this.registerDamageStepWindowTrace();
-		}
 
 		const [player0DeckCount, player0ExtraCount, player1DeckCount, player1ExtraCount] =
 			await Promise.all([
@@ -658,49 +644,6 @@ export class YGOProDuelingState extends RoomState {
 				ranked: this.room.ranked,
 			}),
 		);
-	}
-
-	/**
-	 * Traces every chain window the core opens inside a damage step, with the
-	 * candidate card codes offered to each player. Middleware handlers observe
-	 * the message stream without altering it (each returns the message as-is).
-	 * Registered only when DUEL_DEBUG_DS_WINDOWS=1.
-	 */
-	private registerDamageStepWindowTrace(): void {
-		this.ocgCore.messageMiddleware.on(YGOProMsgDamageStepStart, (msg) => {
-			this.insideDamageStep = true;
-			this.damageStepWindowCount = 0;
-			this.logger.info("[ds-window] DAMAGE STEP START");
-			return msg;
-		});
-
-		this.ocgCore.messageMiddleware.on(YGOProMsgSelectChain, (msg) => {
-			if (this.insideDamageStep) {
-				this.damageStepWindowCount++;
-				const candidates = msg.chains.map((chain) => chain.code).join(",");
-				this.logger.info(
-					`[ds-window] window #${this.damageStepWindowCount} → player ${msg.player} | candidates: [${candidates}]`,
-				);
-			}
-			return msg;
-		});
-
-		this.ocgCore.messageMiddleware.on(YGOProMsgBattle, (msg) => {
-			if (this.insideDamageStep) {
-				this.logger.info(
-					`[ds-window] MSG_BATTLE (damage calculation resolved) — chain windows offered so far: ${this.damageStepWindowCount}`,
-				);
-			}
-			return msg;
-		});
-
-		this.ocgCore.messageMiddleware.on(YGOProMsgDamageStepEnd, (msg) => {
-			this.insideDamageStep = false;
-			this.logger.info(
-				`[ds-window] DAMAGE STEP END — total chain windows: ${this.damageStepWindowCount}`,
-			);
-			return msg;
-		});
 	}
 
 	private resolveTeam(side: number): Team {
