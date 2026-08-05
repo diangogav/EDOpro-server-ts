@@ -34,7 +34,7 @@ _check_jq
 
 # ---------------------------------------------------------------------------
 # Private override merge — keeps PRIVATE git sources (private repos, e.g. the
-# pre-errata scripts moat) OUT of the public base manifest. When the caller uses
+# pre-errata scripts) OUT of the public base manifest. When the caller uses
 # the default base manifest AND a private override file exists, merge base +
 # override (append sources + assembly) into an effective manifest and use it.
 # Prod/CI provide resources.manifest.private.json (gitignored) + a read-only
