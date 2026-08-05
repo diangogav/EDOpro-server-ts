@@ -4,9 +4,9 @@
 #
 # Generic add-on: any private GitHub source (pre-errata scripts today, other
 # private repos in the future) is fetched with GH_PRIVATE_TOKEN. Reads the token
-# from the environment (build: a BuildKit secret; runtime: the container env from
-# --env-file). No-op when the token is absent (public builds clone only public
-# sources). The token is NEVER written to disk — an env-based credential helper
+# from the container env (--env-file) at runtime — the entrypoint runs this before
+# the resource updater loop. No-op when the token is absent (only public sources
+# are cloned). The token is NEVER written to disk — an env-based credential helper
 # reads it at clone time; public HTTPS clones don't challenge auth, so the token
 # is only ever sent to private repos.
 set -u

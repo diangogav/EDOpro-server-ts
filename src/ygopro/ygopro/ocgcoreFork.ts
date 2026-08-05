@@ -16,10 +16,10 @@ export function ocgcoreForkPath(): string {
 	return path.resolve(config.resources.dir, OCGCORE_RESOURCE_PATH);
 }
 
-// Single, explicit fork-vs-stock decision, logged once at load time. Returns the
-// fork path when the binary is present, or undefined to let koishipro-core.js
-// use its bundled STOCK WASM. Legacy-format rooms need the fork for correct
-// rulings — running stock there is legal but wrong — so the fallback is loud.
+// Explicit fork-vs-stock decision, logged when resolved (the loader resolves it
+// once and caches). Returns the fork path when the binary is present, or undefined
+// to let koishipro-core.js use its bundled STOCK WASM. Legacy-format rooms need the
+// fork for correct rulings — running stock there is legal but wrong — so the warn is loud.
 export function resolveForkCorePath(logger: Logger): string | undefined {
 	const file = ocgcoreForkPath();
 	if (existsSync(file)) {
