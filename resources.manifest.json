@@ -120,7 +120,7 @@
 			"file": "lflist/edison.lflist.conf"
 		},
 		{
-			"comment": "ocgcore fork WASM — placed at ygopro/core/ocgcore-worker; read once at boot by YGOProResourceLoader",
+			"comment": "ocgcore fork WASM — placed at ygopro/core/ocgcore-worker; read by the card-load worker when (re)building card storage",
 			"target": "ygopro/core/ocgcore-worker",
 			"from": "edison-core",
 			"file": "ocgcore-worker"
