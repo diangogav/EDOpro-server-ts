@@ -61,7 +61,7 @@
 			"branch": "main"
 		},
 		{
-			"comment": "Edison ocgcore fork WASM — runtime add-on; integrity is checked at boot by verifyOcgcoreFork (sha256)",
+			"comment": "ocgcore fork WASM — runtime add-on; the loader logs whether the fork or the stock core is active",
 			"id": "edison-core",
 			"type": "http",
 			"url": "https://github.com/diangogav/evolution-ygopro-core/releases/download/v1.0.0-edison/libocgcore-edison-fork.wasm",
@@ -120,7 +120,7 @@
 			"file": "lflist/edison.lflist.conf"
 		},
 		{
-			"comment": "Edison ocgcore fork WASM — placed at ygopro/core/ocgcore-worker; read once at boot by YGOProResourceLoader",
+			"comment": "ocgcore fork WASM — placed at ygopro/core/ocgcore-worker; read once at boot by YGOProResourceLoader",
 			"target": "ygopro/core/ocgcore-worker",
 			"from": "edison-core",
 			"file": "ocgcore-worker"
