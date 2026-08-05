@@ -12,16 +12,13 @@ WORKDIR /build
 # single source of truth, shared with local dev (README) and the runtime refresh
 # loop (entrypoint). This produces /build/resources/releases/<id> and a current symlink.
 COPY scripts/ ./scripts/
-# resources.manifest*.json = public base + (optional, gitignored) private override + example.
+# resources.manifest.json = public base (+ the shipped example). The private override is
+# NOT part of the build — it is provided at runtime, so the seed is public-only.
 COPY resources.manifest*.json ./
-# Private manifest sources (any private GitHub repo) need a read-only token, passed as a
-# BuildKit secret:  docker build --secret id=gh_private_token,src=<token-file> ...
-# No secret + no override → public sources only. The token is read only inside this RUN and
-# never persists to an image layer.
-RUN --mount=type=secret,id=gh_private_token \
-    export GH_PRIVATE_TOKEN="$(cat /run/secrets/gh_private_token 2>/dev/null || true)" && \
-    bash scripts/setup-git-credentials.sh && \
-    bash scripts/clone_repositories.sh && bash scripts/setup_resources.sh
+# Assemble the PUBLIC resource seed so the server boots immediately. Private sources are
+# fetched at runtime by the entrypoint's updater (mounted private override + a token from
+# the container env); no token ever touches the build.
+RUN bash scripts/clone_repositories.sh && bash scripts/setup_resources.sh
 
 
 # Stage 2: Build CoreIntegrator (C++)
@@ -90,10 +87,10 @@ COPY --from=core-builder /app/CoreIntegrator ./core/CoreIntegrator
 # then refreshes resources/current in place and the in-memory reload picks it up.
 COPY --from=resources-builder /build/resources ./resources
 
-# Provisioning scripts (scripts/) + manifest(s) — single source of truth, reused at runtime.
-# The gitignored private override (if present in the build context) ships too so the runtime
-# resources-updater loop knows the private sources; their token comes from the container env
-# (--env-file). git-credentials is set up by the entrypoint before the loop starts.
+# Provisioning scripts (scripts/) + the PUBLIC manifest — reused by the runtime updater loop.
+# The private override is not baked in: mount it at runtime (-v .../resources.manifest.private.json
+# :/app/resources.manifest.private.json) and pass a read-only token via the container env
+# (--env-file); the entrypoint sets up git-credentials before the loop clones private sources.
 COPY scripts/ ./scripts/
 COPY resources.manifest*.json ./
 
