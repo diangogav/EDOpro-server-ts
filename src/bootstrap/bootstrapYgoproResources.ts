@@ -1,6 +1,6 @@
 import { Logger } from "@shared/logger/domain/Logger";
 import { YGOProResourceLoader } from "@ygopro/ygopro/YGOProResourceLoader";
-import { verifyEdisonCore } from "@ygopro/ygopro/edisonCore";
+import { verifyOcgcoreFork } from "@ygopro/ygopro/ocgcoreFork";
 import YGOProBanListMemoryRepository from "@ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository";
 import { loadYgoproBanLists } from "./bootstrapBanListLoaders";
 
@@ -11,9 +11,9 @@ import { loadYgoproBanLists } from "./bootstrapBanListLoaders";
 // so calling this before bootstrapEdoproResources yields empty hashes. The
 // order is enforced by bootstrapResources.
 export async function bootstrapYgoproResources(logger: Logger): Promise<void> {
-	// Surface whether Edison rooms will run the patched fork or silently fall
-	// back to the stock core. Runs before the load so the signal appears early.
-	await verifyEdisonCore(logger);
+	// Surface whether legacy-format rooms will run the patched fork or silently
+	// fall back to the stock core. Runs before the load so the signal appears early.
+	await verifyOcgcoreFork(logger);
 
 	await YGOProResourceLoader.start();
 	await YGOProResourceLoader.get().logLFLists();

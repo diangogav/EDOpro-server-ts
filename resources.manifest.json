@@ -61,7 +61,7 @@
 			"branch": "main"
 		},
 		{
-			"comment": "Edison ocgcore fork WASM — runtime add-on; integrity is checked at boot by verifyEdisonCore (sha256)",
+			"comment": "Edison ocgcore fork WASM — runtime add-on; integrity is checked at boot by verifyOcgcoreFork (sha256)",
 			"id": "edison-core",
 			"type": "http",
 			"url": "https://github.com/diangogav/evolution-ygopro-core/releases/download/v1.0.0-edison/libocgcore-edison-fork.wasm",

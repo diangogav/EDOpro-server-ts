@@ -3,7 +3,7 @@ jest.mock("fs/promises", () => ({
 	readFile: (...args: unknown[]) => readFileMock(...args),
 }));
 
-import { verifyEdisonCore } from "./edisonCore";
+import { verifyOcgcoreFork } from "./ocgcoreFork";
 
 function makeLogger() {
 	return {
@@ -15,49 +15,49 @@ function makeLogger() {
 	};
 }
 
-describe("verifyEdisonCore", () => {
-	const original = process.env.EDISON_CORE_REQUIRED;
+describe("verifyOcgcoreFork", () => {
+	const original = process.env.OCGCORE_FORK_REQUIRED;
 
 	afterEach(() => {
 		readFileMock.mockReset();
 		if (original === undefined) {
-			delete process.env.EDISON_CORE_REQUIRED;
+			delete process.env.OCGCORE_FORK_REQUIRED;
 		} else {
-			process.env.EDISON_CORE_REQUIRED = original;
+			process.env.OCGCORE_FORK_REQUIRED = original;
 		}
 	});
 
 	it("warns and does not throw when the fork binary is missing (default)", async () => {
-		delete process.env.EDISON_CORE_REQUIRED;
+		delete process.env.OCGCORE_FORK_REQUIRED;
 		readFileMock.mockRejectedValue(new Error("ENOENT"));
 		const logger = makeLogger();
 
-		await expect(verifyEdisonCore(logger as never)).resolves.toBeUndefined();
+		await expect(verifyOcgcoreFork(logger as never)).resolves.toBeUndefined();
 		expect(logger.warn).toHaveBeenCalledTimes(1);
 		expect(logger.info).not.toHaveBeenCalled();
 	});
 
-	it("throws when the fork binary is missing and EDISON_CORE_REQUIRED=true", async () => {
-		process.env.EDISON_CORE_REQUIRED = "true";
+	it("throws when the fork binary is missing and OCGCORE_FORK_REQUIRED=true", async () => {
+		process.env.OCGCORE_FORK_REQUIRED = "true";
 		readFileMock.mockRejectedValue(new Error("ENOENT"));
 
-		await expect(verifyEdisonCore(makeLogger() as never)).rejects.toThrow(/not found/);
+		await expect(verifyOcgcoreFork(makeLogger() as never)).rejects.toThrow(/not found/);
 	});
 
 	it("warns on a sha mismatch by default (never silently trusts a wrong binary)", async () => {
-		delete process.env.EDISON_CORE_REQUIRED;
+		delete process.env.OCGCORE_FORK_REQUIRED;
 		readFileMock.mockResolvedValue(Buffer.from("not the fork binary"));
 		const logger = makeLogger();
 
-		await verifyEdisonCore(logger as never);
+		await verifyOcgcoreFork(logger as never);
 		expect(logger.warn).toHaveBeenCalledTimes(1);
 		expect(logger.info).not.toHaveBeenCalled();
 	});
 
-	it("throws on a sha mismatch when EDISON_CORE_REQUIRED=true", async () => {
-		process.env.EDISON_CORE_REQUIRED = "true";
+	it("throws on a sha mismatch when OCGCORE_FORK_REQUIRED=true", async () => {
+		process.env.OCGCORE_FORK_REQUIRED = "true";
 		readFileMock.mockResolvedValue(Buffer.from("not the fork binary"));
 
-		await expect(verifyEdisonCore(makeLogger() as never)).rejects.toThrow(/expected/);
+		await expect(verifyOcgcoreFork(makeLogger() as never)).rejects.toThrow(/expected/);
 	});
 });
