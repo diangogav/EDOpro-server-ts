@@ -1,3 +1,4 @@
+import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
 import { PlayerChangeClientMessage } from "@edopro/messages/server-to-client/PlayerChangeClientMessage";
 import { ChildProcessWithoutNullStreams } from "child_process";
 import shuffle from "shuffle-array";
@@ -507,6 +508,10 @@ export class Room extends YgoRoom {
 
 	get replay(): Replay {
 		return this._replay;
+	}
+
+	get banListName(): string | null {
+		return BanListMemoryRepository.findByHash(this.banListHash)?.name ?? null;
 	}
 
 	setDecksToPlayer(position: number, deck: Deck): void {

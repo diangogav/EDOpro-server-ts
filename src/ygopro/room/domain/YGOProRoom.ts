@@ -340,6 +340,10 @@ export class YGOProRoom extends YgoRoom {
 		return this._edoBanListHash;
 	}
 
+	get banListName(): string | null {
+		return MercuryBanListMemoryRepository.findByHash(this.banListHash)?.name ?? null;
+	}
+
 	waiting(): void {
 		this._roomState?.removeAllListener();
 		const userProfileRepo = new UserProfilePostgresRepository();

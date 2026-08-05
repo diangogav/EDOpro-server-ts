@@ -5,6 +5,7 @@ export type GameOverData = {
 	date: Date;
 	players: PlayerMatchSummary[];
 	banListHash: number;
+	banListName: string;
 	ranked: boolean;
 };
 

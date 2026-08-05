@@ -114,6 +114,7 @@ describe("BasicStatsCalculator", () => {
 		const event = GameOverDomainEventMother.create({
 			players: players.map((player) => player.toPresentation()),
 			ranked: true,
+			banListName: "N/A",
 		});
 
 		await basicStatsCalculator.handle(event);
@@ -133,5 +134,49 @@ describe("BasicStatsCalculator", () => {
 		);
 		expect(playerStatsRepository.save).toHaveBeenNthCalledWith(1, PlayerStats.from(playerStats));
 		expect(playerStatsRepository.save).toHaveBeenNthCalledWith(2, PlayerStats.from(opponentStats));
+	});
+
+	it("Should use banListName from event data (not from hash lookup) for per-format rank", async () => {
+		const edisonBanListName = "2010.03 Edison";
+		playerStatsRepository.findByUserIdAndBanListName
+			.mockResolvedValueOnce(playerStats) // per-format lookup for player
+			.mockResolvedValueOnce(playerStats) // Global lookup for player
+			.mockResolvedValueOnce(opponentStats) // per-format lookup for opponent
+			.mockResolvedValueOnce(opponentStats); // Global lookup for opponent
+
+		const players = [player, opponent];
+		const event = GameOverDomainEventMother.create({
+			players: players.map((p) => p.toPresentation()),
+			ranked: true,
+			banListName: edisonBanListName,
+		});
+
+		await basicStatsCalculator.handle(event);
+
+		// Per-format lookup must use the name from event.data.banListName
+		expect(playerStatsRepository.findByUserIdAndBanListName).toHaveBeenCalledWith(
+			playerUserProfile.id,
+			edisonBanListName,
+		);
+		expect(playerStatsRepository.findByUserIdAndBanListName).toHaveBeenCalledWith(
+			opponentUserProfile.id,
+			edisonBanListName,
+		);
+	});
+
+	it("Should NOT write per-format row when banListName is N/A", async () => {
+		const players = [player, opponent];
+		const event = GameOverDomainEventMother.create({
+			players: players.map((p) => p.toPresentation()),
+			ranked: true,
+			banListName: "N/A",
+		});
+
+		await basicStatsCalculator.handle(event);
+
+		// Only Global calls — no per-format call with "N/A"
+		const calls = playerStatsRepository.findByUserIdAndBanListName.mock.calls;
+		const perFormatCalls = calls.filter(([, name]) => name !== "Global");
+		expect(perFormatCalls).toHaveLength(0);
 	});
 });
