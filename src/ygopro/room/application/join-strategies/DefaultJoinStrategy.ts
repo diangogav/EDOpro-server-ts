@@ -1,14 +1,11 @@
-import { generateUniqueId } from "src/utils/generateUniqueId";
-
 import { JoinContext, JoinStrategy } from "./JoinStrategy";
-import { YGOProRoom } from "../../domain/YGOProRoom";
-import YGOProRoomList from "../../infrastructure/YGOProRoomList";
+import { findOrCreateRoom } from "./findOrCreateRoom";
 
 /**
  * DefaultJoinStrategy — terminal fallback.
  *
- * Behavior is an EXACT extraction of the original YGOProJoinHandler.findOrCreateRoom logic.
- * No behavioral changes — only the existing find-or-create + JOIN emit.
+ * Delegates find-or-create to findOrCreateRoom and routes the JOIN event;
+ * it holds no room-matching logic of its own.
  *
  * This strategy always matches (terminal).
  */
@@ -18,40 +15,13 @@ export class DefaultJoinStrategy implements JoinStrategy {
 	}
 
 	async handle(ctx: JoinContext): Promise<void> {
-		const room = this._findOrCreateRoom(ctx);
-
-		if (!room) {
-			ctx.logger.info("JOIN_GAME rejected: wrong password");
-			ctx.socket.destroy();
-			return;
-		}
+		// rankedOverride is left `undefined` (not `false`): RoomLeague.determine
+		// treats undefined as "fall through to hasPin", so an anonymous join
+		// carrying a PIN still resolves to the External league.
+		const room = findOrCreateRoom(ctx, { rankedOverride: undefined });
 
 		// Admission — ranked auth and league segregation — is decided inside the
 		// room's WaitingState via AdmitToRoom. The strategy only routes the join.
 		room.emit("JOIN", ctx.message, ctx.socket);
-	}
-
-	private _findOrCreateRoom(ctx: JoinContext): YGOProRoom | null {
-		const existingRoom = YGOProRoomList.findByName(ctx.command);
-		if (existingRoom) {
-			if (existingRoom.password !== ctx.password) {
-				return null;
-			}
-			return existingRoom;
-		}
-
-		const room = YGOProRoom.create(
-			generateUniqueId(),
-			ctx.rawPass,
-			ctx.logger,
-			ctx.eventEmitter,
-			ctx.playerInfo,
-			ctx.socketId,
-			ctx.messageRepository,
-		);
-		YGOProRoomList.addRoom(room);
-		room.waiting();
-
-		return room;
 	}
 }

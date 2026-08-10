@@ -1,8 +1,5 @@
-import { generateUniqueId } from "src/utils/generateUniqueId";
-
 import { JoinContext, JoinStrategy } from "./JoinStrategy";
-import { YGOProRoom } from "../../domain/YGOProRoom";
-import YGOProRoomList from "../../infrastructure/YGOProRoomList";
+import { findOrCreateRoom } from "./findOrCreateRoom";
 
 /**
  * TicketJoinStrategy — handles joins from sockets that were authenticated
@@ -16,9 +13,12 @@ import YGOProRoomList from "../../infrastructure/YGOProRoomList";
  * - JOIN is emitted directly.
  *
  * The ticket only replaces the username:password LOGIN credential — it does
- * NOT bypass the per-room password (the "command#password" room key). An
- * existing room with a password must still be joined with the matching key,
- * exactly like DefaultJoinStrategy, so private rooms stay private.
+ * NOT bypass the per-room password (the "command#password" room key). Room
+ * identity is the exact (name, password) pair (see findOrCreateRoom /
+ * YGOProRoomList.findByNameAndPassword), so a mismatched key never reaches an
+ * existing room — it identifies a DIFFERENT room outright, exactly like
+ * DefaultJoinStrategy. This is what keeps private rooms private: the
+ * (name, password) pair never matches without the correct password.
  */
 export class TicketJoinStrategy implements JoinStrategy {
 	matches(ctx: JoinContext): boolean {
@@ -26,37 +26,8 @@ export class TicketJoinStrategy implements JoinStrategy {
 	}
 
 	async handle(ctx: JoinContext): Promise<void> {
-		const room = this._findOrCreateRankedRoom(ctx);
-		if (!room) {
-			ctx.logger.info("JOIN_GAME rejected: wrong password");
-			ctx.socket.destroy();
-			return;
-		}
+		// rankedOverride: true — ticket users always join ranked rooms.
+		const room = findOrCreateRoom(ctx, { rankedOverride: true });
 		room.emit("JOIN", ctx.message, ctx.socket);
-	}
-
-	private _findOrCreateRankedRoom(ctx: JoinContext): YGOProRoom | null {
-		const existingRoom = YGOProRoomList.findByName(ctx.command);
-		if (existingRoom) {
-			if (existingRoom.password !== ctx.password) {
-				return null;
-			}
-			return existingRoom;
-		}
-
-		const room = YGOProRoom.create(
-			generateUniqueId(),
-			ctx.rawPass,
-			ctx.logger,
-			ctx.eventEmitter,
-			ctx.playerInfo,
-			ctx.socketId,
-			ctx.messageRepository,
-			true, // rankedOverride — ticket users always join ranked rooms
-		);
-		YGOProRoomList.addRoom(room);
-		room.waiting();
-
-		return room;
 	}
 }
