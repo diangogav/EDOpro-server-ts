@@ -1,5 +1,23 @@
 import { EventEmitter } from "stream";
 
+// The requestBot failure path delegates to FinalizeYGOProRoom.run(), which
+// broadcasts REMOVE-ROOM via WebSocketSingleton. Mock it so tests don't spin
+// up a real HTTP+WS server (mirrors FinalizeYGOProRoom.test.ts).
+jest.mock("../../../../web-socket-server/WebSocketSingleton", () => {
+	const mockBroadcast = jest.fn();
+	return {
+		__esModule: true,
+		default: {
+			getInstance: () => ({ broadcast: mockBroadcast }),
+		},
+		mockBroadcast,
+	};
+});
+
+import { Seat } from "@shared/room/admission/domain/Seat";
+
+import { MessageRepositoryMock } from "@test-support/mocks/MessageRepositoryMock";
+
 import { JoinContext } from "./JoinStrategy";
 import { WindBotJoinStrategy } from "./WindBotJoinStrategy";
 import { WindbotModule, WindbotModuleDeps } from "../../../windbot/application/WindbotModule";
@@ -7,6 +25,8 @@ import { WindbotTokenStore } from "../../../windbot/domain/WindbotTokenStore";
 import { WindbotUnreachableError } from "../../../windbot/domain/WindbotErrors";
 import YGOProRoomList from "../../infrastructure/YGOProRoomList";
 import { YGOProRoom } from "../../domain/YGOProRoom";
+import { FinalizeYGOProRoom } from "../FinalizeYGOProRoom";
+import WebSocketSingleton from "../../../../web-socket-server/WebSocketSingleton";
 
 // ---- helpers ----
 
@@ -111,6 +131,7 @@ describe("WindBotJoinStrategy", () => {
 	afterEach(() => {
 		waitingSpy.mockRestore();
 		emitSpy.mockRestore();
+		jest.clearAllMocks();
 		const rooms = YGOProRoomList.getRooms();
 		while (rooms.length) {
 			YGOProRoomList.deleteRoom(rooms[0]);
@@ -368,6 +389,57 @@ describe("WindBotJoinStrategy", () => {
 			});
 		});
 
+		describe("format-aware random pool resolution (REQ-WINDBOT-POOL)", () => {
+			it("'ed,ai' requests a random bot from the edison pool", async () => {
+				const repo = makeRepo();
+				const mod = makeModule({ repo });
+				const strategy = new WindBotJoinStrategy(mod);
+
+				const ctx = makeCtx("ed,ai");
+
+				await strategy.handle(ctx);
+
+				expect(repo.pickRandom).toHaveBeenCalledWith("edison");
+			});
+
+			it("bare 'ai' keeps the generic pool (undefined)", async () => {
+				const repo = makeRepo();
+				const mod = makeModule({ repo });
+				const strategy = new WindBotJoinStrategy(mod);
+
+				const ctx = makeCtx("ai");
+
+				await strategy.handle(ctx);
+
+				expect(repo.pickRandom).toHaveBeenCalledWith(undefined);
+			});
+
+			it("'pre,ai' requests a random bot from the tcg pool", async () => {
+				const repo = makeRepo();
+				const mod = makeModule({ repo });
+				const strategy = new WindBotJoinStrategy(mod);
+
+				const ctx = makeCtx("pre,ai");
+
+				await strategy.handle(ctx);
+
+				expect(repo.pickRandom).toHaveBeenCalledWith("tcg");
+			});
+
+			it("does not consult the pool when a bot name is given (named lookup, not random)", async () => {
+				const repo = makeRepo();
+				const mod = makeModule({ repo });
+				const strategy = new WindBotJoinStrategy(mod);
+
+				const ctx = makeCtx("ed,ai#Blackwing");
+
+				await strategy.handle(ctx);
+
+				expect(repo.findByName).toHaveBeenCalledWith("Blackwing");
+				expect(repo.pickRandom).not.toHaveBeenCalled();
+			});
+		});
+
 		describe("requestBot failure path", () => {
 			it("sends error to human and closes socket when requestBot throws", async () => {
 				const provider = {
@@ -404,6 +476,98 @@ describe("WindBotJoinStrategy", () => {
 
 				// Room must be deleted
 				expect(YGOProRoomList.getRooms().length).toBe(0);
+			});
+
+			// The failure path must run the CANONICAL teardown
+			// (FinalizeYGOProRoom.run), not a bare YGOProRoomList.deleteRoom(room).
+			// A bare deleteRoom leaks the human's reconnection token (issued by
+			// YGOProWaitingState) into the no-TTL TokenIndex.
+			it("runs the canonical teardown (finalizing flag + REMOVE-ROOM broadcast) on requestBot failure", async () => {
+				const provider = {
+					requestJoin: jest.fn().mockRejectedValue(new WindbotUnreachableError("Anna", 10)),
+				};
+				const mod = makeModule({ provider: provider as never });
+				const strategy = new WindBotJoinStrategy(mod);
+
+				const ctx = makeCtx("AI");
+
+				await strategy.handle(ctx);
+				const room = YGOProRoomList.getRooms()[0];
+				expect(room).toBeDefined();
+
+				await new Promise((r) => setImmediate(r));
+
+				expect(room.finalizing).toBe(true);
+				expect(WebSocketSingleton.getInstance().broadcast).toHaveBeenCalledWith(
+					expect.objectContaining({ action: "REMOVE-ROOM" }),
+				);
+			});
+
+			// FinalizeYGOProRoom.run(room) destroys every seated client's socket.
+			// The human is seated by the earlier JOIN emit, so if run() executes
+			// before the JOINERROR send()/close(), the human's socket would already
+			// be destroyed by the time send() runs — a silent no-op (WS) or
+			// ERR_STREAM_DESTROYED (TCP), leaving the human with a bare disconnect
+			// and no error frame.
+			//
+			// This scenario deliberately does NOT rely on the global `emit` mock
+			// (which leaves room.clients empty and makes ordering regressions
+			// invisible — see SocketCloseOnError.test.ts). It seats a REAL client
+			// on ctx.socket via room.admissionTarget, mirroring what the real JOIN
+			// handler does, so FinalizeYGOProRoom.run() has an actual client to
+			// tear down and any ordering regression is observable.
+			it("delivers JOINERROR to the seated human's socket BEFORE FinalizeYGOProRoom tears the room down", async () => {
+				const provider = {
+					requestJoin: jest.fn().mockRejectedValue(new WindbotUnreachableError("Anna", 10)),
+				};
+				const mod = makeModule({ provider: provider as never });
+				const strategy = new WindBotJoinStrategy(mod);
+
+				const callOrder: string[] = [];
+				const socket = {
+					...makeSocket(),
+					send: jest.fn(() => callOrder.push("send")),
+					close: jest.fn(() => callOrder.push("close")),
+					destroy: jest.fn(() => callOrder.push("destroy")),
+					onMessage: jest.fn(),
+					removeAllListeners: jest.fn(),
+				};
+				const ctx = makeCtx("AI", {
+					socket: socket as never,
+					// The seatPlayer() call below exercises real room bookkeeping
+					// (typeChangeMessage / playerEnterMessage) that this file's local
+					// message-repository stub doesn't implement.
+					messageRepository: new MessageRepositoryMock() as never,
+				});
+
+				await strategy.handle(ctx);
+				const room = YGOProRoomList.getRooms()[0];
+				expect(room).toBeDefined();
+
+				// Reproduce "the human was seated by the earlier JOIN emit" — emit()
+				// is mocked away in this suite, so seat the human explicitly via the
+				// same admission path the real JOIN handler uses.
+				await room
+					.admissionTarget(socket as never, { name: "Human", password: "" } as never)
+					.seatPlayer({ kind: "guest", name: "Human" }, new Seat(0, 0));
+				expect(room.clients).toHaveLength(1);
+
+				// Seating itself already sent lobby-bookkeeping frames (joinGame /
+				// typeChange) through this same socket — clear those out so the
+				// assertion below is only about the failure-path ordering.
+				callOrder.length = 0;
+
+				const runSpy = jest.spyOn(FinalizeYGOProRoom, "run");
+
+				await new Promise((r) => setImmediate(r));
+
+				// The JOINERROR must reach the human's still-open socket, and the
+				// socket must be gracefully closed, BEFORE the canonical teardown
+				// (which destroys every remaining client's socket) runs.
+				expect(callOrder).toEqual(["send", "close", "destroy"]);
+				expect(runSpy).toHaveBeenCalledTimes(1);
+
+				runSpy.mockRestore();
 			});
 		});
 

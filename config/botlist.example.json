@@ -1,38 +1,65 @@
 [
 	{
 		"name": "Joey",
-		"deck": "JTP"
+		"deck": "JTP",
+		"format": "jtp"
 	},
 	{
 		"name": "Yugi",
-		"deck": "Yugi"
+		"deck": "Yugi",
+		"format": "jtp"
 	},
 	{
 		"name": "Salamangreat",
-		"deck": "Salamangreat"
+		"deck": "Salamangreat",
+		"format": "tcg"
 	},
 	{
 		"name": "Sky Striker",
-		"deck": "SkyStriker"
+		"deck": "SkyStriker",
+		"format": "tcg"
 	},
 	{
 		"name": "Labrynth",
-		"deck": "Labrynth"
+		"deck": "Labrynth",
+		"format": "tcg"
 	},
 	{
 		"name": "Yubel",
-		"deck": "Yubel"
+		"deck": "Yubel",
+		"format": "tcg"
 	},
 	{
 		"name": "Swordsoul",
-		"deck": "Swordsoul"
+		"deck": "Swordsoul",
+		"format": "tcg"
 	},
 	{
 		"name": "Ryzeal",
-		"deck": "Ryzeal"
+		"deck": "Ryzeal",
+		"format": "tcg"
 	},
 	{
 		"name": "Maliss",
-		"deck": "Maliss"
+		"deck": "Maliss",
+		"format": "tcg"
+	},
+	{
+		"name": "Blackwing",
+		"deck": "EdisonBlackwing",
+		"hidden": true,
+		"format": "edison"
+	},
+	{
+		"name": "Lightsworn",
+		"deck": "EdisonLightsworn",
+		"hidden": true,
+		"format": "edison"
+	},
+	{
+		"name": "Machina",
+		"deck": "EdisonMachina",
+		"hidden": true,
+		"format": "edison"
 	}
 ]

@@ -5,17 +5,34 @@
  * close the socket AFTER the send — using close() (graceful), NOT destroy().
  *
  * Why close() and not destroy():
- *   destroy() → ws.terminate() is abrupt and can drop the queued error frame, so the
- *   client never receives the JOINERROR it needs to react to. close() → ws.close()
- *   performs the closing handshake and flushes queued frames first, so the error is
- *   delivered AND the socket is torn down (no live-but-rejected connection the client
- *   keeps reusing). Pure-rejection paths with no message (wrong password) still use
- *   destroy() — see DefaultJoinStrategy / TicketJoinStrategy.
+ *   destroy() → ws.terminate()/socket.destroy() is abrupt and can drop the queued
+ *   error frame, so the client never receives the JOINERROR it needs to react to.
+ *   close() → ws.close()/socket.end() performs a graceful (half-)close and flushes
+ *   queued frames first, so the error is delivered AND the socket is torn down (no
+ *   live-but-rejected connection the client keeps reusing).
+ *
+ *   BOTH the tag-mode rejection AND the requestBot-failure paths send + close().
+ *   close() being a half-close (TCP: end(), WS: close()) rather than an
+ *   immediate hard reset is a deliberate UX tradeoff: it is
+ *   attacker-triggerable (a client can force this path repeatedly, e.g. by
+ *   resending an invalid AI join token or an unresolvable windbot request),
+ *   so a half-close lingers slightly longer than destroy() would. Revisit if
+ *   FIN_WAIT abuse / socket exhaustion from repeated triggering is observed in
+ *   production.
+ *
+ *   DefaultJoinStrategy and TicketJoinStrategy never reject on a mismatched
+ *   room password — a mismatch resolves to a different room via
+ *   findOrCreateRoom's (name, password) identity, not an error path. The one
+ *   remaining destroy()-only path with a message is
+ *   RoomState.sendExistingPlayerErrorMessage (duplicate player name), which
+ *   is not covered by this suite.
  *
  * Covered error paths:
  *   WindBotJoinStrategy:
  *     1. Tag-mode rejection → send + close
- *     2. requestBot failure → send + close
+ *     2. requestBot failure → send + close (must run BEFORE
+ *        FinalizeYGOProRoom.run() tears the room's clients down — see
+ *        WindBotJoinStrategy.test.ts for the ordering regression test)
  *
  *   AIJoinTokenStrategy:
  *     3. Invalid token → send + close
@@ -23,6 +40,21 @@
  */
 
 import { EventEmitter } from "stream";
+
+// WindBotJoinStrategy's requestBot-failure path delegates to
+// FinalizeYGOProRoom.run(), which broadcasts REMOVE-ROOM via WebSocketSingleton.
+// Mock it so tests don't spin up a real HTTP+WS server (mirrors
+// FinalizeYGOProRoom.test.ts / WindBotJoinStrategy.test.ts).
+jest.mock("../../../../web-socket-server/WebSocketSingleton", () => {
+	const mockBroadcast = jest.fn();
+	return {
+		__esModule: true,
+		default: {
+			getInstance: () => ({ broadcast: mockBroadcast }),
+		},
+		mockBroadcast,
+	};
+});
 
 import { WindBotJoinStrategy } from "./WindBotJoinStrategy";
 import { AIJoinTokenStrategy } from "./AIJoinTokenStrategy";

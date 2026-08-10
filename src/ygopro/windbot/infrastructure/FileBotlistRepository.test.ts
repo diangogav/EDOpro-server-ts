@@ -28,10 +28,17 @@ describe("FileBotlistRepository", () => {
 			expect(repo.findAll()[0].name).toBe("Anna");
 		});
 
-		it("accepts optional fields (dialog, hidden, deckcode)", () => {
+		it("accepts optional fields (dialog, hidden, deckcode, format)", () => {
 			const filePath = writeTempFile(
 				JSON.stringify([
-					{ name: "Anna", deck: "Anna.ydk", dialog: "anna_dlg", hidden: false, deckcode: "abc" },
+					{
+						name: "Anna",
+						deck: "Anna.ydk",
+						dialog: "anna_dlg",
+						hidden: false,
+						deckcode: "abc",
+						format: "tcg",
+					},
 				]),
 			);
 
@@ -41,6 +48,7 @@ describe("FileBotlistRepository", () => {
 			expect(bots[0].dialog).toBe("anna_dlg");
 			expect(bots[0].hidden).toBe(false);
 			expect(bots[0].deckcode).toBe("abc");
+			expect(bots[0].format).toBe("tcg");
 		});
 
 		it("throws on invalid JSON (malformed)", () => {
@@ -65,6 +73,30 @@ describe("FileBotlistRepository", () => {
 			const filePath = writeTempFile(JSON.stringify({ name: "Anna", deck: "Anna.ydk" }));
 
 			expect(() => new FileBotlistRepository(filePath)).toThrow();
+		});
+	});
+
+	describe("boot-time name length validation", () => {
+		// Every join command rides "<token>,ai#<name>" through the
+		// CTOS_JOIN_GAME utf16[20] pass field. Reserving 4 chars for "<token>,"
+		// (covers up to 3-char tokens like "jtp") and 3 chars for "ai#" leaves
+		// name.length <= 13 as the safe boot-time ceiling.
+		it("accepts a bot name at the 13-char ceiling", () => {
+			const filePath = writeTempFile(JSON.stringify([{ name: "A".repeat(13), deck: "Deck.ydk" }]));
+
+			expect(() => new FileBotlistRepository(filePath)).not.toThrow();
+		});
+
+		it("throws with the offending bot name when a name exceeds the 13-char ceiling", () => {
+			const filePath = writeTempFile(JSON.stringify([{ name: "A".repeat(14), deck: "Deck.ydk" }]));
+
+			expect(() => new FileBotlistRepository(filePath)).toThrow(/AAAAAAAAAAAAAA/);
+		});
+
+		it("scopes the thrown message's guarantee to tokens up to 3 chars, not unconditionally", () => {
+			const filePath = writeTempFile(JSON.stringify([{ name: "A".repeat(14), deck: "Deck.ydk" }]));
+
+			expect(() => new FileBotlistRepository(filePath)).toThrow(/tokens up to 3 chars/);
 		});
 	});
 
@@ -179,6 +211,70 @@ describe("FileBotlistRepository", () => {
 
 			expect(results.has("Anna")).toBe(true);
 			expect(results.has("Gear")).toBe(true);
+		});
+
+		describe("format-scoped random (pickRandom(format))", () => {
+			it("restricts the pool to bots whose format matches, INCLUDING hidden ones", () => {
+				const filePath = writeTempFile(
+					JSON.stringify([
+						{ name: "Anna", deck: "Anna.ydk", format: "tcg" },
+						{ name: "Hidden", deck: "Hidden.ydk", format: "tcg", hidden: true },
+						{ name: "Other", deck: "Other.ydk", format: "jtp" },
+					]),
+				);
+
+				const repo = new FileBotlistRepository(filePath);
+				const results = new Set<string>();
+
+				for (let i = 0; i < 40; i++) {
+					const bot = repo.pickRandom("tcg");
+					if (bot) results.add(bot.name);
+				}
+
+				expect(results.has("Anna")).toBe(true);
+				expect(results.has("Hidden")).toBe(true);
+				expect(results.has("Other")).toBe(false);
+			});
+
+			it("returns null when no bot matches the requested format", () => {
+				const filePath = writeTempFile(
+					JSON.stringify([{ name: "Anna", deck: "Anna.ydk", format: "tcg" }]),
+				);
+
+				const repo = new FileBotlistRepository(filePath);
+
+				expect(repo.pickRandom("edison")).toBeNull();
+			});
+
+			it("treats an empty-string format as an empty pool, NOT the generic pool", () => {
+				const filePath = writeTempFile(
+					JSON.stringify([{ name: "Anna", deck: "Anna.ydk", format: "tcg" }]),
+				);
+
+				const repo = new FileBotlistRepository(filePath);
+
+				expect(repo.pickRandom("")).toBeNull();
+			});
+
+			it("does not change the no-argument (generic pool) behavior", () => {
+				const filePath = writeTempFile(
+					JSON.stringify([
+						{ name: "Anna", deck: "Anna.ydk", format: "tcg" },
+						{ name: "Hidden", deck: "Hidden.ydk", format: "tcg", hidden: true },
+					]),
+				);
+
+				const repo = new FileBotlistRepository(filePath);
+				const results = new Set<string>();
+
+				for (let i = 0; i < 30; i++) {
+					const bot = repo.pickRandom();
+					if (bot) results.add(bot.name);
+				}
+
+				expect(results.has("Hidden")).toBe(false);
+				expect(results.has("Anna")).toBe(true);
+			});
 		});
 	});
 });

@@ -3,9 +3,11 @@ import { generateUniqueId } from "src/utils/generateUniqueId";
 import { ErrorMessageType } from "ygopro-msg-encode";
 
 import { WindbotModule } from "../../../windbot/application/WindbotModule";
+import { resolveBotPool } from "../../../windbot/domain/resolveBotPool";
 import { JoinContext, JoinStrategy } from "./JoinStrategy";
 import { YGOProRoom } from "../../domain/YGOProRoom";
 import YGOProRoomList from "../../infrastructure/YGOProRoomList";
+import { FinalizeYGOProRoom } from "../FinalizeYGOProRoom";
 
 /**
  * WindBotJoinStrategy — handles AI / AI#name join passwords (explicit "ai" token).
@@ -29,13 +31,22 @@ export class WindBotJoinStrategy implements JoinStrategy {
 			return false;
 		}
 
-		// Extract config segment (everything before the first "#"), split by comma,
-		// trim and lowercase — check if "ai" is among the tokens.
-		// This is ORDER-INDEPENDENT and CASE-INSENSITIVE.
-		// Examples: "AI#Anna", "ai,jtp#Joey", "nc,ns,ai#joey", "jtp,ai", "ai"
-		const configSegment = ctx.rawPass.split("#")[0];
-		const tokens = configSegment.split(",").map((t) => t.trim().toLowerCase());
+		const tokens = WindBotJoinStrategy._extractTokens(ctx.rawPass);
 		return tokens.includes("ai");
+	}
+
+	/**
+	 * Extract config segment (everything before the first "#"), split by
+	 * comma, trim and lowercase. Shared by matches() (checks for the "ai"
+	 * token) and handle() (resolves the format-scoped random pool from the
+	 * same tokens via resolveBotPool).
+	 *
+	 * This is ORDER-INDEPENDENT and CASE-INSENSITIVE.
+	 * Examples: "AI#Anna", "ai,jtp#Joey", "nc,ns,ai#joey", "jtp,ai", "ai"
+	 */
+	private static _extractTokens(rawPass: string): string[] {
+		const configSegment = rawPass.split("#")[0];
+		return configSegment.split(",").map((t) => t.trim().toLowerCase());
 	}
 
 	async handle(ctx: JoinContext): Promise<void> {
@@ -45,6 +56,11 @@ export class WindBotJoinStrategy implements JoinStrategy {
 		// "nc,ns,ai#joey" → botName = "joey"
 		// "ai" / "nc,ai" (no "#") → botName = null (random)
 		const botNameOrNull = ctx.password !== "" ? ctx.password : null;
+
+		// Resolve the format-scoped random pool from the SAME config tokens
+		// matches() used (e.g. "ed,ai" → "edison", "pre,ai" → "tcg"). Only
+		// consulted by requestBot when botNameOrNull is null (random selection).
+		const pool = resolveBotPool(WindBotJoinStrategy._extractTokens(ctx.rawPass)) ?? undefined;
 
 		// Create the room through the SAME path as the default flow
 		const room = YGOProRoom.create(
@@ -63,7 +79,7 @@ export class WindBotJoinStrategy implements JoinStrategy {
 			ctx.socket.send(errorBuf);
 			// close() (not destroy()): graceful close flushes the queued JOINERROR frame
 			// to the human before tearing the socket down. destroy()/terminate() is abrupt
-			// and can drop it. (destroy() stays only for message-less rejects, e.g. wrong password.)
+			// and can drop it. (destroy() stays only for message-less rejects.)
 			ctx.socket.close();
 			// Room was NOT added to the list — no cleanup needed
 			return;
@@ -84,28 +100,40 @@ export class WindBotJoinStrategy implements JoinStrategy {
 		// Fire-and-forget: request bot — handle failure internally.
 		// Pass () => room.finalizing so the retry loop aborts as soon as the room
 		// begins teardown (e.g. triggered by a concurrent failure).
-		this._requestBotFireAndForget(room, botNameOrNull, ctx);
+		this._requestBotFireAndForget(room, botNameOrNull, ctx, pool);
 	}
 
 	private _requestBotFireAndForget(
 		room: YGOProRoom,
 		botNameOrNull: string | null,
 		ctx: JoinContext,
+		pool: string | undefined,
 	): void {
 		this.module
-			.requestBot(room.id, botNameOrNull, () => room.finalizing)
+			.requestBot(room.id, botNameOrNull, () => room.finalizing, undefined, pool)
 			.then(({ bot }) => {
 				// Set windbot data on the room now that we know the bot
 				room.windbot = { name: bot.name, deck: bot.deck };
 			})
 			.catch(() => {
-				// On trigger failure, destroy room + notify human
-				YGOProRoomList.deleteRoom(room);
-
+				// Deliver the JOINERROR to the human BEFORE tearing the room down.
+				// FinalizeYGOProRoom.run() below destroys every seated client's
+				// socket, including the human's (seated by the earlier JOIN emit) —
+				// running it first would turn the subsequent send() into a silent
+				// no-op (WS) or ERR_STREAM_DESTROYED (TCP), leaving the human with a
+				// bare disconnect and no error frame.
 				const errorBuf = ctx.messageRepository.errorMessage(ErrorMessageType.JOINERROR, 0);
 				ctx.socket.send(errorBuf);
 				// close() flushes the JOINERROR to the human before tearing down.
 				ctx.socket.close();
+
+				// Tear the room down through the canonical path (finalizing flag,
+				// windbot cleanup, reconnection-token revocation, list removal,
+				// REMOVE-ROOM broadcast) — a bare deleteRoom() would leak the
+				// human's reconnection token into the no-TTL TokenIndex. run() is
+				// idempotent (finalizing guard) and skips clients whose socket is
+				// already closed, so calling it AFTER the send/close above is safe.
+				FinalizeYGOProRoom.run(room);
 			});
 	}
 }
