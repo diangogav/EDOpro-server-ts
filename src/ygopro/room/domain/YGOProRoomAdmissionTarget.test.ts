@@ -113,4 +113,19 @@ describe("YGOProRoom.admissionTarget", () => {
 		// Only the generic JOINERROR — a genuine guest never sent credentials.
 		expect(socket.send).toHaveBeenCalledTimes(1);
 	});
+
+	// YGOProMessageRepository.errorMessage(type, code) requires `code`; the
+	// concrete implementation encodes it directly into the wire payload.
+	// Calling it with only `type` sends `code: undefined` on the real repository.
+	it("rejectAdmission calls errorMessage with an explicit JOINERROR code of 0", () => {
+		const room = YGOProRoomMother.create();
+		const socket = makeSocket();
+		const target = room.admissionTarget(socket, playerInfo("P"));
+
+		const errorMessageSpy = jest.spyOn(room.messageSender, "errorMessage");
+
+		target.rejectAdmission("ranked-requires-account");
+
+		expect(errorMessageSpy).toHaveBeenCalledWith(expect.anything(), 0);
+	});
 });

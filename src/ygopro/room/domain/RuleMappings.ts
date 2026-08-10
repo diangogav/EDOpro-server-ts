@@ -1,4 +1,5 @@
 import MercuryBanListMemoryRepository from "../../ban-list/infrastructure/YGOProBanListMemoryRepository";
+import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 import { GameMode } from "ygopro-msg-encode";
 import { HostInfo } from "./host-info/HostInfo";
 
@@ -13,6 +14,36 @@ function extractNumberFromCommand(input: string): number | null {
 	const match = input.match(/-?\d+(\.\d+)?/);
 
 	return match ? parseFloat(match[0]) : null;
+}
+
+// Tracked per alias so a missing alias (gx/mdc today) warns once instead of
+// re-logging the same, already-known miss on every room creation that uses
+// it. (Module state, so this is "once per alias per module instance" — Jest
+// gives each test FILE a fresh module registry, so this caps repeats to once
+// per alias per file; a long-running server process gets true
+// once-per-alias-per-process.)
+const aliasesWarnedAsMissing = new Set<string>();
+
+/**
+ * Shared resolver for the "look up a format's banlist alias, default to
+ * `fallback` if it's not loaded" pattern. A miss logs a warning (once per
+ * alias — see aliasesWarnedAsMissing) instead of silently mislabeling the
+ * room with whichever list sits at `fallback` (index 0 by default) — see
+ * gx/mdc below, which are dead tokens today because their lists are not
+ * shipped in this corpus.
+ */
+function resolveAliasIndex(alias: string, fallback = 0): number {
+	const index = MercuryBanListMemoryRepository.findIndexByAlias(alias);
+	if (index === -1) {
+		if (!aliasesWarnedAsMissing.has(alias)) {
+			aliasesWarnedAsMissing.add(alias);
+			LoggerFactory.getLogger().warn(
+				`RuleMappings: banlist alias "${alias}" has no matching banlist loaded — falling back to index ${fallback}. The room will be labeled with whatever list sits there.`,
+			);
+		}
+		return fallback;
+	}
+	return index;
 }
 
 export const ruleMappings: RuleMappings = {
@@ -66,22 +97,20 @@ export const priorityRuleMappings: RuleMappings = {
 				};
 			}
 
-			const numberValue = parseInt(value, 10);
-
-			if (numberValue <= 0) {
+			if (lps <= 0) {
 				return {
 					start_lp: 1,
 				};
 			}
 
-			if (numberValue >= 99999) {
+			if (lps >= 99999) {
 				return {
 					start_lp: 99999,
 				};
 			}
 
 			return {
-				start_lp: +lps,
+				start_lp: lps,
 			};
 		},
 		validate: (value) => {
@@ -150,7 +179,7 @@ export const priorityRuleMappings: RuleMappings = {
 	},
 	// OCG with TCG and OCG cards allowed
 	otto: {
-		get: () => ({ rule: 5, lflist: 0 }),
+		get: () => ({ rule: 5, lflist: MercuryBanListMemoryRepository.getFirstOCGIndex() }),
 		validate: (value) => {
 			return value === "otto";
 		},
@@ -312,7 +341,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 0,
-				lflist: 0,
+				lflist: MercuryBanListMemoryRepository.getFirstOCGIndex(),
 			};
 		},
 		validate: (value) => {
@@ -324,7 +353,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: 0,
+				lflist: MercuryBanListMemoryRepository.getFirstOCGIndex(),
 			};
 		},
 		validate: (value) => {
@@ -348,7 +377,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 0,
-				lflist: 0,
+				lflist: MercuryBanListMemoryRepository.getFirstOCGIndex(),
 				mode: GameMode.MATCH,
 				best_of: 3,
 			};
@@ -362,7 +391,7 @@ export const priorityRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: 0,
+				lflist: MercuryBanListMemoryRepository.getFirstOCGIndex(),
 				mode: GameMode.MATCH,
 				best_of: 3,
 			};
@@ -401,25 +430,41 @@ export const priorityRuleMappings: RuleMappings = {
 	},
 };
 
+// Shared payload for the "edison" / "ed" entries below (see comment on "ed").
+// Kept as one function so the two aliases can never drift apart.
+const edisonRuleSet = () => ({
+	rule: 5,
+	lflist: resolveAliasIndex("edison"),
+	duel_rule: 1,
+	time_limit: 450,
+});
+
 export const formatRuleMappings: RuleMappings = {
 	edison: {
-		get: () => {
-			return {
-				rule: 5,
-				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("edison")),
-				duel_rule: 1,
-				time_limit: 450,
-			};
-		},
+		get: edisonRuleSet,
 		validate: (value) => {
 			return value === "edison";
+		},
+	},
+	// "ed" is the short alias of "edison". AI duel join passwords ride the
+	// CTOS_JOIN_GAME utf16[20] "pass" field as "<format-token>,ai#<botlist-name>",
+	// which silently truncates past 20 chars — see aiOpponents.ts (evolution-card-game).
+	// With the current short bot names, "edison,ai#Blackwing" (19) and even
+	// "edison,ai#Lightsworn" (20) DO fit under that ceiling. "ed" is a
+	// deliberate safety margin, not a hard requirement — "edison,ai#Lightsworn"
+	// sits exactly at the 20-char limit, leaving zero room for a longer bot
+	// name added later.
+	ed: {
+		get: edisonRuleSet,
+		validate: (value) => {
+			return value === "ed";
 		},
 	},
 	hat: {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("hat")),
+				lflist: resolveAliasIndex("hat"),
 				duel_rule: 2,
 				time_limit: 450,
 			};
@@ -432,7 +477,7 @@ export const formatRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("tengu")),
+				lflist: resolveAliasIndex("tengu"),
 				duel_rule: 2,
 				time_limit: 450,
 			};
@@ -443,10 +488,9 @@ export const formatRuleMappings: RuleMappings = {
 	},
 	md: {
 		get: () => {
-			const index = MercuryBanListMemoryRepository.findIndexByAlias("md");
 			return {
 				rule: 5,
-				lflist: Math.max(0, index),
+				lflist: resolveAliasIndex("md"),
 				duel_rule: 5,
 				time_limit: 450,
 			};
@@ -459,7 +503,7 @@ export const formatRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("jtp")),
+				lflist: resolveAliasIndex("jtp"),
 				duel_rule: 2,
 			};
 		},
@@ -471,7 +515,7 @@ export const formatRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("adv2007-03")),
+				lflist: resolveAliasIndex("adv2007-03"),
 				duel_rule: 2,
 			};
 		},
@@ -486,7 +530,7 @@ export const formatRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("jtp")),
+				lflist: resolveAliasIndex("jtp"),
 				duel_rule: 2,
 				mode: GameMode.MATCH,
 				best_of: 3,
@@ -496,11 +540,15 @@ export const formatRuleMappings: RuleMappings = {
 			return value === "jm";
 		},
 	},
+	// NOTE: the "gx" banlist is NOT shipped in this corpus, so resolveAliasIndex
+	// always misses and falls back to index 0 (logging a warning). Kept as a
+	// forward-compatible token, not deleted — do not remove without shipping
+	// the corresponding banlist.
 	gx: {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("gx")),
+				lflist: resolveAliasIndex("gx"),
 				duel_rule: 1,
 			};
 		},
@@ -508,11 +556,15 @@ export const formatRuleMappings: RuleMappings = {
 			return value === "gx";
 		},
 	},
+	// NOTE: the "mdc" banlist is NOT shipped in this corpus, so resolveAliasIndex
+	// always misses and falls back to index 0 (logging a warning). Kept as a
+	// forward-compatible token, not deleted — do not remove without shipping
+	// the corresponding banlist.
 	mdc: {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("mdc")),
+				lflist: resolveAliasIndex("mdc"),
 				duel_rule: 2,
 			};
 		},
@@ -524,7 +576,7 @@ export const formatRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 5,
-				lflist: Math.max(0, MercuryBanListMemoryRepository.findIndexByAlias("goat")),
+				lflist: resolveAliasIndex("goat"),
 				duel_rule: 4,
 			};
 		},
@@ -628,7 +680,7 @@ export const formatRuleMappings: RuleMappings = {
 		get: () => {
 			return {
 				rule: 0,
-				lflist: 0,
+				lflist: MercuryBanListMemoryRepository.getFirstOCGIndex(),
 				time_limit: 450,
 			};
 		},
@@ -653,7 +705,7 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				duel_rule: 5,
-				lflist: 0,
+				lflist: MercuryBanListMemoryRepository.getFirstOCGIndex(),
 				time_limit: 450,
 			};
 		},
@@ -661,6 +713,12 @@ export const formatRuleMappings: RuleMappings = {
 			return value === "ocgpre";
 		},
 	},
+	// "tcgart" is byte-identical to "tcgpre" (rule-equivalent) but kept as a
+	// SEPARATE token on purpose: room identity is the raw command string (see
+	// docs/join-commands.md §4 and the pairing-join semantics), so "tcgart"
+	// and "tcgpre" are two distinct pairing pools even though they resolve to
+	// the same ruleset. Merging them into one alias would silently change
+	// which strangers end up paired together.
 	tcgart: {
 		get: () => {
 			return {
@@ -673,12 +731,14 @@ export const formatRuleMappings: RuleMappings = {
 			return value === "tcgart";
 		},
 	},
+	// Same rationale as "tcgart" above, for the OCG side: "ocgart" is
+	// rule-equivalent to "ocgpre" but intentionally a separate token/pairing pool.
 	ocgart: {
 		get: () => {
 			return {
 				rule: 5,
 				duel_rule: 5,
-				lflist: 0,
+				lflist: MercuryBanListMemoryRepository.getFirstOCGIndex(),
 				time_limit: 450,
 			};
 		},
@@ -687,6 +747,22 @@ export const formatRuleMappings: RuleMappings = {
 		},
 	},
 };
+
+/**
+ * True when the lowercased token matches at least one validate() across the
+ * three tiers (mode / format / priority). Used by the pairing-join predicate
+ * to decide whether every token in a join command is a known rule token —
+ * "casual" is intentionally NOT covered here, it is a separate
+ * league token handled directly by YGOProRoom.create.
+ */
+export function isRecognizedToken(token: string): boolean {
+	const normalized = token.toLowerCase();
+	return (
+		Object.values(ruleMappings).some((mapping) => mapping.validate(normalized)) ||
+		Object.values(formatRuleMappings).some((mapping) => mapping.validate(normalized)) ||
+		Object.values(priorityRuleMappings).some((mapping) => mapping.validate(normalized))
+	);
+}
 
 export const extendedCardPoolFormats = new Set([
 	"pre",

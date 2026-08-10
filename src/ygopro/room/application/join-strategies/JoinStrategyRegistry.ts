@@ -1,5 +1,5 @@
 import { JoinContext, JoinStrategy } from "./JoinStrategy";
-import { DefaultJoinStrategy } from "./DefaultJoinStrategy";
+import { composeJoinStrategies } from "./composeJoinStrategies";
 
 /**
  * JoinStrategyRegistry — ordered resolver for join strategies.
@@ -7,7 +7,8 @@ import { DefaultJoinStrategy } from "./DefaultJoinStrategy";
  * Priority order (highest to lowest):
  *   1. AIJoinTokenStrategy  — catches reverse-connecting bot first (AIJOIN# prefix)
  *   2. WindBotJoinStrategy  — matches the explicit "ai" token (AI / AI#name) when windbot enabled
- *   3. DefaultJoinStrategy  — terminal fallback, always matches (blank password lands here)
+ *   3. TicketJoinStrategy   — matches sockets authenticated via a WS handshake ticket
+ *   4. DefaultJoinStrategy  — terminal fallback, always matches (blank password lands here)
  *
  * Mirrors the YGOProRoomList module-level singleton pattern.
  *
@@ -35,12 +36,14 @@ export class JoinStrategyRegistry {
 
 	/**
 	 * Returns the module-level singleton.
-	 * Lazily constructed with a DefaultJoinStrategy-only chain on first call
-	 * (windbot strategies are added when WindbotModule is initialized).
+	 * Lazily constructed with the base chain (composeJoinStrategies() called
+	 * with no windbot arg → [TicketJoinStrategy, DefaultJoinStrategy]) on first
+	 * call — windbot strategies are added when WindbotModule is initialized via
+	 * setStrategies().
 	 */
 	static getInstance(): JoinStrategyRegistry {
 		if (!JoinStrategyRegistry._instance) {
-			JoinStrategyRegistry._instance = new JoinStrategyRegistry([new DefaultJoinStrategy()]);
+			JoinStrategyRegistry._instance = new JoinStrategyRegistry(composeJoinStrategies());
 		}
 		return JoinStrategyRegistry._instance;
 	}

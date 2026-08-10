@@ -78,9 +78,14 @@ describe("DefaultJoinStrategy", () => {
 	});
 
 	describe("handle()", () => {
-		it("destroys the socket when the room exists but password is wrong", async () => {
+		// Room identity for non-pairing joins is the exact (name, password)
+		// pair (see findOrCreateRoom), so a mismatched password identifies a
+		// DIFFERENT room rather than rejecting the join: no matching pair
+		// creates a new room and routes the joiner into it, leaving the
+		// original room untouched.
+		it("creates a new room and routes JOIN into it when the existing same-named room's password does not match", async () => {
 			const emitter = new EventEmitter();
-			const room = YGOProRoom.create(
+			const existingRoom = YGOProRoom.create(
 				9999,
 				"SECRETROOM#correctpass",
 				makeLogger() as never,
@@ -89,19 +94,69 @@ describe("DefaultJoinStrategy", () => {
 				"sock-original",
 				makeMessageRepository() as never,
 			);
-			YGOProRoomList.addRoom(room);
+			YGOProRoomList.addRoom(existingRoom);
+
+			const waitingSpy = jest
+				.spyOn(YGOProRoom.prototype, "waiting")
+				.mockImplementation(() => undefined);
+			const emitSpy = jest.spyOn(YGOProRoom.prototype, "emit").mockImplementation(() => undefined);
 
 			const socket = makeSocket();
+			const messageRepository = makeMessageRepository();
 			const ctx = makeCtx({
 				rawPass: "SECRETROOM#wrongpass",
 				command: "SECRETROOM",
 				password: "wrongpass",
 				socket: socket as never,
+				messageRepository: messageRepository as never,
 			});
 
 			await strategy.handle(ctx);
 
-			expect(socket.destroy).toHaveBeenCalled();
+			expect(socket.close).not.toHaveBeenCalled();
+			expect(messageRepository.errorMessage).not.toHaveBeenCalled();
+
+			const rooms = YGOProRoomList.getRooms();
+			expect(rooms).toHaveLength(2);
+			const newRoom = rooms.find((candidate) => candidate !== existingRoom);
+			expect(newRoom?.name).toBe("SECRETROOM");
+			expect(newRoom?.password).toBe("wrongpass");
+			expect(emitSpy).toHaveBeenCalledWith("JOIN", expect.anything(), ctx.socket);
+			expect(emitSpy.mock.instances[0]).toBe(newRoom);
+
+			waitingSpy.mockRestore();
+			emitSpy.mockRestore();
+		});
+
+		it("routes JOIN to the same room mid-duel when the password matches (spectating is decided downstream by the room's own state)", async () => {
+			const emitter = new EventEmitter();
+			const room = YGOProRoom.create(
+				6666,
+				"DUELROOM#pass",
+				makeLogger() as never,
+				emitter,
+				{ name: "TestPlayer", password: "", previousMessage: Buffer.alloc(0) } as never,
+				"sock-original",
+				makeMessageRepository() as never,
+			);
+			YGOProRoomList.addRoom(room);
+			room.rps(); // lightweight non-waiting transition, no OCGCore needed
+
+			const emitSpy = jest.spyOn(room, "emit").mockImplementation(() => undefined);
+
+			const socket = makeSocket();
+			const ctx = makeCtx({
+				rawPass: "DUELROOM#pass",
+				command: "DUELROOM",
+				password: "pass",
+				socket: socket as never,
+				eventEmitter: emitter,
+			});
+
+			await strategy.handle(ctx);
+
+			expect(emitSpy).toHaveBeenCalledWith("JOIN", expect.anything(), ctx.socket);
+			expect(YGOProRoomList.getRooms()).toHaveLength(1);
 		});
 
 		it("calls room.emit(JOIN) when the existing room has the correct password", async () => {
@@ -188,6 +243,45 @@ describe("DefaultJoinStrategy", () => {
 			emitSpy.mockRestore();
 
 			expect(YGOProRoomList.findByName("NEWROOM")).not.toBeNull();
+		});
+
+		// "TCG" is a recognized rule token with no password segment, so the second
+		// sender must land in the FIRST sender's waiting room instead of creating a
+		// separate one (see findOrCreateRoom.test.ts for the full pairing-scenario
+		// matrix; this is the thin end-to-end proof that DefaultJoinStrategy wires
+		// into it).
+		it("routes a second joiner with the same recognized command into the first's waiting room (pairing)", async () => {
+			const emitter = new EventEmitter();
+
+			const waitingSpy = jest
+				.spyOn(YGOProRoom.prototype, "waiting")
+				.mockImplementation(() => undefined);
+			const emitSpy = jest.spyOn(YGOProRoom.prototype, "emit").mockImplementation(() => undefined);
+
+			const firstCtx = makeCtx({
+				rawPass: "TCG",
+				command: "TCG",
+				password: "",
+				socket: makeSocket() as never,
+				eventEmitter: emitter,
+				messageRepository: makeMessageRepository() as never,
+			});
+			await strategy.handle(firstCtx);
+
+			const secondCtx = makeCtx({
+				rawPass: "TCG",
+				command: "TCG",
+				password: "",
+				socket: makeSocket() as never,
+				eventEmitter: emitter,
+				messageRepository: makeMessageRepository() as never,
+			});
+			await strategy.handle(secondCtx);
+
+			waitingSpy.mockRestore();
+			emitSpy.mockRestore();
+
+			expect(YGOProRoomList.getRooms()).toHaveLength(1);
 		});
 	});
 });

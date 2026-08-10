@@ -76,6 +76,11 @@ COPY --from=server-builder /server/node_modules ./node_modules
 # tsc only emits dist/, so config/ must be copied explicitly or the server crashes
 # at boot with ENOENT when windbot is enabled. Replace botlist.example.json with a
 # curated botlist whose deck names match the WindBot image's bots.json.
+# IMPORTANT: every entry MUST also carry a "format" tag ("tcg" / "jtp" / "edison")
+# matching resolveBotPool's pools. Format-scoped random join commands (e.g.
+# "pre,ai", "ed,ai", "jtp,ai") call pickRandom(format) — a curated botlist without
+# "format" tags makes that lookup return null for every user of those commands
+# (JOINERROR). See config/botlist.example.json for the reference shape.
 COPY --from=server-builder /server/config ./config
 
 # CoreIntegrator binaries

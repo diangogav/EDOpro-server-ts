@@ -155,6 +155,19 @@ describe("WindbotModule", () => {
 
 			expect(result.bot.name).toBe("Gear");
 		});
+
+		it("forwards the pool param through to repo.pickRandom", async () => {
+			const provider = makeProvider();
+			const randomBot = makeBot({ name: "Blackwing", deck: "EdisonBlackwing" });
+			const repo = makeRepo({ pickRandom: jest.fn().mockReturnValue(randomBot) });
+			const mod = WindbotModule.createForTests(
+				makeDeps({ provider: provider as unknown as WindbotModuleDeps["provider"], repo }),
+			);
+
+			await mod.requestBot(1, null, () => false, undefined, "edison");
+
+			expect(repo.pickRandom).toHaveBeenCalledWith("edison");
+		});
 	});
 
 	describe("consumeToken()", () => {

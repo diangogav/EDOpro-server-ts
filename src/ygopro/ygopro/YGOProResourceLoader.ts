@@ -287,10 +287,31 @@ export class YGOProResourceLoader {
 			const buf = await file.read();
 			const text = Buffer.from(buf).toString("utf-8");
 			const lflist = new YGOProLFList().fromText(text);
+			const alias = this.deriveFormatAlias(file.path);
+
+			if (alias && lflist.items.length > 1) {
+				this.logger.warn(
+					`YGOProResourceLoader.getLFLists: "${file.path}" holds ${lflist.items.length} lflist entries under a formats/<alias>/ directory — an alias identifies exactly one list, so "${alias}" is assigned to the first entry only.`,
+				);
+			}
+
+			let itemIndex = 0;
 			for (const item of lflist.items) {
-				yield { item, text };
+				yield { item, text, alias: itemIndex === 0 ? alias : undefined };
+				itemIndex++;
 			}
 		}
+	}
+
+	/**
+	 * A banlist alias identifies exactly one list, so it is derived only from
+	 * paths shaped as formats/<alias>/lflist.conf. Lists outside a formats/
+	 * directory (e.g. the base pool) get no alias.
+	 */
+	private deriveFormatAlias(filePath: string): string | undefined {
+		const normalizedPath = filePath.split(path.sep).join("/");
+		const match = normalizedPath.match(/\/formats\/([^/]+)\/lflist\.conf$/);
+		return match?.[1]?.toLowerCase();
 	}
 
 	async logLFLists(): Promise<void> {

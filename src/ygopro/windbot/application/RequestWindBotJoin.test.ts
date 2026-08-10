@@ -133,5 +133,35 @@ describe("RequestWindBotJoin", () => {
 			const payload = tokenStore.consume(token);
 			expect(payload.deck).toBe("Gear.ydk");
 		});
+
+		it("forwards the pool to repo.pickRandom when provided", () => {
+			const bot = makeBot({ name: "Gear", deck: "Gear.ydk" });
+			const repo = makeRepo({ pickRandom: jest.fn().mockReturnValue(bot) });
+			const useCase = new RequestWindBotJoin(repo, tokenStore);
+
+			useCase.execute(7, null, undefined, "edison");
+
+			expect(repo.pickRandom).toHaveBeenCalledWith("edison");
+		});
+
+		it("calls repo.pickRandom with undefined when no pool is provided (generic pool)", () => {
+			const bot = makeBot({ name: "Gear", deck: "Gear.ydk" });
+			const repo = makeRepo({ pickRandom: jest.fn().mockReturnValue(bot) });
+			const useCase = new RequestWindBotJoin(repo, tokenStore);
+
+			useCase.execute(7, null);
+
+			expect(repo.pickRandom).toHaveBeenCalledWith(undefined);
+		});
+
+		it("does not consult the pool when a bot name is given (named lookup takes priority)", () => {
+			const bot = makeBot();
+			const repo = makeRepo({ findByName: jest.fn().mockReturnValue(bot) });
+			const useCase = new RequestWindBotJoin(repo, tokenStore);
+
+			useCase.execute(1, "Anna", undefined, "edison");
+
+			expect(repo.pickRandom).not.toHaveBeenCalled();
+		});
 	});
 });

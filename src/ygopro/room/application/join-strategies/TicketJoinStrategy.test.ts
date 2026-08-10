@@ -19,6 +19,7 @@ const makeSocket = (resolvedUserId?: string) => ({
 	id: "sock-1",
 	resolvedUserId,
 	destroy: jest.fn(),
+	close: jest.fn(),
 	send: jest.fn(),
 });
 
@@ -165,7 +166,12 @@ describe("TicketJoinStrategy", () => {
 			expect(emitSpy).toHaveBeenCalledWith("JOIN", expect.anything(), ctx.socket);
 		});
 
-		it("rejects the join when the existing room password does NOT match", async () => {
+		// Room identity for non-pairing joins is the exact (name, password)
+		// pair (see findOrCreateRoom), so a mismatched password identifies a
+		// DIFFERENT room rather than rejecting the join: no matching pair
+		// creates a new ranked room (TicketJoinStrategy's rankedOverride=true)
+		// and routes the joiner into it, leaving the original room untouched.
+		it("creates a new ranked room and routes JOIN into it when the existing room's password does NOT match", async () => {
 			const { YGOProRoom } = await import("../../domain/YGOProRoom");
 			const { MessageRepositoryMock } = await import("@test-support/mocks/MessageRepositoryMock");
 			const { LoggerMock } = await import("@test-support/mocks/logger/LoggerMock");
@@ -184,20 +190,40 @@ describe("TicketJoinStrategy", () => {
 				true,
 			);
 			YGOProRoomList.addRoom(existingRoom);
-			const emitSpy = jest.spyOn(existingRoom, "emit").mockImplementation(() => undefined);
+			const originalEmitSpy = jest.spyOn(existingRoom, "emit").mockImplementation(() => undefined);
+
+			const waitingSpy = jest
+				.spyOn(YGOProRoom.prototype, "waiting")
+				.mockImplementation(() => undefined);
+			const emitSpy = jest.spyOn(YGOProRoom.prototype, "emit").mockImplementation(() => undefined);
 
 			const socket = makeSocket("ticket-user");
+			const messageRepository = makeMessageRepository();
 			const ctx = makeCtx({
 				socket: socket as never,
 				command: "TESTROOM",
-				password: "",
-				rawPass: "TESTROOM",
+				password: "wrong",
+				rawPass: "TESTROOM#wrong",
+				messageRepository: messageRepository as never,
 			});
 
 			await strategy.handle(ctx);
 
-			expect(socket.destroy).toHaveBeenCalled();
-			expect(emitSpy).not.toHaveBeenCalled();
+			expect(socket.close).not.toHaveBeenCalled();
+			expect(messageRepository.errorMessage).not.toHaveBeenCalled();
+			expect(originalEmitSpy).not.toHaveBeenCalled();
+
+			const rooms = YGOProRoomList.getRooms();
+			expect(rooms).toHaveLength(2);
+			const newRoom = rooms.find((candidate) => candidate !== existingRoom);
+			expect(newRoom?.name).toBe("TESTROOM");
+			expect(newRoom?.password).toBe("wrong");
+			expect(newRoom?.ranked).toBe(true);
+			expect(emitSpy).toHaveBeenCalledWith("JOIN", expect.anything(), ctx.socket);
+			expect(emitSpy.mock.instances[0]).toBe(newRoom);
+
+			waitingSpy.mockRestore();
+			emitSpy.mockRestore();
 		});
 
 		it("joins an existing room when a non-empty room password matches", async () => {
@@ -231,6 +257,43 @@ describe("TicketJoinStrategy", () => {
 			await strategy.handle(ctx);
 
 			expect(emitSpy).toHaveBeenCalledWith("JOIN", expect.anything(), ctx.socket);
+		});
+
+		// "TCG" is a recognized rule token with no password segment, so a second
+		// ticket-authenticated sender must land in the FIRST sender's waiting
+		// room instead of creating a separate one (see findOrCreateRoom.test.ts
+		// for the full pairing-scenario matrix).
+		it("routes a second ticket joiner with the same recognized command into the first's waiting room (pairing)", async () => {
+			const { YGOProRoom } = await import("../../domain/YGOProRoom");
+			const emitter = new EventEmitter();
+
+			const waitingSpy = jest
+				.spyOn(YGOProRoom.prototype, "waiting")
+				.mockImplementation(() => undefined);
+			const emitSpy = jest.spyOn(YGOProRoom.prototype, "emit").mockImplementation(() => undefined);
+
+			const firstCtx = makeCtx({
+				rawPass: "TCG",
+				command: "TCG",
+				password: "",
+				socket: makeSocket("ticket-user-1") as never,
+				eventEmitter: emitter,
+			});
+			await strategy.handle(firstCtx);
+
+			const secondCtx = makeCtx({
+				rawPass: "TCG",
+				command: "TCG",
+				password: "",
+				socket: makeSocket("ticket-user-2") as never,
+				eventEmitter: emitter,
+			});
+			await strategy.handle(secondCtx);
+
+			waitingSpy.mockRestore();
+			emitSpy.mockRestore();
+
+			expect(YGOProRoomList.getRooms()).toHaveLength(1);
 		});
 	});
 });

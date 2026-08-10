@@ -88,13 +88,16 @@ export class YGOProBanListLoader {
 
 		this.logger.info("Loading ban lists from YGOPro resources...");
 
-		for await (const { item: lflist, text } of loader.getLFLists()) {
+		for await (const { item: lflist, text, alias } of loader.getLFLists()) {
 			const normalizedName = this.appendOcgSuffix(this.normalizeName(lflist.name || "Unnamed"));
 			const hash = lflist.getHash();
 
 			const banList = new YGOProBanList();
 			banList.setName(normalizedName);
 			banList.setHash(hash);
+			if (alias) {
+				banList.setAlias(alias);
+			}
 
 			const isWhitelist = text.includes("$whitelist");
 			if (isWhitelist) {

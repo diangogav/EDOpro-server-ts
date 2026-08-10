@@ -18,8 +18,9 @@ export class RequestWindBotJoin {
 		roomId: number,
 		botNameOrNull: string | null,
 		deckOverride?: string,
+		pool?: string,
 	): RequestWindBotJoinResult {
-		const resolved = this._resolveBot(botNameOrNull);
+		const resolved = this._resolveBot(botNameOrNull, pool);
 		const deck = deckOverride ?? resolved.deck;
 		// The override must reach BOTH the token store AND the bot the provider
 		// fires to windbot (buildUrl reads bot.deck for the `deck=` query param),
@@ -34,7 +35,7 @@ export class RequestWindBotJoin {
 		return { token, bot };
 	}
 
-	private _resolveBot(botNameOrNull: string | null): WindbotData {
+	private _resolveBot(botNameOrNull: string | null, pool?: string): WindbotData {
 		if (botNameOrNull !== null) {
 			const bot = this.repo.findByName(botNameOrNull);
 			if (bot === null) {
@@ -43,7 +44,7 @@ export class RequestWindBotJoin {
 			return bot;
 		}
 
-		const bot = this.repo.pickRandom();
+		const bot = this.repo.pickRandom(pool);
 		if (bot === null) {
 			throw new WindbotsExhaustedError();
 		}
