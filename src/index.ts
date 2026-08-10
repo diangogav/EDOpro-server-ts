@@ -45,12 +45,11 @@ async function start(): Promise<void> {
 	// when the on-disk .conf files change (see bootstrapBanListReloader).
 	await bootstrapBanListReloader(logger);
 
-	await server.initialize();
-	WebSocketSingleton.getInstance();
-	hostServer.initialize();
-	wsHostServer.initialize();
-
 	// config.windbot is validated for fail-fast at module load (src/config/index.ts).
+	// Bootstrapped BEFORE any server/socket initialization below: it has no
+	// dependency on them (only on config + the mercury port number), so a bad
+	// botlist (see FileBotlistRepository's boot-time validation) aborts boot
+	// pre-listen instead of crashing the process with sockets already open.
 	const windbotModule = config.windbot.enabled
 		? bootstrapWindbot(config.windbot, config.servers.mercury.port)
 		: undefined;
@@ -58,6 +57,11 @@ async function start(): Promise<void> {
 	if (windbotModule) {
 		logger.info("🤖 Windbot enabled");
 	}
+
+	await server.initialize();
+	WebSocketSingleton.getInstance();
+	hostServer.initialize();
+	wsHostServer.initialize();
 
 	// After windbot so the queue's bot-fallback availability check reflects it.
 	bootstrapMatchmaking(logger);

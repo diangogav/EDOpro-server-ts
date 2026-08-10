@@ -83,6 +83,38 @@ describe("JoinStrategyRegistry", () => {
 			const instance = JoinStrategyRegistry.getInstance();
 			expect(instance).toBeDefined();
 		});
+
+		// The never-initialized lazy fallback must build the same base chain as
+		// composeJoinStrategies() with no windbot arg — otherwise any process
+		// that reaches getInstance() before bootstrap wires
+		// composeJoinStrategies() in would silently drop TicketJoinStrategy.
+		it("the never-initialized lazy fallback still routes ticket-authenticated sockets to TicketJoinStrategy", () => {
+			JoinStrategyRegistry.reset();
+			const instance = JoinStrategyRegistry.getInstance();
+
+			const ctx = {
+				rawPass: "ROOM",
+				command: "ROOM",
+				password: "",
+				socket: { resolvedUserId: "some-user-id" },
+			} as unknown as JoinContext;
+
+			expect(instance.resolve(ctx)).toBeInstanceOf(TicketJoinStrategy);
+		});
+
+		it("the never-initialized lazy fallback still falls through to DefaultJoinStrategy", () => {
+			JoinStrategyRegistry.reset();
+			const instance = JoinStrategyRegistry.getInstance();
+
+			const ctx = {
+				rawPass: "ROOM",
+				command: "ROOM",
+				password: "",
+				socket: { resolvedUserId: undefined },
+			} as unknown as JoinContext;
+
+			expect(instance.resolve(ctx)).toBeInstanceOf(DefaultJoinStrategy);
+		});
 	});
 
 	describe("bootstrap — base chain [TicketJoinStrategy, DefaultJoinStrategy]", () => {

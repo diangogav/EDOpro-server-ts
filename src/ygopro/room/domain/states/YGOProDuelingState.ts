@@ -551,7 +551,14 @@ export class YGOProDuelingState extends RoomState {
 		this.sendDuelEndAndDisconnect();
 	}
 
-	private disposeCore(): void {
+	/**
+	 * Public so YGOProRoom.setDuelFinished() can dispose THIS state's OCGCore
+	 * before delegating to waiting() on the ocgcore-error recovery path
+	 * (handleResponse's catch, above). Every other exit from dueling disposes
+	 * before transitioning (see finalizeWithReplays and
+	 * transitionToSideDecking) — this path must too, or the core leaks.
+	 */
+	disposeCore(): void {
 		if (this.ocgCore.hasOcgcore()) {
 			this.ocgCore.dispose();
 			this.logger.info("OCGCore disposed");

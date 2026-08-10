@@ -60,6 +60,13 @@ const BEST_OF = {
 	[GameMode.TAG]: 1,
 };
 
+// Computed once at module load (not per YGOProRoom.create() call).
+// Order matters: later tiers overwrite earlier ones for the same hostInfo key.
+const MODE_TIER = Object.values(ruleMappings);
+const FORMAT_TIER = Object.values(formatRuleMappings);
+const PRIORITY_TIER = Object.values(priorityRuleMappings);
+const RULE_MAPPING_TIERS = [MODE_TIER, FORMAT_TIER, PRIORITY_TIER];
+
 export class YGOProRoom extends YgoRoom {
 	readonly name: string;
 	readonly password: string;
@@ -151,7 +158,6 @@ export class YGOProRoom extends YgoRoom {
 			rule: this._hostInfo.rule,
 			maxDeckPoints: this._hostInfo.max_deck_points,
 		});
-		banListHash;
 		const banList = MercuryBanListMemoryRepository.findByHash(banListHash);
 		const edoBanList = BanListMemoryRepository.findByName(banList?.name ?? "");
 		this._edoBanListHash = edoBanList?.hash ?? 0;
@@ -188,49 +194,24 @@ export class YGOProRoom extends YgoRoom {
 			.split(",")
 			.map((_) => _.trim());
 
-		const mappingKeys = Object.keys(ruleMappings);
-		const formatMappingKeys = Object.keys(formatRuleMappings);
-		const priorityMappingKeys = Object.keys(priorityRuleMappings);
-		const mappings = mappingKeys.map((key) => ruleMappings[key]);
-		const formatMappings = formatMappingKeys.map((key) => formatRuleMappings[key]);
-		const priorityMappings = priorityMappingKeys.map((key) => priorityRuleMappings[key]);
+		// One loop over the three tiers (mode → format → priority), each tier
+		// fully applied to every option before the next tier starts — so later
+		// tiers still overwrite earlier ones for the same hostInfo key, and a
+		// double-match is only ever checked WITHIN a single tier's mapping list.
+		for (const tierMappings of RULE_MAPPING_TIERS) {
+			options.forEach((option) => {
+				const items = tierMappings.filter((item) => item.validate(option));
+				if (items.length > 1) {
+					throw new Error(`Error: param match with two rules.`);
+				}
 
-		options.forEach((option) => {
-			const items = mappings.filter((item) => item.validate(option));
-			if (items.length > 1) {
-				throw new Error(`Error: param match with two rules.`);
-			}
-
-			const mapping = items.shift();
-			if (mapping) {
-				const rule = mapping.get(option);
-				hostInfo = { ...hostInfo, ...rule };
-			}
-		});
-
-		options.forEach((option) => {
-			const items = formatMappings.filter((item) => item.validate(option));
-			if (items.length > 1) {
-				throw new Error(`Error: param match with two rules.`);
-			}
-			const mapping = items.shift();
-			if (mapping) {
-				const rule = mapping.get(option);
-				hostInfo = { ...hostInfo, ...rule };
-			}
-		});
-
-		options.forEach((option) => {
-			const items = priorityMappings.filter((item) => item.validate(option));
-			if (items.length > 1) {
-				throw new Error(`Error: param match with two rules.`);
-			}
-			const mapping = items.shift();
-			if (mapping) {
-				const rule = mapping.get(option);
-				hostInfo = { ...hostInfo, ...rule };
-			}
-		});
+				const mapping = items.shift();
+				if (mapping) {
+					const rule = mapping.get(option);
+					hostInfo = { ...hostInfo, ...rule };
+				}
+			});
+		}
 
 		const teamCount = hostInfo.mode === GameMode.TAG ? 2 : 1;
 		// The host's explicit "casual" token wins over any ranked default — a
@@ -324,6 +305,18 @@ export class YGOProRoom extends YgoRoom {
 		);
 	}
 
+	/**
+	 * Minimal read-only routing hint for YGOProRoomList.findJoinableByName.
+	 * This is a LOCK-FREE read (does not take the room mutex) — it is only ever
+	 * used to decide whether a room is worth attempting to join. Real admission
+	 * still runs exclusively under AdmitToRoom / calculatePlace (which DOES take
+	 * the mutex), so a seat that looks free here can still lose the race by the
+	 * time admission actually runs — the caller must be able to tolerate that.
+	 */
+	hasFreeSeat(): boolean {
+		return this.calculatePlaceUnsafe() !== null;
+	}
+
 	get seed(): number[] {
 		return this._currentDuelRecord.seed;
 	}
@@ -345,7 +338,23 @@ export class YGOProRoom extends YgoRoom {
 	}
 
 	waiting(): void {
+		// Keep the DuelState label (_state, read by toRoomListDTO and
+		// DisconnectHandler) and the actual state object (_roomState, whose
+		// handleJoin() decides player-vs-spectator) moving together — every
+		// other transition (rps/choosingOrder/dueling/sideDecking) sets _state
+		// alongside swapping _roomState, so waiting() must too.
+		this._state = DuelState.WAITING;
 		this._roomState?.removeAllListener();
+		// A room can re-enter waiting after an aborted duel (setDuelFinished,
+		// ocgcore error) with both players still seated, isStart="start", and
+		// stale isReady flags from the crashed duel. Reset both here so a bare
+		// TRY_START can't silently re-arm a new duel — everyone must re-ready
+		// deliberately. No-op on first entry (no players seated yet, isStart is
+		// already "waiting" from the constructor) and on every other normal
+		// waiting() call site (room creation), so this is safe to run
+		// unconditionally.
+		this.isStart = "waiting";
+		this._players.forEach((player) => player.notReady());
 		const userProfileRepo = new UserProfilePostgresRepository();
 		const admitToRoom = new AdmitToRoom(
 			new CredentialResolver(userProfileRepo, new UserAuth(userProfileRepo), this._logger),
@@ -447,7 +456,7 @@ export class YGOProRoom extends YgoRoom {
 					});
 					socket.send(Buffer.from(chat.toFullPayload()));
 				}
-				socket.send(this.messageSender.errorMessage(ErrorMessageType.JOINERROR));
+				socket.send(this.messageSender.errorMessage(ErrorMessageType.JOINERROR, 0));
 				socket.close();
 			},
 		};
@@ -839,7 +848,25 @@ export class YGOProRoom extends YgoRoom {
 	}
 
 	setDuelFinished(): void {
-		this._state = DuelState.WAITING;
+		// The ocgcore-error path lands here with the OCGCore still alive inside
+		// the (about to be discarded) dueling state. Every other exit from
+		// dueling disposes the core before transitioning away (see
+		// YGOProDuelingState.finalizeWithReplays / transitionToSideDecking), so
+		// this path must too, or the core leaks. Guarded because
+		// setDuelFinished can only meaningfully dispose when the CURRENT state
+		// actually is a dueling state.
+		if (this._roomState instanceof YGOProDuelingState) {
+			this._roomState.disposeCore();
+		}
+
+		// Delegate to waiting() instead of flipping the _state label alone.
+		// Flipping only the label would leave _roomState pointing at the stale
+		// dueling state, so a room coming out of a broken duel (ocgcore error in
+		// YGOProDuelingState.handleResponse) would look "waiting" in
+		// toRoomListDTO while its live JOIN handler still spectated
+		// unconditionally. waiting() tears down the old state's listeners AND
+		// rearms real player admission (and resets isStart/isReady).
+		this.waiting();
 	}
 
 	get messageSender(): MessageRepository {

@@ -632,6 +632,18 @@ describe("YGOProRoom", () => {
 		});
 	});
 
+	// The same-tier double-match throw is characterized with an isolated,
+	// mocked RuleMappings module in YGOProRoomTierCollapse.test.ts, because the
+	// tier arrays are module-level constants (Object.values computed once at
+	// import) and cannot be mutated at runtime from a normal test.
+	describe("cross-tier double match", () => {
+		it("does NOT throw when a command matches validators across DIFFERENT tiers", () => {
+			// "tcg" matches priorityRuleMappings.ot (priority tier) and "m" matches
+			// ruleMappings.m (mode tier) — two different tiers, so no throw.
+			expect(() => YGOProRoomMother.create({ command: "tcg,m#123" })).not.toThrow();
+		});
+	});
+
 	// A ban-list hot-reload must NOT affect rooms already constructed. A room snapshots
 	// its edopro ban-list hash as a primitive at construction, so a later replaceAll()
 	// on the repositories cannot mutate an in-flight room's value.
