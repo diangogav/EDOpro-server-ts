@@ -110,6 +110,17 @@ export class YGOProBanListLoader {
 				this.parseUnrestrictedEntries(text, banList);
 			}
 
+			// The library hash covers limit 0-2 entries only and ignores the
+			// `$whitelist` directive, so a whitelist list is announced with a hash
+			// no client can match and the room reads "Unknown Banlist". Recompute
+			// it over every entry the way a ygopro-family client does. Genesys is
+			// excluded: it folds per-card point costs into its own hash, which we
+			// do not model, so recomputing there would trade one mismatch for
+			// another.
+			if (isWhitelist && !banList.isGenesys()) {
+				banList.recomputeWhitelistHash();
+			}
+
 			this._loaded.push(banList);
 
 			if (this._target !== null) {
