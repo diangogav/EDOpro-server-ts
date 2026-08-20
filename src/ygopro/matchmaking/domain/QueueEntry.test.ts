@@ -1,8 +1,8 @@
 import { MATCHMAKING_FORMATS, MatchmakingFormat } from "./QueueEntry";
 
 describe("MATCHMAKING_FORMATS", () => {
-	it('is exactly ["tcg","jtp"] as a const array', () => {
-		expect(MATCHMAKING_FORMATS).toEqual(["tcg", "jtp"]);
+	it('is exactly ["tcg","jtp","edison"] as a const array', () => {
+		expect(MATCHMAKING_FORMATS).toEqual(["tcg", "jtp", "edison"]);
 	});
 
 	it("contains only non-empty, unique format strings", () => {

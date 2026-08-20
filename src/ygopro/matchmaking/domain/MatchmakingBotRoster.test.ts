@@ -18,6 +18,10 @@ describe("MATCHMAKING_BOT_ROSTER", () => {
 		expect(MATCHMAKING_BOT_ROSTER.jtp.length).toBe(2);
 	});
 
+	it("edison roster has exactly 3 entries", () => {
+		expect(MATCHMAKING_BOT_ROSTER.edison.length).toBe(3);
+	});
+
 	it("all roster entries have non-empty name and deck strings", () => {
 		for (const fmt of MATCHMAKING_FORMATS) {
 			for (const pair of MATCHMAKING_BOT_ROSTER[fmt]) {
@@ -33,6 +37,17 @@ describe("MATCHMAKING_BOT_ROSTER", () => {
 		const jtp = MATCHMAKING_BOT_ROSTER.jtp;
 		expect(jtp[0]).toEqual({ name: "Joey", deck: "JTP" });
 		expect(jtp[1]).toEqual({ name: "Yugi", deck: "Yugi" });
+	});
+
+	it("edison roster pairs each archetype name with its Edison deck", () => {
+		// Names and decks are verified against config/botlist.example.json, where
+		// the Edison bots are `hidden` (excluded from the random pool) but still
+		// reachable by explicit name — which is exactly how the roster requests them.
+		expect(MATCHMAKING_BOT_ROSTER.edison).toEqual([
+			{ name: "Blackwing", deck: "EdisonBlackwing" },
+			{ name: "Lightsworn", deck: "EdisonLightsworn" },
+			{ name: "Machina", deck: "EdisonMachina" },
+		]);
 	});
 });
 

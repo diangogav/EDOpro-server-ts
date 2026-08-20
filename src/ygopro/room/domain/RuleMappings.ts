@@ -460,6 +460,20 @@ export const formatRuleMappings: RuleMappings = {
 			return value === "ed";
 		},
 	},
+	// "edm" is "edison" + best-of-3 match. Kept to 3 chars because it is the
+	// matchmaking MATCH token for the edison queue, whose join string must fit
+	// the utf16[20] wire field (token <= 3 chars — see MatchmakingRoomFactory).
+	// Spreads the shared edison payload so the two can never drift apart.
+	edm: {
+		get: () => ({
+			...edisonRuleSet(),
+			mode: GameMode.MATCH,
+			best_of: 3,
+		}),
+		validate: (value) => {
+			return value === "edm";
+		},
+	},
 	hat: {
 		get: () => {
 			return {

@@ -87,6 +87,36 @@ describe("createMatchmakingRoom", () => {
 		expect(room.hostInfo.rule).toBe(5);
 	});
 
+	it('uses the "ed" token for edison single rooms (MR1 + edison banlist)', () => {
+		const { room } = createMatchmakingRoom({
+			format: "edison",
+			rankedOverride: false,
+			logger: makeLogger(),
+			emitter: new EventEmitter(),
+		});
+
+		expect(room.name.startsWith("ed,")).toBe(true);
+		// Edison is Master Rule 1 over the open pool — the banlist defines the format.
+		expect(room.hostInfo.rule).toBe(5);
+		expect(room.hostInfo.duel_rule).toBe(1);
+		expect(room.bestOf).toBe(1);
+	});
+
+	it('uses the "edm" token for edison MATCH rooms (edison rules + best-of-3)', () => {
+		const { room } = createMatchmakingRoom({
+			format: "edison",
+			rankedOverride: true,
+			matchMode: true,
+			logger: makeLogger(),
+			emitter: new EventEmitter(),
+		});
+
+		expect(room.bestOf).toBe(3);
+		expect(room.isMatch).toBe(true);
+		expect(room.name.startsWith("edm,")).toBe(true);
+		expect(room.hostInfo.duel_rule).toBe(1);
+	});
+
 	it("keeps rooms best-of-1 when matchMode is omitted (bot fallback — windbot cannot side-deck)", () => {
 		const { room } = createMatchmakingRoom({
 			rankedOverride: false,

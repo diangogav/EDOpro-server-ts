@@ -261,6 +261,36 @@ describe("ed mapping (edison short alias, used by AI duel join commands)", () =>
 	});
 });
 
+describe("edm mapping (edison best-of-3, used by matchmaking)", () => {
+	it("maps the edison rule set to a best-of-3 match", () => {
+		const findIndex = jest
+			.spyOn(MercuryBanListMemoryRepository, "findIndexByAlias")
+			.mockReturnValue(7);
+
+		const rule = formatRuleMappings.edm.get("edm");
+
+		// Same rule set as "edison"/"ed" — MR1 over the open pool with the edison
+		// banlist and the 450s clock — plus MATCH + best-of-3 for ranked pairs.
+		expect(rule).toEqual({
+			rule: 5,
+			lflist: 7,
+			duel_rule: 1,
+			time_limit: 450,
+			mode: GameMode.MATCH,
+			best_of: 3,
+		});
+		expect(findIndex).toHaveBeenCalledWith("edison");
+
+		findIndex.mockRestore();
+	});
+
+	it("validates only the exact token", () => {
+		expect(formatRuleMappings.edm.validate("edm")).toBe(true);
+		expect(formatRuleMappings.edm.validate("ed")).toBe(false);
+		expect(formatRuleMappings.edm.validate("edison")).toBe(false);
+	});
+});
+
 describe("jtp-2007-03 mapping (JTP Advanced March 2007)", () => {
 	it("maps the historical JTP variant to MR2 over the open JTP pool", () => {
 		const findIndex = jest

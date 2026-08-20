@@ -19,7 +19,7 @@ export const MATCHED_GRACE_MS = 30_000;
 
 /** All accepted matchmaking formats. Used as the single source of truth for the
  * Zod enum, type derivation, and per-format record maps. */
-export const MATCHMAKING_FORMATS = ["tcg", "jtp"] as const;
+export const MATCHMAKING_FORMATS = ["tcg", "jtp", "edison"] as const;
 export const SUPPORTED_QUEUE = "ranked" as const;
 
 export type MatchmakingFormat = (typeof MATCHMAKING_FORMATS)[number];

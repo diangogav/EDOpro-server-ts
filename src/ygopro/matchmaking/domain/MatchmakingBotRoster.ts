@@ -25,6 +25,12 @@ export interface BotIdentity {
  * JTP roster: Joey plays JTP, Yugi plays Yugi. Both are in the server botlist
  * (config/botlist.example.json) so requestBot will find them by name.
  *
+ * Edison roster: the three archetype bots shipped for the vs-AI screen —
+ * "Blackwing" ↔ EdisonBlackwing.ydk, "Lightsworn" ↔ EdisonLightsworn.ydk,
+ * "Machina" ↔ EdisonMachina.ydk. They are `hidden` in the botlist (kept out of
+ * the random pool) but stay reachable by explicit name, which is how the roster
+ * requests them.
+ *
  * IMPORTANT: All deck strings must be legal for the active banlist of that format.
  * Adjust if a deck-check rejects any entry.
  */
@@ -41,6 +47,11 @@ export const MATCHMAKING_BOT_ROSTER: Record<MatchmakingFormat, readonly BotIdent
 	jtp: [
 		{ name: "Joey", deck: "JTP" },
 		{ name: "Yugi", deck: "Yugi" },
+	],
+	edison: [
+		{ name: "Blackwing", deck: "EdisonBlackwing" },
+		{ name: "Lightsworn", deck: "EdisonLightsworn" },
+		{ name: "Machina", deck: "EdisonMachina" },
 	],
 };
 
