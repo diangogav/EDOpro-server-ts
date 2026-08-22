@@ -2,6 +2,7 @@ import { EventEmitter } from "stream";
 
 import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
 import { RoomState } from "@edopro/room/domain/RoomState";
+import { YGOProRoomState } from "../YGOProRoomState";
 
 import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
 import { YGOProDeckValidator } from "@ygopro/deck/domain/YGOProDeckValidator";
@@ -31,7 +32,7 @@ import {
 const SIDE_TIMEOUT_MINUTES = config.sideTimeoutMinutes;
 const TICK_INTERVAL_MS = 60_000;
 
-export class YGOProSideDeckingState extends RoomState {
+export class YGOProSideDeckingState extends YGOProRoomState {
 	private readonly playerTimers = new Map<number, NodeJS.Timeout>();
 	private readonly playerRemainMinutes = new Map<number, number>();
 
@@ -282,9 +283,22 @@ export class YGOProSideDeckingState extends RoomState {
 		}
 
 		this.clearAllTimeouts();
-		(room.clientWhoChoosesTurn as YGOProClient).sendMessageToClient(
-			room.messageSender.selectTpMessage(),
-		);
+
+		// KDE Tournament Policy §IV.F: after a drawn duel the loser-chooses rule
+		// does not apply — a random method decides again, so re-enter RPS. The
+		// missing-chooser fallback goes the same way: a random re-roll is always
+		// a legal way to pick the deciding duelist, while throwing here would
+		// strand the whole room after everyone already sided.
+		const chooser = room.clientWhoChoosesTurn as YGOProClient | undefined;
+		if (room.turnChoiceRequiresRps || !chooser) {
+			room.turnChoiceRequiresRps = false;
+			this.toRPS(room);
+			room.rps();
+
+			return;
+		}
+
+		chooser.sendMessageToClient(room.messageSender.selectTpMessage());
 
 		room.choosingOrder();
 	}

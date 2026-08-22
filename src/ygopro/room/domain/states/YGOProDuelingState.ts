@@ -112,7 +112,19 @@ export class YGOProDuelingState extends RoomState {
 			YGOProMsgWin,
 			(msg) => {
 				this.logger.info(`Winner: player=${msg.player}, type=${msg.type}`);
-				this.handleWinCondition(msg);
+				// Clients receive MSG_WIN early in this sequence; if anything after
+				// that throws, they would wait forever for CHANGE_SIDE/DUEL_END.
+				// Fail towards closing the room so nobody is stranded on WinScreen.
+				this.handleWinCondition(msg).catch((error) => {
+					this.logger.error(`handleWinCondition failed: ${String(error)}`);
+					try {
+						this.sendDuelEndAndDisconnect();
+					} catch (sendError) {
+						this.logger.error(`sendDuelEndAndDisconnect failed: ${String(sendError)}`);
+					}
+					this.removeRoom();
+				});
+
 				return msg;
 			},
 			100,
@@ -526,6 +538,17 @@ export class YGOProDuelingState extends RoomState {
 	}
 
 	private assignSideDeckChoice(winner: number): void {
+		// A DRAW (ingame position 2, neither team) has no loser to hand the turn
+		// choice to. KDE Tournament Policy §IV.F: "In the case of a Duel ending in
+		// a Draw, another random method should be employed to choose the deciding
+		// Duelist" — flag the room so side-decking re-enters RPS.
+		if (winner !== Team.PLAYER && winner !== Team.OPPONENT) {
+			this.room.turnChoiceRequiresRps = true;
+
+			return;
+		}
+
+		this.room.turnChoiceRequiresRps = false;
 		const looser = this.room.players.find((client: YGOProClient) => {
 			const isLoserTeam =
 				winner === Team.PLAYER ? client.team === Team.OPPONENT : client.team === Team.PLAYER;

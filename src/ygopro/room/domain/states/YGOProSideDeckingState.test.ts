@@ -131,3 +131,129 @@ describe("YGOProSideDeckingState.handleUpdateDeck — deck error code is encoded
 		);
 	});
 });
+
+// ---- post-side turn choice (KDE Tournament Policy §IV.F) ----
+//
+// After a decided duel, the loser of the previous duel chooses who goes first
+// (selectTp → choosingOrder). After a DRAWN duel the loser-chooses rule does
+// not apply: "another random method should be employed to choose the deciding
+// Duelist" — the room must re-enter RPS instead of reusing a stale chooser.
+
+describe("YGOProSideDeckingState — post-side turn choice", () => {
+	let eventEmitter: EventEmitter;
+	let mockLogger: jest.Mocked<Logger>;
+	let mockDeckCreator: jest.Mocked<YGOProDeckCreator>;
+	let mockDeckValidator: jest.Mocked<YGOProDeckValidator>;
+
+	const makePlayer = (position: number, team: number) =>
+		({
+			isSpectator: false,
+			position,
+			team,
+			isReady: true,
+			name: `p${position}`,
+			ready: jest.fn(),
+			captain: jest.fn(),
+			deck: { isSideDeckValid: jest.fn().mockReturnValue(true) },
+			logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
+			sendMessageToClient: jest.fn(),
+		}) as unknown as jest.Mocked<YGOProClient>;
+
+	const makeRoom = (
+		players: jest.Mocked<YGOProClient>[],
+		opts: { chooser?: YGOProClient; turnChoiceRequiresRps?: boolean },
+	) =>
+		({
+			players,
+			banListHash: 0,
+			hostInfo: { rule: 0 },
+			useExtendedCardPool: false,
+			shouldValidateDeck: jest.fn().mockReturnValue(false),
+			notReadyUnsafe: jest.fn(),
+			setDecksToPlayerUnsafe: jest.fn(),
+			getTeamPlayers: jest.fn((team: number) => players.filter((p) => p.team === team)),
+			rps: jest.fn(),
+			choosingOrder: jest.fn(),
+			clientWhoChoosesTurn: opts.chooser,
+			turnChoiceRequiresRps: opts.turnChoiceRequiresRps ?? false,
+			messageSender: {
+				errorMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
+				duelStartMessage: jest.fn().mockReturnValue(Buffer.from("duel-start")),
+				selectHandMessage: jest.fn().mockReturnValue(Buffer.from("select-hand")),
+				selectTpMessage: jest.fn().mockReturnValue(Buffer.from("select-tp")),
+			},
+		}) as unknown as jest.Mocked<YGOProRoom>;
+
+	beforeEach(() => {
+		eventEmitter = new EventEmitter();
+		mockLogger = {
+			child: jest.fn().mockReturnThis(),
+			info: jest.fn(),
+			warn: jest.fn(),
+			error: jest.fn(),
+			debug: jest.fn(),
+		} as unknown as jest.Mocked<Logger>;
+		mockDeckCreator = {
+			build: jest.fn().mockResolvedValue({ allCards: [] }),
+		} as unknown as jest.Mocked<YGOProDeckCreator>;
+		mockDeckValidator = {
+			validate: jest.fn().mockReturnValue(null),
+		} as unknown as jest.Mocked<YGOProDeckValidator>;
+	});
+
+	const emitUpdateDeckFrom = (
+		room: jest.Mocked<YGOProRoom>,
+		player: jest.Mocked<YGOProClient>,
+	): Promise<void> => {
+		const message = makeClientMessage(makeDeckPayload());
+		return new Promise((resolve) => {
+			setImmediate(() => resolve());
+			eventEmitter.emit(Commands.UPDATE_DECK as unknown as string, message, room, player);
+		});
+	};
+
+	it("re-enters RPS when the previous duel was a draw (turnChoiceRequiresRps)", async () => {
+		const p0 = makePlayer(0, 0);
+		const p1 = makePlayer(1, 1);
+		// A stale chooser from game 1 is present on purpose — the flag must win.
+		const room = makeRoom([p0, p1], { chooser: p0, turnChoiceRequiresRps: true });
+		new YGOProSideDeckingState(eventEmitter, mockLogger, mockDeckCreator, mockDeckValidator, room);
+
+		await emitUpdateDeckFrom(room, p0);
+
+		expect(room.rps).toHaveBeenCalledTimes(1);
+		expect(room.choosingOrder).not.toHaveBeenCalled();
+		expect(room.turnChoiceRequiresRps).toBe(false);
+		// Both captains got STOC_SELECT_HAND
+		expect(p0.captain).toHaveBeenCalled();
+		expect(p1.captain).toHaveBeenCalled();
+		expect(p0.sendMessageToClient).toHaveBeenCalledWith(Buffer.from("select-hand"));
+		expect(p1.sendMessageToClient).toHaveBeenCalledWith(Buffer.from("select-hand"));
+		expect(room.messageSender.selectTpMessage).not.toHaveBeenCalled();
+	});
+
+	it("keeps loser-chooses (selectTp → choosingOrder) when the previous duel had a winner", async () => {
+		const p0 = makePlayer(0, 0);
+		const p1 = makePlayer(1, 1);
+		const room = makeRoom([p0, p1], { chooser: p1, turnChoiceRequiresRps: false });
+		new YGOProSideDeckingState(eventEmitter, mockLogger, mockDeckCreator, mockDeckValidator, room);
+
+		await emitUpdateDeckFrom(room, p0);
+
+		expect(p1.sendMessageToClient).toHaveBeenCalledWith(Buffer.from("select-tp"));
+		expect(room.choosingOrder).toHaveBeenCalledTimes(1);
+		expect(room.rps).not.toHaveBeenCalled();
+	});
+
+	it("falls back to RPS instead of throwing when no chooser was assigned", async () => {
+		const p0 = makePlayer(0, 0);
+		const p1 = makePlayer(1, 1);
+		const room = makeRoom([p0, p1], { chooser: undefined, turnChoiceRequiresRps: false });
+		new YGOProSideDeckingState(eventEmitter, mockLogger, mockDeckCreator, mockDeckValidator, room);
+
+		await emitUpdateDeckFrom(room, p0);
+
+		expect(room.rps).toHaveBeenCalledTimes(1);
+		expect(room.choosingOrder).not.toHaveBeenCalled();
+	});
+});
