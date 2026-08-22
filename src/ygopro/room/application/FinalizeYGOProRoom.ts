@@ -1,3 +1,7 @@
+import { YGOProStocDuelEnd } from "ygopro-msg-encode";
+
+import { DuelState } from "@shared/room/domain/YgoRoom";
+
 import { WindbotModule } from "../../windbot/application/WindbotModule";
 import { YGOProClient } from "@ygopro/client/domain/YGOProClient";
 import { YGOProRoom } from "../domain/YGOProRoom";
@@ -28,9 +32,24 @@ export class FinalizeYGOProRoom {
 
 		WindbotModule.cleanupRoomIfEnabled(room.id);
 
+		// A client whose socket is still open mid-duel (WinScreen, side deck, RPS)
+		// deliberately tolerates silent socket drops to allow reconnects — so an
+		// unannounced destroy() strands it forever. STOC_DUEL_END is the universal
+		// "this room is over" frame; send it best-effort before closing. In the
+		// WAITING lobby the frame is meaningless (join errors already speak for
+		// themselves) and the client's lobby disconnect policy handles the drop.
+		const announceDuelEnd = room.duelState !== DuelState.WAITING;
+		const duelEndBuffer = Buffer.from(new YGOProStocDuelEnd().toFullPayload());
 		(room.clients as YGOProClient[]).forEach((client) => {
 			ReconnectionTokenIssuer.revoke(client);
 			if (!client.socket.closed) {
+				if (announceDuelEnd) {
+					try {
+						client.sendMessageToClient(duelEndBuffer);
+					} catch {
+						// Socket already broken — destroy below still runs.
+					}
+				}
 				client.destroy();
 			}
 		});
