@@ -21,7 +21,8 @@
 			"@edopro/*": ["src/edopro/*"],
 			"@shared/*": ["src/shared/*"],
 			"@ygopro/*": ["src/ygopro/*"],
-			"@test-support/*": ["src/test-support/*"]
+			"@test-support/*": ["src/test-support/*"],
+			"@plugins/*": ["src/plugins/*"]
 		}
 	},
 	"include": ["src/**/*"],
