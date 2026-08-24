@@ -664,7 +664,7 @@ export class YGOProDuelingState extends RoomState {
 	}
 
 	private dispatchGameOverDomainEvent(): void {
-		this.eventBus.publish(
+		void this.eventBus.publish(
 			GameOverDomainEvent.DOMAIN_EVENT,
 			new GameOverDomainEvent({
 				bestOf: this.room.bestOf,
