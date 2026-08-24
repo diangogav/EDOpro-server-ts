@@ -22,8 +22,8 @@ import { DuelResumeCreator } from "./shared/stats/match-resume/duel-resume/appli
 import { MatchResumePostgresRepository } from "./shared/stats/match-resume/infrastructure/postgres/MatchResumePostgresRepository";
 import { PlayerStatsPostgresRepository } from "./shared/stats/player-stats/infrastructure/PlayerStatsPostgresRepository";
 import { BasicStatsCalculator } from "./plugins/basic-stats/application/BasicStatsCalculator";
-import { UnrankedMatchSaver } from "./shared/stats/unranked-match/application/UnrankedMatchSaver";
-import { UnrankedMatchPostgresRepository } from "./shared/stats/unranked-match/infrastructure/postgres/UnrankedMatchPostgresRepository";
+import { UnrankedMatchSaver } from "./plugins/unranked-match/application/UnrankedMatchSaver";
+import { UnrankedMatchPostgresRepository } from "./plugins/unranked-match/infrastructure/postgres/UnrankedMatchPostgresRepository";
 import { UserProfilePostgresRepository } from "./shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import WebSocketSingleton from "./web-socket-server/WebSocketSingleton";
 import { bootstrapWindbot } from "./ygopro/windbot/infrastructure/bootstrapWindbot";
