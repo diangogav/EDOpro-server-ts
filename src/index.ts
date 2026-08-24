@@ -21,7 +21,7 @@ import { MatchResumeCreator } from "./shared/stats/match-resume/application/Matc
 import { DuelResumeCreator } from "./shared/stats/match-resume/duel-resume/application/DuelResumeCreator";
 import { MatchResumePostgresRepository } from "./shared/stats/match-resume/infrastructure/postgres/MatchResumePostgresRepository";
 import { PlayerStatsPostgresRepository } from "./shared/stats/player-stats/infrastructure/PlayerStatsPostgresRepository";
-import { BasicStatsCalculator } from "./shared/stats/basic/application/BasicStatsCalculator";
+import { BasicStatsCalculator } from "./plugins/basic-stats/application/BasicStatsCalculator";
 import { UnrankedMatchSaver } from "./shared/stats/unranked-match/application/UnrankedMatchSaver";
 import { UnrankedMatchPostgresRepository } from "./shared/stats/unranked-match/infrastructure/postgres/UnrankedMatchPostgresRepository";
 import { UserProfilePostgresRepository } from "./shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";

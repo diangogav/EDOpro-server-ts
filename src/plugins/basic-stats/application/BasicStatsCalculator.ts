@@ -3,12 +3,12 @@ import { Logger } from "src/shared/logger/domain/Logger";
 import { Player } from "src/shared/player/domain/Player";
 import { UserProfileRepository } from "src/shared/user-profile/domain/UserProfileRepository";
 
-import { DomainEventSubscriber } from "../../../event-bus/EventBus";
-import { GameOverDomainEvent } from "../../../room/domain/match/domain/domain-events/GameOverDomainEvent";
-import { MatchResumeCreator } from "../../match-resume/application/MatchResumeCreator";
-import { DuelResumeCreator } from "../../match-resume/duel-resume/application/DuelResumeCreator";
-import { PlayerStatsRepository } from "../../player-stats/domain/PlayerStatsRepository";
-import { config } from "./../../../../config/index";
+import { DomainEventSubscriber } from "../../../shared/event-bus/EventBus";
+import { GameOverDomainEvent } from "../../../shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
+import { MatchResumeCreator } from "../../../shared/stats/match-resume/application/MatchResumeCreator";
+import { DuelResumeCreator } from "../../../shared/stats/match-resume/duel-resume/application/DuelResumeCreator";
+import { PlayerStatsRepository } from "../../../shared/stats/player-stats/domain/PlayerStatsRepository";
+import { config } from "../../../config/index";
 
 export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomainEvent> {
 	static readonly ListenTo = GameOverDomainEvent.DOMAIN_EVENT;
