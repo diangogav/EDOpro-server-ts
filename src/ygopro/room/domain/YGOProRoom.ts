@@ -98,6 +98,12 @@ export class YGOProRoom extends YgoRoom {
 	// is being torn down.
 	finalizing: boolean = false;
 
+	// Set when a duel in a match ends in a DRAW. KDE Tournament Policy §IV.F:
+	// after a drawn duel the loser-chooses rule does not apply — "another random
+	// method should be employed", so side-decking must re-enter RPS instead of
+	// reusing the previous game's chooser.
+	turnChoiceRequiresRps = false;
+
 	private constructor({
 		id,
 		name,

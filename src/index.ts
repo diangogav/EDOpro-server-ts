@@ -14,7 +14,17 @@ import { WSHostServer } from "./socket-server/WSHostServer";
 import { YGOProServer } from "./socket-server/YGOProServer";
 import { WSYGOProServer } from "./socket-server/WSYGOProServer";
 import { HandshakeTicketAuthenticator } from "./socket-server/HandshakeTicketAuthenticator";
+import { container } from "./shared/dependency-injection";
+import { EventBus } from "./shared/event-bus/EventBus";
 import { RedisTicketRepository } from "./shared/ticket/infrastructure/redis/RedisTicketRepository";
+import { MatchResumeCreator } from "./shared/stats/match-resume/application/MatchResumeCreator";
+import { DuelResumeCreator } from "./shared/stats/match-resume/duel-resume/application/DuelResumeCreator";
+import { MatchResumePostgresRepository } from "./shared/stats/match-resume/infrastructure/postgres/MatchResumePostgresRepository";
+import { PlayerStatsPostgresRepository } from "./shared/stats/player-stats/infrastructure/PlayerStatsPostgresRepository";
+import { BasicStatsCalculator } from "./shared/stats/basic/application/BasicStatsCalculator";
+import { UnrankedMatchSaver } from "./shared/stats/unranked-match/application/UnrankedMatchSaver";
+import { UnrankedMatchPostgresRepository } from "./shared/stats/unranked-match/infrastructure/postgres/UnrankedMatchPostgresRepository";
+import { UserProfilePostgresRepository } from "./shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import WebSocketSingleton from "./web-socket-server/WebSocketSingleton";
 import { bootstrapWindbot } from "./ygopro/windbot/infrastructure/bootstrapWindbot";
 import { JoinStrategyRegistry } from "./ygopro/room/application/join-strategies/JoinStrategyRegistry";
@@ -40,6 +50,27 @@ async function start(): Promise<void> {
 
 	await bootstrapResources(logger);
 	await bootstrapPersistence(logger);
+
+	// Subscriber registration lives here (not in HostServer) so it always runs
+	// after persistence is ready and before any socket can publish GAME_OVER.
+	// TODO(plugin-system phase 2): replace with bootstrapPlugins(bus, deps).
+	const eventBus = container.get(EventBus);
+
+	eventBus.subscribe(
+		BasicStatsCalculator.ListenTo,
+		new BasicStatsCalculator(
+			logger,
+			new UserProfilePostgresRepository(),
+			new PlayerStatsPostgresRepository(),
+			new MatchResumeCreator(new MatchResumePostgresRepository()),
+			new DuelResumeCreator(new MatchResumePostgresRepository()),
+		),
+	);
+
+	eventBus.subscribe(
+		UnrankedMatchSaver.ListenTo,
+		new UnrankedMatchSaver(logger, new UnrankedMatchPostgresRepository()),
+	);
 
 	// Keep in-memory ban lists fresh without a restart: re-read them on an interval
 	// when the on-disk .conf files change (see bootstrapBanListReloader).

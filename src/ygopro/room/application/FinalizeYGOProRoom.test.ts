@@ -30,6 +30,8 @@ import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
 import { YGOProRoomMother } from "@test-support/mothers/room/YGOProRoomMother";
 import { TokenIndex } from "@shared/room/domain/TokenIndex";
 import { YgoClient } from "@shared/client/domain/YgoClient";
+import { DuelState } from "@shared/room/domain/YgoRoom";
+import { YGOProStocDuelEnd } from "ygopro-msg-encode";
 
 // ---------- helpers ----------
 
@@ -213,5 +215,96 @@ describe("FinalizeYGOProRoom.run()", () => {
 		FinalizeYGOProRoom.run(room);
 
 		expect(TokenIndex.getInstance().find(otherToken)).toBeDefined();
+	});
+});
+
+// ---------- duel-end announcement before socket destroy ----------
+//
+// A client whose socket is still open mid-duel deliberately tolerates silent
+// socket drops (reconnect support), so an unannounced destroy() strands it on
+// whatever screen it was showing — the "stuck on Continue" hang in AI rooms,
+// where any disconnect finalizes the room in any phase. Once a duel lifecycle
+// started, run() must send STOC_DUEL_END to still-open sockets before
+// destroying them. The WAITING lobby keeps its silent teardown: join errors
+// already speak for themselves there.
+
+describe("FinalizeYGOProRoom.run() — duel-end frame before destroy", () => {
+	const DUEL_END_BUFFER = Buffer.from(new YGOProStocDuelEnd().toFullPayload());
+
+	interface AnnouncedClient extends FakeClient {
+		sendMessageToClient: jest.Mock;
+	}
+
+	const makeAnnouncedClient = (closed: boolean): AnnouncedClient => {
+		const client = makeClient(makeSocket(closed)) as AnnouncedClient;
+		client.sendMessageToClient = jest.fn();
+		return client;
+	};
+
+	const createRoomInPhase = (clients: FakeClient[], duelState: DuelState) => {
+		const room = createRoomInList(clients);
+		Object.defineProperty(room, "duelState", { get: () => duelState, configurable: true });
+		return room;
+	};
+
+	afterEach(() => {
+		const rooms = MercuryRoomList.getRooms();
+		while (rooms.length) {
+			MercuryRoomList.deleteRoom(rooms[0]);
+		}
+	});
+
+	it("sends STOC_DUEL_END to a still-connected client before destroying its socket", () => {
+		const client = makeAnnouncedClient(false);
+		const room = createRoomInPhase([client], DuelState.DUELING);
+
+		FinalizeYGOProRoom.run(room);
+
+		expect(client.sendMessageToClient).toHaveBeenCalledWith(DUEL_END_BUFFER);
+		expect(client.destroy).toHaveBeenCalledTimes(1);
+		const sendOrder = client.sendMessageToClient.mock.invocationCallOrder[0]!;
+		const destroyOrder = client.destroy.mock.invocationCallOrder[0]!;
+		expect(sendOrder).toBeLessThan(destroyOrder);
+	});
+
+	it("announces in the SIDE_DECKING interlude too", () => {
+		const client = makeAnnouncedClient(false);
+		const room = createRoomInPhase([client], DuelState.SIDE_DECKING);
+
+		FinalizeYGOProRoom.run(room);
+
+		expect(client.sendMessageToClient).toHaveBeenCalledWith(DUEL_END_BUFFER);
+	});
+
+	it("does not touch a client whose socket is already closed", () => {
+		const client = makeAnnouncedClient(true);
+		const room = createRoomInPhase([client], DuelState.DUELING);
+
+		FinalizeYGOProRoom.run(room);
+
+		expect(client.sendMessageToClient).not.toHaveBeenCalled();
+		expect(client.destroy).not.toHaveBeenCalled();
+	});
+
+	it("keeps the WAITING lobby teardown silent (join errors already spoke)", () => {
+		const client = makeAnnouncedClient(false);
+		const room = createRoomInPhase([client], DuelState.WAITING);
+
+		FinalizeYGOProRoom.run(room);
+
+		expect(client.sendMessageToClient).not.toHaveBeenCalled();
+		expect(client.destroy).toHaveBeenCalledTimes(1);
+	});
+
+	it("still destroys the socket when the duel-end send throws", () => {
+		const client = makeAnnouncedClient(false);
+		client.sendMessageToClient.mockImplementation(() => {
+			throw new Error("broken pipe");
+		});
+		const room = createRoomInPhase([client], DuelState.DUELING);
+
+		FinalizeYGOProRoom.run(room);
+
+		expect(client.destroy).toHaveBeenCalledTimes(1);
 	});
 });
