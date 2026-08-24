@@ -6,6 +6,7 @@ import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 import { config } from "./config";
 import { bootstrapResources } from "./bootstrap/bootstrapResources";
 import { bootstrapPersistence } from "./bootstrap/bootstrapPersistence";
+import { bootstrapPlugins } from "./bootstrap/bootstrapPlugins";
 import { bootstrapBanListReloader } from "./bootstrap/bootstrapBanListReloader";
 import { bootstrapMatchmaking } from "./bootstrap/bootstrapMatchmaking";
 import { Server } from "./http-server/Server";
@@ -17,14 +18,6 @@ import { HandshakeTicketAuthenticator } from "./socket-server/HandshakeTicketAut
 import { container } from "./shared/dependency-injection";
 import { EventBus } from "./shared/event-bus/EventBus";
 import { RedisTicketRepository } from "./shared/ticket/infrastructure/redis/RedisTicketRepository";
-import { MatchResumeCreator } from "./shared/stats/match-resume/application/MatchResumeCreator";
-import { DuelResumeCreator } from "./shared/stats/match-resume/duel-resume/application/DuelResumeCreator";
-import { MatchResumePostgresRepository } from "./shared/stats/match-resume/infrastructure/postgres/MatchResumePostgresRepository";
-import { PlayerStatsPostgresRepository } from "./shared/stats/player-stats/infrastructure/PlayerStatsPostgresRepository";
-import { BasicStatsCalculator } from "./plugins/basic-stats/application/BasicStatsCalculator";
-import { UnrankedMatchSaver } from "./plugins/unranked-match/application/UnrankedMatchSaver";
-import { UnrankedMatchPostgresRepository } from "./plugins/unranked-match/infrastructure/postgres/UnrankedMatchPostgresRepository";
-import { UserProfilePostgresRepository } from "./shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import WebSocketSingleton from "./web-socket-server/WebSocketSingleton";
 import { bootstrapWindbot } from "./ygopro/windbot/infrastructure/bootstrapWindbot";
 import { JoinStrategyRegistry } from "./ygopro/room/application/join-strategies/JoinStrategyRegistry";
@@ -51,25 +44,13 @@ async function start(): Promise<void> {
 	await bootstrapResources(logger);
 	await bootstrapPersistence(logger);
 
-	// Subscriber registration lives here (not in HostServer) so it always runs
+	// Plugin registration lives here (not in HostServer) so it always runs
 	// after persistence is ready and before any socket can publish GAME_OVER.
-	// TODO(plugin-system phase 2): replace with bootstrapPlugins(bus, deps).
 	const eventBus = container.get(EventBus);
 
-	eventBus.subscribe(
-		BasicStatsCalculator.ListenTo,
-		new BasicStatsCalculator(
-			logger,
-			new UserProfilePostgresRepository(),
-			new PlayerStatsPostgresRepository(),
-			new MatchResumeCreator(new MatchResumePostgresRepository()),
-			new DuelResumeCreator(new MatchResumePostgresRepository()),
-		),
-	);
-
-	eventBus.subscribe(
-		UnrankedMatchSaver.ListenTo,
-		new UnrankedMatchSaver(logger, new UnrankedMatchPostgresRepository()),
+	const pluginReport = await bootstrapPlugins(eventBus, { logger, config });
+	logger.info(
+		`🔌 Plugins   → loaded: [${pluginReport.loaded.join(", ")}] · skipped: [${pluginReport.skipped.join(", ")}] · failed: [${pluginReport.failed.join(", ")}]`,
 	);
 
 	// Keep in-memory ban lists fresh without a restart: re-read them on an interval
