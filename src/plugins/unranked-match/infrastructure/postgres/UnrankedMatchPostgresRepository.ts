@@ -1,6 +1,6 @@
-import { dataSource } from "../../../../../evolution-types/src/data-source";
-import { UnrankedDuelEntity } from "../../../../../evolution-types/src/entities/UnrankedDuelEntity";
-import { UnrankedMatchEntity } from "../../../../../evolution-types/src/entities/UnrankedMatchEntity";
+import { dataSource } from "../../../../evolution-types/src/data-source";
+import { UnrankedDuelEntity } from "../../../../evolution-types/src/entities/UnrankedDuelEntity";
+import { UnrankedMatchEntity } from "../../../../evolution-types/src/entities/UnrankedMatchEntity";
 import { UnrankedDuel } from "../../domain/UnrankedDuel";
 import { UnrankedMatch } from "../../domain/UnrankedMatch";
 import { UnrankedMatchRepository } from "../../domain/UnrankedMatchRepository";
