@@ -122,11 +122,18 @@ export abstract class RoomState {
 		}
 
 		if (messageType === CoreMessages.MSG_NEW_TURN) {
-			this.duelEvents.dispatch("duel.turn-start", decodeTurnStarted(data, ctx), room);
+			// TurnStartedEvent.turn is the number of the turn that just started;
+			// the room counter increments in the internal subscriber, after this
+			// event is built.
+			const turnStartCtx: DuelEventContext = { ...ctx, turn: room.turn + 1 };
+			this.duelEvents.dispatch("duel.turn-start", decodeTurnStarted(data, turnStartCtx), room);
 		}
 	}
 
-	private registerDuelEventSubscribers(): void {
+	// The ygopro pipeline overrides this with a no-op: it applies LP/turn
+	// mutations in its ocgcore middleware, so its dispatcher carries plugin
+	// delivery only.
+	protected registerDuelEventSubscribers(): void {
 		this.duelEvents.subscribe("duel.damage", (event, room) => {
 			room.decreaseLps(event.team as Team, event.amount);
 			this.broadcastDuelRoomUpdate(room);

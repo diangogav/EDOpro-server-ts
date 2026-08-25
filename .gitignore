@@ -81,4 +81,5 @@ resources.manifest.private.json.*
 # Plugins — private plugin folders are cloned in place and must stay untracked.
 src/plugins/*
 !src/plugins/basic-stats/
+!src/plugins/big-damage-log/
 !src/plugins/unranked-match/

@@ -2,6 +2,13 @@ import { RoomState } from "@edopro/room/domain/RoomState";
 import { YGOProRoom } from "./YGOProRoom";
 
 export class YGOProRoomState extends RoomState {
+	protected override registerDuelEventSubscribers(): void {
+		// LP and turn mutations on this pipeline live in the ocgcore middleware
+		// (YGOProDuelingState / ocgcore.ts), not in dispatcher subscribers.
+		// Registering the EDOPro internal handlers here would apply every
+		// mutation twice; the dispatcher carries plugin delivery only.
+	}
+
 	protected toRPS(room: YGOProRoom): void {
 		const team0Player = room.getTeamPlayers(0)[0];
 		const team1Player = room.getTeamPlayers(1)[0];
