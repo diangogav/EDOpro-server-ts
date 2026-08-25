@@ -21,9 +21,9 @@ import { ErrorMessageType } from "ygopro-msg-encode";
 // ---- helpers ----
 
 // mercuryConfig.version = 4962 = 0x1362 → LE bytes: 0x62 0x13
-const makeJoinData = (): Buffer => {
+const makeJoinData = (version = 4962): Buffer => {
 	const buf = Buffer.alloc(48);
-	buf.writeUInt16LE(4962, 0);
+	buf.writeUInt16LE(version, 0);
 	return buf;
 };
 
@@ -31,9 +31,9 @@ const makeJoinData = (): Buffer => {
 const PLAYER_INFO_HEX =
 	"4a006100640065006e00000000000000000000000000000000000000000000000000000000000000";
 
-const makeJoinMessage = (): ClientMessage =>
+const makeJoinMessage = (version?: number): ClientMessage =>
 	({
-		data: makeJoinData(),
+		data: makeJoinData(version),
 		previousMessage: Buffer.from(PLAYER_INFO_HEX, "hex"),
 	}) as unknown as ClientMessage;
 
@@ -274,8 +274,12 @@ describe("YGOProWaitingState.handleJoin", () => {
 			removeAllListeners: jest.fn(),
 		}) as unknown as jest.Mocked<ISocket>;
 
-	const emitJoin = (room: jest.Mocked<YGOProRoom>, socket: jest.Mocked<ISocket>): Promise<void> => {
-		const message = makeJoinMessage();
+	const emitJoin = (
+		room: jest.Mocked<YGOProRoom>,
+		socket: jest.Mocked<ISocket>,
+		version?: number,
+	): Promise<void> => {
+		const message = makeJoinMessage(version);
 		return new Promise((resolve) => {
 			setImmediate(() => resolve());
 			eventEmitter.emit("JOIN", message, room, socket);
@@ -329,7 +333,96 @@ describe("YGOProWaitingState.handleJoin", () => {
 
 		expect(mockAdmitToRoom.run).not.toHaveBeenCalled();
 		expect(mockSocket.send).toHaveBeenCalled();
-		expect(mockSocket.destroy).toHaveBeenCalled();
+	});
+
+	// Regression: the duplicate-name path used to reuse the EDOPro-flavoured
+	// RoomState.sendExistingPlayerErrorMessage, which writes an EDOPro-packed
+	// STOC_ERROR_MSG (2-byte size = 6) plus a 0xF3 frame the classic ygopro
+	// client does not know. ygopro drops STOC_ERROR_MSG when
+	// `len < 1 + sizeof(STOC_ErrorMsg)` (9 with struct alignment), so the joiner
+	// never saw the error and sat on the connecting screen. It must use the
+	// ygopro encoder (YGOProMessageRepository.errorMessage -> 9-byte frame).
+	it("sends the ygopro-encoded JOINERROR frame, not the EDOPro-packed one", async () => {
+		mockRoom = makeMockRoom();
+		(mockRoom as unknown as { players: unknown[] }).players = [
+			{ name: "Jaden", socket: { remoteAddress: "127.0.0.1", closed: true } },
+		];
+
+		await emitJoin(mockRoom, mockSocket);
+
+		expect(mockRoom.messageSender.errorMessage).toHaveBeenCalledWith(ErrorMessageType.JOINERROR, 0);
+		// The EDOPro-packed frame (size 6) must never reach a ygopro client.
+		const edoproPacked = Buffer.from("060002010000000", "hex");
+		for (const [buf] of (mockSocket.send as jest.Mock).mock.calls as [Buffer][]) {
+			expect(buf.equals(edoproPacked)).toBe(false);
+			expect(buf[2]).not.toBe(0xf3);
+		}
+	});
+
+	// close() (not destroy()): destroy() tears the socket down abruptly and can
+	// drop the queued JOINERROR frame. Same invariant as SocketCloseOnError.test.ts.
+	it("closes the socket gracefully after the error frames", async () => {
+		mockRoom = makeMockRoom();
+		(mockRoom as unknown as { players: unknown[] }).players = [
+			{ name: "Jaden", socket: { remoteAddress: "127.0.0.1", closed: true } },
+		];
+
+		await emitJoin(mockRoom, mockSocket);
+
+		expect(mockSocket.close).toHaveBeenCalled();
+		expect(mockSocket.destroy).not.toHaveBeenCalled();
+	});
+
+	// Regression: the version check used to live in the EDOPro RoomState base and
+	// `throw`. handleJoin is async and the "JOIN" listener voids its promise, so the
+	// throw became an unhandled rejection that Node routes to the global
+	// uncaughtException hook (src/shared/error-handler/error-handler.ts) — a routine
+	// client-version mismatch logged as "Excepción no capturada" — AND the rejected
+	// socket was left open, since nothing after the throw ever ran.
+	describe("version mismatch", () => {
+		const WRONG_VERSION = 4961;
+
+		it("rejects without delegating to AdmitToRoom", async () => {
+			await emitJoin(mockRoom, mockSocket, WRONG_VERSION);
+
+			expect(mockAdmitToRoom.run).not.toHaveBeenCalled();
+			expect(mockRoom.admissionTarget).not.toHaveBeenCalled();
+		});
+
+		it("sends VERERROR carrying the server version and closes the socket", async () => {
+			await emitJoin(mockRoom, mockSocket, WRONG_VERSION);
+
+			expect(mockRoom.messageSender.errorMessage).toHaveBeenCalledWith(
+				ErrorMessageType.VERERROR,
+				4962,
+			);
+			expect(mockSocket.close).toHaveBeenCalled();
+			expect(mockSocket.destroy).not.toHaveBeenCalled();
+		});
+
+		it("does not leak an unhandled rejection", async () => {
+			const rejections: unknown[] = [];
+			const onRejection = (reason: unknown): void => {
+				rejections.push(reason);
+			};
+			process.on("unhandledRejection", onRejection);
+			try {
+				await emitJoin(mockRoom, mockSocket, WRONG_VERSION);
+				// unhandledRejection fires on a later microtask/tick than the void'ed call
+				await new Promise((resolve) => setImmediate(resolve));
+			} finally {
+				process.off("unhandledRejection", onRejection);
+			}
+
+			expect(rejections).toEqual([]);
+		});
+
+		it("still admits a client on the matching version", async () => {
+			await emitJoin(mockRoom, mockSocket);
+
+			expect(mockAdmitToRoom.run).toHaveBeenCalled();
+			expect(mockSocket.close).not.toHaveBeenCalled();
+		});
 	});
 });
 
