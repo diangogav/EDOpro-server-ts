@@ -34,6 +34,7 @@ import { DUEL_EVENT_KINDS } from "./DuelEvents";
 // injected, never assumed.
 const xorCtx = (firstToPlay: number): DuelEventContext => ({
 	roomId: 42,
+	duelId: "duel-uuid-1",
 	turn: 3,
 	resolveTeam: (player: number) => firstToPlay ^ player,
 });
@@ -65,7 +66,7 @@ describe("decodeDamageDealt", () => {
 		// [0x5b, 0x01, e8 03 00 00] — player 1 takes 1000
 		const event = decodeDamageDealt(wire.damage(1, 1000), xorCtx(0));
 
-		expect(event).toEqual({ roomId: 42, team: 1, amount: 1000, turn: 3 });
+		expect(event).toEqual({ roomId: 42, duelId: "duel-uuid-1", team: 1, amount: 1000, turn: 3 });
 	});
 
 	it("applies the injected team mapping (firstToPlay = 1 flips the team)", () => {
@@ -83,7 +84,7 @@ describe("decodeLifeRecovered", () => {
 	it("decodes a classic-encoded MSG_RECOVER payload", () => {
 		const event = decodeLifeRecovered(wire.recover(0, 500), xorCtx(0));
 
-		expect(event).toEqual({ roomId: 42, team: 0, amount: 500, turn: 3 });
+		expect(event).toEqual({ roomId: 42, duelId: "duel-uuid-1", team: 0, amount: 500, turn: 3 });
 	});
 
 	it("rejects a mismatched type byte", () => {
@@ -95,7 +96,7 @@ describe("decodeLpCostPaid", () => {
 	it("decodes a classic-encoded MSG_PAY_LPCOST payload", () => {
 		const event = decodeLpCostPaid(wire.lpCost(1, 800), xorCtx(0));
 
-		expect(event).toEqual({ roomId: 42, team: 1, amount: 800, turn: 3 });
+		expect(event).toEqual({ roomId: 42, duelId: "duel-uuid-1", team: 1, amount: 800, turn: 3 });
 	});
 
 	it("rejects a mismatched type byte", () => {
@@ -110,7 +111,7 @@ describe("decodeTurnStarted", () => {
 		// resolution differs per pipeline and is not this event's business.
 		const event = decodeTurnStarted(wire.newTurn(1), xorCtx(0));
 
-		expect(event).toEqual({ roomId: 42, player: 1, turn: 3 });
+		expect(event).toEqual({ roomId: 42, duelId: "duel-uuid-1", player: 1, turn: 3 });
 	});
 
 	it("rejects a mismatched type byte", () => {

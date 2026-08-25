@@ -6,7 +6,13 @@ import { DuelEventPluginHub } from "./DuelEventPluginHub";
 import { DamageDealtEvent } from "./DuelEvents";
 
 const room = { id: 7 } as unknown as YgoRoom;
-const damage = (amount: number): DamageDealtEvent => ({ roomId: 7, team: 0, amount, turn: 1 });
+const damage = (amount: number): DamageDealtEvent => ({
+	roomId: 7,
+	duelId: "d-1",
+	team: 0,
+	amount,
+	turn: 1,
+});
 
 // Queue drains run on microtasks (and async handlers add real ticks); flush
 // both before asserting.
@@ -192,7 +198,11 @@ describe("DuelEventPluginHub", () => {
 		dispatcher.dispatch("duel.damage", damage(1), room);
 		await flush();
 		dispatcher.dispatch("duel.damage", damage(2), room);
-		otherDispatcher.dispatch("duel.damage", { roomId: 8, team: 0, amount: 3, turn: 1 }, otherRoom);
+		otherDispatcher.dispatch(
+			"duel.damage",
+			{ roomId: 8, duelId: "d-2", team: 0, amount: 3, turn: 1 },
+			otherRoom,
+		);
 		await flush();
 
 		expect(seen).toEqual([1, 3]);

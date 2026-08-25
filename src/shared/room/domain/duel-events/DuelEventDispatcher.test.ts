@@ -2,8 +2,8 @@ import { YgoRoom } from "../YgoRoom";
 import { DuelEventDispatcher } from "./DuelEventDispatcher";
 import { DamageDealtEvent, TurnStartedEvent } from "./DuelEvents";
 
-const damage: DamageDealtEvent = { roomId: 7, team: 1, amount: 1000, turn: 2 };
-const turnStart: TurnStartedEvent = { roomId: 7, player: 0, turn: 3 };
+const damage: DamageDealtEvent = { roomId: 7, duelId: "d-1", team: 1, amount: 1000, turn: 2 };
+const turnStart: TurnStartedEvent = { roomId: 7, duelId: "d-1", player: 0, turn: 3 };
 const room = { id: 7 } as unknown as YgoRoom;
 
 describe("DuelEventDispatcher", () => {

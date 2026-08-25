@@ -303,6 +303,11 @@ export abstract class YgoRoom {
 		return this.currentDuel?.turn ?? 0;
 	}
 
+	// Empty only outside a duel; duel events are only built mid-duel.
+	get duelId(): string {
+		return this.currentDuel?.duelId ?? "";
+	}
+
 	get firstToPlay(): number {
 		return this._firstToPlay;
 	}

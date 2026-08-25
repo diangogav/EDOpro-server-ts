@@ -25,6 +25,7 @@ import {
 
 export interface DuelEventContext {
 	readonly roomId: number;
+	readonly duelId: string;
 	readonly turn: number;
 	readonly resolveTeam: (player: number) => number;
 }
@@ -53,6 +54,7 @@ function readLpWire(data: Buffer): LpWire {
 export function buildDamageDealt(wire: LpWire, ctx: DuelEventContext): DamageDealtEvent {
 	return {
 		roomId: ctx.roomId,
+		duelId: ctx.duelId,
 		team: ctx.resolveTeam(wire.player),
 		amount: wire.amount,
 		turn: ctx.turn,
@@ -71,7 +73,7 @@ export function buildTurnStarted(
 	wire: { readonly player: number },
 	ctx: DuelEventContext,
 ): TurnStartedEvent {
-	return { roomId: ctx.roomId, player: wire.player, turn: ctx.turn };
+	return { roomId: ctx.roomId, duelId: ctx.duelId, player: wire.player, turn: ctx.turn };
 }
 
 export function decodeDamageDealt(data: Buffer, ctx: DuelEventContext): DamageDealtEvent {

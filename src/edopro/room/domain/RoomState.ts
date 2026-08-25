@@ -105,6 +105,7 @@ export abstract class RoomState {
 		// subscribers registered by registerDuelEventSubscribers.
 		const ctx: DuelEventContext = {
 			roomId: room.id,
+			duelId: room.duelId,
 			turn: room.turn,
 			resolveTeam: (player: number) => room.firstToPlay ^ player,
 		};

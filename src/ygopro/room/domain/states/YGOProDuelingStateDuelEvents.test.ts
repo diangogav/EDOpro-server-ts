@@ -24,7 +24,7 @@ function buildState(overrides: Record<string, unknown> = {}): {
 	room: object;
 } {
 	const dispatch = jest.fn();
-	const room = { id: 7, turn: 3, isTag: false, ...overrides };
+	const room = { id: 7, duelId: "duel-uuid-1", turn: 3, isTag: false, ...overrides };
 	const state = Object.create(YGOProDuelingState.prototype) as Record<string, unknown>;
 	state.room = room;
 	// Non-tag team resolution goes through the core's side mapping.
@@ -42,7 +42,7 @@ describe("YGOProDuelingState duel-event publishers", () => {
 
 		expect(dispatch).toHaveBeenCalledWith(
 			"duel.damage",
-			{ roomId: 7, team: 0, amount: 1000, turn: 3 },
+			{ roomId: 7, duelId: "duel-uuid-1", team: 0, amount: 1000, turn: 3 },
 			room,
 		);
 	});
@@ -69,7 +69,7 @@ describe("YGOProDuelingState duel-event publishers", () => {
 
 		expect(dispatch).toHaveBeenCalledWith(
 			"duel.turn-start",
-			{ roomId: 7, player: 1, turn: 3 },
+			{ roomId: 7, duelId: "duel-uuid-1", player: 1, turn: 3 },
 			room,
 		);
 	});

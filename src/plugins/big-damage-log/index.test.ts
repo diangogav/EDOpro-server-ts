@@ -24,7 +24,13 @@ function makeDeps(): {
 	return { deps: { logger, config: {} as AppConfig, duelEvents }, handlers, logger };
 }
 
-const damage = (amount: number): DamageDealtEvent => ({ roomId: 7, team: 1, amount, turn: 3 });
+const damage = (amount: number): DamageDealtEvent => ({
+	roomId: 7,
+	duelId: "d-1",
+	team: 1,
+	amount,
+	turn: 3,
+});
 
 describe("big-damage-log plugin", () => {
 	it("conforms to the ServerPlugin contract", () => {

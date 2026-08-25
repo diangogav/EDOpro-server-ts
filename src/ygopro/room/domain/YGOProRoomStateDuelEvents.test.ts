@@ -43,7 +43,7 @@ describe("YGOProRoomState duel-event dispatcher", () => {
 		DuelEventPluginHub.resetInstance();
 	});
 
-	const damage: DamageDealtEvent = { roomId: 7, team: 1, amount: 1000, turn: 2 };
+	const damage: DamageDealtEvent = { roomId: 7, duelId: "d-1", team: 1, amount: 1000, turn: 2 };
 
 	it("does not run the EDOPro internal subscribers (no double LP mutation, no broadcast)", () => {
 		const state = new TestYgoState(new EventEmitter());
