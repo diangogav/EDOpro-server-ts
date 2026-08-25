@@ -14,6 +14,14 @@ import {
 	registerCalls,
 } from "@test-support/plugin-fixtures/kitchen-sink/valid-plugin/capture";
 
+import { DuelEventDispatcher } from "@shared/room/domain/duel-events/DuelEventDispatcher";
+import { DuelEventPluginHub } from "@shared/room/domain/duel-events/DuelEventPluginHub";
+import { YgoRoom } from "@shared/room/domain/YgoRoom";
+import {
+	receivedEvents,
+	resetReceivedEvents,
+} from "@test-support/plugin-fixtures/duel-events/subscriber/capture";
+
 import { bootstrapPlugins } from "./bootstrapPlugins";
 
 const FIXTURES_ROOT = path.join(__dirname, "..", "test-support", "plugin-fixtures");
@@ -95,5 +103,45 @@ describe("bootstrapPlugins", () => {
 
 		expect(report.loaded).toEqual(["dup-name"]);
 		expect(report.skipped).toContain("duplicate-name-b");
+	});
+
+	describe("duel-events root", () => {
+		const duelEventsRoot = path.join(FIXTURES_ROOT, "duel-events");
+		const room = { id: 7 } as unknown as YgoRoom;
+
+		beforeEach(() => {
+			DuelEventPluginHub.resetInstance();
+			resetReceivedEvents();
+		});
+
+		afterEach(() => {
+			DuelEventPluginHub.resetInstance();
+		});
+
+		it("wires a declaring plugin's subscription into the hub", async () => {
+			const report = await bootstrapPlugins(bus, deps, duelEventsRoot);
+			expect(report.loaded).toContain("subscriber");
+
+			const dispatcher = new DuelEventDispatcher();
+			DuelEventPluginHub.getInstance().attach(dispatcher);
+			dispatcher.dispatch("duel.damage", { roomId: 7, team: 0, amount: 1000, turn: 1 }, room);
+			await new Promise((resolve) => setImmediate(resolve));
+
+			expect(receivedEvents).toEqual([{ roomId: 7, team: 0, amount: 1000, turn: 1 }]);
+		});
+
+		it("fails a plugin that subscribes to a kind it did not declare", async () => {
+			const report = await bootstrapPlugins(bus, deps, duelEventsRoot);
+
+			expect(report.failed).toContain("undeclared-kind");
+			expect(report.loaded).not.toContain("undeclared-kind");
+		});
+
+		it("keeps deps identity for plugins that declare nothing", async () => {
+			const kitchenSinkRoot = path.join(FIXTURES_ROOT, "kitchen-sink");
+			await bootstrapPlugins(bus, deps, kitchenSinkRoot);
+
+			expect(registerCalls[0].deps).toBe(deps);
+		});
 	});
 });

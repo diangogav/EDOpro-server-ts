@@ -12,6 +12,7 @@ import {
 	decodeTurnStarted,
 } from "src/shared/room/domain/duel-events/DuelEventDecoders";
 import { DuelEventDispatcher } from "src/shared/room/domain/duel-events/DuelEventDispatcher";
+import { DuelEventPluginHub } from "src/shared/room/domain/duel-events/DuelEventPluginHub";
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 import { EventEmitter } from "stream";
 
@@ -44,6 +45,10 @@ export abstract class RoomState {
 	constructor(eventEmitter: EventEmitter) {
 		this.eventEmitter = eventEmitter;
 		this.registerDuelEventSubscribers();
+		// Plugin subscribers observe the same dispatched events through the
+		// hub's bounded per-room queue; with no plugins registered this is a
+		// no-op.
+		DuelEventPluginHub.getInstance().attach(this.duelEvents);
 
 		this.eventEmitter.on(
 			Commands.CHAT as unknown as string,

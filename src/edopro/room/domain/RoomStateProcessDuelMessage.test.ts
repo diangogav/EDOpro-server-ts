@@ -18,6 +18,7 @@ jest.mock("../../../web-socket-server/WebSocketSingleton", () => {
 	};
 });
 
+import { DuelEventPluginHub } from "../../../shared/room/domain/duel-events/DuelEventPluginHub";
 import { RoomState } from "./RoomState";
 import { YgoRoom } from "../../../shared/room/domain/YgoRoom";
 import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
@@ -116,5 +117,32 @@ describe("RoomState.processDuelMessage", () => {
 		expect(room.increaseLps).not.toHaveBeenCalled();
 		expect(room.increaseTurn).not.toHaveBeenCalled();
 		expect(mockBroadcast).not.toHaveBeenCalled();
+	});
+
+	describe("plugin delivery through the hub", () => {
+		beforeEach(() => {
+			DuelEventPluginHub.resetInstance();
+		});
+
+		afterEach(() => {
+			DuelEventPluginHub.resetInstance();
+		});
+
+		it("delivers decoded events to a hub-registered plugin handler, off the dispatch path", async () => {
+			const received: unknown[] = [];
+			DuelEventPluginHub.getInstance().register("stats", "duel.damage", (event) => {
+				received.push(event);
+			});
+			const pluginState = new TestRoomState(new EventEmitter());
+			const room = makeRoom(0);
+
+			pluginState.run(CoreMessages.MSG_DAMAGE, lpPayload(CoreMessages.MSG_DAMAGE, 1, 1000), room);
+
+			// Nothing synchronously — the queue drains on a microtask.
+			expect(received).toEqual([]);
+			await new Promise((resolve) => setImmediate(resolve));
+
+			expect(received).toEqual([{ roomId: 7, team: 1, amount: 1000, turn: 2 }]);
+		});
 	});
 });

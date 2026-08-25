@@ -3,7 +3,8 @@ import path from "node:path";
 
 import { EventBus } from "@shared/event-bus/EventBus";
 import { isServerPlugin } from "@shared/plugin/isServerPlugin";
-import { PluginDeps } from "@shared/plugin/ServerPlugin";
+import { DuelEventSubscriptions, PluginDeps, ServerPlugin } from "@shared/plugin/ServerPlugin";
+import { DuelEventPluginHub } from "@shared/room/domain/duel-events/DuelEventPluginHub";
 
 export interface PluginBootstrapReport {
 	loaded: string[];
@@ -13,6 +14,33 @@ export interface PluginBootstrapReport {
 
 function isErrnoException(error: unknown): error is NodeJS.ErrnoException {
 	return error instanceof Error && "code" in error;
+}
+
+// A plugin that declares duelEvents gets a subscription surface scoped to
+// exactly those kinds, wired into the DuelEventPluginHub under its own name so
+// delivery and disconnection are attributable. A plugin that declares nothing
+// receives the shared deps object untouched.
+function depsFor(plugin: ServerPlugin, deps: PluginDeps): PluginDeps {
+	if (plugin.duelEvents === undefined) {
+		return deps;
+	}
+
+	const declared = new Set(plugin.duelEvents);
+	const hub = DuelEventPluginHub.getInstance();
+	hub.initialize(deps.logger);
+
+	const duelEvents: DuelEventSubscriptions = {
+		subscribe: (kind, handler) => {
+			if (!declared.has(kind)) {
+				throw new Error(
+					`Plugin "${plugin.name}" subscribed to undeclared duel event "${kind}" — add it to duelEvents`,
+				);
+			}
+			hub.register(plugin.name, kind, handler);
+		},
+	};
+
+	return { ...deps, duelEvents };
 }
 
 // Discovers and registers plugins from pluginsRoot (D5/D8): only direct
@@ -79,7 +107,7 @@ export async function bootstrapPlugins(
 				continue;
 			}
 
-			await candidate.register(bus, deps);
+			await candidate.register(bus, depsFor(candidate, deps));
 			report.loaded.push(candidate.name);
 		} catch (error) {
 			deps.logger.error(error instanceof Error ? error : String(error), { dirName });
