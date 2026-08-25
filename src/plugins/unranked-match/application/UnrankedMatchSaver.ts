@@ -40,7 +40,9 @@ export class UnrankedMatchSaver implements DomainEventSubscriber<GameOverDomainE
 
 		// Use the first player of Team 0 as reference for scores and result
 		const referencePlayer = team0Players[0];
-		const matchId = randomUUID();
+		// unranked_matches rows are one per match, so the row id IS the match:
+		// a duplicate GAME_OVER hits the primary key instead of duplicating it.
+		const matchId = event.data.matchId;
 
 		const unrankedMatch = UnrankedMatch.create({
 			id: matchId,

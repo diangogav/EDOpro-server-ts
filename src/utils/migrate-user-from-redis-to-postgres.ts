@@ -136,6 +136,7 @@ async function run() {
 							result: game.result,
 							turns: game.turns,
 							matchId,
+							duelId: null, // legacy data predates duel identity
 							season: 3,
 							ipAddress: null,
 						});

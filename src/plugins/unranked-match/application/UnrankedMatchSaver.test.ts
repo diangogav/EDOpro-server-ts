@@ -152,6 +152,32 @@ describe("UnrankedMatchSaver", () => {
 		);
 	});
 
+	// unranked_matches rows are one per match, so the row id IS the match:
+	// duplicate GAME_OVER publications hit the primary key instead of
+	// duplicating the row.
+	it("persists the match row under the real matchId", async () => {
+		const event = new GameOverDomainEvent({
+			ranked: false,
+			players: [
+				PlayerMother.create({ team: Team.PLAYER }).toPresentation(),
+				PlayerMother.create({ team: Team.OPPONENT }).toPresentation(),
+			],
+			bestOf: 1,
+			date: new Date(),
+			banListHash: 123,
+			banListName: "N/A",
+			roomId: 7,
+			matchId: "match-uuid-1",
+			duelIds: ["duel-uuid-1"],
+		});
+
+		await unrankedMatchSaver.handle(event);
+
+		expect(unrankedMatchRepository.saveMatch).toHaveBeenCalledWith(
+			expect.objectContaining({ id: "match-uuid-1" }),
+		);
+	});
+
 	it("persists each duel row under its real duelId when the event carries one per game", async () => {
 		const event = new GameOverDomainEvent({
 			ranked: false,

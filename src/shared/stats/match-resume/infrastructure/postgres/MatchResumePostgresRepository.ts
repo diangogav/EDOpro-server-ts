@@ -43,6 +43,7 @@ export class MatchResumePostgresRepository implements MatchResumeRepository {
 			result: duelResume.result,
 			turns: duelResume.turns,
 			matchId: duelResume.matchId,
+			duelId: duelResume.duelId,
 			season: duelResume.season,
 			ipAddress: duelResume.ipAddress,
 		});
