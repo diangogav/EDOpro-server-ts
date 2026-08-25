@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.16.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.15.0...v2.16.0) (2026-08-25)
+
+
+### Features
+
+* **plugins:** bridge duel events to plugins via bounded per-room queues (duel-events 3/4) ([#332](https://github.com/diangogav/EDOpro-server-ts/issues/332)) ([55db87e](https://github.com/diangogav/EDOpro-server-ts/commit/55db87e04b2860c150658e524fa689a253ddd7de))
+* **plugins:** wire ygopro duel events and ship the first consumer plugin (duel-events 4/4) ([#333](https://github.com/diangogav/EDOpro-server-ts/issues/333)) ([94b770c](https://github.com/diangogav/EDOpro-server-ts/commit/94b770c2fd0a7d0fe80e871b09f2850f3ac6b6e3))
+* **room:** add shared duel-event vocabulary and wire decoders (duel-events 1/4) ([#329](https://github.com/diangogav/EDOpro-server-ts/issues/329)) ([3502cc7](https://github.com/diangogav/EDOpro-server-ts/commit/3502cc7ce39d1e672a70a099bdb54a635ef73e97))
+* **room:** carry real match identity in GAME_OVER and persist real duelIds ([#335](https://github.com/diangogav/EDOpro-server-ts/issues/335)) ([429045b](https://github.com/diangogav/EDOpro-server-ts/commit/429045bee7fcabf31022c28ff57afa408b42f35a))
+* **room:** dispatch duel events to synchronous internal subscribers (duel-events 2/4) ([#331](https://github.com/diangogav/EDOpro-server-ts/issues/331)) ([8d5dd40](https://github.com/diangogav/EDOpro-server-ts/commit/8d5dd404da56997c506a6bb81199d5bb59460b00))
+* **room:** give every duel a stable uuid identity carried by duel events ([#334](https://github.com/diangogav/EDOpro-server-ts/issues/334)) ([e7ce15a](https://github.com/diangogav/EDOpro-server-ts/commit/e7ce15ac61ed6306f471ae87fb5cba7da29c206e))
+* **stats:** persist duel resumes under their real duelId and unranked matches under their matchId ([#336](https://github.com/diangogav/EDOpro-server-ts/issues/336)) ([c1d8b14](https://github.com/diangogav/EDOpro-server-ts/commit/c1d8b149fa2556cf0027af321d5676399e7800fc))
+
+
+### Bug Fixes
+
+* **room:** stop ygopro duel events from applying LP and turn mutations twice ([#339](https://github.com/diangogav/EDOpro-server-ts/issues/339)) ([f5363e6](https://github.com/diangogav/EDOpro-server-ts/commit/f5363e6682d301cadcc5145c0179ca8b8c456737))
+
 ## [2.15.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.14.0...v2.15.0) (2026-08-25)
 
 
