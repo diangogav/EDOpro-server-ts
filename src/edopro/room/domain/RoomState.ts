@@ -11,6 +11,7 @@ import {
 	decodeLpCostPaid,
 	decodeTurnStarted,
 } from "src/shared/room/domain/duel-events/DuelEventDecoders";
+import { DuelEventDispatcher } from "src/shared/room/domain/duel-events/DuelEventDispatcher";
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 import { EventEmitter } from "stream";
 
@@ -38,9 +39,11 @@ import {
 
 export abstract class RoomState {
 	protected readonly eventEmitter: EventEmitter;
+	protected readonly duelEvents = new DuelEventDispatcher();
 
 	constructor(eventEmitter: EventEmitter) {
 		this.eventEmitter = eventEmitter;
+		this.registerDuelEventSubscribers();
 
 		this.eventEmitter.on(
 			Commands.CHAT as unknown as string,
@@ -92,9 +95,9 @@ export abstract class RoomState {
 	}
 
 	protected processDuelMessage(messageType: CoreMessages, data: Buffer, room: YgoRoom): void {
-		// Wire decoding lives in the shared duel-event decoders — one per kind,
-		// shared with the ygopro pipeline. This method keeps only the room
-		// mutation + broadcast.
+		// Decode the core message into a duel event and hand it to the
+		// synchronous dispatcher; the room mutation and broadcast live in the
+		// subscribers registered by registerDuelEventSubscribers.
 		const ctx: DuelEventContext = {
 			roomId: room.id,
 			turn: room.turn,
@@ -102,28 +105,42 @@ export abstract class RoomState {
 		};
 
 		if (messageType === CoreMessages.MSG_DAMAGE) {
-			const event = decodeDamageDealt(data, ctx);
-			room.decreaseLps(event.team as Team, event.amount);
-			this.broadcastDuelRoomUpdate(room);
+			this.duelEvents.dispatch("duel.damage", decodeDamageDealt(data, ctx), room);
 		}
 
 		if (messageType === CoreMessages.MSG_RECOVER) {
-			const event = decodeLifeRecovered(data, ctx);
-			room.increaseLps(event.team as Team, event.amount);
-			this.broadcastDuelRoomUpdate(room);
+			this.duelEvents.dispatch("duel.recover", decodeLifeRecovered(data, ctx), room);
 		}
 
 		if (messageType === CoreMessages.MSG_PAY_LPCOST) {
-			const event = decodeLpCostPaid(data, ctx);
-			room.decreaseLps(event.team as Team, event.amount);
-			this.broadcastDuelRoomUpdate(room);
+			this.duelEvents.dispatch("duel.lp-cost", decodeLpCostPaid(data, ctx), room);
 		}
 
 		if (messageType === CoreMessages.MSG_NEW_TURN) {
-			decodeTurnStarted(data, ctx);
+			this.duelEvents.dispatch("duel.turn-start", decodeTurnStarted(data, ctx), room);
+		}
+	}
+
+	private registerDuelEventSubscribers(): void {
+		this.duelEvents.subscribe("duel.damage", (event, room) => {
+			room.decreaseLps(event.team as Team, event.amount);
+			this.broadcastDuelRoomUpdate(room);
+		});
+
+		this.duelEvents.subscribe("duel.recover", (event, room) => {
+			room.increaseLps(event.team as Team, event.amount);
+			this.broadcastDuelRoomUpdate(room);
+		});
+
+		this.duelEvents.subscribe("duel.lp-cost", (event, room) => {
+			room.decreaseLps(event.team as Team, event.amount);
+			this.broadcastDuelRoomUpdate(room);
+		});
+
+		this.duelEvents.subscribe("duel.turn-start", (_event, room) => {
 			room.increaseTurn();
 			this.broadcastDuelRoomUpdate(room);
-		}
+		});
 	}
 
 	private broadcastDuelRoomUpdate(room: YgoRoom): void {
