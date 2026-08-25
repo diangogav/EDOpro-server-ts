@@ -27,6 +27,7 @@ As an AI agent, you must strictly adhere to these rules. **Violation of these ru
 - **DDD is Mandatory**: Business logic lives in `domain/`. Never import `infrastructure/` or `application/`. Dependencies point inward.
 - **Hexagonal Architecture**: Dependencies point inward. The core doesn't know about the database or sockets.
 - **Test data**: Use `*Mother` classes for shared domain entities; local `make*` factories for suite-specific stubs. Tests are **co-located** in `src/` next to their source. See [testing conventions](./docs/testing.md).
+- **Plugins**: New event subscribers ship as plugins under `src/plugins/`, never as hardwired composition-root code. Contract, discovery, duel events and isolation rules: [server plugins](./docs/plugins.md).
 - **Chain of Responsibility**: Use this pattern for complex validations (e.g., Deck Rules).
 - **Dependency Injection**: Use `diod` or constructor injection to manage dependencies.
 

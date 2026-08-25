@@ -265,12 +265,15 @@ src/
 ├── 🖥️ edopro/             # EDOPro engine (EDOPro protocol)
 ├── 📱 ygopro/             # YGOPro engine (srvpro2-compatible)
 ├── 🤝 shared/             # Shared domain logic (rooms, decks, cards, clients)
+├── 🧩 plugins/            # Server plugins — see docs/plugins.md
 ├── 🔌 socket-server/      # TCP socket servers for both engines
 ├── 🌐 http-server/        # REST API
 └── 📡 web-socket-server/  # WebSocket server for real-time updates
 ```
 
 Both engines share the same room management, player handling, and match lifecycle — but use different protocols, card databases, and deck validation rules.
+
+Server behavior can be extended through **plugins** — self-contained folders under `src/plugins/` that observe match results and live duel events (damage, life points, turns) without touching the core. See [docs/plugins.md](./docs/plugins.md).
 
 ---
 
