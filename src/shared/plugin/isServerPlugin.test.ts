@@ -28,4 +28,28 @@ describe("isServerPlugin", () => {
 	it("returns true when register returns a Promise<void>", () => {
 		expect(isServerPlugin({ ...validPlugin, register: async () => undefined })).toBe(true);
 	});
+
+	describe("duelEvents declaration", () => {
+		it("returns true when duelEvents is absent", () => {
+			expect(isServerPlugin(validPlugin)).toBe(true);
+		});
+
+		it("returns true for an array of known duel-event kinds", () => {
+			expect(
+				isServerPlugin({ ...validPlugin, duelEvents: ["duel.damage", "duel.turn-start"] }),
+			).toBe(true);
+		});
+
+		it("returns true for an empty declaration", () => {
+			expect(isServerPlugin({ ...validPlugin, duelEvents: [] })).toBe(true);
+		});
+
+		it.each([
+			["not an array", "duel.damage"],
+			["an unknown kind", ["duel.damage", "duel.unknown"]],
+			["a non-string entry", [42]],
+		])("returns false when duelEvents is %s", (_description, duelEvents) => {
+			expect(isServerPlugin({ ...validPlugin, duelEvents })).toBe(false);
+		});
+	});
 });
