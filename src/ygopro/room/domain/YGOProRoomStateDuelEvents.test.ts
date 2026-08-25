@@ -24,6 +24,11 @@ import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
 
 import { YGOProRoom } from "./YGOProRoom";
 import { YGOProRoomState } from "./YGOProRoomState";
+import { YGOProChoosingOrderState } from "./states/YGOProChoosingOrderState";
+import { YGOProDuelingState } from "./states/YGOProDuelingState";
+import { YGOProRockPaperScissorState } from "./states/YGOProRockPaperScissorState";
+import { YGOProSideDeckingState } from "./states/YGOProSideDeckingState";
+import { YGOProWaitingState } from "./states/YGOProWaitingState";
 
 const mockBroadcast = WebSocketSingleton.getInstance().broadcast as jest.Mock;
 
@@ -67,5 +72,29 @@ describe("YGOProRoomState duel-event dispatcher", () => {
 		await new Promise((resolve) => setImmediate(resolve));
 
 		expect(received).toEqual([damage]);
+	});
+
+	// Every ygopro state must resolve registerDuelEventSubscribers to the
+	// YGOProRoomState no-op. A state extending RoomState directly inherits the
+	// EDOPro internal subscribers instead, and every dispatched duel event then
+	// applies its LP/turn mutation a second time — damage counted twice, turns
+	// advancing by two (only in the room's bookkeeping; clients receive their
+	// frames once through routeGameMsg, so the game itself looks fine).
+	describe("every ygopro state inherits the no-op internal registration", () => {
+		const noOp = (YGOProRoomState.prototype as unknown as Record<string, unknown>)
+			.registerDuelEventSubscribers;
+
+		it.each([
+			["YGOProWaitingState", YGOProWaitingState],
+			["YGOProRockPaperScissorState", YGOProRockPaperScissorState],
+			["YGOProChoosingOrderState", YGOProChoosingOrderState],
+			["YGOProDuelingState", YGOProDuelingState],
+			["YGOProSideDeckingState", YGOProSideDeckingState],
+		])("%s", (_name, stateClass) => {
+			const resolved = (stateClass.prototype as unknown as Record<string, unknown>)
+				.registerDuelEventSubscribers;
+
+			expect(resolved).toBe(noOp);
+		});
 	});
 });
