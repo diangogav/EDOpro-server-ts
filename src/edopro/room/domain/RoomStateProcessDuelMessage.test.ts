@@ -144,5 +144,23 @@ describe("RoomState.processDuelMessage", () => {
 
 			expect(received).toEqual([{ roomId: 7, team: 1, amount: 1000, turn: 2 }]);
 		});
+
+		// TurnStartedEvent.turn is the number of the turn that just started. The
+		// room counter increments inside the internal subscriber, after the event
+		// is built, so the event must carry room.turn + 1 — matching the ygopro
+		// pipeline, whose counter has already incremented when it dispatches.
+		it("turn-start carries the number of the turn that just started", async () => {
+			const received: unknown[] = [];
+			DuelEventPluginHub.getInstance().register("stats", "duel.turn-start", (event) => {
+				received.push(event);
+			});
+			const pluginState = new TestRoomState(new EventEmitter());
+			const room = makeRoom(0); // room.turn = 2
+
+			pluginState.run(CoreMessages.MSG_NEW_TURN, Buffer.from([CoreMessages.MSG_NEW_TURN, 1]), room);
+			await new Promise((resolve) => setImmediate(resolve));
+
+			expect(received).toEqual([{ roomId: 7, player: 1, turn: 3 }]);
+		});
 	});
 });

@@ -4,6 +4,8 @@ import { GameOverDomainEvent } from "@shared/room/domain/match/domain/domain-eve
 import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
 import { dataSource } from "src/evolution-types/src/data-source";
 
+import { DuelEventPluginHub } from "@shared/room/domain/duel-events/DuelEventPluginHub";
+
 import { bootstrapPlugins } from "./bootstrapPlugins";
 
 // Exercises bootstrapPlugins against the real src/plugins directory (no
@@ -20,12 +22,22 @@ function makeDeps(rankingEnabled: boolean): PluginDeps {
 }
 
 describe("bootstrapPlugins against the real src/plugins directory", () => {
+	beforeEach(() => {
+		DuelEventPluginHub.resetInstance();
+	});
+
+	afterEach(() => {
+		DuelEventPluginHub.resetInstance();
+	});
+
 	it("skips both stats plugins when ranking is disabled (zero-argument default pluginsRoot)", async () => {
 		const bus = { subscribe: jest.fn() } as unknown as EventBus;
 
 		const report = await bootstrapPlugins(bus, makeDeps(false));
 
-		expect(report.loaded).toEqual([]);
+		// big-damage-log is ranking-independent and observes duel events only,
+		// so it loads without ever touching the event bus.
+		expect(report.loaded).toEqual(["big-damage-log"]);
 		expect(report.skipped).toEqual(expect.arrayContaining(["basic-stats", "unranked-match"]));
 		expect(bus.subscribe).not.toHaveBeenCalled();
 	});
@@ -35,7 +47,9 @@ describe("bootstrapPlugins against the real src/plugins directory", () => {
 
 		const report = await bootstrapPlugins(bus, makeDeps(true));
 
-		expect(report.loaded).toEqual(expect.arrayContaining(["basic-stats", "unranked-match"]));
+		expect(report.loaded).toEqual(
+			expect.arrayContaining(["basic-stats", "big-damage-log", "unranked-match"]),
+		);
 		expect(bus.subscribe).toHaveBeenCalledTimes(2);
 	});
 

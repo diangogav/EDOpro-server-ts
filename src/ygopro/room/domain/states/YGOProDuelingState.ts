@@ -10,6 +10,11 @@ import { EventBus } from "@shared/event-bus/EventBus";
 import { Commands } from "@shared/messages/Commands";
 import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { Logger } from "@shared/logger/domain/Logger";
+import {
+	buildDamageDealt,
+	buildTurnStarted,
+	DuelEventContext,
+} from "@shared/room/domain/duel-events/DuelEventDecoders";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { Team } from "@shared/room/Team";
 import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
@@ -134,6 +139,7 @@ export class YGOProDuelingState extends RoomState {
 			if (this.room.isTag && (msg.player & 0x2) === 0) {
 				this.pendingSurrenders.clear();
 			}
+			this.publishTurnStart(msg.player);
 			this.broadcastRoomUpdate();
 			return msg;
 		});
@@ -141,6 +147,7 @@ export class YGOProDuelingState extends RoomState {
 		this.ocgCore.messageMiddleware.on(YGOProMsgDamage, (msg) => {
 			const team = this.resolveTeam(msg.player);
 			this.room.decreaseLps(team, msg.value);
+			this.publishLpEvent("duel.damage", msg.player, msg.value);
 			this.broadcastRoomUpdate();
 			return msg;
 		});
@@ -148,6 +155,7 @@ export class YGOProDuelingState extends RoomState {
 		this.ocgCore.messageMiddleware.on(YGOProMsgRecover, (msg) => {
 			const team = this.resolveTeam(msg.player);
 			this.room.increaseLps(team, msg.value);
+			this.publishLpEvent("duel.recover", msg.player, msg.value);
 			this.broadcastRoomUpdate();
 			return msg;
 		});
@@ -155,6 +163,7 @@ export class YGOProDuelingState extends RoomState {
 		this.ocgCore.messageMiddleware.on(YGOProMsgPayLpCost, (msg) => {
 			const team = this.resolveTeam(msg.player);
 			this.room.decreaseLps(team, msg.cost);
+			this.publishLpEvent("duel.lp-cost", msg.player, msg.cost);
 			this.broadcastRoomUpdate();
 			return msg;
 		});
@@ -674,6 +683,39 @@ export class YGOProDuelingState extends RoomState {
 				banListName: this.room.banListName ?? "N/A",
 				ranked: this.room.ranked,
 			}),
+		);
+	}
+
+	private duelEventContext(): DuelEventContext {
+		return {
+			roomId: this.room.id,
+			turn: this.room.turn,
+			resolveTeam: (player: number) => this.resolveTeam(player),
+		};
+	}
+
+	private publishLpEvent(
+		kind: "duel.damage" | "duel.recover" | "duel.lp-cost",
+		player: number,
+		amount: number,
+	): void {
+		this.duelEvents.dispatch(
+			kind,
+			buildDamageDealt({ player, amount }, this.duelEventContext()),
+			this.room,
+		);
+	}
+
+	/**
+	 * The room counter has already incremented when this pipeline's NEW_TURN
+	 * middleware runs (ocgcore.ts registers increaseTurn first), so the current
+	 * value is the number of the turn that just started.
+	 */
+	private publishTurnStart(player: number): void {
+		this.duelEvents.dispatch(
+			"duel.turn-start",
+			buildTurnStarted({ player }, this.duelEventContext()),
+			this.room,
 		);
 	}
 
