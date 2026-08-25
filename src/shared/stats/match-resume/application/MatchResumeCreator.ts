@@ -1,28 +1,12 @@
 import { randomUUID } from "crypto";
 
-import { MatchResume } from "../domain/MatchResume";
+import { MatchResume, MatchResumeData } from "../domain/MatchResume";
 import { MatchResumeRepository } from "../domain/MatchResumeRepository";
 
 export class MatchResumeCreator {
 	constructor(private readonly matchResumeRepository: MatchResumeRepository) {}
 
-	async run(payload: {
-		userId: string;
-		gameId: string;
-		bestOf: number;
-		playerNames: string[];
-		opponentNames: string[];
-		playerIds: string[];
-		opponentIds: string[];
-		date: Date;
-		banListName: string;
-		banListHash: string;
-		playerScore: number;
-		opponentScore: number;
-		winner: boolean;
-		season: number;
-		points: number;
-	}): Promise<{ id: string }> {
+	async run(payload: Omit<MatchResumeData, "id">): Promise<{ id: string }> {
 		const id = randomUUID();
 		const matchResume = MatchResume.create({ id, ...payload });
 		await this.matchResumeRepository.create(matchResume);

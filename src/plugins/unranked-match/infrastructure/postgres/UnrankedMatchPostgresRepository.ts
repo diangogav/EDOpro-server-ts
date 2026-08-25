@@ -9,18 +9,18 @@ export class UnrankedMatchPostgresRepository implements UnrankedMatchRepository 
 	async saveMatch(unrankedMatch: UnrankedMatch): Promise<void> {
 		const repository = dataSource.getRepository(UnrankedMatchEntity);
 		const entity = repository.create({
-			id: unrankedMatch.id,
-			gameId: unrankedMatch.gameId,
-			bestOf: unrankedMatch.bestOf,
-			playerNames: unrankedMatch.playerNames,
-			opponentNames: unrankedMatch.opponentNames,
-			date: unrankedMatch.date,
-			banListName: unrankedMatch.banListName,
-			banListHash: unrankedMatch.banListHash,
-			team0Score: unrankedMatch.team0Score,
-			team1Score: unrankedMatch.team1Score,
-			winnerTeam: unrankedMatch.winnerTeam,
-			season: unrankedMatch.season,
+			id: unrankedMatch.data.id,
+			gameId: unrankedMatch.data.gameId,
+			bestOf: unrankedMatch.data.bestOf,
+			playerNames: unrankedMatch.data.playerNames,
+			opponentNames: unrankedMatch.data.opponentNames,
+			date: unrankedMatch.data.date,
+			banListName: unrankedMatch.data.banListName,
+			banListHash: unrankedMatch.data.banListHash,
+			team0Score: unrankedMatch.data.team0Score,
+			team1Score: unrankedMatch.data.team1Score,
+			winnerTeam: unrankedMatch.data.winnerTeam,
+			season: unrankedMatch.data.season,
 		});
 		await repository.save(entity);
 	}
@@ -28,18 +28,18 @@ export class UnrankedMatchPostgresRepository implements UnrankedMatchRepository 
 	async saveDuel(unrankedDuel: UnrankedDuel): Promise<void> {
 		const repository = dataSource.getRepository(UnrankedDuelEntity);
 		const entity = repository.create({
-			id: unrankedDuel.id,
-			gameId: unrankedDuel.gameId,
-			date: unrankedDuel.date,
-			banListName: unrankedDuel.banListName,
-			banListHash: unrankedDuel.banListHash,
-			team0Score: unrankedDuel.team0Score,
-			team1Score: unrankedDuel.team1Score,
-			winnerTeam: unrankedDuel.winnerTeam,
-			turns: unrankedDuel.turns,
-			matchId: unrankedDuel.matchId,
-			season: unrankedDuel.season,
-			ipAddress: unrankedDuel.ipAddress,
+			id: unrankedDuel.data.id,
+			gameId: unrankedDuel.data.gameId,
+			date: unrankedDuel.data.date,
+			banListName: unrankedDuel.data.banListName,
+			banListHash: unrankedDuel.data.banListHash,
+			team0Score: unrankedDuel.data.team0Score,
+			team1Score: unrankedDuel.data.team1Score,
+			winnerTeam: unrankedDuel.data.winnerTeam,
+			turns: unrankedDuel.data.turns,
+			matchId: unrankedDuel.data.matchId,
+			season: unrankedDuel.data.season,
+			ipAddress: unrankedDuel.data.ipAddress,
 		});
 		await repository.save(entity);
 	}
