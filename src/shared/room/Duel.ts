@@ -1,6 +1,16 @@
+import { randomUUID } from "crypto";
+
 import { Team } from "./Team";
 
 export class Duel {
+	/**
+	 * Stable identity of this single game. Room ids are 4-digit randoms that
+	 * collide and get reused, and the turn counter resets per game — so
+	 * (duelId, turn) is the only unambiguous key for anything that happens
+	 * inside a duel.
+	 */
+	readonly duelId: string = randomUUID();
+
 	private _turn: number;
 	private readonly _lps: [number, number];
 	private readonly _banListName: string;

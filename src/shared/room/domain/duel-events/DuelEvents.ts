@@ -19,6 +19,8 @@ export type DuelEventKind = (typeof DUEL_EVENT_KINDS)[number];
 /** A player's team took battle or effect damage. */
 export interface DamageDealtEvent {
 	readonly roomId: number;
+	/** Stable uuid of the single game this happened in — see Duel.duelId. */
+	readonly duelId: string;
 	readonly team: number;
 	readonly amount: number;
 	readonly turn: number;
@@ -27,6 +29,8 @@ export interface DamageDealtEvent {
 /** A player's team recovered life points. */
 export interface LifeRecoveredEvent {
 	readonly roomId: number;
+	/** Stable uuid of the single game this happened in — see Duel.duelId. */
+	readonly duelId: string;
 	readonly team: number;
 	readonly amount: number;
 	readonly turn: number;
@@ -35,6 +39,8 @@ export interface LifeRecoveredEvent {
 /** A player's team paid life points as a cost. */
 export interface LpCostPaidEvent {
 	readonly roomId: number;
+	/** Stable uuid of the single game this happened in — see Duel.duelId. */
+	readonly duelId: string;
 	readonly team: number;
 	readonly amount: number;
 	readonly turn: number;
@@ -49,6 +55,8 @@ export interface LpCostPaidEvent {
  */
 export interface TurnStartedEvent {
 	readonly roomId: number;
+	/** Stable uuid of the single game this happened in — see Duel.duelId. */
+	readonly duelId: string;
 	readonly player: number;
 	readonly turn: number;
 }

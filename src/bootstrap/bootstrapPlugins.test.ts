@@ -124,10 +124,16 @@ describe("bootstrapPlugins", () => {
 
 			const dispatcher = new DuelEventDispatcher();
 			DuelEventPluginHub.getInstance().attach(dispatcher);
-			dispatcher.dispatch("duel.damage", { roomId: 7, team: 0, amount: 1000, turn: 1 }, room);
+			dispatcher.dispatch(
+				"duel.damage",
+				{ roomId: 7, duelId: "d-1", team: 0, amount: 1000, turn: 1 },
+				room,
+			);
 			await new Promise((resolve) => setImmediate(resolve));
 
-			expect(receivedEvents).toEqual([{ roomId: 7, team: 0, amount: 1000, turn: 1 }]);
+			expect(receivedEvents).toEqual([
+				{ roomId: 7, duelId: "d-1", team: 0, amount: 1000, turn: 1 },
+			]);
 		});
 
 		it("fails a plugin that subscribes to a kind it did not declare", async () => {

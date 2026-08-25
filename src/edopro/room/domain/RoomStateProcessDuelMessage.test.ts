@@ -48,6 +48,7 @@ const lpPayload = (type: number, player: number, amount: number): Buffer => {
 const makeRoom = (firstToPlay: number) =>
 	({
 		id: 7,
+		duelId: "duel-uuid-1",
 		firstToPlay,
 		turn: 2,
 		decreaseLps: jest.fn(),
@@ -142,7 +143,9 @@ describe("RoomState.processDuelMessage", () => {
 			expect(received).toEqual([]);
 			await new Promise((resolve) => setImmediate(resolve));
 
-			expect(received).toEqual([{ roomId: 7, team: 1, amount: 1000, turn: 2 }]);
+			expect(received).toEqual([
+				{ roomId: 7, duelId: "duel-uuid-1", team: 1, amount: 1000, turn: 2 },
+			]);
 		});
 
 		// TurnStartedEvent.turn is the number of the turn that just started. The
@@ -160,7 +163,7 @@ describe("RoomState.processDuelMessage", () => {
 			pluginState.run(CoreMessages.MSG_NEW_TURN, Buffer.from([CoreMessages.MSG_NEW_TURN, 1]), room);
 			await new Promise((resolve) => setImmediate(resolve));
 
-			expect(received).toEqual([{ roomId: 7, player: 1, turn: 3 }]);
+			expect(received).toEqual([{ roomId: 7, duelId: "duel-uuid-1", player: 1, turn: 3 }]);
 		});
 	});
 });

@@ -689,6 +689,7 @@ export class YGOProDuelingState extends RoomState {
 	private duelEventContext(): DuelEventContext {
 		return {
 			roomId: this.room.id,
+			duelId: this.room.duelId,
 			turn: this.room.turn,
 			resolveTeam: (player: number) => this.resolveTeam(player),
 		};

@@ -14,6 +14,16 @@ describe("Duel", () => {
 			expect(duel.isFinished).toBe(false);
 		});
 
+		it("assigns each duel a unique uuid identity", () => {
+			const first = new Duel(0, [8000, 8000], null);
+			const second = new Duel(0, [8000, 8000], null);
+
+			expect(first.duelId).toMatch(
+				/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+			);
+			expect(second.duelId).not.toBe(first.duelId);
+		});
+
 		it("should handle null ban list name", () => {
 			duel = new Duel(1, [8000, 8000], null);
 
