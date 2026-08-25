@@ -7,8 +7,6 @@ import { Team } from "src/shared/room/Team";
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 import { EventEmitter } from "stream";
 
-import { mercuryConfig } from "@ygopro/config";
-import { YGOProJoinGameMessage } from "@ygopro/messages/YGOProJoinGameMessage";
 import { YGOProPlayerChatMessage } from "@ygopro/messages/server-to-client/YGOProPlayerChatMessage";
 import { YgoClient } from "../../../shared/client/domain/YgoClient";
 import { YgoRoom } from "../../../shared/room/domain/YgoRoom";
@@ -21,7 +19,6 @@ import { ClientMessage } from "../../../shared/messages/MessageProcessor";
 import { PlayerMessageClientMessage } from "../../messages/server-to-client/PlayerMessageClientMessage";
 import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { SpectatorMessageClientMessage } from "../../messages/server-to-client/SpectatorMessageClientMessage";
-import { VersionErrorClientMessage } from "../../messages/server-to-client/VersionErrorClientMessage";
 import { RoomType } from "src/shared/room/domain/RoomType";
 import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
 import { NetPlayerType, YGOProStocChat, YGOProStocSelectHand } from "ygopro-msg-encode";
@@ -53,16 +50,6 @@ export abstract class RoomState {
 
 	removeAllListener(): void {
 		this.eventEmitter.removeAllListeners();
-	}
-
-	protected validateVersion(message: Buffer, socket: ISocket): void {
-		const joinMessage = new YGOProJoinGameMessage(message);
-
-		if (joinMessage.version !== mercuryConfig.version) {
-			socket.send(VersionErrorClientMessage.create(mercuryConfig.version));
-
-			throw new Error("Version mismatch");
-		}
 	}
 
 	protected sendExistingPlayerErrorMessage(
