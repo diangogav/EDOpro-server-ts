@@ -77,3 +77,8 @@ resources.manifest.private.json.*
 # Local session + fetched core artifact (not versioned)
 .claude/
 /ocgcore-worker
+
+# Plugins — private plugin folders are cloned in place and must stay untracked.
+src/plugins/*
+!src/plugins/basic-stats/
+!src/plugins/unranked-match/
