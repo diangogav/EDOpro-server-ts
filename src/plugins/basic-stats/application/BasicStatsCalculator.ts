@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { Logger } from "src/shared/logger/domain/Logger";
 import { Player } from "src/shared/player/domain/Player";
 import { UserProfileRepository } from "src/shared/user-profile/domain/UserProfileRepository";
@@ -37,7 +36,7 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 		const banListName = event.data.banListName;
 		const players = event.data.players.map((item) => new Player(item));
 
-		const gameId = randomUUID();
+		const gameId = event.data.matchId;
 
 		for (const player of players) {
 			const userProfile = await this.userProfileRepository.findByUsername(player.name);

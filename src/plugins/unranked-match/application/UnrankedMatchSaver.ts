@@ -34,7 +34,7 @@ export class UnrankedMatchSaver implements DomainEventSubscriber<GameOverDomainE
 			`Processing unranked match: Team 0 (${team0Players.map((p) => p.name).join(", ")}) vs Team 1 (${team1Players.map((p) => p.name).join(", ")})`,
 		);
 
-		const gameId = randomUUID();
+		const gameId = event.data.matchId;
 		const banListName = event.data.banListName;
 		const banListHash = event.data.banListHash.toString();
 

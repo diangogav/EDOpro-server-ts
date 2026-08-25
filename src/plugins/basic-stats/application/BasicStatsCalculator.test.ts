@@ -136,6 +136,21 @@ describe("BasicStatsCalculator", () => {
 		expect(playerStatsRepository.save).toHaveBeenNthCalledWith(2, PlayerStats.from(opponentStats));
 	});
 
+	it("uses the event's matchId as the persisted gameId instead of inventing one", async () => {
+		const event = GameOverDomainEventMother.create({
+			players: [player.toPresentation(), opponent.toPresentation()],
+			ranked: true,
+			banListName: "N/A",
+			matchId: "match-uuid-1",
+		});
+
+		await basicStatsCalculator.handle(event);
+
+		expect(matchResumeCreator.run).toHaveBeenCalledWith(
+			expect.objectContaining({ gameId: "match-uuid-1" }),
+		);
+	});
+
 	it("Should use banListName from event data (not from hash lookup) for per-format rank", async () => {
 		const edisonBanListName = "2010.03 Edison";
 		playerStatsRepository.findByUserIdAndBanListName

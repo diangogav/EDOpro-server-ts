@@ -69,4 +69,45 @@ describe("YgoRoom", () => {
 			expect(room.players[1]).toBe(c2);
 		});
 	});
+
+	describe("match identity", () => {
+		const flushMutex = () => new Promise((resolve) => setTimeout(resolve, 10));
+
+		it("assigns a fresh matchId per match", () => {
+			const room = SimpleRoomMother.create();
+			const initial = room.matchId;
+
+			room.createMatchUnsafe();
+			const first = room.matchId;
+			room.createMatchUnsafe();
+
+			expect(first).toMatch(/^[0-9a-f-]{36}$/);
+			expect(first).not.toBe(initial);
+			expect(room.matchId).not.toBe(first);
+		});
+
+		it("accumulates the duelIds of every game in match order", async () => {
+			const room = SimpleRoomMother.create();
+			room.createMatchUnsafe();
+
+			room.createDuel(null);
+			await flushMutex();
+			const firstDuelId = room.duelId;
+			room.createDuel(null);
+			await flushMutex();
+
+			expect(room.duelIds).toEqual([firstDuelId, room.duelId]);
+		});
+
+		it("resets the duelIds when a new match starts", async () => {
+			const room = SimpleRoomMother.create();
+			room.createMatchUnsafe();
+			room.createDuel(null);
+			await flushMutex();
+
+			room.createMatchUnsafe();
+
+			expect(room.duelIds).toEqual([]);
+		});
+	});
 });

@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { PlayerData } from "@shared/player/domain/PlayerData";
 import { Duel } from "@shared/room/Duel";
 import { Team } from "@shared/room/Team";
@@ -81,6 +83,10 @@ export abstract class YgoRoom {
 	protected _clientWhoChoosesTurn: YgoClient;
 	protected _match: Match | null;
 	protected _firstToPlay: number;
+	// A room always has a match identity, refreshed by createMatchUnsafe; the
+	// field initializer covers rooms whose flow never calls it explicitly.
+	private _matchId: string = randomUUID();
+	private _duelIds: string[] = [];
 	protected isStart: string;
 	protected currentDuel: Duel | null = null;
 
@@ -230,6 +236,8 @@ export abstract class YgoRoom {
 
 	createMatchUnsafe(): void {
 		this._match = new Match({ bestOf: this.bestOf });
+		this._matchId = randomUUID();
+		this._duelIds = [];
 		this.initializeHistoricalData();
 	}
 
@@ -276,6 +284,7 @@ export abstract class YgoRoom {
 	createDuel(banListName: string | null): void {
 		this.mutex.runExclusive(() => {
 			this.currentDuel = new Duel(this.STARTING_TURN, [this.startLp, this.startLp], banListName);
+			this._duelIds.push(this.currentDuel.duelId);
 		});
 	}
 
@@ -306,6 +315,15 @@ export abstract class YgoRoom {
 	// Empty only outside a duel; duel events are only built mid-duel.
 	get duelId(): string {
 		return this.currentDuel?.duelId ?? "";
+	}
+
+	get matchId(): string {
+		return this._matchId;
+	}
+
+	/** duelIds of every game of the current match, in the order they were played. */
+	get duelIds(): readonly string[] {
+		return this._duelIds;
 	}
 
 	get firstToPlay(): number {

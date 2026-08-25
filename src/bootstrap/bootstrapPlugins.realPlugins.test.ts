@@ -62,6 +62,9 @@ describe("bootstrapPlugins against the real src/plugins directory", () => {
 		await bus.publish(
 			GameOverDomainEvent.DOMAIN_EVENT,
 			new GameOverDomainEvent({
+				roomId: 7,
+				matchId: "match-uuid-1",
+				duelIds: ["duel-uuid-1"],
 				ranked: false,
 				players: [],
 				bestOf: 1,

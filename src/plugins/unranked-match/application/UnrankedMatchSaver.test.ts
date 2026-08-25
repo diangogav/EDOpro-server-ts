@@ -5,6 +5,7 @@ import { UnrankedMatchSaver } from "./UnrankedMatchSaver";
 import { GameOverDomainEvent } from "src/shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
 import { Team } from "src/shared/room/Team";
 import { PlayerMatchSummary } from "src/shared/player/domain/Player";
+import { PlayerMother } from "@test-support/mothers/player/PlayerMother";
 
 describe("UnrankedMatchSaver", () => {
 	let logger: MockProxy<Logger>;
@@ -20,6 +21,9 @@ describe("UnrankedMatchSaver", () => {
 
 	it("should NOT save if match is ranked", async () => {
 		const event = new GameOverDomainEvent({
+			roomId: 7,
+			matchId: "match-uuid-1",
+			duelIds: ["duel-uuid-1"],
 			ranked: true,
 			players: [],
 			bestOf: 1,
@@ -66,6 +70,9 @@ describe("UnrankedMatchSaver", () => {
 		};
 
 		const event = new GameOverDomainEvent({
+			roomId: 7,
+			matchId: "match-uuid-1",
+			duelIds: ["duel-uuid-1"],
 			ranked: false,
 			players: [playerTeam0, playerTeam1],
 			bestOf: 1,
@@ -105,6 +112,9 @@ describe("UnrankedMatchSaver", () => {
 		};
 
 		const event = new GameOverDomainEvent({
+			roomId: 7,
+			matchId: "match-uuid-1",
+			duelIds: ["duel-uuid-1"],
 			ranked: false,
 			players: [playerTeam0],
 			bestOf: 1,
@@ -116,5 +126,28 @@ describe("UnrankedMatchSaver", () => {
 		await unrankedMatchSaver.handle(event);
 
 		expect(unrankedMatchRepository.saveMatch).not.toHaveBeenCalled();
+	});
+
+	it("uses the event's matchId as the persisted gameId instead of inventing one", async () => {
+		const event = new GameOverDomainEvent({
+			ranked: false,
+			players: [
+				PlayerMother.create({ team: Team.PLAYER }).toPresentation(),
+				PlayerMother.create({ team: Team.OPPONENT }).toPresentation(),
+			],
+			bestOf: 1,
+			date: new Date(),
+			banListHash: 123,
+			banListName: "N/A",
+			roomId: 7,
+			matchId: "match-uuid-1",
+			duelIds: ["duel-uuid-1"],
+		});
+
+		await unrankedMatchSaver.handle(event);
+
+		expect(unrankedMatchRepository.saveMatch).toHaveBeenCalledWith(
+			expect.objectContaining({ gameId: "match-uuid-1" }),
+		);
 	});
 });
