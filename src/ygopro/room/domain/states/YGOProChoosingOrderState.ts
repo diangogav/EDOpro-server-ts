@@ -3,7 +3,7 @@ import EventEmitter from "events";
 import { PlayerInfoMessage } from "../../../../edopro/messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../../shared/messages/Commands";
 import { ClientMessage } from "../../../../shared/messages/MessageProcessor";
-import { RoomState } from "../../../../edopro/room/domain/RoomState";
+import { YGOProRoomState } from "../YGOProRoomState";
 import { Logger } from "../../../../shared/logger/domain/Logger";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { YGOProClient } from "../../../client/domain/YGOProClient";
@@ -13,7 +13,7 @@ import { TurnPlayerResult, YGOProCtosTpResult, YGOProStocDuelStart } from "ygopr
 import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
 
-export class YGOProChoosingOrderState extends RoomState {
+export class YGOProChoosingOrderState extends YGOProRoomState {
 	constructor(
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
