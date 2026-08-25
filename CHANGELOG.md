@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.15.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.14.0...v2.15.0) (2026-08-25)
+
+
+### Features
+
+* **event-bus:** harden EventBus and unhardwire GAME_OVER subscribers (plugin-system 1/4) ([#323](https://github.com/diangogav/EDOpro-server-ts/issues/323)) ([262f340](https://github.com/diangogav/EDOpro-server-ts/commit/262f340a52b8675d89becd4c05ff4e7852d1ed11))
+* **matchmaking:** add edison to the ranked queue ([#322](https://github.com/diangogav/EDOpro-server-ts/issues/322)) ([447d93d](https://github.com/diangogav/EDOpro-server-ts/commit/447d93df48d976b02a6676af2cde54b40c332e64))
+* **plugin:** add ServerPlugin contract and bootstrapPlugins loader (plugin-system 2/4) ([#324](https://github.com/diangogav/EDOpro-server-ts/issues/324)) ([8f351f1](https://github.com/diangogav/EDOpro-server-ts/commit/8f351f1f5d96d497d0d18811e6bf055b7e9a1d88))
+* **plugins:** activate plugin loader, unranked-match plugin, private whitelist (plugin-system 4/4) ([#328](https://github.com/diangogav/EDOpro-server-ts/issues/328)) ([9627842](https://github.com/diangogav/EDOpro-server-ts/commit/9627842cbda9fd477ebb92972fb0900496ee1985))
+* **room:** join-command overhaul — pairing joins, room identity, edison bots ([#319](https://github.com/diangogav/EDOpro-server-ts/issues/319)) ([46e353c](https://github.com/diangogav/EDOpro-server-ts/commit/46e353c588f6a4e3bcab64447ebfc6945e6cdfd8))
+
+
+### Bug Fixes
+
+* **ban-list:** announce whitelist lists with the hash ygopro clients compute ([#321](https://github.com/diangogav/EDOpro-server-ts/issues/321)) ([6e7baf2](https://github.com/diangogav/EDOpro-server-ts/commit/6e7baf2cc73876d7b02b62a637fa3b9ed09741a0))
+* **room:** send ygopro-encoded rejection frames on failed joins ([#327](https://github.com/diangogav/EDOpro-server-ts/issues/327)) ([22b8bf0](https://github.com/diangogav/EDOpro-server-ts/commit/22b8bf0f8337f0ccdf5157a024a469c5f5dfee49))
+
 ## [2.14.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.13.2...v2.14.0) (2026-08-05)
 
 
