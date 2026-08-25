@@ -34,7 +34,7 @@ export class UnrankedMatchSaver implements DomainEventSubscriber<GameOverDomainE
 			`Processing unranked match: Team 0 (${team0Players.map((p) => p.name).join(", ")}) vs Team 1 (${team1Players.map((p) => p.name).join(", ")})`,
 		);
 
-		const gameId = randomUUID();
+		const gameId = event.data.matchId;
 		const banListName = event.data.banListName;
 		const banListHash = event.data.banListHash.toString();
 
@@ -60,9 +60,21 @@ export class UnrankedMatchSaver implements DomainEventSubscriber<GameOverDomainE
 		await this.unrankedMatchRepository.saveMatch(unrankedMatch);
 		this.logger.info(`Unranked match saved: ${matchId}`);
 
-		for (const game of referencePlayer.games) {
+		// unranked_duels rows are one per game, so the row id IS the duel: use the
+		// real duelId when the event carries one per game. A count mismatch means
+		// the ids can no longer be matched to games by position — fall back to
+		// random ids rather than guessing, and say so.
+		const duelIds = event.data.duelIds;
+		const idsMatchGames = duelIds.length === referencePlayer.games.length;
+		if (!idsMatchGames) {
+			this.logger.warn(
+				`duelIds count (${duelIds.length}) does not match games count (${referencePlayer.games.length}) — persisting unranked duels under random ids`,
+			);
+		}
+
+		for (const [index, game] of referencePlayer.games.entries()) {
 			const unrankedDuel = UnrankedDuel.create({
-				id: randomUUID(),
+				id: idsMatchGames ? duelIds[index] : randomUUID(),
 				gameId: gameId,
 				date: event.data.date,
 				banListName,

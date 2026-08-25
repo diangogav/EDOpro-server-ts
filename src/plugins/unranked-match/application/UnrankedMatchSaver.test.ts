@@ -5,6 +5,8 @@ import { UnrankedMatchSaver } from "./UnrankedMatchSaver";
 import { GameOverDomainEvent } from "src/shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
 import { Team } from "src/shared/room/Team";
 import { PlayerMatchSummary } from "src/shared/player/domain/Player";
+import { PlayerMother } from "@test-support/mothers/player/PlayerMother";
+import { GameMother } from "@test-support/mothers/player/GameMother";
 
 describe("UnrankedMatchSaver", () => {
 	let logger: MockProxy<Logger>;
@@ -20,6 +22,9 @@ describe("UnrankedMatchSaver", () => {
 
 	it("should NOT save if match is ranked", async () => {
 		const event = new GameOverDomainEvent({
+			roomId: 7,
+			matchId: "match-uuid-1",
+			duelIds: ["duel-uuid-1"],
 			ranked: true,
 			players: [],
 			bestOf: 1,
@@ -66,6 +71,9 @@ describe("UnrankedMatchSaver", () => {
 		};
 
 		const event = new GameOverDomainEvent({
+			roomId: 7,
+			matchId: "match-uuid-1",
+			duelIds: ["duel-uuid-1"],
 			ranked: false,
 			players: [playerTeam0, playerTeam1],
 			bestOf: 1,
@@ -105,6 +113,9 @@ describe("UnrankedMatchSaver", () => {
 		};
 
 		const event = new GameOverDomainEvent({
+			roomId: 7,
+			matchId: "match-uuid-1",
+			duelIds: ["duel-uuid-1"],
 			ranked: false,
 			players: [playerTeam0],
 			bestOf: 1,
@@ -116,5 +127,89 @@ describe("UnrankedMatchSaver", () => {
 		await unrankedMatchSaver.handle(event);
 
 		expect(unrankedMatchRepository.saveMatch).not.toHaveBeenCalled();
+	});
+
+	it("uses the event's matchId as the persisted gameId instead of inventing one", async () => {
+		const event = new GameOverDomainEvent({
+			ranked: false,
+			players: [
+				PlayerMother.create({ team: Team.PLAYER }).toPresentation(),
+				PlayerMother.create({ team: Team.OPPONENT }).toPresentation(),
+			],
+			bestOf: 1,
+			date: new Date(),
+			banListHash: 123,
+			banListName: "N/A",
+			roomId: 7,
+			matchId: "match-uuid-1",
+			duelIds: ["duel-uuid-1"],
+		});
+
+		await unrankedMatchSaver.handle(event);
+
+		expect(unrankedMatchRepository.saveMatch).toHaveBeenCalledWith(
+			expect.objectContaining({ gameId: "match-uuid-1" }),
+		);
+	});
+
+	it("persists each duel row under its real duelId when the event carries one per game", async () => {
+		const event = new GameOverDomainEvent({
+			ranked: false,
+			players: [
+				PlayerMother.create({
+					team: Team.PLAYER,
+					games: [GameMother.create(), GameMother.create()],
+				}).toPresentation(),
+				PlayerMother.create({ team: Team.OPPONENT }).toPresentation(),
+			],
+			bestOf: 3,
+			date: new Date(),
+			banListHash: 123,
+			banListName: "N/A",
+			roomId: 7,
+			matchId: "match-uuid-1",
+			duelIds: ["duel-uuid-1", "duel-uuid-2"],
+		});
+
+		await unrankedMatchSaver.handle(event);
+
+		expect(unrankedMatchRepository.saveDuel).toHaveBeenCalledTimes(2);
+		expect(unrankedMatchRepository.saveDuel).toHaveBeenNthCalledWith(
+			1,
+			expect.objectContaining({ id: "duel-uuid-1" }),
+		);
+		expect(unrankedMatchRepository.saveDuel).toHaveBeenNthCalledWith(
+			2,
+			expect.objectContaining({ id: "duel-uuid-2" }),
+		);
+	});
+
+	it("falls back to a random id and warns when duelIds do not match the games count", async () => {
+		const event = new GameOverDomainEvent({
+			ranked: false,
+			players: [
+				PlayerMother.create({
+					team: Team.PLAYER,
+					games: [GameMother.create(), GameMother.create()],
+				}).toPresentation(),
+				PlayerMother.create({ team: Team.OPPONENT }).toPresentation(),
+			],
+			bestOf: 3,
+			date: new Date(),
+			banListHash: 123,
+			banListName: "N/A",
+			roomId: 7,
+			matchId: "match-uuid-1",
+			duelIds: ["duel-uuid-1"],
+		});
+
+		await unrankedMatchSaver.handle(event);
+
+		expect(unrankedMatchRepository.saveDuel).toHaveBeenCalledTimes(2);
+		const savedIds = unrankedMatchRepository.saveDuel.mock.calls.map(
+			([duel]) => (duel as { id: string }).id,
+		);
+		expect(savedIds).not.toContain("duel-uuid-1");
+		expect(logger.warn).toHaveBeenCalled();
 	});
 });

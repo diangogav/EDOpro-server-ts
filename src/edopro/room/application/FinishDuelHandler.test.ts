@@ -154,6 +154,8 @@ describe("FinishDuelHandler", () => {
 		Object.defineProperty(mockRoom, "bestOf", { value: 3 });
 		Object.defineProperty(mockRoom, "banListHash", { value: 123 });
 		Object.defineProperty(mockRoom, "ranked", { value: true });
+		Object.defineProperty(mockRoom, "matchId", { value: "match-uuid-1" });
+		Object.defineProperty(mockRoom, "duelIds", { value: ["duel-uuid-1"] });
 
 		await handler.run();
 
