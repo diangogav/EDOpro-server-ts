@@ -4,6 +4,13 @@ import { ErrorMessages } from "src/edopro/messages/server-to-client/error-messag
 import { ErrorClientMessage } from "src/edopro/messages/server-to-client/ErrorClientMessage";
 import { ServerErrorClientMessage } from "src/edopro/messages/server-to-client/ServerErrorMessageClientMessage";
 import { Team } from "src/shared/room/Team";
+import {
+	DuelEventContext,
+	decodeDamageDealt,
+	decodeLifeRecovered,
+	decodeLpCostPaid,
+	decodeTurnStarted,
+} from "src/shared/room/domain/duel-events/DuelEventDecoders";
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 import { EventEmitter } from "stream";
 
@@ -85,43 +92,45 @@ export abstract class RoomState {
 	}
 
 	protected processDuelMessage(messageType: CoreMessages, data: Buffer, room: YgoRoom): void {
+		// Wire decoding lives in the shared duel-event decoders — one per kind,
+		// shared with the ygopro pipeline. This method keeps only the room
+		// mutation + broadcast.
+		const ctx: DuelEventContext = {
+			roomId: room.id,
+			turn: room.turn,
+			resolveTeam: (player: number) => room.firstToPlay ^ player,
+		};
+
 		if (messageType === CoreMessages.MSG_DAMAGE) {
-			const team = room.firstToPlay ^ data.readUint8(1);
-			const damage = data.readUint32LE(2);
-			room.decreaseLps(team as Team, damage);
-			WebSocketSingleton.getInstance().broadcast({
-				action: "UPDATE-ROOM",
-				data: room.toRealTimePresentation(),
-			});
+			const event = decodeDamageDealt(data, ctx);
+			room.decreaseLps(event.team as Team, event.amount);
+			this.broadcastDuelRoomUpdate(room);
 		}
 
 		if (messageType === CoreMessages.MSG_RECOVER) {
-			const team = room.firstToPlay ^ data.readUint8(1);
-			const health = data.readUint32LE(2);
-			room.increaseLps(team as Team, health);
-			WebSocketSingleton.getInstance().broadcast({
-				action: "UPDATE-ROOM",
-				data: room.toRealTimePresentation(),
-			});
+			const event = decodeLifeRecovered(data, ctx);
+			room.increaseLps(event.team as Team, event.amount);
+			this.broadcastDuelRoomUpdate(room);
 		}
 
 		if (messageType === CoreMessages.MSG_PAY_LPCOST) {
-			const team = room.firstToPlay ^ data.readUint8(1);
-			const cost = data.readUint32LE(2);
-			room.decreaseLps(team as Team, cost);
-			WebSocketSingleton.getInstance().broadcast({
-				action: "UPDATE-ROOM",
-				data: room.toRealTimePresentation(),
-			});
+			const event = decodeLpCostPaid(data, ctx);
+			room.decreaseLps(event.team as Team, event.amount);
+			this.broadcastDuelRoomUpdate(room);
 		}
 
 		if (messageType === CoreMessages.MSG_NEW_TURN) {
+			decodeTurnStarted(data, ctx);
 			room.increaseTurn();
-			WebSocketSingleton.getInstance().broadcast({
-				action: "UPDATE-ROOM",
-				data: room.toRealTimePresentation(),
-			});
+			this.broadcastDuelRoomUpdate(room);
 		}
+	}
+
+	private broadcastDuelRoomUpdate(room: YgoRoom): void {
+		WebSocketSingleton.getInstance().broadcast({
+			action: "UPDATE-ROOM",
+			data: room.toRealTimePresentation(),
+		});
 	}
 
 	protected notifyDuelStart(room: YgoRoom): void {
