@@ -88,18 +88,18 @@ describe("UnrankedMatchSaver", () => {
 		expect(unrankedMatchRepository.saveDuel).toHaveBeenCalledTimes(1);
 
 		const capturedMatch = unrankedMatchRepository.saveMatch.mock.calls[0][0];
-		expect(capturedMatch.team0Score).toBe(1);
-		expect(capturedMatch.team1Score).toBe(0);
-		expect(capturedMatch.winnerTeam).toBe(0);
-		expect(capturedMatch.playerNames).toContain("Player0");
-		expect(capturedMatch.opponentNames).toContain("Player1");
-		expect(capturedMatch.banListName).toBe("2010.03 Edison");
+		expect(capturedMatch.data.team0Score).toBe(1);
+		expect(capturedMatch.data.team1Score).toBe(0);
+		expect(capturedMatch.data.winnerTeam).toBe(0);
+		expect(capturedMatch.data.playerNames).toContain("Player0");
+		expect(capturedMatch.data.opponentNames).toContain("Player1");
+		expect(capturedMatch.data.banListName).toBe("2010.03 Edison");
 
 		const capturedDuel = unrankedMatchRepository.saveDuel.mock.calls[0][0];
-		expect(capturedDuel.team0Score).toBe(1);
-		expect(capturedDuel.team1Score).toBe(0);
-		expect(capturedDuel.winnerTeam).toBe(0);
-		expect(capturedDuel.banListName).toBe("2010.03 Edison");
+		expect(capturedDuel.data.team0Score).toBe(1);
+		expect(capturedDuel.data.team1Score).toBe(0);
+		expect(capturedDuel.data.winnerTeam).toBe(0);
+		expect(capturedDuel.data.banListName).toBe("2010.03 Edison");
 	});
 
 	it("should NOT save if players are missing from one team", async () => {
@@ -148,7 +148,7 @@ describe("UnrankedMatchSaver", () => {
 		await unrankedMatchSaver.handle(event);
 
 		expect(unrankedMatchRepository.saveMatch).toHaveBeenCalledWith(
-			expect.objectContaining({ gameId: "match-uuid-1" }),
+			expect.objectContaining({ data: expect.objectContaining({ gameId: "match-uuid-1" }) }),
 		);
 	});
 
@@ -174,7 +174,7 @@ describe("UnrankedMatchSaver", () => {
 		await unrankedMatchSaver.handle(event);
 
 		expect(unrankedMatchRepository.saveMatch).toHaveBeenCalledWith(
-			expect.objectContaining({ id: "match-uuid-1" }),
+			expect.objectContaining({ data: expect.objectContaining({ id: "match-uuid-1" }) }),
 		);
 	});
 
@@ -202,11 +202,11 @@ describe("UnrankedMatchSaver", () => {
 		expect(unrankedMatchRepository.saveDuel).toHaveBeenCalledTimes(2);
 		expect(unrankedMatchRepository.saveDuel).toHaveBeenNthCalledWith(
 			1,
-			expect.objectContaining({ id: "duel-uuid-1" }),
+			expect.objectContaining({ data: expect.objectContaining({ id: "duel-uuid-1" }) }),
 		);
 		expect(unrankedMatchRepository.saveDuel).toHaveBeenNthCalledWith(
 			2,
-			expect.objectContaining({ id: "duel-uuid-2" }),
+			expect.objectContaining({ data: expect.objectContaining({ id: "duel-uuid-2" }) }),
 		);
 	});
 
@@ -233,7 +233,7 @@ describe("UnrankedMatchSaver", () => {
 
 		expect(unrankedMatchRepository.saveDuel).toHaveBeenCalledTimes(2);
 		const savedIds = unrankedMatchRepository.saveDuel.mock.calls.map(
-			([duel]) => (duel as { id: string }).id,
+			([duel]) => (duel as { data: { id: string } }).data.id,
 		);
 		expect(savedIds).not.toContain("duel-uuid-1");
 		expect(logger.warn).toHaveBeenCalled();

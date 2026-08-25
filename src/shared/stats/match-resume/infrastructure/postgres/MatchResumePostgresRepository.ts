@@ -9,22 +9,22 @@ export class MatchResumePostgresRepository implements MatchResumeRepository {
 	async create(matchResume: MatchResume): Promise<void> {
 		const repository = dataSource.getRepository(MatchResumeEntity);
 		const matchResumeEntity = repository.create({
-			id: matchResume.id,
-			userId: matchResume.userId,
-			gameId: matchResume.gameId,
-			bestOf: matchResume.bestOf,
-			playerNames: matchResume.playerNames,
-			opponentNames: matchResume.opponentNames,
-			playerIds: matchResume.playerIds,
-			opponentIds: matchResume.opponentIds,
-			date: matchResume.date,
-			banListName: matchResume.banListName,
-			banListHash: matchResume.banListHash,
-			playerScore: matchResume.playerScore,
-			opponentScore: matchResume.opponentScore,
-			winner: matchResume.winner,
-			season: matchResume.season,
-			points: matchResume.points,
+			id: matchResume.data.id,
+			userId: matchResume.data.userId,
+			gameId: matchResume.data.gameId,
+			bestOf: matchResume.data.bestOf,
+			playerNames: matchResume.data.playerNames,
+			opponentNames: matchResume.data.opponentNames,
+			playerIds: matchResume.data.playerIds,
+			opponentIds: matchResume.data.opponentIds,
+			date: matchResume.data.date,
+			banListName: matchResume.data.banListName,
+			banListHash: matchResume.data.banListHash,
+			playerScore: matchResume.data.playerScore,
+			opponentScore: matchResume.data.opponentScore,
+			winner: matchResume.data.winner,
+			season: matchResume.data.season,
+			points: matchResume.data.points,
 		});
 		await repository.save(matchResumeEntity);
 	}
@@ -32,20 +32,20 @@ export class MatchResumePostgresRepository implements MatchResumeRepository {
 	async createDuelResume(duelResume: DuelResume): Promise<void> {
 		const repository = dataSource.getRepository(DuelResumeEntity);
 		const duelResumeEntity = repository.create({
-			id: duelResume.id,
-			userId: duelResume.userId,
-			gameId: duelResume.gameId,
-			playerNames: duelResume.playerNames,
-			opponentNames: duelResume.opponentNames,
-			date: duelResume.date,
-			banListName: duelResume.banListName,
-			banListHash: duelResume.banListHash,
-			result: duelResume.result,
-			turns: duelResume.turns,
-			matchId: duelResume.matchId,
-			duelId: duelResume.duelId,
-			season: duelResume.season,
-			ipAddress: duelResume.ipAddress,
+			id: duelResume.data.id,
+			userId: duelResume.data.userId,
+			gameId: duelResume.data.gameId,
+			playerNames: duelResume.data.playerNames,
+			opponentNames: duelResume.data.opponentNames,
+			date: duelResume.data.date,
+			banListName: duelResume.data.banListName,
+			banListHash: duelResume.data.banListHash,
+			result: duelResume.data.result,
+			turns: duelResume.data.turns,
+			matchId: duelResume.data.matchId,
+			duelId: duelResume.data.duelId,
+			season: duelResume.data.season,
+			ipAddress: duelResume.data.ipAddress,
 		});
 		await repository.save(duelResumeEntity);
 	}

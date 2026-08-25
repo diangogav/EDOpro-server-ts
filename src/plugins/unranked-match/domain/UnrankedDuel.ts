@@ -1,4 +1,4 @@
-export class UnrankedDuel {
+export interface UnrankedDuelData {
 	readonly id: string;
 	readonly gameId: string;
 	readonly date: Date;
@@ -11,49 +11,12 @@ export class UnrankedDuel {
 	readonly matchId: string;
 	readonly season: number;
 	readonly ipAddress: string | null;
+}
 
-	private constructor(data: {
-		id: string;
-		gameId: string;
-		date: Date;
-		banListName: string;
-		banListHash: string;
-		team0Score: number;
-		team1Score: number;
-		winnerTeam: number;
-		turns: number;
-		matchId: string;
-		season: number;
-		ipAddress: string | null;
-	}) {
-		this.id = data.id;
-		this.gameId = data.gameId;
-		this.date = data.date;
-		this.banListName = data.banListName;
-		this.banListHash = data.banListHash;
-		this.team0Score = data.team0Score;
-		this.team1Score = data.team1Score;
-		this.winnerTeam = data.winnerTeam;
-		this.turns = data.turns;
-		this.matchId = data.matchId;
-		this.season = data.season;
-		this.ipAddress = data.ipAddress;
-	}
+export class UnrankedDuel {
+	private constructor(readonly data: UnrankedDuelData) {}
 
-	static create(data: {
-		id: string;
-		gameId: string;
-		date: Date;
-		banListName: string;
-		banListHash: string;
-		team0Score: number;
-		team1Score: number;
-		winnerTeam: number;
-		turns: number;
-		matchId: string;
-		season: number;
-		ipAddress: string | null;
-	}): UnrankedDuel {
+	static create(data: UnrankedDuelData): UnrankedDuel {
 		return new UnrankedDuel(data);
 	}
 }

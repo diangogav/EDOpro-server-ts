@@ -1,4 +1,4 @@
-export class MatchResume {
+export interface MatchResumeData {
 	readonly id: string;
 	readonly userId: string;
 	readonly gameId: string;
@@ -15,133 +15,12 @@ export class MatchResume {
 	readonly winner: boolean;
 	readonly season: number;
 	readonly points: number;
+}
 
-	private constructor({
-		id,
-		userId,
-		gameId,
-		bestOf,
-		playerNames,
-		opponentNames,
-		date,
-		banListName,
-		banListHash,
-		playerScore,
-		opponentScore,
-		winner,
-		season,
-		points,
-		playerIds,
-		opponentIds,
-	}: {
-		id: string;
-		userId: string;
-		gameId: string;
-		bestOf: number;
-		playerNames: string[];
-		opponentNames: string[];
-		date: Date;
-		banListName: string;
-		banListHash: string;
-		playerScore: number;
-		opponentScore: number;
-		winner: boolean;
-		season: number;
-		points: number;
-		playerIds: string[];
-		opponentIds: string[];
-	}) {
-		this.id = id;
-		this.userId = userId;
-		this.gameId = gameId;
-		this.bestOf = bestOf;
-		this.playerNames = playerNames;
-		this.opponentNames = opponentNames;
-		this.date = date;
-		this.banListName = banListName;
-		this.banListHash = banListHash;
-		this.playerScore = playerScore;
-		this.opponentScore = opponentScore;
-		this.winner = winner;
-		this.season = season;
-		this.points = points;
-		this.playerIds = playerIds;
-		this.opponentIds = opponentIds;
-	}
+export class MatchResume {
+	private constructor(readonly data: MatchResumeData) {}
 
-	static create({
-		id,
-		userId,
-		gameId,
-		bestOf,
-		playerNames,
-		opponentNames,
-		date,
-		banListName,
-		banListHash,
-		playerScore,
-		opponentScore,
-		winner,
-		season,
-		points,
-		playerIds,
-		opponentIds,
-	}: {
-		id: string;
-		userId: string;
-		gameId: string;
-		bestOf: number;
-		playerNames: string[];
-		opponentNames: string[];
-		date: Date;
-		banListName: string;
-		banListHash: string;
-		playerScore: number;
-		opponentScore: number;
-		winner: boolean;
-		season: number;
-		points: number;
-		playerIds: string[];
-		opponentIds: string[];
-	}): MatchResume {
-		return new MatchResume({
-			id,
-			userId,
-			gameId,
-			bestOf,
-			playerNames,
-			opponentNames,
-			date,
-			banListName,
-			banListHash,
-			playerScore,
-			opponentScore,
-			winner,
-			season,
-			points,
-			playerIds,
-			opponentIds,
-		});
-	}
-
-	static from(data: {
-		id: string;
-		userId: string;
-		gameId: string;
-		bestOf: number;
-		playerNames: string[];
-		opponentNames: string[];
-		date: Date;
-		banListName: string;
-		banListHash: string;
-		playerScore: number;
-		opponentScore: number;
-		winner: boolean;
-		season: number;
-		points: number;
-		playerIds: string[];
-		opponentIds: string[];
-	}): MatchResume {
+	static create(data: MatchResumeData): MatchResume {
 		return new MatchResume(data);
 	}
 }
