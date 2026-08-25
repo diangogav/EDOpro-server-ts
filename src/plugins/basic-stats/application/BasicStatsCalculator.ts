@@ -97,10 +97,22 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 				`Match saved with id ${matchId} for user: ${userProfile.id} with name ${player.name}`,
 			);
 
-			for (const game of player.games) {
+			// duels rows are one per player per game: both players' rows of game i
+			// carry the same duelId. A count mismatch means positional matching is
+			// untrustworthy — persist null rather than guessing, and say so.
+			const duelIds = event.data.duelIds;
+			const idsMatchGames = duelIds.length === player.games.length;
+			if (!idsMatchGames) {
+				this.logger.warn(
+					`duelIds count (${duelIds.length}) does not match games count (${player.games.length}) for ${player.name} — persisting duel resumes without duelId`,
+				);
+			}
+
+			for (const [index, game] of player.games.entries()) {
 				void this.duelResumeCreator.run({
 					userId: userProfile.id,
 					gameId,
+					duelId: idsMatchGames ? duelIds[index] : null,
 					playerNames,
 					opponentNames,
 					date: event.data.date,

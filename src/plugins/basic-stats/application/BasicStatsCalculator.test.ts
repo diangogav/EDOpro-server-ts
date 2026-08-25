@@ -151,6 +151,50 @@ describe("BasicStatsCalculator", () => {
 		);
 	});
 
+	it("persists each duel resume under its real duelId when the event carries one per game", async () => {
+		const event = GameOverDomainEventMother.create({
+			players: [player.toPresentation(), opponent.toPresentation()],
+			ranked: true,
+			banListName: "N/A",
+			matchId: "match-uuid-1",
+			duelIds: ["duel-uuid-1", "duel-uuid-2", "duel-uuid-3"],
+		});
+
+		await basicStatsCalculator.handle(event);
+
+		// Both players' rows of game i carry the SAME duelId — the cross-player
+		// correlation key.
+		const duelIdsPassed = duelResumeCreator.run.mock.calls.map(
+			([payload]) => (payload as { duelId: string | null }).duelId,
+		);
+		expect(duelIdsPassed).toEqual([
+			"duel-uuid-1",
+			"duel-uuid-2",
+			"duel-uuid-3",
+			"duel-uuid-1",
+			"duel-uuid-2",
+			"duel-uuid-3",
+		]);
+	});
+
+	it("falls back to null duelIds and warns when the count does not match the games", async () => {
+		const event = GameOverDomainEventMother.create({
+			players: [player.toPresentation(), opponent.toPresentation()],
+			ranked: true,
+			banListName: "N/A",
+			matchId: "match-uuid-1",
+			duelIds: ["duel-uuid-1"],
+		});
+
+		await basicStatsCalculator.handle(event);
+
+		const duelIdsPassed = duelResumeCreator.run.mock.calls.map(
+			([payload]) => (payload as { duelId: string | null }).duelId,
+		);
+		expect(duelIdsPassed).toEqual([null, null, null, null, null, null]);
+		expect(logger.warn).toHaveBeenCalled();
+	});
+
 	it("Should use banListName from event data (not from hash lookup) for per-format rank", async () => {
 		const edisonBanListName = "2010.03 Edison";
 		playerStatsRepository.findByUserIdAndBanListName

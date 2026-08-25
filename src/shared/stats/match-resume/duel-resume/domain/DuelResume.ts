@@ -10,6 +10,8 @@ export class DuelResume {
 	readonly result: string;
 	readonly turns: number;
 	readonly matchId: string;
+	/** Cross-player correlation key of the game; null when the emitter could not provide one. */
+	readonly duelId: string | null;
 	readonly season: number;
 	readonly ipAddress: string | null;
 
@@ -25,6 +27,7 @@ export class DuelResume {
 		result,
 		turns,
 		matchId,
+		duelId,
 		season,
 		ipAddress,
 	}: {
@@ -39,6 +42,7 @@ export class DuelResume {
 		result: string;
 		turns: number;
 		matchId: string;
+		duelId: string | null;
 		season: number;
 		ipAddress: string | null;
 	}) {
@@ -53,6 +57,7 @@ export class DuelResume {
 		this.result = result;
 		this.turns = turns;
 		this.matchId = matchId;
+		this.duelId = duelId;
 		this.season = season;
 		this.ipAddress = ipAddress;
 	}
@@ -69,6 +74,7 @@ export class DuelResume {
 		result,
 		turns,
 		matchId,
+		duelId,
 		season,
 		ipAddress,
 	}: {
@@ -83,6 +89,7 @@ export class DuelResume {
 		result: string;
 		turns: number;
 		matchId: string;
+		duelId: string | null;
 		season: number;
 		ipAddress: string | null;
 	}): DuelResume {
@@ -98,6 +105,7 @@ export class DuelResume {
 			result,
 			turns,
 			matchId,
+			duelId,
 			season,
 			ipAddress,
 		});
@@ -115,6 +123,7 @@ export class DuelResume {
 		result: string;
 		turns: number;
 		matchId: string;
+		duelId: string | null;
 		season: number;
 		ipAddress: string | null;
 	}): DuelResume {

@@ -17,6 +17,7 @@ export class DuelResumeCreator {
 		result: string;
 		turns: number;
 		matchId: string;
+		duelId: string | null;
 		season: number;
 		ipAddress: string | null;
 	}): Promise<{ id: string }> {
