@@ -47,7 +47,7 @@ For when you want full control, or Docker isn't an option.
 
 ### 📋 Prerequisites
 
-- [Node.js](https://nodejs.org) >= 24
+- [Node.js](https://nodejs.org) 24 — the exact version lives in `.nvmrc` (`nvm use` picks it up). CI and the Docker images track the same one.
 - [pnpm](https://pnpm.io) — the package manager for this repo. `corepack enable pnpm` picks up the version pinned in `package.json`.
 - [CMake](https://cmake.org/download/) >= 3.18
 - A C++ compiler (g++ or clang++)
