@@ -352,3 +352,19 @@ describe("resolveCardPool", () => {
 		expect(resolveCardPool(["casual", "tm300", "rush"])).toBe("rush");
 	});
 });
+
+describe("rush mapping", () => {
+	it("deals a 4-card opening hand", () => {
+		// Rush deals 4 and the draw-to-5 rule in RDRule.lua tops the turn player
+		// up during the Draw Phase. Leaving the default 5 would start every
+		// player one card ahead.
+		expect(formatRuleMappings.rush.get().start_hand).toBe(4);
+	});
+
+	it("uses the only master rule that allows Fusion Summons", () => {
+		// Verified in evolution-ygopro-core (rush-fusion-zone.integration.test.ts):
+		// under duel_rule 4 the Fusion spell never becomes activatable, because
+		// RDRule.lua disables the Extra Monster Zones and Rush has no Links.
+		expect(formatRuleMappings.rush.get().duel_rule).toBe(5);
+	});
+});

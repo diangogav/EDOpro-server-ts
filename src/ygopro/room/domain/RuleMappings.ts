@@ -633,7 +633,15 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: index !== -1 ? index : 2,
-				duel_rule: 4,
+				// Must be 5. RDRule.lua disables both Extra Monster Zones, and under
+				// duel_rule 4 those are the only zones an Extra Deck monster may enter
+				// without a Link — which Rush does not have — so Fusion Summons become
+				// impossible. Lower rules would allow the summon but leave the Pendulum
+				// Zones open at S/T 6-7, outside the mask.
+				duel_rule: 5,
+				// Rush deals 4; RDRule.lua tops the turn player up to 5 during the
+				// Draw Phase via EFFECT_DRAW_COUNT.
+				start_hand: 4,
 			};
 		},
 		validate: (value) => {
