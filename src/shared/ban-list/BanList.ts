@@ -6,6 +6,16 @@ export abstract class BanList {
 	readonly semiLimited: number[] = [];
 	readonly all: number[] = [];
 	readonly points = new Map<number, number>();
+
+	/**
+	 * Allowances shared across a group of cards, keyed by the list's own
+	 * identifier (`legend_monster`, `legend_spell`, `legend_trap` in Rush).
+	 *
+	 * Unlike forbidden/limited/semiLimited, which cap copies of ONE card, this
+	 * caps how much of a category a whole deck may spend.
+	 */
+	readonly creditLimits = new Map<string, { cap: number; cards: Map<number, number> }>();
+
 	protected _name: string | null = null;
 	protected _hash = 0x7dfcee6a;
 	private _whitelisted = false;
@@ -20,6 +30,26 @@ export abstract class BanList {
 
 	get hash(): number {
 		return this._hash;
+	}
+
+	/** Declare a category and how much of it one deck may spend. */
+	addCreditLimit(identifier: string, cap: number): void {
+		const existing = this.creditLimits.get(identifier);
+		if (existing) {
+			this.creditLimits.set(identifier, { cap, cards: existing.cards });
+			return;
+		}
+		this.creditLimits.set(identifier, { cap, cards: new Map() });
+	}
+
+	/** Tolerates arriving before its cap line — lflist order is not guaranteed. */
+	addCreditMember(identifier: string, cardId: number, credit: number): void {
+		let limit = this.creditLimits.get(identifier);
+		if (!limit) {
+			limit = { cap: 1, cards: new Map() };
+			this.creditLimits.set(identifier, limit);
+		}
+		limit.cards.set(cardId, credit);
 	}
 
 	whileListed(): void {
