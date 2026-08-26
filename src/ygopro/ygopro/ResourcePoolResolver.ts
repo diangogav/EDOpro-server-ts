@@ -19,6 +19,7 @@ export function __resetResolverWarnings(): void {
 interface ManifestRuntimeYGOPro {
 	standard?: unknown;
 	extended?: unknown;
+	pools?: unknown;
 }
 
 interface ManifestRuntime {
@@ -38,11 +39,27 @@ export interface ResourcePoolResolverOptions {
 	logger: Logger;
 }
 
+/**
+ * A named pool keeps its script search path separate from its card pool.
+ *
+ * A script pack needs both to differ: Rush scripts need `base` on the search
+ * path for utility.lua and constant.lua, while its card pool must exclude base
+ * because OCG cards are not part of the format.
+ */
+export interface NamedPool {
+	/** Ordered absolute paths searched for Lua scripts. */
+	scripts: string[];
+	/** Ordered absolute paths whose .cdb files form the card pool. */
+	cards: string[];
+}
+
 export interface ResolvedPools {
 	/** Ordered absolute paths for the standard (served formats) pool. */
 	standard: string[];
 	/** Ordered absolute paths for the extended pool (standard + extensions). */
 	extended: string[];
+	/** Named pools from runtime.ygopro.pools, keyed by pool name. */
+	named: Record<string, NamedPool>;
 }
 
 /**
@@ -71,16 +88,25 @@ export function resolvePools(options: ResourcePoolResolverOptions): ResolvedPool
 
 	const extended = [...standard, ...extendedDelta];
 
+	// --- Named pools (per-format script/card path sets) ---
+	const named = deriveNamedPools(manifest, ygoproBase, manifestPath, logger);
+
 	// --- Diagnostic 1: warn on manifest-derived paths that do not exist on disk ---
 	// All pool paths are manifest-derived; check all of them.
 	warnMissingPoolDirs(standard, logger);
+	for (const pool of Object.values(named)) {
+		warnMissingPoolDirs([...pool.scripts, ...pool.cards], logger);
+	}
+
+	// --- Diagnostic 3: a named pool that resolves but carries no cards ---
+	errorOnEmptyNamedPools(named, logger);
 
 	// --- Diagnostic 2: warn on duplicate .cdb basenames across standard pool folders ---
 	// Scanned on the standard pool (extended = standard + delta; scanning standard avoids
 	// double-counting the overlapping directories). Best-effort: unreadable dirs skipped.
 	warnDuplicateCdbBasenames(standard, logger);
 
-	return { standard, extended };
+	return { standard, extended, named };
 }
 
 // ---------------------------------------------------------------------------
@@ -147,6 +173,112 @@ function deriveExtended(manifest: Manifest | null, ygoproBase: string): string[]
 	}
 
 	return extendedLeaves
+		.filter((leaf): leaf is string => typeof leaf === "string" && leaf.length > 0)
+		.map((leaf) => path.join(ygoproBase, leaf));
+}
+
+/**
+ * Derive named pools from runtime.ygopro.pools.
+ *
+ * Absent `pools` is normal. A declared but malformed entry is an error —
+ * dropping it silently would boot a server whose format looks configured and
+ * resolves to nothing. Invalid entries are skipped one by one.
+ */
+function deriveNamedPools(
+	manifest: Manifest | null,
+	ygoproBase: string,
+	manifestPath: string,
+	logger: Logger,
+): Record<string, NamedPool> {
+	const pools = manifest?.runtime?.ygopro?.pools;
+
+	if (pools === undefined || pools === null) {
+		return {};
+	}
+
+	if (typeof pools !== "object" || Array.isArray(pools)) {
+		logger.error(
+			`ResourcePoolResolver: manifest at "${manifestPath}" has runtime.ygopro.pools that is not ` +
+				`an object; ignoring all named pools.`,
+		);
+		return {};
+	}
+
+	const resolved: Record<string, NamedPool> = {};
+
+	for (const [name, entry] of Object.entries(pools as Record<string, unknown>)) {
+		if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+			logger.error(
+				`ResourcePoolResolver: named pool "${name}" in "${manifestPath}" must be an object with ` +
+					`"scripts" and "cards" arrays; skipping it.`,
+			);
+			continue;
+		}
+
+		const { scripts, cards } = entry as { scripts?: unknown; cards?: unknown };
+
+		if (!Array.isArray(scripts) || !Array.isArray(cards)) {
+			logger.error(
+				`ResourcePoolResolver: named pool "${name}" in "${manifestPath}" is missing a "scripts" or ` +
+					`"cards" array; skipping it.`,
+			);
+			continue;
+		}
+
+		resolved[name] = {
+			scripts: toAbsoluteLeaves(scripts, ygoproBase),
+			cards: toAbsoluteLeaves(cards, ygoproBase),
+		};
+	}
+
+	return resolved;
+}
+
+/**
+ * Diagnostic 3 — a named pool whose directories exist but hold no .cdb.
+ *
+ * Happens when the assembly step half-runs: the directory is created, the
+ * databases are not. Error rather than warn — unlike a missing folder there is
+ * no benign reading, since the pool is declared.
+ *
+ * Pools missing outright are skipped; warnMissingPoolDirs already names those.
+ */
+function errorOnEmptyNamedPools(named: Record<string, NamedPool>, logger: Logger): void {
+	for (const [name, pool] of Object.entries(named)) {
+		const present = pool.cards.filter(
+			(dir) => fs.existsSync(dir) && fs.statSync(dir).isDirectory(),
+		);
+		if (present.length === 0) {
+			continue;
+		}
+
+		const hasCdb = present.some((dir) => {
+			try {
+				return fs.readdirSync(dir).some((entry) => entry.toLowerCase().endsWith(".cdb"));
+			} catch {
+				return false;
+			}
+		});
+		if (hasCdb) {
+			continue;
+		}
+
+		const key = `emptypool:${name}`;
+		if (_warnedKeys.has(key)) {
+			continue;
+		}
+		_warnedKeys.add(key);
+
+		logger.error(
+			`ResourcePoolResolver: named pool "${name}" has no card database in [${present.join(", ")}]` +
+				` — rooms on this format will boot with an empty card pool and reject every deck.` +
+				` Check that the assembly step published its .cdb files.`,
+		);
+	}
+}
+
+function toAbsoluteLeaves(leaves: unknown[], ygoproBase: string): string[] {
+	return leaves
 		.filter((leaf): leaf is string => typeof leaf === "string" && leaf.length > 0)
 		.map((leaf) => path.join(ygoproBase, leaf));
 }
