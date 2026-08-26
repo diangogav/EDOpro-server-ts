@@ -23,7 +23,7 @@ import { Deck } from "@shared/deck/domain/Deck";
 import MercuryBanListMemoryRepository from "../../ban-list/infrastructure/YGOProBanListMemoryRepository";
 import { YGOProClient } from "../../client/domain/YGOProClient";
 import {
-	extendedCardPoolFormats,
+	resolveCardPool,
 	formatRuleMappings,
 	priorityRuleMappings,
 	ruleMappings,
@@ -73,7 +73,7 @@ export class YGOProRoom extends YgoRoom {
 	readonly league: RoomLeague;
 	readonly createdBySocketId: string;
 	readonly banListHash: number;
-	readonly useExtendedCardPool: boolean;
+	readonly cardPool: string;
 	//TODO: compatibility with edopro list and rank;
 	private _edoBanListHash: number;
 	private _logger: Logger;
@@ -117,7 +117,7 @@ export class YGOProRoom extends YgoRoom {
 		startLp,
 		messageRepository,
 		banListHash,
-		useExtendedCardPool,
+		cardPool,
 	}: {
 		id: number;
 		password: string;
@@ -131,7 +131,7 @@ export class YGOProRoom extends YgoRoom {
 		startLp: number;
 		messageRepository: MessageRepository;
 		banListHash: number;
-		useExtendedCardPool: boolean;
+		cardPool: string;
 	}) {
 		super({
 			team0,
@@ -150,10 +150,10 @@ export class YGOProRoom extends YgoRoom {
 		this._hostInfo = hostInfo;
 		this._state = DuelState.WAITING;
 		this.banListHash = banListHash;
-		this.useExtendedCardPool = useExtendedCardPool;
+		this.cardPool = cardPool;
 		this.createdBySocketId = createdBySocketId;
 		this._messageRepository = messageRepository;
-		this._cardRepository = new CardYGOProRepository(this.useExtendedCardPool);
+		this._cardRepository = new CardYGOProRepository(this.cardPool);
 		this._deckRules = new DeckRules({
 			mainMin: 40,
 			mainMax: 60,
@@ -228,7 +228,7 @@ export class YGOProRoom extends YgoRoom {
 			rankedOverride,
 			hasPin: Boolean(playerInfo.password),
 		});
-		const useExtendedCardPool = options.some((opt) => extendedCardPoolFormats.has(opt));
+		const cardPool = resolveCardPool(options);
 		const banList = MercuryBanListMemoryRepository.findLFListByIndex(hostInfo.lflist);
 		const banListHash = banList?.hash ?? 0;
 
@@ -245,7 +245,7 @@ export class YGOProRoom extends YgoRoom {
 			startLp: hostInfo.start_lp,
 			messageRepository,
 			banListHash,
-			useExtendedCardPool,
+			cardPool,
 		});
 
 		room._logger = logger.child({ file: "MercuryRoom" });

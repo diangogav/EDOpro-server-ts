@@ -10,6 +10,7 @@ import { AvailableCardValidationHandler } from "@shared/deck/domain/validators/A
 import { GenesysRulesValidationHandler } from "@shared/deck/domain/validators/GenesysRulesValidationHandler";
 import { MaxCopiesValidationHandler } from "@shared/deck/domain/validators/MaxCopiesValidationHandler";
 import { EdoproBanList } from "@edopro/ban-list/domain/BanList";
+import { CreditLimitValidationHandler } from "@shared/deck/domain/validators/CreditLimitValidationHandler";
 import { CardAvailabilityValidationHandler } from "./validators/CardAvailabilityValidationHandler";
 
 /**
@@ -43,6 +44,9 @@ export class YGOProDeckValidator {
 			.setNextHandler(new ForbiddenCardValidationHandler(this.banList))
 			.setNextHandler(new SemiLimitedCardValidationHandler(this.banList))
 			.setNextHandler(new LimitedCardValidationHandler(this.banList))
+			// Rush Duel's Legend rule. Inert for every list that declares no
+			// credit limits, so it costs nothing on the other formats.
+			.setNextHandler(new CreditLimitValidationHandler(this.banList))
 			.setNextHandler(new CardAvailabilityValidationHandler(this.deckRules.rule))
 			.setNextHandler(new NoLimitedCardValidationHandler(this.banList))
 			.setNextHandler(new AvailableCardValidationHandler(this.banList));

@@ -2,6 +2,7 @@ import MercuryBanListMemoryRepository from "../../ban-list/infrastructure/YGOPro
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 import { GameMode } from "ygopro-msg-encode";
 import { HostInfo } from "./host-info/HostInfo";
+import { DEFAULT_POOL, EXTENDED_POOL, RUSH_POOL } from "src/ygopro/ygopro/PoolSelection";
 
 interface RuleMappings {
 	[key: string]: {
@@ -632,7 +633,15 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: index !== -1 ? index : 2,
-				duel_rule: 4,
+				// Must be 5. RDRule.lua disables both Extra Monster Zones, and under
+				// duel_rule 4 those are the only zones an Extra Deck monster may enter
+				// without a Link — which Rush does not have — so Fusion Summons become
+				// impossible. Lower rules would allow the summon but leave the Pendulum
+				// Zones open at S/T 6-7, outside the mask.
+				duel_rule: 5,
+				// Rush deals 4; RDRule.lua tops the turn player up to 5 during the
+				// Draw Phase via EFFECT_DRAW_COUNT.
+				start_hand: 4,
 			};
 		},
 		validate: (value) => {
@@ -778,11 +787,31 @@ export function isRecognizedToken(token: string): boolean {
 	);
 }
 
-export const extendedCardPoolFormats = new Set([
-	"pre",
-	"tcgpre",
-	"ocgpre",
-	"tcgart",
-	"ocgart",
-	"rushpre",
+/**
+ * Card pool per format token. A token absent from this map plays out of the
+ * standard pool.
+ *
+ * The prerelease and art tokens widen the standard pool; `rush` replaces it,
+ * since OCG cards are absent from that format rather than banned. `rushpre` is
+ * the prerelease token, not the Rush one, so it stays on extended.
+ */
+const formatCardPools = new Map<string, string>([
+	["pre", EXTENDED_POOL],
+	["tcgpre", EXTENDED_POOL],
+	["ocgpre", EXTENDED_POOL],
+	["tcgart", EXTENDED_POOL],
+	["ocgart", EXTENDED_POOL],
+	["rushpre", EXTENDED_POOL],
+	["rush", RUSH_POOL],
 ]);
+
+/** First option declaring a pool wins, so the result never depends on map order. */
+export function resolveCardPool(options: string[]): string {
+	for (const option of options) {
+		const pool = formatCardPools.get(option.toLowerCase());
+		if (pool !== undefined) {
+			return pool;
+		}
+	}
+	return DEFAULT_POOL;
+}

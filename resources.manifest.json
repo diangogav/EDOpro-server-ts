@@ -147,8 +147,9 @@
 		},
 		{
 			"target": "ygopro/formats/rush/lflist.conf",
-			"from": "edopro-lflists",
-			"file": "Rush.lflist.conf"
+			"from": "evolution-assets",
+			"file": "rush/lflist.conf",
+			"comment": "Rush ban list from the mirrored pack — the ProjectIgnis Rush list targets EDOPro's native Rush with real card IDs, which do not exist in this pool"
 		},
 		{
 			"target": "ygopro/formats/goat/lflist.conf",
@@ -192,10 +193,23 @@
 			"comment": "YGOPro cards art (extended pool only)",
 			"target": "ygopro/extensions/custom-cards",
 			"from": "custom-cards"
+		},
+		{
+			"comment": "Rush Duel Lua pack — rules live in RDRule.lua, loaded via special.lua",
+			"target": "ygopro/formats/rush/script",
+			"from": "evolution-assets",
+			"dir": "rush/script"
+		},
+		{
+			"comment": "Rush card databases (RD Standard/Patch/Alternate) — rush-only pool, no base cards. Mirrored daily from code.moenext.com by evolution-assets so the image build never depends on that host being reachable.",
+			"target": "ygopro/formats/rush",
+			"from": "evolution-assets",
+			"dir": "rush",
+			"only": "*.cdb"
 		}
 	],
 	"runtime": {
-		"comment": "TS loader pool membership. standard = base + served formats (load order; base first for FIRST-occurrence dedup). extended = extra members appended after standard. Formats assembled but omitted here (goat, rush, speed, gx, mdc) are assembled-but-not-served by design.",
+		"comment": "TS loader pool membership. standard = base + served formats (load order; base first for FIRST-occurrence dedup). extended = extra members appended after standard. pools = named pools that declare their script search path and card pool separately. Formats assembled but omitted here (goat, speed, gx, mdc) are assembled-but-not-served by design.",
 		"ygopro": {
 			"standard": [
 				"base",
@@ -209,7 +223,14 @@
 				"formats/hat",
 				"formats/ocg"
 			],
-			"extended": ["extensions/prereleases", "extensions/custom-cards"]
+			"extended": ["extensions/prereleases", "extensions/custom-cards"],
+			"pools": {
+				"rush": {
+					"comment": "Base is on the script path for utility.lua/constant.lua, but its cards are not part of the format.",
+					"scripts": ["base", "formats/rush"],
+					"cards": ["formats/rush"]
+				}
+			}
 		}
 	}
 }

@@ -10,6 +10,7 @@ import { Logger } from "src/shared/logger/domain/Logger";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 import { config } from "src/config";
 import { resolvePools } from "./ResourcePoolResolver";
+import { DEFAULT_POOL, EXTENDED_POOL, lflistScanPaths, selectPoolPaths } from "./PoolSelection";
 import { resolveForkCorePath } from "./ocgcoreFork";
 
 const CARD_STORAGE_RELOAD_INTERVAL_MS = 10 * 60 * 1000;
@@ -67,6 +68,11 @@ export class YGOProResourceLoader {
 	extraScriptPaths = config.resources.ygopro.extraScripts;
 
 	private loadingLock = new BetterLock();
+
+	// standard/extended keep their own fields below: the resource-version
+	// endpoint reports them and the reload timer refreshes them.
+	private readonly namedPoolStorages = new Map<string, CardStorage>();
+	private readonly namedPoolLoading = new Map<string, Promise<CardStorage>>();
 
 	private standardLoadingPromise?: Promise<CardStorage>;
 	private standardCardStorage?: CardStorage;
@@ -128,6 +134,54 @@ export class YGOProResourceLoader {
 	async getExtendedCardReader(): Promise<CardReaderFn> {
 		const storage = await this.getExtendedCardStorage();
 		return storage.toCardReader();
+	}
+
+	/** Ordered script search paths for a pool. */
+	getPoolScriptPaths(pool: string): string[] {
+		return selectPoolPaths(this.resolvedPools, pool, this.logger).scripts;
+	}
+
+	/** standard/extended delegate to their own cached loaders. */
+	async getPoolCardStorage(pool: string): Promise<CardStorage> {
+		if (pool === DEFAULT_POOL) {
+			return this.getStandardCardStorage();
+		}
+		if (pool === EXTENDED_POOL) {
+			return this.getExtendedCardStorage();
+		}
+
+		const cached = this.namedPoolStorages.get(pool);
+		if (cached) {
+			return cached;
+		}
+		const inFlight = this.namedPoolLoading.get(pool);
+		if (inFlight) {
+			return inFlight;
+		}
+		return this.loadNamedPoolCdbs(pool);
+	}
+
+	async getPoolCardReader(pool: string): Promise<CardReaderFn> {
+		const storage = await this.getPoolCardStorage(pool);
+		return storage.toCardReader();
+	}
+
+	private async loadNamedPoolCdbs(pool: string): Promise<CardStorage> {
+		const { cards } = selectPoolPaths(this.resolvedPools, pool, this.logger);
+
+		const loading = this.loadingLock.acquire(async () => {
+			const { cardStorage } = await this.loadCardStorageFromPaths(cards, pool);
+			this.namedPoolStorages.set(pool, cardStorage);
+			return cardStorage;
+		});
+		this.namedPoolLoading.set(pool, loading);
+		try {
+			return await loading;
+		} finally {
+			if (this.namedPoolLoading.get(pool) === loading) {
+				this.namedPoolLoading.delete(pool);
+			}
+		}
 	}
 
 	async getOcgcoreWasmBinary() {
@@ -279,7 +333,7 @@ export class YGOProResourceLoader {
 	}
 
 	async *getLFLists() {
-		for await (const file of searchYGOProResource(...this.ygoproPaths)) {
+		for await (const file of searchYGOProResource(...lflistScanPaths(this.resolvedPools))) {
 			const filename = path.basename(file.path);
 			if (filename !== "lflist.conf") {
 				continue;

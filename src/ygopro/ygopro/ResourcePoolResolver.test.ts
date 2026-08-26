@@ -509,3 +509,245 @@ describe("ResourcePoolResolver — one-shot diagnostics", () => {
 		expect(dupWarns).toHaveLength(1);
 	});
 });
+
+// ---------------------------------------------------------------------------
+// Named pools — per-format script/card path sets
+// ---------------------------------------------------------------------------
+
+describe("ResourcePoolResolver — named pools", () => {
+	let tmpDir: string;
+
+	beforeEach(() => {
+		tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "named-pools-"));
+		__resetResolverWarnings();
+	});
+
+	afterEach(() => {
+		fs.rmSync(tmpDir, { recursive: true, force: true });
+	});
+
+	/** Rush is the motivating case: base scripts, but a card pool without base. */
+	const RUSH_MANIFEST = {
+		runtime: {
+			ygopro: {
+				standard: STANDARD_LEAVES,
+				extended: EXTENDED_LEAVES,
+				pools: {
+					rush: {
+						scripts: ["base", "formats/rush"],
+						cards: ["formats/rush"],
+					},
+				},
+			},
+		},
+	};
+
+	function abs(resourcesDir: string, leaf: string): string {
+		return path.join(path.resolve(resourcesDir), "ygopro", leaf);
+	}
+
+	it("resolves a named pool's script and card paths independently", () => {
+		const manifestPath = writeManifest(tmpDir, RUSH_MANIFEST);
+		const resourcesDir = "/test/resources/current";
+
+		const { named } = resolvePools(opts({ manifestPath, resourcesDir }));
+
+		expect(named.rush).toEqual({
+			scripts: [abs(resourcesDir, "base"), abs(resourcesDir, "formats/rush")],
+			cards: [abs(resourcesDir, "formats/rush")],
+		});
+	});
+
+	it("preserves declaration order within each path set", () => {
+		const manifestPath = writeManifest(tmpDir, RUSH_MANIFEST);
+		const resourcesDir = "/test/resources/current";
+
+		const { named } = resolvePools(opts({ manifestPath, resourcesDir }));
+
+		// Base must come first: rush scripts depend on utility.lua / constant.lua.
+		expect(named.rush.scripts[0]).toBe(abs(resourcesDir, "base"));
+	});
+
+	it("leaves standard and extended untouched when named pools are present", () => {
+		const manifestPath = writeManifest(tmpDir, RUSH_MANIFEST);
+		const resourcesDir = "/test/resources/current";
+
+		const { standard, extended } = resolvePools(opts({ manifestPath, resourcesDir }));
+
+		expect(standard).toEqual(STANDARD_LEAVES.map((leaf) => abs(resourcesDir, leaf)));
+		expect(extended).toEqual(
+			[...STANDARD_LEAVES, ...EXTENDED_LEAVES].map((leaf) => abs(resourcesDir, leaf)),
+		);
+	});
+
+	it("returns an empty map when the manifest declares no pools", () => {
+		const manifestPath = writeManifest(tmpDir, VALID_MANIFEST);
+
+		const { named } = resolvePools(opts({ manifestPath, resourcesDir: "/test/resources/current" }));
+
+		expect(named).toEqual({});
+	});
+
+	it("skips a pool missing its cards list and logs an error", () => {
+		const logger = makeLogger();
+		const manifestPath = writeManifest(tmpDir, {
+			runtime: {
+				ygopro: {
+					standard: STANDARD_LEAVES,
+					pools: { rush: { scripts: ["base"] } },
+				},
+			},
+		});
+
+		const { named } = resolvePools(
+			opts({ manifestPath, resourcesDir: "/test/resources/current", logger }),
+		);
+
+		expect(named).toEqual({});
+		expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("rush"));
+	});
+
+	it("skips a pool whose entry is not an object and logs an error", () => {
+		const logger = makeLogger();
+		const manifestPath = writeManifest(tmpDir, {
+			runtime: {
+				ygopro: {
+					standard: STANDARD_LEAVES,
+					pools: { rush: "formats/rush" },
+				},
+			},
+		});
+
+		const { named } = resolvePools(
+			opts({ manifestPath, resourcesDir: "/test/resources/current", logger }),
+		);
+
+		expect(named).toEqual({});
+		expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("rush"));
+	});
+
+	it("keeps valid pools when a sibling pool is invalid", () => {
+		const logger = makeLogger();
+		const manifestPath = writeManifest(tmpDir, {
+			runtime: {
+				ygopro: {
+					standard: STANDARD_LEAVES,
+					pools: {
+						broken: { scripts: ["base"] },
+						rush: { scripts: ["base", "formats/rush"], cards: ["formats/rush"] },
+					},
+				},
+			},
+		});
+
+		const { named } = resolvePools(
+			opts({ manifestPath, resourcesDir: "/test/resources/current", logger }),
+		);
+
+		expect(Object.keys(named)).toEqual(["rush"]);
+	});
+
+	it("warns for a named pool path that does not exist on disk", () => {
+		const logger = makeLogger();
+		fs.mkdirSync(path.join(tmpDir, "ygopro", "base"), { recursive: true });
+		const manifestPath = writeManifest(tmpDir, {
+			runtime: {
+				ygopro: {
+					standard: ["base"],
+					pools: { rush: { scripts: ["base", "formats/rush"], cards: ["formats/rush"] } },
+				},
+			},
+		});
+
+		resolvePools(opts({ manifestPath, resourcesDir: tmpDir, logger }));
+
+		const missingWarns = logger.warn.mock.calls.filter((args) =>
+			String(args[0]).includes("formats/rush"),
+		);
+		expect(missingWarns.length).toBeGreaterThan(0);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Diagnostic 3 — a named pool whose card dirs hold no cdb
+// ---------------------------------------------------------------------------
+
+describe("ResourcePoolResolver — Diagnostic 3 (named pool with no cards)", () => {
+	let tmpDir: string;
+	let logger: jest.Mocked<Logger>;
+
+	beforeEach(() => {
+		__resetResolverWarnings();
+		tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "rfd-dx3-"));
+		logger = makeLogger();
+	});
+
+	afterEach(() => {
+		fs.rmSync(tmpDir, { recursive: true, force: true });
+	});
+
+	function makeDir(leaf: string, files: string[] = []): void {
+		const dir = path.join(tmpDir, "ygopro", leaf);
+		fs.mkdirSync(dir, { recursive: true });
+		for (const name of files) fs.writeFileSync(path.join(dir, name), "", "utf-8");
+	}
+
+	function rushManifest(): string {
+		return writeManifest(tmpDir, {
+			runtime: {
+				ygopro: {
+					standard: ["base"],
+					pools: { rush: { scripts: ["base", "formats/rush"], cards: ["formats/rush"] } },
+				},
+			},
+		});
+	}
+
+	it("errors when a named pool's card dirs contain no cdb at all", () => {
+		// The failure this exists for: the server boots clean, and the first
+		// room on that format has an empty card pool — every deck rejected,
+		// with nothing in the logs pointing at the cause.
+		makeDir("base", ["cards.cdb"]);
+		makeDir("formats/rush"); // assembled, but the cdbs never landed
+
+		resolvePools(opts({ manifestPath: rushManifest(), resourcesDir: tmpDir, logger }));
+
+		const errors = logger.error.mock.calls.map((args) => String(args[0]));
+		expect(errors.some((line) => line.includes("rush"))).toBe(true);
+	});
+
+	it("stays quiet when the pool has at least one cdb", () => {
+		makeDir("base", ["cards.cdb"]);
+		makeDir("formats/rush", ["RD Standard.cdb"]);
+
+		resolvePools(opts({ manifestPath: rushManifest(), resourcesDir: tmpDir, logger }));
+
+		const errors = logger.error.mock.calls.map((args) => String(args[0]));
+		expect(errors.some((line) => line.includes("no card database"))).toBe(false);
+	});
+
+	it("does not double-report a pool whose dir is missing entirely", () => {
+		// warnMissingPoolDirs already names that case; two messages for one
+		// cause trains people to skim the logs.
+		makeDir("base", ["cards.cdb"]);
+
+		resolvePools(opts({ manifestPath: rushManifest(), resourcesDir: tmpDir, logger }));
+
+		const errors = logger.error.mock.calls.map((args) => String(args[0]));
+		expect(errors.filter((line) => line.includes("no card database"))).toHaveLength(0);
+	});
+
+	it("reports each empty pool once, not once per call", () => {
+		makeDir("base", ["cards.cdb"]);
+		makeDir("formats/rush");
+
+		const manifestPath = rushManifest();
+		resolvePools(opts({ manifestPath, resourcesDir: tmpDir, logger }));
+		resolvePools(opts({ manifestPath, resourcesDir: tmpDir, logger }));
+
+		const errors = logger.error.mock.calls.filter((args) =>
+			String(args[0]).includes("no card database"),
+		);
+		expect(errors).toHaveLength(1);
+	});
+});

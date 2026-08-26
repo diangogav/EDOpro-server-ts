@@ -106,6 +106,13 @@ export class YGOProBanListLoader {
 
 			lflist.entries.forEach((entry) => banList.add(entry.code, entry.limit));
 
+			for (const credit of lflist.creditLimits ?? []) {
+				banList.addCreditLimit(credit.identifier, credit.limit);
+				for (const member of credit.entries ?? []) {
+					banList.addCreditMember(credit.identifier, member.code, member.credit);
+				}
+			}
+
 			if (isWhitelist || banList.isGenesys()) {
 				this.parseUnrestrictedEntries(text, banList);
 			}

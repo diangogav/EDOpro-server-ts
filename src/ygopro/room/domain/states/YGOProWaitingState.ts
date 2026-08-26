@@ -233,7 +233,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 
 		if (deckOrError instanceof DeckError) {
 			this.logger.warn(
-				`Deck build error: type=0x${deckOrError.type.toString(16)}, code=${deckOrError.code}, rule=${room.hostInfo.rule}, extendedPool=${room.useExtendedCardPool}`,
+				`Deck build error: type=0x${deckOrError.type.toString(16)}, code=${deckOrError.code}, rule=${room.hostInfo.rule}, pool=${room.cardPool}`,
 			);
 			room.notReadyUnsafe(player);
 			player.sendMessageToClient(
@@ -258,7 +258,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 		if (hasError) {
 			const failedCard = deck.allCards.find((c) => Number(c.code) === hasError.code);
 			this.logger.warn(
-				`Deck validation error: type=0x${hasError.type.toString(16)}, code=${hasError.code}, cardOt=${failedCard?.variant ?? "N/A"}, rule=${room.hostInfo.rule}, extendedPool=${room.useExtendedCardPool}`,
+				`Deck validation error: type=0x${hasError.type.toString(16)}, code=${hasError.code}, cardOt=${failedCard?.variant ?? "N/A"}, rule=${room.hostInfo.rule}, pool=${room.cardPool}`,
 			);
 			room.notReadyUnsafe(player);
 			player.sendMessageToClient(

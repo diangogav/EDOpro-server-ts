@@ -67,7 +67,7 @@ describe("YGOProSideDeckingState.handleUpdateDeck — deck error code is encoded
 			players: [], // empty → constructor schedules no side-deck timers
 			banListHash: 0,
 			hostInfo: { rule: 0 }, // referenced by the warn() log on the error paths
-			useExtendedCardPool: false,
+			cardPool: "standard",
 			shouldValidateDeck: jest.fn().mockReturnValue(true),
 			notReadyUnsafe: jest.fn(),
 			setDecksToPlayerUnsafe: jest.fn(),
@@ -167,7 +167,7 @@ describe("YGOProSideDeckingState — post-side turn choice", () => {
 			players,
 			banListHash: 0,
 			hostInfo: { rule: 0 },
-			useExtendedCardPool: false,
+			cardPool: "standard",
 			shouldValidateDeck: jest.fn().mockReturnValue(false),
 			notReadyUnsafe: jest.fn(),
 			setDecksToPlayerUnsafe: jest.fn(),
