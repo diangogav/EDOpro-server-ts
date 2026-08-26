@@ -146,12 +146,8 @@ export class OCGCore {
 		];
 
 		const loader = YGOProResourceLoader.get();
-		const cardStorage = this.room.useExtendedCardPool
-			? await loader.getExtendedCardStorage()
-			: await loader.getStandardCardStorage();
-		const scriptSearchPaths = this.room.useExtendedCardPool
-			? [...loader.ygoproPaths, ...loader.extraFolderPaths]
-			: loader.ygoproPaths;
+		const cardStorage = await loader.getPoolCardStorage(this.room.cardPool);
+		const scriptSearchPaths = loader.getPoolScriptPaths(this.room.cardPool);
 		const ocgcoreWasmBinary = await loader.getOcgcoreWasmBinary();
 
 		const registry: Record<string, string> = {
@@ -167,9 +163,7 @@ export class OCGCore {
 			registry[`player_name_${index}`] = player.name;
 		});
 
-		const cardReader = this.room.useExtendedCardPool
-			? await loader.getExtendedCardReader()
-			: await loader.getCardReader();
+		const cardReader = await loader.getPoolCardReader(this.room.cardPool);
 
 		const decks = duelRecord
 			.toSwappedPlayers()

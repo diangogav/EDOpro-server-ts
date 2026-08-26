@@ -2,6 +2,7 @@ import MercuryBanListMemoryRepository from "../../ban-list/infrastructure/YGOPro
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 import { GameMode } from "ygopro-msg-encode";
 import { HostInfo } from "./host-info/HostInfo";
+import { DEFAULT_POOL, EXTENDED_POOL, RUSH_POOL } from "src/ygopro/ygopro/PoolSelection";
 
 interface RuleMappings {
 	[key: string]: {
@@ -778,11 +779,31 @@ export function isRecognizedToken(token: string): boolean {
 	);
 }
 
-export const extendedCardPoolFormats = new Set([
-	"pre",
-	"tcgpre",
-	"ocgpre",
-	"tcgart",
-	"ocgart",
-	"rushpre",
+/**
+ * Card pool per format token. A token absent from this map plays out of the
+ * standard pool.
+ *
+ * The prerelease and art tokens widen the standard pool; `rush` replaces it,
+ * since OCG cards are absent from that format rather than banned. `rushpre` is
+ * the prerelease token, not the Rush one, so it stays on extended.
+ */
+const formatCardPools = new Map<string, string>([
+	["pre", EXTENDED_POOL],
+	["tcgpre", EXTENDED_POOL],
+	["ocgpre", EXTENDED_POOL],
+	["tcgart", EXTENDED_POOL],
+	["ocgart", EXTENDED_POOL],
+	["rushpre", EXTENDED_POOL],
+	["rush", RUSH_POOL],
 ]);
+
+/** First option declaring a pool wins, so the result never depends on map order. */
+export function resolveCardPool(options: string[]): string {
+	for (const option of options) {
+		const pool = formatCardPools.get(option.toLowerCase());
+		if (pool !== undefined) {
+			return pool;
+		}
+	}
+	return DEFAULT_POOL;
+}

@@ -10,6 +10,7 @@ import { YGOProBanList } from "@ygopro/ban-list/domain/YGOProBanList";
 import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
 import { EdoproBanList } from "@edopro/ban-list/domain/BanList";
 import { YGOProRoom } from "./YGOProRoom";
+import { DEFAULT_POOL, EXTENDED_POOL, RUSH_POOL } from "src/ygopro/ygopro/PoolSelection";
 import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
 import { MessageRepositoryMock } from "@test-support/mocks/MessageRepositoryMock";
 
@@ -96,7 +97,7 @@ describe("YGOProRoom", () => {
 		expect(room.hostInfo.lflist).toBe(0);
 		expect(room.hostInfo.mode).toBe(GameMode.MATCH);
 		expect(room.hostInfo.start_hand).toBe(7);
-		expect(room.useExtendedCardPool).toBe(false);
+		expect(room.cardPool).toBe(DEFAULT_POOL);
 	});
 
 	it("Should create a toot room with rule 5 (all cards), TCG banlist and match mode", () => {
@@ -104,7 +105,7 @@ describe("YGOProRoom", () => {
 		expect(room.hostInfo.rule).toBe(5);
 		expect(room.hostInfo.mode).toBe(GameMode.MATCH);
 		expect(room.hostInfo.start_hand).toBe(7);
-		expect(room.useExtendedCardPool).toBe(false);
+		expect(room.cardPool).toBe(DEFAULT_POOL);
 	});
 
 	it("Should treat tt as the toot alias (rule 5, TCG banlist) — matchmaking's wire-budget token", () => {
@@ -289,7 +290,7 @@ describe("YGOProRoom", () => {
 			expect(room.hostInfo.duel_rule).toBe(1);
 			expect(room.hostInfo.time_limit).toBe(450);
 			expect(room.hostInfo.start_hand).toBe(6);
-			expect(room.useExtendedCardPool).toBe(false);
+			expect(room.cardPool).toBe(DEFAULT_POOL);
 		});
 	});
 
@@ -301,7 +302,7 @@ describe("YGOProRoom", () => {
 			expect(room.hostInfo.mode).toBe(GameMode.MATCH);
 			expect(room.hostInfo.start_hand).toBe(6);
 			expect(room.hostInfo.time_limit).toBe(400);
-			expect(room.useExtendedCardPool).toBe(false);
+			expect(room.cardPool).toBe(DEFAULT_POOL);
 		});
 	});
 
@@ -381,7 +382,20 @@ describe("YGOProRoom", () => {
 
 		it("Should use extended card pool for pre format", () => {
 			const room = YGOProRoomMother.create({ command: "pre#123" });
-			expect(room.useExtendedCardPool).toBe(true);
+			expect(room.cardPool).toBe(EXTENDED_POOL);
+		});
+
+		it("Should use the rush card pool for rush format", () => {
+			// Rush is not a widened standard pool: its cards and scripts are a
+			// separate universe, so the room must not fall back to standard.
+			const room = YGOProRoomMother.create({ command: "rush#123" });
+			expect(room.cardPool).toBe(RUSH_POOL);
+		});
+
+		it("Should keep rushpre on the extended pool, not the rush pool", () => {
+			// rushpre is the prerelease token; only `rush` selects the Rush pool.
+			const room = YGOProRoomMother.create({ command: "rushpre#123" });
+			expect(room.cardPool).toBe(EXTENDED_POOL);
 		});
 
 		it("Should create a tcgpre room with rule 5 (no scope restriction) and extended card pool", () => {
@@ -389,7 +403,7 @@ describe("YGOProRoom", () => {
 			expect(room.hostInfo.rule).toBe(5);
 			expect(room.hostInfo.duel_rule).toBe(5);
 			expect(room.hostInfo.time_limit).toBe(800);
-			expect(room.useExtendedCardPool).toBe(true);
+			expect(room.cardPool).toBe(EXTENDED_POOL);
 		});
 
 		it("Should create an ocgpre room with rule 5 (no scope restriction) and extended card pool", () => {
@@ -397,7 +411,7 @@ describe("YGOProRoom", () => {
 			expect(room.hostInfo.rule).toBe(5);
 			expect(room.hostInfo.lflist).toBe(0);
 			expect(room.hostInfo.duel_rule).toBe(5);
-			expect(room.useExtendedCardPool).toBe(true);
+			expect(room.cardPool).toBe(EXTENDED_POOL);
 		});
 
 		it("Should create a tcgart room with rule 5 (no scope restriction) and extended card pool", () => {
@@ -405,7 +419,7 @@ describe("YGOProRoom", () => {
 			expect(room.hostInfo.rule).toBe(5);
 			expect(room.hostInfo.duel_rule).toBe(5);
 			expect(room.hostInfo.time_limit).toBe(800);
-			expect(room.useExtendedCardPool).toBe(true);
+			expect(room.cardPool).toBe(EXTENDED_POOL);
 		});
 
 		it("Should create an ocgart room with rule 5 (no scope restriction) and extended card pool", () => {
@@ -413,17 +427,17 @@ describe("YGOProRoom", () => {
 			expect(room.hostInfo.rule).toBe(5);
 			expect(room.hostInfo.lflist).toBe(0);
 			expect(room.hostInfo.duel_rule).toBe(5);
-			expect(room.useExtendedCardPool).toBe(true);
+			expect(room.cardPool).toBe(EXTENDED_POOL);
 		});
 
 		it("Should NOT use extended card pool for standard formats", () => {
 			const room = YGOProRoomMother.create({ command: "m#123" });
-			expect(room.useExtendedCardPool).toBe(false);
+			expect(room.cardPool).toBe(DEFAULT_POOL);
 		});
 
 		it("Should NOT use extended card pool for ot format", () => {
 			const room = YGOProRoomMother.create({ command: "ot#123" });
-			expect(room.useExtendedCardPool).toBe(false);
+			expect(room.cardPool).toBe(DEFAULT_POOL);
 		});
 	});
 
@@ -433,7 +447,7 @@ describe("YGOProRoom", () => {
 			expect(room.hostInfo.rule).toBe(5);
 			expect(room.hostInfo.duel_rule).toBe(2);
 			expect(room.hostInfo.start_hand).toBe(5);
-			expect(room.useExtendedCardPool).toBe(false);
+			expect(room.cardPool).toBe(DEFAULT_POOL);
 		});
 	});
 
@@ -443,7 +457,7 @@ describe("YGOProRoom", () => {
 			expect(room.hostInfo.rule).toBe(5);
 			expect(room.hostInfo.duel_rule).toBe(2);
 			expect(room.hostInfo.mode).toBe(GameMode.MATCH);
-			expect(room.useExtendedCardPool).toBe(false);
+			expect(room.cardPool).toBe(DEFAULT_POOL);
 		});
 	});
 
@@ -453,7 +467,7 @@ describe("YGOProRoom", () => {
 			expect(room.hostInfo.rule).toBe(5);
 			expect(room.hostInfo.duel_rule).toBe(2);
 			expect(room.hostInfo.time_limit).toBe(450);
-			expect(room.useExtendedCardPool).toBe(false);
+			expect(room.cardPool).toBe(DEFAULT_POOL);
 		});
 	});
 
@@ -532,7 +546,7 @@ describe("YGOProRoom", () => {
 			expect(room.hostInfo.rule).toBe(5);
 			expect(room.hostInfo.duel_rule).toBe(1);
 			expect(room.hostInfo.time_limit).toBe(500);
-			expect(room.useExtendedCardPool).toBe(false);
+			expect(room.cardPool).toBe(DEFAULT_POOL);
 		});
 	});
 

@@ -3,7 +3,13 @@ import { GameMode } from "ygopro-msg-encode";
 import MercuryBanListMemoryRepository from "../../ban-list/infrastructure/YGOProBanListMemoryRepository";
 import { YGOProBanList } from "../../ban-list/domain/YGOProBanList";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
-import { formatRuleMappings, isRecognizedToken, priorityRuleMappings } from "./RuleMappings";
+import {
+	formatRuleMappings,
+	isRecognizedToken,
+	priorityRuleMappings,
+	resolveCardPool,
+} from "./RuleMappings";
+import { DEFAULT_POOL, EXTENDED_POOL } from "src/ygopro/ygopro/PoolSelection";
 
 // isRecognizedToken(token) is the predicate the pairing feature uses to
 // decide whether every comma-separated token in a join command is a known
@@ -307,5 +313,42 @@ describe("jtp-2007-03 mapping (JTP Advanced March 2007)", () => {
 	it("validates only the exact token", () => {
 		expect(formatRuleMappings["jtp-2007-03"].validate("jtp-2007-03")).toBe(true);
 		expect(formatRuleMappings["jtp-2007-03"].validate("jtp")).toBe(false);
+	});
+});
+
+describe("resolveCardPool", () => {
+	it("defaults to the standard pool when no option declares one", () => {
+		expect(resolveCardPool(["edison", "casual"])).toBe(DEFAULT_POOL);
+	});
+
+	it("defaults to the standard pool for an empty option list", () => {
+		expect(resolveCardPool([])).toBe(DEFAULT_POOL);
+	});
+
+	it("selects the extended pool for prerelease and custom-art tokens", () => {
+		for (const token of ["pre", "tcgpre", "ocgpre", "tcgart", "ocgart"]) {
+			expect(resolveCardPool([token])).toBe(EXTENDED_POOL);
+		}
+	});
+
+	it("selects the rush pool for the rush token", () => {
+		// Rush cards live in their own pool: base OCG/TCG cards are not part of
+		// the format, so they are absent rather than banned.
+		expect(resolveCardPool(["rush"])).toBe("rush");
+	});
+
+	it("matches tokens case-insensitively", () => {
+		expect(resolveCardPool(["RUSH"])).toBe("rush");
+	});
+
+	it("takes the first declaring token when options disagree", () => {
+		// Deterministic instead of order-dependent-by-accident: a room asking for
+		// both rush and prereleases resolves to whichever the host typed first.
+		expect(resolveCardPool(["rush", "pre"])).toBe("rush");
+		expect(resolveCardPool(["pre", "rush"])).toBe(EXTENDED_POOL);
+	});
+
+	it("ignores non-declaring tokens while scanning", () => {
+		expect(resolveCardPool(["casual", "tm300", "rush"])).toBe("rush");
 	});
 });
