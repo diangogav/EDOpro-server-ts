@@ -1,0 +1,9 @@
+# Dependencies allowed to run install/postinstall scripts. pnpm blocks them by
+# default; every entry here compiles or fetches a native binding the server needs
+# at runtime (or at build time, for the SWC/resolver toolchain).
+allowBuilds:
+  '@swc/core': true
+  bcrypt: true
+  better-sqlite3: true
+  lzma-native: true
+  unrs-resolver: true

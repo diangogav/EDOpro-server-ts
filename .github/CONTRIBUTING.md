@@ -7,7 +7,7 @@ Thank you for your interest in contributing to Evolution Server! Your help is we
 1. **Fork the repository** and create your branch from `main`.
 2. **Describe your changes** clearly in your Pull Request (PR).
 3. **Link related issues** in your PR description if applicable.
-4. **Ensure your code passes linting** by running `npm run lint` before submitting.
+4. **Ensure your code passes linting** by running `pnpm lint` before submitting.
 5. **Write clear, maintainable code** following the TypeScript and Biome standards used in this project.
 6. **Add or update tests** if your changes affect logic or features. Follow the [testing conventions](./docs/testing.md).
 7. **Update documentation** if your changes require it.
@@ -15,7 +15,7 @@ Thank you for your interest in contributing to Evolution Server! Your help is we
 ## Code Style
 
 - Use TypeScript for all new code.
-- Follow the Biome rules defined in `biome.json`. Run `npm run lint:fix` (lint + format) before submitting.
+- Follow the Biome rules defined in `biome.json`. Run `pnpm lint:fix` (lint + format) before submitting.
 - Use clear, descriptive variable and function names.
 - Keep functions and files focused and modular.
 - Prefer immutability and pure functions when possible.
@@ -23,7 +23,7 @@ Thank you for your interest in contributing to Evolution Server! Your help is we
 ## Pull Request Checklist
 
 - [ ] My code follows the project style and guidelines
-- [ ] I have run `npm run lint` and fixed any issues
+- [ ] I have run `pnpm lint` and fixed any issues
 - [ ] I have added or updated tests as needed
 - [ ] I have updated documentation if needed
 

@@ -40,5 +40,5 @@ This is the **Core Domain** and **Common Infrastructure** layer. It contains ent
 ### [SOP-SHR-002] Modifying Database Schema
 
 1.  **Modify Entity**: Add/Change field in TypeORM entity.
-2.  **Generate Migration**: `npm run migration:generate`.
-3.  **Run Migration**: `npm run migration:run`.
+2.  **Generate Migration**: `MIGRATION_NAME=NameOfChange pnpm migration:generate`.
+3.  **Run Migration**: `pnpm migration:run`.

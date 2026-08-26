@@ -19,21 +19,25 @@ jobs:
       - name: Update submodules
         run: git submodule update --init --recursive
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version-file: .nvmrc
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Lint & format check
-        run: npx biome ci
+        run: pnpm exec biome ci
 
       - name: Build
-        run: npm run build
+        run: pnpm build
 
       - name: Test
-        run: npm test
+        run: pnpm test
 
   bash-resources-tests:
     runs-on: ubuntu-latest

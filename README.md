@@ -47,7 +47,8 @@ For when you want full control, or Docker isn't an option.
 
 ### 📋 Prerequisites
 
-- [Node.js](https://nodejs.org) >= 24
+- [Node.js](https://nodejs.org) 24 — the exact version lives in `.nvmrc` (`nvm use` picks it up). CI and the Docker images track the same one.
+- [pnpm](https://pnpm.io) — the package manager for this repo. `corepack enable pnpm` picks up the version pinned in `package.json`.
 - [CMake](https://cmake.org/download/) >= 3.18
 - A C++ compiler (g++ or clang++)
 - [jq](https://jqlang.github.io/jq/) >= 1.6 — required by `scripts/clone_repositories.sh` and `scripts/setup_resources.sh` to read the resource manifest
@@ -77,7 +78,7 @@ bash scripts/setup_resources.sh
 bash scripts/build_core_integrator.sh
 
 # 5️⃣ Install Node.js dependencies
-npm install
+pnpm install
 
 # 6️⃣ Configure environment
 cp .env.example .env
@@ -117,7 +118,7 @@ WEBSOCKET_PORT=4000
 ```
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 > 🎯 Connect with EDOPro to `your-server-ip:7911`
@@ -158,7 +159,7 @@ RESOURCES_DIR=./resources/current
 Both pools are **derived automatically** from `resources.manifest.json` (`runtime.ygopro.standard` / `.extended`). No environment variable is needed or supported for pool membership — the manifest is the sole source.
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 > 🎯 Connect with Koishi or YGO Mobile to `your-server-ip:7711`
@@ -178,7 +179,7 @@ RESOURCES_DIR=./resources/current
 ```
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 Both engines run in the same process, sharing the HTTP API and WebSocket server. 💪
@@ -230,7 +231,7 @@ Run this manually before deploying to production to confirm the derived pools ma
 bash scripts/clone_repositories.sh && bash scripts/setup_resources.sh
 
 # 2. Start the server (RESOURCES_DIR and MANIFEST_PATH use their defaults)
-npm run dev
+pnpm dev
 ```
 
 Watch the startup log for lines like:
