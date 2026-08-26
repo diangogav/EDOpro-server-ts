@@ -2,12 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Logger } from "src/shared/logger/domain/Logger";
 
-// ---------------------------------------------------------------------------
-// One-shot diagnostic dedup state
-// Keys: absPath for missing-dir warns; "dup:<basename>" for cdb-dup warns.
-// Module-level so repeated resolvePools calls within the same process stay silent
-// after the first occurrence. __resetResolverWarnings() is exported for tests only.
-// ---------------------------------------------------------------------------
+/**
+ * Diagnostics already emitted, so repeated resolvePools calls in one process
+ * report each problem once. Keys are namespaced by diagnostic kind.
+ */
 const _warnedKeys = new Set<string>();
 
 /** Test-only helper — resets one-shot warning state between test cases. */
@@ -65,11 +63,9 @@ export interface ResolvedPools {
 /**
  * Derive ordered absolute-path pools from the manifest runtime section.
  *
- * Resolution rules (per RFD-003, RFD-005):
- * 1. Derive standard pool from manifest runtime.ygopro.standard.
- * 2. Derive extended pool as standard + runtime.ygopro.extended delta.
- * 3. On any manifest read/parse error or missing standard: log error, return empty pools.
- * 4. Missing extended (but valid standard): extended falls back to standard (no error).
+ * The manifest is the sole source of pool membership: an unreadable manifest or
+ * a missing `standard` is an error and yields empty pools. A missing `extended`
+ * is not — extended then equals standard.
  */
 export function resolvePools(options: ResourcePoolResolverOptions): ResolvedPools {
 	const { manifestPath, resourcesDir, logger } = options;
@@ -77,41 +73,20 @@ export function resolvePools(options: ResourcePoolResolverOptions): ResolvedPool
 	const resolvedResourcesDir = path.resolve(resourcesDir);
 	const ygoproBase = path.join(resolvedResourcesDir, "ygopro");
 
-	// --- Parse manifest (always required; manifest is the sole source of pool membership) ---
 	const manifest = readManifest(manifestPath, logger);
-
-	// --- Standard pool ---
 	const standard = deriveStandard(manifest, ygoproBase, manifestPath, logger);
-
-	// --- Extended delta (extensions beyond standard) ---
-	const extendedDelta = deriveExtended(manifest, ygoproBase);
-
-	const extended = [...standard, ...extendedDelta];
-
-	// --- Named pools (per-format script/card path sets) ---
+	const extended = [...standard, ...deriveExtended(manifest, ygoproBase)];
 	const named = deriveNamedPools(manifest, ygoproBase, manifestPath, logger);
 
-	// --- Diagnostic 1: warn on manifest-derived paths that do not exist on disk ---
-	// All pool paths are manifest-derived; check all of them.
 	warnMissingPoolDirs(standard, logger);
 	for (const pool of Object.values(named)) {
 		warnMissingPoolDirs([...pool.scripts, ...pool.cards], logger);
 	}
-
-	// --- Diagnostic 3: a named pool that resolves but carries no cards ---
 	errorOnEmptyNamedPools(named, logger);
-
-	// --- Diagnostic 2: warn on duplicate .cdb basenames across standard pool folders ---
-	// Scanned on the standard pool (extended = standard + delta; scanning standard avoids
-	// double-counting the overlapping directories). Best-effort: unreadable dirs skipped.
 	warnDuplicateCdbBasenames(standard, logger);
 
 	return { standard, extended, named };
 }
-
-// ---------------------------------------------------------------------------
-// Internals
-// ---------------------------------------------------------------------------
 
 function readManifest(manifestPath: string, logger: Logger): Manifest | null {
 	let raw: string;
@@ -141,7 +116,7 @@ function deriveStandard(
 	logger: Logger,
 ): string[] {
 	if (manifest === null) {
-		// Error already logged in readManifest
+		// readManifest already reported why.
 		return [];
 	}
 
@@ -155,26 +130,18 @@ function deriveStandard(
 		return [];
 	}
 
-	return standardLeaves
-		.filter((leaf): leaf is string => typeof leaf === "string" && leaf.length > 0)
-		.map((leaf) => path.join(ygoproBase, leaf));
+	return toAbsoluteLeaves(standardLeaves, ygoproBase);
 }
 
+/** An absent `extended` is not an error: the empty delta leaves extended equal to standard. */
 function deriveExtended(manifest: Manifest | null, ygoproBase: string): string[] {
-	if (manifest === null) {
-		return [];
-	}
-
 	const extendedLeaves = manifest?.runtime?.ygopro?.extended;
 
 	if (!Array.isArray(extendedLeaves)) {
-		// Missing extended — fall back silently to empty delta (caller will use standard as extended)
 		return [];
 	}
 
-	return extendedLeaves
-		.filter((leaf): leaf is string => typeof leaf === "string" && leaf.length > 0)
-		.map((leaf) => path.join(ygoproBase, leaf));
+	return toAbsoluteLeaves(extendedLeaves, ygoproBase);
 }
 
 /**
@@ -234,14 +201,17 @@ function deriveNamedPools(
 	return resolved;
 }
 
+function toAbsoluteLeaves(leaves: unknown[], ygoproBase: string): string[] {
+	return leaves
+		.filter((leaf): leaf is string => typeof leaf === "string" && leaf.length > 0)
+		.map((leaf) => path.join(ygoproBase, leaf));
+}
+
 /**
- * Diagnostic 3 — a named pool whose directories exist but hold no .cdb.
- *
- * Happens when the assembly step half-runs: the directory is created, the
- * databases are not. Error rather than warn — unlike a missing folder there is
- * no benign reading, since the pool is declared.
- *
- * Pools missing outright are skipped; warnMissingPoolDirs already names those.
+ * A named pool whose directories exist but hold no .cdb — the assembly step
+ * half-ran. Error rather than warn: unlike a missing folder there is no benign
+ * reading, since the pool is declared. Pools missing outright are left to
+ * warnMissingPoolDirs.
  */
 function errorOnEmptyNamedPools(named: Record<string, NamedPool>, logger: Logger): void {
 	for (const [name, pool] of Object.entries(named)) {
@@ -277,28 +247,18 @@ function errorOnEmptyNamedPools(named: Record<string, NamedPool>, logger: Logger
 	}
 }
 
-function toAbsoluteLeaves(leaves: unknown[], ygoproBase: string): string[] {
-	return leaves
-		.filter((leaf): leaf is string => typeof leaf === "string" && leaf.length > 0)
-		.map((leaf) => path.join(ygoproBase, leaf));
-}
-
-/**
- * Diagnostic 1 — warn for each pool path that does not exist as a directory on disk.
- * All pool paths are manifest-derived. Non-fatal: the path is still returned to the caller.
- */
+/** A manifest-derived pool path that is not a directory on disk. Non-fatal: the path is still returned. */
 function warnMissingPoolDirs(pools: string[], logger: Logger): void {
 	for (const absPath of pools) {
 		if (!fs.existsSync(absPath) || !fs.statSync(absPath).isDirectory()) {
-			// One-shot: emit this warning at most once per process per missing path.
 			const key = `missing:${absPath}`;
 			if (_warnedKeys.has(key)) {
 				continue;
 			}
 			_warnedKeys.add(key);
 
-			// Derive the leaf from the path for a friendlier message.
-			// The leaf is whatever comes after /ygopro/ in the resolved path.
+			// Report the manifest leaf — whatever follows /ygopro/ — so the message
+			// names what the operator actually wrote.
 			const ygoproMarker = `${path.sep}ygopro${path.sep}`;
 			const markerIdx = absPath.indexOf(ygoproMarker);
 			const leaf = markerIdx >= 0 ? absPath.slice(markerIdx + ygoproMarker.length) : absPath;
@@ -311,18 +271,14 @@ function warnMissingPoolDirs(pools: string[], logger: Logger): void {
 }
 
 /**
- * Diagnostic 2 — warn when two or more standard pool folders contain a .cdb file with the
- * same basename. Duplicate basenames cause the databases listing to merge them into a single
- * entry (keyed by filename), making one source invisible.
+ * Two pool folders holding a .cdb of the same basename: the databases listing is
+ * keyed by filename, so they merge into one entry and one source goes invisible.
  *
- * Scan scope: top-level .cdb files in each pool directory (non-recursive). This matches how
- * the game engine reads cdbs. Best-effort: unreadable folders are silently skipped.
- *
- * Decision: scanned on the standard pool only (not extended), because extended = standard +
- * delta; scanning both would double-count the standard directories.
+ * Scans top-level .cdb files only, matching how the engine reads them, and only
+ * the standard pool — extended is standard plus a delta, so scanning both would
+ * double-count. Unreadable folders are skipped.
  */
 function warnDuplicateCdbBasenames(pools: string[], logger: Logger): void {
-	// Map: basename → list of pool dirs that contain it
 	const basenameToFolders = new Map<string, string[]>();
 
 	for (const folder of pools) {
@@ -330,7 +286,6 @@ function warnDuplicateCdbBasenames(pools: string[], logger: Logger): void {
 		try {
 			entries = fs.readdirSync(folder);
 		} catch {
-			// Unreadable — skip silently
 			continue;
 		}
 
@@ -346,7 +301,6 @@ function warnDuplicateCdbBasenames(pools: string[], logger: Logger): void {
 
 	for (const [basename, folders] of basenameToFolders) {
 		if (folders.length >= 2) {
-			// One-shot: emit this warning at most once per process per duplicate basename.
 			const key = `dup:${basename}`;
 			if (_warnedKeys.has(key)) {
 				continue;
