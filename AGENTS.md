@@ -42,8 +42,8 @@ As an AI agent, you must strictly adhere to these rules. **Violation of these ru
 ### 3. Operational Safety
 
 - **Absolute Paths**: Always use absolute paths for file operations.
-- **Database**: Never alter `migrations/` manually after they are applied. Use `npm run migration:generate` for schema changes.
-- **Verify**: Run `npm run lint` and `npm run test` before finishing.
+- **Database**: Never alter `migrations/` manually after they are applied. Use `pnpm migration:generate` for schema changes.
+- **Verify**: Run `pnpm lint` and `pnpm test` before finishing.
 
 ---
 
@@ -129,12 +129,12 @@ When performing these actions, **ALWAYS** follow the corresponding Standard Oper
 1.  **Update Entity**: Modify the TypeORM entity class in `src/evolution-types/src/`.
 2.  **Generate Migration**:
     ```bash
-    npm run migration:generate --name=NameOfChange
+    MIGRATION_NAME=NameOfChange pnpm migration:generate
     ```
 3.  **Verify**: Inspect the generated file in `src/shared/infrastructure/persistence/typeorm/migrations/`.
 4.  **Apply**:
     ```bash
-    npm run migration:run
+    pnpm migration:run
     ```
 
 ### [SOP-004] Module Creation
@@ -158,12 +158,12 @@ When performing these actions, **ALWAYS** follow the corresponding Standard Oper
 
 | Command                    | Description                          |
 | -------------------------- | ------------------------------------ |
-| `npm run dev`              | Start development server (Port 9229) |
-| `npm run build`            | Build for production                 |
-| `npm run test`             | Run all tests                        |
-| `npm test -- path/to/file` | Run specific test file               |
-| `npm run lint`             | Check code style                     |
-| `npm run lint:fix`         | Fix code style                       |
+| `pnpm dev`                 | Start development server (Port 9229) |
+| `pnpm build`               | Build for production                 |
+| `pnpm test`                | Run all tests                        |
+| `pnpm test path/to/file`   | Run specific test file               |
+| `pnpm lint`                | Check code style                     |
+| `pnpm lint:fix`            | Fix code style                       |
 
 ### Path Aliases
 

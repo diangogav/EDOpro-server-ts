@@ -11,7 +11,7 @@
  *   6. decode_room_queue      — decode + per-room queue, drained outside the
  *                               loop in insertion order
  *
- * Run: npx ts-node -r tsconfig-paths/register src/utils/perf/benchmark-duel-events.ts
+ * Run: pnpm exec ts-node -r tsconfig-paths/register src/utils/perf/benchmark-duel-events.ts
  */
 import { EventBus } from "@shared/event-bus/EventBus";
 import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";

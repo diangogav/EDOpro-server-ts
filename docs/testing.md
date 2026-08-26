@@ -10,7 +10,7 @@ How we write tests in EDOpro-server-ts: where they live, how we build test data,
 2. **Build domain objects with a Mother.** Use (or create) an Object Mother for shared domain entities. Use a local `make*` factory only for stubs specific to that one suite.
 3. **Mock infra with the shared doubles.** `LoggerMock`, `SocketMock`, `MessageRepositoryMock` for ubiquitous interfaces; `jest.mock()` for module singletons; `mock<T>()` (jest-mock-extended) for one-off interface mocks.
 4. **Reset singletons** in `afterEach` (e.g. `WindbotModule.resetForTests()`, `JoinStrategyRegistry.reset()`).
-5. **Format:** tab indentation — Biome applies it (`npm run format`), and your editor via `.editorconfig`.
+5. **Format:** tab indentation — Biome applies it (`pnpm format`), and your editor via `.editorconfig`.
 
 ## Where tests live
 
@@ -93,7 +93,7 @@ Always reset shared singleton state in `afterEach` so suites don't leak into eac
 - [ ] Shared domain objects built via a Mother; local stubs via `make*` factories.
 - [ ] Infra mocked via shared Mock classes / `mock<T>()`; singletons reset in `afterEach`.
 - [ ] Tab indentation; `describe`/`it` follow the naming convention.
-- [ ] `npm run lint` and the test suite pass.
+- [ ] `pnpm lint` and the test suite pass.
 
 ## Migration targets (incremental)
 

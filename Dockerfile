@@ -47,15 +47,25 @@ FROM public.ecr.aws/docker/library/node:24.11.0-bullseye AS server-builder
 
 WORKDIR /server
 
-COPY package.json package-lock.json ./
-RUN npm ci
+# pnpm is pinned by package.json's "packageManager" field; corepack activates that
+# exact version. The prompt must be off or the non-interactive build hangs on it.
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack enable pnpm
+
+# pnpm-workspace.yaml carries allowBuilds — without it pnpm skips the install
+# scripts of bcrypt/better-sqlite3/lzma-native and the server dies at require().
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
 
 RUN git clone --depth 1 https://github.com/diangogav/evolution-types.git ./src/evolution-types
 
 COPY . .
 
-RUN npm run build && \
-    npm prune --production
+# --ignore-scripts is required: unlike `npm prune`, pnpm re-runs the `prepare`
+# lifecycle after pruning, and `prepare` calls husky — a devDependency the prune
+# just removed. Without the flag the stage dies with "husky: not found".
+RUN pnpm build && \
+    pnpm prune --prod --ignore-scripts
 
 
 # Stage 4: Final image
