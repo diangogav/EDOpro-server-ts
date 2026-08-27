@@ -2,9 +2,10 @@
  * Seat reservation at the JOIN door of every non-waiting state.
  *
  * A matchmaking room's join string travels through client config and process
- * lists, so it must not be enough to enter the room once the duel is underway:
- * a third party is explicitly rejected — not seated, not spectator — while a
- * reserved player's own reconnect keeps working. States are exercised on
+ * lists, so it must not be enough to take a seat once the duel is underway:
+ * a non-watch third party is explicitly rejected — not seated, not spectator —
+ * while a reserved player's own reconnect keeps working and a watch-stamped
+ * socket ("w,<roomId>") is admitted to the stands only. States are exercised on
  * prototype instances (same approach as the express-reconnect tests) because
  * the dueling state's full constructor needs an OCGCore spin-up.
  */
@@ -253,9 +254,10 @@ describe("YGOProSideDeckingState.handleJoin — reserved rooms", () => {
 });
 
 // Watch joins ("w,<roomId>") reach these states carrying a server-side watch
-// stamp on the socket. The reservation gate still runs first and rejects a
-// watcher in a reserved room like any other third party; in an unreserved
-// room the stamp forces the spectator branch.
+// stamp on the socket. The reservation gate still runs first: a stamp for
+// THIS room is admitted (stands only), any other socket the reservation does
+// not admit is rejected. In an unreserved room the stamp forces the
+// spectator branch.
 describe("mid-duel states — watch-marked joiners", () => {
 	const buildDueling = (room: jest.Mocked<YGOProRoom>) => buildState(YGOProDuelingState, { room });
 
@@ -365,5 +367,63 @@ describe("mid-duel states — watch stamp never takes a seat", () => {
 
 		expect(room.reconnect).toHaveBeenCalledWith(victim, socket);
 		expect(room.createSpectatorUnsafe).not.toHaveBeenCalled();
+	});
+});
+
+// Reserved-room spectating through the REAL reservation gate: a watch stamp
+// for THIS room is spectate-only capability, so it passes the JOIN door and
+// lands in the stands, while every non-watch third party stays fully
+// rejected — no seat, no stands.
+describe("mid-duel states — watch spectating a RESERVED room (real gate)", () => {
+	const ROOM_ID = 7;
+
+	const makeReservedRoom = (): jest.Mocked<YGOProRoom> => {
+		const room = makeRoom({ id: ROOM_ID, reservedUserIds: ["u-a", "u-b"] });
+		room.reservationAdmits = YGOProRoom.prototype.reservationAdmits.bind(
+			room,
+		) as typeof room.reservationAdmits;
+		return room;
+	};
+
+	it("spectates a watch-stamped joiner in a reserved DUELING room without touching seats", () => {
+		const room = makeReservedRoom();
+		const socket = makeSocket({ watchForRoomId: ROOM_ID });
+
+		buildState(YGOProDuelingState, { room }).handleJoin(makeJoinMessage(), room, socket);
+
+		expectSpectated(room);
+		expect(room.reconnect).not.toHaveBeenCalled();
+	});
+
+	it("spectates a watch-stamped joiner in a reserved RPS room", () => {
+		const room = makeReservedRoom();
+		const socket = makeSocket({ watchForRoomId: ROOM_ID });
+
+		buildState(YGOProRockPaperScissorState, { handResult: [0, 0] }).handleJoin(
+			makeJoinMessage(),
+			room,
+			socket,
+		);
+
+		expectSpectated(room);
+		expect(room.reconnect).not.toHaveBeenCalled();
+	});
+
+	it("still fully rejects a ticketed non-reserved third party", () => {
+		const room = makeReservedRoom();
+		const socket = makeSocket({ resolvedUserId: "u-intruder" });
+
+		buildState(YGOProDuelingState, { room }).handleJoin(makeJoinMessage(), room, socket);
+
+		expectRejected(room, socket);
+	});
+
+	it("still fully rejects an anonymous guest third party", () => {
+		const room = makeReservedRoom();
+		const socket = makeSocket();
+
+		buildState(YGOProDuelingState, { room }).handleJoin(makeJoinMessage(), room, socket);
+
+		expectRejected(room, socket);
 	});
 });

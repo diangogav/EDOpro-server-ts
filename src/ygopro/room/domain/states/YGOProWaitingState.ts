@@ -83,8 +83,9 @@ export class YGOProWaitingState extends YGOProRoomState {
 		}
 
 		// Reservation gate before any admission work: a reserved room's join
-		// string is not a key — only the stamped identities (or the bot's
-		// token-marked socket) get past this door, not even as spectators.
+		// string is not a key — only the stamped identities, the bot's
+		// token-marked socket, or a watch-stamped spectator (stands only, by
+		// construction) get past this door.
 		if (!room.reservationAdmits(socket)) {
 			room.rejectReservedJoin(socket);
 			return;
@@ -210,6 +211,13 @@ export class YGOProWaitingState extends YGOProRoomState {
 				// stands door, mirroring the JOIN door).
 				const credential = player.credential ?? { kind: "guest" as const, name: player.name };
 				if (!room.league.admitsAsPlayer(credential)) {
+					return;
+				}
+				// In a reserved room only a reserved identity may leave the stands:
+				// the JOIN gate admits watch spectators, so this promotion door must
+				// run the seat-taking reservation check or a non-reserved watcher
+				// could TO_DUEL into a reserved seat before the duel starts.
+				if (!room.reservationPermitsSeat(player.socket)) {
 					return;
 				}
 				room.spectatorToPlayerUnsafe(player);

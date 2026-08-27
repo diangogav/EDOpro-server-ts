@@ -71,3 +71,36 @@ describe("YGOProRoom.admissionTarget — watch intent", () => {
 		expect(room.spectators).toHaveLength(1);
 	});
 });
+
+describe("YGOProRoom.admissionTarget — watch intent in a RESERVED room", () => {
+	it("lands a watch joiner of a reserved waiting room in the stands, reserved seats intact", async () => {
+		const room = YGOProRoomMother.create({ id: 42 });
+		room.reservedUserIds = ["u-a", "u-b"];
+		const socket = makeSocket({ watchForRoomId: 42 });
+
+		expect(room.reservationAdmits(socket)).toBe(true);
+
+		const target = room.admissionTarget(socket, playerInfo);
+		const credential = { kind: "guest" as const, name: "Watcher" };
+		const decision = new RoomAdmission().decide(credential, {
+			league: target.league,
+			freeSeat: target.freeSeat(),
+		});
+		expect(decision.kind).toBe("spectator");
+
+		await target.admitSpectator(credential);
+
+		expect(room.playersCount).toBe(0);
+		expect(room.spectators).toHaveLength(1);
+		expect(room.reservedUserIds).toEqual(["u-a", "u-b"]);
+	});
+
+	it("still offers the seat path to a reserved matched player (non-watch socket)", () => {
+		const room = YGOProRoomMother.create({ id: 42 });
+		room.reservedUserIds = ["u-a", "u-b"];
+		const socket = makeSocket({ resolvedUserId: "u-a" });
+
+		expect(room.reservationAdmits(socket)).toBe(true);
+		expect(room.admissionTarget(socket, playerInfo).freeSeat()).not.toBeNull();
+	});
+});

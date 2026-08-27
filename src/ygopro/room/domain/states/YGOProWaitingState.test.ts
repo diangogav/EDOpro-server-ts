@@ -342,11 +342,11 @@ describe("YGOProWaitingState.handleJoin", () => {
 			expect(mockRoom.admissionTarget).not.toHaveBeenCalled();
 		});
 
-		// The gate runs BEFORE any admission work and reads only the reserved
-		// identities: a watch join ("w,<roomId>") is a third party like any
-		// other, and its server-side watch stamp must never open a reserved
-		// room — not even to the stands.
-		it("rejects a watch-intent joiner the reservation does not admit (watch never bypasses the gate)", async () => {
+		// The gate runs BEFORE any admission work. A watch stamp for THIS room
+		// is admitted (stands only); a stamp for another room is inert, so a
+		// watch-intent joiner the gate does not admit is rejected like any
+		// other third party.
+		it("rejects a watch-intent joiner the reservation does not admit (a foreign stamp never bypasses the gate)", async () => {
 			(mockRoom.reservationAdmits as jest.Mock).mockReturnValue(false);
 			(mockSocket as { watchForRoomId?: number }).watchForRoomId = 99;
 
@@ -477,6 +477,9 @@ describe("YGOProWaitingState.handleToDuel (spectator -> player)", () => {
 			mutex: {
 				runExclusive: jest.fn().mockImplementation((fn: () => void) => fn()),
 			},
+			// Default true = a room without reservations (ordinary rooms permit
+			// every promotion, exactly as before the reservation seat gate).
+			reservationPermitsSeat: jest.fn().mockReturnValue(true),
 			spectatorToPlayerUnsafe: jest.fn(),
 			movePlayerToAnotherCellUnsafe: jest.fn(),
 		}) as unknown as jest.Mocked<YGOProRoom>;
@@ -486,6 +489,7 @@ describe("YGOProWaitingState.handleToDuel (spectator -> player)", () => {
 			isSpectator: true,
 			credential,
 			name: "X",
+			socket: { id: "spectator-socket" },
 			logger: makeLogger(),
 		}) as unknown as jest.Mocked<YGOProClient>;
 
@@ -539,5 +543,43 @@ describe("YGOProWaitingState.handleToDuel (spectator -> player)", () => {
 		await emitToDuel(room, spectator);
 
 		expect(room.spectatorToPlayerUnsafe).toHaveBeenCalledWith(spectator);
+	});
+
+	// Reserved rooms admit watch spectators through the JOIN door, so the
+	// promotion door needs its own gate: only a reserved identity may leave the
+	// stands. The state must consult the room's SEAT-taking reservation check
+	// (reservationPermitsSeat) with the spectator's socket — never the
+	// watch-permitting JOIN gate — or a watcher could TO_DUEL into a reserved
+	// seat during the pre-duel window.
+	describe("reserved rooms", () => {
+		it("does NOT seat a spectator the reservation denies (watch spectator in a reserved room)", async () => {
+			const room = makeRoom(RoomLeague.Verified);
+			(room.reservationPermitsSeat as jest.Mock).mockReturnValue(false);
+			const spectator = makeSpectator({ kind: "verified", userId: "u-watcher" });
+
+			await emitToDuel(room, spectator);
+
+			expect(room.spectatorToPlayerUnsafe).not.toHaveBeenCalled();
+		});
+
+		it("consults the seat-taking reservation check with the spectator's socket", async () => {
+			const room = makeRoom(RoomLeague.Verified);
+			(room.reservationPermitsSeat as jest.Mock).mockReturnValue(false);
+			const spectator = makeSpectator({ kind: "verified", userId: "u-watcher" });
+
+			await emitToDuel(room, spectator);
+
+			expect(room.reservationPermitsSeat).toHaveBeenCalledWith(spectator.socket);
+		});
+
+		it("still seats a spectator the reservation permits (reserved player)", async () => {
+			const room = makeRoom(RoomLeague.Verified);
+			(room.reservationPermitsSeat as jest.Mock).mockReturnValue(true);
+			const spectator = makeSpectator({ kind: "verified", userId: "u-a" });
+
+			await emitToDuel(room, spectator);
+
+			expect(room.spectatorToPlayerUnsafe).toHaveBeenCalledWith(spectator);
+		});
 	});
 });

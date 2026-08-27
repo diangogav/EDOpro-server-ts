@@ -154,3 +154,106 @@ describe("YGOProRoom.reservationAdmits — one seat per reserved identity", () =
 		expect(room.reservationAdmits(makeSocket({ resolvedUserId: "u-a" }))).toBe(true);
 	});
 });
+
+describe("YGOProRoom.reservationAdmits — watch spectators", () => {
+	it("admits a watch-stamped socket for THIS room (spectate-only entry)", () => {
+		const room = YGOProRoomMother.create({ id: 42 });
+		room.reservedUserIds = ["u-a", "u-b"];
+
+		expect(room.reservationAdmits(makeSocket({ watchForRoomId: 42 }))).toBe(true);
+	});
+
+	it("rejects a socket whose watch stamp names a DIFFERENT room", () => {
+		const room = YGOProRoomMother.create({ id: 42 });
+		room.reservedUserIds = ["u-a", "u-b"];
+
+		expect(room.reservationAdmits(makeSocket({ watchForRoomId: 43 }))).toBe(false);
+	});
+});
+
+describe("YGOProRoom.reservationPermitsSeat — seat-taking reservation check", () => {
+	// Distinct from reservationAdmits on purpose: the JOIN gate also lets
+	// watch-stamped sockets through, but a watch stamp is spectate-only
+	// capability. Promotion paths (spectator -> player) must consult THIS
+	// check, or a non-reserved watcher could escalate into a reserved seat.
+	it("permits anyone in a room without reservations (ordinary rooms unchanged)", () => {
+		const room = YGOProRoomMother.create();
+
+		expect(room.reservationPermitsSeat(makeSocket())).toBe(true);
+		expect(room.reservationPermitsSeat(makeSocket({ resolvedUserId: "u-any" }))).toBe(true);
+	});
+
+	it("permits a reserved identity", () => {
+		const room = YGOProRoomMother.create();
+		room.reservedUserIds = ["u-a", "u-b"];
+
+		expect(room.reservationPermitsSeat(makeSocket({ resolvedUserId: "u-a" }))).toBe(true);
+	});
+
+	it("denies a watch-stamped socket carrying no reserved identity", () => {
+		const room = YGOProRoomMother.create({ id: 42 });
+		room.reservedUserIds = ["u-a", "u-b"];
+
+		expect(room.reservationPermitsSeat(makeSocket({ watchForRoomId: 42 }))).toBe(false);
+	});
+
+	it("denies a non-reserved authenticated identity", () => {
+		const room = YGOProRoomMother.create();
+		room.reservedUserIds = ["u-a", "u-b"];
+
+		expect(room.reservationPermitsSeat(makeSocket({ resolvedUserId: "u-intruder" }))).toBe(false);
+	});
+
+	it("denies an anonymous socket", () => {
+		const room = YGOProRoomMother.create();
+		room.reservedUserIds = ["u-a", "u-b"];
+
+		expect(room.reservationPermitsSeat(makeSocket())).toBe(false);
+	});
+});
+
+describe("YGOProRoom.reservationPermitsSeat — one seat per reserved identity", () => {
+	// The promotion door must enforce the same liveness guard as the JOIN
+	// door: a reserved user already holding a live seat could otherwise open a
+	// second connection through the watch door and TO_DUEL into the
+	// opponent's still-free seat.
+	const seatPlayer = (
+		room: ReturnType<typeof YGOProRoomMother.create>,
+		userId: string,
+		closed = false,
+	): void => {
+		room.players.push({ id: userId, socket: { closed } } as never);
+	};
+
+	it("denies a reserved user whose seat is still held by a live socket (double-seat via watch + TO_DUEL)", () => {
+		const room = YGOProRoomMother.create();
+		room.reservedUserIds = ["u-a", "u-b"];
+		seatPlayer(room, "u-a");
+
+		expect(room.reservationPermitsSeat(makeSocket({ resolvedUserId: "u-a" }))).toBe(false);
+	});
+
+	it("still permits the opponent's first seat while the first player holds their own", () => {
+		const room = YGOProRoomMother.create();
+		room.reservedUserIds = ["u-a", "u-b"];
+		seatPlayer(room, "u-a");
+
+		expect(room.reservationPermitsSeat(makeSocket({ resolvedUserId: "u-b" }))).toBe(true);
+	});
+
+	it("permits the reserved user again once their seat's socket is closed (crash recovery)", () => {
+		const room = YGOProRoomMother.create();
+		room.reservedUserIds = ["u-a", "u-b"];
+		seatPlayer(room, "u-a", true);
+
+		expect(room.reservationPermitsSeat(makeSocket({ resolvedUserId: "u-a" }))).toBe(true);
+	});
+
+	it("ignores guest seats (null id) when checking the double-seat guard", () => {
+		const room = YGOProRoomMother.create();
+		room.reservedUserIds = ["u-a", "u-b"];
+		room.players.push({ id: null, socket: { closed: false } } as never);
+
+		expect(room.reservationPermitsSeat(makeSocket({ resolvedUserId: "u-a" }))).toBe(true);
+	});
+});

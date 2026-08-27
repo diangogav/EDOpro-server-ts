@@ -483,14 +483,20 @@ export class YGOProRoom extends YgoRoom {
 	}
 
 	/**
-	 * Reservation gate for the JOIN door, evaluated in EVERY room state (a
-	 * reserved ranked duel is not even watchable by a third party). The join
-	 * string alone is deliberately not enough to enter a reserved room: it
-	 * travels through client config files and process lists, so entry demands
-	 * a ticket-resolved identity stamped in the reservation set. Internal (bot)
+	 * Reservation gate for the JOIN door, evaluated in EVERY room state. A
+	 * reserved room rejects third parties from SEATS, but admits watch-stamped
+	 * spectators: seat security is independent from watchability. The join
+	 * string alone is deliberately not enough to take a seat in a reserved
+	 * room: it travels through client config files and process lists, so a
+	 * seat demands a ticket-resolved identity stamped in the reservation set.
+	 * A watch-stamped socket ("w,<roomId>") can only ever spectate — the
+	 * waiting door offers it no seat and the mid-duel states force its
+	 * spectator branch — and spectators see only the opponent view (no hands),
+	 * so admitting it grants the stands and nothing more. Internal (bot)
 	 * sockets are pre-authorized by their consumed room-bound join token — a
-	 * bot carries no user identity to compare. Rooms without reservations
-	 * admit everyone, exactly as before.
+	 * bot carries no user identity to compare. Everything else (non-watch,
+	 * non-reserved, non-bot) is still rejected outright. Rooms without
+	 * reservations admit everyone, exactly as before.
 	 */
 	reservationAdmits(socket: ISocket): boolean {
 		if (!this.reservedUserIds || this.reservedUserIds.length === 0) {
@@ -499,22 +505,54 @@ export class YGOProRoom extends YgoRoom {
 		if (socket.internalForRoomId === this.id) {
 			return true;
 		}
+		// A watch stamp is spectate-only capability, never seat capability:
+		// seat-taking paths (spectator -> player promotion) must consult
+		// reservationPermitsSeat instead of this gate.
+		if (socket.watchForRoomId === this.id) {
+			return true;
+		}
 
 		if (!socket.resolvedUserId || !this.reservedUserIds.includes(socket.resolvedUserId)) {
 			return false;
 		}
 
-		// One seat per reserved identity: a reserved user whose seat is still
-		// held by a live socket cannot enter again, or one player could fill
-		// both seats with two connections and squeeze the opponent out. Seat
-		// liveness reads socket.closed — the same signal the reconnect paths
-		// use — so a crashed player (their seat's socket already closed) can
-		// still come back in through this gate.
-		const holdsLiveSeat = this._players.some(
-			(player) => player.id === socket.resolvedUserId && !player.socket.closed,
-		);
+		return !this.holdsLiveSeat(socket.resolvedUserId);
+	}
 
-		return !holdsLiveSeat;
+	/**
+	 * Seat-taking form of the reservation check, for paths that hand an
+	 * ALREADY-ADMITTED client a seat (spectator -> player promotion via
+	 * TO_DUEL). Deliberately distinct from reservationAdmits: the JOIN gate
+	 * also admits watch-stamped sockets, and a watch stamp grants the stands
+	 * only — reusing it here would let a non-reserved watcher escalate into a
+	 * reserved seat during the pre-duel window. Only a ticket-resolved
+	 * identity in the reservation set may sit, and — same one-seat-per-identity
+	 * rule as the JOIN gate — not while that identity already holds a live
+	 * seat: a seated player could otherwise re-enter through the watch door on
+	 * a second connection and TO_DUEL into the opponent's still-free seat.
+	 * Rooms without reservations permit everyone, exactly as before.
+	 */
+	reservationPermitsSeat(socket: ISocket): boolean {
+		if (!this.reservedUserIds || this.reservedUserIds.length === 0) {
+			return true;
+		}
+		if (!socket.resolvedUserId || !this.reservedUserIds.includes(socket.resolvedUserId)) {
+			return false;
+		}
+
+		return !this.holdsLiveSeat(socket.resolvedUserId);
+	}
+
+	/**
+	 * One seat per reserved identity, shared by BOTH reservation gates (JOIN
+	 * admission and seat-taking promotion): a user whose seat is still held by
+	 * a live socket may not take another, or one player could fill both seats
+	 * with two connections and squeeze the opponent out. Seat liveness reads
+	 * socket.closed — the same signal the reconnect paths use — so a crashed
+	 * player (their seat's socket already closed) can still come back in.
+	 */
+	private holdsLiveSeat(userId: string): boolean {
+		return this._players.some((player) => player.id === userId && !player.socket.closed);
 	}
 
 	/**

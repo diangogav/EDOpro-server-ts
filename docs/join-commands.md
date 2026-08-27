@@ -337,11 +337,20 @@ can still become an ordinary room name.
   rejection and league checks still apply, and the stamp is derived
   exclusively from the server-parsed command — no client-controlled field
   can set it. A watch spectator in WAITING may still self-promote through
-  the existing `TO_DUEL` flow (§6), like any other spectator.
+  the existing `TO_DUEL` flow (§6), like any other spectator — except in a
+  reserved room, where the promotion door additionally runs the seat-taking
+  reservation check (`reservationPermitsSeat`): only a ticket-resolved
+  identity in the reservation set may leave the stands, so a non-reserved
+  watch spectator stays a spectator.
 - Reservation interaction: the reservation gate at the top of every state's
-  `handleJoin` (`reservationAdmits`) runs BEFORE watch admission and never
-  reads the watch stamp — a reserved (matchmaking) room rejects a watcher
-  like any other third party, even with the correct password.
+  `handleJoin` (`reservationAdmits`) runs BEFORE watch admission. A reserved
+  (matchmaking) room is spectator-only watchable: a socket whose watch stamp
+  names that room is admitted to the stands (spectators see only the
+  opponent view, and a watch-stamped socket can never take a seat), while
+  every other third party is still rejected outright, even with the correct
+  password. Seats stay reserved: seat-taking paths use
+  `reservationPermitsSeat`, which ignores the watch stamp and demands a
+  reserved identity.
 
 **Room id uniqueness.** `findById` is first-match, so id-addressed paths
 (watch joins, the windbot `AIJOIN` return trip) require live ids to be

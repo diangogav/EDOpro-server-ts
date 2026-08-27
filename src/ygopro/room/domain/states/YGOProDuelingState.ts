@@ -241,10 +241,11 @@ export class YGOProDuelingState extends YGOProRoomState {
 	private handleJoin(message: ClientMessage, room: YGOProRoom, socket: ISocket): void {
 		this.logger.info("handleJoin");
 
-		// Reservation gate: past WAITING, a reserved room is not even watchable
-		// by a third party — the join string alone never buys a spectator seat.
-		// A reserved player's own reconnect passes this check (its ticket-resolved
-		// identity is in the reservation set) and proceeds below unchanged.
+		// Reservation gate: past WAITING, a reserved room keeps its seats closed
+		// to third parties — the join string alone never buys a seat. The gate
+		// admits watch-stamped sockets (spectate-only by construction) alongside
+		// a reserved player's own reconnect (its ticket-resolved identity is in
+		// the reservation set); both proceed below unchanged.
 		if (!room.reservationAdmits(socket)) {
 			room.rejectReservedJoin(socket);
 			return;
