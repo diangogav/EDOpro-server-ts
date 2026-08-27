@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 
 import { MatchmakingQueue } from "@ygopro/matchmaking/domain/MatchmakingQueue";
+import { BOT_FALLBACK_MS, QUEUE_TTL_MS } from "@ygopro/matchmaking/domain/QueueEntry";
 
 import { MatchmakingStatusController } from "./MatchmakingStatusController";
 
@@ -74,5 +75,36 @@ describe("MatchmakingStatusController", () => {
 			opponentType: "human",
 			rated: true,
 		});
+	});
+
+	it("serializes the opponent's display name on the matched payload", () => {
+		const q = MatchmakingQueue.getInstance();
+		q.enqueue({ ticketId: "t1", userId: "user-1", format: "tcg", displayName: "Yugi" });
+		q.enqueue({ ticketId: "t2", userId: "user-2", format: "tcg", displayName: "Kaiba" });
+
+		const body = run({ ticketId: "t1" }).body() as Record<string, unknown>;
+		expect(body).toMatchObject({ state: "matched", opponentName: "Kaiba" });
+	});
+
+	it("serializes an explicit null opponentName for a bot match", () => {
+		const clock = { t: 0 };
+		MatchmakingQueue.resetForTests();
+		MatchmakingQueue.init({ ...makeDeps(), now: () => clock.t });
+		const q = MatchmakingQueue.getInstance();
+		q.enqueue({ ticketId: "t1", userId: "user-1", format: "tcg" });
+
+		// Heartbeat inside the TTL window so the entry survives to the bot fallback.
+		clock.t = QUEUE_TTL_MS - 1;
+		q.poll("t1");
+		clock.t = BOT_FALLBACK_MS + 1;
+		q.tick();
+
+		const out = run({ ticketId: "t1" });
+		expect(out.status()).toBe(200);
+		const body = out.body() as Record<string, unknown>;
+		expect(body).toMatchObject({ state: "matched", opponentType: "bot" });
+		// The key must be present on the wire with an explicit null, not absent.
+		expect("opponentName" in body).toBe(true);
+		expect(body.opponentName).toBeNull();
 	});
 });

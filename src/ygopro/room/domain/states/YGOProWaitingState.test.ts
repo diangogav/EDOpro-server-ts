@@ -258,6 +258,8 @@ describe("YGOProWaitingState.handleJoin", () => {
 				runExclusive: jest.fn().mockImplementation(async (fn: () => Promise<void>) => fn()),
 			},
 			admissionTarget: jest.fn().mockReturnValue(admissionTarget),
+			reservationAdmits: jest.fn().mockReturnValue(true),
+			rejectReservedJoin: jest.fn(),
 			messageSender: {
 				errorMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
 			},
@@ -321,6 +323,31 @@ describe("YGOProWaitingState.handleJoin", () => {
 			expect.anything(),
 			admissionTarget,
 		);
+	});
+
+	describe("seat reservation", () => {
+		it("asks the room whether the reservation admits the joining socket", async () => {
+			await emitJoin(mockRoom, mockSocket);
+
+			expect(mockRoom.reservationAdmits).toHaveBeenCalledWith(mockSocket);
+		});
+
+		it("rejects a joiner the reservation does not admit, without delegating to AdmitToRoom", async () => {
+			(mockRoom.reservationAdmits as jest.Mock).mockReturnValue(false);
+
+			await emitJoin(mockRoom, mockSocket);
+
+			expect(mockRoom.rejectReservedJoin).toHaveBeenCalledWith(mockSocket);
+			expect(mockAdmitToRoom.run).not.toHaveBeenCalled();
+			expect(mockRoom.admissionTarget).not.toHaveBeenCalled();
+		});
+
+		it("still delegates an admitted joiner to AdmitToRoom (ordinary rooms unaffected)", async () => {
+			await emitJoin(mockRoom, mockSocket);
+
+			expect(mockRoom.rejectReservedJoin).not.toHaveBeenCalled();
+			expect(mockAdmitToRoom.run).toHaveBeenCalled();
+		});
 	});
 
 	it("rejects a duplicate name without delegating to AdmitToRoom", async () => {

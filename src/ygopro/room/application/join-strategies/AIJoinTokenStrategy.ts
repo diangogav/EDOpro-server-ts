@@ -60,6 +60,15 @@ export class AIJoinTokenStrategy implements JoinStrategy {
 			return;
 		}
 
+		// The consumed token was minted server-side for exactly this room, so this
+		// socket is a pre-authorized internal (bot) connection: stamp the token's
+		// room id BEFORE the JOIN emit so a seat-reserved matchmaking room admits
+		// it — the bot has no user ticket, and the reservation gate exempts a
+		// socket whose stamp names the room being joined. Scoping the stamp to
+		// the room id keeps the exemption from leaking to any other reserved
+		// room this socket might later present itself to.
+		ctx.socket.internalForRoomId = payload.roomId;
+
 		// A bot has joined — this room is now an AI room. Mark it noHost so the
 		// DisconnectHandler tears it down when the (only) human leaves, and
 		// noReconnect since a bot practice game is not reconnectable. Mirrors

@@ -57,6 +57,20 @@ describe("MatchmakingQueue", () => {
 		});
 	});
 
+	describe("isUserQueued", () => {
+		it("reports true only while the user has an active entry", () => {
+			const queue = MatchmakingQueue.createForTests(makeDeps());
+
+			expect(queue.isUserQueued("user-1")).toBe(false);
+
+			enqueue(queue, "t1", "user-1");
+			expect(queue.isUserQueued("user-1")).toBe(true);
+
+			queue.cancel("t1");
+			expect(queue.isUserQueued("user-1")).toBe(false);
+		});
+	});
+
 	describe("poll", () => {
 		it("returns searching state with elapsed waitedMs and refreshes lastPollAt", () => {
 			const clock = { t: 0 };
@@ -90,6 +104,36 @@ describe("MatchmakingQueue", () => {
 			tickSpy.mockRestore();
 		});
 
+		it("hands both matched userIds to the ranked-room port so the room can reserve its seats", () => {
+			const createRankedRoom = jest
+				.fn()
+				.mockReturnValue({ roomId: 1, roomPassword: "to,mmabcde#pw" });
+			const queue = MatchmakingQueue.createForTests(makeDeps({ createRankedRoom }));
+			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t2", "user-2");
+
+			queue.tick();
+
+			expect(createRankedRoom).toHaveBeenCalledWith("tcg", ["user-1", "user-2"]);
+		});
+
+		it("hands the lone human's userId to the bot-room port so the room can reserve its seat", () => {
+			const clock = { t: 0 };
+			const createBotRoom = jest.fn().mockReturnValue({ roomId: 2, roomPassword: "to,mmfghij#pw" });
+			const queue = MatchmakingQueue.createForTests(
+				makeDeps({ now: () => clock.t, createBotRoom }),
+			);
+			enqueue(queue, "t1", "user-1");
+
+			// Keep the entry alive across the TTL window; the fallback fires later.
+			clock.t = QUEUE_TTL_MS - 1;
+			queue.poll("t1");
+			clock.t = BOT_FALLBACK_MS + 1;
+			queue.tick();
+
+			expect(createBotRoom).toHaveBeenCalledWith("tcg", "user-1");
+		});
+
 		it("returns the matched payload once paired", () => {
 			const clock = { t: 0 };
 			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t }));
@@ -106,6 +150,90 @@ describe("MatchmakingQueue", () => {
 			expect((s1 as { roomPassword: string }).roomPassword).toBe(
 				(s2 as { roomPassword: string }).roomPassword,
 			);
+		});
+	});
+
+	describe("poll — pure read + heartbeat", () => {
+		it("does not pair two waiting compatible players; the sweep does on its next tick", () => {
+			// Both enqueue-time pair attempts fail, leaving two compatible entries
+			// searching. A poll must not retry the pairing — only the sweep may.
+			const createRankedRoom = jest
+				.fn()
+				.mockImplementationOnce(() => {
+					throw new Error("room not ready yet");
+				})
+				.mockReturnValue({ roomId: 1, roomPassword: "to,mm-r1#pw1" });
+			const queue = MatchmakingQueue.createForTests(
+				makeDeps({ createRankedRoom, onRoomCreationError: jest.fn() }),
+			);
+			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t2", "user-2");
+			expect(queue.get("t1")?.state).toBe("searching");
+			expect(queue.get("t2")?.state).toBe("searching");
+			const callsAfterEnqueue = createRankedRoom.mock.calls.length;
+
+			expect(queue.poll("t1")).toMatchObject({ state: "searching" });
+
+			expect(createRankedRoom.mock.calls.length).toBe(callsAfterEnqueue);
+			expect(queue.get("t1")?.state).toBe("searching");
+			expect(queue.get("t2")?.state).toBe("searching");
+
+			queue.tick();
+			expect(queue.get("t1")?.state).toBe("matched");
+			expect(queue.get("t2")?.state).toBe("matched");
+		});
+
+		it("does not trigger bot fallback; the sweep does on its next tick", () => {
+			const clock = { t: 0 };
+			const createBotRoom = jest
+				.fn()
+				.mockReturnValue({ roomPassword: "to,mm-b1#pw1", roomId: 4242 });
+			const queue = MatchmakingQueue.createForTests(
+				makeDeps({ now: () => clock.t, createBotRoom }),
+			);
+			enqueue(queue, "t1", "user-1");
+
+			clock.t = QUEUE_TTL_MS - 1;
+			queue.poll("t1");
+			clock.t = BOT_FALLBACK_MS + 1;
+
+			expect(queue.poll("t1")).toMatchObject({ state: "searching" });
+			expect(createBotRoom).not.toHaveBeenCalled();
+			expect(queue.get("t1")?.state).toBe("searching");
+
+			queue.tick();
+			expect(queue.get("t1")?.state).toBe("matched");
+			expect(queue.get("t1")?.opponentType).toBe("bot");
+		});
+
+		it("does not run the expiry sweep; a stale peer survives until the interval tick", () => {
+			// Cross-format entries: user-2 goes stale while user-1 keeps polling.
+			// user-1's polls must not reap user-2 — only the sweep may.
+			const clock = { t: 0 };
+			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t }));
+			queue.enqueue({ ticketId: "t1", userId: "user-1", format: "tcg" });
+			queue.enqueue({ ticketId: "t2", userId: "user-2", format: "jtp" });
+
+			clock.t = QUEUE_TTL_MS + 1;
+			queue.poll("t1");
+
+			expect(queue.get("t2")).toBeDefined();
+
+			queue.tick();
+			expect(queue.get("t2")).toBeUndefined();
+		});
+
+		it("still refreshes the heartbeat so a polling entry survives the sweep", () => {
+			const clock = { t: 0 };
+			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t }));
+			enqueue(queue, "t1", "user-1");
+
+			clock.t = QUEUE_TTL_MS - 1;
+			queue.poll("t1");
+			clock.t = QUEUE_TTL_MS + 1;
+			queue.tick();
+
+			expect(queue.get("t1")).toBeDefined();
 		});
 	});
 
@@ -211,6 +339,51 @@ describe("MatchmakingQueue", () => {
 			expect(createRankedRoom).not.toHaveBeenCalled();
 			expect(queue.get("t1")?.state).toBe("searching");
 			expect(queue.get("t2")?.state).toBe("searching");
+		});
+	});
+
+	describe("matched payload — opponent display name", () => {
+		it("exposes the partner's display name, never the raw userId", () => {
+			const queue = MatchmakingQueue.createForTests(makeDeps());
+			queue.enqueue({ ticketId: "t1", userId: "user-1", format: "tcg", displayName: "Kaiba" });
+			queue.enqueue({ ticketId: "t2", userId: "user-2", format: "tcg", displayName: "Yugi" });
+
+			queue.tick();
+
+			const s1 = queue.poll("t1");
+			const s2 = queue.poll("t2");
+			expect(s1).toMatchObject({ state: "matched", opponentName: "Yugi" });
+			expect(s2).toMatchObject({ state: "matched", opponentName: "Kaiba" });
+			// The internal userId must never leave the server in the matched payload.
+			expect(JSON.stringify(s1)).not.toContain("user-2");
+			expect(JSON.stringify(s2)).not.toContain("user-1");
+		});
+
+		it("falls back to null (not the userId) when the partner has no display name", () => {
+			const queue = MatchmakingQueue.createForTests(makeDeps());
+			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t2", "user-2");
+
+			queue.tick();
+
+			const s1 = queue.poll("t1");
+			expect(s1).toMatchObject({ state: "matched", opponentName: null });
+			expect(JSON.stringify(s1)).not.toContain("user-2");
+		});
+
+		it("keeps opponentName null for a bot match (no userId leak on the bot path)", () => {
+			const clock = { t: 0 };
+			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t }));
+			enqueue(queue, "t1", "user-1");
+
+			clock.t = QUEUE_TTL_MS - 1;
+			queue.poll("t1");
+			clock.t = BOT_FALLBACK_MS + 1;
+			queue.tick();
+
+			const s1 = queue.poll("t1");
+			expect(s1).toMatchObject({ state: "matched", opponentType: "bot", opponentName: null });
+			expect(JSON.stringify(s1)).not.toContain("user-1");
 		});
 	});
 

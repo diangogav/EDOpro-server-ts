@@ -2,6 +2,8 @@ import { EventEmitter } from "stream";
 
 import { RoomLeague } from "@shared/room/admission/domain/RoomLeague";
 
+import { ErrorMessageType } from "ygopro-msg-encode";
+
 import { MATCHMAKING_FORMATS } from "../domain/QueueEntry";
 import YGOProRoomList from "../../room/infrastructure/YGOProRoomList";
 import {
@@ -32,6 +34,7 @@ describe("createMatchmakingRoom", () => {
 
 	it("creates a ranked (Verified) TCG room and registers it in the room list", () => {
 		const { room, roomPassword } = createMatchmakingRoom({
+			reservedUserIds: ["u-a", "u-b"],
 			rankedOverride: true,
 			logger: makeLogger(),
 			emitter: new EventEmitter(),
@@ -48,6 +51,7 @@ describe("createMatchmakingRoom", () => {
 
 	it("creates an unrated (Casual) room for bot games when rankedOverride is false", () => {
 		const { room } = createMatchmakingRoom({
+			reservedUserIds: ["u-a", "u-b"],
 			rankedOverride: false,
 			logger: makeLogger(),
 			emitter: new EventEmitter(),
@@ -59,6 +63,7 @@ describe("createMatchmakingRoom", () => {
 
 	it("creates a best-of-3 MATCH room for ranked human pairs (matchMode)", () => {
 		const { room } = createMatchmakingRoom({
+			reservedUserIds: ["u-a", "u-b"],
 			rankedOverride: true,
 			matchMode: true,
 			logger: makeLogger(),
@@ -74,6 +79,7 @@ describe("createMatchmakingRoom", () => {
 
 	it('uses the "jm" token for jtp MATCH rooms (jtp rules + best-of-3)', () => {
 		const { room } = createMatchmakingRoom({
+			reservedUserIds: ["u-a", "u-b"],
 			format: "jtp",
 			rankedOverride: true,
 			matchMode: true,
@@ -89,6 +95,7 @@ describe("createMatchmakingRoom", () => {
 
 	it('uses the "ed" token for edison single rooms (MR1 + edison banlist)', () => {
 		const { room } = createMatchmakingRoom({
+			reservedUserIds: ["u-a", "u-b"],
 			format: "edison",
 			rankedOverride: false,
 			logger: makeLogger(),
@@ -104,6 +111,7 @@ describe("createMatchmakingRoom", () => {
 
 	it('uses the "edm" token for edison MATCH rooms (edison rules + best-of-3)', () => {
 		const { room } = createMatchmakingRoom({
+			reservedUserIds: ["u-a", "u-b"],
 			format: "edison",
 			rankedOverride: true,
 			matchMode: true,
@@ -119,6 +127,7 @@ describe("createMatchmakingRoom", () => {
 
 	it("keeps rooms best-of-1 when matchMode is omitted (bot fallback — windbot cannot side-deck)", () => {
 		const { room } = createMatchmakingRoom({
+			reservedUserIds: ["u-a", "u-b"],
 			rankedOverride: false,
 			logger: makeLogger(),
 			emitter: new EventEmitter(),
@@ -131,6 +140,7 @@ describe("createMatchmakingRoom", () => {
 
 	it("returns roomPassword as the exact command#password join string", () => {
 		const { room, roomPassword } = createMatchmakingRoom({
+			reservedUserIds: ["u-a", "u-b"],
 			rankedOverride: true,
 			logger: makeLogger(),
 			emitter: new EventEmitter(),
@@ -159,6 +169,7 @@ describe("createMatchmakingRoom", () => {
 	)("produces a join string that fits the CTOS_JOIN_GAME pass field (<= 19 chars) for format %s", (format) => {
 		for (let i = 0; i < 500; i++) {
 			const { roomPassword } = createMatchmakingRoom({
+				reservedUserIds: ["u-a", "u-b"],
 				format,
 				rankedOverride: true,
 				logger: makeLogger(),
@@ -176,6 +187,7 @@ describe("createMatchmakingRoom", () => {
 	)("produces a join string that fits the pass field (<= 19 chars) for MATCH rooms, format %s", (format) => {
 		for (let i = 0; i < 500; i++) {
 			const { roomPassword } = createMatchmakingRoom({
+				reservedUserIds: ["u-a", "u-b"],
 				format,
 				rankedOverride: true,
 				matchMode: true,
@@ -189,6 +201,7 @@ describe("createMatchmakingRoom", () => {
 
 	it("keeps a non-empty TCG name prefix and a non-empty password segment", () => {
 		const { roomPassword } = createMatchmakingRoom({
+			reservedUserIds: ["u-a", "u-b"],
 			rankedOverride: true,
 			logger: makeLogger(),
 			emitter: new EventEmitter(),
@@ -207,6 +220,7 @@ describe("createMatchmakingRoom", () => {
 		// Matchmaking hands the SAME join string to both matched players. Each
 		// sends it in CTOS_JOIN_GAME { pass }; both must land in this one room.
 		const { room, roomPassword } = createMatchmakingRoom({
+			reservedUserIds: ["u-a", "u-b"],
 			rankedOverride: true,
 			logger: makeLogger(),
 			emitter: new EventEmitter(),
@@ -227,11 +241,13 @@ describe("createMatchmakingRoom", () => {
 
 	it("generates a unique room name/password per pair (no collision across calls)", () => {
 		const a = createMatchmakingRoom({
+			reservedUserIds: ["u-a", "u-b"],
 			rankedOverride: true,
 			logger: makeLogger(),
 			emitter: new EventEmitter(),
 		});
 		const b = createMatchmakingRoom({
+			reservedUserIds: ["u-a", "u-b"],
 			rankedOverride: true,
 			logger: makeLogger(),
 			emitter: new EventEmitter(),
@@ -241,10 +257,159 @@ describe("createMatchmakingRoom", () => {
 		expect(a.room.name).not.toBe(b.room.name);
 	});
 
+	it("stamps the matched pair's userIds as the room's seat reservation", () => {
+		const { room } = createMatchmakingRoom({
+			rankedOverride: true,
+			matchMode: true,
+			reservedUserIds: ["u-a", "u-b"],
+			logger: makeLogger(),
+			emitter: new EventEmitter(),
+		});
+
+		expect(room.reservedUserIds).toEqual(["u-a", "u-b"]);
+		expect(room.reservationAdmits({ resolvedUserId: "u-a" } as never)).toBe(true);
+		expect(room.reservationAdmits({ resolvedUserId: "u-intruder" } as never)).toBe(false);
+	});
+
+	it("reserves only the human's userId for a bot-fallback room, keeping the bot's token path open", () => {
+		const { room } = createMatchmakingRoom({
+			rankedOverride: false,
+			reservedUserIds: ["u-human"],
+			logger: makeLogger(),
+			emitter: new EventEmitter(),
+		});
+
+		expect(room.reservedUserIds).toEqual(["u-human"]);
+		// The windbot authenticates with a one-shot room-bound token, not a user
+		// ticket — its socket is marked internal and must stay admissible.
+		expect(room.reservationAdmits({ internalForRoomId: room.id } as never)).toBe(true);
+	});
+
+	describe("reserved-room JOIN pipeline (real waiting state)", () => {
+		// mercuryConfig.version = 4962, little-endian at offset 0 of CTOS_JOIN_GAME.
+		const makeJoinMessage = () => {
+			const data = Buffer.alloc(48);
+			data.writeUInt16LE(4962, 0);
+			// "Mallory" in UTF-16LE, no PIN separator.
+			const previousMessage = Buffer.from("Mallory", "utf16le");
+			return { data, previousMessage } as never;
+		};
+
+		const makeSocket = (resolvedUserId?: string) =>
+			({
+				id: "sock-stranger",
+				resolvedUserId,
+				remoteAddress: "10.0.0.9",
+				closed: false,
+				send: jest.fn(),
+				close: jest.fn(),
+				destroy: jest.fn(),
+				onMessage: jest.fn(),
+				removeAllListeners: jest.fn(),
+			}) as never;
+
+		const flush = () => new Promise((resolve) => setImmediate(resolve));
+
+		it.each([
+			["a ticketed stranger", "u-intruder"],
+			["an anonymous socket", undefined],
+		])("rejects %s presenting the exact join string, leaving the room untouched", async (_, userId) => {
+			const { room } = createMatchmakingRoom({
+				rankedOverride: true,
+				matchMode: true,
+				reservedUserIds: ["u-a", "u-b"],
+				logger: makeLogger(),
+				emitter: new EventEmitter(),
+			});
+			const socket = makeSocket(userId as string | undefined);
+
+			room.emit("JOIN", makeJoinMessage(), socket);
+			await flush();
+
+			const sentBuffers = ((socket as { send: jest.Mock }).send as jest.Mock).mock.calls.map(
+				([buf]) => buf as Buffer,
+			);
+			expect(sentBuffers).toContainEqual(
+				room.messageSender.errorMessage(ErrorMessageType.JOINERROR, 0),
+			);
+			expect((socket as { close: jest.Mock }).close).toHaveBeenCalled();
+			expect(room.playersCount).toBe(0);
+			expect(room.spectators).toHaveLength(0);
+			expect(YGOProRoomList.findById(room.id)).toBe(room);
+		});
+
+		it("rejects a reserved player's SECOND concurrent join, leaving their live seat intact", async () => {
+			const { room } = createMatchmakingRoom({
+				rankedOverride: true,
+				matchMode: true,
+				reservedUserIds: ["u-a", "u-b"],
+				logger: makeLogger(),
+				emitter: new EventEmitter(),
+			});
+			// Player A already holds a seat over a live socket.
+			room.players.push({ id: "u-a", socket: { closed: false } } as never);
+
+			// A second connection with the same reserved identity and a fresh
+			// ticket (different wire name is irrelevant — the gate reads identity).
+			const secondSocket = makeSocket("u-a");
+			room.emit("JOIN", makeJoinMessage(), secondSocket);
+			await flush();
+
+			const sentBuffers = ((secondSocket as { send: jest.Mock }).send as jest.Mock).mock.calls.map(
+				([buf]) => buf as Buffer,
+			);
+			expect(sentBuffers).toContainEqual(
+				room.messageSender.errorMessage(ErrorMessageType.JOINERROR, 0),
+			);
+			expect((secondSocket as { close: jest.Mock }).close).toHaveBeenCalled();
+			// The first seat is untouched and the opponent's seat stays free.
+			expect(room.playersCount).toBe(1);
+			expect(room.spectators).toHaveLength(0);
+		});
+	});
+
+	describe("reservation is mandatory", () => {
+		it("throws on an empty reservation list instead of creating an unguarded room", () => {
+			expect(() =>
+				createMatchmakingRoom({
+					reservedUserIds: [],
+					rankedOverride: true,
+					logger: makeLogger(),
+					emitter: new EventEmitter(),
+				}),
+			).toThrow();
+			// Nothing half-created: the loud failure must not leak a room.
+			expect(YGOProRoomList.getRooms()).toHaveLength(0);
+		});
+
+		it("still creates a ranked room for a two-id human pair", () => {
+			const { room } = createMatchmakingRoom({
+				reservedUserIds: ["u-a", "u-b"],
+				rankedOverride: true,
+				logger: makeLogger(),
+				emitter: new EventEmitter(),
+			});
+
+			expect(room.reservedUserIds).toEqual(["u-a", "u-b"]);
+		});
+
+		it("still creates a bot-fallback room for a single reserved human", () => {
+			const { room } = createMatchmakingRoom({
+				reservedUserIds: ["u-human"],
+				rankedOverride: false,
+				logger: makeLogger(),
+				emitter: new EventEmitter(),
+			});
+
+			expect(room.reservedUserIds).toEqual(["u-human"]);
+		});
+	});
+
 	it("builds the room without any client PlayerInfo wire bytes (additive path)", () => {
 		// Must not throw despite no connected client / PlayerInfoMessage.
 		expect(() =>
 			createMatchmakingRoom({
+				reservedUserIds: ["u-a", "u-b"],
 				rankedOverride: true,
 				logger: makeLogger(),
 				emitter: new EventEmitter(),

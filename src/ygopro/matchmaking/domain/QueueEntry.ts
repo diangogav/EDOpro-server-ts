@@ -38,6 +38,9 @@ export interface QueueEntry {
 	readonly userId: string;
 	readonly format: MatchmakingFormat;
 	readonly enteredAt: number;
+	/** Public name resolved at enqueue; null when the user has no resolvable name.
+	 * The matched payload's opponentName comes from here — never from userId. */
+	readonly displayName: string | null;
 	/** Refreshed on every status poll; the TTL sweep drops entries that fall behind. */
 	lastPollAt: number;
 	state: QueueEntryState;
@@ -50,6 +53,7 @@ export interface QueueEntry {
 	 * when an incomplete matchmaking lobby is aborted. */
 	roomId?: number;
 	opponentType?: OpponentType;
-	opponentName?: string;
+	/** Opponent's public display name; null when unresolved (never the raw userId). */
+	opponentName?: string | null;
 	rated?: boolean;
 }

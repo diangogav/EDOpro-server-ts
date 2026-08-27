@@ -93,6 +93,11 @@ export class YGOProRoom extends YgoRoom {
 	 * lifecycle is atomic: if either participant leaves, the reservation aborts. */
 	isMatchmaking: boolean = false;
 
+	/** Present only on rooms whose seats were assigned before anyone connected
+	 * (matchmaking): the userIds allowed through the JOIN door. Undefined for
+	 * ordinary rooms, which admit by (name, password) alone. */
+	reservedUserIds?: readonly string[];
+
 	// Set to true when the room begins teardown (removeRoom entry point in YGOProDuelingState).
 	// The WindBotJoinStrategy retry-abort callback reads this to stop retrying when the room
 	// is being torn down.
@@ -466,6 +471,57 @@ export class YGOProRoom extends YgoRoom {
 				socket.close();
 			},
 		};
+	}
+
+	/**
+	 * Reservation gate for the JOIN door, evaluated in EVERY room state (a
+	 * reserved ranked duel is not even watchable by a third party). The join
+	 * string alone is deliberately not enough to enter a reserved room: it
+	 * travels through client config files and process lists, so entry demands
+	 * a ticket-resolved identity stamped in the reservation set. Internal (bot)
+	 * sockets are pre-authorized by their consumed room-bound join token — a
+	 * bot carries no user identity to compare. Rooms without reservations
+	 * admit everyone, exactly as before.
+	 */
+	reservationAdmits(socket: ISocket): boolean {
+		if (!this.reservedUserIds || this.reservedUserIds.length === 0) {
+			return true;
+		}
+		if (socket.internalForRoomId === this.id) {
+			return true;
+		}
+
+		if (!socket.resolvedUserId || !this.reservedUserIds.includes(socket.resolvedUserId)) {
+			return false;
+		}
+
+		// One seat per reserved identity: a reserved user whose seat is still
+		// held by a live socket cannot enter again, or one player could fill
+		// both seats with two connections and squeeze the opponent out. Seat
+		// liveness reads socket.closed — the same signal the reconnect paths
+		// use — so a crashed player (their seat's socket already closed) can
+		// still come back in through this gate.
+		const holdsLiveSeat = this._players.some(
+			(player) => player.id === socket.resolvedUserId && !player.socket.closed,
+		);
+
+		return !holdsLiveSeat;
+	}
+
+	/**
+	 * Turn a non-reserved joiner away: a red STOC_CHAT explaining why, the real
+	 * JOINERROR, then a graceful close() so both frames flush before teardown —
+	 * the same ygopro-flavored reject sequence as admissionTarget's
+	 * rejectAdmission and the waiting state's name-taken path.
+	 */
+	rejectReservedJoin(socket: ISocket): void {
+		const chat = new YGOProStocChat().fromPartial({
+			player_type: ChatColor.RED,
+			msg: "This room is reserved for its matched players.",
+		});
+		socket.send(Buffer.from(chat.toFullPayload()));
+		socket.send(this.messageSender.errorMessage(ErrorMessageType.JOINERROR, 0));
+		socket.close();
 	}
 
 	createPlayerUnsafe(socket: ISocket, name: string, userId: string | null): YGOProClient | null {
