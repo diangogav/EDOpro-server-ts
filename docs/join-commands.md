@@ -36,8 +36,14 @@ Strategy chain, first `matches()` wins
 |---|----------|--------------|----------|
 | 1 | `AIJoinTokenStrategy` | windbot enabled AND `rawPass` starts with `AIJOIN#` | The bot itself connecting back: consumes a one-shot token, finds the room **by id**, marks the client internal. |
 | 2 | `WindBotJoinStrategy` | windbot enabled AND `ai` among config tokens | Creates an AI room, resolves the bot (by name after `#`, or format-scoped random via `resolveBotPool`), fires the bot request. Rejects tag mode. |
-| 3 | `TicketJoinStrategy` | socket authenticated via WS ticket (`resolvedUserId`) | Shared `findOrCreateRoom` helper (`rankedOverride=true`) — see §5 for the pairing-vs-non-pairing lookup it performs. |
-| 4 | `DefaultJoinStrategy` | always | Shared `findOrCreateRoom` helper (`rankedOverride=undefined`) — see §5 for the pairing-vs-non-pairing lookup it performs. Admission is delegated to the room state (§6). |
+| 3 | `WatchJoinStrategy` | command segment is exactly `w,<digits>` (see §9) | Intentional spectating **by room id**: finds the room via `findById`, gates on an exact password match, marks the socket with watch intent and routes the JOIN. Never creates a room. |
+| 4 | `TicketJoinStrategy` | socket authenticated via WS ticket (`resolvedUserId`) | Shared `findOrCreateRoom` helper (`rankedOverride=true`) — see §5 for the pairing-vs-non-pairing lookup it performs. |
+| 5 | `DefaultJoinStrategy` | always | Shared `findOrCreateRoom` helper (`rankedOverride=undefined`) — see §5 for the pairing-vs-non-pairing lookup it performs. Admission is delegated to the room state (§6). |
+
+`WatchJoinStrategy` must sit BEFORE `TicketJoinStrategy`: the ticket strategy
+matches on socket auth alone, not command shape, so a ticketed socket sending
+`w,1234` would otherwise fall into `findOrCreateRoom` and mint a junk room
+literally named `w,1234` instead of watching room 1234.
 
 On strategy error: `JOINERROR` frame + `socket.close()`.
 
@@ -282,6 +288,72 @@ Admission depends on the room state active when `JOIN` fires:
    instead of an explicit reject. Because there is no reject on this path, a
    mismatched password also no longer terminates the connection: the socket
    is never destroyed, and the joiner instead lands in the newly created room.
+   Watch joins (§9) are the deliberate exception: they resolve by id, not by
+   the (name, password) pair, so a wrong password there is an explicit reject
+   rather than a fresh room.
 5. The 20-char `pass` ceiling applies to the entire command string; bot names
    are boot-validated against a 13-char budget that assumes short (≤3 chars +
    comma) format tokens.
+
+## 9. Watch joins (`w,<roomId>[#password]`)
+
+Intentional spectating of a specific room, addressed **by id** instead of the
+(name, password) pair. Handled by `WatchJoinStrategy`
+(`src/ygopro/room/application/join-strategies/WatchJoinStrategy.ts`), placed
+after the windbot strategies and BEFORE `TicketJoinStrategy` in the chain
+(§2 — placement rationale there).
+
+**Shape.** The command segment (before the first `#`) must be exactly two
+comma-separated tokens: `w` (trimmed, case-insensitive) followed by an
+all-digit room id (trimmed; inner whitespace or any non-digit disqualifies).
+The password segment after the first `#` is the room password, `""` when
+absent — same split as every other join (§1). `w,123`, `W, 123 ` and
+`w,123#secret` are watch joins; `w`, `w,12a`, `tcg,w` and `w,123,extra` are
+not — they fall through to the rest of the chain untouched, so `w,123,extra`
+can still become an ordinary room name.
+
+**Semantics.**
+
+- The room is resolved via `YGOProRoomList.findById`. Unknown id → explicit
+  reject (red `STOC_CHAT` + `JOINERROR` + graceful `close()`, the same idiom
+  as `rejectReservedJoin`). A watch join **never creates a room**.
+- Password gate: the supplied password must equal `room.password` exactly
+  (empty matches empty). Mismatch → the same explicit reject. This
+  deliberately CONTRASTS with the non-pairing name path (§4/§8 caveat 4),
+  where a mistyped password silently creates a fresh room: an id names one
+  concrete room, so there is nothing sensible to create — rejecting is the
+  honest answer, and it costs none of the identity trade-offs the name path
+  makes.
+- On success the joiner enters as a SPECTATOR in ANY room state. Mid-duel
+  states spectate unknown joiners (§6), and for a watch-stamped socket they
+  FORCE that spectator branch: the name-based reconnect
+  (`findReconnectingPlayer`) is skipped entirely, so a watcher whose nickname
+  matches a seated player never takes that seat. In WAITING, the strategy
+  stamps the socket server-side with
+  `watchForRoomId = room.id` (ISocket, mirroring the `internalForRoomId`
+  precedent) before emitting JOIN; `YGOProRoom.admissionTarget` then offers
+  that socket no seat, so the unchanged admission policy (`RoomAdmission`)
+  routes it to the stands. Only the seat offer is affected: ranked+guest
+  rejection and league checks still apply, and the stamp is derived
+  exclusively from the server-parsed command — no client-controlled field
+  can set it. A watch spectator in WAITING may still self-promote through
+  the existing `TO_DUEL` flow (§6), like any other spectator.
+- Reservation interaction: the reservation gate at the top of every state's
+  `handleJoin` (`reservationAdmits`) runs BEFORE watch admission and never
+  reads the watch stamp — a reserved (matchmaking) room rejects a watcher
+  like any other third party, even with the correct password.
+
+**Room id uniqueness.** `findById` is first-match, so id-addressed paths
+(watch joins, the windbot `AIJOIN` return trip) require live ids to be
+unique. Every ygopro room creation site (`findOrCreateRoom`,
+`WindBotJoinStrategy`, `createMatchmakingRoom`) therefore draws its id from
+`generateUnusedRoomId`
+(`src/ygopro/room/application/generateUnusedRoomId.ts`), which retries
+`generateUniqueId` until the id is unused by any live room in
+`YGOProRoomList` and throws after a bounded number of attempts. The edopro
+`RoomCreator` keeps its own separate generator — it feeds a different room
+list.
+
+`w` is a join command, not a rule token: it is deliberately absent from
+`RuleMappings`/`isRecognizedToken`, so a bare `w` can never become a pairing
+pool (§5).

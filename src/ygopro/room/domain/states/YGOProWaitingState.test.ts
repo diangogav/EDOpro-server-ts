@@ -342,6 +342,21 @@ describe("YGOProWaitingState.handleJoin", () => {
 			expect(mockRoom.admissionTarget).not.toHaveBeenCalled();
 		});
 
+		// The gate runs BEFORE any admission work and reads only the reserved
+		// identities: a watch join ("w,<roomId>") is a third party like any
+		// other, and its server-side watch stamp must never open a reserved
+		// room — not even to the stands.
+		it("rejects a watch-intent joiner the reservation does not admit (watch never bypasses the gate)", async () => {
+			(mockRoom.reservationAdmits as jest.Mock).mockReturnValue(false);
+			(mockSocket as { watchForRoomId?: number }).watchForRoomId = 99;
+
+			await emitJoin(mockRoom, mockSocket);
+
+			expect(mockRoom.rejectReservedJoin).toHaveBeenCalledWith(mockSocket);
+			expect(mockAdmitToRoom.run).not.toHaveBeenCalled();
+			expect(mockRoom.admissionTarget).not.toHaveBeenCalled();
+		});
+
 		it("still delegates an admitted joiner to AdmitToRoom (ordinary rooms unaffected)", async () => {
 			await emitJoin(mockRoom, mockSocket);
 

@@ -24,7 +24,7 @@ import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { DuelRecord } from "../DuelRecord";
 import { FinalizeYGOProRoom } from "../../application/FinalizeYGOProRoom";
 import { YGOProRoom } from "../YGOProRoom";
-import { findReconnectingPlayer } from "@shared/room/domain/findReconnectingPlayer";
+import { findMidDuelReconnectingPlayer } from "@shared/room/domain/findMidDuelReconnectingPlayer";
 import { getMessageIdentifier } from "../../../utils/response-time-utils";
 
 import {
@@ -251,10 +251,13 @@ export class YGOProDuelingState extends YGOProRoomState {
 		}
 
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
-		const playerAlreadyInRoom = findReconnectingPlayer({
+		// The shared seam honors the watch stamp: a "w,<roomId>" joiner asked to
+		// spectate, never to take a seat, so a name match must not reconnect it.
+		const playerAlreadyInRoom = findMidDuelReconnectingPlayer({
 			players: room.players,
 			name: playerInfoMessage.name,
-			remoteAddress: socket.remoteAddress,
+			socket,
+			roomId: room.id,
 			ranked: room.ranked,
 		});
 

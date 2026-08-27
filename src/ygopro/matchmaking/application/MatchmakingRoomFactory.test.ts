@@ -1,5 +1,7 @@
 import { EventEmitter } from "stream";
 
+import * as uniqueIdModule from "src/utils/generateUniqueId";
+
 import { RoomLeague } from "@shared/room/admission/domain/RoomLeague";
 
 import { ErrorMessageType } from "ygopro-msg-encode";
@@ -447,5 +449,32 @@ describe("FORMAT_ROOM_TOKEN_MATCH", () => {
 	it('maps tcg to "tmr" (tt rules + best-of-3) and jtp to "jm"', () => {
 		expect(FORMAT_ROOM_TOKEN_MATCH.tcg).toBe("tmr");
 		expect(FORMAT_ROOM_TOKEN_MATCH.jtp).toBe("jm");
+	});
+});
+
+describe("createMatchmakingRoom — room id uniqueness", () => {
+	beforeEach(clearRooms);
+	afterEach(() => {
+		clearRooms();
+		jest.restoreAllMocks();
+	});
+
+	// findById is first-match: a matchmaking room reusing a live room's id
+	// would be shadowed on every id-addressed path (watch joins, AIJOIN).
+	it("skips an id already used by a live room", () => {
+		YGOProRoomList.addRoom({ id: 4444 } as never);
+		jest
+			.spyOn(uniqueIdModule, "generateUniqueId")
+			.mockReturnValueOnce(4444)
+			.mockReturnValueOnce(5555);
+
+		const { room } = createMatchmakingRoom({
+			reservedUserIds: ["u-a", "u-b"],
+			rankedOverride: true,
+			logger: makeLogger(),
+			emitter: new EventEmitter(),
+		});
+
+		expect(room.id).toBe(5555);
 	});
 });

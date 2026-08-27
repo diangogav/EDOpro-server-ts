@@ -7,7 +7,7 @@ import { Logger } from "../../../../shared/logger/domain/Logger";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { YGOProRoom } from "../YGOProRoom";
-import { findReconnectingPlayer } from "@shared/room/domain/findReconnectingPlayer";
+import { findMidDuelReconnectingPlayer } from "@shared/room/domain/findMidDuelReconnectingPlayer";
 import { YGOProCtosHandResult } from "ygopro-msg-encode";
 import { Team } from "@shared/room/Team";
 import { YGOProRoomState } from "../YGOProRoomState";
@@ -84,10 +84,13 @@ export class YGOProRockPaperScissorState extends YGOProRoomState {
 		}
 
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
-		const playerAlreadyInRoom = findReconnectingPlayer({
+		// The shared seam honors the watch stamp: a "w,<roomId>" joiner asked to
+		// spectate, never to take a seat, so a name match must not reconnect it.
+		const playerAlreadyInRoom = findMidDuelReconnectingPlayer({
 			players: room.players,
 			name: playerInfoMessage.name,
-			remoteAddress: socket.remoteAddress,
+			socket,
+			roomId: room.id,
 			ranked: room.ranked,
 		});
 

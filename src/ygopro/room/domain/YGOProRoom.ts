@@ -440,6 +440,15 @@ export class YGOProRoom extends YgoRoom {
 		return {
 			league: this.league,
 			freeSeat: () => {
+				// A watch joiner ("w,<roomId>") asked for the stands: offering it no
+				// seat routes the unchanged admission policy to spectator. Only the
+				// seat offer is affected — ranked-guest rejection, league checks and
+				// the upstream reservation gate all still apply. The stamp is set
+				// server-side from the parsed command and scoped to this room's id.
+				if (socket.watchForRoomId === this.id) {
+					return null;
+				}
+
 				const place = this.calculatePlaceUnsafe();
 				return place ? new Seat(place.position, place.team) : null;
 			},

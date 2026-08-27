@@ -4,7 +4,7 @@ import { EventEmitter } from "stream";
 import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
 import { Logger } from "@shared/logger/domain/Logger";
 
-import { generateUniqueId } from "src/utils/generateUniqueId";
+import { generateUnusedRoomId } from "../../room/application/generateUnusedRoomId";
 
 import { MatchmakingFormat } from "@ygopro/matchmaking/domain/QueueEntry";
 import { YGOProMessageRepository } from "../../room/infrastructure/YGOProMessageRepository";
@@ -158,7 +158,7 @@ export function createMatchmakingRoom(input: CreateMatchmakingRoomInput): Matchm
 	const syntheticPlayerInfo = new PlayerInfoMessage(Buffer.alloc(0), 0);
 
 	const room = YGOProRoom.create(
-		generateUniqueId(),
+		generateUnusedRoomId(),
 		command,
 		input.logger,
 		input.emitter,

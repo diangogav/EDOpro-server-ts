@@ -75,11 +75,18 @@ const makeRoom = (overrides: Record<string, unknown> = {}): jest.Mocked<YGOProRo
 // A YGOProClient instance (passes `instanceof YGOProClient`) without running
 // the real constructor. A weak-auth seat with a matching name so
 // findReconnectingPlayer resolves it in a ranked room.
-const makeSeatedPlayer = (name = "Jaden"): YGOProClient => {
+const makeSeatedPlayer = (
+	name = "Jaden",
+	socket?: { closed: boolean; remoteAddress: string | undefined },
+): YGOProClient => {
 	const client = Object.create(YGOProClient.prototype) as Record<string, unknown>;
 	client._credential = null;
 	client.name = name;
 	client.sendMessageToClient = jest.fn();
+	client.clearReconnecting = jest.fn();
+	if (socket) {
+		client._socket = socket;
+	}
 	return client as unknown as YGOProClient;
 };
 
@@ -242,5 +249,121 @@ describe("YGOProSideDeckingState.handleJoin — reserved rooms", () => {
 		buildState(YGOProSideDeckingState).handleJoin(makeJoinMessage(), room, makeSocket());
 
 		expectSpectated(room);
+	});
+});
+
+// Watch joins ("w,<roomId>") reach these states carrying a server-side watch
+// stamp on the socket. The reservation gate still runs first and rejects a
+// watcher in a reserved room like any other third party; in an unreserved
+// room the stamp forces the spectator branch.
+describe("mid-duel states — watch-marked joiners", () => {
+	const buildDueling = (room: jest.Mocked<YGOProRoom>) => buildState(YGOProDuelingState, { room });
+
+	it("rejects a watch-marked third party when the reservation does not admit it", () => {
+		const room = makeRoom();
+		(room.reservationAdmits as jest.Mock).mockReturnValue(false);
+		const socket = makeSocket({ watchForRoomId: 99 });
+
+		buildDueling(room).handleJoin(makeJoinMessage(), room, socket);
+
+		expectRejected(room, socket);
+	});
+
+	it("spectates a watch-marked joiner in an unreserved dueling room (existing fallback path)", () => {
+		const room = makeRoom();
+		const socket = makeSocket({ watchForRoomId: 99 });
+
+		buildDueling(room).handleJoin(makeJoinMessage(), room, socket);
+
+		expectSpectated(room);
+	});
+
+	it("spectates a watch-marked joiner in an unreserved RPS room (existing fallback path)", () => {
+		const room = makeRoom();
+		const socket = makeSocket({ watchForRoomId: 99 });
+
+		buildState(YGOProRockPaperScissorState).handleJoin(makeJoinMessage(), room, socket);
+
+		expectSpectated(room);
+	});
+});
+
+// The watch stamp's contract in every mid-duel state: a "w,<roomId>" joiner
+// asked to spectate, never to take a seat. Even when its nickname matches a
+// reconnect-eligible player, the JOIN must land in the stands and the seated
+// player's connection must stay untouched. A stamp for a DIFFERENT room is
+// inert — never cleared, so a stale stamp must not leak across rooms.
+describe("mid-duel states — watch stamp never takes a seat", () => {
+	const ROOM_ID = 7;
+
+	const stateBuilders: ReadonlyArray<
+		[string, (room: jest.Mocked<YGOProRoom>) => JoinCapableState]
+	> = [
+		["YGOProDuelingState", (room) => buildState(YGOProDuelingState, { room })],
+		[
+			"YGOProRockPaperScissorState",
+			() => buildState(YGOProRockPaperScissorState, { handResult: [0, 0] }),
+		],
+		["YGOProChoosingOrderState", () => buildState(YGOProChoosingOrderState)],
+		["YGOProSideDeckingState", () => buildState(YGOProSideDeckingState)],
+	];
+
+	const expectSeatUntouched = (room: jest.Mocked<YGOProRoom>, victim: YGOProClient): void => {
+		expectSpectated(room);
+		expect(room.reconnect).not.toHaveBeenCalled();
+		expect(victim.sendMessageToClient).not.toHaveBeenCalled();
+	};
+
+	it.each(
+		stateBuilders,
+	)("%s: a watch-marked joiner matching a DISCONNECTED player in a casual room lands in the stands", (_name, build) => {
+		// Casual reconnect eligibility: same name, same remote address, socket
+		// already closed — the strongest legitimate-looking claim on the seat.
+		const victim = makeSeatedPlayer("Jaden", { closed: true, remoteAddress: "127.0.0.1" });
+		const room = makeRoom({ id: ROOM_ID, ranked: false, players: [victim] });
+		const socket = makeSocket({ watchForRoomId: ROOM_ID });
+
+		build(room).handleJoin(makeJoinMessage(), room, socket);
+
+		expectSeatUntouched(room, victim);
+	});
+
+	it.each(
+		stateBuilders,
+	)("%s: a watch-marked joiner matching a STILL-CONNECTED player in a ranked room lands in the stands", (_name, build) => {
+		// Ranked rooms (incl. external leagues) skip the address and liveness
+		// checks, so without the stamp this name match would take over the
+		// victim's live seat.
+		const victim = makeSeatedPlayer("Jaden", { closed: false, remoteAddress: "9.9.9.9" });
+		const room = makeRoom({ id: ROOM_ID, ranked: true, players: [victim] });
+		const socket = makeSocket({ watchForRoomId: ROOM_ID });
+
+		build(room).handleJoin(makeJoinMessage(), room, socket);
+
+		expectSeatUntouched(room, victim);
+	});
+
+	it.each(
+		stateBuilders,
+	)("%s: a genuine (non-watch) by-name reconnect still reaches the seat", (_name, build) => {
+		const victim = makeSeatedPlayer("Jaden");
+		const room = makeRoom({ id: ROOM_ID, ranked: true, players: [victim] });
+		const socket = makeSocket();
+
+		build(room).handleJoin(makeJoinMessage(), room, socket);
+
+		expect(room.reconnect).toHaveBeenCalledWith(victim, socket);
+		expect(room.createSpectatorUnsafe).not.toHaveBeenCalled();
+	});
+
+	it("a stale stamp for ANOTHER room does not suppress the reconnect", () => {
+		const victim = makeSeatedPlayer("Jaden");
+		const room = makeRoom({ id: ROOM_ID, ranked: true, players: [victim] });
+		const socket = makeSocket({ watchForRoomId: ROOM_ID + 1 });
+
+		buildState(YGOProDuelingState, { room }).handleJoin(makeJoinMessage(), room, socket);
+
+		expect(room.reconnect).toHaveBeenCalledWith(victim, socket);
+		expect(room.createSpectatorUnsafe).not.toHaveBeenCalled();
 	});
 });
