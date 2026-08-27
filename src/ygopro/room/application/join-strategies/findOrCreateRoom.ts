@@ -1,6 +1,6 @@
 import { generateUnusedRoomId } from "../generateUnusedRoomId";
 
-import { findReconnectingPlayer } from "@shared/room/domain/findReconnectingPlayer";
+import { isPairingReconnectRoutingEligible } from "@shared/room/domain/findReconnectingPlayer";
 
 import { JoinContext } from "./JoinStrategy";
 import { isPairingJoin } from "./isPairingJoin";
@@ -42,10 +42,12 @@ export interface FindOrCreateRoomOptions {
  * brand-new room instead of resuming its seat. Before the WAITING-only scan,
  * findPairingReconnectTarget looks for a same-name, passwordless, non-WAITING
  * room containing a disconnected occupant this joiner may legitimately
- * resume, reusing findReconnectingPlayer's own eligibility rules so the two
- * paths never diverge. Only ROUTING happens here; the actual re-seat runs
- * downstream, under the room's mutex, when the room's state machine handles
- * the JOIN event.
+ * resume, reusing the reconnect eligibility rules through
+ * isPairingReconnectRoutingEligible so the two paths never diverge. Only
+ * ROUTING happens here — the predicate cannot return a seat by construction.
+ * The room's own mid-duel JOIN door then resolves the joiner's identity and
+ * decides the re-seat, holding the room's mutex across both so the check and
+ * the seat change are atomic.
  *
  * Non-pairing joins identify a room by the exact (name, password) pair
  * (findByNameAndPassword: first-match, state-blind). A matching pair is
@@ -66,15 +68,17 @@ export function findOrCreateRoom(
 		// guests need the league filter — non-guests keep pairing unchanged.
 		const isGuestJoiner = !ctx.socket.resolvedUserId && !ctx.playerInfo.password;
 
-		const reconnectTarget = YGOProRoomList.findPairingReconnectTarget(
-			ctx.command,
-			(room) =>
-				findReconnectingPlayer({
-					players: room.players,
-					name: ctx.playerInfo.name,
-					remoteAddress: ctx.socket.remoteAddress,
-					ranked: room.ranked,
-				}) !== null,
+		// Routing only: a PIN cannot be resolved synchronously here, so this
+		// predicate never sees an identity and can never return a seat. The
+		// room's mid-duel JOIN door resolves the joiner's identity and is the
+		// sole authority over the seat.
+		const reconnectTarget = YGOProRoomList.findPairingReconnectTarget(ctx.command, (room) =>
+			isPairingReconnectRoutingEligible({
+				players: room.players,
+				name: ctx.playerInfo.name,
+				remoteAddress: ctx.socket.remoteAddress,
+				ranked: room.ranked,
+			}),
 		);
 		if (reconnectTarget) {
 			return reconnectTarget;

@@ -113,11 +113,15 @@ export class RockPaperScissorState extends RoomState {
 		this.logger.info("JOIN");
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const joinMessage = new JoinGameMessage(message.data);
+		// edopro seats never record a credential, so there is no seat identity to
+		// bind here; ranked reconnects are account-gated afterwards by
+		// Reconnect.run (CheckIfUseCanJoin).
 		const reconnectingPlayer = findReconnectingPlayer({
 			players: room.players,
 			name: playerInfoMessage.name,
 			remoteAddress: socket.remoteAddress,
 			ranked: room.ranked,
+			joinerUserId: null,
 		});
 
 		if (!(reconnectingPlayer instanceof Client)) {

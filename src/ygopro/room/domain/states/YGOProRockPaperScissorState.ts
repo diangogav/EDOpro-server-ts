@@ -6,6 +6,7 @@ import { ClientMessage } from "../../../../shared/messages/MessageProcessor";
 import { Logger } from "../../../../shared/logger/domain/Logger";
 import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { YGOProClient } from "../../../client/domain/YGOProClient";
+import { resolveJoinerIdentityWithTimeout } from "../resolveJoinerIdentityWithTimeout";
 import { YGOProRoom } from "../YGOProRoom";
 import { findMidDuelReconnectingPlayer } from "@shared/room/domain/findMidDuelReconnectingPlayer";
 import { YGOProCtosHandResult } from "ygopro-msg-encode";
@@ -71,7 +72,11 @@ export class YGOProRockPaperScissorState extends YGOProRoomState {
 		player.clearReconnecting();
 	}
 
-	private handleJoin(message: ClientMessage, room: YGOProRoom, socket: ISocket): void {
+	private async handleJoin(
+		message: ClientMessage,
+		room: YGOProRoom,
+		socket: ISocket,
+	): Promise<void> {
 		this.logger.info("handleJoin");
 
 		// Reservation gate: past WAITING, a reserved room keeps its seats closed
@@ -85,34 +90,68 @@ export class YGOProRockPaperScissorState extends YGOProRoomState {
 		}
 
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
-		// The shared seam honors the watch stamp: a "w,<roomId>" joiner asked to
-		// spectate, never to take a seat, so a name match must not reconnect it.
-		const playerAlreadyInRoom = findMidDuelReconnectingPlayer({
-			players: room.players,
-			name: playerInfoMessage.name,
-			socket,
-			roomId: room.id,
-			ranked: room.ranked,
+		// The identity resolution awaits the database, yielding the event loop,
+		// so the eligibility check and the seat change must run as ONE exclusive
+		// section — otherwise two concurrent joins could both observe the seat
+		// as reclaimable before either takes it. Same lock (and same
+		// hold-across-resolver idiom) as the WAITING admission.
+		await room.mutex.runExclusive(async () => {
+			// A ranked seat is bound to an account id, so the joiner's identity is
+			// resolved BEFORE the reconnect decision — the display name alone never
+			// identifies anyone. Casual rooms bind by address and liveness instead
+			// and never consult the resolver.
+			let joinerUserId: string | null = null;
+			if (room.ranked) {
+				try {
+					joinerUserId = await resolveJoinerIdentityWithTimeout(room, socket, playerInfoMessage);
+				} catch (error) {
+					// Fail closed: with the resolver unreachable — erroring, or hung
+					// past the bounded timeout — nobody's identity is proven, so no
+					// seat may change hands. The joiner waits in the stands (a legit
+					// player can simply rejoin once the resolver recovers) instead of
+					// hanging with no response. This catch keeps the resolver failure
+					// off the voided JOIN promise; a later synchronous throw inside
+					// this exclusive section still surfaces to the global handler
+					// (the process survives it and the mutex releases).
+					this.logger.error(`resolveJoinerIdentity failed: ${String(error)}`);
+					this.admitAsSpectator(room, socket, playerInfoMessage.name);
+					return;
+				}
+			}
+			// The shared seam honors the watch stamp: a "w,<roomId>" joiner asked to
+			// spectate, never to take a seat, so a name match must not reconnect it.
+			const playerAlreadyInRoom = findMidDuelReconnectingPlayer({
+				players: room.players,
+				name: playerInfoMessage.name,
+				socket,
+				roomId: room.id,
+				ranked: room.ranked,
+				joinerUserId,
+			});
+
+			if (!(playerAlreadyInRoom instanceof YGOProClient)) {
+				this.admitAsSpectator(room, socket, playerInfoMessage.name);
+				return;
+			}
+
+			room.reconnect(playerAlreadyInRoom, socket);
+
+			playerAlreadyInRoom.sendMessageToClient(room.messageSender.duelStartMessage());
+
+			room.sendDeckCountMessage(playerAlreadyInRoom);
+
+			const hasSelected = this.handResult[playerAlreadyInRoom.team] !== 0;
+			if (playerAlreadyInRoom.isCaptain && !hasSelected) {
+				playerAlreadyInRoom.sendMessageToClient(room.messageSender.selectHandMessage());
+			}
 		});
+	}
 
-		if (!(playerAlreadyInRoom instanceof YGOProClient)) {
-			const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name);
-			room.addSpectatorUnsafe(spectator);
-			spectator.sendMessageToClient(room.messageSender.duelStartMessage());
-			room.sendDeckCountMessage(spectator);
-			return;
-		}
-
-		room.reconnect(playerAlreadyInRoom, socket);
-
-		playerAlreadyInRoom.sendMessageToClient(room.messageSender.duelStartMessage());
-
-		room.sendDeckCountMessage(playerAlreadyInRoom);
-
-		const hasSelected = this.handResult[playerAlreadyInRoom.team] !== 0;
-		if (playerAlreadyInRoom.isCaptain && !hasSelected) {
-			playerAlreadyInRoom.sendMessageToClient(room.messageSender.selectHandMessage());
-		}
+	private admitAsSpectator(room: YGOProRoom, socket: ISocket, name: string): void {
+		const spectator = room.createSpectatorUnsafe(socket, name);
+		room.addSpectatorUnsafe(spectator);
+		spectator.sendMessageToClient(room.messageSender.duelStartMessage());
+		room.sendDeckCountMessage(spectator);
 	}
 
 	private handleRPSChoice(message: ClientMessage, room: YGOProRoom, player: YGOProClient): void {

@@ -58,8 +58,10 @@ const makeRoom = (overrides: Record<string, unknown> = {}): jest.Mocked<YGOProRo
 	({
 		ranked: true,
 		players: [],
+		mutex: { runExclusive: async (fn: () => unknown) => fn() },
 		reservationAdmits: jest.fn().mockReturnValue(true),
 		rejectReservedJoin: jest.fn(),
+		resolveJoinerIdentity: jest.fn().mockResolvedValue(null),
 		createSpectatorUnsafe: jest.fn().mockReturnValue(makeSpectator()),
 		addSpectatorUnsafe: jest.fn(),
 		reconnect: jest.fn(),
@@ -92,7 +94,7 @@ const makeSeatedPlayer = (
 };
 
 type JoinCapableState = {
-	handleJoin(message: ClientMessage, room: YGOProRoom, socket: ISocket): void;
+	handleJoin(message: ClientMessage, room: YGOProRoom, socket: ISocket): void | Promise<void>;
 };
 
 const buildState = (
@@ -120,30 +122,30 @@ const expectSpectated = (room: jest.Mocked<YGOProRoom>): void => {
 describe("YGOProDuelingState.handleJoin — reserved rooms", () => {
 	const build = (room: jest.Mocked<YGOProRoom>) => buildState(YGOProDuelingState, { room });
 
-	it("rejects a third party the reservation does not admit — not even as spectator", () => {
+	it("rejects a third party the reservation does not admit — not even as spectator", async () => {
 		const room = makeRoom();
 		(room.reservationAdmits as jest.Mock).mockReturnValue(false);
 		const socket = makeSocket({ resolvedUserId: "u-intruder" });
 
-		build(room).handleJoin(makeJoinMessage(), room, socket);
+		await build(room).handleJoin(makeJoinMessage(), room, socket);
 
 		expectRejected(room, socket);
 	});
 
-	it("still spectates a third party in a room without reservations", () => {
+	it("still spectates a third party in a room without reservations", async () => {
 		const room = makeRoom();
 
-		build(room).handleJoin(makeJoinMessage(), room, makeSocket());
+		await build(room).handleJoin(makeJoinMessage(), room, makeSocket());
 
 		expectSpectated(room);
 	});
 
-	it("still reconnects a seated player the reservation admits", () => {
+	it("still reconnects a seated player the reservation admits", async () => {
 		const player = makeSeatedPlayer();
 		const room = makeRoom({ players: [player] });
 		const socket = makeSocket({ resolvedUserId: "u-a" });
 
-		build(room).handleJoin(makeJoinMessage(), room, socket);
+		await build(room).handleJoin(makeJoinMessage(), room, socket);
 
 		expect(room.reconnect).toHaveBeenCalledWith(player, socket);
 		expect(room.rejectReservedJoin).not.toHaveBeenCalled();
@@ -194,60 +196,60 @@ describe("YGOProDuelingState.handleJoin — reserved rooms", () => {
 describe("YGOProRockPaperScissorState.handleJoin — reserved rooms", () => {
 	const build = () => buildState(YGOProRockPaperScissorState, { handResult: [0, 0] });
 
-	it("rejects a third party the reservation does not admit", () => {
+	it("rejects a third party the reservation does not admit", async () => {
 		const room = makeRoom();
 		(room.reservationAdmits as jest.Mock).mockReturnValue(false);
 		const socket = makeSocket();
 
-		build().handleJoin(makeJoinMessage(), room, socket);
+		await build().handleJoin(makeJoinMessage(), room, socket);
 
 		expectRejected(room, socket);
 	});
 
-	it("still spectates a third party in a room without reservations", () => {
+	it("still spectates a third party in a room without reservations", async () => {
 		const room = makeRoom();
 
-		build().handleJoin(makeJoinMessage(), room, makeSocket());
+		await build().handleJoin(makeJoinMessage(), room, makeSocket());
 
 		expectSpectated(room);
 	});
 });
 
 describe("YGOProChoosingOrderState.handleJoin — reserved rooms", () => {
-	it("rejects a third party the reservation does not admit", () => {
+	it("rejects a third party the reservation does not admit", async () => {
 		const room = makeRoom();
 		(room.reservationAdmits as jest.Mock).mockReturnValue(false);
 		const socket = makeSocket();
 
-		buildState(YGOProChoosingOrderState).handleJoin(makeJoinMessage(), room, socket);
+		await buildState(YGOProChoosingOrderState).handleJoin(makeJoinMessage(), room, socket);
 
 		expectRejected(room, socket);
 	});
 
-	it("still spectates a third party in a room without reservations", () => {
+	it("still spectates a third party in a room without reservations", async () => {
 		const room = makeRoom();
 
-		buildState(YGOProChoosingOrderState).handleJoin(makeJoinMessage(), room, makeSocket());
+		await buildState(YGOProChoosingOrderState).handleJoin(makeJoinMessage(), room, makeSocket());
 
 		expectSpectated(room);
 	});
 });
 
 describe("YGOProSideDeckingState.handleJoin — reserved rooms", () => {
-	it("rejects a third party the reservation does not admit", () => {
+	it("rejects a third party the reservation does not admit", async () => {
 		const room = makeRoom();
 		(room.reservationAdmits as jest.Mock).mockReturnValue(false);
 		const socket = makeSocket();
 
-		buildState(YGOProSideDeckingState).handleJoin(makeJoinMessage(), room, socket);
+		await buildState(YGOProSideDeckingState).handleJoin(makeJoinMessage(), room, socket);
 
 		expectRejected(room, socket);
 	});
 
-	it("still spectates a third party in a room without reservations", () => {
+	it("still spectates a third party in a room without reservations", async () => {
 		const room = makeRoom();
 
-		buildState(YGOProSideDeckingState).handleJoin(makeJoinMessage(), room, makeSocket());
+		await buildState(YGOProSideDeckingState).handleJoin(makeJoinMessage(), room, makeSocket());
 
 		expectSpectated(room);
 	});
@@ -261,30 +263,30 @@ describe("YGOProSideDeckingState.handleJoin — reserved rooms", () => {
 describe("mid-duel states — watch-marked joiners", () => {
 	const buildDueling = (room: jest.Mocked<YGOProRoom>) => buildState(YGOProDuelingState, { room });
 
-	it("rejects a watch-marked third party when the reservation does not admit it", () => {
+	it("rejects a watch-marked third party when the reservation does not admit it", async () => {
 		const room = makeRoom();
 		(room.reservationAdmits as jest.Mock).mockReturnValue(false);
 		const socket = makeSocket({ watchForRoomId: 99 });
 
-		buildDueling(room).handleJoin(makeJoinMessage(), room, socket);
+		await buildDueling(room).handleJoin(makeJoinMessage(), room, socket);
 
 		expectRejected(room, socket);
 	});
 
-	it("spectates a watch-marked joiner in an unreserved dueling room (existing fallback path)", () => {
+	it("spectates a watch-marked joiner in an unreserved dueling room (existing fallback path)", async () => {
 		const room = makeRoom();
 		const socket = makeSocket({ watchForRoomId: 99 });
 
-		buildDueling(room).handleJoin(makeJoinMessage(), room, socket);
+		await buildDueling(room).handleJoin(makeJoinMessage(), room, socket);
 
 		expectSpectated(room);
 	});
 
-	it("spectates a watch-marked joiner in an unreserved RPS room (existing fallback path)", () => {
+	it("spectates a watch-marked joiner in an unreserved RPS room (existing fallback path)", async () => {
 		const room = makeRoom();
 		const socket = makeSocket({ watchForRoomId: 99 });
 
-		buildState(YGOProRockPaperScissorState).handleJoin(makeJoinMessage(), room, socket);
+		await buildState(YGOProRockPaperScissorState).handleJoin(makeJoinMessage(), room, socket);
 
 		expectSpectated(room);
 	});
@@ -318,21 +320,21 @@ describe("mid-duel states — watch stamp never takes a seat", () => {
 
 	it.each(
 		stateBuilders,
-	)("%s: a watch-marked joiner matching a DISCONNECTED player in a casual room lands in the stands", (_name, build) => {
+	)("%s: a watch-marked joiner matching a DISCONNECTED player in a casual room lands in the stands", async (_name, build) => {
 		// Casual reconnect eligibility: same name, same remote address, socket
 		// already closed — the strongest legitimate-looking claim on the seat.
 		const victim = makeSeatedPlayer("Jaden", { closed: true, remoteAddress: "127.0.0.1" });
 		const room = makeRoom({ id: ROOM_ID, ranked: false, players: [victim] });
 		const socket = makeSocket({ watchForRoomId: ROOM_ID });
 
-		build(room).handleJoin(makeJoinMessage(), room, socket);
+		await build(room).handleJoin(makeJoinMessage(), room, socket);
 
 		expectSeatUntouched(room, victim);
 	});
 
 	it.each(
 		stateBuilders,
-	)("%s: a watch-marked joiner matching a STILL-CONNECTED player in a ranked room lands in the stands", (_name, build) => {
+	)("%s: a watch-marked joiner matching a STILL-CONNECTED player in a ranked room lands in the stands", async (_name, build) => {
 		// Ranked rooms (incl. external leagues) skip the address and liveness
 		// checks, so without the stamp this name match would take over the
 		// victim's live seat.
@@ -340,30 +342,30 @@ describe("mid-duel states — watch stamp never takes a seat", () => {
 		const room = makeRoom({ id: ROOM_ID, ranked: true, players: [victim] });
 		const socket = makeSocket({ watchForRoomId: ROOM_ID });
 
-		build(room).handleJoin(makeJoinMessage(), room, socket);
+		await build(room).handleJoin(makeJoinMessage(), room, socket);
 
 		expectSeatUntouched(room, victim);
 	});
 
 	it.each(
 		stateBuilders,
-	)("%s: a genuine (non-watch) by-name reconnect still reaches the seat", (_name, build) => {
+	)("%s: a genuine (non-watch) by-name reconnect still reaches the seat", async (_name, build) => {
 		const victim = makeSeatedPlayer("Jaden");
 		const room = makeRoom({ id: ROOM_ID, ranked: true, players: [victim] });
 		const socket = makeSocket();
 
-		build(room).handleJoin(makeJoinMessage(), room, socket);
+		await build(room).handleJoin(makeJoinMessage(), room, socket);
 
 		expect(room.reconnect).toHaveBeenCalledWith(victim, socket);
 		expect(room.createSpectatorUnsafe).not.toHaveBeenCalled();
 	});
 
-	it("a stale stamp for ANOTHER room does not suppress the reconnect", () => {
+	it("a stale stamp for ANOTHER room does not suppress the reconnect", async () => {
 		const victim = makeSeatedPlayer("Jaden");
 		const room = makeRoom({ id: ROOM_ID, ranked: true, players: [victim] });
 		const socket = makeSocket({ watchForRoomId: ROOM_ID + 1 });
 
-		buildState(YGOProDuelingState, { room }).handleJoin(makeJoinMessage(), room, socket);
+		await buildState(YGOProDuelingState, { room }).handleJoin(makeJoinMessage(), room, socket);
 
 		expect(room.reconnect).toHaveBeenCalledWith(victim, socket);
 		expect(room.createSpectatorUnsafe).not.toHaveBeenCalled();
@@ -385,21 +387,21 @@ describe("mid-duel states — watch spectating a RESERVED room (real gate)", () 
 		return room;
 	};
 
-	it("spectates a watch-stamped joiner in a reserved DUELING room without touching seats", () => {
+	it("spectates a watch-stamped joiner in a reserved DUELING room without touching seats", async () => {
 		const room = makeReservedRoom();
 		const socket = makeSocket({ watchForRoomId: ROOM_ID });
 
-		buildState(YGOProDuelingState, { room }).handleJoin(makeJoinMessage(), room, socket);
+		await buildState(YGOProDuelingState, { room }).handleJoin(makeJoinMessage(), room, socket);
 
 		expectSpectated(room);
 		expect(room.reconnect).not.toHaveBeenCalled();
 	});
 
-	it("spectates a watch-stamped joiner in a reserved RPS room", () => {
+	it("spectates a watch-stamped joiner in a reserved RPS room", async () => {
 		const room = makeReservedRoom();
 		const socket = makeSocket({ watchForRoomId: ROOM_ID });
 
-		buildState(YGOProRockPaperScissorState, { handResult: [0, 0] }).handleJoin(
+		await buildState(YGOProRockPaperScissorState, { handResult: [0, 0] }).handleJoin(
 			makeJoinMessage(),
 			room,
 			socket,
@@ -409,20 +411,20 @@ describe("mid-duel states — watch spectating a RESERVED room (real gate)", () 
 		expect(room.reconnect).not.toHaveBeenCalled();
 	});
 
-	it("still fully rejects a ticketed non-reserved third party", () => {
+	it("still fully rejects a ticketed non-reserved third party", async () => {
 		const room = makeReservedRoom();
 		const socket = makeSocket({ resolvedUserId: "u-intruder" });
 
-		buildState(YGOProDuelingState, { room }).handleJoin(makeJoinMessage(), room, socket);
+		await buildState(YGOProDuelingState, { room }).handleJoin(makeJoinMessage(), room, socket);
 
 		expectRejected(room, socket);
 	});
 
-	it("still fully rejects an anonymous guest third party", () => {
+	it("still fully rejects an anonymous guest third party", async () => {
 		const room = makeReservedRoom();
 		const socket = makeSocket();
 
-		buildState(YGOProDuelingState, { room }).handleJoin(makeJoinMessage(), room, socket);
+		await buildState(YGOProDuelingState, { room }).handleJoin(makeJoinMessage(), room, socket);
 
 		expectRejected(room, socket);
 	});

@@ -743,11 +743,15 @@ export class DuelingState extends RoomState {
 
 			return;
 		}
+		// edopro seats never record a credential, so there is no seat identity to
+		// bind here; ranked reconnects are account-gated afterwards by
+		// Reconnect.run (CheckIfUseCanJoin).
 		const reconnectingPlayer = findReconnectingPlayer({
 			players: room.players,
 			name: playerInfoMessage.name,
 			remoteAddress: socket.remoteAddress,
 			ranked: room.ranked,
+			joinerUserId: null,
 		});
 
 		if (!(reconnectingPlayer instanceof Client)) {

@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 
 import { Redis } from "@shared/db/redis/infrastructure/Redis";
+import { isRateLimited, RateLimitStore } from "@shared/rate-limit/application/isRateLimited";
 import { config } from "src/config";
 
 const WINDOW_SECONDS = 60;
@@ -10,24 +11,8 @@ const MAX_REQUESTS = 60;
 // covering several players behind one shared NAT IP.
 const ENQUEUE_MAX_REQUESTS = 20;
 
-export interface RateLimitStore {
-	incr(key: string): Promise<number>;
-	expire(key: string, seconds: number): Promise<unknown>;
-}
-
-export async function isRateLimited(
-	store: RateLimitStore,
-	key: string,
-	max: number,
-	windowSeconds: number,
-): Promise<boolean> {
-	const attempts = await store.incr(key);
-	if (attempts === 1) {
-		await store.expire(key, windowSeconds);
-	}
-
-	return attempts > max;
-}
+export { isRateLimited };
+export type { RateLimitStore };
 
 export type RateLimitMiddlewareFn = (
 	request: Request,

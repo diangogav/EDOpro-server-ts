@@ -43,6 +43,8 @@ export class AdmitToRoom {
 		playerInfo: PlayerInfoMessage,
 		target: AdmissionTarget,
 	): Promise<Admission> {
+		// This wait is unbounded; the mid-duel states bound the same resolve
+		// with resolveJoinerIdentityWithTimeout, and this path does not yet.
 		const credential = await this.resolver.resolve(socket, playerInfo);
 		const result = this.admission.decide(credential, {
 			league: target.league,

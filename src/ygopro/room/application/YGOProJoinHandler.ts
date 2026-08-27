@@ -9,7 +9,10 @@ import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoM
 
 import { ErrorMessageType, YGOProCtosJoinGame } from "ygopro-msg-encode";
 import { MessageRepository } from "@shared/messages/MessageRepository";
+import { Redis } from "@shared/db/redis/infrastructure/Redis";
+import { isRateLimited } from "@shared/rate-limit/application/isRateLimited";
 
+import { config } from "../../../config";
 import { JoinStrategyRegistry } from "./join-strategies/JoinStrategyRegistry";
 import { JoinContext } from "./join-strategies/JoinStrategy";
 
@@ -40,6 +43,22 @@ export class YGOProJoinHandler implements JoinMessageHandler {
 
 	async handleJoinGame(message: ClientMessage): Promise<void> {
 		this.logger.info("JOIN_GAME");
+
+		// Per-IP gate on the JOIN attempt itself, before any strategy resolves.
+		// The attempt is the guarded resource: a novel JOIN can allocate a room
+		// id from the finite 1000-9999 space, a watch JOIN probes which ids
+		// exist, and a ranked mid-duel JOIN with a PIN costs a DB lookup plus a
+		// bcrypt compare whose outcome is observable. All three are cross-room
+		// (a new room has no id yet; probes span many ids), so a per-room key
+		// cannot cover them — and nothing a client controls may exempt it.
+		if (await this.isJoinRateLimited()) {
+			const errorBuf = this.messageRepository.errorMessage(ErrorMessageType.JOINERROR, 0);
+			this.socket.send(errorBuf);
+			// close() (not destroy()): flush the JOINERROR frame before tearing down.
+			this.socket.close();
+
+			return;
+		}
 
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const joinMessage = new YGOProCtosJoinGame().fromPayload(message.data);
@@ -86,6 +105,39 @@ export class YGOProJoinHandler implements JoinMessageHandler {
 			// close() (not destroy()): flush the JOINERROR frame before tearing down,
 			// consistent with the other join error paths.
 			this.socket.close();
+		}
+	}
+
+	/**
+	 * Fixed-window per-IP counter over `rate-limit:ygopro-join:<ip>`. Every
+	 * attempt counts — cheap and expensive alike — so no client-controlled
+	 * field can carve out an exemption. Fails open on every degradation
+	 * (limiter disabled, Redis unavailable, no remote address, store error):
+	 * the limiter may refuse service to one IP, never to everyone.
+	 */
+	private async isJoinRateLimited(): Promise<boolean> {
+		const redis = Redis.getInstance();
+		const ip = this.socket.remoteAddress;
+
+		if (!config.rateLimit.enabled || !redis || !ip) {
+			return false;
+		}
+
+		try {
+			const limited = await isRateLimited(
+				redis,
+				`rate-limit:ygopro-join:${ip}`,
+				config.rateLimit.join.limit,
+				config.rateLimit.join.window,
+			);
+			if (limited) {
+				this.logger.info(`JOIN_GAME from ip: ${ip} rejected: per-IP join rate limit exceeded`);
+			}
+
+			return limited;
+		} catch {
+			// A limiter backend error must never block joins.
+			return false;
 		}
 	}
 }

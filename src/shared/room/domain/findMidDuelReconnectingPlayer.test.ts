@@ -1,4 +1,5 @@
 import { YgoClient } from "@shared/client/domain/YgoClient";
+import { PlayerCredential } from "@shared/room/admission/domain/PlayerCredential";
 import { ISocket } from "@shared/socket/domain/ISocket";
 
 import { findMidDuelReconnectingPlayer } from "./findMidDuelReconnectingPlayer";
@@ -9,11 +10,13 @@ const player = (
 		isStrongAuth: boolean;
 		closed: boolean;
 		remoteAddress: string | null;
+		credential: PlayerCredential | null;
 	}> = {},
 ): YgoClient =>
 	({
 		name: overrides.name ?? "Jaden",
 		isStrongAuth: overrides.isStrongAuth ?? false,
+		credential: overrides.credential ?? null,
 		socket: {
 			closed: overrides.closed ?? true,
 			remoteAddress: overrides.remoteAddress ?? "1.1.1.1",
@@ -35,6 +38,20 @@ describe("findMidDuelReconnectingPlayer", () => {
 			socket: socket({ watchForRoomId: 7 }),
 			roomId: 7,
 			ranked: true,
+			joinerUserId: null,
+		});
+		expect(found).toBeNull();
+	});
+
+	it("the watch stamp wins even over a joiner presenting the seat's own account id", () => {
+		const p = player({ credential: { kind: "external", userId: "acc-1" } });
+		const found = findMidDuelReconnectingPlayer({
+			players: [p],
+			name: "Jaden",
+			socket: socket({ watchForRoomId: 7 }),
+			roomId: 7,
+			ranked: true,
+			joinerUserId: "acc-1",
 		});
 		expect(found).toBeNull();
 	});
@@ -47,6 +64,7 @@ describe("findMidDuelReconnectingPlayer", () => {
 			socket: socket({ watchForRoomId: 7 }),
 			roomId: 7,
 			ranked: false,
+			joinerUserId: null,
 		});
 		expect(found).toBeNull();
 	});
@@ -59,8 +77,35 @@ describe("findMidDuelReconnectingPlayer", () => {
 			socket: socket({ watchForRoomId: 8 }),
 			roomId: 7,
 			ranked: true,
+			joinerUserId: null,
 		});
 		expect(found).toBe(p);
+	});
+
+	it("hands the joiner's account id through — the same id reclaims an external seat", () => {
+		const p = player({ credential: { kind: "external", userId: "acc-1" } });
+		const found = findMidDuelReconnectingPlayer({
+			players: [p],
+			name: "Jaden",
+			socket: socket(),
+			roomId: 7,
+			ranked: true,
+			joinerUserId: "acc-1",
+		});
+		expect(found).toBe(p);
+	});
+
+	it("hands the joiner's account id through — an identity-less name match is denied an external seat", () => {
+		const p = player({ credential: { kind: "external", userId: "acc-1" } });
+		const found = findMidDuelReconnectingPlayer({
+			players: [p],
+			name: "Jaden",
+			socket: socket(),
+			roomId: 7,
+			ranked: true,
+			joinerUserId: null,
+		});
+		expect(found).toBeNull();
 	});
 
 	it("without a stamp it behaves exactly like findReconnectingPlayer — match found", () => {
@@ -71,6 +116,7 @@ describe("findMidDuelReconnectingPlayer", () => {
 			socket: socket(),
 			roomId: 7,
 			ranked: true,
+			joinerUserId: null,
 		});
 		expect(found).toBe(p);
 	});
@@ -82,6 +128,7 @@ describe("findMidDuelReconnectingPlayer", () => {
 			socket: socket(),
 			roomId: 7,
 			ranked: true,
+			joinerUserId: null,
 		});
 		expect(found).toBeNull();
 	});
