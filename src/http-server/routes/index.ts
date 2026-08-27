@@ -2,6 +2,8 @@ import { Express } from "express";
 
 import { TicketRepository } from "../../shared/ticket/domain/TicketRepository";
 import { Logger } from "../../shared/logger/domain/Logger";
+import { UserProfilePostgresRepository } from "../../shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
+import { UserProfileDisplayNameResolver } from "../../ygopro/matchmaking/infrastructure/UserProfileDisplayNameResolver";
 import { CancelMatchmakingController } from "../controllers/CancelMatchmakingController";
 import { CreateRoomController } from "../controllers/CreateRoomController";
 import { EnqueueMatchmakingController } from "../controllers/EnqueueMatchmakingController";
@@ -17,15 +19,22 @@ import { RoomListController } from "../controllers/RoomListController";
 import { SearchCardsController } from "../controllers/SearchCardsController";
 import { ServerMessagesController } from "../controllers/ServerMessagesController";
 import { AuthAdminMiddleware } from "../middlewares/AuthAdminMiddleware";
-import { RateLimitMiddleware } from "../middlewares/RateLimitMiddleware";
+import {
+	EnqueueRateLimitMiddleware,
+	RateLimitMiddleware,
+} from "../middlewares/RateLimitMiddleware";
 
 export function loadRoutes(app: Express, logger: Logger, tickets: TicketRepository): void {
 	app.get("/", (req, res) => new InspectPageController().run(req, res));
 
 	app.get("/api/getrooms", (req, res) => new GetRoomListController().run(req, res));
 
-	app.post("/api/matchmaking/queue", (req, res) =>
-		new EnqueueMatchmakingController(logger, tickets).run(req, res),
+	const matchmakingDisplayNames = new UserProfileDisplayNameResolver(
+		new UserProfilePostgresRepository(),
+	);
+
+	app.post("/api/matchmaking/queue", EnqueueRateLimitMiddleware, (req, res) =>
+		new EnqueueMatchmakingController(logger, tickets, matchmakingDisplayNames).run(req, res),
 	);
 
 	app.get("/api/matchmaking/status", RateLimitMiddleware, (req, res) =>

@@ -4,6 +4,8 @@ import { TicketRepository } from "@shared/ticket/domain/TicketRepository";
 
 import { MatchmakingQueue } from "@ygopro/matchmaking/domain/MatchmakingQueue";
 
+import { DisplayNameResolver } from "@ygopro/matchmaking/domain/DisplayNameResolver";
+
 import { EnqueueMatchmakingController } from "./EnqueueMatchmakingController";
 
 const makeLogger = () =>
@@ -51,9 +53,20 @@ describe("EnqueueMatchmakingController", () => {
 		MatchmakingQueue.resetForTests();
 	});
 
-	const run = async (body: unknown, tickets: TicketRepository) => {
+	const makeResolver = (name: string | null): DisplayNameResolver => ({
+		resolve: jest.fn().mockResolvedValue(name),
+	});
+
+	const run = async (
+		body: unknown,
+		tickets: TicketRepository,
+		displayNames: DisplayNameResolver = makeResolver(null),
+	) => {
 		const out = fakeResponse();
-		await new EnqueueMatchmakingController(makeLogger(), tickets).run({ body } as Request, out.res);
+		await new EnqueueMatchmakingController(makeLogger(), tickets, displayNames).run(
+			{ body } as Request,
+			out.res,
+		);
 		return out;
 	};
 
@@ -118,6 +131,47 @@ describe("EnqueueMatchmakingController", () => {
 		expect(out.status()).toBe(401);
 	});
 
+	it("resolves the user's display name at enqueue and stores it on the entry", async () => {
+		const resolver = makeResolver("Yugi");
+		const out = await run(
+			{ format: "tcg", queue: "ranked", ticket: "the-ticket" },
+			makeTickets("user-1"),
+			resolver,
+		);
+
+		expect(out.status()).toBe(200);
+		expect(resolver.resolve).toHaveBeenCalledWith("user-1");
+		const body = out.body() as { ticketId: string };
+		expect(MatchmakingQueue.getInstance().get(body.ticketId)?.displayName).toBe("Yugi");
+	});
+
+	it("stores a null display name when the resolver finds none", async () => {
+		const out = await run(
+			{ format: "tcg", queue: "ranked", ticket: "the-ticket" },
+			makeTickets("user-1"),
+			makeResolver(null),
+		);
+
+		expect(out.status()).toBe(200);
+		const body = out.body() as { ticketId: string };
+		expect(MatchmakingQueue.getInstance().get(body.ticketId)?.displayName).toBeNull();
+	});
+
+	it("still enqueues (200) with a null display name when resolution fails", async () => {
+		const resolver: DisplayNameResolver = {
+			resolve: jest.fn().mockRejectedValue(new Error("db down")),
+		};
+		const out = await run(
+			{ format: "tcg", queue: "ranked", ticket: "the-ticket" },
+			makeTickets("user-1"),
+			resolver,
+		);
+
+		expect(out.status()).toBe(200);
+		const body = out.body() as { ticketId: string };
+		expect(MatchmakingQueue.getInstance().get(body.ticketId)?.displayName).toBeNull();
+	});
+
 	it("returns the existing ticketId when the same user enqueues twice (409-safe idempotency)", async () => {
 		const tickets = makeTickets("user-1");
 		const first = await run({ format: "tcg", queue: "ranked", ticket: "t-a" }, tickets);
@@ -125,5 +179,17 @@ describe("EnqueueMatchmakingController", () => {
 
 		expect(first.status()).toBe(200);
 		expect(second.status()).toBe(409);
+	});
+
+	it("answers a duplicate enqueue (409) without resolving a display name", async () => {
+		const tickets = makeTickets("user-1");
+		await run({ format: "tcg", queue: "ranked", ticket: "t-a" }, tickets);
+
+		const resolver = makeResolver("Yugi");
+		const second = await run({ format: "tcg", queue: "ranked", ticket: "t-b" }, tickets, resolver);
+
+		expect(second.status()).toBe(409);
+		expect(second.body()).toEqual({ success: false, error: "Already in queue" });
+		expect(resolver.resolve).not.toHaveBeenCalled();
 	});
 });

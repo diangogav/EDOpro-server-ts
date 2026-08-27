@@ -6,6 +6,7 @@ import { z } from "zod";
 import { Logger } from "@shared/logger/domain/Logger";
 import { TicketRepository } from "@shared/ticket/domain/TicketRepository";
 
+import { DisplayNameResolver } from "@ygopro/matchmaking/domain/DisplayNameResolver";
 import {
 	DuplicateQueueEntryError,
 	MatchmakingQueue,
@@ -30,6 +31,7 @@ export class EnqueueMatchmakingController {
 	constructor(
 		private readonly logger: Logger,
 		private readonly tickets: TicketRepository,
+		private readonly displayNames: DisplayNameResolver,
 	) {}
 
 	async run(req: Request, res: Response): Promise<void> {
@@ -45,12 +47,35 @@ export class EnqueueMatchmakingController {
 			return;
 		}
 
+		// Cheap synchronous pre-check: a user already in the pool never needs the
+		// display-name round-trip below. The guard inside enqueue() remains the
+		// atomic authority for the race between this check and insertion.
+		if (MatchmakingQueue.getInstance().isUserQueued(userId)) {
+			res.status(409).json({ success: false, error: "Already in queue" });
+			return;
+		}
+
+		// Resolved here, at the async HTTP boundary, so the synchronous pairing tick
+		// never touches the database. A failed lookup degrades to a null name — the
+		// matched payload must carry a public name or nothing, never the userId.
+		let displayName: string | null = null;
+		try {
+			displayName = await this.displayNames.resolve(userId);
+		} catch (error) {
+			this.logger.error(
+				`Matchmaking display-name resolution failed: ${
+					error instanceof Error ? error.message : String(error)
+				}`,
+			);
+		}
+
 		const ticketId = randomUUID();
 		try {
 			MatchmakingQueue.getInstance().enqueue({
 				ticketId,
 				userId,
 				format: validation.data.format,
+				displayName,
 			});
 		} catch (error) {
 			if (error instanceof DuplicateQueueEntryError) {

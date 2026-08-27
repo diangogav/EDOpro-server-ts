@@ -24,10 +24,15 @@ export interface BotRoomHandle extends RankedRoomHandle {
  */
 export interface MatchmakingQueueDeps {
 	now: () => number;
-	/** Creates a ranked (Verified) room for a human pair. */
-	createRankedRoom: (format: MatchmakingFormat) => RankedRoomHandle;
-	/** Creates a casual (unrated) room for a bot game and returns its id for the spawn. */
-	createBotRoom: (format: MatchmakingFormat) => BotRoomHandle;
+	/** Creates a ranked (Verified) room for a human pair. The pair's userIds
+	 * become the room's seat reservation — only they may enter it. */
+	createRankedRoom: (
+		format: MatchmakingFormat,
+		reservedUserIds: readonly [string, string],
+	) => RankedRoomHandle;
+	/** Creates a casual (unrated) room for a bot game and returns its id for the
+	 * spawn. The human's userId becomes the room's seat reservation. */
+	createBotRoom: (format: MatchmakingFormat, reservedUserId: string) => BotRoomHandle;
 	/** Fires the windbot join for the given room (fire-and-forget). */
 	spawnBot: (roomId: number, format: MatchmakingFormat) => void;
 	/** Whether bot fallback is currently possible (windbot initialized + enabled). */
@@ -41,6 +46,8 @@ export interface EnqueueInput {
 	ticketId: string;
 	userId: string;
 	format: MatchmakingFormat;
+	/** Public name pre-resolved by the caller; omitted/null when unresolvable. */
+	displayName?: string | null;
 }
 
 export type PollResult =
@@ -49,7 +56,8 @@ export type PollResult =
 			state: "matched";
 			roomPassword: string;
 			opponentType: "human" | "bot";
-			opponentName?: string;
+			/** Opponent's public display name; null when unresolved. Never a userId. */
+			opponentName: string | null;
 			rated: boolean;
 	  };
 
@@ -68,7 +76,8 @@ export class DuplicateQueueEntryError extends Error {
  * work (room creation side effects, windbot HTTP) is delegated to injected ports
  * and, for the bot spawn, fired-and-forgotten.
  *
- * The tick (run on an unref'd interval AND opportunistically on enqueue/poll):
+ * The tick (run on an unref'd interval AND opportunistically on enqueue — the
+ * state-changing event; poll is a pure read plus heartbeat and never sweeps):
  *   1. TTL sweep: drop searching entries whose last poll fell outside QUEUE_TTL_MS.
  *   2. Pair: two searching entries of the same format → one ranked room, both matched.
  *   3. Bot fallback: a searching entry older than BOT_FALLBACK_MS with no human → bot room.
@@ -141,6 +150,7 @@ export class MatchmakingQueue {
 			ticketId: input.ticketId,
 			userId: input.userId,
 			format: input.format,
+			displayName: input.displayName ?? null,
 			enteredAt: now,
 			lastPollAt: now,
 			state: "searching",
@@ -153,6 +163,12 @@ export class MatchmakingQueue {
 		return entry;
 	}
 
+	/**
+	 * Pure read + heartbeat: refreshes lastPollAt and reports the entry's state.
+	 * Pairing, bot fallback, and expiry run only inside tick() — driven by the
+	 * interval sweep and opportunistically by enqueue — so a poll storm can never
+	 * amplify into O(polls) sweeps or room-creation side effects.
+	 */
 	poll(ticketId: string): PollResult | null {
 		const entry = this.entries.get(ticketId);
 		if (!entry) {
@@ -166,22 +182,8 @@ export class MatchmakingQueue {
 				state: "matched",
 				roomPassword: entry.roomPassword as string,
 				opponentType: entry.opponentType as "human" | "bot",
-				opponentName: entry.opponentName,
+				opponentName: entry.opponentName ?? null,
 				rated: entry.rated as boolean,
-			};
-		}
-
-		// Advance the queue on the poll too — the poll is the client's heartbeat.
-		this.tick();
-
-		const refreshed = this.entries.get(ticketId);
-		if (refreshed && refreshed.state === "matched") {
-			return {
-				state: "matched",
-				roomPassword: refreshed.roomPassword as string,
-				opponentType: refreshed.opponentType as "human" | "bot",
-				opponentName: refreshed.opponentName,
-				rated: refreshed.rated as boolean,
 			};
 		}
 
@@ -212,6 +214,15 @@ export class MatchmakingQueue {
 			removed += 1;
 		}
 		return removed;
+	}
+
+	/**
+	 * Synchronous membership check so callers can refuse a duplicate before
+	 * paying for async work (ticket already consumed, display-name lookup not
+	 * yet started). enqueue() keeps the authoritative atomic guard.
+	 */
+	isUserQueued(userId: string): boolean {
+		return this.usersInQueue.has(userId);
 	}
 
 	get(ticketId: string): QueueEntry | undefined {
@@ -271,9 +282,12 @@ export class MatchmakingQueue {
 				// On failure, leave BOTH entries searching (a retry next tick, or a
 				// bot fallback / TTL drop, will resolve them) and move on.
 				try {
-					const { roomPassword, roomId } = this.deps.createRankedRoom(a.format);
-					this.markMatched(a, roomPassword, "human", true, b.userId, roomId);
-					this.markMatched(b, roomPassword, "human", true, a.userId, roomId);
+					const { roomPassword, roomId } = this.deps.createRankedRoom(a.format, [
+						a.userId,
+						b.userId,
+					]);
+					this.markMatched(a, roomPassword, "human", true, b.displayName, roomId);
+					this.markMatched(b, roomPassword, "human", true, a.displayName, roomId);
 				} catch (error) {
 					this.deps.onRoomCreationError?.(error);
 				}
@@ -297,8 +311,8 @@ export class MatchmakingQueue {
 			// or 500 an unrelated caller. On failure, leave THIS entry searching (a
 			// later tick retries, or the TTL sweep drops it) and continue with the rest.
 			try {
-				const { roomPassword, roomId } = this.deps.createBotRoom(entry.format);
-				this.markMatched(entry, roomPassword, "bot", false, undefined, roomId);
+				const { roomPassword, roomId } = this.deps.createBotRoom(entry.format, entry.userId);
+				this.markMatched(entry, roomPassword, "bot", false, null, roomId);
 				this.deps.spawnBot(roomId, entry.format);
 			} catch (error) {
 				this.deps.onRoomCreationError?.(error);
@@ -311,7 +325,7 @@ export class MatchmakingQueue {
 		roomPassword: string,
 		opponentType: "human" | "bot",
 		rated: boolean,
-		opponentName?: string,
+		opponentName: string | null,
 		roomId?: number,
 	): void {
 		entry.state = "matched";

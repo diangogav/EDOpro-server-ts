@@ -82,6 +82,14 @@ export class YGOProWaitingState extends YGOProRoomState {
 			return;
 		}
 
+		// Reservation gate before any admission work: a reserved room's join
+		// string is not a key — only the stamped identities (or the bot's
+		// token-marked socket) get past this door, not even as spectators.
+		if (!room.reservationAdmits(socket)) {
+			room.rejectReservedJoin(socket);
+			return;
+		}
+
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		if (isNameTaken(room.players, playerInfoMessage.name)) {
 			this.sendNameTakenError(room, playerInfoMessage.name, socket);

@@ -35,12 +35,13 @@ export function bootstrapMatchmaking(logger: Logger): void {
 	MatchmakingQueue.init({
 		now: () => Date.now(),
 
-		createRankedRoom: (format: MatchmakingFormat) => {
+		createRankedRoom: (format: MatchmakingFormat, reservedUserIds: readonly [string, string]) => {
 			const { room, roomPassword } = createMatchmakingRoom({
 				format,
 				// Ranked human pairs play best-of-3 (MATCH room with side-decking).
 				matchMode: true,
 				rankedOverride: true,
+				reservedUserIds,
 				logger: mmLogger,
 				emitter: new EventEmitter(),
 				onRoomCreated: (room) => reaper.track(room),
@@ -48,13 +49,16 @@ export function bootstrapMatchmaking(logger: Logger): void {
 			return { roomId: room.id, roomPassword };
 		},
 
-		createBotRoom: (format: MatchmakingFormat) => {
+		createBotRoom: (format: MatchmakingFormat, reservedUserId: string) => {
 			const { room, roomPassword } = createMatchmakingRoom({
 				format,
 				// Bot fallback stays best-of-1: windbot has no side-deck support,
 				// so a MATCH room would stall in side-decking until the timeout.
 				matchMode: false,
 				rankedOverride: false,
+				// Only the human is reserved: the windbot enters through its
+				// one-shot AIJOIN token, which marks its socket internal.
+				reservedUserIds: [reservedUserId],
 				logger: mmLogger,
 				emitter: new EventEmitter(),
 				onRoomCreated: (room) => reaper.track(room),

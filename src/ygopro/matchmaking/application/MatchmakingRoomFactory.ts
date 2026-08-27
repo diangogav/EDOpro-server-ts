@@ -55,6 +55,13 @@ export interface CreateMatchmakingRoomInput {
 	matchMode?: boolean;
 	/** true → ranked (Verified) human pair; false → unrated (Casual) bot game. */
 	rankedOverride: boolean;
+	/**
+	 * The userIds allowed through the room's JOIN door: both matched players
+	 * for a human pair, only the human for a bot-fallback room (the windbot
+	 * enters through its one-shot AIJOIN token, not a user ticket). Required —
+	 * the join string alone must never be enough to enter a matchmaking room.
+	 */
+	reservedUserIds: readonly string[];
 	logger: Logger;
 	emitter: EventEmitter;
 	/**
@@ -123,6 +130,14 @@ function randomBase36(length: number): string {
 }
 
 export function createMatchmakingRoom(input: CreateMatchmakingRoomInput): MatchmakingRoomHandle {
+	// A matchmaking room without a reservation would admit anyone holding the
+	// join string (reservationAdmits treats an empty set as "no reservation").
+	// Every caller knows its matched identities up front, so an empty list is a
+	// programming error — fail loudly before any room is created.
+	if (input.reservedUserIds.length === 0) {
+		throw new Error("createMatchmakingRoom requires at least one reserved userId");
+	}
+
 	const tokens = input.matchMode ? FORMAT_ROOM_TOKEN_MATCH : FORMAT_ROOM_TOKEN;
 	const token = tokens[input.format ?? "tcg"];
 
@@ -156,6 +171,7 @@ export function createMatchmakingRoom(input: CreateMatchmakingRoomInput): Matchm
 
 	YGOProRoomList.addRoom(room);
 	room.isMatchmaking = true;
+	room.reservedUserIds = input.reservedUserIds;
 	room.waiting();
 
 	// Register with the empty-room reaper (if wired) so an unjoined room does not

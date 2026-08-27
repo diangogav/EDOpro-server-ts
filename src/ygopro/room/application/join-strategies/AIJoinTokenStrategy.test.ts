@@ -217,6 +217,40 @@ describe("AIJoinTokenStrategy", () => {
 				expect(roomEmitSpy).toHaveBeenCalledWith("JOIN", expect.anything(), ctx.socket);
 			});
 
+			it("stamps the socket internal FOR THIS ROOM before emitting JOIN so its reservation admits it", async () => {
+				const { room, emitter } = createRoomInList();
+				room.reservedUserIds = ["u-human"];
+				const token = tokenStore.register(room.id, "Anna", "Anna.ydk");
+
+				let internalRoomAtJoin: number | undefined;
+				jest.spyOn(room, "emit").mockImplementation((_event, _message, socket) => {
+					internalRoomAtJoin = socket.internalForRoomId;
+				});
+
+				const mod = makeModule(tokenStore);
+				const strategy = new AIJoinTokenStrategy(mod);
+
+				const ctx = makeCtx(`AIJOIN#${token}`, {
+					eventEmitter: emitter,
+					messageRepository: makeMessageRepository() as never,
+				});
+
+				await strategy.handle(ctx);
+
+				expect(internalRoomAtJoin).toBe(room.id);
+				expect(room.reservationAdmits(ctx.socket)).toBe(true);
+			});
+
+			it("does NOT mark the socket internal when the token is invalid", async () => {
+				const mod = makeModule(tokenStore);
+				const strategy = new AIJoinTokenStrategy(mod);
+				const socket = makeSocket();
+
+				await strategy.handle(makeCtx("AIJOIN#invalidtoken", { socket: socket as never }));
+
+				expect((socket as { internalForRoomId?: number }).internalForRoomId).toBeUndefined();
+			});
+
 			it("marks the room as an AI room (noHost + noReconnect) so it tears down when the human leaves", async () => {
 				const { room, emitter } = createRoomInList();
 				const token = tokenStore.register(room.id, "Anna", "Anna.ydk");
