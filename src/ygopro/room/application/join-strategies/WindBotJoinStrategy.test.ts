@@ -16,6 +16,8 @@ jest.mock("../../../../web-socket-server/WebSocketSingleton", () => {
 
 import { Seat } from "@shared/room/admission/domain/Seat";
 
+import * as uniqueIdModule from "src/utils/generateUniqueId";
+
 import { MessageRepositoryMock } from "@test-support/mocks/MessageRepositoryMock";
 
 import { JoinContext } from "./JoinStrategy";
@@ -636,5 +638,41 @@ describe("WindBotJoinStrategy", () => {
 				expect(capturedIsFinalizing!()).toBe(true);
 			});
 		});
+	});
+});
+
+describe("WindBotJoinStrategy — room id uniqueness", () => {
+	let waitingSpy: jest.SpyInstance;
+	let emitSpy: jest.SpyInstance;
+
+	beforeEach(() => {
+		waitingSpy = jest.spyOn(YGOProRoom.prototype, "waiting").mockImplementation(() => undefined);
+		emitSpy = jest.spyOn(YGOProRoom.prototype, "emit").mockImplementation(() => undefined);
+	});
+
+	afterEach(() => {
+		waitingSpy.mockRestore();
+		emitSpy.mockRestore();
+		jest.restoreAllMocks();
+		const rooms = YGOProRoomList.getRooms();
+		while (rooms.length) {
+			YGOProRoomList.deleteRoom(rooms[0]);
+		}
+	});
+
+	// findById is first-match: an AI room reusing a live room's id would make
+	// the bot's AIJOIN return trip land in the wrong room.
+	it("skips an id already used by a live room", async () => {
+		YGOProRoomList.addRoom({ id: 7777 } as never);
+		jest
+			.spyOn(uniqueIdModule, "generateUniqueId")
+			.mockReturnValueOnce(7777)
+			.mockReturnValueOnce(8888);
+
+		const strategy = new WindBotJoinStrategy(makeModule());
+		await strategy.handle(makeCtx("AI"));
+
+		const aiRoom = YGOProRoomList.getRooms().find((room) => room.id !== 7777);
+		expect(aiRoom?.id).toBe(8888);
 	});
 });

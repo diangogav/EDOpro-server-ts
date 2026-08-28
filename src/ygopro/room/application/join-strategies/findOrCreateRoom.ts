@@ -1,4 +1,4 @@
-import { generateUniqueId } from "src/utils/generateUniqueId";
+import { generateUnusedRoomId } from "../generateUnusedRoomId";
 
 import { findReconnectingPlayer } from "@shared/room/domain/findReconnectingPlayer";
 
@@ -104,7 +104,7 @@ function createRoom(
 	path: "pairing" | "non-pairing",
 ): YGOProRoom {
 	const room = YGOProRoom.create(
-		generateUniqueId(),
+		generateUnusedRoomId(),
 		ctx.rawPass,
 		ctx.logger,
 		ctx.eventEmitter,

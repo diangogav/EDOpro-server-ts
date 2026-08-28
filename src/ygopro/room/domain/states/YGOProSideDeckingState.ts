@@ -16,7 +16,7 @@ import { ISocket } from "../../../../shared/socket/domain/ISocket";
 
 import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { YGOProRoom } from "../YGOProRoom";
-import { findReconnectingPlayer } from "@shared/room/domain/findReconnectingPlayer";
+import { findMidDuelReconnectingPlayer } from "@shared/room/domain/findMidDuelReconnectingPlayer";
 import { config } from "../../../../config";
 import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
@@ -193,20 +193,24 @@ export class YGOProSideDeckingState extends YGOProRoomState {
 	private handleJoin(message: ClientMessage, room: YGOProRoom, socket: ISocket): void {
 		this.logger.info("handleJoin");
 
-		// Reservation gate: past WAITING, a reserved room is not even watchable
-		// by a third party — the join string alone never buys a spectator seat.
-		// A reserved player's own reconnect passes this check (its ticket-resolved
-		// identity is in the reservation set) and proceeds below unchanged.
+		// Reservation gate: past WAITING, a reserved room keeps its seats closed
+		// to third parties — the join string alone never buys a seat. The gate
+		// admits watch-stamped sockets (spectate-only by construction) alongside
+		// a reserved player's own reconnect (its ticket-resolved identity is in
+		// the reservation set); both proceed below unchanged.
 		if (!room.reservationAdmits(socket)) {
 			room.rejectReservedJoin(socket);
 			return;
 		}
 
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
-		const playerAlreadyInRoom = findReconnectingPlayer({
+		// The shared seam honors the watch stamp: a "w,<roomId>" joiner asked to
+		// spectate, never to take a seat, so a name match must not reconnect it.
+		const playerAlreadyInRoom = findMidDuelReconnectingPlayer({
 			players: room.players,
 			name: playerInfoMessage.name,
-			remoteAddress: socket.remoteAddress,
+			socket,
+			roomId: room.id,
 			ranked: room.ranked,
 		});
 

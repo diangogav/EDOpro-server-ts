@@ -1,5 +1,7 @@
 import { EventEmitter } from "stream";
 
+import * as uniqueIdModule from "src/utils/generateUniqueId";
+
 import { MessageRepositoryMock } from "@test-support/mocks/MessageRepositoryMock";
 
 import { JoinContext } from "./JoinStrategy";
@@ -704,5 +706,49 @@ describe("findOrCreateRoom", () => {
 				expect(secondAuthed).toBe(authedRoom);
 			});
 		});
+	});
+});
+
+describe("findOrCreateRoom — room id uniqueness", () => {
+	let waitingSpy: jest.SpyInstance;
+
+	beforeEach(() => {
+		waitingSpy = jest.spyOn(YGOProRoom.prototype, "waiting").mockImplementation(() => undefined);
+		const rooms = YGOProRoomList.getRooms();
+		while (rooms.length) {
+			YGOProRoomList.deleteRoom(rooms[0]);
+		}
+	});
+
+	afterEach(() => {
+		waitingSpy.mockRestore();
+		jest.restoreAllMocks();
+	});
+
+	// findById is first-match: a created room reusing a live room's id would be
+	// unreachable by every id-addressed path (watch joins, AIJOIN return trip).
+	it("skips an id already used by a live room when creating", () => {
+		const occupied = YGOProRoom.create(
+			1234,
+			"OCCUPIED",
+			makeLogger() as never,
+			new EventEmitter(),
+			{ name: "P", password: "", previousMessage: Buffer.alloc(0) } as never,
+			"sock-orig",
+			makeMessageRepository() as never,
+		);
+		YGOProRoomList.addRoom(occupied);
+
+		jest
+			.spyOn(uniqueIdModule, "generateUniqueId")
+			.mockReturnValueOnce(1234)
+			.mockReturnValueOnce(5678);
+
+		const result = findOrCreateRoom(makeCtx({ rawPass: "NEWROOM", command: "NEWROOM" }), {
+			rankedOverride: undefined,
+		});
+
+		expect(result.id).toBe(5678);
+		expect(YGOProRoomList.findById(1234)).toBe(occupied);
 	});
 });

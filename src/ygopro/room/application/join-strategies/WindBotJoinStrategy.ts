@@ -1,4 +1,4 @@
-import { generateUniqueId } from "src/utils/generateUniqueId";
+import { generateUnusedRoomId } from "../generateUnusedRoomId";
 
 import { ErrorMessageType } from "ygopro-msg-encode";
 
@@ -64,7 +64,7 @@ export class WindBotJoinStrategy implements JoinStrategy {
 
 		// Create the room through the SAME path as the default flow
 		const room = YGOProRoom.create(
-			generateUniqueId(),
+			generateUnusedRoomId(),
 			ctx.rawPass,
 			ctx.logger,
 			ctx.eventEmitter,
