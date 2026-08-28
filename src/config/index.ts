@@ -1,5 +1,21 @@
 import { parseWindbotConfig } from "../ygopro/windbot/infrastructure/WindbotConfig";
 
+/**
+ * Honors any explicit numeric env value — including 0 — and falls back only
+ * when the variable is unset or non-numeric. The `Number(...) || default`
+ * idiom used elsewhere in this file silently turns an explicit 0 into the
+ * default, which matters for knobs where 0 is a meaningful operator choice
+ * (e.g. a deny-all rate limit).
+ */
+function numberFromEnv(value: string | undefined, fallback: number): number {
+	if (value === undefined || value === "") {
+		return fallback;
+	}
+	const parsed = Number(value);
+
+	return Number.isNaN(parsed) ? fallback : parsed;
+}
+
 export const config = {
 	redis: {
 		use: process.env.USE_REDIS === "true",
@@ -23,6 +39,16 @@ export const config = {
 		enabled: process.env.RATE_LIMIT_ENABLED === "true",
 		limit: Number(process.env.RATE_LIMIT),
 		window: Number(process.env.RATE_LIMIT_WINDOW),
+		// Per-IP budget for ygopro socket JOIN attempts. Deliberately separate
+		// from limit/window above (a small per-room wrong-password budget):
+		// this one must absorb every join a whole NAT'd LAN plus a flapping
+		// mobile reconnect can legitimately produce, so it defaults generous.
+		join: {
+			// 0 is a valid operator choice here (deny every join), so this knob
+			// must not fold an explicit 0 into the default.
+			limit: numberFromEnv(process.env.RATE_LIMIT_JOIN, 60),
+			window: Number(process.env.RATE_LIMIT_JOIN_WINDOW) || 60,
+		},
 	},
 	servers: {
 		host: {

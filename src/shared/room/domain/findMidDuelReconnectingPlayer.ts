@@ -23,6 +23,7 @@ export function findMidDuelReconnectingPlayer(params: {
 	socket: ISocket;
 	roomId: number;
 	ranked: boolean;
+	joinerUserId: string | null;
 }): YgoClient | null {
 	const { socket } = params;
 
@@ -35,5 +36,6 @@ export function findMidDuelReconnectingPlayer(params: {
 		name: params.name,
 		remoteAddress: socket.remoteAddress,
 		ranked: params.ranked,
+		joinerUserId: params.joinerUserId,
 	});
 }

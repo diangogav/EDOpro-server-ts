@@ -381,6 +381,29 @@ export class YGOProRoom extends YgoRoom {
 		);
 	}
 
+	/**
+	 * Resolves the account identity behind a mid-duel JOIN, with the same
+	 * resolver wiring the WAITING admission uses (waiting(), above). Ranked
+	 * seats are bound to an account id, so the non-waiting states must know who
+	 * is knocking BEFORE the reconnect decision — a client-chosen display name
+	 * alone never identifies anyone. Returns null for a joiner that resolves to
+	 * no account (guest).
+	 */
+	async resolveJoinerIdentity(
+		socket: ISocket,
+		playerInfo: PlayerInfoMessage,
+	): Promise<string | null> {
+		const userProfileRepo = new UserProfilePostgresRepository();
+		const credentialResolver = new CredentialResolver(
+			userProfileRepo,
+			new UserAuth(userProfileRepo),
+			this._logger,
+		);
+		const credential = await credentialResolver.resolve(socket, playerInfo);
+
+		return credential.kind === "guest" ? null : credential.userId;
+	}
+
 	rps(): void {
 		this._state = DuelState.RPS;
 		this._roomState?.removeAllListener();
