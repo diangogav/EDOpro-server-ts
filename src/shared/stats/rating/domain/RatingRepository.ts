@@ -1,0 +1,45 @@
+import { Rating } from "./Rating";
+
+export type RatingHistoryEntry = {
+	matchId: string;
+	userId: string;
+	banListName: string;
+	season: number;
+	kind: "applied" | "reversal";
+	previousRating: number;
+	delta: number;
+	kFactor: number;
+	opponentRating: number;
+};
+
+/**
+ * Write-side handle bound to one open transaction. All operations happen
+ * against the row-locked ratings acquired by `RatingRepository.transaction`.
+ */
+export interface RatingTransaction {
+	/**
+	 * Inserts one rating_history row. Returns false instead of throwing when
+	 * the row already exists for (matchId, userId, kind) — the UNIQUE
+	 * constraint makes a replayed write a no-op the caller can detect and
+	 * skip projecting.
+	 */
+	insertHistory(entry: RatingHistoryEntry): Promise<boolean>;
+
+	/** Upserts the derived player_ratings projection for one player. */
+	saveRating(userId: string, banListName: string, season: number, rating: Rating): Promise<void>;
+}
+
+export interface RatingRepository {
+	/**
+	 * Locks every `player_ratings` row for the given users (ordered by
+	 * user_id ascending to avoid lock-order deadlocks between concurrent
+	 * matches sharing a player), defaulting missing rows to a fresh
+	 * season-start rating, then runs `work` inside that same transaction.
+	 */
+	transaction<T>(
+		userIds: string[],
+		banListName: string,
+		season: number,
+		work: (ratings: Map<string, Rating>, tx: RatingTransaction) => Promise<T>,
+	): Promise<T>;
+}

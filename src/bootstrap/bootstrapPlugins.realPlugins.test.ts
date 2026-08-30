@@ -30,7 +30,7 @@ describe("bootstrapPlugins against the real src/plugins directory", () => {
 		DuelEventPluginHub.resetInstance();
 	});
 
-	it("skips both stats plugins when ranking is disabled (zero-argument default pluginsRoot)", async () => {
+	it("skips all ranking-gated plugins when ranking is disabled (zero-argument default pluginsRoot)", async () => {
 		const bus = { subscribe: jest.fn() } as unknown as EventBus;
 
 		const report = await bootstrapPlugins(bus, makeDeps(false));
@@ -38,19 +38,21 @@ describe("bootstrapPlugins against the real src/plugins directory", () => {
 		// big-damage-log is ranking-independent and observes duel events only,
 		// so it loads without ever touching the event bus.
 		expect(report.loaded).toEqual(["big-damage-log"]);
-		expect(report.skipped).toEqual(expect.arrayContaining(["basic-stats", "unranked-match"]));
+		expect(report.skipped).toEqual(
+			expect.arrayContaining(["basic-stats", "unranked-match", "elo-rating"]),
+		);
 		expect(bus.subscribe).not.toHaveBeenCalled();
 	});
 
-	it("registers both stats plugins when ranking is enabled (zero-argument default pluginsRoot)", async () => {
+	it("registers all ranking-gated plugins when ranking is enabled (zero-argument default pluginsRoot)", async () => {
 		const bus = { subscribe: jest.fn() } as unknown as EventBus;
 
 		const report = await bootstrapPlugins(bus, makeDeps(true));
 
 		expect(report.loaded).toEqual(
-			expect.arrayContaining(["basic-stats", "big-damage-log", "unranked-match"]),
+			expect.arrayContaining(["basic-stats", "big-damage-log", "unranked-match", "elo-rating"]),
 		);
-		expect(bus.subscribe).toHaveBeenCalledTimes(2);
+		expect(bus.subscribe).toHaveBeenCalledTimes(3);
 	});
 
 	it("issues zero Postgres queries when ranking is disabled and GAME_OVER is published", async () => {
