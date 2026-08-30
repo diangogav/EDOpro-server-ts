@@ -29,9 +29,10 @@ describe("RatingPostgresRepository", () => {
 
 	describe("transaction()", () => {
 		it("locks player_ratings rows ordered by user_id ascending, defaulting missing rows to a fresh rating", async () => {
-			manager.query.mockResolvedValueOnce([
-				{ userId: "user-b", rating: 1200, gamesPlayed: 15, peak: 1250 },
-			]);
+			manager.query
+				.mockResolvedValueOnce([]) // advisory lock user-a
+				.mockResolvedValueOnce([]) // advisory lock user-b
+				.mockResolvedValueOnce([{ userId: "user-b", rating: 1200, gamesPlayed: 15, peak: 1250 }]); // FOR UPDATE row lock
 
 			const result = await repository.transaction(
 				["user-b", "user-a"],
@@ -55,6 +56,42 @@ describe("RatingPostgresRepository", () => {
 				Rating.from({ value: 1200, gamesPlayed: 15, peak: 1250 }),
 			);
 			expect(result.get("user-a")).toEqual(Rating.initialize());
+		});
+
+		it("acquires a pg_advisory_xact_lock per participant, ordered by user_id ascending, before the FOR UPDATE row lock", async () => {
+			manager.query.mockResolvedValue([]);
+
+			await repository.transaction(["user-b", "user-a"], "TCG", 5, async (ratings) => ratings);
+
+			const calls = manager.query.mock.calls;
+
+			expect(calls[0]).toEqual([
+				expect.stringContaining("pg_advisory_xact_lock"),
+				["user-a", "TCG", 5],
+			]);
+			expect(calls[1]).toEqual([
+				expect.stringContaining("pg_advisory_xact_lock"),
+				["user-b", "TCG", 5],
+			]);
+			expect(calls[2][0]).toEqual(expect.stringContaining("FOR UPDATE"));
+
+			// hashtextextended over a length-prefixed encoding stays injective even
+			// when a field's value contains the delimiter, unlike a plain "a|b|c" join.
+			expect(calls[0][0]).toEqual(expect.stringContaining("hashtextextended"));
+			expect(calls[0][0]).toEqual(expect.stringContaining("length($2)"));
+		});
+
+		it("skips advisory locking entirely when there are no participants", async () => {
+			manager.query.mockResolvedValueOnce([]); // FOR UPDATE row lock
+
+			await repository.transaction([], "TCG", 5, async (ratings) => ratings);
+
+			expect(manager.query).toHaveBeenCalledTimes(1);
+			expect(manager.query).toHaveBeenCalledWith(expect.stringContaining("FOR UPDATE"), [
+				"TCG",
+				5,
+				[],
+			]);
 		});
 	});
 

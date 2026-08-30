@@ -8,6 +8,13 @@ import {
 } from "../domain/RatingRepository";
 import { dataSource } from "../../../../evolution-types/src/data-source";
 
+// Encodes (user_id, ban_list_name, season) with a length-prefixed field so
+// the concatenation stays injective even when a value contains the
+// delimiter — a plain "a|b|c" join can collide for two different inputs.
+const ADVISORY_LOCK_QUERY = `
+	SELECT pg_advisory_xact_lock(hashtextextended($1 || ':' || length($2)::text || ':' || $2 || ':' || $3, 0))
+`;
+
 const LOCK_RATINGS_QUERY = `
 	SELECT user_id AS "userId", rating, games_played AS "gamesPlayed", peak
 	FROM player_ratings
@@ -40,20 +47,42 @@ export class RatingPostgresRepository implements RatingRepository {
 		work: (ratings: Map<string, Rating>, tx: RatingTransaction) => Promise<T>,
 	): Promise<T> {
 		return dataSource.transaction(async (manager) => {
-			const ratings = await this.lockRatings(manager, userIds, banListName, season);
+			const orderedIds = [...userIds].sort();
+
+			await this.acquireParticipantLocks(manager, orderedIds, banListName, season);
+			const ratings = await this.lockRatings(manager, orderedIds, banListName, season);
 			const tx = new RatingPostgresTransaction(manager);
 
 			return work(ratings, tx);
 		});
 	}
 
+	// SELECT ... FOR UPDATE cannot lock a row that does not exist yet: for a
+	// player's first rated match in a (ban list, season), two concurrent
+	// GAME_OVER transactions can both see "no row", both default to
+	// Rating.initialize(), and the later UPSERT overwrites the earlier one —
+	// the projection drops a match while rating_history keeps both. A
+	// session-scoped advisory lock per participant, acquired sequentially in
+	// the same sorted order used below for the row lock, closes that window
+	// before either transaction reads anything and keeps the lock order
+	// consistent across matches that share a player, avoiding deadlocks.
+	private async acquireParticipantLocks(
+		manager: EntityManager,
+		orderedIds: string[],
+		banListName: string,
+		season: number,
+	): Promise<void> {
+		for (const userId of orderedIds) {
+			await manager.query(ADVISORY_LOCK_QUERY, [userId, banListName, season]);
+		}
+	}
+
 	private async lockRatings(
 		manager: EntityManager,
-		userIds: string[],
+		orderedIds: string[],
 		banListName: string,
 		season: number,
 	): Promise<Map<string, Rating>> {
-		const orderedIds = [...userIds].sort();
 		const rows: PlayerRatingRow[] = await manager.query(LOCK_RATINGS_QUERY, [
 			banListName,
 			season,
