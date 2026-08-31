@@ -1,5 +1,4 @@
 import { CoreMessages } from "src/edopro/messages/domain/CoreMessages";
-import { ServerInfoMessage } from "src/edopro/messages/domain/ServerInfoMessage";
 import { ErrorMessages } from "src/edopro/messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "src/edopro/messages/server-to-client/ErrorClientMessage";
 import { ServerErrorClientMessage } from "src/edopro/messages/server-to-client/ServerErrorMessageClientMessage";
@@ -85,23 +84,6 @@ export abstract class RoomState {
 		socket.destroy();
 
 		return;
-	}
-
-	protected sendWelcomeMessage(room: YgoRoom, socket: ISocket): void {
-		if (room.ranked) {
-			socket.send(
-				YGOProPlayerChatMessage.create(
-					`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS} - ${ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION}`,
-				),
-			);
-			return;
-		}
-
-		socket.send(
-			YGOProPlayerChatMessage.create(
-				`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.UN_RANKED_ROOM_CREATION_SUCCESS}`,
-			),
-		);
 	}
 
 	protected processDuelMessage(messageType: CoreMessages, data: Buffer, room: YgoRoom): void {
@@ -264,14 +246,6 @@ export abstract class RoomState {
 		room.clients.forEach((c: YgoClient) => {
 			c.socket.send(frame);
 		});
-	}
-
-	protected sendSystemErrorMessage(message: string, client: YgoClient): void {
-		client.socket.send(YGOProPlayerChatMessage.create(message));
-	}
-
-	protected sendSystemMessage(message: string, client: YgoClient): void {
-		client.socket.send(YGOProPlayerChatMessage.create(message));
 	}
 
 	private handleChat(message: ClientMessage, room: YgoRoom, client: YgoClient): void {
