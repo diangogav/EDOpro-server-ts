@@ -202,6 +202,43 @@ describe("EloRatingCalculator", () => {
 		});
 	});
 
+	describe("G5 — eligibility log strings are pinned across the gate refactor", () => {
+		it("logs the unranked skip reason verbatim", async () => {
+			await calculator.handle(makeEligibleEvent({ ranked: false, matchId: "match-1" }));
+
+			expect(logger.info).toHaveBeenCalledWith(
+				expect.stringContaining("Skipping rating for match match-1: match is not ranked."),
+			);
+		});
+
+		it("logs the no-ranked-banlist skip reason verbatim", async () => {
+			await calculator.handle(makeEligibleEvent({ banListName: "N/A", matchId: "match-1" }));
+
+			expect(logger.info).toHaveBeenCalledWith(
+				expect.stringContaining('Skipping rating for match match-1: no ranked banlist ("N/A").'),
+			);
+		});
+
+		it("logs the missing-account-id skip reason verbatim, including the count", async () => {
+			const winner = PlayerMother.create({ id: "player-1", team: Team.PLAYER, winner: true });
+			const noId = PlayerMother.create({ id: null, team: Team.OPPONENT, winner: false });
+			const event = GameOverDomainEventMother.create({
+				matchId: "match-1",
+				ranked: true,
+				banListName: "TCG",
+				players: [winner.toPresentation(), noId.toPresentation()],
+			});
+
+			await calculator.handle(event);
+
+			expect(logger.warn).toHaveBeenCalledWith(
+				expect.stringContaining(
+					"Skipping rating for match match-1: 1 participant(s) have no account id (bot or unresolved account).",
+				),
+			);
+		});
+	});
+
 	describe("account resolution gap", () => {
 		it("writes no rating row when a player's account cannot be resolved by id", async () => {
 			userProfileRepository.findById.mockResolvedValue(null);
