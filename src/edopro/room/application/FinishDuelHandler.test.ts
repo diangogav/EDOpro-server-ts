@@ -1,12 +1,14 @@
 import "reflect-metadata";
 import { container } from "@shared/dependency-injection";
 import { EventBus } from "@shared/event-bus/EventBus";
+import { MatchLifecycleHooks } from "@shared/room/application/lifecycle/MatchLifecycleHooks";
 import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
 import { Client } from "@edopro/client/domain/Client";
 import { FinishDuelHandler } from "./FinishDuelHandler";
 import { DuelFinishReason } from "@edopro/room/domain/DuelFinishReason";
 import { Room } from "@edopro/room/domain/Room";
 import { Replay } from "@edopro/replay/Replay";
+import RoomList from "@edopro/room/infrastructure/RoomList";
 
 // Mock dependencies
 jest.mock("@shared/dependency-injection");
@@ -24,6 +26,7 @@ describe("FinishDuelHandler", () => {
 	let mockClient2: jest.Mocked<Client>;
 	let mockSpectator: jest.Mocked<Client>;
 	let mockReplay: jest.Mocked<Replay>;
+	let mockLifecycleHooks: { runEnding: jest.Mock };
 
 	beforeEach(() => {
 		// Mock WebSocketSingleton
@@ -36,7 +39,14 @@ describe("FinishDuelHandler", () => {
 		mockEventBus = {
 			publish: jest.fn(),
 		} as unknown as jest.Mocked<EventBus>;
-		(container.get as jest.Mock).mockReturnValue(mockEventBus);
+		mockLifecycleHooks = { runEnding: jest.fn().mockResolvedValue(undefined) };
+		(container.get as jest.Mock).mockImplementation((token: unknown) => {
+			if (token === MatchLifecycleHooks) {
+				return mockLifecycleHooks;
+			}
+
+			return mockEventBus;
+		});
 
 		// Mock Clients
 		mockClient1 = new Client({} as any) as jest.Mocked<Client>;
@@ -150,6 +160,7 @@ describe("FinishDuelHandler", () => {
 
 	it("should handle match finish", async () => {
 		mockRoom.isMatchFinished.mockReturnValue(true);
+		Object.defineProperty(mockRoom, "id", { value: 999 });
 		Object.defineProperty(mockRoom, "matchPlayersHistory", { value: [] });
 		Object.defineProperty(mockRoom, "bestOf", { value: 3 });
 		Object.defineProperty(mockRoom, "banListHash", { value: 123 });
@@ -167,6 +178,11 @@ describe("FinishDuelHandler", () => {
 		// Event published
 		expect(mockEventBus.publish).toHaveBeenCalled();
 
+		// MatchLifecycleHooks.runEnding awaited
+		expect(mockLifecycleHooks.runEnding).toHaveBeenCalledWith(
+			expect.objectContaining({ roomId: 999, ranked: true, banListName: "N/A" }),
+		);
+
 		// Room removed broadcast
 		expect(mockWebSocketSingleton.broadcast).toHaveBeenCalledWith({
 			action: "REMOVE-ROOM",
@@ -175,5 +191,29 @@ describe("FinishDuelHandler", () => {
 
 		// Should NOT side deck
 		expect(mockRoom.sideDecking).not.toHaveBeenCalled();
+	});
+
+	it("awaits MatchLifecycleHooks.runEnding before RoomList.deleteRoom", async () => {
+		mockRoom.isMatchFinished.mockReturnValue(true);
+		Object.defineProperty(mockRoom, "id", { value: 999 });
+		Object.defineProperty(mockRoom, "matchPlayersHistory", { value: [] });
+		Object.defineProperty(mockRoom, "bestOf", { value: 3 });
+		Object.defineProperty(mockRoom, "banListHash", { value: 123 });
+		Object.defineProperty(mockRoom, "ranked", { value: true });
+		Object.defineProperty(mockRoom, "matchId", { value: "match-uuid-1" });
+		Object.defineProperty(mockRoom, "duelIds", { value: ["duel-uuid-1"] });
+
+		const calls: string[] = [];
+		mockLifecycleHooks.runEnding.mockImplementation(async () => {
+			calls.push("runEnding");
+		});
+		const deleteRoomSpy = jest.spyOn(RoomList, "deleteRoom").mockImplementation(() => {
+			calls.push("deleteRoom");
+		});
+
+		await handler.run();
+
+		expect(calls).toEqual(["runEnding", "deleteRoom"]);
+		deleteRoomSpy.mockRestore();
 	});
 });

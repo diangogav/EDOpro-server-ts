@@ -18,6 +18,11 @@ import { EventEmitter } from "stream";
 
 import { YGOProPlayerChatMessage } from "@ygopro/messages/server-to-client/YGOProPlayerChatMessage";
 import { YgoClient } from "../../../shared/client/domain/YgoClient";
+import { container } from "../../../shared/dependency-injection";
+import { MatchLifecycleHooks } from "../../../shared/room/application/lifecycle/MatchLifecycleHooks";
+import { MatchContext } from "../../../shared/room/domain/lifecycle/MatchLifecycleHook";
+import { createRoomAnnounce } from "../../../shared/room/domain/lifecycle/RoomAnnounce";
+import { config } from "../../../config";
 import { YgoRoom } from "../../../shared/room/domain/YgoRoom";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { BufferToUTF16 } from "../../../utils/BufferToUTF16";
@@ -169,12 +174,38 @@ export abstract class RoomState {
 				action: "ADD-ROOM",
 				data: room.toRealTimePresentation(),
 			});
+			container.get(MatchLifecycleHooks).runStarted(this.buildStartContext(room));
 		} else {
 			WebSocketSingleton.getInstance().broadcast({
 				action: "UPDATE-ROOM",
 				data: room.toRealTimePresentation(),
 			});
 		}
+	}
+
+	private buildStartContext(room: YgoRoom): MatchContext {
+		return {
+			roomId: room.id,
+			ranked: room.ranked,
+			banListName: this.roomBanListName(room),
+			season: config.season,
+			players: room.players.map((client) => ({
+				id: client.id,
+				team: client.team as Team,
+				name: client.name,
+				winner: false,
+			})),
+			announce: createRoomAnnounce(room),
+		};
+	}
+
+	// YgoRoom (the abstract base notifyDuelStart is declared against, shared by
+	// both pipelines) does not expose banListName — only the concrete Room and
+	// YGOProRoom subclasses do, with the identical `string | null` shape.
+	private roomBanListName(room: YgoRoom): string {
+		const withBanListName = room as unknown as { banListName?: string | null };
+
+		return withBanListName.banListName ?? "N/A";
 	}
 
 	private handleMercuryChat(message: ClientMessage, room: YGOProRoom, client: YgoClient): void {

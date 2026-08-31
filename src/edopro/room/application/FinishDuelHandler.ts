@@ -1,6 +1,11 @@
 import { container } from "../../../shared/dependency-injection";
 import { EventBus } from "../../../shared/event-bus/EventBus";
 import { GameOverDomainEvent } from "../../../shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
+import { MatchLifecycleHooks } from "../../../shared/room/application/lifecycle/MatchLifecycleHooks";
+import { MatchContext } from "../../../shared/room/domain/lifecycle/MatchLifecycleHook";
+import { createRoomAnnounce } from "../../../shared/room/domain/lifecycle/RoomAnnounce";
+import { Team } from "../../../shared/room/Team";
+import { config } from "../../../config";
 import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
 import { Client } from "../../client/domain/Client";
 import { DuelEndMessage } from "../../messages/server-to-client/game-messages/DuelEndMessage";
@@ -88,6 +93,8 @@ export class FinishDuelHandler {
 		});
 
 		if (this.room.isMatchFinished()) {
+			await container.get(MatchLifecycleHooks).runEnding(this.buildEndContext());
+
 			this.room.players.forEach((player: Client) => {
 				player.sendMessage(DuelEndMessage.create());
 			});
@@ -149,5 +156,21 @@ export class FinishDuelHandler {
 		this.room.spectators.forEach((spectator: Client) => {
 			spectator.sendMessage(SideDeckWaitClientMessage.create());
 		});
+	}
+
+	private buildEndContext(): MatchContext {
+		return {
+			roomId: this.room.id,
+			ranked: this.room.ranked,
+			banListName: this.room.banListName ?? "N/A",
+			season: config.season,
+			players: this.room.matchPlayersHistory.map((player) => ({
+				id: player.id,
+				team: player.team as Team,
+				name: player.name,
+				winner: player.winner,
+			})),
+			announce: createRoomAnnounce(this.room),
+		};
 	}
 }
