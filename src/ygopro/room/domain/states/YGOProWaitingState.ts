@@ -8,8 +8,10 @@ import { YgoClient } from "@shared/client/domain/YgoClient";
 import { Logger } from "@shared/logger/domain/Logger";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
+import { Admission } from "@shared/room/admission/domain/Admission";
 import { isNameTaken } from "@shared/room/domain/isNameTaken";
 import { createSystemChat } from "@shared/room/domain/chat/SystemChat";
+import { roomCreationNotice } from "@shared/room/domain/chat/RoomCreationNotice";
 
 import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { YGOProRoom } from "../YGOProRoom";
@@ -23,6 +25,7 @@ import { encodeDeckErrorCode } from "@shared/deck/domain/errors/encodeDeckErrorC
 import { YGOProRoomState } from "../YGOProRoomState";
 import MercuryBanListMemoryRepository from "@ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository";
 import { mercuryConfig } from "@ygopro/config";
+import { config } from "../../../../config";
 import { YGOProJoinGameMessage } from "@ygopro/messages/YGOProJoinGameMessage";
 
 export class YGOProWaitingState extends YGOProRoomState {
@@ -94,12 +97,40 @@ export class YGOProWaitingState extends YGOProRoomState {
 		}
 
 		await room.mutex.runExclusive(async () => {
-			await this.admitToRoom.run(
+			const result = await this.admitToRoom.run(
 				socket,
 				playerInfoMessage,
 				room.admissionTarget(socket, playerInfoMessage),
 			);
+
+			this.sendRoomCreationNoticeToCreator(room, socket, result);
 		});
+	}
+
+	/**
+	 * The edopro pipeline sends this right after CREATE_GAME. This pipeline
+	 * instead creates the room inside the JOIN flow (findOrCreateRoom) and
+	 * only seats the creator once admission succeeds here — so this is the
+	 * one point that can fire it, guarded to the creator's own first seat so
+	 * later joiners, spectators, rejections and reconnects never see it.
+	 */
+	private sendRoomCreationNoticeToCreator(
+		room: YGOProRoom,
+		socket: ISocket,
+		result: Admission | undefined,
+	): void {
+		if (
+			result?.kind === "player" &&
+			socket.id === room.createdBySocketId &&
+			room.players.length === 1
+		) {
+			socket.send(
+				roomCreationNotice({
+					ranked: room.league.isRanked,
+					rankingEnabled: config.ranking.enabled,
+				}),
+			);
+		}
 	}
 
 	/**

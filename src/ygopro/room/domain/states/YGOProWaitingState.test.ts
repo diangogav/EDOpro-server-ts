@@ -16,7 +16,10 @@ import { AdmitToRoom } from "../../admission/application/AdmitToRoom";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { RoomLeague } from "@shared/room/admission/domain/RoomLeague";
 import { PlayerCredential } from "@shared/room/admission/domain/PlayerCredential";
+import { roomCreationNotice } from "@shared/room/domain/chat/RoomCreationNotice";
 import { ErrorMessageType } from "ygopro-msg-encode";
+
+import { config } from "../../../../config";
 
 // ---- helpers ----
 
@@ -254,6 +257,8 @@ describe("YGOProWaitingState.handleJoin", () => {
 		({
 			ranked: false,
 			players: [],
+			league: RoomLeague.Casual,
+			createdBySocketId: "sock-test",
 			mutex: {
 				runExclusive: jest.fn().mockImplementation(async (fn: () => Promise<void>) => fn()),
 			},
@@ -464,6 +469,70 @@ describe("YGOProWaitingState.handleJoin", () => {
 
 			expect(mockAdmitToRoom.run).toHaveBeenCalled();
 			expect(mockSocket.close).not.toHaveBeenCalled();
+		});
+	});
+
+	// The edopro pipeline sends this via GameCreatorHandler right after room
+	// creation; the ygopro/Mercury pipeline creates the room inside the JOIN
+	// flow and only seats the creator once admission succeeds here, so this
+	// is the one place that path can send it.
+	describe("room creation notice", () => {
+		const originalRankingEnabled = config.ranking.enabled;
+
+		afterEach(() => {
+			config.ranking.enabled = originalRankingEnabled;
+		});
+
+		it("sends the creator's room-creation notice once they are seated as the first player", async () => {
+			config.ranking.enabled = true;
+			(mockRoom as unknown as { league: RoomLeague }).league = RoomLeague.External;
+			(mockRoom as unknown as { players: unknown[] }).players = [{}];
+			mockAdmitToRoom.run.mockResolvedValue({
+				kind: "player",
+				credential: { kind: "external", userId: "u" } as PlayerCredential,
+				seat: { position: 0, team: 0 },
+			});
+
+			await emitJoin(mockRoom, mockSocket);
+
+			expect(mockSocket.send).toHaveBeenCalledWith(
+				roomCreationNotice({ ranked: true, rankingEnabled: true }),
+			);
+		});
+
+		it("does not send the notice when a second player is seated", async () => {
+			config.ranking.enabled = true;
+			(mockRoom as unknown as { league: RoomLeague }).league = RoomLeague.Casual;
+			(mockRoom as unknown as { createdBySocketId: string }).createdBySocketId = "creator-socket";
+			(mockRoom as unknown as { players: unknown[] }).players = [{}, {}];
+			mockAdmitToRoom.run.mockResolvedValue({
+				kind: "player",
+				credential: { kind: "guest", name: "Jaden" } as PlayerCredential,
+				seat: { position: 1, team: 0 },
+			});
+
+			await emitJoin(mockRoom, mockSocket);
+
+			expect(mockSocket.send).not.toHaveBeenCalled();
+		});
+
+		it("does not send the notice when the creator's socket is only admitted as a spectator", async () => {
+			mockAdmitToRoom.run.mockResolvedValue({ kind: "spectator" });
+
+			await emitJoin(mockRoom, mockSocket);
+
+			expect(mockSocket.send).not.toHaveBeenCalled();
+		});
+
+		it("does not send the notice when admission rejects the creator's socket", async () => {
+			mockAdmitToRoom.run.mockResolvedValue({
+				kind: "rejected",
+				reason: "ranked-requires-account",
+			});
+
+			await emitJoin(mockRoom, mockSocket);
+
+			expect(mockSocket.send).not.toHaveBeenCalled();
 		});
 	});
 });
