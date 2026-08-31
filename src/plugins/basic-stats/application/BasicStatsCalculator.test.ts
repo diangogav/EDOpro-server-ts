@@ -99,7 +99,8 @@ describe("BasicStatsCalculator", () => {
 
 		playerStatsRepository.findByUserIdAndRankId
 			.mockResolvedValueOnce(playerStats)
-			.mockResolvedValueOnce(opponentStats);
+			.mockResolvedValueOnce(opponentStats)
+			.mockImplementation(async () => PlayerStatsMother.create());
 
 		matchResumeCreator.run.mockResolvedValue({ id: matchId });
 	});
@@ -136,23 +137,40 @@ describe("BasicStatsCalculator", () => {
 			banListName: "N/A",
 		});
 
+		playerStatsRepository.findByUserIdAndRankId
+			.mockReset()
+			.mockResolvedValueOnce(playerStats) // "N/A" row for player
+			.mockResolvedValueOnce(playerStats) // Global row for player
+			.mockResolvedValueOnce(opponentStats) // "N/A" row for opponent
+			.mockResolvedValueOnce(opponentStats); // Global row for opponent
+
 		await basicStatsCalculator.handle(event);
 
-		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenCalledTimes(2);
-		expect(playerStatsRepository.save).toHaveBeenCalledTimes(2);
+		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenCalledTimes(4);
+		expect(playerStatsRepository.save).toHaveBeenCalledTimes(4);
 
 		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenNthCalledWith(
 			1,
 			playerUserProfile.id,
-			globalRank.id,
+			formatRank.id,
 		);
 		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenNthCalledWith(
 			2,
+			playerUserProfile.id,
+			globalRank.id,
+		);
+		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenNthCalledWith(
+			3,
+			opponentUserProfile.id,
+			formatRank.id,
+		);
+		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenNthCalledWith(
+			4,
 			opponentUserProfile.id,
 			globalRank.id,
 		);
 		expect(playerStatsRepository.save).toHaveBeenNthCalledWith(1, PlayerStats.from(playerStats));
-		expect(playerStatsRepository.save).toHaveBeenNthCalledWith(2, PlayerStats.from(opponentStats));
+		expect(playerStatsRepository.save).toHaveBeenNthCalledWith(3, PlayerStats.from(opponentStats));
 	});
 
 	it("uses the event's matchId as the persisted gameId instead of inventing one", async () => {
@@ -243,7 +261,15 @@ describe("BasicStatsCalculator", () => {
 		);
 	});
 
-	it("Should NOT write per-format row when banListName is N/A", async () => {
+	it('writes the "N/A" ladder row plus Global, and no group rows, when the match has no ban list', async () => {
+		const naRank = RankMother.create({ name: "N/A" });
+		rankRepository.findOrCreateByName.mockImplementation(async (name) =>
+			name === "Global" ? globalRank : naRank,
+		);
+		rankGroupResolver.groupsFor.mockReturnValue(["TCG"]);
+		playerStatsRepository.findByUserIdAndRankId
+			.mockReset()
+			.mockImplementation(async () => PlayerStatsMother.create());
 		const players = [player, opponent];
 		const event = GameOverDomainEventMother.create({
 			players: players.map((p) => p.toPresentation()),
@@ -253,11 +279,19 @@ describe("BasicStatsCalculator", () => {
 
 		await basicStatsCalculator.handle(event);
 
-		// Only Global-rank calls — no rank resolution and no row for "N/A"
-		expect(rankRepository.findOrCreateByName).not.toHaveBeenCalledWith("N/A");
-		const calls = playerStatsRepository.findByUserIdAndRankId.mock.calls;
-		const perFormatCalls = calls.filter(([, rankId]) => rankId !== globalRank.id);
-		expect(perFormatCalls).toHaveLength(0);
+		// "N/A" keeps its own ladder so it stays in sync with Global, but it is
+		// never alias-resolved and never feeds a format group.
+		expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith("N/A");
+		expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith("Global");
+		expect(rankGroupResolver.resolveAlias).not.toHaveBeenCalled();
+		expect(rankGroupResolver.groupsFor).not.toHaveBeenCalled();
+		expect(rankRepository.findOrCreateByName).not.toHaveBeenCalledWith("TCG", "group");
+
+		const rankIds = playerStatsRepository.findByUserIdAndRankId.mock.calls.map(
+			([, rankId]) => rankId,
+		);
+		expect(rankIds).toEqual([naRank.id, globalRank.id, naRank.id, globalRank.id]);
+		expect(playerStatsRepository.save).toHaveBeenCalledTimes(4);
 	});
 
 	it("writes one row for the banlist rank and one for the Global rank per player", async () => {
@@ -329,6 +363,41 @@ describe("BasicStatsCalculator", () => {
 		);
 		// 3 ranks (banlist, Global, group) × 2 players.
 		expect(playerStatsRepository.save).toHaveBeenCalledTimes(6);
+	});
+
+	it("writes the alias-resolved banlist row, Global and every group row for a ranked ban list", async () => {
+		const groupRank = RankMother.create({ name: "TCG", type: "group" });
+		const aliasedRank = RankMother.create({ name: "JTP (Original)" });
+		rankGroupResolver.resolveAlias.mockImplementation((name) =>
+			name === "JTP" ? "JTP (Original)" : name,
+		);
+		rankGroupResolver.groupsFor.mockReturnValue(["TCG"]);
+		rankRepository.findOrCreateByName.mockImplementation(async (name, type) =>
+			name === "Global" ? globalRank : type === "group" ? groupRank : aliasedRank,
+		);
+		playerStatsRepository.findByUserIdAndRankId
+			.mockReset()
+			.mockImplementation(async () => PlayerStatsMother.create());
+		const event = GameOverDomainEventMother.create({
+			players: [player.toPresentation(), opponent.toPresentation()],
+			ranked: true,
+			banListName: "JTP",
+		});
+
+		await basicStatsCalculator.handle(event);
+
+		expect(rankGroupResolver.groupsFor).toHaveBeenCalledWith("JTP (Original)");
+		const rankIds = playerStatsRepository.findByUserIdAndRankId.mock.calls.map(
+			([, rankId]) => rankId,
+		);
+		expect(rankIds).toEqual([
+			aliasedRank.id,
+			globalRank.id,
+			groupRank.id,
+			aliasedRank.id,
+			globalRank.id,
+			groupRank.id,
+		]);
 	});
 
 	it("resolves the alias before any rank lookup but keeps the raw name in resumes", async () => {
