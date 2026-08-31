@@ -26,6 +26,7 @@ class TestRoomState extends RoomState {
 function makeRoom(overrides: Record<string, unknown> = {}) {
 	return {
 		id: 4242,
+		matchId: "match-uuid-1",
 		ranked: true,
 		banListName: "TCG",
 		isFirstDuel: () => true,
@@ -57,6 +58,7 @@ describe("RoomState.notifyDuelStart() — MatchLifecycleHooks wiring", () => {
 		expect(runStarted).toHaveBeenCalledWith(
 			expect.objectContaining({
 				roomId: 4242,
+				matchId: "match-uuid-1",
 				ranked: true,
 				banListName: "TCG",
 				players: [

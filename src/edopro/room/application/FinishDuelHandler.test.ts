@@ -26,7 +26,7 @@ describe("FinishDuelHandler", () => {
 	let mockClient2: jest.Mocked<Client>;
 	let mockSpectator: jest.Mocked<Client>;
 	let mockReplay: jest.Mocked<Replay>;
-	let mockLifecycleHooks: { runEnding: jest.Mock };
+	let mockLifecycleHooks: { runEnding: jest.Mock; runClosed: jest.Mock };
 
 	beforeEach(() => {
 		// Mock WebSocketSingleton
@@ -39,7 +39,10 @@ describe("FinishDuelHandler", () => {
 		mockEventBus = {
 			publish: jest.fn(),
 		} as unknown as jest.Mocked<EventBus>;
-		mockLifecycleHooks = { runEnding: jest.fn().mockResolvedValue(undefined) };
+		mockLifecycleHooks = {
+			runEnding: jest.fn().mockResolvedValue(undefined),
+			runClosed: jest.fn(),
+		};
 		(container.get as jest.Mock).mockImplementation((token: unknown) => {
 			if (token === MatchLifecycleHooks) {
 				return mockLifecycleHooks;
@@ -180,7 +183,12 @@ describe("FinishDuelHandler", () => {
 
 		// MatchLifecycleHooks.runEnding awaited
 		expect(mockLifecycleHooks.runEnding).toHaveBeenCalledWith(
-			expect.objectContaining({ roomId: 999, ranked: true, banListName: "N/A" }),
+			expect.objectContaining({
+				roomId: 999,
+				matchId: "match-uuid-1",
+				ranked: true,
+				banListName: "N/A",
+			}),
 		);
 
 		// Room removed broadcast
@@ -191,6 +199,13 @@ describe("FinishDuelHandler", () => {
 
 		// Should NOT side deck
 		expect(mockRoom.sideDecking).not.toHaveBeenCalled();
+
+		// FinishDuelHandler funnels through RoomList.deleteRoom, the edopro
+		// teardown chokepoint that invokes MatchLifecycleHooks.runClosed.
+		expect(mockLifecycleHooks.runClosed).toHaveBeenCalledWith({
+			roomId: 999,
+			matchId: "match-uuid-1",
+		});
 	});
 
 	it("awaits MatchLifecycleHooks.runEnding before RoomList.deleteRoom", async () => {

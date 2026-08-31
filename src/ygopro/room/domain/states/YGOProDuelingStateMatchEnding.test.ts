@@ -32,6 +32,7 @@ function buildState(room: object, logger: Logger): TestableDuelingState {
 function makeRoom(overrides: Record<string, unknown> = {}) {
 	return {
 		id: 4242,
+		matchId: "match-uuid-1",
 		ranked: true,
 		bestOf: 1,
 		banListName: "TCG",
@@ -87,6 +88,7 @@ describe("YGOProDuelingState.determineNextPhase() — match-finished branch", ()
 		expect(runEnding).toHaveBeenCalledWith(
 			expect.objectContaining({
 				roomId: 4242,
+				matchId: "match-uuid-1",
 				ranked: true,
 				banListName: "TCG",
 				players: [

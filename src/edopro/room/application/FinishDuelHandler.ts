@@ -161,6 +161,7 @@ export class FinishDuelHandler {
 	private buildEndContext(): MatchContext {
 		return {
 			roomId: this.room.id,
+			matchId: this.room.matchId,
 			ranked: this.room.ranked,
 			banListName: this.room.banListName ?? "N/A",
 			season: config.season,

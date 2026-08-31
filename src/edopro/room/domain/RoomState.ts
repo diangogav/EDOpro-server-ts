@@ -186,6 +186,7 @@ export abstract class RoomState {
 	private buildStartContext(room: YgoRoom): MatchContext {
 		return {
 			roomId: room.id,
+			matchId: room.matchId,
 			ranked: room.ranked,
 			banListName: this.roomBanListName(room),
 			season: config.season,

@@ -1,6 +1,10 @@
 import { Logger } from "@shared/logger/domain/Logger";
 import { Team } from "@shared/room/Team";
-import { MatchContext, MatchLifecycleHook } from "@shared/room/domain/lifecycle/MatchLifecycleHook";
+import {
+	MatchContext,
+	MatchLifecycleHook,
+	RoomClosedContext,
+} from "@shared/room/domain/lifecycle/MatchLifecycleHook";
 import { EloCalculator, RatedPlayer } from "@shared/stats/rating/domain/EloCalculator";
 import { MatchRatingSnapshot } from "@shared/stats/rating/domain/MatchRatingSnapshot";
 import { Rating } from "@shared/stats/rating/domain/Rating";
@@ -23,15 +27,22 @@ const TEAM_ORDER = [Team.PLAYER, Team.OPPONENT] as const;
  * MatchLifecycleHook implementer that announces each seated player's rating
  * at match start and their delta/resulting rating at match end, over the
  * bounded ctx.announce() capability. A hook receives no room reference, so
- * the start-time snapshot is kept here, keyed by roomId — room lifetime
- * bounds the key space (a 4-digit id) and a snapshot is cleared as soon as
- * onMatchEnding consumes it, so a match that never ends is the only case
- * that leaves a stale entry, self-healing the next time that roomId starts
- * a new match.
+ * the start-time snapshot is kept here, keyed by matchId — the unique match
+ * identity, not the roomId (`roomId` is a small numeric slot the server
+ * reuses across unrelated matches once freed). `onMatchEnding` and
+ * `onRoomClosed` both release a match's snapshot; the latter guarantees
+ * release even when a match never reaches a clean end (abandoned, mid-duel
+ * disconnect, error fallback).
  */
 export class RatingAnnouncer implements MatchLifecycleHook {
 	readonly name = "rating-announcer";
-	private readonly snapshots = new Map<number, MatchRatingSnapshot>();
+	private readonly snapshots = new Map<string, MatchRatingSnapshot>();
+	// Tracks the current matchId this hook has snapshotted for a given
+	// roomId, so a repeat onMatchStarted call can tell a genuine re-entry for
+	// the SAME match (drawn game 1) apart from a NEW match reusing a freed
+	// roomId, and discard the previous match's leftover snapshot in the
+	// latter case.
+	private readonly matchIdByRoom = new Map<number, string>();
 
 	constructor(
 		private readonly ratingRepository: RatingRepository,
@@ -39,8 +50,13 @@ export class RatingAnnouncer implements MatchLifecycleHook {
 	) {}
 
 	async onMatchStarted(ctx: MatchContext): Promise<void> {
-		if (this.snapshots.has(ctx.roomId)) {
+		const trackedMatchId = this.matchIdByRoom.get(ctx.roomId);
+		if (trackedMatchId === ctx.matchId) {
 			return;
+		}
+		if (trackedMatchId !== undefined) {
+			this.snapshots.delete(trackedMatchId);
+			this.matchIdByRoom.delete(ctx.roomId);
 		}
 
 		const eligibility = evaluateRatingEligibility({
@@ -69,9 +85,10 @@ export class RatingAnnouncer implements MatchLifecycleHook {
 		}
 
 		this.snapshots.set(
-			ctx.roomId,
+			ctx.matchId,
 			MatchRatingSnapshot.create(ratings, eligibility.banListName, ctx.season),
 		);
+		this.matchIdByRoom.set(ctx.roomId, ctx.matchId);
 
 		const teams = this.groupByTeam(
 			eligibility.players,
@@ -85,8 +102,11 @@ export class RatingAnnouncer implements MatchLifecycleHook {
 	}
 
 	async onMatchEnding(ctx: MatchContext): Promise<void> {
-		const snapshot = this.snapshots.get(ctx.roomId);
-		this.snapshots.delete(ctx.roomId);
+		const snapshot = this.snapshots.get(ctx.matchId);
+		this.snapshots.delete(ctx.matchId);
+		if (this.matchIdByRoom.get(ctx.roomId) === ctx.matchId) {
+			this.matchIdByRoom.delete(ctx.roomId);
+		}
 		if (!snapshot) {
 			return;
 		}
@@ -127,6 +147,13 @@ export class RatingAnnouncer implements MatchLifecycleHook {
 		});
 
 		ctx.announce(formatEnd(teams));
+	}
+
+	async onRoomClosed(ctx: RoomClosedContext): Promise<void> {
+		this.snapshots.delete(ctx.matchId);
+		if (this.matchIdByRoom.get(ctx.roomId) === ctx.matchId) {
+			this.matchIdByRoom.delete(ctx.roomId);
+		}
 	}
 
 	private groupByTeam<T>(
