@@ -1,4 +1,5 @@
 import { Logger } from "@shared/logger/domain/Logger";
+import { RankGroupResolver } from "@shared/rank/application/RankGroupResolver";
 import { RankRepository } from "@shared/rank/domain/RankRepository";
 import { Team } from "@shared/room/Team";
 import {
@@ -48,6 +49,7 @@ export class RatingAnnouncer implements MatchLifecycleHook {
 	constructor(
 		private readonly ratingRepository: RatingRepository,
 		private readonly rankRepository: RankRepository,
+		private readonly rankGroupResolver: RankGroupResolver,
 		private readonly logger: Logger,
 	) {}
 
@@ -70,12 +72,16 @@ export class RatingAnnouncer implements MatchLifecycleHook {
 			return;
 		}
 
-		// Eligibility stays keyed on the banlist name; the rank is resolved
-		// exactly once per match, here at start, and carried in the snapshot.
+		// Eligibility stays keyed on the raw banlist name; the rank is
+		// resolved exactly once per match — by its alias-resolved canonical
+		// name — here at start, and carried in the snapshot. Announcements
+		// stay on the banlist pool only: group ladders are silent.
 		let rankId: string;
 		let ratings: Map<string, Rating>;
 		try {
-			const rank = await this.rankRepository.findOrCreateByName(eligibility.banListName);
+			const rank = await this.rankRepository.findOrCreateByName(
+				this.rankGroupResolver.resolveAlias(eligibility.banListName),
+			);
 			rankId = rank.id;
 			ratings = await this.ratingRepository.findMany(
 				eligibility.players.map((player) => player.id),

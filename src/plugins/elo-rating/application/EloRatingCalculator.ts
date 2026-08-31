@@ -1,4 +1,6 @@
 import { Logger } from "src/shared/logger/domain/Logger";
+import { RankGroupResolver } from "src/shared/rank/application/RankGroupResolver";
+import { Rank } from "src/shared/rank/domain/Rank";
 import { RankRepository } from "src/shared/rank/domain/RankRepository";
 import { EloCalculator, RatedPlayer } from "src/shared/stats/rating/domain/EloCalculator";
 import { Rating } from "src/shared/stats/rating/domain/Rating";
@@ -18,6 +20,7 @@ export class EloRatingCalculator implements DomainEventSubscriber<GameOverDomain
 		private readonly userProfileRepository: UserProfileRepository,
 		private readonly ratingRepository: RatingRepository,
 		private readonly rankRepository: RankRepository,
+		private readonly rankGroupResolver: RankGroupResolver,
 	) {
 		this.logger = logger.child({ file: "EloRatingCalculator" });
 	}
@@ -63,39 +66,48 @@ export class EloRatingCalculator implements DomainEventSubscriber<GameOverDomain
 			team: player.team,
 			winner: player.winner,
 		}));
-		const banListName = eligibility.banListName;
 		const season = config.season;
-		// Eligibility stays keyed on the banlist name; persistence is keyed by
-		// the rank resolved (or created) for that name, once per match.
-		const rank = await this.rankRepository.findOrCreateByName(banListName);
+		// Eligibility stays keyed on the raw banlist name; persistence is
+		// keyed by the ranks resolved (or created) once per match. The alias
+		// resolves before any rank lookup, and each group ladder the played
+		// list feeds is an independent Elo pool with its own ratings and
+		// history. Global stays out of Elo.
+		const banListName = this.rankGroupResolver.resolveAlias(eligibility.banListName);
+		const groupNames = this.rankGroupResolver.groupsFor(banListName);
+		const ranks: Rank[] = [await this.rankRepository.findOrCreateByName(banListName)];
+		for (const groupName of groupNames) {
+			ranks.push(await this.rankRepository.findOrCreateByName(groupName, "group"));
+		}
 
-		await this.ratingRepository.transaction(playerIds, rank.id, season, async (ratings, tx) => {
-			const deltas = EloCalculator.deltasFor(ratedPlayers, ratings);
+		for (const rank of ranks) {
+			await this.ratingRepository.transaction(playerIds, rank.id, season, async (ratings, tx) => {
+				const deltas = EloCalculator.deltasFor(ratedPlayers, ratings);
 
-			for (const delta of deltas) {
-				const inserted = await tx.insertHistory({
-					matchId: data.matchId,
-					userId: delta.userId,
-					rankId: rank.id,
-					season,
-					kind: "applied",
-					previousRating: delta.previousRating,
-					delta: delta.delta,
-					kFactor: delta.kFactor,
-					opponentRating: delta.opponentRating,
-				});
+				for (const delta of deltas) {
+					const inserted = await tx.insertHistory({
+						matchId: data.matchId,
+						userId: delta.userId,
+						rankId: rank.id,
+						season,
+						kind: "applied",
+						previousRating: delta.previousRating,
+						delta: delta.delta,
+						kFactor: delta.kFactor,
+						opponentRating: delta.opponentRating,
+					});
 
-				if (!inserted) {
-					this.logger.info(
-						`Rating for match ${data.matchId} / user ${delta.userId} was already recorded — replay no-op.`,
-					);
-					continue;
+					if (!inserted) {
+						this.logger.info(
+							`Rating for match ${data.matchId} / user ${delta.userId} was already recorded — replay no-op.`,
+						);
+						continue;
+					}
+
+					const currentRating = ratings.get(delta.userId) as Rating;
+					const updatedRating = currentRating.applyDelta(delta.delta);
+					await tx.saveRating(delta.userId, rank.id, season, updatedRating);
 				}
-
-				const currentRating = ratings.get(delta.userId) as Rating;
-				const updatedRating = currentRating.applyDelta(delta.delta);
-				await tx.saveRating(delta.userId, rank.id, season, updatedRating);
-			}
-		});
+			});
+		}
 	}
 }

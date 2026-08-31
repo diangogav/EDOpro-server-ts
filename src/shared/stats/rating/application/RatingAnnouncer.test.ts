@@ -1,5 +1,6 @@
 import { mock } from "jest-mock-extended";
 
+import { RankGroupResolver } from "@shared/rank/application/RankGroupResolver";
 import { Rank } from "@shared/rank/domain/Rank";
 import { RankRepository } from "@shared/rank/domain/RankRepository";
 import { Team } from "@shared/room/Team";
@@ -30,6 +31,7 @@ function makeContext(overrides?: Partial<MatchContext>): MatchContext {
 describe("RatingAnnouncer", () => {
 	let repository: ReturnType<typeof mock<RatingRepository>>;
 	let rankRepository: ReturnType<typeof mock<RankRepository>>;
+	let rankGroupResolver: ReturnType<typeof mock<RankGroupResolver>>;
 	let rank: Rank;
 	let logger: LoggerMock;
 	let announcer: RatingAnnouncer;
@@ -37,10 +39,12 @@ describe("RatingAnnouncer", () => {
 	beforeEach(() => {
 		repository = mock<RatingRepository>();
 		rankRepository = mock<RankRepository>();
+		rankGroupResolver = mock<RankGroupResolver>();
+		rankGroupResolver.resolveAlias.mockImplementation((name) => name);
 		rank = RankMother.create({ name: "TCG" });
 		rankRepository.findOrCreateByName.mockResolvedValue(rank);
 		logger = new LoggerMock();
-		announcer = new RatingAnnouncer(repository, rankRepository, logger);
+		announcer = new RatingAnnouncer(repository, rankRepository, rankGroupResolver, logger);
 	});
 
 	describe("onMatchStarted", () => {
@@ -292,6 +296,22 @@ describe("RatingAnnouncer", () => {
 
 		it("never throws, isolating the runner's per-hook try/catch from any internal failure", async () => {
 			await expect(announcer.onRoomClosed({ roomId: 1, matchId: "x" })).resolves.not.toThrow();
+		});
+	});
+
+	describe("alias resolution", () => {
+		it("looks the rank up by the alias-resolved banlist name, keeping announcements otherwise unchanged", async () => {
+			rankGroupResolver.resolveAlias.mockImplementation((name) =>
+				name === "JTP" ? "JTP (Original)" : name,
+			);
+			repository.findMany.mockResolvedValue(new Map());
+			const ctx = makeContext({ banListName: "JTP" });
+
+			await announcer.onMatchStarted(ctx);
+
+			expect(rankGroupResolver.resolveAlias).toHaveBeenCalledWith("JTP");
+			expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith("JTP (Original)");
+			expect(ctx.announce).toHaveBeenCalledWith("[Rating v1 start] Diango 1000 | Rival 1000");
 		});
 	});
 });

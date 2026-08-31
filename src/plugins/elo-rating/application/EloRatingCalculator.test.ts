@@ -1,5 +1,6 @@
 import { mock, MockProxy } from "jest-mock-extended";
 import { Logger } from "@shared/logger/domain/Logger";
+import { RankGroupResolver } from "@shared/rank/application/RankGroupResolver";
 import { Rank } from "@shared/rank/domain/Rank";
 import { RankRepository } from "@shared/rank/domain/RankRepository";
 import { Team } from "@shared/room/Team";
@@ -21,6 +22,7 @@ describe("EloRatingCalculator", () => {
 	let userProfileRepository: MockProxy<UserProfileRepository>;
 	let ratingRepository: MockProxy<RatingRepository>;
 	let rankRepository: MockProxy<RankRepository>;
+	let rankGroupResolver: MockProxy<RankGroupResolver>;
 	let rank: Rank;
 	let tx: MockProxy<RatingTransaction>;
 
@@ -30,6 +32,9 @@ describe("EloRatingCalculator", () => {
 		userProfileRepository = mock<UserProfileRepository>();
 		ratingRepository = mock<RatingRepository>();
 		rankRepository = mock<RankRepository>();
+		rankGroupResolver = mock<RankGroupResolver>();
+		rankGroupResolver.resolveAlias.mockImplementation((name) => name);
+		rankGroupResolver.groupsFor.mockReturnValue([]);
 		rank = RankMother.create({ name: "TCG" });
 		rankRepository.findOrCreateByName.mockResolvedValue(rank);
 		tx = mock<RatingTransaction>();
@@ -40,6 +45,7 @@ describe("EloRatingCalculator", () => {
 			userProfileRepository,
 			ratingRepository,
 			rankRepository,
+			rankGroupResolver,
 		);
 	});
 
@@ -263,6 +269,84 @@ describe("EloRatingCalculator", () => {
 
 			expect(ratingRepository.transaction).not.toHaveBeenCalled();
 			expect(logger.warn).toHaveBeenCalled();
+		});
+	});
+
+	describe("group ranks", () => {
+		function resolveAccounts(): void {
+			const winnerProfile = UserProfileMother.create({ id: "player-1" });
+			const loserProfile = UserProfileMother.create({ id: "player-2" });
+			userProfileRepository.findById.mockImplementation(async (id) =>
+				id === "player-1" ? winnerProfile : loserProfile,
+			);
+		}
+
+		it("processes one independent Elo transaction per resolved group rank", async () => {
+			const groupRank = RankMother.create({ name: "TCG Ladder", type: "group" });
+			rankGroupResolver.groupsFor.mockReturnValue(["TCG Ladder"]);
+			rankRepository.findOrCreateByName.mockImplementation(async (name) =>
+				name === "TCG Ladder" ? groupRank : rank,
+			);
+			resolveAccounts();
+			ratingRepository.transaction.mockImplementation(async (_userIds, _rankId, _season, work) =>
+				work(
+					new Map<string, Rating>([
+						["player-1", Rating.from({ value: 1000, gamesPlayed: 20, peak: 1000 })],
+						["player-2", Rating.from({ value: 1000, gamesPlayed: 20, peak: 1000 })],
+					]),
+					tx,
+				),
+			);
+
+			await calculator.handle(makeEligibleEvent());
+
+			expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith("TCG");
+			expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith("TCG Ladder", "group");
+			expect(ratingRepository.transaction).toHaveBeenCalledTimes(2);
+			expect(ratingRepository.transaction).toHaveBeenCalledWith(
+				expect.arrayContaining(["player-1", "player-2"]),
+				rank.id,
+				config.season,
+				expect.any(Function),
+			);
+			expect(ratingRepository.transaction).toHaveBeenCalledWith(
+				expect.arrayContaining(["player-1", "player-2"]),
+				groupRank.id,
+				config.season,
+				expect.any(Function),
+			);
+			expect(tx.insertHistory).toHaveBeenCalledWith(
+				expect.objectContaining({ userId: "player-1", rankId: rank.id }),
+			);
+			expect(tx.insertHistory).toHaveBeenCalledWith(
+				expect.objectContaining({ userId: "player-1", rankId: groupRank.id }),
+			);
+			expect(tx.saveRating).toHaveBeenCalledWith(
+				"player-1",
+				groupRank.id,
+				config.season,
+				expect.anything(),
+			);
+		});
+
+		it("resolves the alias before the rank lookup and resolves groups from the canonical name", async () => {
+			rankGroupResolver.resolveAlias.mockImplementation((name) =>
+				name === "JTP" ? "JTP (Original)" : name,
+			);
+			resolveAccounts();
+
+			await calculator.handle(makeEligibleEvent({ banListName: "JTP" }));
+
+			expect(rankGroupResolver.resolveAlias).toHaveBeenCalledWith("JTP");
+			expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith("JTP (Original)");
+			expect(rankGroupResolver.groupsFor).toHaveBeenCalledWith("JTP (Original)");
+		});
+
+		it("consults the resolver only after the eligibility gate", async () => {
+			await calculator.handle(makeEligibleEvent({ ranked: false }));
+
+			expect(rankGroupResolver.resolveAlias).not.toHaveBeenCalled();
+			expect(rankGroupResolver.groupsFor).not.toHaveBeenCalled();
 		});
 	});
 });

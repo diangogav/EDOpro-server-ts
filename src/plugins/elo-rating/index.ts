@@ -1,6 +1,9 @@
 import { EventBus } from "@shared/event-bus/EventBus";
 import { PluginDeps, ServerPlugin } from "@shared/plugin/ServerPlugin";
+import { RankGroupResolver } from "@shared/rank/application/RankGroupResolver";
+import { InMemoryLoadedBanListNamesProvider } from "@shared/rank/infrastructure/InMemoryLoadedBanListNamesProvider";
 import { RankPostgresRepository } from "@shared/rank/infrastructure/RankPostgresRepository";
+import { getActiveRankGroupsConfig } from "@shared/rank/infrastructure/RankGroupsConfigLoader";
 import { RatingPostgresRepository } from "@shared/stats/rating/infrastructure/RatingPostgresRepository";
 import { UserProfilePostgresRepository } from "@shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 
@@ -20,6 +23,7 @@ const plugin: ServerPlugin = {
 				new UserProfilePostgresRepository(),
 				new RatingPostgresRepository(),
 				new RankPostgresRepository(),
+				new RankGroupResolver(getActiveRankGroupsConfig, new InMemoryLoadedBanListNamesProvider()),
 			),
 		);
 	},

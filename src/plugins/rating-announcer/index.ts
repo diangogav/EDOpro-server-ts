@@ -1,5 +1,8 @@
 import LoggerFactory from "@shared/logger/infrastructure/LoggerFactory";
+import { RankGroupResolver } from "@shared/rank/application/RankGroupResolver";
+import { InMemoryLoadedBanListNamesProvider } from "@shared/rank/infrastructure/InMemoryLoadedBanListNamesProvider";
 import { RankPostgresRepository } from "@shared/rank/infrastructure/RankPostgresRepository";
+import { getActiveRankGroupsConfig } from "@shared/rank/infrastructure/RankGroupsConfigLoader";
 import { ServerPlugin } from "@shared/plugin/ServerPlugin";
 import { RatingAnnouncer } from "@shared/stats/rating/application/RatingAnnouncer";
 import { RatingPostgresRepository } from "@shared/stats/rating/infrastructure/RatingPostgresRepository";
@@ -16,6 +19,7 @@ const plugin: ServerPlugin = {
 		new RatingAnnouncer(
 			new RatingPostgresRepository(),
 			new RankPostgresRepository(),
+			new RankGroupResolver(getActiveRankGroupsConfig, new InMemoryLoadedBanListNamesProvider()),
 			LoggerFactory.getLogger({ file: "RatingAnnouncer" }),
 		),
 	],

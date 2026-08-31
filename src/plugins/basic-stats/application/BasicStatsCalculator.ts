@@ -1,5 +1,7 @@
 import { Logger } from "src/shared/logger/domain/Logger";
 import { Player } from "src/shared/player/domain/Player";
+import { RankGroupResolver } from "src/shared/rank/application/RankGroupResolver";
+import { Rank } from "src/shared/rank/domain/Rank";
 import { RankRepository } from "src/shared/rank/domain/RankRepository";
 import { UserProfileRepository } from "src/shared/user-profile/domain/UserProfileRepository";
 
@@ -18,6 +20,7 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 		private readonly userProfileRepository: UserProfileRepository,
 		private readonly playerStatsRepository: PlayerStatsRepository,
 		private readonly rankRepository: RankRepository,
+		private readonly rankGroupResolver: RankGroupResolver,
 		private readonly matchResumeCreator: MatchResumeCreator,
 		private readonly duelResumeCreator: DuelResumeCreator,
 	) {
@@ -40,11 +43,24 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 
 		const gameId = event.data.matchId;
 
-		const banListRank =
-			banListName && banListName !== "N/A"
-				? await this.rankRepository.findOrCreateByName(banListName)
-				: null;
+		// The alias resolves before any rank lookup so a renamed header keeps
+		// feeding its canonical rank.
+		const hasRankedBanList = Boolean(banListName) && banListName !== "N/A";
+		const resolvedBanListName = hasRankedBanList
+			? this.rankGroupResolver.resolveAlias(banListName)
+			: banListName;
+
+		const banListRank = hasRankedBanList
+			? await this.rankRepository.findOrCreateByName(resolvedBanListName)
+			: null;
 		const globalRank = await this.rankRepository.findOrCreateByName("Global");
+		const groupNames = hasRankedBanList
+			? this.rankGroupResolver.groupsFor(resolvedBanListName)
+			: [];
+		const groupRanks: Rank[] = [];
+		for (const groupName of groupNames) {
+			groupRanks.push(await this.rankRepository.findOrCreateByName(groupName, "group"));
+		}
 
 		for (const player of players) {
 			const userProfile = await this.userProfileRepository.findByUsername(player.name);
@@ -65,23 +81,19 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 				.map((element) => element.id);
 			const points = player.calculateMatchPoints();
 			this.logger.info(`Player ${player.name} and id: ${userProfile.id} gain ${points} points`);
-			if (banListRank) {
+			// One row per rank with the same wins/losses/points math: the
+			// banlist rank (when played on a real list), Global, and every
+			// group ladder the played list feeds.
+			const statsRanks = [...(banListRank ? [banListRank] : []), globalRank, ...groupRanks];
+			for (const rank of statsRanks) {
 				const playerStats = await this.playerStatsRepository.findByUserIdAndRankId(
 					userProfile.id,
-					banListRank.id,
+					rank.id,
 				);
 				playerStats.addPoints(points);
 				player.winner ? playerStats.increaseWins() : playerStats.increaseLosses();
 				void this.playerStatsRepository.save(playerStats);
 			}
-
-			const globalPlayerStats = await this.playerStatsRepository.findByUserIdAndRankId(
-				userProfile.id,
-				globalRank.id,
-			);
-			globalPlayerStats.addPoints(points);
-			player.winner ? globalPlayerStats.increaseWins() : globalPlayerStats.increaseLosses();
-			void this.playerStatsRepository.save(globalPlayerStats);
 
 			const { id: matchId } = await this.matchResumeCreator.run({
 				userId: userProfile.id,
