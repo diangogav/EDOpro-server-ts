@@ -21,6 +21,13 @@ import {
 	receivedEvents,
 	resetReceivedEvents,
 } from "@test-support/plugin-fixtures/duel-events/subscriber/capture";
+import {
+	resetStartedCalls,
+	startedCalls,
+} from "@test-support/plugin-fixtures/lifecycle-hooks/provider/capture";
+
+import { container } from "@shared/dependency-injection";
+import { MatchLifecycleHooks } from "@shared/room/application/lifecycle/MatchLifecycleHooks";
 
 import { bootstrapPlugins } from "./bootstrapPlugins";
 
@@ -103,6 +110,32 @@ describe("bootstrapPlugins", () => {
 
 		expect(report.loaded).toEqual(["dup-name"]);
 		expect(report.skipped).toContain("duplicate-name-b");
+	});
+
+	describe("lifecycle-hooks root", () => {
+		const lifecycleHooksRoot = path.join(FIXTURES_ROOT, "lifecycle-hooks");
+
+		beforeEach(() => {
+			resetStartedCalls();
+		});
+
+		it("registers a plugin-declared lifecycleHooks entry into the shared MatchLifecycleHooks runner", async () => {
+			const report = await bootstrapPlugins(bus, deps, lifecycleHooksRoot);
+			expect(report.loaded).toContain("lifecycle-provider");
+			expect(startedCalls).toEqual([]);
+
+			container.get(MatchLifecycleHooks).runStarted({
+				roomId: 1,
+				ranked: true,
+				banListName: "TCG",
+				season: 1,
+				players: [],
+				announce: () => undefined,
+			});
+			await new Promise((resolve) => setImmediate(resolve));
+
+			expect(startedCalls).toEqual(["started"]);
+		});
 	});
 
 	describe("duel-events root", () => {

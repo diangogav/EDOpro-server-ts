@@ -2,6 +2,7 @@ import { EventBus } from "@shared/event-bus/EventBus";
 import { Logger } from "@shared/logger/domain/Logger";
 import { DuelEventPayloads } from "@shared/room/domain/duel-events/DuelEventDispatcher";
 import { DuelEventKind } from "@shared/room/domain/duel-events/DuelEvents";
+import { MatchLifecycleHook } from "@shared/room/domain/lifecycle/MatchLifecycleHook";
 
 import { config } from "src/config";
 
@@ -47,4 +48,12 @@ export interface ServerPlugin {
 	 * DuelEventPluginHub).
 	 */
 	readonly duelEvents?: readonly DuelEventKind[];
+
+	/**
+	 * Match lifecycle hooks this plugin provides. bootstrapPlugins() registers
+	 * every entry into the shared MatchLifecycleHooks runner right after this
+	 * plugin's register() call succeeds — the plugin never touches the runner
+	 * itself. Omit it and the plugin observes no match lifecycle events.
+	 */
+	readonly lifecycleHooks?: readonly MatchLifecycleHook[];
 }

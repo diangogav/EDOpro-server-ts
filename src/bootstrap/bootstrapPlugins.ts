@@ -1,9 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import { container } from "@shared/dependency-injection";
 import { EventBus } from "@shared/event-bus/EventBus";
 import { isServerPlugin } from "@shared/plugin/isServerPlugin";
 import { DuelEventSubscriptions, PluginDeps, ServerPlugin } from "@shared/plugin/ServerPlugin";
+import { MatchLifecycleHooks } from "@shared/room/application/lifecycle/MatchLifecycleHooks";
 import { DuelEventPluginHub } from "@shared/room/domain/duel-events/DuelEventPluginHub";
 
 export interface PluginBootstrapReport {
@@ -108,6 +110,12 @@ export async function bootstrapPlugins(
 			}
 
 			await candidate.register(bus, depsFor(candidate, deps));
+
+			if (candidate.lifecycleHooks) {
+				const hooks = container.get(MatchLifecycleHooks);
+				candidate.lifecycleHooks.forEach((hook) => hooks.register(hook));
+			}
+
 			report.loaded.push(candidate.name);
 		} catch (error) {
 			deps.logger.error(error instanceof Error ? error : String(error), { dirName });
