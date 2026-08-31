@@ -22,6 +22,8 @@ jest.mock("../../../web-socket-server/WebSocketSingleton", () => {
 	};
 });
 
+jest.mock("@shared/dependency-injection");
+
 import { WindbotModule, WindbotModuleDeps } from "../../windbot/application/WindbotModule";
 import { WindbotTokenStore } from "../../windbot/domain/WindbotTokenStore";
 import { FinalizeYGOProRoom } from "./FinalizeYGOProRoom";
@@ -32,6 +34,8 @@ import { TokenIndex } from "@shared/room/domain/TokenIndex";
 import { YgoClient } from "@shared/client/domain/YgoClient";
 import { DuelState } from "@shared/room/domain/YgoRoom";
 import { YGOProStocDuelEnd } from "ygopro-msg-encode";
+import { container } from "@shared/dependency-injection";
+import { MatchLifecycleHooks } from "@shared/room/application/lifecycle/MatchLifecycleHooks";
 
 // ---------- helpers ----------
 
@@ -94,10 +98,15 @@ const createRoomInList = (clients: FakeClient[] = []) => {
 
 describe("FinalizeYGOProRoom.run()", () => {
 	const mockInstance = WebSocketSingleton.getInstance();
+	let runClosed: jest.Mock;
 
 	beforeEach(() => {
 		(mockInstance.broadcast as jest.Mock).mockClear();
 		TokenIndex.getInstance().clear();
+		runClosed = jest.fn();
+		(container.get as jest.Mock).mockReturnValue({
+			runClosed,
+		} as unknown as MatchLifecycleHooks);
 	});
 
 	afterEach(() => {
@@ -191,6 +200,23 @@ describe("FinalizeYGOProRoom.run()", () => {
 	it("does not throw when windbot is not initialized", () => {
 		const room = createRoomInList();
 		expect(() => FinalizeYGOProRoom.run(room)).not.toThrow();
+	});
+
+	it("invokes MatchLifecycleHooks.runClosed with the room's roomId and matchId — the ygopro teardown chokepoint", () => {
+		const room = createRoomInList();
+
+		FinalizeYGOProRoom.run(room);
+
+		expect(runClosed).toHaveBeenCalledWith({ roomId: room.id, matchId: room.matchId });
+	});
+
+	it("invokes runClosed exactly once even when finalize is called twice (idempotent teardown)", () => {
+		const room = createRoomInList();
+
+		FinalizeYGOProRoom.run(room);
+		FinalizeYGOProRoom.run(room);
+
+		expect(runClosed).toHaveBeenCalledTimes(1);
 	});
 
 	it("revokes every client's reconnection token from the global index", () => {

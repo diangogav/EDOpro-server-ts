@@ -19,6 +19,10 @@ import { ISocket } from "@shared/socket/domain/ISocket";
 import { Team } from "@shared/room/Team";
 import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
+import { MatchLifecycleHooks } from "@shared/room/application/lifecycle/MatchLifecycleHooks";
+import { MatchContext } from "@shared/room/domain/lifecycle/MatchLifecycleHook";
+import { createRoomAnnounce } from "@shared/room/domain/lifecycle/RoomAnnounce";
+import { config } from "src/config";
 
 import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { DuelRecord } from "../DuelRecord";
@@ -573,6 +577,7 @@ export class YGOProDuelingState extends YGOProRoomState {
 		);
 
 		if (this.room.isMatchFinished()) {
+			await container.get(MatchLifecycleHooks).runEnding(this.buildEndContext());
 			await this.finalizeWithReplays();
 			this.dispatchGameOverDomainEvent();
 			this.removeRoom();
@@ -581,6 +586,23 @@ export class YGOProDuelingState extends YGOProRoomState {
 		}
 
 		this.transitionToSideDecking(winner);
+	}
+
+	private buildEndContext(): MatchContext {
+		return {
+			roomId: this.room.id,
+			matchId: this.room.matchId,
+			ranked: this.room.ranked,
+			banListName: this.room.banListName ?? "N/A",
+			season: config.season,
+			players: this.room.matchPlayersHistory.map((player) => ({
+				id: player.id,
+				team: player.team as Team,
+				name: player.name,
+				winner: player.winner,
+			})),
+			announce: createRoomAnnounce(this.room),
+		};
 	}
 
 	private transitionToSideDecking(winner: number): void {
