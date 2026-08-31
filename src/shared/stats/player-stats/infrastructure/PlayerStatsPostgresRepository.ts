@@ -5,16 +5,16 @@ import { PlayerStatsRepository } from "../domain/PlayerStatsRepository";
 import { config } from "./../../../../config/index";
 
 export class PlayerStatsPostgresRepository implements PlayerStatsRepository {
-	async findByUserIdAndBanListName(userId: string, banListName: string): Promise<PlayerStats> {
+	async findByUserIdAndRankId(userId: string, rankId: string): Promise<PlayerStats> {
 		const repository = dataSource.getRepository(PlayerStatsEntity);
 		const playerStatsResponse = await repository.findOneBy({
-			banListName,
+			rankId,
 			userId,
 			season: config.season,
 		});
 		if (!playerStatsResponse) {
 			return PlayerStats.initialize({
-				banListName,
+				rankId,
 				userId,
 				season: config.season,
 			});
@@ -28,7 +28,7 @@ export class PlayerStatsPostgresRepository implements PlayerStatsRepository {
 
 		const playerStatsEntity = repository.create({
 			id: playerStats.id,
-			banListName: playerStats.banListName,
+			rankId: playerStats.rankId,
 			wins: playerStats.wins,
 			losses: playerStats.losses,
 			points: playerStats.points,

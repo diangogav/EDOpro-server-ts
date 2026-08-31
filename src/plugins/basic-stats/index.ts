@@ -3,6 +3,7 @@ import { PluginDeps, ServerPlugin } from "@shared/plugin/ServerPlugin";
 import { MatchResumeCreator } from "@shared/stats/match-resume/application/MatchResumeCreator";
 import { DuelResumeCreator } from "@shared/stats/match-resume/duel-resume/application/DuelResumeCreator";
 import { MatchResumePostgresRepository } from "@shared/stats/match-resume/infrastructure/postgres/MatchResumePostgresRepository";
+import { RankPostgresRepository } from "@shared/rank/infrastructure/RankPostgresRepository";
 import { PlayerStatsPostgresRepository } from "@shared/stats/player-stats/infrastructure/PlayerStatsPostgresRepository";
 import { UserProfilePostgresRepository } from "@shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 
@@ -21,6 +22,7 @@ const plugin: ServerPlugin = {
 				deps.logger,
 				new UserProfilePostgresRepository(),
 				new PlayerStatsPostgresRepository(),
+				new RankPostgresRepository(),
 				new MatchResumeCreator(new MatchResumePostgresRepository()),
 				new DuelResumeCreator(new MatchResumePostgresRepository()),
 			),

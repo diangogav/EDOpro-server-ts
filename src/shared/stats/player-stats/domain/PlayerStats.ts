@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 
 export type PlayerStatsProperties = {
 	id: string;
-	banListName: string;
+	rankId: string;
 	wins: number;
 	losses: number;
 	points: number;
@@ -12,7 +12,7 @@ export type PlayerStatsProperties = {
 
 export class PlayerStats {
 	public readonly id: string;
-	public readonly banListName: string;
+	public readonly rankId: string;
 	public readonly userId: string;
 	public readonly season: number;
 	private _points: number;
@@ -21,7 +21,7 @@ export class PlayerStats {
 
 	private constructor(data: PlayerStatsProperties) {
 		this.id = data.id;
-		this.banListName = data.banListName;
+		this.rankId = data.rankId;
 		this._wins = data.wins;
 		this._losses = data.losses;
 		this._points = data.points;
@@ -41,7 +41,7 @@ export class PlayerStats {
 		return this._losses;
 	}
 
-	static initialize(data: { banListName: string; userId: string; season: number }): PlayerStats {
+	static initialize(data: { rankId: string; userId: string; season: number }): PlayerStats {
 		return new PlayerStats({ ...data, wins: 0, losses: 0, points: 0, id: randomUUID() });
 	}
 

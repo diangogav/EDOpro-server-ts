@@ -5,7 +5,7 @@ export class PlayerStatsMother {
 	static create(params?: Partial<PlayerStatsProperties>): PlayerStats {
 		return PlayerStats.from({
 			id: faker.string.uuid(),
-			banListName: faker.lorem.word(),
+			rankId: faker.string.uuid(),
 			wins: faker.number.int(),
 			losses: faker.number.int(),
 			points: faker.number.int(),

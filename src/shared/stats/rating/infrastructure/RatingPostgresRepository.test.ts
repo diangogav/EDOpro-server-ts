@@ -37,18 +37,18 @@ describe("RatingPostgresRepository", () => {
 
 			const result = await repository.transaction(
 				["user-b", "user-a"],
-				"TCG",
+				"rank-1",
 				5,
 				async (ratings) => ratings,
 			);
 
 			expect(manager.query).toHaveBeenCalledWith(expect.stringContaining("ORDER BY user_id ASC"), [
-				"TCG",
+				"rank-1",
 				5,
 				["user-a", "user-b"],
 			]);
 			expect(manager.query).toHaveBeenCalledWith(expect.stringContaining("FOR UPDATE"), [
-				"TCG",
+				"rank-1",
 				5,
 				["user-a", "user-b"],
 			]);
@@ -62,17 +62,17 @@ describe("RatingPostgresRepository", () => {
 		it("acquires a pg_advisory_xact_lock per participant, ordered by user_id ascending, before the FOR UPDATE row lock", async () => {
 			manager.query.mockResolvedValue([]);
 
-			await repository.transaction(["user-b", "user-a"], "TCG", 5, async (ratings) => ratings);
+			await repository.transaction(["user-b", "user-a"], "rank-1", 5, async (ratings) => ratings);
 
 			const calls = manager.query.mock.calls;
 
 			expect(calls[0]).toEqual([
 				expect.stringContaining("pg_advisory_xact_lock"),
-				["user-a", "TCG", 5],
+				["user-a", "rank-1", 5],
 			]);
 			expect(calls[1]).toEqual([
 				expect.stringContaining("pg_advisory_xact_lock"),
-				["user-b", "TCG", 5],
+				["user-b", "rank-1", 5],
 			]);
 			expect(calls[2][0]).toEqual(expect.stringContaining("FOR UPDATE"));
 
@@ -85,11 +85,11 @@ describe("RatingPostgresRepository", () => {
 		it("skips advisory locking entirely when there are no participants", async () => {
 			manager.query.mockResolvedValueOnce([]); // FOR UPDATE row lock
 
-			await repository.transaction([], "TCG", 5, async (ratings) => ratings);
+			await repository.transaction([], "rank-1", 5, async (ratings) => ratings);
 
 			expect(manager.query).toHaveBeenCalledTimes(1);
 			expect(manager.query).toHaveBeenCalledWith(expect.stringContaining("FOR UPDATE"), [
-				"TCG",
+				"rank-1",
 				5,
 				[],
 			]);
@@ -103,11 +103,11 @@ describe("RatingPostgresRepository", () => {
 				.mockResolvedValueOnce([{ id: "history-row-1" }]); // insert
 
 			let inserted = false;
-			await repository.transaction([], "TCG", 5, async (_ratings, tx) => {
+			await repository.transaction([], "rank-1", 5, async (_ratings, tx) => {
 				inserted = await tx.insertHistory({
 					matchId: "match-1",
 					userId: "user-a",
-					banListName: "TCG",
+					rankId: "rank-1",
 					season: 5,
 					kind: "applied",
 					previousRating: 1000,
@@ -120,7 +120,7 @@ describe("RatingPostgresRepository", () => {
 			expect(inserted).toBe(true);
 			expect(manager.query).toHaveBeenCalledWith(
 				expect.stringContaining("ON CONFLICT (match_id, user_id, kind) DO NOTHING"),
-				["match-1", "user-a", "TCG", 5, "applied", 1000, 10, 20, 1000],
+				["match-1", "user-a", "rank-1", 5, "applied", 1000, 10, 20, 1000],
 			);
 		});
 
@@ -130,11 +130,11 @@ describe("RatingPostgresRepository", () => {
 				.mockResolvedValueOnce([]); // conflicting insert returns no rows
 
 			let inserted = true;
-			await repository.transaction([], "TCG", 5, async (_ratings, tx) => {
+			await repository.transaction([], "rank-1", 5, async (_ratings, tx) => {
 				inserted = await tx.insertHistory({
 					matchId: "match-1",
 					userId: "user-a",
-					banListName: "TCG",
+					rankId: "rank-1",
 					season: 5,
 					kind: "applied",
 					previousRating: 1000,
@@ -154,10 +154,10 @@ describe("RatingPostgresRepository", () => {
 				{ userId: "user-a", rating: 1200, gamesPlayed: 15, peak: 1250 },
 			]);
 
-			const result = await repository.findMany(["user-a"], "TCG", 5);
+			const result = await repository.findMany(["user-a"], "rank-1", 5);
 
 			expect(dataSource.query).toHaveBeenCalledTimes(1);
-			expect(dataSource.query).toHaveBeenCalledWith(expect.any(String), ["TCG", 5, ["user-a"]]);
+			expect(dataSource.query).toHaveBeenCalledWith(expect.any(String), ["rank-1", 5, ["user-a"]]);
 			expect((dataSource.query as jest.Mock).mock.calls[0][0]).not.toEqual(
 				expect.stringContaining("FOR UPDATE"),
 			);
@@ -170,7 +170,7 @@ describe("RatingPostgresRepository", () => {
 		it("R2 — defaults a user with no rating row to the season-start value (1000)", async () => {
 			(dataSource.query as jest.Mock).mockResolvedValueOnce([]);
 
-			const result = await repository.findMany(["user-a"], "TCG", 5);
+			const result = await repository.findMany(["user-a"], "rank-1", 5);
 
 			expect(result.get("user-a")).toEqual(Rating.initialize());
 		});
@@ -178,7 +178,7 @@ describe("RatingPostgresRepository", () => {
 		it("R3 — reads without acquiring the advisory participant locks used by the write path", async () => {
 			(dataSource.query as jest.Mock).mockResolvedValueOnce([]);
 
-			await repository.findMany(["user-a", "user-b"], "TCG", 5);
+			await repository.findMany(["user-a", "user-b"], "rank-1", 5);
 
 			expect(dataSource.query).toHaveBeenCalledTimes(1);
 			expect((dataSource.query as jest.Mock).mock.calls[0][0]).not.toEqual(
@@ -188,21 +188,21 @@ describe("RatingPostgresRepository", () => {
 	});
 
 	describe("RatingTransaction.saveRating()", () => {
-		it("upserts the player_ratings projection keyed by (user_id, ban_list_name, season)", async () => {
+		it("upserts the player_ratings projection keyed by (user_id, rank_id, season)", async () => {
 			manager.query.mockResolvedValueOnce([]); // lock query
 
-			await repository.transaction([], "TCG", 5, async (_ratings, tx) => {
+			await repository.transaction([], "rank-1", 5, async (_ratings, tx) => {
 				await tx.saveRating(
 					"user-a",
-					"TCG",
+					"rank-1",
 					5,
 					Rating.from({ value: 1010, gamesPlayed: 21, peak: 1010 }),
 				);
 			});
 
 			expect(manager.query).toHaveBeenCalledWith(
-				expect.stringContaining("ON CONFLICT (user_id, ban_list_name, season)"),
-				["user-a", "TCG", 5, 1010, 21, 1010],
+				expect.stringContaining("ON CONFLICT (user_id, rank_id, season)"),
+				["user-a", "rank-1", 5, 1010, 21, 1010],
 			);
 		});
 	});

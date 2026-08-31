@@ -1,4 +1,5 @@
 import LoggerFactory from "@shared/logger/infrastructure/LoggerFactory";
+import { RankPostgresRepository } from "@shared/rank/infrastructure/RankPostgresRepository";
 import { ServerPlugin } from "@shared/plugin/ServerPlugin";
 import { RatingAnnouncer } from "@shared/stats/rating/application/RatingAnnouncer";
 import { RatingPostgresRepository } from "@shared/stats/rating/infrastructure/RatingPostgresRepository";
@@ -14,6 +15,7 @@ const plugin: ServerPlugin = {
 	lifecycleHooks: [
 		new RatingAnnouncer(
 			new RatingPostgresRepository(),
+			new RankPostgresRepository(),
 			LoggerFactory.getLogger({ file: "RatingAnnouncer" }),
 		),
 	],

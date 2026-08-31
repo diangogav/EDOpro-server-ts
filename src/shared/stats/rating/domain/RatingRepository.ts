@@ -3,7 +3,7 @@ import { Rating } from "./Rating";
 export type RatingHistoryEntry = {
 	matchId: string;
 	userId: string;
-	banListName: string;
+	rankId: string;
 	season: number;
 	kind: "applied" | "reversal";
 	previousRating: number;
@@ -26,7 +26,7 @@ export interface RatingTransaction {
 	insertHistory(entry: RatingHistoryEntry): Promise<boolean>;
 
 	/** Upserts the derived player_ratings projection for one player. */
-	saveRating(userId: string, banListName: string, season: number, rating: Rating): Promise<void>;
+	saveRating(userId: string, rankId: string, season: number, rating: Rating): Promise<void>;
 }
 
 export interface RatingRepository {
@@ -38,7 +38,7 @@ export interface RatingRepository {
 	 */
 	transaction<T>(
 		userIds: string[],
-		banListName: string,
+		rankId: string,
 		season: number,
 		work: (ratings: Map<string, Rating>, tx: RatingTransaction) => Promise<T>,
 	): Promise<T>;
@@ -49,5 +49,5 @@ export interface RatingRepository {
 	 * display path — must never interfere with `transaction`'s write-side
 	 * locking.
 	 */
-	findMany(userIds: string[], banListName: string, season: number): Promise<Map<string, Rating>>;
+	findMany(userIds: string[], rankId: string, season: number): Promise<Map<string, Rating>>;
 }

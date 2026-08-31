@@ -1,10 +1,13 @@
 import { mock } from "jest-mock-extended";
 
+import { Rank } from "@shared/rank/domain/Rank";
+import { RankRepository } from "@shared/rank/domain/RankRepository";
 import { Team } from "@shared/room/Team";
 import { MatchContext } from "@shared/room/domain/lifecycle/MatchLifecycleHook";
 import { Rating } from "@shared/stats/rating/domain/Rating";
 import { RatingRepository } from "@shared/stats/rating/domain/RatingRepository";
 import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
+import { RankMother } from "@test-support/mothers/rank/RankMother";
 
 import { RatingAnnouncer } from "./RatingAnnouncer";
 
@@ -26,13 +29,18 @@ function makeContext(overrides?: Partial<MatchContext>): MatchContext {
 
 describe("RatingAnnouncer", () => {
 	let repository: ReturnType<typeof mock<RatingRepository>>;
+	let rankRepository: ReturnType<typeof mock<RankRepository>>;
+	let rank: Rank;
 	let logger: LoggerMock;
 	let announcer: RatingAnnouncer;
 
 	beforeEach(() => {
 		repository = mock<RatingRepository>();
+		rankRepository = mock<RankRepository>();
+		rank = RankMother.create({ name: "TCG" });
+		rankRepository.findOrCreateByName.mockResolvedValue(rank);
 		logger = new LoggerMock();
-		announcer = new RatingAnnouncer(repository, logger);
+		announcer = new RatingAnnouncer(repository, rankRepository, logger);
 	});
 
 	describe("onMatchStarted", () => {
@@ -47,7 +55,8 @@ describe("RatingAnnouncer", () => {
 
 			await announcer.onMatchStarted(ctx);
 
-			expect(repository.findMany).toHaveBeenCalledWith(["p1", "p2"], "TCG", 5);
+			expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith("TCG");
+			expect(repository.findMany).toHaveBeenCalledWith(["p1", "p2"], rank.id, 5);
 			expect(ctx.announce).toHaveBeenCalledWith("[Rating v1 start] Diango 1050 | Rival 950");
 		});
 
@@ -65,6 +74,7 @@ describe("RatingAnnouncer", () => {
 
 			await announcer.onMatchStarted(ctx);
 
+			expect(rankRepository.findOrCreateByName).not.toHaveBeenCalled();
 			expect(repository.findMany).not.toHaveBeenCalled();
 			expect(ctx.announce).not.toHaveBeenCalled();
 		});
@@ -74,6 +84,7 @@ describe("RatingAnnouncer", () => {
 
 			await announcer.onMatchStarted(ctx);
 
+			expect(rankRepository.findOrCreateByName).not.toHaveBeenCalled();
 			expect(repository.findMany).not.toHaveBeenCalled();
 			expect(ctx.announce).not.toHaveBeenCalled();
 		});
@@ -88,6 +99,7 @@ describe("RatingAnnouncer", () => {
 
 			await announcer.onMatchStarted(ctx);
 
+			expect(rankRepository.findOrCreateByName).not.toHaveBeenCalled();
 			expect(repository.findMany).not.toHaveBeenCalled();
 			expect(ctx.announce).not.toHaveBeenCalled();
 		});
@@ -109,6 +121,27 @@ describe("RatingAnnouncer", () => {
 
 			await expect(announcer.onMatchStarted(ctx)).resolves.toBeUndefined();
 
+			expect(ctx.announce).not.toHaveBeenCalled();
+		});
+
+		it("resolves the rank by banlist name exactly once per match", async () => {
+			repository.findMany.mockResolvedValue(new Map());
+			const ctx = makeContext();
+
+			await announcer.onMatchStarted(ctx);
+			await announcer.onMatchEnding(ctx);
+
+			expect(rankRepository.findOrCreateByName).toHaveBeenCalledTimes(1);
+			expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith("TCG");
+		});
+
+		it("does not throw and sends no frame when rank resolution fails", async () => {
+			rankRepository.findOrCreateByName.mockRejectedValue(new Error("db down"));
+			const ctx = makeContext();
+
+			await expect(announcer.onMatchStarted(ctx)).resolves.toBeUndefined();
+
+			expect(repository.findMany).not.toHaveBeenCalled();
 			expect(ctx.announce).not.toHaveBeenCalled();
 		});
 	});

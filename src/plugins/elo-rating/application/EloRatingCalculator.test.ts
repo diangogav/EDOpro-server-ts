@@ -1,11 +1,14 @@
 import { mock, MockProxy } from "jest-mock-extended";
 import { Logger } from "@shared/logger/domain/Logger";
+import { Rank } from "@shared/rank/domain/Rank";
+import { RankRepository } from "@shared/rank/domain/RankRepository";
 import { Team } from "@shared/room/Team";
 import { Rating } from "@shared/stats/rating/domain/Rating";
 import { RatingRepository, RatingTransaction } from "@shared/stats/rating/domain/RatingRepository";
 import { UserProfileRepository } from "@shared/user-profile/domain/UserProfileRepository";
 import { GameOverDomainEventMother } from "@test-support/mothers/player/GameOverDomainEventMother";
 import { PlayerMother } from "@test-support/mothers/player/PlayerMother";
+import { RankMother } from "@test-support/mothers/rank/RankMother";
 import { RatingMother } from "@test-support/mothers/player/RatingMother";
 import { UserProfileMother } from "@test-support/mothers/user-profile/UserProfileMother";
 
@@ -17,6 +20,8 @@ describe("EloRatingCalculator", () => {
 	let logger: MockProxy<Logger>;
 	let userProfileRepository: MockProxy<UserProfileRepository>;
 	let ratingRepository: MockProxy<RatingRepository>;
+	let rankRepository: MockProxy<RankRepository>;
+	let rank: Rank;
 	let tx: MockProxy<RatingTransaction>;
 
 	beforeEach(() => {
@@ -24,10 +29,18 @@ describe("EloRatingCalculator", () => {
 		logger.child.mockReturnValue(logger);
 		userProfileRepository = mock<UserProfileRepository>();
 		ratingRepository = mock<RatingRepository>();
+		rankRepository = mock<RankRepository>();
+		rank = RankMother.create({ name: "TCG" });
+		rankRepository.findOrCreateByName.mockResolvedValue(rank);
 		tx = mock<RatingTransaction>();
 		tx.insertHistory.mockResolvedValue(true);
 
-		calculator = new EloRatingCalculator(logger, userProfileRepository, ratingRepository);
+		calculator = new EloRatingCalculator(
+			logger,
+			userProfileRepository,
+			ratingRepository,
+			rankRepository,
+		);
 	});
 
 	function makeEligibleEvent(overrides?: Parameters<typeof GameOverDomainEventMother.create>[0]) {
@@ -64,9 +77,10 @@ describe("EloRatingCalculator", () => {
 			expect(userProfileRepository.findById).toHaveBeenCalledWith("player-2");
 			expect(userProfileRepository.findByUsername).not.toHaveBeenCalled();
 
+			expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith("TCG");
 			expect(ratingRepository.transaction).toHaveBeenCalledWith(
 				expect.arrayContaining(["player-1", "player-2"]),
-				"TCG",
+				rank.id,
 				config.season,
 				expect.any(Function),
 			);
@@ -75,7 +89,7 @@ describe("EloRatingCalculator", () => {
 				expect.objectContaining({
 					matchId: "match-1",
 					userId: "player-1",
-					banListName: "TCG",
+					rankId: rank.id,
 					season: config.season,
 					kind: "applied",
 					delta: 10,
@@ -92,13 +106,13 @@ describe("EloRatingCalculator", () => {
 
 			expect(tx.saveRating).toHaveBeenCalledWith(
 				"player-1",
-				"TCG",
+				rank.id,
 				config.season,
 				Rating.from({ value: 1010, gamesPlayed: 21, peak: 1010 }),
 			);
 			expect(tx.saveRating).toHaveBeenCalledWith(
 				"player-2",
-				"TCG",
+				rank.id,
 				config.season,
 				Rating.from({ value: 990, gamesPlayed: 21, peak: 1000 }),
 			);
@@ -110,6 +124,7 @@ describe("EloRatingCalculator", () => {
 			await calculator.handle(makeEligibleEvent({ ranked: false }));
 
 			expect(ratingRepository.transaction).not.toHaveBeenCalled();
+			expect(rankRepository.findOrCreateByName).not.toHaveBeenCalled();
 			expect(userProfileRepository.findById).not.toHaveBeenCalled();
 		});
 	});
@@ -137,6 +152,7 @@ describe("EloRatingCalculator", () => {
 			await calculator.handle(makeEligibleEvent({ banListName: "N/A" }));
 
 			expect(ratingRepository.transaction).not.toHaveBeenCalled();
+			expect(rankRepository.findOrCreateByName).not.toHaveBeenCalled();
 		});
 	});
 

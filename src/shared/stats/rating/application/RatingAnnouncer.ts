@@ -1,4 +1,5 @@
 import { Logger } from "@shared/logger/domain/Logger";
+import { RankRepository } from "@shared/rank/domain/RankRepository";
 import { Team } from "@shared/room/Team";
 import {
 	MatchContext,
@@ -46,6 +47,7 @@ export class RatingAnnouncer implements MatchLifecycleHook {
 
 	constructor(
 		private readonly ratingRepository: RatingRepository,
+		private readonly rankRepository: RankRepository,
 		private readonly logger: Logger,
 	) {}
 
@@ -68,26 +70,28 @@ export class RatingAnnouncer implements MatchLifecycleHook {
 			return;
 		}
 
+		// Eligibility stays keyed on the banlist name; the rank is resolved
+		// exactly once per match, here at start, and carried in the snapshot.
+		let rankId: string;
 		let ratings: Map<string, Rating>;
 		try {
+			const rank = await this.rankRepository.findOrCreateByName(eligibility.banListName);
+			rankId = rank.id;
 			ratings = await this.ratingRepository.findMany(
 				eligibility.players.map((player) => player.id),
-				eligibility.banListName,
+				rankId,
 				ctx.season,
 			);
 		} catch (error) {
 			this.logger.warn(
-				`RatingAnnouncer: findMany failed for room ${ctx.roomId}: ${String(error)}`,
+				`RatingAnnouncer: rating lookup failed for room ${ctx.roomId}: ${String(error)}`,
 				{ roomId: ctx.roomId },
 			);
 
 			return;
 		}
 
-		this.snapshots.set(
-			ctx.matchId,
-			MatchRatingSnapshot.create(ratings, eligibility.banListName, ctx.season),
-		);
+		this.snapshots.set(ctx.matchId, MatchRatingSnapshot.create(ratings, rankId, ctx.season));
 		this.matchIdByRoom.set(ctx.roomId, ctx.matchId);
 
 		const teams = this.groupByTeam(

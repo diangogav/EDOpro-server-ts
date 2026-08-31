@@ -1,5 +1,6 @@
 import { EventBus } from "@shared/event-bus/EventBus";
 import { PluginDeps, ServerPlugin } from "@shared/plugin/ServerPlugin";
+import { RankPostgresRepository } from "@shared/rank/infrastructure/RankPostgresRepository";
 import { RatingPostgresRepository } from "@shared/stats/rating/infrastructure/RatingPostgresRepository";
 import { UserProfilePostgresRepository } from "@shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 
@@ -18,6 +19,7 @@ const plugin: ServerPlugin = {
 				deps.logger,
 				new UserProfilePostgresRepository(),
 				new RatingPostgresRepository(),
+				new RankPostgresRepository(),
 			),
 		);
 	},
