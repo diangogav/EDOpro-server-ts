@@ -2,6 +2,7 @@ import { Logger } from "src/shared/logger/domain/Logger";
 import { EloCalculator, RatedPlayer } from "src/shared/stats/rating/domain/EloCalculator";
 import { Rating } from "src/shared/stats/rating/domain/Rating";
 import { RatingRepository } from "src/shared/stats/rating/domain/RatingRepository";
+import { evaluateRatingEligibility } from "src/shared/stats/rating/domain/RatingEligibility";
 import { UserProfileRepository } from "src/shared/user-profile/domain/UserProfileRepository";
 
 import { DomainEventSubscriber } from "../../../shared/event-bus/EventBus";
@@ -22,28 +23,27 @@ export class EloRatingCalculator implements DomainEventSubscriber<GameOverDomain
 	async handle(event: GameOverDomainEvent): Promise<void> {
 		const { data } = event;
 
-		if (!data.ranked) {
-			this.logger.info(`Skipping rating for match ${data.matchId}: match is not ranked.`);
+		const eligibility = evaluateRatingEligibility({
+			ranked: data.ranked,
+			banListName: data.banListName,
+			players: data.players,
+		});
+
+		if (!eligibility.eligible) {
+			if (eligibility.reason === "unranked") {
+				this.logger.info(`Skipping rating for match ${data.matchId}: match is not ranked.`);
+			} else if (eligibility.reason === "no-ranked-banlist") {
+				this.logger.info(`Skipping rating for match ${data.matchId}: no ranked banlist ("N/A").`);
+			} else {
+				this.logger.warn(
+					`Skipping rating for match ${data.matchId}: ${eligibility.missingIdCount} participant(s) have no account id (bot or unresolved account).`,
+				);
+			}
 
 			return;
 		}
 
-		if (!data.banListName || data.banListName === "N/A") {
-			this.logger.info(`Skipping rating for match ${data.matchId}: no ranked banlist ("N/A").`);
-
-			return;
-		}
-
-		const missingIdCount = data.players.filter((player) => player.id === null).length;
-		if (missingIdCount > 0) {
-			this.logger.warn(
-				`Skipping rating for match ${data.matchId}: ${missingIdCount} participant(s) have no account id (bot or unresolved account).`,
-			);
-
-			return;
-		}
-
-		const playerIds = data.players.map((player) => player.id as string);
+		const playerIds = eligibility.players.map((player) => player.id);
 		const accounts = await Promise.all(
 			playerIds.map((id) => this.userProfileRepository.findById(id)),
 		);
@@ -56,12 +56,12 @@ export class EloRatingCalculator implements DomainEventSubscriber<GameOverDomain
 			return;
 		}
 
-		const ratedPlayers: RatedPlayer[] = data.players.map((player) => ({
-			id: player.id as string,
+		const ratedPlayers: RatedPlayer[] = eligibility.players.map((player) => ({
+			id: player.id,
 			team: player.team,
 			winner: player.winner,
 		}));
-		const banListName = data.banListName;
+		const banListName = eligibility.banListName;
 		const season = config.season;
 
 		await this.ratingRepository.transaction(playerIds, banListName, season, async (ratings, tx) => {

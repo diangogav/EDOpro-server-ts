@@ -42,4 +42,12 @@ export interface RatingRepository {
 		season: number,
 		work: (ratings: Map<string, Rating>, tx: RatingTransaction) => Promise<T>,
 	): Promise<T>;
+
+	/**
+	 * Reads current ratings for the given users without acquiring any row
+	 * lock, defaulting missing rows to a fresh season-start rating. Read-only
+	 * display path — must never interfere with `transaction`'s write-side
+	 * locking.
+	 */
+	findMany(userIds: string[], banListName: string, season: number): Promise<Map<string, Rating>>;
 }

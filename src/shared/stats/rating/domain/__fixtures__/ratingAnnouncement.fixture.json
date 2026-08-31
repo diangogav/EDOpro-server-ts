@@ -1,0 +1,136 @@
+{
+	"oneVOneStart": {
+		"parsed": {
+			"kind": "start",
+			"teams": [
+				[
+					{
+						"name": "Diango",
+						"rating": 1000
+					}
+				],
+				[
+					{
+						"name": "Rival",
+						"rating": 980
+					}
+				]
+			]
+		},
+		"frame": "[Rating v1 start] Diango 1000 | Rival 980"
+	},
+	"oneVOneEnd": {
+		"parsed": {
+			"kind": "end",
+			"teams": [
+				[
+					{
+						"name": "Diango",
+						"rating": 1012,
+						"delta": 12
+					}
+				],
+				[
+					{
+						"name": "Rival",
+						"rating": 968,
+						"delta": -12
+					}
+				]
+			]
+		},
+		"frame": "[Rating v1 end] Diango 1012 (+12) | Rival 968 (-12)"
+	},
+	"twoVTwoStart": {
+		"parsed": {
+			"kind": "start",
+			"teams": [
+				[
+					{
+						"name": "Diango",
+						"rating": 1000
+					},
+					{
+						"name": "Ally",
+						"rating": 1100
+					}
+				],
+				[
+					{
+						"name": "Rival",
+						"rating": 980
+					},
+					{
+						"name": "Foe",
+						"rating": 1200
+					}
+				]
+			]
+		},
+		"frame": "[Rating v1 start] Diango 1000 · Ally 1100 | Rival 980 · Foe 1200"
+	},
+	"twoVTwoEnd": {
+		"parsed": {
+			"kind": "end",
+			"teams": [
+				[
+					{
+						"name": "Diango",
+						"rating": 1012,
+						"delta": 12
+					},
+					{
+						"name": "Ally",
+						"rating": 1108,
+						"delta": 8
+					}
+				],
+				[
+					{
+						"name": "Rival",
+						"rating": 968,
+						"delta": -12
+					},
+					{
+						"name": "Foe",
+						"rating": 1192,
+						"delta": -8
+					}
+				]
+			]
+		},
+		"frame": "[Rating v1 end] Diango 1012 (+12) · Ally 1108 (+8) | Rival 968 (-12) · Foe 1192 (-8)"
+	},
+	"worstCaseEnd": {
+		"parsed": {
+			"kind": "end",
+			"teams": [
+				[
+					{
+						"name": "AAAAAAAAAAAAAAAAAAAA",
+						"rating": 999999,
+						"delta": 9999
+					},
+					{
+						"name": "BBBBBBBBBBBBBBBBBBBB",
+						"rating": 999999,
+						"delta": 9999
+					}
+				],
+				[
+					{
+						"name": "CCCCCCCCCCCCCCCCCCCC",
+						"rating": 999999,
+						"delta": -9999
+					},
+					{
+						"name": "DDDDDDDDDDDDDDDDDDDD",
+						"rating": 999999,
+						"delta": -9999
+					}
+				]
+			]
+		},
+		"frame": "[Rating v1 end] AAAAAAAAAAAAAAAAAAAA 999999 (+9999) · BBBBBBBBBBBBBBBBBBBB 999999 (+9999) | CCCCCCCCCCCCCCCCCCCC 999999 (-9999) · DDDDDDDDDDDDDDDDDDDD 999999 (-9999)"
+	}
+}

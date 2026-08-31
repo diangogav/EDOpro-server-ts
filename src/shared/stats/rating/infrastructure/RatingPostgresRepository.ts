@@ -23,6 +23,15 @@ const LOCK_RATINGS_QUERY = `
 	FOR UPDATE
 `;
 
+// Same shape as LOCK_RATINGS_QUERY minus FOR UPDATE: a display-only read must
+// never take a row lock or otherwise interfere with the write path above.
+const FIND_RATINGS_QUERY = `
+	SELECT user_id AS "userId", rating, games_played AS "gamesPlayed", peak
+	FROM player_ratings
+	WHERE ban_list_name = $1 AND season = $2 AND user_id = ANY($3)
+	ORDER BY user_id ASC
+`;
+
 const INSERT_HISTORY_QUERY = `
 	INSERT INTO rating_history (match_id, user_id, ban_list_name, season, kind, previous_rating, delta, k_factor, opponent_rating)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -89,19 +98,37 @@ export class RatingPostgresRepository implements RatingRepository {
 			orderedIds,
 		]);
 
-		const ratings = new Map<string, Rating>();
-		for (const userId of orderedIds) {
-			const row = rows.find((item) => item.userId === userId);
-			ratings.set(
-				userId,
-				row
-					? Rating.from({ value: row.rating, gamesPlayed: row.gamesPlayed, peak: row.peak })
-					: Rating.initialize(),
-			);
-		}
-
-		return ratings;
+		return toRatingsMap(orderedIds, rows);
 	}
+
+	async findMany(
+		userIds: string[],
+		banListName: string,
+		season: number,
+	): Promise<Map<string, Rating>> {
+		const rows: PlayerRatingRow[] = await dataSource.query(FIND_RATINGS_QUERY, [
+			banListName,
+			season,
+			userIds,
+		]);
+
+		return toRatingsMap(userIds, rows);
+	}
+}
+
+function toRatingsMap(userIds: string[], rows: PlayerRatingRow[]): Map<string, Rating> {
+	const ratings = new Map<string, Rating>();
+	for (const userId of userIds) {
+		const row = rows.find((item) => item.userId === userId);
+		ratings.set(
+			userId,
+			row
+				? Rating.from({ value: row.rating, gamesPlayed: row.gamesPlayed, peak: row.peak })
+				: Rating.initialize(),
+		);
+	}
+
+	return ratings;
 }
 
 class RatingPostgresTransaction implements RatingTransaction {
