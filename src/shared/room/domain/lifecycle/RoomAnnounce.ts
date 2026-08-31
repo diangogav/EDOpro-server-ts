@@ -1,6 +1,7 @@
-import { ChatColor, YGOProStocChat } from "ygopro-msg-encode";
+import { ChatColor } from "ygopro-msg-encode";
 
 import { YgoRoom } from "@shared/room/domain/YgoRoom";
+import { createSystemChat } from "@shared/room/domain/chat/SystemChat";
 
 /**
  * Builds the `MatchContext.announce` capability for one room: a system
@@ -10,11 +11,7 @@ import { YgoRoom } from "@shared/room/domain/YgoRoom";
  */
 export function createRoomAnnounce(room: YgoRoom): (message: string) => void {
 	return (message: string) => {
-		const frame = Buffer.from(
-			new YGOProStocChat()
-				.fromPartial({ player_type: ChatColor.GRAY, msg: message })
-				.toFullPayload(),
-		);
+		const frame = createSystemChat(ChatColor.GRAY, message);
 
 		room.clients.forEach((client) => {
 			client.socket.send(frame);

@@ -15,12 +15,12 @@ import { DuelEventPluginHub } from "src/shared/room/domain/duel-events/DuelEvent
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 import { EventEmitter } from "stream";
 
-import { YGOProPlayerChatMessage } from "@ygopro/messages/server-to-client/YGOProPlayerChatMessage";
 import { YgoClient } from "../../../shared/client/domain/YgoClient";
 import { container } from "../../../shared/dependency-injection";
 import { MatchLifecycleHooks } from "../../../shared/room/application/lifecycle/MatchLifecycleHooks";
 import { MatchContext } from "../../../shared/room/domain/lifecycle/MatchLifecycleHook";
 import { createRoomAnnounce } from "../../../shared/room/domain/lifecycle/RoomAnnounce";
+import { createSystemChat } from "../../../shared/room/domain/chat/SystemChat";
 import { config } from "../../../config";
 import { YgoRoom } from "../../../shared/room/domain/YgoRoom";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
@@ -34,7 +34,7 @@ import { ServerMessageClientMessage } from "../../messages/server-to-client/Serv
 import { SpectatorMessageClientMessage } from "../../messages/server-to-client/SpectatorMessageClientMessage";
 import { RoomType } from "src/shared/room/domain/RoomType";
 import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
-import { NetPlayerType, YGOProStocChat, YGOProStocSelectHand } from "ygopro-msg-encode";
+import { ChatColor, NetPlayerType, YGOProStocChat, YGOProStocSelectHand } from "ygopro-msg-encode";
 import {
 	EMOTE_COOLDOWN_MS,
 	MAX_ID_LENGTH,
@@ -251,7 +251,7 @@ export abstract class RoomState {
 	private handleChat(message: ClientMessage, room: YgoRoom, client: YgoClient): void {
 		const sanitized = BufferToUTF16(message.data, message.data.length);
 		if (sanitized === ":score") {
-			client.socket.send(YGOProPlayerChatMessage.create(room.score));
+			client.socket.send(createSystemChat(ChatColor.WHITE, room.score));
 
 			return;
 		}

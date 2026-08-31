@@ -1,5 +1,7 @@
 import { EventEmitter } from "stream";
 
+import { ChatColor, YGOProStocChat } from "ygopro-msg-encode";
+
 import { RoomState } from "./RoomState";
 import { Commands } from "../../../shared/messages/Commands";
 import { RoomType } from "src/shared/room/domain/RoomType";
@@ -76,6 +78,30 @@ describe("RoomState — Mercury spectator chat (Option A: server prefixes name)"
 		const sent = socket.send.mock.calls[0][0] as Buffer;
 		expect(sent.includes(Buffer.from("Jugador A: hola", "utf16le"))).toBe(false);
 		expect(sent.includes(Buffer.from("hola", "utf16le"))).toBe(true);
+	});
+});
+
+describe("RoomState — :score command", () => {
+	let eventEmitter: EventEmitter;
+
+	beforeEach(() => {
+		eventEmitter = new EventEmitter();
+		new TestRoomState(eventEmitter);
+	});
+
+	it("answers with a WHITE STOC_CHAT frame carrying room.score, not the legacy 0xF3 frame", () => {
+		const socket = makeSocket();
+		const room = { score: "Score · Diango 1 – 0 Rival" } as unknown as never;
+		const client = { socket } as unknown as never;
+
+		eventEmitter.emit(Commands.CHAT as unknown as string, makeChatMessage(":score"), room, client);
+
+		const expectedFrame = Buffer.from(
+			new YGOProStocChat()
+				.fromPartial({ player_type: ChatColor.WHITE, msg: "Score · Diango 1 – 0 Rival" })
+				.toFullPayload(),
+		);
+		expect(socket.send).toHaveBeenCalledWith(expectedFrame);
 	});
 });
 
