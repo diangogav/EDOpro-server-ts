@@ -2,12 +2,10 @@ import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 import { EventEmitter } from "stream";
 
-import { ChatColor } from "ygopro-msg-encode";
-
 import { config } from "../../../config";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { GameCreatorMessageHandler } from "../../../shared/room/domain/GameCreatorMessageHandler";
-import { createSystemChat } from "../../../shared/room/domain/chat/SystemChat";
+import { roomCreationNotice } from "../../../shared/room/domain/chat/RoomCreationNotice";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
@@ -95,31 +93,11 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 
 	/**
 	 * One-line, colored room-creation notice replacing the old three-clause
-	 * WELCOME banner. Ranking-disabled takes priority only for a room that
-	 * would otherwise be unranked — a room the client already flagged
-	 * ranked (via the password convention) still gets the ranked notice,
-	 * matching the pre-existing branch order.
+	 * WELCOME banner.
 	 */
 	private sendRoomCreationNotice(room: Room): void {
-		if (room.ranked) {
-			this.socket.send(
-				createSystemChat(ChatColor.GREEN, "Ranked room — results count toward your rating."),
-			);
-			return;
-		}
-
-		if (!config.ranking.enabled) {
-			this.socket.send(
-				createSystemChat(
-					ChatColor.YELLOW,
-					"Ranking is temporarily unavailable — this match won't be rated.",
-				),
-			);
-			return;
-		}
-
 		this.socket.send(
-			createSystemChat(ChatColor.WHITE, "Casual room — results won't affect your rating."),
+			roomCreationNotice({ ranked: room.ranked, rankingEnabled: config.ranking.enabled }),
 		);
 	}
 }
