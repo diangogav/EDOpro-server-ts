@@ -1,4 +1,6 @@
+import { container } from "@shared/dependency-injection";
 import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
+import { MatchLifecycleHooks } from "@shared/room/application/lifecycle/MatchLifecycleHooks";
 
 import { type Room } from "../domain/Room";
 
@@ -15,7 +17,8 @@ export default {
 
 	// deleteRoom is the single funnel through which every edopro room is torn down
 	// (DisconnectHandler, FinishDuelHandler and Room itself all route here), so it
-	// is also where we revoke the players' reconnection tokens. Without this they
+	// is also where we revoke the players' reconnection tokens and notify
+	// MatchLifecycleHooks that the room closed. Without the token revocation they
 	// leak into the global in-memory TokenIndex (no TTL) for the life of the
 	// process, pointing at destroyed clients. ygopro does the equivalent in
 	// FinalizeYGOProRoom — edopro has no such application-level teardown, so the
@@ -24,6 +27,7 @@ export default {
 		room.clients.forEach((client) => {
 			ReconnectionTokenIssuer.revoke(client);
 		});
+		container.get(MatchLifecycleHooks).runClosed({ roomId: room.id, matchId: room.matchId });
 		room.destroy();
 		const index = rooms.findIndex((item) => item.id === room.id);
 		if (index !== -1) {

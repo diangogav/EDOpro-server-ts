@@ -1,7 +1,11 @@
+jest.mock("@shared/dependency-injection");
+
 import RoomList from "./RoomList";
 import { Room } from "../domain/Room";
 import { TokenIndex } from "@shared/room/domain/TokenIndex";
 import { YgoClient } from "@shared/client/domain/YgoClient";
+import { container } from "@shared/dependency-injection";
+import { MatchLifecycleHooks } from "@shared/room/application/lifecycle/MatchLifecycleHooks";
 
 interface FakeClient {
 	reconnectionToken: string | null;
@@ -18,9 +22,10 @@ const makeClient = (token: string | null = null): FakeClient => {
 	return client;
 };
 
-const makeRoom = (id: number, clients: FakeClient[] = []): Room =>
+const makeRoom = (id: number, clients: FakeClient[] = [], matchId = `match-${id}`): Room =>
 	({
 		id,
+		matchId,
 		clients,
 		destroy: jest.fn(),
 	}) as unknown as Room;
@@ -31,9 +36,15 @@ const flushRooms = (): void => {
 };
 
 describe("RoomList.deleteRoom", () => {
+	let runClosed: jest.Mock;
+
 	beforeEach(() => {
 		TokenIndex.getInstance().clear();
 		flushRooms();
+		runClosed = jest.fn();
+		(container.get as jest.Mock).mockReturnValue({
+			runClosed,
+		} as unknown as MatchLifecycleHooks);
 	});
 
 	afterEach(() => {
@@ -80,5 +91,14 @@ describe("RoomList.deleteRoom", () => {
 
 		expect(room.destroy).toHaveBeenCalled();
 		expect(RoomList.getRooms().find((r) => r.id === 2)).toBeUndefined();
+	});
+
+	it("invokes MatchLifecycleHooks.runClosed with the room's roomId and matchId — the edopro teardown chokepoint", () => {
+		const room = makeRoom(3, [], "match-abc");
+		RoomList.addRoom(room);
+
+		RoomList.deleteRoom(room);
+
+		expect(runClosed).toHaveBeenCalledWith({ roomId: 3, matchId: "match-abc" });
 	});
 });

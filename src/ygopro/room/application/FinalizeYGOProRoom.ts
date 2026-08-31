@@ -1,6 +1,8 @@
 import { YGOProStocDuelEnd } from "ygopro-msg-encode";
 
+import { container } from "@shared/dependency-injection";
 import { DuelState } from "@shared/room/domain/YgoRoom";
+import { MatchLifecycleHooks } from "@shared/room/application/lifecycle/MatchLifecycleHooks";
 
 import { WindbotModule } from "../../windbot/application/WindbotModule";
 import { YGOProClient } from "@ygopro/client/domain/YGOProClient";
@@ -16,12 +18,14 @@ import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/Reco
  * Order is significant:
  *   1. finalizing = true — aborts any in-flight windbot retry loop before anything else.
  *   2. windbot token cleanup — no-op when windbot is uninitialized or disabled.
- *   3. revoke each client's reconnection token + close any still-open socket —
+ *   3. MatchLifecycleHooks.runClosed — every match lifecycle hook releases any
+ *      per-match state it kept, regardless of how the match ended.
+ *   4. revoke each client's reconnection token + close any still-open socket —
  *      MercuryRoomList.deleteRoom does NOT do either, so without this an orphaned
  *      bot keeps its socket alive AND every player's token leaks into the global
  *      in-memory TokenIndex (which has no TTL) for the lifetime of the process.
- *   4. delete the room from the list.
- *   5. broadcast REMOVE-ROOM so the real-time room list updates.
+ *   5. delete the room from the list.
+ *   6. broadcast REMOVE-ROOM so the real-time room list updates.
  */
 export class FinalizeYGOProRoom {
 	static run(room: YGOProRoom): void {
@@ -31,6 +35,8 @@ export class FinalizeYGOProRoom {
 		room.finalizing = true;
 
 		WindbotModule.cleanupRoomIfEnabled(room.id);
+
+		container.get(MatchLifecycleHooks).runClosed({ roomId: room.id, matchId: room.matchId });
 
 		// A client whose socket is still open mid-duel (WinScreen, side deck, RPS)
 		// deliberately tolerates silent socket drops to allow reconnects — so an
