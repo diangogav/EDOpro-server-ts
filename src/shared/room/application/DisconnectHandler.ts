@@ -1,8 +1,5 @@
-import { ServerInfoMessage } from "@edopro/messages/domain/ServerInfoMessage";
-
 import { Client } from "../../../edopro/client/domain/Client";
 import { PlayerChangeClientMessage } from "../../../edopro/messages/server-to-client/PlayerChangeClientMessage";
-import { ServerMessageClientMessage } from "../../../edopro/messages/server-to-client/ServerMessageClientMessage";
 import { WatchChangeClientMessage } from "../../../edopro/messages/server-to-client/WatchChangeClientMessage";
 import { Room } from "../../../edopro/room/domain/Room";
 import RoomList from "../../../edopro/room/infrastructure/RoomList";
@@ -87,24 +84,6 @@ export class DisconnectHandler {
 			});
 
 			return;
-		}
-
-		if (address) {
-			room.players.forEach((client: Client) => {
-				client.sendMessage(
-					ServerMessageClientMessage.create(
-						`${player.name.replace(/\0/g, "").trim()} ${ServerInfoMessage.HAS_LEFT_THE_DUEL}`,
-					),
-				);
-			});
-
-			room.spectators.forEach((spectator: Client) => {
-				spectator.sendMessage(
-					ServerMessageClientMessage.create(
-						`${player.name.replace(/\0/g, "").trim()} ${ServerInfoMessage.HAS_LEFT_THE_DUEL}`,
-					),
-				);
-			});
 		}
 	}
 

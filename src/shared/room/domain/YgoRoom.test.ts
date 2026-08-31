@@ -3,6 +3,17 @@ import { ClientMother } from "@test-support/mothers/client/ClientMother";
 import { SimpleRoomMother } from "@test-support/mothers/room/SimpleRoomMother";
 
 describe("YgoRoom", () => {
+	describe("score", () => {
+		it("formats as 'Score · <teamA names> <n> – <m> <teamB names>'", () => {
+			const room = SimpleRoomMother.create();
+			const teamA = ClientMother.create({ name: "Diango", team: 0 });
+			const teamB = ClientMother.create({ name: "Rival", team: 1 });
+			room.players.push(teamA, teamB);
+
+			expect(room.score).toBe("Score · Diango 0 – 0 Rival");
+		});
+	});
+
 	describe("Lock-Free", () => {
 		let room: ReturnType<typeof SimpleRoomMother.create>;
 

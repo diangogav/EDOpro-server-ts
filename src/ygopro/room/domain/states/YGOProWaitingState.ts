@@ -9,17 +9,13 @@ import { Logger } from "@shared/logger/domain/Logger";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { isNameTaken } from "@shared/room/domain/isNameTaken";
+import { createSystemChat } from "@shared/room/domain/chat/SystemChat";
 
 import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { YGOProRoom } from "../YGOProRoom";
 import { AdmitToRoom } from "@ygopro/room/admission/application/AdmitToRoom";
 
-import {
-	ChatColor,
-	ErrorMessageType,
-	YGOProCtosUpdateDeck,
-	YGOProStocChat,
-} from "ygopro-msg-encode";
+import { ChatColor, ErrorMessageType, YGOProCtosUpdateDeck } from "ygopro-msg-encode";
 import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
 import { YGOProDeckValidator } from "@ygopro/deck/domain/YGOProDeckValidator";
 import { DeckError } from "@shared/deck/domain/errors/DeckError";
@@ -147,11 +143,9 @@ export class YGOProWaitingState extends YGOProRoomState {
 	 * frames flush before teardown (see SocketCloseOnError.test.ts).
 	 */
 	private sendNameTakenError(room: YGOProRoom, name: string, socket: ISocket): void {
-		const chat = new YGOProStocChat().fromPartial({
-			player_type: ChatColor.RED,
-			msg: `A player named "${name}" is already in this room. Change your nickname and try again.`,
-		});
-		socket.send(Buffer.from(chat.toFullPayload()));
+		socket.send(
+			createSystemChat(ChatColor.RED, `Nickname '${name}' is already in use — choose another.`),
+		);
 		socket.send(room.messageSender.errorMessage(ErrorMessageType.JOINERROR, 0));
 		socket.close();
 	}

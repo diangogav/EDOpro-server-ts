@@ -1,4 +1,6 @@
 import "reflect-metadata";
+import { ChatColor, YGOProStocChat } from "ygopro-msg-encode";
+
 import { container } from "@shared/dependency-injection";
 import { EventBus } from "@shared/event-bus/EventBus";
 import { MatchLifecycleHooks } from "@shared/room/application/lifecycle/MatchLifecycleHooks";
@@ -121,9 +123,15 @@ describe("FinishDuelHandler", () => {
 		expect(mockRoom.stopTimer).toHaveBeenCalledTimes(2);
 		expect(mockRoom.clearSpectatorCache).toHaveBeenCalled();
 
-		// Verify score message sent
-		expect(mockClient1.sendMessage).toHaveBeenCalled();
-		expect(mockSpectator.sendMessage).toHaveBeenCalled();
+		// Score is sent as a WHITE STOC_CHAT frame (not the legacy 0xF3 frame),
+		// carrying room.score verbatim — one source of truth for the format.
+		const expectedScoreFrame = Buffer.from(
+			new YGOProStocChat()
+				.fromPartial({ player_type: ChatColor.WHITE, msg: "0-0" })
+				.toFullPayload(),
+		);
+		expect(mockClient1.sendMessage).toHaveBeenCalledWith(expectedScoreFrame);
+		expect(mockSpectator.sendMessage).toHaveBeenCalledWith(expectedScoreFrame);
 
 		// Verify win message (due to surrender)
 		expect(mockRoom.replay.addMessage).toHaveBeenCalled();

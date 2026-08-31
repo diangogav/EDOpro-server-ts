@@ -1,8 +1,6 @@
 import { CoreMessages } from "src/edopro/messages/domain/CoreMessages";
-import { ServerInfoMessage } from "src/edopro/messages/domain/ServerInfoMessage";
 import { ErrorMessages } from "src/edopro/messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "src/edopro/messages/server-to-client/ErrorClientMessage";
-import { ServerErrorClientMessage } from "src/edopro/messages/server-to-client/ServerErrorMessageClientMessage";
 import { Team } from "src/shared/room/Team";
 import {
 	DuelEventContext,
@@ -16,12 +14,12 @@ import { DuelEventPluginHub } from "src/shared/room/domain/duel-events/DuelEvent
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 import { EventEmitter } from "stream";
 
-import { YGOProPlayerChatMessage } from "@ygopro/messages/server-to-client/YGOProPlayerChatMessage";
 import { YgoClient } from "../../../shared/client/domain/YgoClient";
 import { container } from "../../../shared/dependency-injection";
 import { MatchLifecycleHooks } from "../../../shared/room/application/lifecycle/MatchLifecycleHooks";
 import { MatchContext } from "../../../shared/room/domain/lifecycle/MatchLifecycleHook";
 import { createRoomAnnounce } from "../../../shared/room/domain/lifecycle/RoomAnnounce";
+import { createSystemChat } from "../../../shared/room/domain/chat/SystemChat";
 import { config } from "../../../config";
 import { YgoRoom } from "../../../shared/room/domain/YgoRoom";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
@@ -35,7 +33,7 @@ import { ServerMessageClientMessage } from "../../messages/server-to-client/Serv
 import { SpectatorMessageClientMessage } from "../../messages/server-to-client/SpectatorMessageClientMessage";
 import { RoomType } from "src/shared/room/domain/RoomType";
 import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
-import { NetPlayerType, YGOProStocChat, YGOProStocSelectHand } from "ygopro-msg-encode";
+import { ChatColor, NetPlayerType, YGOProStocChat, YGOProStocSelectHand } from "ygopro-msg-encode";
 import {
 	EMOTE_COOLDOWN_MS,
 	MAX_ID_LENGTH,
@@ -77,31 +75,15 @@ export abstract class RoomState {
 		socket: ISocket,
 	): void {
 		socket.send(
-			ServerErrorClientMessage.create(
-				`Already exists a player with the name :${playerInfoMessage.name}`,
+			createSystemChat(
+				ChatColor.RED,
+				`Nickname '${playerInfoMessage.name}' is already in use — choose another.`,
 			),
 		);
 		socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 		socket.destroy();
 
 		return;
-	}
-
-	protected sendWelcomeMessage(room: YgoRoom, socket: ISocket): void {
-		if (room.ranked) {
-			socket.send(
-				YGOProPlayerChatMessage.create(
-					`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS} - ${ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION}`,
-				),
-			);
-			return;
-		}
-
-		socket.send(
-			YGOProPlayerChatMessage.create(
-				`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.UN_RANKED_ROOM_CREATION_SUCCESS}`,
-			),
-		);
 	}
 
 	protected processDuelMessage(messageType: CoreMessages, data: Buffer, room: YgoRoom): void {
@@ -266,18 +248,10 @@ export abstract class RoomState {
 		});
 	}
 
-	protected sendSystemErrorMessage(message: string, client: YgoClient): void {
-		client.socket.send(YGOProPlayerChatMessage.create(message));
-	}
-
-	protected sendSystemMessage(message: string, client: YgoClient): void {
-		client.socket.send(YGOProPlayerChatMessage.create(message));
-	}
-
 	private handleChat(message: ClientMessage, room: YgoRoom, client: YgoClient): void {
 		const sanitized = BufferToUTF16(message.data, message.data.length);
 		if (sanitized === ":score") {
-			client.socket.send(YGOProPlayerChatMessage.create(room.score));
+			client.socket.send(createSystemChat(ChatColor.WHITE, room.score));
 
 			return;
 		}

@@ -1,4 +1,5 @@
 import { EventEmitter } from "stream";
+import { ChatColor, YGOProStocChat } from "ygopro-msg-encode";
 import { Logger } from "@shared/logger/domain/Logger";
 import { UserAuth } from "@shared/user-auth/application/UserAuth";
 import { DeckCreator } from "@edopro/deck/application/DeckCreator";
@@ -112,13 +113,31 @@ describe("WaitingState", () => {
 			name: "Kicked",
 		});
 
+		const spectator = new Client({} as any) as jest.Mocked<Client>;
+		Object.assign(spectator, { sendMessage: jest.fn() });
+
 		Object.defineProperty(mockRoom, "players", { value: [kickedClient] });
+		Object.defineProperty(mockRoom, "spectators", { value: [spectator] });
 
 		mockEmitter.emit(Commands.KICK as unknown as string, message, mockRoom, mockClient);
 
 		expect(mockRoom.playerToSpectatorUnsafe).toHaveBeenCalledWith(kickedClient);
 		expect(mockRoom.addKick).toHaveBeenCalledWith(kickedClient);
-		expect(kickedClient.sendMessage).toHaveBeenCalled(); // Banned message
+
+		// One YELLOW STOC_CHAT send per room client — not two identical
+		// send loops (players, then spectators separately).
+		const expectedFrame = Buffer.from(
+			new YGOProStocChat()
+				.fromPartial({
+					player_type: ChatColor.YELLOW,
+					msg: "Kicked is banned from this room and can only join as a spectator.",
+				})
+				.toFullPayload(),
+		);
+		expect(kickedClient.sendMessage).toHaveBeenCalledWith(expectedFrame);
+		expect(kickedClient.sendMessage).toHaveBeenCalledTimes(1);
+		expect(spectator.sendMessage).toHaveBeenCalledWith(expectedFrame);
+		expect(spectator.sendMessage).toHaveBeenCalledTimes(1);
 	});
 
 	it("should handle TO_DUEL command (spectator to player)", () => {

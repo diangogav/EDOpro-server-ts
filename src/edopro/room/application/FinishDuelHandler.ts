@@ -1,9 +1,12 @@
+import { ChatColor } from "ygopro-msg-encode";
+
 import { container } from "../../../shared/dependency-injection";
 import { EventBus } from "../../../shared/event-bus/EventBus";
 import { GameOverDomainEvent } from "../../../shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
 import { MatchLifecycleHooks } from "../../../shared/room/application/lifecycle/MatchLifecycleHooks";
 import { MatchContext } from "../../../shared/room/domain/lifecycle/MatchLifecycleHook";
 import { createRoomAnnounce } from "../../../shared/room/domain/lifecycle/RoomAnnounce";
+import { createSystemChat } from "../../../shared/room/domain/chat/SystemChat";
 import { Team } from "../../../shared/room/Team";
 import { config } from "../../../config";
 import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
@@ -14,7 +17,6 @@ import { SideDeckWaitClientMessage } from "../../messages/server-to-client/game-
 import { WinClientMessage } from "../../messages/server-to-client/game-messages/WinClientMessage";
 import { ReplayBufferMessage } from "../../messages/server-to-client/ReplayBufferMessage";
 import { ReplayPromptMessage } from "../../messages/server-to-client/ReplayPromptMessage";
-import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { DuelFinishReason } from "../domain/DuelFinishReason";
 import { Room } from "../domain/Room";
 import RoomList from "../infrastructure/RoomList";
@@ -43,7 +45,7 @@ export class FinishDuelHandler {
 		this.room.stopTimer(1);
 		this.room.clearSpectatorCache();
 
-		const scoreTitleMessage = ServerMessageClientMessage.create(this.room.score);
+		const scoreTitleMessage = createSystemChat(ChatColor.WHITE, this.room.score);
 		this.room.players.forEach((player: Client) => {
 			player.sendMessage(scoreTitleMessage);
 		});

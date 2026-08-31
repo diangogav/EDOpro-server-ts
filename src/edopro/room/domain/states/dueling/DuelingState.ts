@@ -1,13 +1,14 @@
 import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
-import { ServerInfoMessage } from "@edopro/messages/domain/ServerInfoMessage";
 import { spawn } from "child_process";
 import * as crypto from "crypto";
 import EventEmitter from "events";
+import { ChatColor } from "ygopro-msg-encode";
 import { CoreMessages } from "src/edopro/messages/domain/CoreMessages";
 import { DuelStartClientMessage } from "src/shared/messages/server-to-client/DuelStartClientMessage";
 import { Team } from "src/shared/room/Team";
 
 import { Logger } from "../../../../../shared/logger/domain/Logger";
+import { createSystemChat } from "../../../../../shared/room/domain/chat/SystemChat";
 import { ISocket } from "../../../../../shared/socket/domain/ISocket";
 import { decimalToBytesBuffer } from "../../../../../utils";
 import { Client } from "../../../../client/domain/Client";
@@ -27,8 +28,6 @@ import { PlayerChangeClientMessage } from "../../../../messages/server-to-client
 import { ReconnectionTokenIssuer } from "../../../../../shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { findReconnectingPlayer } from "../../../../../shared/room/domain/findReconnectingPlayer";
 import { ReconnectionAckMessage } from "../../../../../shared/messages/server-to-client/ReconnectionAckMessage";
-import { ServerErrorClientMessage } from "../../../../messages/server-to-client/ServerErrorMessageClientMessage";
-import { ServerMessageClientMessage } from "../../../../messages/server-to-client/ServerMessageClientMessage";
 import { FinishDuelHandler } from "../../../application/FinishDuelHandler";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";
@@ -96,6 +95,10 @@ type FinishMessage = {
 type SwapMessage = {
 	team: number;
 };
+
+// Shared by both deck-mismatch checks in handleUpdateDeck below.
+const RECONNECT_SAME_DECK_MESSAGE = "Reconnect with the same deck you were using in this match.";
+
 export class DuelingState extends RoomState {
 	private static readonly MAX_MESSAGES_PER_TICK = 1000;
 
@@ -163,11 +166,7 @@ export class DuelingState extends RoomState {
 		].map((item) => Number(item.code));
 
 		if (completeCurrentDeck.length !== completeIncomingDeck.length) {
-			client.socket.send(
-				ServerErrorClientMessage.create(
-					"Por favor selecciona el mismo deck de la partida en curso para poder reconectar",
-				),
-			);
+			client.socket.send(createSystemChat(ChatColor.RED, RECONNECT_SAME_DECK_MESSAGE));
 			const message = ErrorClientMessage.create(ErrorMessages.DECK_ERROR);
 			client.socket.send(message);
 
@@ -181,11 +180,7 @@ export class DuelingState extends RoomState {
 		}
 
 		if (!completeIncomingDeck.every((item) => completeCurrentDeck.includes(item))) {
-			client.socket.send(
-				ServerErrorClientMessage.create(
-					"Por favor selecciona el mismo deck de la partida en curso para poder reconectar",
-				),
-			);
+			client.socket.send(createSystemChat(ChatColor.RED, RECONNECT_SAME_DECK_MESSAGE));
 
 			const message = ErrorClientMessage.create(ErrorMessages.DECK_ERROR);
 			client.socket.send(message);
@@ -202,9 +197,6 @@ export class DuelingState extends RoomState {
 	}
 
 	private handle(): void {
-		this.room.players.forEach((item) => {
-			item.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.PREPARING_DUEL));
-		});
 		this.room.prepareTurnOrder();
 
 		const players = this.room.players.map((item: Client) => ({
@@ -223,10 +215,6 @@ export class DuelingState extends RoomState {
 		// The reconnection token is issued once at match start (WaitingState), not
 		// per-game, so it survives across RPS, side-decking and every duel in a
 		// match. It is only rotated after each successful reconnection.
-		this.room.players.forEach((item) => {
-			item.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.STARTING_DUEL));
-		});
-
 		const core = spawn(
 			`./core/CoreIntegrator`,
 			[
@@ -253,9 +241,6 @@ export class DuelingState extends RoomState {
 
 		core.stderr.on("data", (data: string) => {
 			this.logger.error(data.toString(), { roomId: this.room.id });
-			this.room.players.forEach((item) => {
-				item.socket.send(ServerMessageClientMessage.create(data.toString()));
-			});
 		});
 
 		core.on("exit", (code, signal) => {
@@ -426,22 +411,6 @@ export class DuelingState extends RoomState {
 			this.logger.info(`Sending last cached message to ${player.name} after reconnection`);
 			player.sendMessage(player.cache);
 		}
-
-		this.room.players.forEach((client: Client) => {
-			client.sendMessage(
-				ServerMessageClientMessage.create(
-					`${player.name} ${ServerInfoMessage.HAS_ENTERED_TO_THE_DUEL}`,
-				),
-			);
-		});
-
-		this.room.spectators.forEach((spectator: Client) => {
-			spectator.sendMessage(
-				ServerMessageClientMessage.create(
-					`${player.name} ${ServerInfoMessage.HAS_ENTERED_TO_THE_DUEL}`,
-				),
-			);
-		});
 	}
 
 	private handleCoreField(message: FieldMessage) {
@@ -737,7 +706,7 @@ export class DuelingState extends RoomState {
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const joinMessage = new JoinGameMessage(message.data);
 		if (room.password !== joinMessage.password) {
-			socket.send(ServerErrorClientMessage.create("Wrong password"));
+			socket.send(createSystemChat(ChatColor.RED, "Wrong password."));
 			socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 			socket.destroy();
 

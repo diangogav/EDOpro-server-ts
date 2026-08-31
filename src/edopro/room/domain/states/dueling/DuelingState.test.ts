@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import { EventEmitter } from "stream";
+import { ChatColor, YGOProStocChat } from "ygopro-msg-encode";
 import { Logger } from "@shared/logger/domain/Logger";
 import { Reconnect } from "@edopro/room/application/Reconnect";
 import { JoinToDuelAsSpectator } from "@edopro/room/application/JoinToDuelAsSpectator";
@@ -165,6 +166,18 @@ describe("DuelingState", () => {
 		expect(mockLogger.info).toHaveBeenCalledWith("Starting Duel");
 	});
 
+	it("does NOT relay 'Preparing duel' / 'Starting duel' chat notices to players", () => {
+		expect(mockClient.socket.send).not.toHaveBeenCalled();
+	});
+
+	it("logs core stderr but does NOT relay it to players as a chat message", () => {
+		const [, stderrCallback] = (mockCore.stderr.on as jest.Mock).mock.calls[0];
+		stderrCallback(Buffer.from("core crashed"));
+
+		expect(mockLogger.error).toHaveBeenCalledWith("core crashed", { roomId: mockRoom.id });
+		expect(mockClient.socket.send).not.toHaveBeenCalled();
+	});
+
 	it("should handle UPDATE_DECK command (valid deck)", () => {
 		const message = { data: Buffer.alloc(10) } as ClientMessage;
 		const mockParser = {
@@ -197,7 +210,16 @@ describe("DuelingState", () => {
 		mockEmitter.emit(Commands.UPDATE_DECK as unknown as string, message, mockRoom, mockClient);
 
 		expect(mockClient.setCanReconnect).toHaveBeenCalledWith(false);
-		expect(mockClient.socket.send).toHaveBeenCalled(); // Error message
+
+		const expectedFrame = Buffer.from(
+			new YGOProStocChat()
+				.fromPartial({
+					player_type: ChatColor.RED,
+					msg: "Reconnect with the same deck you were using in this match.",
+				})
+				.toFullPayload(),
+		);
+		expect(mockClient.socket.send).toHaveBeenCalledWith(expectedFrame);
 	});
 
 	it("should handle SURRENDER command", () => {
@@ -246,7 +268,12 @@ describe("DuelingState", () => {
 
 		mockEmitter.emit("JOIN", message, mockRoom, mockSocket);
 
-		expect(mockSocket.send).toHaveBeenCalled();
+		const expectedFrame = Buffer.from(
+			new YGOProStocChat()
+				.fromPartial({ player_type: ChatColor.RED, msg: "Wrong password." })
+				.toFullPayload(),
+		);
+		expect(mockSocket.send).toHaveBeenCalledWith(expectedFrame);
 		expect(mockSocket.destroy).toHaveBeenCalled();
 	});
 
@@ -382,6 +409,32 @@ describe("DuelingState", () => {
 				expect.stringMatching(/^[0-9a-f]{32}$/),
 			);
 			expect(player.sendMessage).toHaveBeenCalled();
+		});
+
+		it("core RECONNECT: does NOT broadcast a 'has entered to the duel' chat notice", () => {
+			const player = makeRealClient({ reconnectionToken: "old", position: 0 });
+			(mockRoom as any).players = [player];
+			TokenIndex.getInstance().register("old", player, mockRoom.id);
+
+			(state as any).handleCoreReconnect({
+				position: 0,
+				team: 0,
+				cacheable: false,
+			});
+
+			// Only the reconnection-flow sends (opponent/player time, cache replay,
+			// catch-up, token rotate) remain — never a duplicated player-facing notice.
+			// The legacy 0xF3 frame's UTF8ToUTF16 helper zero-extends each ASCII byte
+			// into a UTF-16LE code unit; the needle mirrors that encoding directly
+			// (rather than a full-buffer decode) because the frame's odd-length
+			// prefix would otherwise shift UTF-16 pair alignment.
+			const needle = Buffer.from(
+				"has entered to the duel".split("").flatMap((c) => [c.charCodeAt(0), 0]),
+			);
+			const found = (player.sendMessage as jest.Mock).mock.calls.some(
+				([buf]) => Buffer.isBuffer(buf) && buf.includes(needle),
+			);
+			expect(found).toBe(false);
 		});
 	});
 });

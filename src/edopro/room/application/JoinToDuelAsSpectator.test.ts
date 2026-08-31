@@ -1,3 +1,5 @@
+import { ChatColor, YGOProStocChat } from "ygopro-msg-encode";
+
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { Client } from "@edopro/client/domain/Client";
 import { JoinGameMessage } from "@edopro/messages/client-to-server/JoinGameMessage";
@@ -52,7 +54,7 @@ describe("JoinToDuelAsSpectator", () => {
 			spectatorCache: [Buffer.from("cache1"), Buffer.from("cache2")],
 			players: [mockClient1, mockClient2],
 			spectators: [mockSpectator],
-			matchScore: jest.fn().mockReturnValue({ team0: 1, team1: 0 }),
+			score: "Score · Player1 1 – 0 Player2",
 		} as unknown as jest.Mocked<Room>;
 	});
 
@@ -67,14 +69,19 @@ describe("JoinToDuelAsSpectator", () => {
 		expect(mockRoom.notifyToAllPlayers).toHaveBeenCalledWith(mockSpectator);
 
 		// Verify messages sent to spectator
-		expect(mockSpectator.sendMessage).toHaveBeenCalledTimes(5); // JoinGame, DuelStart, CatchUp(true), CatchUp(false), ServerMessage(has entered)
+		expect(mockSpectator.sendMessage).toHaveBeenCalledTimes(4); // JoinGame, DuelStart, CatchUp(true), CatchUp(false)
 
-		// Verify socket messages (cache + welcome + score)
-		expect(mockSocket.send).toHaveBeenCalledTimes(4); // 2 cache items + Welcome + Score
+		// Verify socket messages (cache + score) — no more "Welcome" and no more
+		// "has entered as a spectator" broadcast to the room.
+		expect(mockSocket.send).toHaveBeenCalledTimes(3); // 2 cache items + Score
 
-		// Verify notification to other clients
-		expect(mockClient1.sendMessage).toHaveBeenCalled();
-		expect(mockClient2.sendMessage).toHaveBeenCalled();
-		expect(mockSpectator.sendMessage).toHaveBeenCalled(); // Also notified self? Logic says [...room.clients, ...room.spectators]
+		// Score reuses room.score verbatim (one source of truth) as a WHITE
+		// STOC_CHAT frame, not the legacy 0xF3 frame.
+		const expectedScoreFrame = Buffer.from(
+			new YGOProStocChat()
+				.fromPartial({ player_type: ChatColor.WHITE, msg: mockRoom.score })
+				.toFullPayload(),
+		);
+		expect(mockSocket.send).toHaveBeenCalledWith(expectedScoreFrame);
 	});
 });

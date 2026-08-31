@@ -1,12 +1,15 @@
 import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
 import { EventEmitter } from "stream";
 
+import { ChatColor } from "ygopro-msg-encode";
+
 import { config } from "../../../config";
 import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
 import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import { Redis } from "../../../shared/db/redis/infrastructure/Redis";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { JoinMessageHandler } from "../../../shared/room/domain/JoinMessageHandler";
+import { createSystemChat } from "../../../shared/room/domain/chat/SystemChat";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { CheckIfUseCanJoin } from "../../../shared/user-auth/application/CheckIfUserCanJoin";
 import { JoinGameMessage } from "../../messages/client-to-server/JoinGameMessage";
@@ -50,7 +53,7 @@ export class JoinHandler implements JoinMessageHandler {
 		const room = this.findRoom(joinMessage);
 
 		if (!room) {
-			this.socket.send(ServerErrorClientMessage.create("Room not found. Try reloading the list"));
+			this.socket.send(createSystemChat(ChatColor.RED, "Room not found — refresh the room list."));
 			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 			this.socket.destroy();
 
@@ -100,7 +103,7 @@ export class JoinHandler implements JoinMessageHandler {
 			this.logger.info(
 				`player: ${playerInfoMessage.name} tried to join to room: ${room.id} with wrong password: ${joinMessage.password}`,
 			);
-			this.socket.send(ServerErrorClientMessage.create("Wrong password"));
+			this.socket.send(createSystemChat(ChatColor.RED, "Wrong password."));
 			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 			this.socket.destroy();
 
