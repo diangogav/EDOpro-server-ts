@@ -40,7 +40,8 @@ export class MatchLifecycleHooks {
 		}
 
 		const work = Promise.allSettled(ending.map((hook) => this.invoke(hook, "onMatchEnding", ctx)));
-		await Promise.race([work, this.budget(ctx)]);
+		const { promise: budget, clear: clearBudget } = this.budget(ctx);
+		await Promise.race([work.then(clearBudget), budget]);
 	}
 
 	/**
@@ -70,9 +71,10 @@ export class MatchLifecycleHooks {
 		}
 	}
 
-	private budget(ctx: MatchContext): Promise<void> {
-		return new Promise((resolve) => {
-			const timer = setTimeout(() => {
+	private budget(ctx: MatchContext): { promise: Promise<void>; clear: () => void } {
+		let timer: NodeJS.Timeout;
+		const promise = new Promise<void>((resolve) => {
+			timer = setTimeout(() => {
 				this.logger.warn(
 					`MatchLifecycleHooks.runEnding exceeded its ${MATCH_ENDING_HOOK_BUDGET_MS}ms budget — proceeding with teardown`,
 					{ roomId: ctx.roomId },
@@ -81,6 +83,7 @@ export class MatchLifecycleHooks {
 			}, MATCH_ENDING_HOOK_BUDGET_MS);
 			timer.unref?.();
 		});
+		return { promise, clear: () => clearTimeout(timer) };
 	}
 
 	private async invoke(

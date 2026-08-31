@@ -197,6 +197,43 @@ describe("MatchLifecycleHooks", () => {
 
 			await expect(runner.runEnding(makeContext())).resolves.toBeUndefined();
 		});
+
+		it("does not warn about the budget when every hook finishes well within it", async () => {
+			jest.useFakeTimers();
+			try {
+				const fastHook: MatchLifecycleHook = {
+					name: "fast",
+					onMatchEnding: async () => undefined,
+				};
+				const runner = new MatchLifecycleHooks(logger);
+				runner.register(fastHook);
+
+				await runner.runEnding(makeContext());
+				await jest.advanceTimersByTimeAsync(MATCH_ENDING_HOOK_BUDGET_MS);
+
+				expect(logger.warn).not.toHaveBeenCalled();
+			} finally {
+				jest.useRealTimers();
+			}
+		});
+
+		it("clears the budget timer once the hooks settle, leaving no dangling timer", async () => {
+			jest.useFakeTimers();
+			try {
+				const fastHook: MatchLifecycleHook = {
+					name: "fast",
+					onMatchEnding: async () => undefined,
+				};
+				const runner = new MatchLifecycleHooks(logger);
+				runner.register(fastHook);
+
+				await runner.runEnding(makeContext());
+
+				expect(jest.getTimerCount()).toBe(0);
+			} finally {
+				jest.useRealTimers();
+			}
+		});
 	});
 
 	describe("runClosed", () => {
