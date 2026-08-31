@@ -18,14 +18,31 @@ export interface MatchContextPlayer {
  * Read-only view of a match handed to lifecycle hooks. Hooks never see the
  * room, a socket, or a client — `announce` is the only way a hook can reach
  * the room's clients, and it only ever sends a system chat line.
+ *
+ * `matchId` identifies the match aggregate itself (the same identity
+ * `GameOverDomainEvent.matchId` carries), distinct from `roomId`: a room's
+ * numeric id is small and gets reused across unrelated matches once freed,
+ * while `matchId` never repeats. A hook that keeps per-match state must key
+ * it by `matchId`, not `roomId`.
  */
 export interface MatchContext {
 	readonly roomId: number;
+	readonly matchId: string;
 	readonly ranked: boolean;
 	readonly banListName: string;
 	readonly season: number;
 	readonly players: readonly MatchContextPlayer[];
 	announce(message: string): void;
+}
+
+/**
+ * Identifies a room that has just been torn down, for hooks that need to
+ * release per-match state at that point rather than only on a clean match
+ * end.
+ */
+export interface RoomClosedContext {
+	readonly roomId: number;
+	readonly matchId: string;
 }
 
 /**
@@ -38,4 +55,5 @@ export interface MatchLifecycleHook {
 	readonly name: string;
 	onMatchStarted?(ctx: MatchContext): Promise<void>;
 	onMatchEnding?(ctx: MatchContext): Promise<void>;
+	onRoomClosed?(ctx: RoomClosedContext): Promise<void>;
 }

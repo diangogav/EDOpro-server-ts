@@ -1,7 +1,11 @@
 import { Service } from "diod";
 
 import { Logger } from "@shared/logger/domain/Logger";
-import { MatchContext, MatchLifecycleHook } from "@shared/room/domain/lifecycle/MatchLifecycleHook";
+import {
+	MatchContext,
+	MatchLifecycleHook,
+	RoomClosedContext,
+} from "@shared/room/domain/lifecycle/MatchLifecycleHook";
 
 type LifecyclePhase = "onMatchStarted" | "onMatchEnding";
 
@@ -37,6 +41,33 @@ export class MatchLifecycleHooks {
 
 		const work = Promise.allSettled(ending.map((hook) => this.invoke(hook, "onMatchEnding", ctx)));
 		await Promise.race([work, this.budget(ctx)]);
+	}
+
+	/**
+	 * Fires when a room is torn down, whether the match reached a clean end or
+	 * not (abandoned, disconnected mid-duel, error fallback). Hooks that keep
+	 * per-match state must release it here — `onMatchEnding` alone is not a
+	 * complete release point, since teardown does not require a prior clean
+	 * finish.
+	 */
+	runClosed(ctx: RoomClosedContext): void {
+		const closing = this.hooks.filter((hook) => hook.onRoomClosed !== undefined);
+		void Promise.allSettled(closing.map((hook) => this.invokeClosed(hook, ctx)));
+	}
+
+	private async invokeClosed(hook: MatchLifecycleHook, ctx: RoomClosedContext): Promise<void> {
+		try {
+			await hook.onRoomClosed?.(ctx);
+		} catch (error) {
+			this.logger.warn(
+				`Match lifecycle hook "${hook.name}" failed in onRoomClosed: ${String(error)}`,
+				{
+					hook: hook.name,
+					phase: "onRoomClosed",
+					roomId: ctx.roomId,
+				},
+			);
+		}
 	}
 
 	private budget(ctx: MatchContext): Promise<void> {

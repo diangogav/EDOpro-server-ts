@@ -1,5 +1,9 @@
 import { Team } from "@shared/room/Team";
-import { MatchContext, MatchLifecycleHook } from "@shared/room/domain/lifecycle/MatchLifecycleHook";
+import {
+	MatchContext,
+	MatchLifecycleHook,
+	RoomClosedContext,
+} from "@shared/room/domain/lifecycle/MatchLifecycleHook";
 import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
 
 import { MATCH_ENDING_HOOK_BUDGET_MS, MatchLifecycleHooks } from "./MatchLifecycleHooks";
@@ -7,6 +11,7 @@ import { MATCH_ENDING_HOOK_BUDGET_MS, MatchLifecycleHooks } from "./MatchLifecyc
 function makeContext(): MatchContext {
 	return {
 		roomId: 1234,
+		matchId: "match-1234-a",
 		ranked: true,
 		banListName: "TCG",
 		season: 5,
@@ -16,6 +21,10 @@ function makeContext(): MatchContext {
 		],
 		announce: jest.fn(),
 	};
+}
+
+function makeRoomClosedContext(): RoomClosedContext {
+	return { roomId: 1234, matchId: "match-1234-a" };
 }
 
 function flushMicrotasks(): Promise<void> {
@@ -187,6 +196,87 @@ describe("MatchLifecycleHooks", () => {
 			runner.register(startOnly);
 
 			await expect(runner.runEnding(makeContext())).resolves.toBeUndefined();
+		});
+	});
+
+	describe("runClosed", () => {
+		it("is fire-and-forget: returns before a slow hook resolves", async () => {
+			let resolved = false;
+			const slowHook: MatchLifecycleHook = {
+				name: "slow",
+				onRoomClosed: () =>
+					new Promise((resolve) =>
+						setTimeout(() => {
+							resolved = true;
+							resolve();
+						}, 50),
+					),
+			};
+			const runner = new MatchLifecycleHooks(logger);
+			runner.register(slowHook);
+
+			const returnValue = runner.runClosed(makeRoomClosedContext());
+
+			expect(returnValue).toBeUndefined();
+			expect(resolved).toBe(false);
+		});
+
+		it("isolates one throwing hook from the others — every registered hook still runs", async () => {
+			const calls: string[] = [];
+			const brokenHook: MatchLifecycleHook = {
+				name: "broken",
+				onRoomClosed: async () => {
+					calls.push("broken");
+					throw new Error("boom");
+				},
+			};
+			const healthyHook: MatchLifecycleHook = {
+				name: "healthy",
+				onRoomClosed: async () => {
+					calls.push("healthy");
+				},
+			};
+			const runner = new MatchLifecycleHooks(logger);
+			runner.register(brokenHook);
+			runner.register(healthyHook);
+
+			runner.runClosed(makeRoomClosedContext());
+			await flushMicrotasks();
+
+			expect(calls).toEqual(["broken", "healthy"]);
+			expect(logger.warn).toHaveBeenCalledWith(
+				expect.stringContaining("broken"),
+				expect.anything(),
+			);
+		});
+
+		it("skips hooks that declare no onRoomClosed", async () => {
+			const startOnly: MatchLifecycleHook = {
+				name: "start-only",
+				onMatchStarted: async () => undefined,
+			};
+			const runner = new MatchLifecycleHooks(logger);
+			runner.register(startOnly);
+
+			expect(() => runner.runClosed(makeRoomClosedContext())).not.toThrow();
+			await flushMicrotasks();
+		});
+
+		it("passes roomId and matchId through to the hook", async () => {
+			const received: RoomClosedContext[] = [];
+			const hook: MatchLifecycleHook = {
+				name: "recorder",
+				onRoomClosed: async (ctx) => {
+					received.push(ctx);
+				},
+			};
+			const runner = new MatchLifecycleHooks(logger);
+			runner.register(hook);
+
+			runner.runClosed({ roomId: 777, matchId: "match-777-z" });
+			await flushMicrotasks();
+
+			expect(received).toEqual([{ roomId: 777, matchId: "match-777-z" }]);
 		});
 	});
 });

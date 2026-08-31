@@ -126,6 +126,7 @@ describe("bootstrapPlugins", () => {
 
 			container.get(MatchLifecycleHooks).runStarted({
 				roomId: 1,
+				matchId: "match-1",
 				ranked: true,
 				banListName: "TCG",
 				season: 1,
