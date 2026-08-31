@@ -80,6 +80,18 @@
 			"from": "evolution-lflists"
 		},
 		{
+			"comment": "Canonical JTP lflist from evolution-assets (overrides the stale jtp-oficial copy)",
+			"target": "edopro/evolution-lflists/jtp-oficial.lflist.conf",
+			"from": "evolution-assets",
+			"file": "lflist/jtp.lflist.conf"
+		},
+		{
+			"comment": "JTP Adv 2007-03 lflist from evolution-assets",
+			"target": "edopro/evolution-lflists/jtp-adv-2007-03.lflist.conf",
+			"from": "evolution-assets",
+			"file": "lflist/jtp-advanced-marzo-2007.lflist.conf"
+		},
+		{
 			"comment": "EDOPro databases",
 			"target": "edopro/databases",
 			"from": "edopro-cdbs"
