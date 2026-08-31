@@ -67,14 +67,10 @@ describe("JoinToDuelAsSpectator", () => {
 		expect(mockRoom.notifyToAllPlayers).toHaveBeenCalledWith(mockSpectator);
 
 		// Verify messages sent to spectator
-		expect(mockSpectator.sendMessage).toHaveBeenCalledTimes(5); // JoinGame, DuelStart, CatchUp(true), CatchUp(false), ServerMessage(has entered)
+		expect(mockSpectator.sendMessage).toHaveBeenCalledTimes(4); // JoinGame, DuelStart, CatchUp(true), CatchUp(false)
 
-		// Verify socket messages (cache + welcome + score)
-		expect(mockSocket.send).toHaveBeenCalledTimes(4); // 2 cache items + Welcome + Score
-
-		// Verify notification to other clients
-		expect(mockClient1.sendMessage).toHaveBeenCalled();
-		expect(mockClient2.sendMessage).toHaveBeenCalled();
-		expect(mockSpectator.sendMessage).toHaveBeenCalled(); // Also notified self? Logic says [...room.clients, ...room.spectators]
+		// Verify socket messages (cache + score) — no more "Welcome" and no more
+		// "has entered as a spectator" broadcast to the room.
+		expect(mockSocket.send).toHaveBeenCalledTimes(3); // 2 cache items + Score
 	});
 });

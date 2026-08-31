@@ -111,8 +111,8 @@ export class YGOProSideDeckingState extends YGOProRoomState {
 
 		this.sendChatToPlayer(
 			player,
-			`You have ${SIDE_TIMEOUT_MINUTES} minute(s) to submit your side deck.`,
-			ChatColor.BABYBLUE,
+			`Side deck: ${SIDE_TIMEOUT_MINUTES} minutes to submit.`,
+			ChatColor.YELLOW,
 		);
 
 		const timer = setInterval(() => {
@@ -133,11 +133,12 @@ export class YGOProSideDeckingState extends YGOProRoomState {
 			this.clearPlayerTimeout(player.position);
 			this.logger.info("Side deck timeout", { player: player.name, position: player.position });
 
+			// Broadcast only — a player-facing chat send here would race the
+			// socket destroy below and may never reach the client.
 			this.broadcastChat(
-				`${player.name} has been disconnected for not submitting a side deck in time.`,
-				ChatColor.BABYBLUE,
+				`${player.name} was disconnected — side deck not submitted in time.`,
+				ChatColor.RED,
 			);
-			this.sendChatToPlayer(player, "Time is up! You have been disconnected.", ChatColor.RED);
 			player.destroy();
 			return;
 		}
@@ -145,11 +146,11 @@ export class YGOProSideDeckingState extends YGOProRoomState {
 		const nextRemain = remain - 1;
 		this.playerRemainMinutes.set(player.position, nextRemain);
 
-		this.sendChatToPlayer(
-			player,
-			`${nextRemain} minute(s) remaining to submit your side deck.`,
-			ChatColor.BABYBLUE,
-		);
+		// Only the last minute gets a warning — silent in between to avoid
+		// spamming the player with a repeat every tick.
+		if (nextRemain === 1) {
+			this.sendChatToPlayer(player, "Side deck: 1 minute left.", ChatColor.YELLOW);
+		}
 	}
 
 	private clearPlayerTimeout(position: number): void {

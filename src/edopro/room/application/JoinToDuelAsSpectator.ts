@@ -1,5 +1,3 @@
-import { ServerInfoMessage } from "@edopro/messages/domain/ServerInfoMessage";
-
 import { DuelStartClientMessage } from "../../../shared/messages/server-to-client/DuelStartClientMessage";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { Client } from "../../client/domain/Client";
@@ -40,22 +38,11 @@ export class JoinToDuelAsSpectator {
 			.map((item) => item.name.replace(/\0/g, "").trim());
 
 		socket.send(
-			ServerMessageClientMessage.create(`Welcome ${spectator.name.replace(/\0/g, "").trim()}`),
-		);
-		socket.send(
 			ServerMessageClientMessage.create(
 				`Score: ${team0.join(",")}: ${room.matchScore().team0} vs ${team1.join(",")}: ${
 					room.matchScore().team1
 				}`,
 			),
 		);
-
-		[...room.players, ...room.spectators].forEach((_client: Client) => {
-			_client.sendMessage(
-				ServerMessageClientMessage.create(
-					`${spectator.name} ${ServerInfoMessage.HAS_ENTERED_AS_A_SPECTATOR}`,
-				),
-			);
-		});
 	}
 }

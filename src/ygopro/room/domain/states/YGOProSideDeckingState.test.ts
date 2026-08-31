@@ -37,6 +37,79 @@ const makeDeckPayload = (): Buffer => {
 const makeClientMessage = (data: Buffer): ClientMessage =>
 	({ data, previousMessage: Buffer.alloc(0) }) as unknown as ClientMessage;
 
+// ---- side-deck timeout chat (per-minute spam pruned to initial + one final warning) ----
+
+describe("YGOProSideDeckingState — side-deck timeout chat", () => {
+	let eventEmitter: EventEmitter;
+	let mockLogger: jest.Mocked<Logger>;
+	let mockDeckCreator: jest.Mocked<YGOProDeckCreator>;
+	let mockDeckValidator: jest.Mocked<YGOProDeckValidator>;
+
+	const makePlayer = (position: number) =>
+		({
+			position,
+			name: `p${position}`,
+			sendMessageToClient: jest.fn(),
+			destroy: jest.fn(),
+		}) as unknown as jest.Mocked<YGOProClient>;
+
+	beforeEach(() => {
+		jest.useFakeTimers();
+		eventEmitter = new EventEmitter();
+		mockLogger = {
+			child: jest.fn().mockReturnThis(),
+			info: jest.fn(),
+			warn: jest.fn(),
+			error: jest.fn(),
+			debug: jest.fn(),
+		} as unknown as jest.Mocked<Logger>;
+		mockDeckCreator = { build: jest.fn() } as unknown as jest.Mocked<YGOProDeckCreator>;
+		mockDeckValidator = {
+			validate: jest.fn().mockReturnValue(null),
+		} as unknown as jest.Mocked<YGOProDeckValidator>;
+	});
+
+	afterEach(() => {
+		jest.useRealTimers();
+	});
+
+	// STOC_CHAT frames are opaque Buffers here; assert on call count instead of
+	// decoding text, mirroring the rest of this suite's style.
+	const chatCallCount = (player: jest.Mocked<YGOProClient>) =>
+		(player.sendMessageToClient as jest.Mock).mock.calls.length;
+
+	it("sends exactly one initial notice and one final-minute warning over a 3-minute timeout — never a per-minute repeat", () => {
+		const player = makePlayer(0);
+		const room = { players: [player], clients: [player] } as unknown as jest.Mocked<YGOProRoom>;
+
+		new YGOProSideDeckingState(eventEmitter, mockLogger, mockDeckCreator, mockDeckValidator, room);
+
+		expect(chatCallCount(player)).toBe(1); // initial notice only
+
+		jest.advanceTimersByTime(60_000); // 3 -> 2 minutes remaining: no send
+		expect(chatCallCount(player)).toBe(1);
+
+		jest.advanceTimersByTime(60_000); // 2 -> 1 minute remaining: the ONE final warning
+		expect(chatCallCount(player)).toBe(2);
+
+		expect(player.destroy).not.toHaveBeenCalled();
+	});
+
+	it("broadcasts the disconnect notice and destroys the player on timeout, without a player-facing 'Time is up!' send", () => {
+		const player = makePlayer(0);
+		const room = { players: [player], clients: [player] } as unknown as jest.Mocked<YGOProRoom>;
+
+		new YGOProSideDeckingState(eventEmitter, mockLogger, mockDeckCreator, mockDeckValidator, room);
+
+		jest.advanceTimersByTime(3 * 60_000);
+
+		// initial notice + final-minute warning + one room-wide disconnect
+		// broadcast (also received by the same client, since clients === [player])
+		expect(chatCallCount(player)).toBe(3);
+		expect(player.destroy).toHaveBeenCalledTimes(1);
+	});
+});
+
 describe("YGOProSideDeckingState.handleUpdateDeck — deck error code is encoded", () => {
 	let eventEmitter: EventEmitter;
 	let mockLogger: jest.Mocked<Logger>;

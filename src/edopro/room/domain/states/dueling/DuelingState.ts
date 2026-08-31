@@ -1,5 +1,4 @@
 import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
-import { ServerInfoMessage } from "@edopro/messages/domain/ServerInfoMessage";
 import { spawn } from "child_process";
 import * as crypto from "crypto";
 import EventEmitter from "events";
@@ -28,7 +27,6 @@ import { ReconnectionTokenIssuer } from "../../../../../shared/room/application/
 import { findReconnectingPlayer } from "../../../../../shared/room/domain/findReconnectingPlayer";
 import { ReconnectionAckMessage } from "../../../../../shared/messages/server-to-client/ReconnectionAckMessage";
 import { ServerErrorClientMessage } from "../../../../messages/server-to-client/ServerErrorMessageClientMessage";
-import { ServerMessageClientMessage } from "../../../../messages/server-to-client/ServerMessageClientMessage";
 import { FinishDuelHandler } from "../../../application/FinishDuelHandler";
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";
@@ -202,9 +200,6 @@ export class DuelingState extends RoomState {
 	}
 
 	private handle(): void {
-		this.room.players.forEach((item) => {
-			item.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.PREPARING_DUEL));
-		});
 		this.room.prepareTurnOrder();
 
 		const players = this.room.players.map((item: Client) => ({
@@ -223,10 +218,6 @@ export class DuelingState extends RoomState {
 		// The reconnection token is issued once at match start (WaitingState), not
 		// per-game, so it survives across RPS, side-decking and every duel in a
 		// match. It is only rotated after each successful reconnection.
-		this.room.players.forEach((item) => {
-			item.socket.send(ServerMessageClientMessage.create(ServerInfoMessage.STARTING_DUEL));
-		});
-
 		const core = spawn(
 			`./core/CoreIntegrator`,
 			[
@@ -253,9 +244,6 @@ export class DuelingState extends RoomState {
 
 		core.stderr.on("data", (data: string) => {
 			this.logger.error(data.toString(), { roomId: this.room.id });
-			this.room.players.forEach((item) => {
-				item.socket.send(ServerMessageClientMessage.create(data.toString()));
-			});
 		});
 
 		core.on("exit", (code, signal) => {
@@ -426,22 +414,6 @@ export class DuelingState extends RoomState {
 			this.logger.info(`Sending last cached message to ${player.name} after reconnection`);
 			player.sendMessage(player.cache);
 		}
-
-		this.room.players.forEach((client: Client) => {
-			client.sendMessage(
-				ServerMessageClientMessage.create(
-					`${player.name} ${ServerInfoMessage.HAS_ENTERED_TO_THE_DUEL}`,
-				),
-			);
-		});
-
-		this.room.spectators.forEach((spectator: Client) => {
-			spectator.sendMessage(
-				ServerMessageClientMessage.create(
-					`${player.name} ${ServerInfoMessage.HAS_ENTERED_TO_THE_DUEL}`,
-				),
-			);
-		});
 	}
 
 	private handleCoreField(message: FieldMessage) {

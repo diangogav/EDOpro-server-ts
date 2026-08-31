@@ -6,10 +6,4 @@ export enum ServerInfoMessage {
 	UN_RANKED_ROOM_CREATION_SUCCESS = "Unranked Room created successfully!",
 
 	UNAVAILABLE_RANKING_SYSTEM = "At the moment, the ranking system is not available.",
-	HAS_ENTERED_AS_A_SPECTATOR = "has entered as a spectator",
-	HAS_ENTERED_TO_THE_DUEL = "has entered to the duel",
-	HAS_LEFT_THE_DUEL = "has left the duel",
-
-	PREPARING_DUEL = "Preparing duel",
-	STARTING_DUEL = "Starting duel",
 }
