@@ -11,6 +11,7 @@ import { dataSource } from "../../../../evolution-types/src/data-source";
 jest.mock("../../../../evolution-types/src/data-source", () => ({
 	dataSource: {
 		transaction: jest.fn(),
+		query: jest.fn(),
 	},
 }));
 
@@ -144,6 +145,45 @@ describe("RatingPostgresRepository", () => {
 			});
 
 			expect(inserted).toBe(false);
+		});
+	});
+
+	describe("findMany()", () => {
+		it("R1 — reads current ratings for the given users without acquiring any row lock", async () => {
+			(dataSource.query as jest.Mock).mockResolvedValueOnce([
+				{ userId: "user-a", rating: 1200, gamesPlayed: 15, peak: 1250 },
+			]);
+
+			const result = await repository.findMany(["user-a"], "TCG", 5);
+
+			expect(dataSource.query).toHaveBeenCalledTimes(1);
+			expect(dataSource.query).toHaveBeenCalledWith(expect.any(String), ["TCG", 5, ["user-a"]]);
+			expect((dataSource.query as jest.Mock).mock.calls[0][0]).not.toEqual(
+				expect.stringContaining("FOR UPDATE"),
+			);
+			expect(dataSource.transaction).not.toHaveBeenCalled();
+			expect(result.get("user-a")).toEqual(
+				Rating.from({ value: 1200, gamesPlayed: 15, peak: 1250 }),
+			);
+		});
+
+		it("R2 — defaults a user with no rating row to the season-start value (1000)", async () => {
+			(dataSource.query as jest.Mock).mockResolvedValueOnce([]);
+
+			const result = await repository.findMany(["user-a"], "TCG", 5);
+
+			expect(result.get("user-a")).toEqual(Rating.initialize());
+		});
+
+		it("R3 — reads without acquiring the advisory participant locks used by the write path", async () => {
+			(dataSource.query as jest.Mock).mockResolvedValueOnce([]);
+
+			await repository.findMany(["user-a", "user-b"], "TCG", 5);
+
+			expect(dataSource.query).toHaveBeenCalledTimes(1);
+			expect((dataSource.query as jest.Mock).mock.calls[0][0]).not.toEqual(
+				expect.stringContaining("pg_advisory_xact_lock"),
+			);
 		});
 	});
 
