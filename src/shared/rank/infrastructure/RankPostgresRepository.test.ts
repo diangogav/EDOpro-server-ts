@@ -64,6 +64,37 @@ describe("RankPostgresRepository", () => {
 		expect(rank.type).toBe("global");
 	});
 
+	it('creates the literal "N/A" name disabled — it is not a real ladder for listings', async () => {
+		query
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([{ id: "rank-na", name: "N/A", type: "banlist", enabled: false }]);
+
+		const rank = await repository.findOrCreateByName("N/A");
+
+		expect(query).toHaveBeenNthCalledWith(1, expect.stringContaining("INSERT INTO ranks"), [
+			"N/A",
+			"banlist",
+			false,
+		]);
+		expect(rank.enabled).toBe(false);
+	});
+
+	it('leaves an already-existing "N/A" row untouched instead of flipping its flags', async () => {
+		query
+			.mockResolvedValueOnce([]) // insert was a conflict no-op
+			.mockResolvedValueOnce([{ id: "rank-na", name: "N/A", type: "banlist", enabled: true }]);
+
+		const rank = await repository.findOrCreateByName("N/A");
+
+		expect(query).toHaveBeenCalledTimes(2);
+		expect(query).toHaveBeenNthCalledWith(
+			1,
+			expect.stringContaining("ON CONFLICT (name) DO NOTHING"),
+			["N/A", "banlist", false],
+		);
+		expect(rank).toEqual({ id: "rank-na", name: "N/A", type: "banlist", enabled: true });
+	});
+
 	it("honors an explicitly passed type over the name-based default", async () => {
 		query
 			.mockResolvedValueOnce([])

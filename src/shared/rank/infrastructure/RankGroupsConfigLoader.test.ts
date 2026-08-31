@@ -94,6 +94,13 @@ describe("loadRankGroupsConfig", () => {
 			"Edison",
 			"HAT",
 			"JTP All",
+			"GOAT",
+			"Tengu",
+			"Duel Terminal",
+			"Eterno",
+			"DAD Return",
+			"Rush Prereleases",
+			"Evolution",
 		]);
 	});
 });

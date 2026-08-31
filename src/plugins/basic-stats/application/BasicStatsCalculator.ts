@@ -43,20 +43,22 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 
 		const gameId = event.data.matchId;
 
+		// "N/A" (a match played with no ban list) owns a ladder of its own so it
+		// stays in sync with Global, but it is not a real ranked list: it is
+		// never alias-resolved and never feeds a format group.
+		const hasBanList = Boolean(banListName);
+		const isRankedBanList = hasBanList && banListName !== "N/A";
 		// The alias resolves before any rank lookup so a renamed header keeps
 		// feeding its canonical rank.
-		const hasRankedBanList = Boolean(banListName) && banListName !== "N/A";
-		const resolvedBanListName = hasRankedBanList
+		const resolvedBanListName = isRankedBanList
 			? this.rankGroupResolver.resolveAlias(banListName)
 			: banListName;
 
-		const banListRank = hasRankedBanList
+		const banListRank = hasBanList
 			? await this.rankRepository.findOrCreateByName(resolvedBanListName)
 			: null;
 		const globalRank = await this.rankRepository.findOrCreateByName("Global");
-		const groupNames = hasRankedBanList
-			? this.rankGroupResolver.groupsFor(resolvedBanListName)
-			: [];
+		const groupNames = isRankedBanList ? this.rankGroupResolver.groupsFor(resolvedBanListName) : [];
 		const groupRanks: Rank[] = [];
 		for (const groupName of groupNames) {
 			groupRanks.push(await this.rankRepository.findOrCreateByName(groupName, "group"));
@@ -82,8 +84,8 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 			const points = player.calculateMatchPoints();
 			this.logger.info(`Player ${player.name} and id: ${userProfile.id} gain ${points} points`);
 			// One row per rank with the same wins/losses/points math: the
-			// banlist rank (when played on a real list), Global, and every
-			// group ladder the played list feeds.
+			// banlist rank (including "N/A"), Global, and every group ladder
+			// the played list feeds.
 			const statsRanks = [...(banListRank ? [banListRank] : []), globalRank, ...groupRanks];
 			for (const rank of statsRanks) {
 				const playerStats = await this.playerStatsRepository.findByUserIdAndRankId(

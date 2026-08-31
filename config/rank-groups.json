@@ -14,7 +14,7 @@
 			"name": "OCG",
 			"enabled": true,
 			"onlyCurrent": true,
-			"members": ["* OCG"]
+			"members": ["* OCG", "2024.07"]
 		},
 		{
 			"name": "Rush",
@@ -38,7 +38,7 @@
 			"name": "Worlds",
 			"enabled": true,
 			"onlyCurrent": true,
-			"members": ["* Worlds"]
+			"members": ["* Worlds", "* World"]
 		},
 		{
 			"name": "MD",
@@ -62,7 +62,49 @@
 			"name": "JTP All",
 			"enabled": true,
 			"onlyCurrent": false,
-			"members": ["JTP", "JTP Adv 2007-03"]
+			"members": ["JTP", "JTP Adv 2007-03", "JTP (AllCards)"]
+		},
+		{
+			"name": "GOAT",
+			"enabled": true,
+			"onlyCurrent": false,
+			"members": ["* GOAT"]
+		},
+		{
+			"name": "Tengu",
+			"enabled": true,
+			"onlyCurrent": false,
+			"members": ["* Tengu"]
+		},
+		{
+			"name": "Duel Terminal",
+			"enabled": true,
+			"onlyCurrent": false,
+			"members": ["* Duel Terminal"]
+		},
+		{
+			"name": "Eterno",
+			"enabled": true,
+			"onlyCurrent": false,
+			"members": ["* Eterno"]
+		},
+		{
+			"name": "DAD Return",
+			"enabled": true,
+			"onlyCurrent": false,
+			"members": ["* DAD Return"]
+		},
+		{
+			"name": "Rush Prereleases",
+			"enabled": true,
+			"onlyCurrent": true,
+			"members": ["* Rush Prereleases"]
+		},
+		{
+			"name": "Evolution",
+			"enabled": true,
+			"onlyCurrent": false,
+			"members": ["Evolution S5", "Evolution S6"]
 		}
 	]
 }
