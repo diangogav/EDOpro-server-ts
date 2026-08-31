@@ -1,4 +1,5 @@
 import { Logger } from "src/shared/logger/domain/Logger";
+import { RankRepository } from "src/shared/rank/domain/RankRepository";
 import { EloCalculator, RatedPlayer } from "src/shared/stats/rating/domain/EloCalculator";
 import { Rating } from "src/shared/stats/rating/domain/Rating";
 import { RatingRepository } from "src/shared/stats/rating/domain/RatingRepository";
@@ -16,6 +17,7 @@ export class EloRatingCalculator implements DomainEventSubscriber<GameOverDomain
 		private readonly logger: Logger,
 		private readonly userProfileRepository: UserProfileRepository,
 		private readonly ratingRepository: RatingRepository,
+		private readonly rankRepository: RankRepository,
 	) {
 		this.logger = logger.child({ file: "EloRatingCalculator" });
 	}
@@ -63,15 +65,18 @@ export class EloRatingCalculator implements DomainEventSubscriber<GameOverDomain
 		}));
 		const banListName = eligibility.banListName;
 		const season = config.season;
+		// Eligibility stays keyed on the banlist name; persistence is keyed by
+		// the rank resolved (or created) for that name, once per match.
+		const rank = await this.rankRepository.findOrCreateByName(banListName);
 
-		await this.ratingRepository.transaction(playerIds, banListName, season, async (ratings, tx) => {
+		await this.ratingRepository.transaction(playerIds, rank.id, season, async (ratings, tx) => {
 			const deltas = EloCalculator.deltasFor(ratedPlayers, ratings);
 
 			for (const delta of deltas) {
 				const inserted = await tx.insertHistory({
 					matchId: data.matchId,
 					userId: delta.userId,
-					banListName,
+					rankId: rank.id,
 					season,
 					kind: "applied",
 					previousRating: delta.previousRating,
@@ -89,7 +94,7 @@ export class EloRatingCalculator implements DomainEventSubscriber<GameOverDomain
 
 				const currentRating = ratings.get(delta.userId) as Rating;
 				const updatedRating = currentRating.applyDelta(delta.delta);
-				await tx.saveRating(delta.userId, banListName, season, updatedRating);
+				await tx.saveRating(delta.userId, rank.id, season, updatedRating);
 			}
 		});
 	}

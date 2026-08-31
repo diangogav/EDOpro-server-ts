@@ -9,9 +9,9 @@ describe("MatchRatingSnapshot", () => {
 				["player-2", Rating.from({ value: 980, gamesPlayed: 15, peak: 1010 })],
 			]);
 
-			const snapshot = MatchRatingSnapshot.create(ratings, "TCG", 5);
+			const snapshot = MatchRatingSnapshot.create(ratings, "rank-1", 5);
 
-			expect(snapshot.banListName).toBe("TCG");
+			expect(snapshot.rankId).toBe("rank-1");
 			expect(snapshot.season).toBe(5);
 			expect(snapshot.ratingFor("player-1")).toEqual(
 				Rating.from({ value: 1000, gamesPlayed: 20, peak: 1000 }),
@@ -26,7 +26,7 @@ describe("MatchRatingSnapshot", () => {
 				["player-1", Rating.from({ value: 1000, gamesPlayed: 20, peak: 1000 })],
 			]);
 
-			const snapshot = MatchRatingSnapshot.create(ratings, "TCG", 5);
+			const snapshot = MatchRatingSnapshot.create(ratings, "rank-1", 5);
 
 			expect(snapshot.ratingFor("player-unknown")).toBeUndefined();
 		});
@@ -36,7 +36,7 @@ describe("MatchRatingSnapshot", () => {
 				["player-1", Rating.from({ value: 1000, gamesPlayed: 20, peak: 1000 })],
 			]);
 
-			const snapshot = MatchRatingSnapshot.create(ratings, "TCG", 5);
+			const snapshot = MatchRatingSnapshot.create(ratings, "rank-1", 5);
 			ratings.set("player-1", Rating.initialize());
 			ratings.set("player-2", Rating.initialize());
 

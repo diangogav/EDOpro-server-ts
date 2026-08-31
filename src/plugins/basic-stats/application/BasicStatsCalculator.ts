@@ -1,5 +1,6 @@
 import { Logger } from "src/shared/logger/domain/Logger";
 import { Player } from "src/shared/player/domain/Player";
+import { RankRepository } from "src/shared/rank/domain/RankRepository";
 import { UserProfileRepository } from "src/shared/user-profile/domain/UserProfileRepository";
 
 import { DomainEventSubscriber } from "../../../shared/event-bus/EventBus";
@@ -16,6 +17,7 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 		private readonly logger: Logger,
 		private readonly userProfileRepository: UserProfileRepository,
 		private readonly playerStatsRepository: PlayerStatsRepository,
+		private readonly rankRepository: RankRepository,
 		private readonly matchResumeCreator: MatchResumeCreator,
 		private readonly duelResumeCreator: DuelResumeCreator,
 	) {
@@ -38,6 +40,12 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 
 		const gameId = event.data.matchId;
 
+		const banListRank =
+			banListName && banListName !== "N/A"
+				? await this.rankRepository.findOrCreateByName(banListName)
+				: null;
+		const globalRank = await this.rankRepository.findOrCreateByName("Global");
+
 		for (const player of players) {
 			const userProfile = await this.userProfileRepository.findByUsername(player.name);
 			if (!userProfile) {
@@ -57,19 +65,19 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 				.map((element) => element.id);
 			const points = player.calculateMatchPoints();
 			this.logger.info(`Player ${player.name} and id: ${userProfile.id} gain ${points} points`);
-			if (banListName && banListName !== "N/A") {
-				const playerStats = await this.playerStatsRepository.findByUserIdAndBanListName(
+			if (banListRank) {
+				const playerStats = await this.playerStatsRepository.findByUserIdAndRankId(
 					userProfile.id,
-					banListName,
+					banListRank.id,
 				);
 				playerStats.addPoints(points);
 				player.winner ? playerStats.increaseWins() : playerStats.increaseLosses();
 				void this.playerStatsRepository.save(playerStats);
 			}
 
-			const globalPlayerStats = await this.playerStatsRepository.findByUserIdAndBanListName(
+			const globalPlayerStats = await this.playerStatsRepository.findByUserIdAndRankId(
 				userProfile.id,
-				"Global",
+				globalRank.id,
 			);
 			globalPlayerStats.addPoints(points);
 			player.winner ? globalPlayerStats.increaseWins() : globalPlayerStats.increaseLosses();

@@ -7,12 +7,15 @@ import { MatchResumeCreator } from "@shared/stats/match-resume/application/Match
 import { DuelResumeCreator } from "@shared/stats/match-resume/duel-resume/application/DuelResumeCreator";
 import { PlayerStats } from "@shared/stats/player-stats/domain/PlayerStats";
 import { PlayerStatsRepository } from "@shared/stats/player-stats/domain/PlayerStatsRepository";
+import { Rank } from "@shared/rank/domain/Rank";
+import { RankRepository } from "@shared/rank/domain/RankRepository";
 import { UserProfile } from "@shared/user-profile/domain/UserProfile";
 import { UserProfileRepository } from "@shared/user-profile/domain/UserProfileRepository";
 import { GameMother } from "@test-support/mothers/player/GameMother";
 import { GameOverDomainEventMother } from "@test-support/mothers/player/GameOverDomainEventMother";
 import { PlayerMother } from "@test-support/mothers/player/PlayerMother";
 import { PlayerStatsMother } from "@test-support/mothers/player/PlayerStatsMother";
+import { RankMother } from "@test-support/mothers/rank/RankMother";
 import { UserProfileMother } from "@test-support/mothers/user-profile/UserProfileMother";
 
 import { BasicStatsCalculator } from "./BasicStatsCalculator";
@@ -25,6 +28,7 @@ describe("BasicStatsCalculator", () => {
 	let logger: MockProxy<Logger>;
 	let userProfileRepository: MockProxy<UserProfileRepository>;
 	let playerStatsRepository: MockProxy<PlayerStatsRepository>;
+	let rankRepository: MockProxy<RankRepository>;
 	let matchResumeCreator: MockProxy<MatchResumeCreator>;
 	let duelResumeCreator: MockProxy<DuelResumeCreator>;
 	let playerUserProfile: UserProfile;
@@ -32,12 +36,15 @@ describe("BasicStatsCalculator", () => {
 	let playerStats: PlayerStats;
 	let opponentStats: PlayerStats;
 	let matchId: string;
+	let globalRank: Rank;
+	let formatRank: Rank;
 
 	beforeEach(() => {
 		logger = mock<Logger>();
 		logger.child.mockReturnValue(logger);
 		userProfileRepository = mock();
 		playerStatsRepository = mock<PlayerStatsRepository>();
+		rankRepository = mock<RankRepository>();
 		matchResumeCreator = mock();
 		duelResumeCreator = mock();
 		playerUserProfile = UserProfileMother.create();
@@ -45,6 +52,11 @@ describe("BasicStatsCalculator", () => {
 		playerStats = PlayerStatsMother.create();
 		opponentStats = PlayerStatsMother.create();
 		matchId = faker.string.uuid();
+		globalRank = RankMother.create({ name: "Global", type: "global" });
+		formatRank = RankMother.create();
+		rankRepository.findOrCreateByName.mockImplementation(async (name) =>
+			name === "Global" ? globalRank : { ...formatRank, name },
+		);
 	});
 
 	beforeEach(() => {
@@ -52,6 +64,7 @@ describe("BasicStatsCalculator", () => {
 			logger,
 			userProfileRepository,
 			playerStatsRepository,
+			rankRepository,
 			matchResumeCreator,
 			duelResumeCreator,
 		);
@@ -78,7 +91,7 @@ describe("BasicStatsCalculator", () => {
 			.mockResolvedValueOnce(playerUserProfile)
 			.mockResolvedValueOnce(opponentUserProfile);
 
-		playerStatsRepository.findByUserIdAndBanListName
+		playerStatsRepository.findByUserIdAndRankId
 			.mockResolvedValueOnce(playerStats)
 			.mockResolvedValueOnce(opponentStats);
 
@@ -119,18 +132,18 @@ describe("BasicStatsCalculator", () => {
 
 		await basicStatsCalculator.handle(event);
 
-		expect(playerStatsRepository.findByUserIdAndBanListName).toHaveBeenCalledTimes(2);
+		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenCalledTimes(2);
 		expect(playerStatsRepository.save).toHaveBeenCalledTimes(2);
 
-		expect(playerStatsRepository.findByUserIdAndBanListName).toHaveBeenNthCalledWith(
+		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenNthCalledWith(
 			1,
 			playerUserProfile.id,
-			"Global",
+			globalRank.id,
 		);
-		expect(playerStatsRepository.findByUserIdAndBanListName).toHaveBeenNthCalledWith(
+		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenNthCalledWith(
 			2,
 			opponentUserProfile.id,
-			"Global",
+			globalRank.id,
 		);
 		expect(playerStatsRepository.save).toHaveBeenNthCalledWith(1, PlayerStats.from(playerStats));
 		expect(playerStatsRepository.save).toHaveBeenNthCalledWith(2, PlayerStats.from(opponentStats));
@@ -197,7 +210,7 @@ describe("BasicStatsCalculator", () => {
 
 	it("Should use banListName from event data (not from hash lookup) for per-format rank", async () => {
 		const edisonBanListName = "2010.03 Edison";
-		playerStatsRepository.findByUserIdAndBanListName
+		playerStatsRepository.findByUserIdAndRankId
 			.mockResolvedValueOnce(playerStats) // per-format lookup for player
 			.mockResolvedValueOnce(playerStats) // Global lookup for player
 			.mockResolvedValueOnce(opponentStats) // per-format lookup for opponent
@@ -212,14 +225,15 @@ describe("BasicStatsCalculator", () => {
 
 		await basicStatsCalculator.handle(event);
 
-		// Per-format lookup must use the name from event.data.banListName
-		expect(playerStatsRepository.findByUserIdAndBanListName).toHaveBeenCalledWith(
+		// Per-format rank must be resolved from the name in event.data.banListName
+		expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith(edisonBanListName);
+		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenCalledWith(
 			playerUserProfile.id,
-			edisonBanListName,
+			formatRank.id,
 		);
-		expect(playerStatsRepository.findByUserIdAndBanListName).toHaveBeenCalledWith(
+		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenCalledWith(
 			opponentUserProfile.id,
-			edisonBanListName,
+			formatRank.id,
 		);
 	});
 
@@ -233,9 +247,50 @@ describe("BasicStatsCalculator", () => {
 
 		await basicStatsCalculator.handle(event);
 
-		// Only Global calls — no per-format call with "N/A"
-		const calls = playerStatsRepository.findByUserIdAndBanListName.mock.calls;
-		const perFormatCalls = calls.filter(([, name]) => name !== "Global");
+		// Only Global-rank calls — no rank resolution and no row for "N/A"
+		expect(rankRepository.findOrCreateByName).not.toHaveBeenCalledWith("N/A");
+		const calls = playerStatsRepository.findByUserIdAndRankId.mock.calls;
+		const perFormatCalls = calls.filter(([, rankId]) => rankId !== globalRank.id);
 		expect(perFormatCalls).toHaveLength(0);
+	});
+
+	it("writes one row for the banlist rank and one for the Global rank per player", async () => {
+		playerStatsRepository.findByUserIdAndRankId
+			.mockReset()
+			.mockResolvedValueOnce(playerStats) // per-format row for player
+			.mockResolvedValueOnce(playerStats) // Global row for player
+			.mockResolvedValueOnce(opponentStats) // per-format row for opponent
+			.mockResolvedValueOnce(opponentStats); // Global row for opponent
+		const event = GameOverDomainEventMother.create({
+			players: [player.toPresentation(), opponent.toPresentation()],
+			ranked: true,
+			banListName: "TCG",
+		});
+
+		await basicStatsCalculator.handle(event);
+
+		expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith("TCG");
+		expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith("Global");
+		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenNthCalledWith(
+			1,
+			playerUserProfile.id,
+			formatRank.id,
+		);
+		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenNthCalledWith(
+			2,
+			playerUserProfile.id,
+			globalRank.id,
+		);
+		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenNthCalledWith(
+			3,
+			opponentUserProfile.id,
+			formatRank.id,
+		);
+		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenNthCalledWith(
+			4,
+			opponentUserProfile.id,
+			globalRank.id,
+		);
+		expect(playerStatsRepository.save).toHaveBeenCalledTimes(4);
 	});
 });
