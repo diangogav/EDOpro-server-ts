@@ -1,4 +1,4 @@
-import { Rank } from "./Rank";
+import { Rank, RankType } from "./Rank";
 
 export interface RankRepository {
 	/**
@@ -10,5 +10,5 @@ export interface RankRepository {
 	 * literal name "Global", which is `type: "global"`. An explicit `type`
 	 * argument overrides that default.
 	 */
-	findOrCreateByName(name: string, type?: "banlist" | "global"): Promise<Rank>;
+	findOrCreateByName(name: string, type?: RankType): Promise<Rank>;
 }

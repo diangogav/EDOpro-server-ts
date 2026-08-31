@@ -33,6 +33,9 @@ export const config = {
 	ranking: {
 		enabled: process.env.RANK_ENABLED === "true",
 	},
+	rankGroups: {
+		path: process.env.RANK_GROUPS_PATH ?? "./config/rank-groups.json",
+	},
 	season: Number(process.env.SEASON),
 	allowedOrigins: process.env.ALLOWED_ORIGINS?.split(",") ?? ["*"],
 	rateLimit: {

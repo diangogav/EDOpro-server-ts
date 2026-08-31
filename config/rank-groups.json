@@ -1,0 +1,68 @@
+{
+	"aliases": {
+		"2011.09 Tengu Plant": "2011.09 Tengu",
+		"JTP (Original)": "JTP"
+	},
+	"groups": [
+		{
+			"name": "TCG",
+			"enabled": true,
+			"onlyCurrent": true,
+			"members": ["* TCG"]
+		},
+		{
+			"name": "OCG",
+			"enabled": true,
+			"onlyCurrent": true,
+			"members": ["* OCG"]
+		},
+		{
+			"name": "Rush",
+			"enabled": true,
+			"onlyCurrent": true,
+			"members": ["* Rush Duel", "RD"]
+		},
+		{
+			"name": "Speed",
+			"enabled": true,
+			"onlyCurrent": true,
+			"members": ["* Speed Duel"]
+		},
+		{
+			"name": "Traditional",
+			"enabled": true,
+			"onlyCurrent": true,
+			"members": ["* Traditional"]
+		},
+		{
+			"name": "Worlds",
+			"enabled": true,
+			"onlyCurrent": true,
+			"members": ["* Worlds"]
+		},
+		{
+			"name": "MD",
+			"enabled": true,
+			"onlyCurrent": true,
+			"members": ["* MD"]
+		},
+		{
+			"name": "Edison",
+			"enabled": true,
+			"onlyCurrent": false,
+			"members": ["* Edison"]
+		},
+		{
+			"name": "HAT",
+			"enabled": true,
+			"onlyCurrent": false,
+			"members": ["* HAT"]
+		},
+		{
+			"name": "JTP All",
+			"enabled": true,
+			"onlyCurrent": false,
+			"members": ["JTP", "JTP Adv 2007-03"]
+		}
+	]
+}

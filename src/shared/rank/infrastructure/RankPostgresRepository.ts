@@ -22,7 +22,7 @@ const SELECT_RANK_QUERY = `
 type RankRow = { id: string; name: string; type: RankType; enabled: boolean };
 
 export class RankPostgresRepository implements RankRepository {
-	async findOrCreateByName(name: string, type?: "banlist" | "global"): Promise<Rank> {
+	async findOrCreateByName(name: string, type?: RankType): Promise<Rank> {
 		const effectiveType: RankType = type ?? (name === GLOBAL_RANK_NAME ? "global" : "banlist");
 
 		await dataSource.query(INSERT_RANK_QUERY, [name, effectiveType, true]);

@@ -7,6 +7,7 @@ import { MatchResumeCreator } from "@shared/stats/match-resume/application/Match
 import { DuelResumeCreator } from "@shared/stats/match-resume/duel-resume/application/DuelResumeCreator";
 import { PlayerStats } from "@shared/stats/player-stats/domain/PlayerStats";
 import { PlayerStatsRepository } from "@shared/stats/player-stats/domain/PlayerStatsRepository";
+import { RankGroupResolver } from "@shared/rank/application/RankGroupResolver";
 import { Rank } from "@shared/rank/domain/Rank";
 import { RankRepository } from "@shared/rank/domain/RankRepository";
 import { UserProfile } from "@shared/user-profile/domain/UserProfile";
@@ -29,6 +30,7 @@ describe("BasicStatsCalculator", () => {
 	let userProfileRepository: MockProxy<UserProfileRepository>;
 	let playerStatsRepository: MockProxy<PlayerStatsRepository>;
 	let rankRepository: MockProxy<RankRepository>;
+	let rankGroupResolver: MockProxy<RankGroupResolver>;
 	let matchResumeCreator: MockProxy<MatchResumeCreator>;
 	let duelResumeCreator: MockProxy<DuelResumeCreator>;
 	let playerUserProfile: UserProfile;
@@ -45,6 +47,9 @@ describe("BasicStatsCalculator", () => {
 		userProfileRepository = mock();
 		playerStatsRepository = mock<PlayerStatsRepository>();
 		rankRepository = mock<RankRepository>();
+		rankGroupResolver = mock<RankGroupResolver>();
+		rankGroupResolver.resolveAlias.mockImplementation((name) => name);
+		rankGroupResolver.groupsFor.mockReturnValue([]);
 		matchResumeCreator = mock();
 		duelResumeCreator = mock();
 		playerUserProfile = UserProfileMother.create();
@@ -65,6 +70,7 @@ describe("BasicStatsCalculator", () => {
 			userProfileRepository,
 			playerStatsRepository,
 			rankRepository,
+			rankGroupResolver,
 			matchResumeCreator,
 			duelResumeCreator,
 		);
@@ -292,5 +298,71 @@ describe("BasicStatsCalculator", () => {
 			globalRank.id,
 		);
 		expect(playerStatsRepository.save).toHaveBeenCalledTimes(4);
+	});
+
+	it("writes one extra row per resolved group rank for every player", async () => {
+		const groupRank = RankMother.create({ name: "TCG", type: "group" });
+		rankGroupResolver.groupsFor.mockReturnValue(["TCG"]);
+		rankRepository.findOrCreateByName.mockImplementation(async (name, type) =>
+			name === "Global" ? globalRank : type === "group" ? groupRank : { ...formatRank, name },
+		);
+		playerStatsRepository.findByUserIdAndRankId
+			.mockReset()
+			.mockImplementation(async () => PlayerStatsMother.create());
+		const event = GameOverDomainEventMother.create({
+			players: [player.toPresentation(), opponent.toPresentation()],
+			ranked: true,
+			banListName: "2026.05 TCG",
+		});
+
+		await basicStatsCalculator.handle(event);
+
+		expect(rankGroupResolver.groupsFor).toHaveBeenCalledWith("2026.05 TCG");
+		expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith("TCG", "group");
+		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenCalledWith(
+			playerUserProfile.id,
+			groupRank.id,
+		);
+		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenCalledWith(
+			opponentUserProfile.id,
+			groupRank.id,
+		);
+		// 3 ranks (banlist, Global, group) × 2 players.
+		expect(playerStatsRepository.save).toHaveBeenCalledTimes(6);
+	});
+
+	it("resolves the alias before any rank lookup but keeps the raw name in resumes", async () => {
+		rankGroupResolver.resolveAlias.mockImplementation((name) =>
+			name === "JTP" ? "JTP (Original)" : name,
+		);
+		playerStatsRepository.findByUserIdAndRankId
+			.mockReset()
+			.mockImplementation(async () => PlayerStatsMother.create());
+		const event = GameOverDomainEventMother.create({
+			players: [player.toPresentation(), opponent.toPresentation()],
+			ranked: true,
+			banListName: "JTP",
+		});
+
+		await basicStatsCalculator.handle(event);
+
+		expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith("JTP (Original)");
+		expect(rankRepository.findOrCreateByName).not.toHaveBeenCalledWith("JTP");
+		expect(rankGroupResolver.groupsFor).toHaveBeenCalledWith("JTP (Original)");
+		expect(matchResumeCreator.run).toHaveBeenCalledWith(
+			expect.objectContaining({ banListName: "JTP" }),
+		);
+	});
+
+	it("resolves no groups when banListName is N/A", async () => {
+		const event = GameOverDomainEventMother.create({
+			players: [player.toPresentation(), opponent.toPresentation()],
+			ranked: true,
+			banListName: "N/A",
+		});
+
+		await basicStatsCalculator.handle(event);
+
+		expect(rankGroupResolver.groupsFor).not.toHaveBeenCalled();
 	});
 });

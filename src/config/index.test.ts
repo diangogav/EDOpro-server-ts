@@ -48,3 +48,25 @@ describe("config.rateLimit.join.limit", () => {
 		expect(loadConfig().rateLimit.join.limit).toBe(7);
 	});
 });
+
+describe("config.rankGroups.path", () => {
+	const originalValue = process.env.RANK_GROUPS_PATH;
+
+	afterEach(() => {
+		if (originalValue === undefined) {
+			delete process.env.RANK_GROUPS_PATH;
+		} else {
+			process.env.RANK_GROUPS_PATH = originalValue;
+		}
+	});
+
+	it("defaults to the repository seed file when unset", () => {
+		delete process.env.RANK_GROUPS_PATH;
+		expect(loadConfig().rankGroups.path).toBe("./config/rank-groups.json");
+	});
+
+	it("honors an explicit RANK_GROUPS_PATH override", () => {
+		process.env.RANK_GROUPS_PATH = "/etc/evolution/rank-groups.json";
+		expect(loadConfig().rankGroups.path).toBe("/etc/evolution/rank-groups.json");
+	});
+});
