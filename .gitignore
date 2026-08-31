@@ -84,3 +84,4 @@ src/plugins/*
 !src/plugins/big-damage-log/
 !src/plugins/unranked-match/
 !src/plugins/elo-rating/
+!src/plugins/rating-announcer/

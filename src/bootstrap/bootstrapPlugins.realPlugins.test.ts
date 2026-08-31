@@ -4,6 +4,8 @@ import { GameOverDomainEvent } from "@shared/room/domain/match/domain/domain-eve
 import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
 import { dataSource } from "src/evolution-types/src/data-source";
 
+import { container } from "@shared/dependency-injection";
+import { MatchLifecycleHooks } from "@shared/room/application/lifecycle/MatchLifecycleHooks";
 import { DuelEventPluginHub } from "@shared/room/domain/duel-events/DuelEventPluginHub";
 
 import { bootstrapPlugins } from "./bootstrapPlugins";
@@ -79,5 +81,22 @@ describe("bootstrapPlugins against the real src/plugins directory", () => {
 		expect(getRepositorySpy).not.toHaveBeenCalled();
 
 		getRepositorySpy.mockRestore();
+	});
+
+	it("registers rating-announcer's lifecycle hook only when ranking is enabled", async () => {
+		const bus = { subscribe: jest.fn() } as unknown as EventBus;
+		const registerSpy = jest
+			.spyOn(container.get(MatchLifecycleHooks), "register")
+			.mockImplementation(() => undefined);
+
+		const disabledReport = await bootstrapPlugins(bus, makeDeps(false));
+		expect(disabledReport.loaded).not.toContain("rating-announcer");
+		expect(registerSpy).not.toHaveBeenCalled();
+
+		const enabledReport = await bootstrapPlugins(bus, makeDeps(true));
+		expect(enabledReport.loaded).toContain("rating-announcer");
+		expect(registerSpy).toHaveBeenCalledTimes(1);
+
+		registerSpy.mockRestore();
 	});
 });
