@@ -29,6 +29,33 @@ describe("isServerPlugin", () => {
 		expect(isServerPlugin({ ...validPlugin, register: async () => undefined })).toBe(true);
 	});
 
+	describe("lifecycleHooks declaration", () => {
+		it("returns true when lifecycleHooks is absent", () => {
+			expect(isServerPlugin(validPlugin)).toBe(true);
+		});
+
+		it("returns true for an array of conformant hook shapes", () => {
+			expect(
+				isServerPlugin({
+					...validPlugin,
+					lifecycleHooks: [{ name: "rating-announcer" }],
+				}),
+			).toBe(true);
+		});
+
+		it("returns true for an empty declaration", () => {
+			expect(isServerPlugin({ ...validPlugin, lifecycleHooks: [] })).toBe(true);
+		});
+
+		it.each([
+			["not an array", { name: "x" }],
+			["an entry with no name", [{}]],
+			["an entry whose name is not a string", [{ name: 42 }]],
+		])("returns false when lifecycleHooks is %s", (_description, lifecycleHooks) => {
+			expect(isServerPlugin({ ...validPlugin, lifecycleHooks })).toBe(false);
+		});
+	});
+
 	describe("duelEvents declaration", () => {
 		it("returns true when duelEvents is absent", () => {
 			expect(isServerPlugin(validPlugin)).toBe(true);

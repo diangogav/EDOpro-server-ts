@@ -108,6 +108,61 @@ const plugin: ServerPlugin = {
 
 Payloads are identical regardless of room type — both pipelines decode to the same events, with team resolution handled server-side. Delivery is **observe-only**: a plugin cannot block, delay or mutate anything in the duel.
 
+### Match lifecycle hooks — a match started, is about to end, or its room closed
+
+Declare `lifecycleHooks` to observe when a match starts (first game only), is about to finalize, or its room has closed, on **both** server pipelines, without touching a socket or the room:
+
+```typescript
+import { MatchLifecycleHook } from "@shared/room/domain/lifecycle/MatchLifecycleHook";
+
+const myHook: MatchLifecycleHook = {
+	name: "my-hook",
+	onMatchStarted: async (ctx) => {
+		// ctx: { roomId, matchId, ranked, banListName, season, players, announce }
+		ctx.announce("hello");
+	},
+	onMatchEnding: async (ctx) => {
+		// awaited before socket teardown — see the time budget below
+	},
+	onRoomClosed: async (ctx) => {
+		// ctx: { roomId, matchId } — release any per-match state here, see below
+	},
+};
+
+const plugin: ServerPlugin = {
+	name: "my-plugin",
+	enabled: () => true,
+	lifecycleHooks: [myHook],
+	register: () => {
+		// delivery happens through lifecycleHooks above — no bus subscription needed
+	},
+};
+
+export default plugin;
+```
+
+| Field | Meaning |
+|-------|---------|
+| `onMatchStarted` | Optional. Fired once, fire-and-forget, from the shared duel-start hook when a match's first game begins. |
+| `onMatchEnding` | Optional. Fired once, awaited, right before either pipeline tears down sockets for a finished match. |
+| `onRoomClosed` | Optional. Fired once, fire-and-forget, from the single teardown chokepoint of each pipeline — every time a room is torn down, whether the match reached a clean end or not. |
+| `MatchContext.announce(message)` | The only client-facing capability a hook gets — broadcasts one system chat line to every current client in the room. A hook never receives the room, a client, or a socket. |
+| `MatchContext.matchId` / `RoomClosedContext.matchId` | The match's own unique identity. Unlike `roomId` — a small numeric slot the server reuses across unrelated matches once freed — `matchId` never repeats. |
+
+**Per-match state must be keyed by `matchId`, released in `onRoomClosed`:**
+
+A room's numeric id is a small, reused key space, not a match identity — the same `roomId` will eventually host an unrelated later match. A hook that caches anything from `onMatchStarted` to consume later (e.g. a start-of-match snapshot, read again in `onMatchEnding`) must key that cache by `matchId`, never by `roomId`, or a later match reusing the same room can silently read another match's leftover state.
+
+`onMatchEnding` alone is not a sufficient release point either: a match can end without ever reaching it — a player disconnecting mid-duel, a matchmaking abort, an error-fallback teardown. `onRoomClosed` fires from the room-deletion chokepoint of **both** pipelines (`RoomList.deleteRoom` for edopro, `FinalizeYGOProRoom.run` for ygopro) for every teardown, clean or not — so it is the only point a hook can rely on to release per-match state unconditionally. `onMatchEnding`'s own cleanup (if any) stays as a fast path; `onRoomClosed` is the guarantee.
+
+**Isolation and budgets:**
+
+- One hook throwing or rejecting never affects another hook or the match — each hook is called in its own try/catch and a failure is logged as a warning naming the hook and the phase.
+- `onMatchStarted` and `onRoomClosed` are both fire-and-forget: the caller never waits on either, so a slow hook cannot delay anything a player sees.
+- `onMatchEnding` is awaited, but bounded by a total time budget of **1500 ms** (`MATCH_ENDING_HOOK_BUDGET_MS`, `src/shared/room/application/lifecycle/MatchLifecycleHooks.ts`) across every registered ending hook combined. The budget exists so a slow or hanging hook — a stalled query, an unresponsive downstream call — can never leave a player's socket dangling past match end; 1500 ms is short enough that no player waits noticeably longer for the duel-end sequence, long enough for a normal unlocked read plus a broadcast. Exceeding it logs a warning and lets teardown proceed; hooks already in flight are not cancelled, only no longer waited on.
+
+`bootstrapPlugins()` registers every `lifecycleHooks` entry into the shared `MatchLifecycleHooks` runner right after a plugin's own `register()` call succeeds — a plugin never touches the runner directly.
+
 ## Isolation: what happens when a plugin misbehaves
 
 Duel events reach plugins through a bounded, ordered, per-room queue (`DuelEventPluginHub`). Enqueueing is the only work on the duel's path; each plugin's queue drains off it, one event at a time, preserving per-room order. Two detectors feed one consequence — **the plugin is disconnected from that room** with an error naming the plugin and the reason:

@@ -15,7 +15,8 @@ export function isServerPlugin(value: unknown): value is ServerPlugin {
 		typeof candidate.name === "string" &&
 		typeof candidate.enabled === "function" &&
 		typeof candidate.register === "function" &&
-		hasValidDuelEventsDeclaration(candidate.duelEvents)
+		hasValidDuelEventsDeclaration(candidate.duelEvents) &&
+		hasValidLifecycleHooksDeclaration(candidate.lifecycleHooks)
 	);
 }
 
@@ -27,5 +28,21 @@ function hasValidDuelEventsDeclaration(duelEvents: unknown): boolean {
 	return (
 		Array.isArray(duelEvents) &&
 		duelEvents.every((kind) => (DUEL_EVENT_KINDS as readonly string[]).includes(kind as string))
+	);
+}
+
+function hasValidLifecycleHooksDeclaration(lifecycleHooks: unknown): boolean {
+	if (lifecycleHooks === undefined) {
+		return true;
+	}
+
+	return (
+		Array.isArray(lifecycleHooks) &&
+		lifecycleHooks.every(
+			(hook) =>
+				typeof hook === "object" &&
+				hook !== null &&
+				typeof (hook as Record<string, unknown>).name === "string",
+		)
 	);
 }
