@@ -1,11 +1,12 @@
+import { ChatColor } from "ygopro-msg-encode";
+
 import { DuelStartClientMessage } from "../../../shared/messages/server-to-client/DuelStartClientMessage";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
-import { Client } from "../../client/domain/Client";
+import { createSystemChat } from "../../../shared/room/domain/chat/SystemChat";
 import { JoinGameMessage } from "../../messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
 import { CatchUpClientMessage } from "../../messages/server-to-client/CatchUpClientMessage";
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
-import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { Room } from "../domain/Room";
 
 export class JoinToDuelAsSpectator {
@@ -29,20 +30,8 @@ export class JoinToDuelAsSpectator {
 
 		spectator.sendMessage(CatchUpClientMessage.create({ catchingUp: false }));
 
-		const team0 = room.players
-			.filter((player: Client) => player.team === 0)
-			.map((item) => item.name.replace(/\0/g, "").trim());
-
-		const team1 = room.players
-			.filter((player: Client) => player.team === 1)
-			.map((item) => item.name.replace(/\0/g, "").trim());
-
-		socket.send(
-			ServerMessageClientMessage.create(
-				`Score: ${team0.join(",")}: ${room.matchScore().team0} vs ${team1.join(",")}: ${
-					room.matchScore().team1
-				}`,
-			),
-		);
+		// room.score is the single source of truth for the "Score · A n – m B"
+		// format — reused verbatim instead of re-deriving it from team rosters.
+		socket.send(createSystemChat(ChatColor.WHITE, room.score));
 	}
 }

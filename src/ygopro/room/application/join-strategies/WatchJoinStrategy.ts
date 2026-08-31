@@ -1,4 +1,6 @@
-import { ChatColor, ErrorMessageType, YGOProStocChat } from "ygopro-msg-encode";
+import { ChatColor, ErrorMessageType } from "ygopro-msg-encode";
+
+import { createSystemChat } from "@shared/room/domain/chat/SystemChat";
 
 import { JoinContext, JoinStrategy } from "./JoinStrategy";
 import YGOProRoomList from "../../infrastructure/YGOProRoomList";
@@ -38,12 +40,12 @@ export class WatchJoinStrategy implements JoinStrategy {
 
 		const room = YGOProRoomList.findById(roomId);
 		if (!room) {
-			this.reject(ctx, `There is no room with id ${roomId}.`);
+			this.reject(ctx, `Room ${roomId} not found.`);
 			return;
 		}
 
 		if (room.password !== ctx.password) {
-			this.reject(ctx, `Wrong password for room ${roomId}.`);
+			this.reject(ctx, "Wrong password.");
 			return;
 		}
 
@@ -80,11 +82,7 @@ export class WatchJoinStrategy implements JoinStrategy {
 	 * and the waiting state's name-taken path.
 	 */
 	private reject(ctx: JoinContext, reason: string): void {
-		const chat = new YGOProStocChat().fromPartial({
-			player_type: ChatColor.RED,
-			msg: reason,
-		});
-		ctx.socket.send(Buffer.from(chat.toFullPayload()));
+		ctx.socket.send(createSystemChat(ChatColor.RED, reason));
 		ctx.socket.send(ctx.messageRepository.errorMessage(ErrorMessageType.JOINERROR, 0));
 		ctx.socket.close();
 	}

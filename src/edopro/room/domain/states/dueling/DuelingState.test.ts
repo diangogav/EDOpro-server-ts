@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import { EventEmitter } from "stream";
+import { ChatColor, YGOProStocChat } from "ygopro-msg-encode";
 import { Logger } from "@shared/logger/domain/Logger";
 import { Reconnect } from "@edopro/room/application/Reconnect";
 import { JoinToDuelAsSpectator } from "@edopro/room/application/JoinToDuelAsSpectator";
@@ -209,7 +210,16 @@ describe("DuelingState", () => {
 		mockEmitter.emit(Commands.UPDATE_DECK as unknown as string, message, mockRoom, mockClient);
 
 		expect(mockClient.setCanReconnect).toHaveBeenCalledWith(false);
-		expect(mockClient.socket.send).toHaveBeenCalled(); // Error message
+
+		const expectedFrame = Buffer.from(
+			new YGOProStocChat()
+				.fromPartial({
+					player_type: ChatColor.RED,
+					msg: "Reconnect with the same deck you were using in this match.",
+				})
+				.toFullPayload(),
+		);
+		expect(mockClient.socket.send).toHaveBeenCalledWith(expectedFrame);
 	});
 
 	it("should handle SURRENDER command", () => {
@@ -258,7 +268,12 @@ describe("DuelingState", () => {
 
 		mockEmitter.emit("JOIN", message, mockRoom, mockSocket);
 
-		expect(mockSocket.send).toHaveBeenCalled();
+		const expectedFrame = Buffer.from(
+			new YGOProStocChat()
+				.fromPartial({ player_type: ChatColor.RED, msg: "Wrong password." })
+				.toFullPayload(),
+		);
+		expect(mockSocket.send).toHaveBeenCalledWith(expectedFrame);
 		expect(mockSocket.destroy).toHaveBeenCalled();
 	});
 

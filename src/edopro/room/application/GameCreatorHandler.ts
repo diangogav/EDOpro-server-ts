@@ -2,20 +2,21 @@ import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 import { EventEmitter } from "stream";
 
+import { ChatColor } from "ygopro-msg-encode";
+
 import { config } from "../../../config";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { GameCreatorMessageHandler } from "../../../shared/room/domain/GameCreatorMessageHandler";
+import { createSystemChat } from "../../../shared/room/domain/chat/SystemChat";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../shared/messages/Commands";
-import { ServerInfoMessage } from "../../messages/domain/ServerInfoMessage";
 import { ClientMessage } from "../../../shared/messages/MessageProcessor";
 import { CreateGameClientMessage } from "../../messages/server-to-client/CreateGameClientMessage";
 import { ErrorMessages } from "../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientMessage";
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
-import { ServerMessageClientMessage } from "../../messages/server-to-client/ServerMessageClientMessage";
 import { Room } from "../domain/Room";
 import RoomList from "../infrastructure/RoomList";
 
@@ -89,34 +90,36 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 			RoomList.addRoom(room);
 		}
 
-		if (room.ranked) {
-			this.sendRankedMessage();
+		this.sendRoomCreationNotice(room);
+	}
 
+	/**
+	 * One-line, colored room-creation notice replacing the old three-clause
+	 * WELCOME banner. Ranking-disabled takes priority only for a room that
+	 * would otherwise be unranked — a room the client already flagged
+	 * ranked (via the password convention) still gets the ranked notice,
+	 * matching the pre-existing branch order.
+	 */
+	private sendRoomCreationNotice(room: Room): void {
+		if (room.ranked) {
+			this.socket.send(
+				createSystemChat(ChatColor.GREEN, "Ranked room — results count toward your rating."),
+			);
 			return;
 		}
 
-		this.sendUnrankedMessage();
-	}
-
-	private sendRankedMessage(): void {
-		this.socket.send(
-			ServerMessageClientMessage.create(
-				`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.RANKED_ROOM_CREATION_SUCCESS} - ${ServerInfoMessage.GAIN_POINTS_CALL_TO_ACTION}`,
-			),
-		);
-	}
-
-	private sendUnrankedMessage(): void {
-		this.socket.send(
-			ServerMessageClientMessage.create(
-				`${ServerInfoMessage.WELCOME} - ${ServerInfoMessage.UN_RANKED_ROOM_CREATION_SUCCESS}`,
-			),
-		);
-
 		if (!config.ranking.enabled) {
 			this.socket.send(
-				ServerMessageClientMessage.create(ServerInfoMessage.UNAVAILABLE_RANKING_SYSTEM),
+				createSystemChat(
+					ChatColor.YELLOW,
+					"Ranking is temporarily unavailable — this match won't be rated.",
+				),
 			);
+			return;
 		}
+
+		this.socket.send(
+			createSystemChat(ChatColor.WHITE, "Casual room — results won't affect your rating."),
+		);
 	}
 }

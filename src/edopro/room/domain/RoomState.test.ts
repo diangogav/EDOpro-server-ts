@@ -81,6 +81,37 @@ describe("RoomState — Mercury spectator chat (Option A: server prefixes name)"
 	});
 });
 
+describe("RoomState — existing-player (nickname taken) rejection", () => {
+	let eventEmitter: EventEmitter;
+
+	beforeEach(() => {
+		eventEmitter = new EventEmitter();
+	});
+
+	it("sends 'Nickname '<name>' is already in use — choose another.' via RED STOC_CHAT, then JOINERROR, then destroys the socket", () => {
+		const state = new TestRoomState(eventEmitter) as unknown as {
+			sendExistingPlayerErrorMessage: (
+				playerInfoMessage: { name: string },
+				socket: unknown,
+			) => void;
+		};
+		const socket = makeSocket();
+
+		state.sendExistingPlayerErrorMessage({ name: "Diango" }, socket);
+
+		const expectedFrame = Buffer.from(
+			new YGOProStocChat()
+				.fromPartial({
+					player_type: ChatColor.RED,
+					msg: "Nickname 'Diango' is already in use — choose another.",
+				})
+				.toFullPayload(),
+		);
+		expect(socket.send).toHaveBeenCalledWith(expectedFrame);
+		expect(socket.destroy).toHaveBeenCalled();
+	});
+});
+
 describe("RoomState — :score command", () => {
 	let eventEmitter: EventEmitter;
 

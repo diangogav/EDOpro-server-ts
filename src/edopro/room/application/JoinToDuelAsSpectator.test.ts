@@ -1,3 +1,5 @@
+import { ChatColor, YGOProStocChat } from "ygopro-msg-encode";
+
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { Client } from "@edopro/client/domain/Client";
 import { JoinGameMessage } from "@edopro/messages/client-to-server/JoinGameMessage";
@@ -52,7 +54,7 @@ describe("JoinToDuelAsSpectator", () => {
 			spectatorCache: [Buffer.from("cache1"), Buffer.from("cache2")],
 			players: [mockClient1, mockClient2],
 			spectators: [mockSpectator],
-			matchScore: jest.fn().mockReturnValue({ team0: 1, team1: 0 }),
+			score: "Score · Player1 1 – 0 Player2",
 		} as unknown as jest.Mocked<Room>;
 	});
 
@@ -72,5 +74,14 @@ describe("JoinToDuelAsSpectator", () => {
 		// Verify socket messages (cache + score) — no more "Welcome" and no more
 		// "has entered as a spectator" broadcast to the room.
 		expect(mockSocket.send).toHaveBeenCalledTimes(3); // 2 cache items + Score
+
+		// Score reuses room.score verbatim (one source of truth) as a WHITE
+		// STOC_CHAT frame, not the legacy 0xF3 frame.
+		const expectedScoreFrame = Buffer.from(
+			new YGOProStocChat()
+				.fromPartial({ player_type: ChatColor.WHITE, msg: mockRoom.score })
+				.toFullPayload(),
+		);
+		expect(mockSocket.send).toHaveBeenCalledWith(expectedScoreFrame);
 	});
 });

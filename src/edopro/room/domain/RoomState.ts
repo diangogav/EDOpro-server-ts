@@ -1,7 +1,6 @@
 import { CoreMessages } from "src/edopro/messages/domain/CoreMessages";
 import { ErrorMessages } from "src/edopro/messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "src/edopro/messages/server-to-client/ErrorClientMessage";
-import { ServerErrorClientMessage } from "src/edopro/messages/server-to-client/ServerErrorMessageClientMessage";
 import { Team } from "src/shared/room/Team";
 import {
 	DuelEventContext,
@@ -76,8 +75,9 @@ export abstract class RoomState {
 		socket: ISocket,
 	): void {
 		socket.send(
-			ServerErrorClientMessage.create(
-				`Already exists a player with the name :${playerInfoMessage.name}`,
+			createSystemChat(
+				ChatColor.RED,
+				`Nickname '${playerInfoMessage.name}' is already in use — choose another.`,
 			),
 		);
 		socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));

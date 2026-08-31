@@ -1,5 +1,7 @@
 import { EventEmitter } from "stream";
 
+import { ChatColor, YGOProStocChat } from "ygopro-msg-encode";
+
 import { ISocket } from "@shared/socket/domain/ISocket";
 
 import { JoinContext } from "./JoinStrategy";
@@ -148,7 +150,7 @@ describe("WatchJoinStrategy", () => {
 			expect(ctx.socket.close).not.toHaveBeenCalled();
 		});
 
-		it("rejects an unknown room id with chat + JOINERROR + close, and NEVER creates a room", async () => {
+		it("rejects an unknown room id with 'Room <id> not found.' + JOINERROR + close, and NEVER creates a room", async () => {
 			const ctx = makeCtx("w,4321");
 
 			await strategy.handle(ctx);
@@ -157,12 +159,18 @@ describe("WatchJoinStrategy", () => {
 			expect(emitSpy).not.toHaveBeenCalled();
 			// Red chat first, then the JOINERROR frame, then a graceful close.
 			expect(ctx.socket.send).toHaveBeenCalledTimes(2);
+			const expectedFrame = Buffer.from(
+				new YGOProStocChat()
+					.fromPartial({ player_type: ChatColor.RED, msg: "Room 4321 not found." })
+					.toFullPayload(),
+			);
+			expect(ctx.socket.send).toHaveBeenCalledWith(expectedFrame);
 			expect(ctx.messageRepository.errorMessage).toHaveBeenCalled();
 			expect(ctx.socket.close).toHaveBeenCalled();
 			expect(ctx.socket.destroy).not.toHaveBeenCalled();
 		});
 
-		it("rejects a wrong password with chat + JOINERROR + close, leaving the room untouched", async () => {
+		it("rejects a wrong password with the unified 'Wrong password.' + JOINERROR + close, leaving the room untouched", async () => {
 			const room = makeRoom(1234, "tcg#secret");
 			const ctx = makeCtx("w,1234#wrong");
 
@@ -171,6 +179,12 @@ describe("WatchJoinStrategy", () => {
 			expect(emitSpy).not.toHaveBeenCalled();
 			expect(ctx.socket.watchForRoomId).toBeUndefined();
 			expect(ctx.socket.send).toHaveBeenCalledTimes(2);
+			const expectedFrame = Buffer.from(
+				new YGOProStocChat()
+					.fromPartial({ player_type: ChatColor.RED, msg: "Wrong password." })
+					.toFullPayload(),
+			);
+			expect(ctx.socket.send).toHaveBeenCalledWith(expectedFrame);
 			expect(ctx.socket.close).toHaveBeenCalled();
 			expect(YGOProRoomList.getRooms()).toEqual([room]);
 		});

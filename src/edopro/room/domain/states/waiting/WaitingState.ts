@@ -2,6 +2,8 @@ import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 import { EventEmitter } from "stream";
 
+import { ChatColor } from "ygopro-msg-encode";
+
 import { Logger } from "../../../../../shared/logger/domain/Logger";
 import { DuelStartClientMessage } from "../../../../../shared/messages/server-to-client/DuelStartClientMessage";
 import { ISocket } from "../../../../../shared/socket/domain/ISocket";
@@ -16,7 +18,7 @@ import { ErrorMessages } from "../../../../messages/server-to-client/error-messa
 import { ErrorClientMessage } from "../../../../messages/server-to-client/ErrorClientMessage";
 import { JoinGameClientMessage } from "../../../../messages/server-to-client/JoinGameClientMessage";
 import { RPSChooseClientMessage } from "../../../../messages/server-to-client/RPSChooseClientMessage";
-import { ServerErrorClientMessage } from "../../../../messages/server-to-client/ServerErrorMessageClientMessage";
+import { createSystemChat } from "../../../../../shared/room/domain/chat/SystemChat";
 import { ReconnectionTokenIssuer } from "../../../../../shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { isNameTaken } from "../../../../../shared/room/domain/isNameTaken";
 import { Room } from "../../Room";
@@ -102,20 +104,12 @@ export class WaitingState extends RoomState {
 
 			room.addKick(playerSelect);
 
-			room.players.forEach((_client: Client) => {
-				_client.sendMessage(
-					ServerErrorClientMessage.create(
-						`The player:${playerSelect.name} has been banned from this room, he can only enter as a spectator!!`,
-					),
-				);
-			});
-
-			room.spectators.forEach((_client: Client) => {
-				_client.sendMessage(
-					ServerErrorClientMessage.create(
-						`The player:${playerSelect.name} has been banned from this room, he can only enter as a spectator!!`,
-					),
-				);
+			const banNotice = createSystemChat(
+				ChatColor.YELLOW,
+				`${playerSelect.name} is banned from this room and can only join as a spectator.`,
+			);
+			[...room.players, ...room.spectators].forEach((_client: Client) => {
+				_client.sendMessage(banNotice);
 			});
 		});
 	}
