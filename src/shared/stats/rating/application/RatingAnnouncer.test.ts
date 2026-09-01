@@ -41,6 +41,7 @@ describe("RatingAnnouncer", () => {
 		rankRepository = mock<RankRepository>();
 		rankGroupResolver = mock<RankGroupResolver>();
 		rankGroupResolver.resolveAlias.mockImplementation((name) => name);
+		rankGroupResolver.groupsFor.mockReturnValue([]);
 		rank = RankMother.create({ name: "TCG" });
 		rankRepository.findOrCreateByName.mockResolvedValue(rank);
 		logger = new LoggerMock();
@@ -312,6 +313,121 @@ describe("RatingAnnouncer", () => {
 			expect(rankGroupResolver.resolveAlias).toHaveBeenCalledWith("JTP");
 			expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith("JTP (Original)");
 			expect(ctx.announce).toHaveBeenCalledWith("[Rating v1 start] Diango 1000 | Rival 1000");
+		});
+	});
+
+	describe("announced pool", () => {
+		const groupRank = RankMother.create({ name: "TCG Advanced", type: "group" });
+
+		function useGroups(...names: string[]): void {
+			rankGroupResolver.groupsFor.mockReturnValue(names);
+			rankRepository.findOrCreateByName.mockImplementation(async (name) =>
+				name === "TCG" ? rank : RankMother.create({ name, type: "group", id: groupRank.id }),
+			);
+		}
+
+		it("announces the ratings of the group ladder the played banlist feeds", async () => {
+			useGroups("TCG Advanced");
+			repository.findMany.mockResolvedValue(
+				new Map([
+					["p1", Rating.from({ value: 1400, gamesPlayed: 40, peak: 1400 })],
+					["p2", Rating.from({ value: 1300, gamesPlayed: 40, peak: 1300 })],
+				]),
+			);
+			const ctx = makeContext();
+
+			await announcer.onMatchStarted(ctx);
+
+			expect(rankGroupResolver.groupsFor).toHaveBeenCalledWith("TCG");
+			expect(rankRepository.findOrCreateByName).toHaveBeenCalledTimes(1);
+			expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith("TCG Advanced", "group");
+			expect(repository.findMany).toHaveBeenCalledWith(["p1", "p2"], groupRank.id, 5);
+			expect(ctx.announce).toHaveBeenCalledWith("[Rating v1 start] Diango 1400 | Rival 1300");
+		});
+
+		it("looks the groups up by the alias-resolved banlist name", async () => {
+			rankGroupResolver.resolveAlias.mockImplementation((name) =>
+				name === "JTP" ? "JTP (Original)" : name,
+			);
+			useGroups("JTP");
+			repository.findMany.mockResolvedValue(new Map());
+			const ctx = makeContext({ banListName: "JTP" });
+
+			await announcer.onMatchStarted(ctx);
+
+			expect(rankGroupResolver.groupsFor).toHaveBeenCalledWith("JTP (Original)");
+		});
+
+		it("announces the first group when the list feeds several, keeping the resolver's order", async () => {
+			useGroups("TCG Advanced", "TCG All Time");
+			repository.findMany.mockResolvedValue(new Map());
+			const ctx = makeContext();
+
+			await announcer.onMatchStarted(ctx);
+
+			expect(rankRepository.findOrCreateByName).toHaveBeenCalledTimes(1);
+			expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith("TCG Advanced", "group");
+		});
+
+		it("falls back to the banlist's own pool when the list belongs to no group", async () => {
+			rankGroupResolver.groupsFor.mockReturnValue([]);
+			repository.findMany.mockResolvedValue(
+				new Map([
+					["p1", Rating.from({ value: 1050, gamesPlayed: 12, peak: 1080 })],
+					["p2", Rating.from({ value: 950, gamesPlayed: 12, peak: 980 })],
+				]),
+			);
+			const ctx = makeContext({ banListName: "Genesys" });
+
+			await announcer.onMatchStarted(ctx);
+
+			expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith("Genesys");
+			expect(repository.findMany).toHaveBeenCalledWith(["p1", "p2"], rank.id, 5);
+			expect(ctx.announce).toHaveBeenCalledWith("[Rating v1 start] Diango 1050 | Rival 950");
+		});
+
+		it("ends on the same pool it started on, resolving it once per match", async () => {
+			useGroups("TCG Advanced");
+			repository.findMany.mockResolvedValue(
+				new Map([
+					["p1", Rating.from({ value: 1000, gamesPlayed: 12, peak: 1000 })],
+					["p2", Rating.from({ value: 1000, gamesPlayed: 12, peak: 1000 })],
+				]),
+			);
+			const startCtx = makeContext();
+			await announcer.onMatchStarted(startCtx);
+
+			const endCtx = makeContext({
+				players: [
+					{ id: "p1", team: Team.PLAYER, name: "Diango", winner: true },
+					{ id: "p2", team: Team.OPPONENT, name: "Rival", winner: false },
+				],
+			});
+
+			await announcer.onMatchEnding(endCtx);
+
+			expect(rankGroupResolver.groupsFor).toHaveBeenCalledTimes(1);
+			expect(rankRepository.findOrCreateByName).toHaveBeenCalledTimes(1);
+			expect(repository.findMany).toHaveBeenCalledTimes(1);
+			expect(repository.findMany).toHaveBeenCalledWith(["p1", "p2"], groupRank.id, 5);
+			expect(endCtx.announce).toHaveBeenCalledWith(
+				"[Rating v1 end] Diango 1010 (+10) | Rival 990 (-10)",
+			);
+		});
+
+		it("warns and stays silent when group resolution fails", async () => {
+			const warn = jest.spyOn(logger, "warn");
+			rankGroupResolver.groupsFor.mockImplementation(() => {
+				throw new Error("groups unavailable");
+			});
+			const ctx = makeContext();
+
+			await expect(announcer.onMatchStarted(ctx)).resolves.toBeUndefined();
+
+			expect(warn).toHaveBeenCalled();
+			expect(rankRepository.findOrCreateByName).not.toHaveBeenCalled();
+			expect(repository.findMany).not.toHaveBeenCalled();
+			expect(ctx.announce).not.toHaveBeenCalled();
 		});
 	});
 });
