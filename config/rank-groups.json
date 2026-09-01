@@ -62,7 +62,7 @@
 			"name": "JTP All",
 			"enabled": true,
 			"onlyCurrent": false,
-			"members": ["JTP", "JTP Adv 2007-03", "JTP (AllCards)"]
+			"members": ["JTP", "JTP Adv 2007-03", "JTP (AllCards)", "JTP (Original)"]
 		},
 		{
 			"name": "GOAT",
@@ -74,7 +74,7 @@
 			"name": "Tengu",
 			"enabled": true,
 			"onlyCurrent": false,
-			"members": ["* Tengu"]
+			"members": ["* Tengu", "2011.09 Tengu Plant"]
 		},
 		{
 			"name": "Duel Terminal",
