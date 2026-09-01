@@ -1,5 +1,42 @@
 # Changelog
 
+## [2.17.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.16.0...v2.17.0) (2026-09-01)
+
+
+### Features
+
+* **chat:** overhaul system chat messages with a unified color grammar ([#353](https://github.com/diangogav/EDOpro-server-ts/issues/353)) ([847635d](https://github.com/diangogav/EDOpro-server-ts/commit/847635de185295ce01a5be0a7224cc075bacd3a5))
+* **join:** add watch-by-id spectator command ([#344](https://github.com/diangogav/EDOpro-server-ts/issues/344)) ([11fa461](https://github.com/diangogav/EDOpro-server-ts/commit/11fa4618af50756da8430499647d3a3282c234a2))
+* **matchmaking:** harden the queue surface and reserve match seats ([#343](https://github.com/diangogav/EDOpro-server-ts/issues/343)) ([01dcb96](https://github.com/diangogav/EDOpro-server-ts/commit/01dcb9673e556c0fdf32d9f2e84dbdba058b2c22))
+* **rank:** configurable group ranks fed by current ban lists ([a8de0fb](https://github.com/diangogav/EDOpro-server-ts/commit/a8de0fb8198f2458df47002e71fa14ecce4a5a0e))
+* **rank:** configurable group ranks fed by current ban lists ([2828c06](https://github.com/diangogav/EDOpro-server-ts/commit/2828c0603ebe73449bd416fff4211773e8abfa6b))
+* **rank:** give single-list formats their own ladder ([6bd9f6b](https://github.com/diangogav/EDOpro-server-ts/commit/6bd9f6b93d5b7b25d1f206f40d19280bab61fdbe))
+* **rank:** key player stats and ratings by rank_id ([a05536f](https://github.com/diangogav/EDOpro-server-ts/commit/a05536f83b90889e05a687df7d9a47b8e453bab1))
+* **rank:** key player stats and ratings by rank_id ([a9f0c44](https://github.com/diangogav/EDOpro-server-ts/commit/a9f0c447b3b048b07a6c43f8b943e19d4883cbb7))
+* **rank:** let formats reach the ban lists they retired ([d34f5ff](https://github.com/diangogav/EDOpro-server-ts/commit/d34f5ff73dd1f7130251bdb5b0d907ebba5f0584))
+* **rank:** let formats reach the ban lists they retired ([d35c2f2](https://github.com/diangogav/EDOpro-server-ts/commit/d35c2f285f03d0e591d8e87e6abb9b344a927323))
+* **rank:** normalize JTP to the canonical evolution-assets lists ([d742ae7](https://github.com/diangogav/EDOpro-server-ts/commit/d742ae799d2ccf537cd67e3fa9bfa5e95cd4c9b6))
+* **rank:** single-list formats and a maintained no-ban-list ladder ([a2e4dda](https://github.com/diangogav/EDOpro-server-ts/commit/a2e4ddaccb4fb05edadfc7f6b72b11ac059be803))
+* **rating:** add elo-rating persistence plugin ([#349](https://github.com/diangogav/EDOpro-server-ts/issues/349)) ([074f18b](https://github.com/diangogav/EDOpro-server-ts/commit/074f18b0013696af525bd3b67cc317cede99de77))
+* **rating:** add pure Elo domain math ([#348](https://github.com/diangogav/EDOpro-server-ts/issues/348)) ([b1328e8](https://github.com/diangogav/EDOpro-server-ts/commit/b1328e8e928180bec14c133a139644cad7cdcc72))
+* **rating:** announce ratings over chat at match start and end ([#351](https://github.com/diangogav/EDOpro-server-ts/issues/351)) ([ccb409b](https://github.com/diangogav/EDOpro-server-ts/commit/ccb409b080d28a40d342464d606f5e5d0a4a8df5))
+* **rating:** announce the rating players keep ([23e91cf](https://github.com/diangogav/EDOpro-server-ts/commit/23e91cfab33503802d03cb385d44351d61294cb9))
+* **rating:** announce the rating players keep ([6622728](https://github.com/diangogav/EDOpro-server-ts/commit/6622728ecc655f521fec1c8eaac39f40b1c07682))
+* **rating:** shared eligibility gate, unlocked read and chat announcement format ([#352](https://github.com/diangogav/EDOpro-server-ts/issues/352)) ([ff45b81](https://github.com/diangogav/EDOpro-server-ts/commit/ff45b81d8e1cfb0a735eef55dc8cc250f452d6b7))
+* **room:** match lifecycle hooks with bounded announce capability ([#350](https://github.com/diangogav/EDOpro-server-ts/issues/350)) ([06e6057](https://github.com/diangogav/EDOpro-server-ts/commit/06e60575f040423a7209ee41f9c29c176930315f))
+* **rush:** enable Rush Duel as a playable format ([#340](https://github.com/diangogav/EDOpro-server-ts/issues/340)) ([2de5a8a](https://github.com/diangogav/EDOpro-server-ts/commit/2de5a8ad77408f966a4ca5c975800286c702d14a))
+
+
+### Bug Fixes
+
+* **rank:** keep the no-ban-list ladder up to date ([2c8ce09](https://github.com/diangogav/EDOpro-server-ts/commit/2c8ce09696f26f6f123458f4ab13f4b3fcd39312))
+* **rating:** make a lopsided duel cost something, and never go negative ([41c762d](https://github.com/diangogav/EDOpro-server-ts/commit/41c762da6ea5ade8fb44314655a8112ccbf526d5))
+* **rating:** make a lopsided duel cost something, and never go negative ([979acfe](https://github.com/diangogav/EDOpro-server-ts/commit/979acfe792cdcdb07413676d3920d77ac8e94b67))
+* **rating:** write a history row per ladder ([7317c50](https://github.com/diangogav/EDOpro-server-ts/commit/7317c50c1a5f1aeab3ad1c5e340b1ebb23539ee2))
+* **rating:** write a history row per ladder ([10ffa9e](https://github.com/diangogav/EDOpro-server-ts/commit/10ffa9e651176867bd1de5568e75ba31e4c0bef0))
+* **room:** bind mid-duel reconnect to account identity and rate-limit joins ([#345](https://github.com/diangogav/EDOpro-server-ts/issues/345)) ([c64eade](https://github.com/diangogav/EDOpro-server-ts/commit/c64eade1c2b766ef09b2e99aa1cbc89ca1351648))
+* **ygopro:** send the room-creation notice on the ygopro pipeline ([#354](https://github.com/diangogav/EDOpro-server-ts/issues/354)) ([b8db63c](https://github.com/diangogav/EDOpro-server-ts/commit/b8db63c26c809096d6a6db8f7c28e25e19f0876b))
+
 ## [2.16.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.15.0...v2.16.0) (2026-08-25)
 
 
