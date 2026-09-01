@@ -6,8 +6,8 @@ import { dataSource } from "../../../../evolution-types/src/data-source";
 // `UserProfilePostgresRepository.test.ts`): the repo has no real-Postgres
 // jest harness. It proves the exact SQL/parameter contract issued to
 // Postgres (ON CONFLICT target, row-lock ordering) but not that Postgres
-// enforces it — the UNIQUE(match_id, user_id, kind) index this adapter
-// targets is created and exercised by the CreateRatingTables migration.
+// enforces it — the UNIQUE(match_id, user_id, kind, rank_id) index this
+// adapter targets is created by the WidenRatingHistoryUniqueIndex migration.
 jest.mock("../../../../evolution-types/src/data-source", () => ({
 	dataSource: {
 		transaction: jest.fn(),
@@ -119,12 +119,12 @@ describe("RatingPostgresRepository", () => {
 
 			expect(inserted).toBe(true);
 			expect(manager.query).toHaveBeenCalledWith(
-				expect.stringContaining("ON CONFLICT (match_id, user_id, kind) DO NOTHING"),
+				expect.stringContaining("ON CONFLICT (match_id, user_id, kind, rank_id) DO NOTHING"),
 				["match-1", "user-a", "rank-1", 5, "applied", 1000, 10, 20, 1000],
 			);
 		});
 
-		it("returns false — a no-op — when the row already exists for (match_id, user_id, kind)", async () => {
+		it("returns false — a no-op — when the row already exists for (match_id, user_id, kind, rank_id)", async () => {
 			manager.query
 				.mockResolvedValueOnce([]) // lock query
 				.mockResolvedValueOnce([]); // conflicting insert returns no rows

@@ -329,6 +329,89 @@ describe("EloRatingCalculator", () => {
 			);
 		});
 
+		// rating_history is UNIQUE on (match_id, user_id, kind, rank_id): one
+		// match feeds several ladders and each needs its own row. This fake
+		// enforces that exact key, so a narrower one would collide, report the
+		// row as already recorded, and fail the assertions below.
+		function uniqueHistoryStore(): {
+			tx: RatingTransaction;
+			historyKeys: string[];
+			savedRanks: string[];
+		} {
+			const historyKeys: string[] = [];
+			const savedRanks: string[] = [];
+			const tx: RatingTransaction = {
+				insertHistory: async (entry) => {
+					const key = [entry.matchId, entry.userId, entry.kind, entry.rankId].join("|");
+					if (historyKeys.includes(key)) {
+						return false;
+					}
+					historyKeys.push(key);
+
+					return true;
+				},
+				saveRating: async (_userId, rankId) => {
+					savedRanks.push(rankId);
+				},
+			};
+
+			return { tx, historyKeys, savedRanks };
+		}
+
+		it("writes history and a rating for the ban list rank and for the group rank it feeds", async () => {
+			const groupRank = RankMother.create({ name: "TCG Ladder", type: "group" });
+			rankGroupResolver.groupsFor.mockReturnValue(["TCG Ladder"]);
+			rankRepository.findOrCreateByName.mockImplementation(async (name) =>
+				name === "TCG Ladder" ? groupRank : rank,
+			);
+			resolveAccounts();
+			const store = uniqueHistoryStore();
+			ratingRepository.transaction.mockImplementation(async (_userIds, _rankId, _season, work) =>
+				work(
+					new Map<string, Rating>([
+						["player-1", Rating.from({ value: 1000, gamesPlayed: 20, peak: 1000 })],
+						["player-2", Rating.from({ value: 1000, gamesPlayed: 20, peak: 1000 })],
+					]),
+					store.tx,
+				),
+			);
+
+			await calculator.handle(makeEligibleEvent());
+
+			expect(store.historyKeys).toEqual([
+				`match-1|player-1|applied|${rank.id}`,
+				`match-1|player-2|applied|${rank.id}`,
+				`match-1|player-1|applied|${groupRank.id}`,
+				`match-1|player-2|applied|${groupRank.id}`,
+			]);
+			expect(store.savedRanks).toEqual([rank.id, rank.id, groupRank.id, groupRank.id]);
+		});
+
+		it("still treats a replay of the same match on the same ladders as a no-op", async () => {
+			const groupRank = RankMother.create({ name: "TCG Ladder", type: "group" });
+			rankGroupResolver.groupsFor.mockReturnValue(["TCG Ladder"]);
+			rankRepository.findOrCreateByName.mockImplementation(async (name) =>
+				name === "TCG Ladder" ? groupRank : rank,
+			);
+			resolveAccounts();
+			const store = uniqueHistoryStore();
+			ratingRepository.transaction.mockImplementation(async (_userIds, _rankId, _season, work) =>
+				work(
+					new Map<string, Rating>([
+						["player-1", Rating.from({ value: 1000, gamesPlayed: 20, peak: 1000 })],
+						["player-2", Rating.from({ value: 1000, gamesPlayed: 20, peak: 1000 })],
+					]),
+					store.tx,
+				),
+			);
+
+			await calculator.handle(makeEligibleEvent());
+			await calculator.handle(makeEligibleEvent());
+
+			expect(store.historyKeys).toHaveLength(4);
+			expect(store.savedRanks).toHaveLength(4);
+		});
+
 		it("resolves the alias before the rank lookup and resolves groups from the canonical name", async () => {
 			rankGroupResolver.resolveAlias.mockImplementation((name) =>
 				name === "JTP" ? "JTP (Original)" : name,

@@ -19,9 +19,10 @@ export type RatingHistoryEntry = {
 export interface RatingTransaction {
 	/**
 	 * Inserts one rating_history row. Returns false instead of throwing when
-	 * the row already exists for (matchId, userId, kind) — the UNIQUE
+	 * the row already exists for (matchId, userId, kind, rankId) — the UNIQUE
 	 * constraint makes a replayed write a no-op the caller can detect and
-	 * skip projecting.
+	 * skip projecting. It is scoped per rank, so the several ladders one match
+	 * feeds each get their own row.
 	 */
 	insertHistory(entry: RatingHistoryEntry): Promise<boolean>;
 
