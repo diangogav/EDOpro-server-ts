@@ -5,7 +5,11 @@ import { Rank } from "@shared/rank/domain/Rank";
 import { RankRepository } from "@shared/rank/domain/RankRepository";
 import { Team } from "@shared/room/Team";
 import { Rating } from "@shared/stats/rating/domain/Rating";
-import { RatingRepository, RatingTransaction } from "@shared/stats/rating/domain/RatingRepository";
+import {
+	RatingHistoryEntry,
+	RatingRepository,
+	RatingTransaction,
+} from "@shared/stats/rating/domain/RatingRepository";
 import { UserProfileRepository } from "@shared/user-profile/domain/UserProfileRepository";
 import { GameOverDomainEventMother } from "@test-support/mothers/player/GameOverDomainEventMother";
 import { PlayerMother } from "@test-support/mothers/player/PlayerMother";
@@ -221,6 +225,73 @@ describe("EloRatingCalculator", () => {
 
 			expect(tx.insertHistory).toHaveBeenCalledTimes(2);
 			expect(tx.saveRating).not.toHaveBeenCalled();
+		});
+	});
+
+	describe("rating floor — history stays reconcilable with the stored rating", () => {
+		it("records the delta the floor let through, so previousRating + delta is the saved rating", async () => {
+			const winnerProfile = UserProfileMother.create({ id: "player-1" });
+			const loserProfile = UserProfileMother.create({ id: "player-2" });
+			userProfileRepository.findById.mockImplementation(async (id) =>
+				id === "player-1" ? winnerProfile : loserProfile,
+			);
+			// Both sit 5 points above the floor, so the curve's -10 loss cannot be
+			// paid in full and the floor truncates it to -5.
+			const ratings = new Map<string, Rating>([
+				["player-1", Rating.from({ value: 105, gamesPlayed: 20, peak: 1400 })],
+				["player-2", Rating.from({ value: 105, gamesPlayed: 20, peak: 1400 })],
+			]);
+			ratingRepository.transaction.mockImplementation(async (_userIds, _banList, _season, work) =>
+				work(ratings, tx),
+			);
+
+			await calculator.handle(makeEligibleEvent());
+
+			expect(tx.insertHistory).toHaveBeenCalledWith(
+				expect.objectContaining({ userId: "player-2", previousRating: 105, delta: -5 }),
+			);
+			expect(tx.saveRating).toHaveBeenCalledWith(
+				"player-2",
+				rank.id,
+				config.season,
+				Rating.from({ value: 100, gamesPlayed: 21, peak: 1400 }),
+			);
+
+			const loserEntry = tx.insertHistory.mock.calls
+				.map(([entry]) => entry)
+				.find((entry) => entry.userId === "player-2") as RatingHistoryEntry;
+			const [, , , savedLoserRating] = tx.saveRating.mock.calls.find(
+				([userId]) => userId === "player-2",
+			) as [string, string, number, Rating];
+
+			expect(loserEntry.previousRating + loserEntry.delta).toBe(savedLoserRating.value);
+		});
+
+		it("leaves an unfloored delta exactly as the curve produced it", async () => {
+			const winnerProfile = UserProfileMother.create({ id: "player-1" });
+			const loserProfile = UserProfileMother.create({ id: "player-2" });
+			userProfileRepository.findById.mockImplementation(async (id) =>
+				id === "player-1" ? winnerProfile : loserProfile,
+			);
+			const ratings = new Map<string, Rating>([
+				["player-1", Rating.from({ value: 105, gamesPlayed: 20, peak: 1400 })],
+				["player-2", Rating.from({ value: 105, gamesPlayed: 20, peak: 1400 })],
+			]);
+			ratingRepository.transaction.mockImplementation(async (_userIds, _banList, _season, work) =>
+				work(ratings, tx),
+			);
+
+			await calculator.handle(makeEligibleEvent());
+
+			expect(tx.insertHistory).toHaveBeenCalledWith(
+				expect.objectContaining({ userId: "player-1", previousRating: 105, delta: 10 }),
+			);
+			expect(tx.saveRating).toHaveBeenCalledWith(
+				"player-1",
+				rank.id,
+				config.season,
+				Rating.from({ value: 115, gamesPlayed: 21, peak: 1400 }),
+			);
 		});
 	});
 

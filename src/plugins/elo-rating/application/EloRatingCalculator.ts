@@ -84,6 +84,13 @@ export class EloRatingCalculator implements DomainEventSubscriber<GameOverDomain
 				const deltas = EloCalculator.deltasFor(ratedPlayers, ratings);
 
 				for (const delta of deltas) {
+					const currentRating = ratings.get(delta.userId) as Rating;
+					// History records the delta the rating actually absorbed, not the one
+					// the curve produced: the two differ only when the rating floor
+					// truncates a loss, and a row whose delta does not reconcile with the
+					// stored rating would over-restore when replayed in reverse.
+					const appliedDelta = currentRating.effectiveDelta(delta.delta);
+
 					const inserted = await tx.insertHistory({
 						matchId: data.matchId,
 						userId: delta.userId,
@@ -91,7 +98,7 @@ export class EloRatingCalculator implements DomainEventSubscriber<GameOverDomain
 						season,
 						kind: "applied",
 						previousRating: delta.previousRating,
-						delta: delta.delta,
+						delta: appliedDelta,
 						kFactor: delta.kFactor,
 						opponentRating: delta.opponentRating,
 					});
@@ -103,8 +110,7 @@ export class EloRatingCalculator implements DomainEventSubscriber<GameOverDomain
 						continue;
 					}
 
-					const currentRating = ratings.get(delta.userId) as Rating;
-					const updatedRating = currentRating.applyDelta(delta.delta);
+					const updatedRating = currentRating.applyDelta(appliedDelta);
 					await tx.saveRating(delta.userId, rank.id, season, updatedRating);
 				}
 			});

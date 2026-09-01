@@ -3,6 +3,19 @@ import { Team } from "@shared/room/Team";
 import { Rating } from "./Rating";
 
 const RATING_SCALE = 400;
+/**
+ * Upper bound on the rating gap fed into the expected score. The Elo curve
+ * itself degrades gracefully at any gap; integer rounding does not. Deltas are
+ * rounded to whole points, so past roughly 640 points of gap the underdog's
+ * loss rounds to exactly 0 and the favourite's win pays exactly 0: losing
+ * becomes free for the weaker player and beating a newcomer becomes worthless
+ * to the stronger one, who can still drop 20 by slipping. Bounding the gap at
+ * 500 keeps every K tier — including K=10 above 2300, where a 600 bound
+ * already rounds a win down to 0 — paying at least one point in both
+ * directions. Gaps under the bound are untouched, so ordinary matchups score
+ * exactly as before.
+ */
+const MAX_EXPECTED_SCORE_GAP = 500;
 const HIGH_RATED_THRESHOLD = 2300;
 
 const K_PROVISIONAL = 40;
@@ -25,7 +38,12 @@ export type RatingDelta = {
 
 export class EloCalculator {
 	static expectedScore(playerRating: number, opponentRating: number): number {
-		return 1 / (1 + 10 ** ((opponentRating - playerRating) / RATING_SCALE));
+		const gap = Math.min(
+			MAX_EXPECTED_SCORE_GAP,
+			Math.max(-MAX_EXPECTED_SCORE_GAP, opponentRating - playerRating),
+		);
+
+		return 1 / (1 + 10 ** (gap / RATING_SCALE));
 	}
 
 	static kFactorFor(rating: Rating): number {

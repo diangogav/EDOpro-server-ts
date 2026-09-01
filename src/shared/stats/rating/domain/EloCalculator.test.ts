@@ -18,6 +18,29 @@ describe("EloCalculator", () => {
 			expect(lower).toBeLessThan(0.5);
 			expect(higher + lower).toBeCloseTo(1);
 		});
+
+		it("leaves the curve untouched for gaps under the 500-point bound", () => {
+			for (const gap of [0, 100, 400, 499]) {
+				const raw = 1 / (1 + 10 ** (-gap / 400));
+
+				expect(EloCalculator.expectedScore(1000 + gap, 1000)).toBeCloseTo(raw, 10);
+			}
+		});
+
+		it("caps the gap at 500 points, so wider gaps all score as a 500-point gap", () => {
+			const atBound = EloCalculator.expectedScore(1500, 1000);
+
+			expect(EloCalculator.expectedScore(1600, 1000)).toBeCloseTo(atBound, 10);
+			expect(EloCalculator.expectedScore(4000, 1000)).toBeCloseTo(atBound, 10);
+			expect(EloCalculator.expectedScore(1000, 4000)).toBeCloseTo(1 - atBound, 10);
+		});
+
+		it("stays symmetric beyond the bound", () => {
+			const higher = EloCalculator.expectedScore(3000, 1000);
+			const lower = EloCalculator.expectedScore(1000, 3000);
+
+			expect(higher + lower).toBeCloseTo(1, 10);
+		});
 	});
 
 	describe("kFactorFor()", () => {
@@ -96,6 +119,66 @@ describe("EloCalculator", () => {
 			// Opposing team average for o1/o2 is (1000+1000)/2 = 1000; o1 (rated 1100) was
 			// favored to win against that average and lost, so it loses more than 10.
 			expect(o1Delta).toMatchObject({ opponentRating: 1000, delta: -13 });
+		});
+	});
+
+	describe("deltasFor() — bounded gap", () => {
+		// Each pair sits in a single K tier on both sides, so the asserted
+		// minimum is unambiguous: provisional (K=40), established under 2300
+		// (K=20), and established at or above 2300 (K=10), which is the tier
+		// an unbounded gap silences first.
+		const tiers = [
+			{ name: "K=40 (provisional)", favorite: 4000, underdog: 1000, gamesPlayed: 3 },
+			{ name: "K=20 (established)", favorite: 2000, underdog: 1000, gamesPlayed: 20 },
+			{ name: "K=10 (high rated)", favorite: 3300, underdog: 2300, gamesPlayed: 20 },
+		];
+
+		it.each(
+			tiers,
+		)("$name — the favorite still gains and the underdog still pays across a huge gap", ({
+			favorite,
+			underdog,
+			gamesPlayed,
+		}) => {
+			const players = [
+				{ id: "favorite", team: Team.PLAYER, winner: true },
+				{ id: "underdog", team: Team.OPPONENT, winner: false },
+			];
+			const ratings = new Map([
+				["favorite", Rating.from({ value: favorite, gamesPlayed, peak: favorite })],
+				["underdog", Rating.from({ value: underdog, gamesPlayed, peak: underdog })],
+			]);
+
+			const deltas = EloCalculator.deltasFor(players, ratings);
+
+			expect(deltas.find((d) => d.userId === "favorite")?.delta).toBeGreaterThanOrEqual(1);
+			expect(deltas.find((d) => d.userId === "underdog")?.delta).toBeLessThanOrEqual(-1);
+		});
+
+		it("makes a long losing streak settle on the rating floor rather than drifting free", () => {
+			let player = Rating.from({ value: 1000, gamesPlayed: 20, peak: 1000 });
+			const opponent = Rating.from({ value: 1000, gamesPlayed: 20, peak: 1000 });
+			const players = [
+				{ id: "player", team: Team.PLAYER, winner: false },
+				{ id: "opponent", team: Team.OPPONENT, winner: true },
+			];
+
+			for (let game = 0; game < 800; game++) {
+				const deltas = EloCalculator.deltasFor(
+					players,
+					new Map([
+						["player", player],
+						["opponent", opponent],
+					]),
+				);
+				const playerDelta = deltas.find((d) => d.userId === "player")?.delta as number;
+
+				expect(playerDelta).toBeLessThanOrEqual(-1);
+				player = player.applyDelta(playerDelta);
+				expect(player.value).toBeGreaterThanOrEqual(100);
+			}
+
+			expect(player.value).toBe(100);
 		});
 	});
 

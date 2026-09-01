@@ -155,7 +155,10 @@ export class RatingAnnouncer implements MatchLifecycleHook {
 
 		const teams = this.groupByTeam(eligibility.players, (player): RatingAnnouncementDeltaEntry => {
 			const delta = deltaByUserId.get(player.id);
-			const magnitude = delta?.delta ?? 0;
+			// Announce the delta the rating floor lets through, so the number shown
+			// is the one that will be stored rather than a below-floor projection.
+			const startRating = startRatings.get(player.id) ?? Rating.initialize();
+			const magnitude = delta === undefined ? 0 : startRating.effectiveDelta(delta.delta);
 
 			return {
 				name: player.name,
