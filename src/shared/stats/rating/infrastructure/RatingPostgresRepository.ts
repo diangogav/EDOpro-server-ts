@@ -35,7 +35,7 @@ const FIND_RATINGS_QUERY = `
 const INSERT_HISTORY_QUERY = `
 	INSERT INTO rating_history (match_id, user_id, rank_id, season, kind, previous_rating, delta, k_factor, opponent_rating)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	ON CONFLICT (match_id, user_id, kind) DO NOTHING
+	ON CONFLICT (match_id, user_id, kind, rank_id) DO NOTHING
 	RETURNING id
 `;
 
