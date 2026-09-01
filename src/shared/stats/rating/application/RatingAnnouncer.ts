@@ -72,16 +72,24 @@ export class RatingAnnouncer implements MatchLifecycleHook {
 			return;
 		}
 
-		// Eligibility stays keyed on the raw banlist name; the rank is
-		// resolved exactly once per match — by its alias-resolved canonical
-		// name — here at start, and carried in the snapshot. Announcements
-		// stay on the banlist pool only: group ladders are silent.
+		// Eligibility stays keyed on the raw banlist name; the announced rank
+		// is resolved exactly once per match — from its alias-resolved
+		// canonical name — here at start, and carried in the snapshot so end
+		// reports the very same pool. Announcements follow the group ladder
+		// the played list feeds, because that is the rating that survives a
+		// list rotation and that players read as theirs; a list feeding no
+		// group falls back to its own banlist pool so those players still see
+		// a rating. Only the first group is announced: the frame has no room
+		// for several numbers, and the resolver's order is deterministic.
 		let rankId: string;
 		let ratings: Map<string, Rating>;
 		try {
-			const rank = await this.rankRepository.findOrCreateByName(
-				this.rankGroupResolver.resolveAlias(eligibility.banListName),
-			);
+			const banListName = this.rankGroupResolver.resolveAlias(eligibility.banListName);
+			const [groupName] = this.rankGroupResolver.groupsFor(banListName);
+			const rank =
+				groupName === undefined
+					? await this.rankRepository.findOrCreateByName(banListName)
+					: await this.rankRepository.findOrCreateByName(groupName, "group");
 			rankId = rank.id;
 			ratings = await this.ratingRepository.findMany(
 				eligibility.players.map((player) => player.id),
