@@ -1,5 +1,8 @@
 import "reflect-metadata";
 
+import * as fs from "fs/promises";
+import * as path from "path";
+
 import { RankGroupResolver } from "@shared/rank/application/RankGroupResolver";
 import { Rank } from "@shared/rank/domain/Rank";
 import { RankRepository } from "@shared/rank/domain/RankRepository";
@@ -21,6 +24,12 @@ import { config } from "../config/index";
 import { dataSource } from "../evolution-types/src/data-source";
 import { PostgresTypeORM } from "../evolution-types/src/PostgresTypeORM";
 import {
+	AchievementPointsRow,
+	buildReconciliationReport,
+	PlayerStatsSnapshotRow,
+	ReconciliationReport,
+} from "../shared/stats/points-ledger/domain/buildReconciliationReport";
+import {
 	BackfillMatchRow,
 	GroupsFor,
 	PlanLedgerBackfillResult,
@@ -38,6 +47,22 @@ const SELECT_MATCH_ROWS_QUERY = `
 	WHERE deleted_at IS NULL
 `;
 
+// Quoted aliases so the returned row shape already IS PlayerStatsSnapshotRow.
+const SELECT_PLAYER_STATS_QUERY = `
+	SELECT ps.user_id AS "userId", ps.rank_id AS "rankId", r.name AS "rankName", ps.season, ps.wins, ps.losses, ps.points
+	FROM player_stats ps
+	JOIN ranks r ON r.id = ps.rank_id
+`;
+
+// Mirrors rebuild-player-stats.sql's achievement_points CTE.
+const SELECT_ACHIEVEMENT_POINTS_QUERY = `
+	SELECT ua.user_id AS "userId", label AS "rankName", ua.season, SUM(a.earned_points)::int AS points
+	FROM user_achievements ua
+	JOIN achievements a ON a.id = ua.achievement_id
+	CROSS JOIN LATERAL json_array_elements_text(ua.labels) AS label
+	GROUP BY 1, 2, 3
+`;
+
 export interface LedgerEntryInsertPort {
 	insert(entry: PointsLedgerEntry): Promise<boolean>;
 }
@@ -48,35 +73,52 @@ export type BackfillDependencies = {
 	groupsFor: GroupsFor;
 	ranksByName: RanksByName;
 	ledgerInserter: LedgerEntryInsertPort;
+	playerStatsRows: { fetchRows(): Promise<PlayerStatsSnapshotRow[]> };
+	achievementPointsRows: { fetchRows(): Promise<AchievementPointsRow[]> };
+	writeReport(report: ReconciliationReport): Promise<void>;
 	logger: { info(message: string): void };
 };
 
 export type BackfillRunOptions = { apply: boolean; batchSize?: number };
 
-/** Thin IO shell over the pure `planLedgerBackfill`; writes no report (that's the follow-up unit). */
+export type RunBackfillResult = { plan: PlanLedgerBackfillResult; report: ReconciliationReport };
+
+/** Thin IO shell over the pure `planLedgerBackfill` and `buildReconciliationReport`. */
 export async function runBackfill(
 	deps: BackfillDependencies,
 	options: BackfillRunOptions,
-): Promise<PlanLedgerBackfillResult> {
+): Promise<RunBackfillResult> {
 	const rows = await deps.matchRows.fetchRows();
-	const result = planLedgerBackfill(rows, deps.resolveAlias, deps.groupsFor, deps.ranksByName);
+	const plan = planLedgerBackfill(rows, deps.resolveAlias, deps.groupsFor, deps.ranksByName);
 	const inserted = options.apply
 		? await insertInBatches(
-				result.entries,
+				plan.entries,
 				deps.ledgerInserter,
 				options.batchSize ?? DEFAULT_BATCH_SIZE,
 			)
 		: 0;
 	const mode = options.apply
-		? `APPLY — ${inserted}/${result.entries.length} rows newly inserted`
+		? `APPLY — ${inserted}/${plan.entries.length} rows newly inserted`
 		: "DRY RUN — nothing written";
 	deps.logger.info(
-		`points-ledger backfill (${mode}); ${result.rankSummaries.length} ranks, ` +
-			`${result.unmappedBanLists.length} unmapped ban lists, ` +
-			`${result.preFlaggedGameIds.length} pre-flagged games`,
+		`points-ledger backfill (${mode}); ${plan.rankSummaries.length} ranks, ` +
+			`${plan.unmappedBanLists.length} unmapped ban lists, ` +
+			`${plan.preFlaggedGameIds.length} pre-flagged games`,
 	);
 
-	return result;
+	const [playerStats, achievementPoints] = await Promise.all([
+		deps.playerStatsRows.fetchRows(),
+		deps.achievementPointsRows.fetchRows(),
+	]);
+	const report = buildReconciliationReport({
+		planResult: plan,
+		gameIds: [...new Set(rows.map((row) => row.gameId))],
+		playerStats,
+		achievementPoints,
+	});
+	await deps.writeReport(report);
+
+	return { plan, report };
 }
 
 async function insertInBatches(
@@ -157,6 +199,20 @@ function ledgerInserterFor(playerStatsRepository: PlayerStatsRepository): Ledger
 	};
 }
 
+const fetchPlayerStatsRows = (): Promise<PlayerStatsSnapshotRow[]> =>
+	dataSource.query(SELECT_PLAYER_STATS_QUERY);
+const fetchAchievementPointsRows = (): Promise<AchievementPointsRow[]> =>
+	dataSource.query(SELECT_ACHIEVEMENT_POINTS_QUERY);
+
+async function writeReportToFile(report: ReconciliationReport): Promise<void> {
+	const dir = path.join(process.cwd(), "reports");
+	await fs.mkdir(dir, { recursive: true });
+	await fs.writeFile(
+		path.join(dir, `points-ledger-reconciliation-${Date.now()}.json`),
+		JSON.stringify(report, null, 2),
+	);
+}
+
 async function main(): Promise<void> {
 	const logger = LoggerFactory.getLogger();
 	const apply = process.argv.includes("--apply");
@@ -190,6 +246,9 @@ async function main(): Promise<void> {
 			groupsFor,
 			ranksByName,
 			ledgerInserter: ledgerInserterFor(new PlayerStatsPostgresRepository()),
+			playerStatsRows: { fetchRows: fetchPlayerStatsRows },
+			achievementPointsRows: { fetchRows: fetchAchievementPointsRows },
+			writeReport: writeReportToFile,
 			logger,
 		},
 		{ apply },
