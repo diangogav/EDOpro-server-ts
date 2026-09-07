@@ -120,6 +120,27 @@ describe("buildReconciliationReport", () => {
 		expect(report.preFlaggedGames).toEqual({ count: 1, gameIds: ["game-1"] });
 	});
 
+	it("flags a player_stats row with no ledger entries and blocks clean", () => {
+		const orphan = makeStatsRow({
+			userId: "user-2",
+			rankId: "rank-2",
+			rankName: "Other",
+			points: 5,
+		});
+		const report = buildReconciliationReport(makeInput({ playerStats: [makeStatsRow(), orphan] }));
+
+		expect(report.clean).toBe(false);
+		expect(report.orphanStatsCount).toBe(1);
+		expect(report.mismatches).toContainEqual(
+			expect.objectContaining({
+				userId: "user-2",
+				ledgerPoints: 0,
+				statsPoints: 5,
+				deltaPoints: 5,
+			}),
+		);
+	});
+
 	it("produces the exact same report on repeated calls with the same input", () => {
 		const input = makeInput();
 

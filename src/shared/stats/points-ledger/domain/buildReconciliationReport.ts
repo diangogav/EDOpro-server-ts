@@ -37,6 +37,8 @@ export type ReconciliationReport = {
 	preFlaggedGames: { count: number; gameIds: string[] };
 	unmappedBanLists: PlanLedgerBackfillResult["unmappedBanLists"];
 	incompleteGames: string[];
+	/** Count of `mismatches` rows for a player_stats key with zero ledger entries. */
+	orphanStatsCount: number;
 	clean: boolean;
 };
 
@@ -67,15 +69,16 @@ export function buildReconciliationReport(input: ReconciliationInput): Reconcili
 		input.playerStats.map((row) => [keyOf(row.userId, row.rankName, row.season), row]),
 	);
 
-	const mismatches = [...ledgerByKey.values()]
-		.map((ledger) =>
-			toMismatch(
-				ledger,
-				statsByKey.get(keyOf(ledger.userId, ledger.rankName, ledger.season)),
-				achievementByKey.get(keyOf(ledger.userId, ledger.rankName, ledger.season)) ?? 0,
-			),
-		)
+	// Union of key sets: a player_stats row with zero ledger entries is a diff too.
+	const allKeys = new Set([...ledgerByKey.keys(), ...statsByKey.keys()]);
+	const mismatches = [...allKeys]
+		.map((key) => {
+			const ledger = ledgerByKey.get(key);
+			const stats = statsByKey.get(key);
+			return toMismatch(ledger ?? stats!, ledger, stats, achievementByKey.get(key) ?? 0);
+		})
 		.sort(byKeyOrder);
+	const orphanStatsCount = [...statsByKey.keys()].filter((key) => !ledgerByKey.has(key)).length;
 
 	const ledgerGameIds = new Set(input.planResult.entries.map((entry) => entry.gameId));
 	const incompleteGames = input.gameIds.filter((gameId) => !ledgerGameIds.has(gameId)).sort();
@@ -93,6 +96,7 @@ export function buildReconciliationReport(input: ReconciliationInput): Reconcili
 		},
 		unmappedBanLists: input.planResult.unmappedBanLists,
 		incompleteGames,
+		orphanStatsCount,
 		clean,
 	};
 }
@@ -102,28 +106,32 @@ function isReconciled(mismatch: ReconciliationMismatch): boolean {
 }
 
 function toMismatch(
-	ledger: LedgerAggregate,
+	key: ReconciliationKey,
+	ledger: LedgerAggregate | undefined,
 	stats: PlayerStatsSnapshotRow | undefined,
 	achievementPoints: number,
 ): ReconciliationMismatch {
+	const ledgerWins = ledger?.wins ?? 0;
+	const ledgerLosses = ledger?.losses ?? 0;
+	const ledgerPoints = ledger?.points ?? 0;
 	const statsWins = stats?.wins ?? 0;
 	const statsLosses = stats?.losses ?? 0;
 	const statsPoints = stats?.points ?? 0;
 
 	return {
-		userId: ledger.userId,
-		rankName: ledger.rankName,
-		season: ledger.season,
-		ledgerWins: ledger.wins,
-		ledgerLosses: ledger.losses,
-		ledgerPoints: ledger.points,
+		userId: key.userId,
+		rankName: key.rankName,
+		season: key.season,
+		ledgerWins,
+		ledgerLosses,
+		ledgerPoints,
 		achievementPoints,
 		statsWins,
 		statsLosses,
 		statsPoints,
-		deltaWins: statsWins - ledger.wins,
-		deltaLosses: statsLosses - ledger.losses,
-		deltaPoints: statsPoints - (ledger.points + achievementPoints),
+		deltaWins: statsWins - ledgerWins,
+		deltaLosses: statsLosses - ledgerLosses,
+		deltaPoints: statsPoints - (ledgerPoints + achievementPoints),
 	};
 }
 
