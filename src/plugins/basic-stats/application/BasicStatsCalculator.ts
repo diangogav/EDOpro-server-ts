@@ -87,15 +87,32 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 			// banlist rank (including "N/A"), Global, and every group ladder
 			// the played list feeds.
 			const statsRanks = [...(banListRank ? [banListRank] : []), globalRank, ...groupRanks];
-			for (const rank of statsRanks) {
-				const playerStats = await this.playerStatsRepository.findByUserIdAndRankId(
-					userProfile.id,
-					rank.id,
-				);
-				playerStats.addPoints(points);
-				player.winner ? playerStats.increaseWins() : playerStats.increaseLosses();
-				void this.playerStatsRepository.save(playerStats);
-			}
+			const winsDelta = player.winner ? 1 : 0;
+			const lossesDelta = player.winner ? 0 : 1;
+			await this.playerStatsRepository.transaction(
+				userProfile.id,
+				statsRanks.map((rank) => rank.id),
+				config.season,
+				async (tx) => {
+					for (const rank of statsRanks) {
+						const playerStats = await tx.findByUserIdAndRankId(userProfile.id, rank.id);
+						playerStats.addPoints(points);
+						player.winner ? playerStats.increaseWins() : playerStats.increaseLosses();
+						await tx.save(playerStats);
+						await tx.insertLedgerEntry({
+							gameId,
+							userId: userProfile.id,
+							rankId: rank.id,
+							season: config.season,
+							kind: "applied",
+							cycle: 0,
+							pointsDelta: points,
+							winsDelta,
+							lossesDelta,
+						});
+					}
+				},
+			);
 
 			const { id: matchId } = await this.matchResumeCreator.run({
 				userId: userProfile.id,
