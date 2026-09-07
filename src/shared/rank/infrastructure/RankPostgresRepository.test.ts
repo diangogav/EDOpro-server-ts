@@ -116,4 +116,25 @@ describe("RankPostgresRepository", () => {
 			'Rank "TCG" could not be found or created',
 		);
 	});
+
+	describe("findByName", () => {
+		it("looks the rank up by name without inserting anything", async () => {
+			query.mockResolvedValueOnce([{ id: "rank-1", name: "TCG", type: "banlist", enabled: true }]);
+
+			const rank = await repository.findByName("TCG");
+
+			expect(query).toHaveBeenCalledTimes(1);
+			expect(query).toHaveBeenCalledWith(expect.stringContaining("WHERE name = $1"), ["TCG"]);
+			expect(rank).toEqual({ id: "rank-1", name: "TCG", type: "banlist", enabled: true });
+		});
+
+		it("returns null instead of creating a rank when no row matches", async () => {
+			query.mockResolvedValueOnce([]);
+
+			const rank = await repository.findByName("Unknown List");
+
+			expect(rank).toBeNull();
+			expect(query).toHaveBeenCalledTimes(1);
+		});
+	});
 });
