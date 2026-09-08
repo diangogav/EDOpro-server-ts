@@ -1,3 +1,4 @@
+import { UnmappedAchievementLabel } from "./fanOutAchievementPoints";
 import { PlanLedgerBackfillResult } from "./planLedgerBackfill";
 
 export type PlayerStatsSnapshotRow = {
@@ -33,9 +34,14 @@ export type ReconciliationMismatch = ReconciliationKey & {
 };
 
 export type ReconciliationReport = {
+	/** Every (user, rank, season) key compared, reconciled or not — see `differingKeys`. */
 	mismatches: ReconciliationMismatch[];
+	/** Count of `mismatches` rows that actually differ (any non-zero delta). */
+	differingKeys: number;
 	preFlaggedGames: { count: number; gameIds: string[] };
 	unmappedBanLists: PlanLedgerBackfillResult["unmappedBanLists"];
+	/** Achievement labels fanned out by `fanOutAchievementPoints` with no matching rank. */
+	unmappedAchievementLabels: UnmappedAchievementLabel[];
 	incompleteGames: string[];
 	/** Count of `mismatches` rows for a player_stats key with zero ledger entries. */
 	orphanStatsCount: number;
@@ -46,7 +52,9 @@ export type ReconciliationInput = {
 	planResult: PlanLedgerBackfillResult;
 	gameIds: string[];
 	playerStats: PlayerStatsSnapshotRow[];
+	/** Already fanned out to group ranks — see `fanOutAchievementPoints`. */
 	achievementPoints: AchievementPointsRow[];
+	unmappedAchievementLabels: UnmappedAchievementLabel[];
 };
 
 type LedgerAggregate = ReconciliationKey & { wins: number; losses: number; points: number };
@@ -62,9 +70,7 @@ export function buildReconciliationReport(input: ReconciliationInput): Reconcili
 		input.planResult.rankSummaries.map((summary) => [summary.rankId, summary.rankName]),
 	);
 	const ledgerByKey = aggregateLedgerEntries(input.planResult.entries, rankNameById);
-	const achievementByKey = new Map(
-		input.achievementPoints.map((row) => [keyOf(row.userId, row.rankName, row.season), row.points]),
-	);
+	const achievementByKey = aggregateAchievementPoints(input.achievementPoints);
 	const statsByKey = new Map(
 		input.playerStats.map((row) => [keyOf(row.userId, row.rankName, row.season), row]),
 	);
@@ -83,18 +89,22 @@ export function buildReconciliationReport(input: ReconciliationInput): Reconcili
 	const ledgerGameIds = new Set(input.planResult.entries.map((entry) => entry.gameId));
 	const incompleteGames = input.gameIds.filter((gameId) => !ledgerGameIds.has(gameId)).sort();
 
+	const differingKeys = mismatches.filter((mismatch) => !isReconciled(mismatch)).length;
 	const clean =
-		mismatches.every(isReconciled) &&
+		differingKeys === 0 &&
 		input.planResult.unmappedBanLists.length === 0 &&
+		input.unmappedAchievementLabels.length === 0 &&
 		incompleteGames.length === 0;
 
 	return {
 		mismatches,
+		differingKeys,
 		preFlaggedGames: {
 			count: input.planResult.preFlaggedGameIds.length,
 			gameIds: [...input.planResult.preFlaggedGameIds].sort(),
 		},
 		unmappedBanLists: input.planResult.unmappedBanLists,
+		unmappedAchievementLabels: input.unmappedAchievementLabels,
 		incompleteGames,
 		orphanStatsCount,
 		clean,
@@ -133,6 +143,18 @@ function toMismatch(
 		deltaLosses: statsLosses - ledgerLosses,
 		deltaPoints: statsPoints - (ledgerPoints + achievementPoints),
 	};
+}
+
+// Sums points for rows sharing a key — fan-out can feed the same group rank
+// from more than one achievement label in the same season.
+function aggregateAchievementPoints(rows: AchievementPointsRow[]): Map<string, number> {
+	const byKey = new Map<string, number>();
+	for (const row of rows) {
+		const key = keyOf(row.userId, row.rankName, row.season);
+		byKey.set(key, (byKey.get(key) ?? 0) + row.points);
+	}
+
+	return byKey;
 }
 
 function aggregateLedgerEntries(
