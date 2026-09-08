@@ -119,9 +119,11 @@ describe("RatingPostgresRepository", () => {
 
 			expect(inserted).toBe(true);
 			expect(manager.query).toHaveBeenCalledWith(
-				expect.stringContaining("ON CONFLICT (match_id, user_id, kind, rank_id) DO NOTHING"),
-				["match-1", "user-a", "rank-1", 5, "applied", 1000, 10, 20, 1000],
+				expect.stringContaining("ON CONFLICT DO NOTHING"),
+				["match-1", "user-a", "rank-1", 5, "applied", 1000, 10, 20, 1000, 0],
 			);
+			const [insertSql] = manager.query.mock.calls[1] as [string, unknown[]];
+			expect(insertSql).not.toEqual(expect.stringContaining("ON CONFLICT ("));
 		});
 
 		it("returns false — a no-op — when the row already exists for (match_id, user_id, kind, rank_id)", async () => {
