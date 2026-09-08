@@ -1,11 +1,16 @@
 import { RankMother } from "@test-support/mothers/rank/RankMother";
 
 import { BackfillDependencies, runBackfill } from "./backfill-points-ledger";
+import { PlayerStatsSnapshotRow } from "../shared/stats/points-ledger/domain/buildReconciliationReport";
 import { BackfillMatchRow } from "../shared/stats/points-ledger/domain/planLedgerBackfill";
 
-function makeDependencies(rows: BackfillMatchRow[]): BackfillDependencies & { insert: jest.Mock } {
+function makeDependencies(
+	rows: BackfillMatchRow[],
+	playerStats: PlayerStatsSnapshotRow[] = [],
+): BackfillDependencies & { insert: jest.Mock; writeReport: jest.Mock } {
 	const globalRank = RankMother.create({ id: "rank-global", name: "Global" });
 	const insert = jest.fn().mockResolvedValue(true);
+	const writeReport = jest.fn().mockResolvedValue(undefined);
 
 	return {
 		matchRows: { fetchRows: () => Promise.resolve(rows) },
@@ -13,6 +18,9 @@ function makeDependencies(rows: BackfillMatchRow[]): BackfillDependencies & { in
 		groupsFor: () => [],
 		ranksByName: (name) => (name === "Global" ? globalRank : undefined),
 		ledgerInserter: { insert },
+		playerStatsRows: { fetchRows: () => Promise.resolve(playerStats) },
+		achievementPointsRows: { fetchRows: () => Promise.resolve([]) },
+		writeReport,
 		logger: { info: jest.fn() },
 		insert,
 	};
@@ -37,7 +45,7 @@ describe("runBackfill", () => {
 
 		const result = await runBackfill(deps, { apply: false });
 
-		expect(result.entries).toHaveLength(1);
+		expect(result.plan.entries).toHaveLength(1);
 		expect(deps.insert).not.toHaveBeenCalled();
 	});
 
@@ -47,7 +55,7 @@ describe("runBackfill", () => {
 		const result = await runBackfill(deps, { apply: true });
 
 		expect(deps.insert).toHaveBeenCalledTimes(1);
-		expect(deps.insert).toHaveBeenCalledWith(result.entries[0]);
+		expect(deps.insert).toHaveBeenCalledWith(result.plan.entries[0]);
 	});
 
 	it("never calls the insert port for rows that plan zero entries", async () => {
@@ -55,7 +63,25 @@ describe("runBackfill", () => {
 
 		const result = await runBackfill(deps, { apply: true });
 
-		expect(result.unmappedBanLists).toEqual([{ banListName: "Unmapped List", matchRows: 1 }]);
+		expect(result.plan.unmappedBanLists).toEqual([{ banListName: "Unmapped List", matchRows: 1 }]);
 		expect(deps.insert).not.toHaveBeenCalled();
+	});
+
+	it("writes the built reconciliation report through the injected writer", async () => {
+		const statsRow = {
+			userId: "user-1",
+			rankId: "rank-global",
+			rankName: "Global",
+			season: 7,
+			wins: 1,
+			losses: 0,
+			points: 3,
+		};
+		const deps = makeDependencies([makeRow()], [statsRow]);
+
+		const result = await runBackfill(deps, { apply: false });
+
+		expect(result.report.clean).toBe(true);
+		expect(deps.writeReport).toHaveBeenCalledWith(result.report);
 	});
 });
