@@ -6,7 +6,10 @@ import { Team } from "@shared/room/Team";
 import { MatchResumeCreator } from "@shared/stats/match-resume/application/MatchResumeCreator";
 import { DuelResumeCreator } from "@shared/stats/match-resume/duel-resume/application/DuelResumeCreator";
 import { PlayerStats } from "@shared/stats/player-stats/domain/PlayerStats";
-import { PlayerStatsRepository } from "@shared/stats/player-stats/domain/PlayerStatsRepository";
+import {
+	PlayerStatsRepository,
+	PlayerStatsTransaction,
+} from "@shared/stats/player-stats/domain/PlayerStatsRepository";
 import { RankGroupResolver } from "@shared/rank/application/RankGroupResolver";
 import { Rank } from "@shared/rank/domain/Rank";
 import { RankRepository } from "@shared/rank/domain/RankRepository";
@@ -16,9 +19,11 @@ import { GameMother } from "@test-support/mothers/player/GameMother";
 import { GameOverDomainEventMother } from "@test-support/mothers/player/GameOverDomainEventMother";
 import { PlayerMother } from "@test-support/mothers/player/PlayerMother";
 import { PlayerStatsMother } from "@test-support/mothers/player/PlayerStatsMother";
+import { PointsLedgerEntryMother } from "@test-support/mothers/player/PointsLedgerEntryMother";
 import { RankMother } from "@test-support/mothers/rank/RankMother";
 import { UserProfileMother } from "@test-support/mothers/user-profile/UserProfileMother";
 
+import { config } from "../../../config/index";
 import { BasicStatsCalculator } from "./BasicStatsCalculator";
 
 describe("BasicStatsCalculator", () => {
@@ -29,6 +34,7 @@ describe("BasicStatsCalculator", () => {
 	let logger: MockProxy<Logger>;
 	let userProfileRepository: MockProxy<UserProfileRepository>;
 	let playerStatsRepository: MockProxy<PlayerStatsRepository>;
+	let txMock: MockProxy<PlayerStatsTransaction>;
 	let rankRepository: MockProxy<RankRepository>;
 	let rankGroupResolver: MockProxy<RankGroupResolver>;
 	let matchResumeCreator: MockProxy<MatchResumeCreator>;
@@ -46,6 +52,11 @@ describe("BasicStatsCalculator", () => {
 		logger.child.mockReturnValue(logger);
 		userProfileRepository = mock();
 		playerStatsRepository = mock<PlayerStatsRepository>();
+		txMock = mock<PlayerStatsTransaction>();
+		playerStatsRepository.transaction.mockImplementation((_userId, _rankIds, _season, work) =>
+			work(txMock),
+		);
+		txMock.insertLedgerEntry.mockResolvedValue(true);
 		rankRepository = mock<RankRepository>();
 		rankGroupResolver = mock<RankGroupResolver>();
 		rankGroupResolver.resolveAlias.mockImplementation((name) => name);
@@ -97,7 +108,7 @@ describe("BasicStatsCalculator", () => {
 			.mockResolvedValueOnce(playerUserProfile)
 			.mockResolvedValueOnce(opponentUserProfile);
 
-		playerStatsRepository.findByUserIdAndRankId
+		txMock.findByUserIdAndRankId
 			.mockResolvedValueOnce(playerStats)
 			.mockResolvedValueOnce(opponentStats)
 			.mockImplementation(async () => PlayerStatsMother.create());
@@ -137,7 +148,7 @@ describe("BasicStatsCalculator", () => {
 			banListName: "N/A",
 		});
 
-		playerStatsRepository.findByUserIdAndRankId
+		txMock.findByUserIdAndRankId
 			.mockReset()
 			.mockResolvedValueOnce(playerStats) // "N/A" row for player
 			.mockResolvedValueOnce(playerStats) // Global row for player
@@ -146,31 +157,31 @@ describe("BasicStatsCalculator", () => {
 
 		await basicStatsCalculator.handle(event);
 
-		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenCalledTimes(4);
-		expect(playerStatsRepository.save).toHaveBeenCalledTimes(4);
+		expect(txMock.findByUserIdAndRankId).toHaveBeenCalledTimes(4);
+		expect(txMock.save).toHaveBeenCalledTimes(4);
 
-		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenNthCalledWith(
+		expect(txMock.findByUserIdAndRankId).toHaveBeenNthCalledWith(
 			1,
 			playerUserProfile.id,
 			formatRank.id,
 		);
-		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenNthCalledWith(
+		expect(txMock.findByUserIdAndRankId).toHaveBeenNthCalledWith(
 			2,
 			playerUserProfile.id,
 			globalRank.id,
 		);
-		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenNthCalledWith(
+		expect(txMock.findByUserIdAndRankId).toHaveBeenNthCalledWith(
 			3,
 			opponentUserProfile.id,
 			formatRank.id,
 		);
-		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenNthCalledWith(
+		expect(txMock.findByUserIdAndRankId).toHaveBeenNthCalledWith(
 			4,
 			opponentUserProfile.id,
 			globalRank.id,
 		);
-		expect(playerStatsRepository.save).toHaveBeenNthCalledWith(1, PlayerStats.from(playerStats));
-		expect(playerStatsRepository.save).toHaveBeenNthCalledWith(3, PlayerStats.from(opponentStats));
+		expect(txMock.save).toHaveBeenNthCalledWith(1, PlayerStats.from(playerStats));
+		expect(txMock.save).toHaveBeenNthCalledWith(3, PlayerStats.from(opponentStats));
 	});
 
 	it("uses the event's matchId as the persisted gameId instead of inventing one", async () => {
@@ -234,7 +245,7 @@ describe("BasicStatsCalculator", () => {
 
 	it("Should use banListName from event data (not from hash lookup) for per-format rank", async () => {
 		const edisonBanListName = "2010.03 Edison";
-		playerStatsRepository.findByUserIdAndRankId
+		txMock.findByUserIdAndRankId
 			.mockResolvedValueOnce(playerStats) // per-format lookup for player
 			.mockResolvedValueOnce(playerStats) // Global lookup for player
 			.mockResolvedValueOnce(opponentStats) // per-format lookup for opponent
@@ -251,11 +262,8 @@ describe("BasicStatsCalculator", () => {
 
 		// Per-format rank must be resolved from the name in event.data.banListName
 		expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith(edisonBanListName);
-		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenCalledWith(
-			playerUserProfile.id,
-			formatRank.id,
-		);
-		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenCalledWith(
+		expect(txMock.findByUserIdAndRankId).toHaveBeenCalledWith(playerUserProfile.id, formatRank.id);
+		expect(txMock.findByUserIdAndRankId).toHaveBeenCalledWith(
 			opponentUserProfile.id,
 			formatRank.id,
 		);
@@ -267,7 +275,7 @@ describe("BasicStatsCalculator", () => {
 			name === "Global" ? globalRank : naRank,
 		);
 		rankGroupResolver.groupsFor.mockReturnValue(["TCG"]);
-		playerStatsRepository.findByUserIdAndRankId
+		txMock.findByUserIdAndRankId
 			.mockReset()
 			.mockImplementation(async () => PlayerStatsMother.create());
 		const players = [player, opponent];
@@ -287,15 +295,13 @@ describe("BasicStatsCalculator", () => {
 		expect(rankGroupResolver.groupsFor).not.toHaveBeenCalled();
 		expect(rankRepository.findOrCreateByName).not.toHaveBeenCalledWith("TCG", "group");
 
-		const rankIds = playerStatsRepository.findByUserIdAndRankId.mock.calls.map(
-			([, rankId]) => rankId,
-		);
+		const rankIds = txMock.findByUserIdAndRankId.mock.calls.map(([, rankId]) => rankId);
 		expect(rankIds).toEqual([naRank.id, globalRank.id, naRank.id, globalRank.id]);
-		expect(playerStatsRepository.save).toHaveBeenCalledTimes(4);
+		expect(txMock.save).toHaveBeenCalledTimes(4);
 	});
 
 	it("writes one row for the banlist rank and one for the Global rank per player", async () => {
-		playerStatsRepository.findByUserIdAndRankId
+		txMock.findByUserIdAndRankId
 			.mockReset()
 			.mockResolvedValueOnce(playerStats) // per-format row for player
 			.mockResolvedValueOnce(playerStats) // Global row for player
@@ -311,27 +317,27 @@ describe("BasicStatsCalculator", () => {
 
 		expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith("TCG");
 		expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith("Global");
-		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenNthCalledWith(
+		expect(txMock.findByUserIdAndRankId).toHaveBeenNthCalledWith(
 			1,
 			playerUserProfile.id,
 			formatRank.id,
 		);
-		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenNthCalledWith(
+		expect(txMock.findByUserIdAndRankId).toHaveBeenNthCalledWith(
 			2,
 			playerUserProfile.id,
 			globalRank.id,
 		);
-		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenNthCalledWith(
+		expect(txMock.findByUserIdAndRankId).toHaveBeenNthCalledWith(
 			3,
 			opponentUserProfile.id,
 			formatRank.id,
 		);
-		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenNthCalledWith(
+		expect(txMock.findByUserIdAndRankId).toHaveBeenNthCalledWith(
 			4,
 			opponentUserProfile.id,
 			globalRank.id,
 		);
-		expect(playerStatsRepository.save).toHaveBeenCalledTimes(4);
+		expect(txMock.save).toHaveBeenCalledTimes(4);
 	});
 
 	it("writes one extra row per resolved group rank for every player", async () => {
@@ -340,7 +346,7 @@ describe("BasicStatsCalculator", () => {
 		rankRepository.findOrCreateByName.mockImplementation(async (name, type) =>
 			name === "Global" ? globalRank : type === "group" ? groupRank : { ...formatRank, name },
 		);
-		playerStatsRepository.findByUserIdAndRankId
+		txMock.findByUserIdAndRankId
 			.mockReset()
 			.mockImplementation(async () => PlayerStatsMother.create());
 		const event = GameOverDomainEventMother.create({
@@ -353,16 +359,10 @@ describe("BasicStatsCalculator", () => {
 
 		expect(rankGroupResolver.groupsFor).toHaveBeenCalledWith("2026.05 TCG");
 		expect(rankRepository.findOrCreateByName).toHaveBeenCalledWith("TCG", "group");
-		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenCalledWith(
-			playerUserProfile.id,
-			groupRank.id,
-		);
-		expect(playerStatsRepository.findByUserIdAndRankId).toHaveBeenCalledWith(
-			opponentUserProfile.id,
-			groupRank.id,
-		);
+		expect(txMock.findByUserIdAndRankId).toHaveBeenCalledWith(playerUserProfile.id, groupRank.id);
+		expect(txMock.findByUserIdAndRankId).toHaveBeenCalledWith(opponentUserProfile.id, groupRank.id);
 		// 3 ranks (banlist, Global, group) × 2 players.
-		expect(playerStatsRepository.save).toHaveBeenCalledTimes(6);
+		expect(txMock.save).toHaveBeenCalledTimes(6);
 	});
 
 	it("writes the alias-resolved banlist row, Global and every group row for a ranked ban list", async () => {
@@ -375,7 +375,7 @@ describe("BasicStatsCalculator", () => {
 		rankRepository.findOrCreateByName.mockImplementation(async (name, type) =>
 			name === "Global" ? globalRank : type === "group" ? groupRank : aliasedRank,
 		);
-		playerStatsRepository.findByUserIdAndRankId
+		txMock.findByUserIdAndRankId
 			.mockReset()
 			.mockImplementation(async () => PlayerStatsMother.create());
 		const event = GameOverDomainEventMother.create({
@@ -387,9 +387,7 @@ describe("BasicStatsCalculator", () => {
 		await basicStatsCalculator.handle(event);
 
 		expect(rankGroupResolver.groupsFor).toHaveBeenCalledWith("JTP (Original)");
-		const rankIds = playerStatsRepository.findByUserIdAndRankId.mock.calls.map(
-			([, rankId]) => rankId,
-		);
+		const rankIds = txMock.findByUserIdAndRankId.mock.calls.map(([, rankId]) => rankId);
 		expect(rankIds).toEqual([
 			aliasedRank.id,
 			globalRank.id,
@@ -404,7 +402,7 @@ describe("BasicStatsCalculator", () => {
 		rankGroupResolver.resolveAlias.mockImplementation((name) =>
 			name === "JTP" ? "JTP (Original)" : name,
 		);
-		playerStatsRepository.findByUserIdAndRankId
+		txMock.findByUserIdAndRankId
 			.mockReset()
 			.mockImplementation(async () => PlayerStatsMother.create());
 		const event = GameOverDomainEventMother.create({
@@ -433,5 +431,120 @@ describe("BasicStatsCalculator", () => {
 		await basicStatsCalculator.handle(event);
 
 		expect(rankGroupResolver.groupsFor).not.toHaveBeenCalled();
+	});
+
+	describe("points_ledger applied rows", () => {
+		it("writes one applied ledger row per credited rank with the same deltas as the player_stats update", async () => {
+			const event = GameOverDomainEventMother.create({
+				players: [player.toPresentation(), opponent.toPresentation()],
+				ranked: true,
+				banListName: "TCG",
+				matchId: "match-uuid-ledger",
+			});
+
+			await basicStatsCalculator.handle(event);
+
+			expect(txMock.insertLedgerEntry).toHaveBeenCalledWith(
+				PointsLedgerEntryMother.applied({
+					gameId: "match-uuid-ledger",
+					userId: playerUserProfile.id,
+					rankId: formatRank.id,
+					season: config.season,
+					pointsDelta: player.calculateMatchPoints(),
+					winsDelta: 1,
+					lossesDelta: 0,
+				}),
+			);
+			expect(txMock.insertLedgerEntry).toHaveBeenCalledWith(
+				PointsLedgerEntryMother.applied({
+					gameId: "match-uuid-ledger",
+					userId: playerUserProfile.id,
+					rankId: globalRank.id,
+					season: config.season,
+					pointsDelta: player.calculateMatchPoints(),
+					winsDelta: 1,
+					lossesDelta: 0,
+				}),
+			);
+			expect(txMock.insertLedgerEntry).toHaveBeenCalledWith(
+				PointsLedgerEntryMother.applied({
+					gameId: "match-uuid-ledger",
+					userId: opponentUserProfile.id,
+					rankId: formatRank.id,
+					season: config.season,
+					pointsDelta: opponent.calculateMatchPoints(),
+					winsDelta: 0,
+					lossesDelta: 1,
+				}),
+			);
+			expect(txMock.insertLedgerEntry).toHaveBeenCalledWith(
+				PointsLedgerEntryMother.applied({
+					gameId: "match-uuid-ledger",
+					userId: opponentUserProfile.id,
+					rankId: globalRank.id,
+					season: config.season,
+					pointsDelta: opponent.calculateMatchPoints(),
+					winsDelta: 0,
+					lossesDelta: 1,
+				}),
+			);
+			expect(txMock.insertLedgerEntry).toHaveBeenCalledTimes(4);
+		});
+
+		it("still writes a ledger row with pointsDelta 0 when the match nets zero points", async () => {
+			const evenPlayer = PlayerMother.create({
+				...player.toPresentation(),
+				winner: true,
+				games: [GameMother.create({ result: "winner" }), GameMother.create({ result: "loser" })],
+			});
+			expect(evenPlayer.calculateMatchPoints()).toBe(0);
+			const event = GameOverDomainEventMother.create({
+				players: [evenPlayer.toPresentation(), opponent.toPresentation()],
+				ranked: true,
+				banListName: "TCG",
+				matchId: "match-uuid-zero",
+			});
+
+			await basicStatsCalculator.handle(event);
+
+			expect(txMock.insertLedgerEntry).toHaveBeenCalledWith(
+				PointsLedgerEntryMother.applied({
+					gameId: "match-uuid-zero",
+					userId: playerUserProfile.id,
+					rankId: formatRank.id,
+					season: config.season,
+					pointsDelta: 0,
+					winsDelta: 1,
+					lossesDelta: 0,
+				}),
+			);
+		});
+
+		it("writes no ledger rows or match resume for an unranked match", async () => {
+			const event = GameOverDomainEventMother.create({
+				players: [player.toPresentation(), opponent.toPresentation()],
+				ranked: false,
+			});
+
+			await basicStatsCalculator.handle(event);
+
+			expect(playerStatsRepository.transaction).not.toHaveBeenCalled();
+			expect(txMock.insertLedgerEntry).not.toHaveBeenCalled();
+			expect(matchResumeCreator.run).not.toHaveBeenCalled();
+		});
+
+		it("propagates a rejection from the player_stats transaction instead of swallowing it", async () => {
+			const persistenceFailure = new Error("persistence failure");
+			playerStatsRepository.transaction.mockRejectedValueOnce(persistenceFailure);
+			const event = GameOverDomainEventMother.create({
+				players: [player.toPresentation(), opponent.toPresentation()],
+				ranked: true,
+				banListName: "TCG",
+			});
+
+			await expect(basicStatsCalculator.handle(event)).rejects.toThrow("persistence failure");
+
+			expect(matchResumeCreator.run).not.toHaveBeenCalled();
+		});
 	});
 });

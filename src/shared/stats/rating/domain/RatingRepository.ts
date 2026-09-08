@@ -5,7 +5,7 @@ export type RatingHistoryEntry = {
 	userId: string;
 	rankId: string;
 	season: number;
-	kind: "applied" | "reversal";
+	kind: "applied" | "reversal" | "reinstatement";
 	previousRating: number;
 	delta: number;
 	kFactor: number;

@@ -57,7 +57,10 @@ mercury/pre-releases/tcg/*
 *repositories/
 
 # Scripts
-scripts/
+/scripts/
+
+# Generated reports (e.g. points-ledger reconciliation output)
+/reports/
 
 # Miscellaneous Directories
 core/dependencies/

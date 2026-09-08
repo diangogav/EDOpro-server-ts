@@ -13,4 +13,11 @@ export interface RankRepository {
 	 * already-existing row keeps its stored flags.
 	 */
 	findOrCreateByName(name: string, type?: RankType): Promise<Rank>;
+
+	/**
+	 * Looks a rank up by its unique name WITHOUT creating it when missing.
+	 * Read-only callers (e.g. historical backfill) must never invent a rank
+	 * that live crediting never created.
+	 */
+	findByName(name: string): Promise<Rank | null>;
 }

@@ -6,14 +6,8 @@ import {
 	RatingRepository,
 	RatingTransaction,
 } from "../domain/RatingRepository";
+import { ADVISORY_LOCK_QUERY } from "../../infrastructure/advisoryLockQuery";
 import { dataSource } from "../../../../evolution-types/src/data-source";
-
-// Encodes (user_id, rank_id, season) with a length-prefixed field so
-// the concatenation stays injective even when a value contains the
-// delimiter — a plain "a|b|c" join can collide for two different inputs.
-const ADVISORY_LOCK_QUERY = `
-	SELECT pg_advisory_xact_lock(hashtextextended($1 || ':' || length($2)::text || ':' || $2 || ':' || $3, 0))
-`;
 
 const LOCK_RATINGS_QUERY = `
 	SELECT user_id AS "userId", rating, games_played AS "gamesPlayed", peak
@@ -32,10 +26,15 @@ const FIND_RATINGS_QUERY = `
 	ORDER BY user_id ASC
 `;
 
+// Target-less ON CONFLICT DO NOTHING: Postgres resolves it against whichever
+// unique index on this row shape is currently declared, so this insert keeps
+// working unchanged whether the 4-column or the 5-column rating_history
+// index is the one enforcing uniqueness (see the ExpandRatingHistoryCycleIndex
+// migration, which adds the 5-column index alongside the existing one).
 const INSERT_HISTORY_QUERY = `
-	INSERT INTO rating_history (match_id, user_id, rank_id, season, kind, previous_rating, delta, k_factor, opponent_rating)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	ON CONFLICT (match_id, user_id, kind, rank_id) DO NOTHING
+	INSERT INTO rating_history (match_id, user_id, rank_id, season, kind, previous_rating, delta, k_factor, opponent_rating, cycle)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	ON CONFLICT DO NOTHING
 	RETURNING id
 `;
 
@@ -131,6 +130,9 @@ class RatingPostgresTransaction implements RatingTransaction {
 	constructor(private readonly manager: EntityManager) {}
 
 	async insertHistory(entry: RatingHistoryEntry): Promise<boolean> {
+		// cycle is always 0 for a freshly applied row; annul/un-annul correction
+		// rows derive a non-zero cycle from the opposite kind's row count, which
+		// is out of scope here (see the match-annulment-ledger design).
 		const rows = await this.manager.query(INSERT_HISTORY_QUERY, [
 			entry.matchId,
 			entry.userId,
@@ -141,6 +143,7 @@ class RatingPostgresTransaction implements RatingTransaction {
 			entry.delta,
 			entry.kFactor,
 			entry.opponentRating,
+			0,
 		]);
 
 		return rows.length > 0;

@@ -40,4 +40,11 @@ export class RankPostgresRepository implements RankRepository {
 
 		return { id: row.id, name: row.name, type: row.type, enabled: row.enabled };
 	}
+
+	async findByName(name: string): Promise<Rank | null> {
+		const rows: RankRow[] = await dataSource.query(SELECT_RANK_QUERY, [name]);
+		const row = rows[0];
+
+		return row ? { id: row.id, name: row.name, type: row.type, enabled: row.enabled } : null;
+	}
 }
