@@ -57,7 +57,7 @@ mercury/pre-releases/tcg/*
 *repositories/
 
 # Scripts
-scripts/
+/scripts/
 
 # Miscellaneous Directories
 core/dependencies/
