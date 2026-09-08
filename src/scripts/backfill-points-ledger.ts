@@ -29,6 +29,7 @@ import {
 	PlayerStatsSnapshotRow,
 	ReconciliationReport,
 } from "../shared/stats/points-ledger/domain/buildReconciliationReport";
+import { fanOutAchievementPoints } from "../shared/stats/points-ledger/domain/fanOutAchievementPoints";
 import {
 	BackfillMatchRow,
 	GroupsFor,
@@ -106,15 +107,23 @@ export async function runBackfill(
 			`${plan.preFlaggedGameIds.length} pre-flagged games`,
 	);
 
-	const [playerStats, achievementPoints] = await Promise.all([
+	const [playerStats, achievementPointsRows] = await Promise.all([
 		deps.playerStatsRows.fetchRows(),
 		deps.achievementPointsRows.fetchRows(),
 	]);
+	const { rows: achievementPoints, unmappedLabels: unmappedAchievementLabels } =
+		fanOutAchievementPoints(
+			achievementPointsRows,
+			deps.resolveAlias,
+			deps.groupsFor,
+			deps.ranksByName,
+		);
 	const report = buildReconciliationReport({
 		planResult: plan,
 		gameIds: [...new Set(rows.map((row) => row.gameId))],
 		playerStats,
 		achievementPoints,
+		unmappedAchievementLabels,
 	});
 	await deps.writeReport(report);
 

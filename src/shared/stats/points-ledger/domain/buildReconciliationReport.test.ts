@@ -48,6 +48,7 @@ function makeInput(overrides?: Partial<ReconciliationInput>): ReconciliationInpu
 		gameIds: ["game-1"],
 		playerStats: [makeStatsRow()],
 		achievementPoints: [],
+		unmappedAchievementLabels: [],
 		...overrides,
 	};
 }
@@ -148,5 +149,40 @@ describe("buildReconciliationReport", () => {
 		const second = buildReconciliationReport(input);
 
 		expect(second).toEqual(first);
+	});
+
+	it("sums achievement points from multiple rows sharing the same user/rank/season key", () => {
+		const report = buildReconciliationReport(
+			makeInput({
+				playerStats: [makeStatsRow({ points: 18 })],
+				achievementPoints: [
+					{ userId: "user-1", rankName: "Global", season: 7, points: 5 },
+					{ userId: "user-1", rankName: "Global", season: 7, points: 3 },
+				],
+			}),
+		);
+
+		expect(report.clean).toBe(true);
+		expect(report.mismatches[0]).toMatchObject({ achievementPoints: 8, deltaPoints: 0 });
+	});
+
+	it("surfaces unmapped achievement labels passed through and blocks clean", () => {
+		const report = buildReconciliationReport(
+			makeInput({ unmappedAchievementLabels: [{ label: "Retired List", occurrences: 2 }] }),
+		);
+
+		expect(report.clean).toBe(false);
+		expect(report.unmappedAchievementLabels).toEqual([{ label: "Retired List", occurrences: 2 }]);
+	});
+
+	it("counts only the keys that actually differ in differingKeys, unlike the full mismatches list", () => {
+		const report = buildReconciliationReport(
+			makeInput({
+				playerStats: [makeStatsRow(), makeStatsRow({ userId: "user-2", points: 999 })],
+			}),
+		);
+
+		expect(report.mismatches).toHaveLength(2);
+		expect(report.differingKeys).toBe(1);
 	});
 });
