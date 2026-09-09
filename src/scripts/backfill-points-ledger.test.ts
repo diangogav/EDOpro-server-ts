@@ -12,9 +12,9 @@ function makeDependencies(
 	rows: BackfillMatchRow[],
 	playerStats: PlayerStatsSnapshotRow[] = [],
 	overrides?: MakeDependenciesOverrides,
-): BackfillDependencies & { insert: jest.Mock; writeReport: jest.Mock } {
+): BackfillDependencies & { insertMany: jest.Mock; writeReport: jest.Mock } {
 	const globalRank = RankMother.create({ id: "rank-global", name: "Global" });
-	const insert = jest.fn().mockResolvedValue(true);
+	const insertMany = jest.fn().mockResolvedValue({ inserted: 0, skipped: 0 });
 	const writeReport = jest.fn().mockResolvedValue(undefined);
 
 	return {
@@ -22,12 +22,12 @@ function makeDependencies(
 		resolveAlias: (name) => name,
 		groupsFor: () => [],
 		ranksByName: (name) => (name === "Global" ? globalRank : undefined),
-		ledgerInserter: { insert },
+		ledgerBulkInserter: { insertMany },
 		playerStatsRows: { fetchRows: () => Promise.resolve(playerStats) },
 		achievementPointsRows: { fetchRows: () => Promise.resolve([]) },
 		writeReport,
 		logger: { info: jest.fn() },
-		insert,
+		insertMany,
 		...overrides,
 	};
 }
@@ -52,25 +52,29 @@ describe("runBackfill", () => {
 		const result = await runBackfill(deps, { apply: false });
 
 		expect(result.plan.entries).toHaveLength(1);
-		expect(deps.insert).not.toHaveBeenCalled();
+		expect(deps.insertMany).not.toHaveBeenCalled();
 	});
 
-	it("passes every planned entry to the insert port when applying", async () => {
+	it("passes every planned entry to the bulk insert method once and reports its totals", async () => {
 		const deps = makeDependencies([makeRow()]);
+		deps.insertMany.mockResolvedValue({ inserted: 1, skipped: 0 });
 
 		const result = await runBackfill(deps, { apply: true });
 
-		expect(deps.insert).toHaveBeenCalledTimes(1);
-		expect(deps.insert).toHaveBeenCalledWith(result.plan.entries[0]);
+		expect(deps.insertMany).toHaveBeenCalledTimes(1);
+		expect(deps.insertMany).toHaveBeenCalledWith(result.plan.entries, expect.any(Function));
+		expect(deps.logger.info).toHaveBeenCalledWith(
+			expect.stringContaining("1/1 rows newly inserted"),
+		);
 	});
 
-	it("never calls the insert port for rows that plan zero entries", async () => {
+	it("never calls the bulk insert method for rows that plan zero entries", async () => {
 		const deps = makeDependencies([makeRow({ banListName: "Unmapped List" })]);
 
 		const result = await runBackfill(deps, { apply: true });
 
 		expect(result.plan.unmappedBanLists).toEqual([{ banListName: "Unmapped List", matchRows: 1 }]);
-		expect(deps.insert).not.toHaveBeenCalled();
+		expect(deps.insertMany).not.toHaveBeenCalled();
 	});
 
 	it("writes the built reconciliation report through the injected writer", async () => {

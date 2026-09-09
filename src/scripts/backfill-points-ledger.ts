@@ -15,6 +15,7 @@ import {
 import { RankPostgresRepository } from "@shared/rank/infrastructure/RankPostgresRepository";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 import {
+	LedgerEntriesInsertProgress,
 	PlayerStatsRepository,
 	PointsLedgerEntry,
 } from "src/shared/stats/player-stats/domain/PlayerStatsRepository";
@@ -39,7 +40,6 @@ import {
 	ResolveAlias,
 } from "../shared/stats/points-ledger/domain/planLedgerBackfill";
 
-const DEFAULT_BATCH_SIZE = 200;
 const GLOBAL_RANK_NAME = "Global";
 
 const SELECT_MATCH_ROWS_QUERY = `
@@ -64,8 +64,11 @@ const SELECT_ACHIEVEMENT_POINTS_QUERY = `
 	GROUP BY 1, 2, 3
 `;
 
-export interface LedgerEntryInsertPort {
-	insert(entry: PointsLedgerEntry): Promise<boolean>;
+export interface LedgerBulkInsertPort {
+	insertMany(
+		entries: PointsLedgerEntry[],
+		onChunkComplete: (progress: LedgerEntriesInsertProgress) => void,
+	): Promise<{ inserted: number; skipped: number }>;
 }
 
 export type BackfillDependencies = {
@@ -73,14 +76,14 @@ export type BackfillDependencies = {
 	resolveAlias: ResolveAlias;
 	groupsFor: GroupsFor;
 	ranksByName: RanksByName;
-	ledgerInserter: LedgerEntryInsertPort;
+	ledgerBulkInserter: LedgerBulkInsertPort;
 	playerStatsRows: { fetchRows(): Promise<PlayerStatsSnapshotRow[]> };
 	achievementPointsRows: { fetchRows(): Promise<AchievementPointsRow[]> };
 	writeReport(report: ReconciliationReport): Promise<void>;
 	logger: { info(message: string): void };
 };
 
-export type BackfillRunOptions = { apply: boolean; batchSize?: number };
+export type BackfillRunOptions = { apply: boolean };
 
 export type RunBackfillResult = { plan: PlanLedgerBackfillResult; report: ReconciliationReport };
 
@@ -91,13 +94,19 @@ export async function runBackfill(
 ): Promise<RunBackfillResult> {
 	const rows = await deps.matchRows.fetchRows();
 	const plan = planLedgerBackfill(rows, deps.resolveAlias, deps.groupsFor, deps.ranksByName);
-	const inserted = options.apply
-		? await insertInBatches(
-				plan.entries,
-				deps.ledgerInserter,
-				options.batchSize ?? DEFAULT_BATCH_SIZE,
-			)
-		: 0;
+	const inserted =
+		options.apply && plan.entries.length > 0
+			? (
+					await deps.ledgerBulkInserter.insertMany(plan.entries, (progress) => {
+						deps.logger.info(
+							`points-ledger backfill chunk ${progress.chunkIndex}/${progress.totalChunks} ` +
+								`(${progress.chunkSize} rows): +${progress.insertedInChunk} inserted, ` +
+								`+${progress.skippedInChunk} skipped (cumulative ${progress.totalInserted} inserted, ` +
+								`${progress.totalSkipped} skipped)`,
+						);
+					})
+				).inserted
+			: 0;
 	const mode = options.apply
 		? `APPLY — ${inserted}/${plan.entries.length} rows newly inserted`
 		: "DRY RUN — nothing written";
@@ -128,22 +137,6 @@ export async function runBackfill(
 	await deps.writeReport(report);
 
 	return { plan, report };
-}
-
-async function insertInBatches(
-	entries: PointsLedgerEntry[],
-	inserter: LedgerEntryInsertPort,
-	batchSize: number,
-): Promise<number> {
-	let inserted = 0;
-	for (let start = 0; start < entries.length; start += batchSize) {
-		const results = await Promise.all(
-			entries.slice(start, start + batchSize).map((entry) => inserter.insert(entry)),
-		);
-		inserted += results.filter(Boolean).length;
-	}
-
-	return inserted;
 }
 
 async function fetchMatchRows(): Promise<BackfillMatchRow[]> {
@@ -199,12 +192,10 @@ async function buildRanksByName(
 	return (name) => catalogue.get(name);
 }
 
-function ledgerInserterFor(playerStatsRepository: PlayerStatsRepository): LedgerEntryInsertPort {
+function ledgerBulkInserterFor(playerStatsRepository: PlayerStatsRepository): LedgerBulkInsertPort {
 	return {
-		insert: (entry) =>
-			playerStatsRepository.transaction(entry.userId, [entry.rankId], entry.season, (tx) =>
-				tx.insertLedgerEntry(entry),
-			),
+		insertMany: (entries, onChunkComplete) =>
+			playerStatsRepository.insertLedgerEntries(entries, onChunkComplete),
 	};
 }
 
@@ -254,7 +245,7 @@ async function main(): Promise<void> {
 			resolveAlias,
 			groupsFor,
 			ranksByName,
-			ledgerInserter: ledgerInserterFor(new PlayerStatsPostgresRepository()),
+			ledgerBulkInserter: ledgerBulkInserterFor(new PlayerStatsPostgresRepository()),
 			playerStatsRows: { fetchRows: fetchPlayerStatsRows },
 			achievementPointsRows: { fetchRows: fetchAchievementPointsRows },
 			writeReport: writeReportToFile,
