@@ -43,7 +43,7 @@ RUN cmake -B build -S . -DCMAKE_BUILD_TYPE=Release && \
 
 
 # Stage 3: Build Node.js server
-FROM public.ecr.aws/docker/library/node:24.11.0-bullseye AS server-builder
+FROM public.ecr.aws/docker/library/node:24.11.0-bookworm AS server-builder
 
 WORKDIR /server
 
