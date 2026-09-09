@@ -261,6 +261,13 @@ pools.extended.slice(pools.standard.length).forEach(p => console.log(' E', p));
 
 ## 🏗️ Project Architecture
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/architecture/server-architecture.dark.png">
+  <img alt="EDOpro server architecture: duel clients enter through HostServer (EDOPro) or YGOProServer (Mercury), rooms run the duel core, publish GAME_OVER to the EventBus, and plugins persist ratings to PostgreSQL" src="./docs/architecture/server-architecture.light.png">
+</picture>
+
+Interactive version with source links, guided views and search: [docs/architecture/server-architecture.html](./docs/architecture/server-architecture.html) (open it locally in a browser). The diagram source is [server-architecture.archify.json](./docs/architecture/server-architecture.archify.json).
+
 ```
 src/
 ├── 🖥️ edopro/             # EDOPro engine (EDOPro protocol)
