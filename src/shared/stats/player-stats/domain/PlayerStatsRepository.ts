@@ -30,6 +30,16 @@ export interface PlayerStatsTransaction {
 	insertLedgerEntry(entry: PointsLedgerEntry): Promise<boolean>;
 }
 
+export type LedgerEntriesInsertProgress = {
+	chunkIndex: number;
+	totalChunks: number;
+	chunkSize: number;
+	insertedInChunk: number;
+	skippedInChunk: number;
+	totalInserted: number;
+	totalSkipped: number;
+};
+
 export interface PlayerStatsRepository {
 	findByUserIdAndRankId(userId: string, rankId: string): Promise<PlayerStats>;
 	save(playerStats: PlayerStats): Promise<void>;
@@ -45,4 +55,18 @@ export interface PlayerStatsRepository {
 		season: number,
 		work: (tx: PlayerStatsTransaction) => Promise<T>,
 	): Promise<T>;
+
+	/**
+	 * Bulk-inserts ledger rows with multi-row `INSERT ... VALUES
+	 * (...),(...) ON CONFLICT DO NOTHING` statements, chunked at 1,000 rows
+	 * per statement (well under Postgres' 65,535 bind-parameter limit) and
+	 * issued sequentially so a large backfill does not flood the
+	 * connection. `onChunkComplete`, when given, fires after each statement
+	 * so a long-running caller can log progress. An empty `entries` list
+	 * issues no query.
+	 */
+	insertLedgerEntries(
+		entries: PointsLedgerEntry[],
+		onChunkComplete?: (progress: LedgerEntriesInsertProgress) => void,
+	): Promise<{ inserted: number; skipped: number }>;
 }

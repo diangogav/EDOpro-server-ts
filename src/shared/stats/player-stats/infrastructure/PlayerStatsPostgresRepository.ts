@@ -5,6 +5,7 @@ import { dataSource } from "../../../../evolution-types/src/data-source";
 import { PlayerStatsEntity } from "../../../../evolution-types/src/entities/PlayerStatsEntity";
 import { PlayerStats } from "../domain/PlayerStats";
 import {
+	LedgerEntriesInsertProgress,
 	PlayerStatsRepository,
 	PlayerStatsTransaction,
 	PointsLedgerEntry,
@@ -19,6 +20,46 @@ const INSERT_LEDGER_ENTRY_QUERY = `
 	ON CONFLICT DO NOTHING
 	RETURNING id
 `;
+
+// Column order mirrors INSERT_LEDGER_ENTRY_QUERY exactly.
+const LEDGER_ENTRY_COLUMN_COUNT = 9;
+
+// 1,000 rows x 9 columns = 9,000 bind parameters per statement, well under
+// Postgres' 65,535 limit, and small enough to keep each round trip fast.
+const INSERT_LEDGER_ENTRIES_CHUNK_SIZE = 1000;
+
+function buildInsertLedgerEntriesQuery(rowCount: number): string {
+	const valuesClauses = Array.from({ length: rowCount }, (_, rowIndex) => {
+		const base = rowIndex * LEDGER_ENTRY_COLUMN_COUNT;
+		const placeholders = Array.from(
+			{ length: LEDGER_ENTRY_COLUMN_COUNT },
+			(_, columnIndex) => `$${base + columnIndex + 1}`,
+		);
+
+		return `(${placeholders.join(", ")})`;
+	}).join(", ");
+
+	return `
+		INSERT INTO points_ledger (game_id, user_id, rank_id, season, kind, cycle, points_delta, wins_delta, losses_delta)
+		VALUES ${valuesClauses}
+		ON CONFLICT DO NOTHING
+		RETURNING id
+	`;
+}
+
+function flattenLedgerEntries(entries: PointsLedgerEntry[]): unknown[] {
+	return entries.flatMap((entry) => [
+		entry.gameId,
+		entry.userId,
+		entry.rankId,
+		entry.season,
+		entry.kind,
+		entry.cycle,
+		entry.pointsDelta,
+		entry.winsDelta,
+		entry.lossesDelta,
+	]);
+}
 
 export class PlayerStatsPostgresRepository implements PlayerStatsRepository {
 	async findByUserIdAndRankId(userId: string, rankId: string): Promise<PlayerStats> {
@@ -80,6 +121,45 @@ export class PlayerStatsPostgresRepository implements PlayerStatsRepository {
 		for (const rankId of orderedRankIds) {
 			await manager.query(ADVISORY_LOCK_QUERY, [userId, rankId, season]);
 		}
+	}
+
+	async insertLedgerEntries(
+		entries: PointsLedgerEntry[],
+		onChunkComplete?: (progress: LedgerEntriesInsertProgress) => void,
+	): Promise<{ inserted: number; skipped: number }> {
+		if (entries.length === 0) {
+			return { inserted: 0, skipped: 0 };
+		}
+
+		const totalChunks = Math.ceil(entries.length / INSERT_LEDGER_ENTRIES_CHUNK_SIZE);
+		let totalInserted = 0;
+		let totalSkipped = 0;
+
+		for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+			const start = chunkIndex * INSERT_LEDGER_ENTRIES_CHUNK_SIZE;
+			const chunk = entries.slice(start, start + INSERT_LEDGER_ENTRIES_CHUNK_SIZE);
+
+			const rows: unknown[] = await dataSource.query(
+				buildInsertLedgerEntriesQuery(chunk.length),
+				flattenLedgerEntries(chunk),
+			);
+			const insertedInChunk = rows.length;
+			const skippedInChunk = chunk.length - insertedInChunk;
+			totalInserted += insertedInChunk;
+			totalSkipped += skippedInChunk;
+
+			onChunkComplete?.({
+				chunkIndex: chunkIndex + 1,
+				totalChunks,
+				chunkSize: chunk.length,
+				insertedInChunk,
+				skippedInChunk,
+				totalInserted,
+				totalSkipped,
+			});
+		}
+
+		return { inserted: totalInserted, skipped: totalSkipped };
 	}
 }
 
