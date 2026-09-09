@@ -137,6 +137,66 @@ describe("planLedgerBackfill", () => {
 		expect(result.preFlaggedGameIds).toEqual(["game-annulled"]);
 	});
 
+	it("skips a match row for an unknown user, producing no entries, and counts it", () => {
+		const ranks = new Map([["Global", RankMother.create({ id: "rank-global", name: "Global" })]]);
+		const row = makeRow({ banListName: "", userId: "user-missing" });
+
+		const result = planLedgerBackfill(
+			[row],
+			(name) => name,
+			() => [],
+			(name) => ranks.get(name),
+			(userId) => userId !== "user-missing",
+		);
+
+		expect(result.entries).toHaveLength(0);
+		expect(result.skippedMissingUsers).toEqual({
+			matchRows: 1,
+			users: ["user-missing"],
+			gameIds: ["game-1"],
+		});
+	});
+
+	it("lists a game id in skippedMissingUsers.gameIds only when every row for that game belongs to a missing user", () => {
+		const ranks = new Map([["Global", RankMother.create({ id: "rank-global", name: "Global" })]]);
+		const bothMissingRows = [
+			makeRow({ gameId: "game-both-missing", userId: "user-missing-a", banListName: "" }),
+			makeRow({ gameId: "game-both-missing", userId: "user-missing-b", banListName: "" }),
+		];
+		const onePresentRows = [
+			makeRow({ gameId: "game-one-present", userId: "user-missing-a", banListName: "" }),
+			makeRow({ gameId: "game-one-present", userId: "user-present", banListName: "" }),
+		];
+		const knownUserIds = (userId: string) => userId === "user-present";
+
+		const result = planLedgerBackfill(
+			[...bothMissingRows, ...onePresentRows],
+			(name) => name,
+			() => [],
+			(name) => ranks.get(name),
+			knownUserIds,
+		);
+
+		expect(result.skippedMissingUsers.gameIds).toEqual(["game-both-missing"]);
+		expect(result.skippedMissingUsers.matchRows).toBe(3);
+		expect(result.skippedMissingUsers.users).toEqual(["user-missing-a", "user-missing-b"]);
+		expect(result.entries).toEqual([expectedEntry(onePresentRows[1], "rank-global")]);
+	});
+
+	it("treats every user as known when no predicate is given, preserving prior behaviour", () => {
+		const ranks = new Map([["Global", RankMother.create({ id: "rank-global", name: "Global" })]]);
+		const row = makeRow({ banListName: "" });
+
+		const result = planLedgerBackfill(
+			[row],
+			(name) => name,
+			() => [],
+			(name) => ranks.get(name),
+		);
+
+		expect(result.skippedMissingUsers).toEqual({ matchRows: 0, users: [], gameIds: [] });
+	});
+
 	it("produces the exact same output on repeated runs of the same input", () => {
 		const ranks = new Map([
 			["2026.05 TCG", RankMother.create({ id: "rank-list", name: "2026.05 TCG" })],

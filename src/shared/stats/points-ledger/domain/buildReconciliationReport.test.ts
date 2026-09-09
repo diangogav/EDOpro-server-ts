@@ -25,6 +25,7 @@ function makePlanResult(overrides?: Partial<PlanLedgerBackfillResult>): PlanLedg
 			{ rankId: "rank-1", rankName: "Global", entryCount: 1, gameCount: 1, userCount: 1 },
 		],
 		preFlaggedGameIds: [],
+		skippedMissingUsers: { matchRows: 0, users: [], gameIds: [] },
 		...overrides,
 	};
 }
@@ -173,6 +174,62 @@ describe("buildReconciliationReport", () => {
 
 		expect(report.clean).toBe(false);
 		expect(report.unmappedAchievementLabels).toEqual([{ label: "Retired List", occurrences: 2 }]);
+	});
+
+	it("excludes a fully-missing-user game from incompleteGames but keeps a genuinely incomplete one", () => {
+		const report = buildReconciliationReport(
+			makeInput({
+				planResult: makePlanResult({
+					skippedMissingUsers: { matchRows: 2, users: ["user-gone"], gameIds: ["game-both-gone"] },
+				}),
+				gameIds: ["game-1", "game-both-gone", "game-unmapped"],
+			}),
+		);
+
+		expect(report.incompleteGames).toEqual(["game-unmapped"]);
+	});
+
+	it("excludes player_stats rows of missing users from mismatches and counts them separately", () => {
+		const orphanOfMissingUser = makeStatsRow({
+			userId: "user-gone",
+			rankId: "rank-2",
+			rankName: "Other",
+			points: 5,
+		});
+		const report = buildReconciliationReport(
+			makeInput({
+				planResult: makePlanResult({
+					skippedMissingUsers: { matchRows: 1, users: ["user-gone"], gameIds: [] },
+				}),
+				playerStats: [makeStatsRow(), orphanOfMissingUser],
+			}),
+		);
+
+		expect(report.clean).toBe(true);
+		expect(report.orphanStatsOfMissingUsers).toBe(1);
+		expect(report.orphanStatsCount).toBe(0);
+		expect(report.mismatches).not.toContainEqual(expect.objectContaining({ userId: "user-gone" }));
+	});
+
+	it("passes skippedMissingUsers through without affecting clean", () => {
+		const report = buildReconciliationReport(
+			makeInput({
+				planResult: makePlanResult({
+					skippedMissingUsers: {
+						matchRows: 3,
+						users: ["user-a", "user-b"],
+						gameIds: ["game-both-gone"],
+					},
+				}),
+			}),
+		);
+
+		expect(report.clean).toBe(true);
+		expect(report.skippedMissingUsers).toEqual({
+			matchRows: 3,
+			users: ["user-a", "user-b"],
+			gameIds: ["game-both-gone"],
+		});
 	});
 
 	it("counts only the keys that actually differ in differingKeys, unlike the full mismatches list", () => {

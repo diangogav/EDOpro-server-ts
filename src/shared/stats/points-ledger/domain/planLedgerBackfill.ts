@@ -19,10 +19,21 @@ export type ResolveAlias = (name: string) => string;
 export type GroupsFor = (banListName: string) => string[];
 /** Lookup-only: a name with no rank row must never be invented here. */
 export type RanksByName = (name: string) => Rank | undefined;
+/** True when `userId` still has a row in `users` — a hard-deleted account returns false. */
+export type KnownUserIds = (userId: string) => boolean;
 
 export type UnmappedBanList = {
 	banListName: string;
 	matchRows: number;
+};
+
+export type SkippedMissingUsers = {
+	/** Match rows skipped because their user no longer exists in `users`. */
+	matchRows: number;
+	/** Distinct missing user ids, sorted. */
+	users: string[];
+	/** Games where EVERY row belongs to a missing user — safe to exclude from reconciliation entirely. */
+	gameIds: string[];
 };
 
 export type RankBackfillSummary = {
@@ -38,6 +49,7 @@ export type PlanLedgerBackfillResult = {
 	unmappedBanLists: UnmappedBanList[];
 	rankSummaries: RankBackfillSummary[];
 	preFlaggedGameIds: string[];
+	skippedMissingUsers: SkippedMissingUsers;
 };
 
 type RankAccumulator = {
@@ -59,13 +71,29 @@ export function planLedgerBackfill(
 	resolveAlias: ResolveAlias,
 	groupsFor: GroupsFor,
 	ranksByName: RanksByName,
+	knownUserIds: KnownUserIds = () => true,
 ): PlanLedgerBackfillResult {
 	const entries: PointsLedgerEntry[] = [];
 	const unmappedCounts = new Map<string, number>();
 	const preFlaggedGameIds = new Set<string>();
 	const rankStats = new Map<string, RankAccumulator>();
+	const missingUsers = new Set<string>();
+	let missingUserMatchRows = 0;
+	const gameRowCounts = new Map<string, { total: number; missing: number }>();
 
 	for (const row of matchRows) {
+		const gameCounts = gameRowCounts.get(row.gameId) ?? { total: 0, missing: 0 };
+		gameCounts.total += 1;
+
+		if (!knownUserIds(row.userId)) {
+			missingUsers.add(row.userId);
+			missingUserMatchRows += 1;
+			gameCounts.missing += 1;
+			gameRowCounts.set(row.gameId, gameCounts);
+			continue;
+		}
+		gameRowCounts.set(row.gameId, gameCounts);
+
 		if (row.anulled) {
 			preFlaggedGameIds.add(row.gameId);
 		}
@@ -110,6 +138,14 @@ export function planLedgerBackfill(
 			}))
 			.sort((a, b) => a.rankName.localeCompare(b.rankName) || a.rankId.localeCompare(b.rankId)),
 		preFlaggedGameIds: [...preFlaggedGameIds].sort(),
+		skippedMissingUsers: {
+			matchRows: missingUserMatchRows,
+			users: [...missingUsers].sort(),
+			gameIds: [...gameRowCounts.entries()]
+				.filter(([, counts]) => counts.missing === counts.total)
+				.map(([gameId]) => gameId)
+				.sort(),
+		},
 	};
 }
 

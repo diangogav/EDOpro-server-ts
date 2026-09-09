@@ -45,6 +45,10 @@ export type ReconciliationReport = {
 	incompleteGames: string[];
 	/** Count of `mismatches` rows for a player_stats key with zero ledger entries. */
 	orphanStatsCount: number;
+	/** Hard-deleted-user match rows/games skipped by the planner — see `skippedMissingUsers`. */
+	skippedMissingUsers: PlanLedgerBackfillResult["skippedMissingUsers"];
+	/** `player_stats` rows belonging to a missing user — excluded from `mismatches`/`orphanStatsCount`. */
+	orphanStatsOfMissingUsers: number;
 	clean: boolean;
 };
 
@@ -71,8 +75,19 @@ export function buildReconciliationReport(input: ReconciliationInput): Reconcili
 	);
 	const ledgerByKey = aggregateLedgerEntries(input.planResult.entries, rankNameById);
 	const achievementByKey = aggregateAchievementPoints(input.achievementPoints);
+
+	// Rows of a hard-deleted user were never — and will never be — reconcilable
+	// against a ledger the planner deliberately skipped writing; they are
+	// surfaced separately (`orphanStatsOfMissingUsers`) rather than as noise
+	// in `mismatches`/`orphanStatsCount`.
+	const missingUserIds = new Set(input.planResult.skippedMissingUsers.users);
+	const orphanStatsOfMissingUsers = input.playerStats.filter((row) =>
+		missingUserIds.has(row.userId),
+	).length;
 	const statsByKey = new Map(
-		input.playerStats.map((row) => [keyOf(row.userId, row.rankName, row.season), row]),
+		input.playerStats
+			.filter((row) => !missingUserIds.has(row.userId))
+			.map((row) => [keyOf(row.userId, row.rankName, row.season), row]),
 	);
 
 	// Union of key sets: a player_stats row with zero ledger entries is a diff too.
@@ -87,7 +102,12 @@ export function buildReconciliationReport(input: ReconciliationInput): Reconcili
 	const orphanStatsCount = [...statsByKey.keys()].filter((key) => !ledgerByKey.has(key)).length;
 
 	const ledgerGameIds = new Set(input.planResult.entries.map((entry) => entry.gameId));
-	const incompleteGames = input.gameIds.filter((gameId) => !ledgerGameIds.has(gameId)).sort();
+	// A game where every row belongs to a missing user never gets ledger rows
+	// by design (skipped, not a data-quality problem) — it is not "incomplete".
+	const skippedGameIds = new Set(input.planResult.skippedMissingUsers.gameIds);
+	const incompleteGames = input.gameIds
+		.filter((gameId) => !ledgerGameIds.has(gameId) && !skippedGameIds.has(gameId))
+		.sort();
 
 	const differingKeys = mismatches.filter((mismatch) => !isReconciled(mismatch)).length;
 	const clean =
@@ -107,6 +127,8 @@ export function buildReconciliationReport(input: ReconciliationInput): Reconcili
 		unmappedAchievementLabels: input.unmappedAchievementLabels,
 		incompleteGames,
 		orphanStatsCount,
+		skippedMissingUsers: input.planResult.skippedMissingUsers,
+		orphanStatsOfMissingUsers,
 		clean,
 	};
 }

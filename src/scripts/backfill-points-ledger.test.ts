@@ -5,7 +5,10 @@ import { PlayerStatsSnapshotRow } from "../shared/stats/points-ledger/domain/bui
 import { BackfillMatchRow } from "../shared/stats/points-ledger/domain/planLedgerBackfill";
 
 type MakeDependenciesOverrides = Partial<
-	Pick<BackfillDependencies, "resolveAlias" | "groupsFor" | "ranksByName" | "achievementPointsRows">
+	Pick<
+		BackfillDependencies,
+		"resolveAlias" | "groupsFor" | "ranksByName" | "achievementPointsRows" | "userIds"
+	>
 >;
 
 function makeDependencies(
@@ -16,6 +19,9 @@ function makeDependencies(
 	const globalRank = RankMother.create({ id: "rank-global", name: "Global" });
 	const insertMany = jest.fn().mockResolvedValue({ inserted: 0, skipped: 0 });
 	const writeReport = jest.fn().mockResolvedValue(undefined);
+	// Every user referenced by `rows` is known by default, unless a test
+	// overrides `userIds` to exercise the missing-user path.
+	const defaultKnownUserIds = [...new Set(rows.map((row) => row.userId))].map((id) => ({ id }));
 
 	return {
 		matchRows: { fetchRows: () => Promise.resolve(rows) },
@@ -25,6 +31,7 @@ function makeDependencies(
 		ledgerBulkInserter: { insertMany },
 		playerStatsRows: { fetchRows: () => Promise.resolve(playerStats) },
 		achievementPointsRows: { fetchRows: () => Promise.resolve([]) },
+		userIds: { fetchRows: () => Promise.resolve(defaultKnownUserIds) },
 		writeReport,
 		logger: { info: jest.fn() },
 		insertMany,
@@ -93,6 +100,33 @@ describe("runBackfill", () => {
 
 		expect(result.report.clean).toBe(true);
 		expect(deps.writeReport).toHaveBeenCalledWith(result.report);
+	});
+
+	it("skips rows for users missing from the loaded user id set and reports the count", async () => {
+		const deps = makeDependencies([makeRow({ userId: "user-missing" })], [], {
+			userIds: { fetchRows: () => Promise.resolve([]) },
+		});
+
+		const result = await runBackfill(deps, { apply: false });
+
+		expect(result.plan.entries).toHaveLength(0);
+		expect(result.plan.skippedMissingUsers).toEqual({
+			matchRows: 1,
+			users: ["user-missing"],
+			gameIds: ["game-1"],
+		});
+	});
+
+	it("logs the skipped-missing-users counts in the summary line", async () => {
+		const deps = makeDependencies([makeRow({ userId: "user-missing" })], [], {
+			userIds: { fetchRows: () => Promise.resolve([]) },
+		});
+
+		await runBackfill(deps, { apply: false });
+
+		expect(deps.logger.info).toHaveBeenCalledWith(
+			expect.stringContaining("1 rows skipped for 1 missing users (1 fully-missing games)"),
+		);
 	});
 
 	it("credits achievement points labeled with a ranked list to the group ranks it feeds, same as match points", async () => {
