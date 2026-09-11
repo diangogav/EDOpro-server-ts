@@ -34,6 +34,7 @@ import { fanOutAchievementPoints } from "../shared/stats/points-ledger/domain/fa
 import {
 	BackfillMatchRow,
 	GroupsFor,
+	KnownUserIds,
 	PlanLedgerBackfillResult,
 	planLedgerBackfill,
 	RanksByName,
@@ -47,6 +48,11 @@ const SELECT_MATCH_ROWS_QUERY = `
 	FROM matches
 	WHERE deleted_at IS NULL
 `;
+
+// Loaded once per run and passed through as a pure predicate — see
+// `planLedgerBackfill`'s `knownUserIds`. A row whose user is missing here
+// means a hard-deleted account (unit 4d): the row is skipped, not applied.
+const SELECT_USER_IDS_QUERY = `SELECT id FROM users`;
 
 // Quoted aliases so the returned row shape already IS PlayerStatsSnapshotRow.
 const SELECT_PLAYER_STATS_QUERY = `
@@ -79,6 +85,7 @@ export type BackfillDependencies = {
 	ledgerBulkInserter: LedgerBulkInsertPort;
 	playerStatsRows: { fetchRows(): Promise<PlayerStatsSnapshotRow[]> };
 	achievementPointsRows: { fetchRows(): Promise<AchievementPointsRow[]> };
+	userIds: { fetchRows(): Promise<{ id: string }[]> };
 	writeReport(report: ReconciliationReport): Promise<void>;
 	logger: { info(message: string): void };
 };
@@ -93,7 +100,16 @@ export async function runBackfill(
 	options: BackfillRunOptions,
 ): Promise<RunBackfillResult> {
 	const rows = await deps.matchRows.fetchRows();
-	const plan = planLedgerBackfill(rows, deps.resolveAlias, deps.groupsFor, deps.ranksByName);
+	const userIdRows = await deps.userIds.fetchRows();
+	const knownUserIdSet = new Set(userIdRows.map((row) => row.id));
+	const knownUserIds: KnownUserIds = (userId) => knownUserIdSet.has(userId);
+	const plan = planLedgerBackfill(
+		rows,
+		deps.resolveAlias,
+		deps.groupsFor,
+		deps.ranksByName,
+		knownUserIds,
+	);
 	const inserted =
 		options.apply && plan.entries.length > 0
 			? (
@@ -113,7 +129,10 @@ export async function runBackfill(
 	deps.logger.info(
 		`points-ledger backfill (${mode}); ${plan.rankSummaries.length} ranks, ` +
 			`${plan.unmappedBanLists.length} unmapped ban lists, ` +
-			`${plan.preFlaggedGameIds.length} pre-flagged games`,
+			`${plan.preFlaggedGameIds.length} pre-flagged games, ` +
+			`${plan.skippedMissingUsers.matchRows} rows skipped for ` +
+			`${plan.skippedMissingUsers.users.length} missing users ` +
+			`(${plan.skippedMissingUsers.gameIds.length} fully-missing games)`,
 	);
 
 	const [playerStats, achievementPointsRows] = await Promise.all([
@@ -203,6 +222,7 @@ const fetchPlayerStatsRows = (): Promise<PlayerStatsSnapshotRow[]> =>
 	dataSource.query(SELECT_PLAYER_STATS_QUERY);
 const fetchAchievementPointsRows = (): Promise<AchievementPointsRow[]> =>
 	dataSource.query(SELECT_ACHIEVEMENT_POINTS_QUERY);
+const fetchUserIdRows = (): Promise<{ id: string }[]> => dataSource.query(SELECT_USER_IDS_QUERY);
 
 async function writeReportToFile(report: ReconciliationReport): Promise<void> {
 	const dir = path.join(process.cwd(), "reports");
@@ -248,6 +268,7 @@ async function main(): Promise<void> {
 			ledgerBulkInserter: ledgerBulkInserterFor(new PlayerStatsPostgresRepository()),
 			playerStatsRows: { fetchRows: fetchPlayerStatsRows },
 			achievementPointsRows: { fetchRows: fetchAchievementPointsRows },
+			userIds: { fetchRows: fetchUserIdRows },
 			writeReport: writeReportToFile,
 			logger,
 		},
