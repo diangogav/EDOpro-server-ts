@@ -499,4 +499,94 @@ describe("Match", () => {
 			expect(history[1].games.filter((g) => g.result === "loser")).toHaveLength(3);
 		});
 	});
+
+	describe("forfeit — a player abandons the match", () => {
+		const ips = [
+			{ name: "Player One", ipAddress: "1.1.1.1" },
+			{ name: "Player Two", ipAddress: "2.2.2.2" },
+		];
+
+		it("awards the match to the team that is still there", () => {
+			match = new Match({ bestOf: 3 });
+			match.initializeHistoricalData(players);
+			match.duelWinner(Team.PLAYER, 11, ips);
+
+			match.forfeit(Team.PLAYER, ips);
+
+			expect(match.isFinished()).toBe(true);
+			expect(match.score).toEqual({ team0: 2, team1: 0 });
+		});
+
+		// Points and the stored match score are both counted off these records
+		// (Player.wins/losses), so an awarded game that leaves no record would
+		// pay the winner as if the match had been closer than it was.
+		it("records every awarded game, so wins and losses still add up", () => {
+			match = new Match({ bestOf: 3 });
+			match.initializeHistoricalData(players);
+			match.duelWinner(Team.PLAYER, 11, ips);
+
+			match.forfeit(Team.PLAYER, ips);
+
+			const survivor = match.playersHistory.find((p) => p.team === Team.PLAYER);
+			const abandoner = match.playersHistory.find((p) => p.team === Team.OPPONENT);
+			expect(survivor?.games.map((g) => g.result)).toEqual(["winner", "winner"]);
+			expect(abandoner?.games.map((g) => g.result)).toEqual(["loser", "loser"]);
+		});
+
+		it("marks an awarded game with zero turns — it was never played", () => {
+			match = new Match({ bestOf: 3 });
+			match.initializeHistoricalData(players);
+			match.duelWinner(Team.PLAYER, 11, ips);
+
+			match.forfeit(Team.PLAYER, ips);
+
+			const survivor = match.playersHistory.find((p) => p.team === Team.PLAYER);
+			expect(survivor?.games.map((g) => g.turns)).toEqual([11, 0]);
+		});
+
+		// A judge scores a no-show the same way: the absent player loses every
+		// remaining game, so trailing 0-1 still ends 2-1.
+		it("awards every remaining game when the abandoner was ahead", () => {
+			match = new Match({ bestOf: 3 });
+			match.initializeHistoricalData(players);
+			match.duelWinner(Team.OPPONENT, 9, ips);
+
+			// OPPONENT took duel 1 and then walked away, so PLAYER is awarded the
+			// two games that decide it.
+			const awarded = match.forfeit(Team.PLAYER, ips);
+
+			expect(awarded).toBe(2);
+			expect(match.score).toEqual({ team0: 2, team1: 1 });
+			expect(match.isFinished()).toBe(true);
+		});
+
+		it("reports how many games it awarded", () => {
+			match = new Match({ bestOf: 3 });
+			match.initializeHistoricalData(players);
+			match.duelWinner(Team.PLAYER, 11, ips);
+
+			expect(match.forfeit(Team.PLAYER, ips)).toBe(1);
+		});
+
+		it("marks the surviving team as the winner in the history", () => {
+			match = new Match({ bestOf: 3 });
+			match.initializeHistoricalData(players);
+
+			match.forfeit(Team.OPPONENT, ips);
+
+			const history = match.playersHistory;
+			expect(history.find((p) => p.team === Team.OPPONENT)?.winner).toBe(true);
+			expect(history.find((p) => p.team === Team.PLAYER)?.winner).toBe(false);
+		});
+
+		it("leaves a decided match untouched", () => {
+			match = new Match({ bestOf: 3 });
+			match.initializeHistoricalData(players);
+			match.duelWinner(Team.PLAYER, 11, ips);
+			match.duelWinner(Team.PLAYER, 9, ips);
+
+			expect(match.forfeit(Team.PLAYER, ips)).toBe(0);
+			expect(match.score).toEqual({ team0: 2, team1: 0 });
+		});
+	});
 });

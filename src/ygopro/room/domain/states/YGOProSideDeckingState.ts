@@ -19,6 +19,7 @@ import { resolveJoinerIdentityWithTimeout } from "../resolveJoinerIdentityWithTi
 import { YGOProRoom } from "../YGOProRoom";
 import { findMidDuelReconnectingPlayer } from "@shared/room/domain/findMidDuelReconnectingPlayer";
 import { config } from "../../../../config";
+import { EndMatchByAbandon } from "../../application/EndMatchByAbandon";
 import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
 import {
@@ -130,16 +131,22 @@ export class YGOProSideDeckingState extends YGOProRoomState {
 		}
 
 		if (remain <= 1) {
-			this.clearPlayerTimeout(player.position);
+			this.clearAllTimeouts();
 			this.logger.info("Side deck timeout", { player: player.name, position: player.position });
 
 			// Broadcast only — a player-facing chat send here would race the
-			// socket destroy below and may never reach the client.
+			// teardown below and may never reach the client.
 			this.broadcastChat(
 				`${player.name} was disconnected — side deck not submitted in time.`,
 				ChatColor.RED,
 			);
-			player.destroy();
+
+			// A player who never sides has abandoned the match. Ending it is what
+			// releases the opponent, records the result and reaps the room; simply
+			// destroying this socket left the room alive with nobody to finish it
+			// (and, since destroy() strips the close listener, unreachable from the
+			// disconnect path too).
+			void EndMatchByAbandon.run(this.room, player.team, this.logger);
 			return;
 		}
 

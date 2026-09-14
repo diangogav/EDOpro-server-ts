@@ -88,6 +88,30 @@ export class Match {
 		this.opponentScore++;
 	}
 
+	/**
+	 * Award every remaining game to `winnerTeam` because the other side walked
+	 * away, and report how many it awarded.
+	 *
+	 * Each awarded game IS recorded, with zero turns to mark that it was never
+	 * played. That is how a judge scores a no-show — the absent player loses the
+	 * games they did not present for — and it is what keeps the numbers honest
+	 * downstream: `Player.wins`/`losses`, the stored match score and the match
+	 * points are all counted off these records, so an awarded game that left no
+	 * record would pay the winner as if the match had been closer than it was.
+	 */
+	forfeit(winnerTeam: number, ips: { name: string; ipAddress: string | null }[]): number {
+		let awarded = 0;
+
+		// duelWinner moves the score on every call, so the match always reaches a
+		// decision; bestOf bounds the loop anyway rather than trusting that.
+		while (!this.isFinished() && awarded < this.bestOf) {
+			this.duelWinner(winnerTeam, 0, ips);
+			awarded++;
+		}
+
+		return awarded;
+	}
+
 	isFinished(): boolean {
 		return this.opponentScore >= this.needWins || this.playerScore >= this.needWins;
 	}

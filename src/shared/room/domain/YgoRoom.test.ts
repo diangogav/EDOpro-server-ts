@@ -121,4 +121,28 @@ describe("YgoRoom", () => {
 			expect(room.duelIds).toEqual([]);
 		});
 	});
+
+	// The stats writer pairs duelIds with the match history by position, so a
+	// game awarded by forfeit needs an id of its own or the whole match loses
+	// its duel links.
+	describe("matchForfeit", () => {
+		it("keeps one duel id per recorded game", async () => {
+			const room = SimpleRoomMother.create({ bestOf: 3, ranked: true });
+			const survivor = ClientMother.create({ name: "Diango", team: 0 });
+			const abandoner = ClientMother.create({ name: "Rival", team: 1 });
+			room.players.push(survivor, abandoner);
+			room.createMatch();
+			room.createDuel("2010.03 Edison");
+			// createDuel registers its id through the room mutex, so let that
+			// settle before counting.
+			await Promise.resolve();
+			room.duelWinner(0);
+
+			room.matchForfeit(0);
+
+			const games = room.matchPlayersHistory[0]?.games ?? [];
+			expect(games).toHaveLength(2);
+			expect(room.duelIds).toHaveLength(2);
+		});
+	});
 });

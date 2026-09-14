@@ -163,6 +163,29 @@ export abstract class YgoRoom {
 		this._match.duelWinner(winner, this.turn, ips);
 	}
 
+	/**
+	 * Award the match to `winnerTeam` because the other side abandoned it.
+	 *
+	 * Every awarded game gets a duel id of its own: the stats writer pairs
+	 * `duelIds` with the match history BY POSITION, so a recorded game with no id
+	 * behind it would make the whole match fall back to null duel ids.
+	 */
+	matchForfeit(winnerTeam: number): void {
+		if (!this._match) {
+			return;
+		}
+
+		const ips = this._players.map((client) => ({
+			name: client.name,
+			ipAddress: client.socket.remoteAddress ?? null,
+		}));
+
+		const awarded = this._match.forfeit(winnerTeam, ips);
+		for (let index = 0; index < awarded; index++) {
+			this._duelIds.push(randomUUID());
+		}
+	}
+
 	get matchPlayersHistory(): PlayerData[] {
 		return this._match?.playersHistory ?? [];
 	}
