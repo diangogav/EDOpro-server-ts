@@ -1,5 +1,72 @@
 # Changelog
 
+## [2.17.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.16.0...v2.17.0) (2026-09-14)
+
+
+### Features
+
+* **basic-stats:** write points_ledger applied rows atomically with player_stats ([3c56af0](https://github.com/diangogav/EDOpro-server-ts/commit/3c56af02fb476ef6b655cd901ae8501f41701922))
+* **basic-stats:** write points_ledger applied rows atomically with player_stats ([8f5b3fa](https://github.com/diangogav/EDOpro-server-ts/commit/8f5b3fa32266ad9c03ad029d8286b7435d68e3f7))
+* **chat:** overhaul system chat messages with a unified color grammar ([#353](https://github.com/diangogav/EDOpro-server-ts/issues/353)) ([847635d](https://github.com/diangogav/EDOpro-server-ts/commit/847635de185295ce01a5be0a7224cc075bacd3a5))
+* **join:** add watch-by-id spectator command ([#344](https://github.com/diangogav/EDOpro-server-ts/issues/344)) ([11fa461](https://github.com/diangogav/EDOpro-server-ts/commit/11fa4618af50756da8430499647d3a3282c234a2))
+* match annulment ledger ([#372](https://github.com/diangogav/EDOpro-server-ts/issues/372)) ([32a5cba](https://github.com/diangogav/EDOpro-server-ts/commit/32a5cbae94b4fc102cc22830a522fa32cd561cb3))
+* match annulment ledger (tracker, do not merge yet) ([32a5cba](https://github.com/diangogav/EDOpro-server-ts/commit/32a5cbae94b4fc102cc22830a522fa32cd561cb3))
+* **matchmaking:** harden the queue surface and reserve match seats ([#343](https://github.com/diangogav/EDOpro-server-ts/issues/343)) ([01dcb96](https://github.com/diangogav/EDOpro-server-ts/commit/01dcb9673e556c0fdf32d9f2e84dbdba058b2c22))
+* **player-stats:** add transactional port with ladder locking and ledger insert ([315bdcb](https://github.com/diangogav/EDOpro-server-ts/commit/315bdcb698cdcb7ba5f4e901d18d1b33c67bfcff))
+* **player-stats:** add transactional port with ladder locking and ledger insert ([c85c9e3](https://github.com/diangogav/EDOpro-server-ts/commit/c85c9e39c04071e08573cd1527b7e92499016960))
+* **points-ledger:** add backfill script shell with dry-run and apply modes ([68a0efe](https://github.com/diangogav/EDOpro-server-ts/commit/68a0efe705867186f2625f0fabd18fe925e588a9))
+* **points-ledger:** add backfill script shell with dry-run and apply modes ([e81bf13](https://github.com/diangogav/EDOpro-server-ts/commit/e81bf137db18dd2235dc7ce478874003b701df78))
+* **points-ledger:** add pure backfill planner with lookup-only rank resolution ([1f7e495](https://github.com/diangogav/EDOpro-server-ts/commit/1f7e495e6d0883b4e39776a26e4c3b7531a4b05b))
+* **points-ledger:** add pure backfill planner with lookup-only rank resolution ([e4280db](https://github.com/diangogav/EDOpro-server-ts/commit/e4280db46a609590accab219267c7ccb553fa4ac))
+* **points-ledger:** add reconciliation report builder and wire it into backfill ([c236181](https://github.com/diangogav/EDOpro-server-ts/commit/c236181d0c9395267f88be56e57b7fe019e426a2))
+* **points-ledger:** add reconciliation report builder and wire it into backfill ([9c6a64a](https://github.com/diangogav/EDOpro-server-ts/commit/9c6a64ac15aa1dcb732c1b6b360a9710b44033bf))
+* **rank:** configurable group ranks fed by current ban lists ([a8de0fb](https://github.com/diangogav/EDOpro-server-ts/commit/a8de0fb8198f2458df47002e71fa14ecce4a5a0e))
+* **rank:** configurable group ranks fed by current ban lists ([2828c06](https://github.com/diangogav/EDOpro-server-ts/commit/2828c0603ebe73449bd416fff4211773e8abfa6b))
+* **rank:** give single-list formats their own ladder ([6bd9f6b](https://github.com/diangogav/EDOpro-server-ts/commit/6bd9f6b93d5b7b25d1f206f40d19280bab61fdbe))
+* **rank:** key player stats and ratings by rank_id ([a05536f](https://github.com/diangogav/EDOpro-server-ts/commit/a05536f83b90889e05a687df7d9a47b8e453bab1))
+* **rank:** key player stats and ratings by rank_id ([a9f0c44](https://github.com/diangogav/EDOpro-server-ts/commit/a9f0c447b3b048b07a6c43f8b943e19d4883cbb7))
+* **rank:** let formats reach the ban lists they retired ([d34f5ff](https://github.com/diangogav/EDOpro-server-ts/commit/d34f5ff73dd1f7130251bdb5b0d907ebba5f0584))
+* **rank:** let formats reach the ban lists they retired ([d35c2f2](https://github.com/diangogav/EDOpro-server-ts/commit/d35c2f285f03d0e591d8e87e6abb9b344a927323))
+* **rank:** normalize JTP to the canonical evolution-assets lists ([d742ae7](https://github.com/diangogav/EDOpro-server-ts/commit/d742ae799d2ccf537cd67e3fa9bfa5e95cd4c9b6))
+* **rank:** single-list formats and a maintained no-ban-list ladder ([a2e4dda](https://github.com/diangogav/EDOpro-server-ts/commit/a2e4ddaccb4fb05edadfc7f6b72b11ac059be803))
+* **rating:** add elo-rating persistence plugin ([#349](https://github.com/diangogav/EDOpro-server-ts/issues/349)) ([074f18b](https://github.com/diangogav/EDOpro-server-ts/commit/074f18b0013696af525bd3b67cc317cede99de77))
+* **rating:** add pure Elo domain math ([#348](https://github.com/diangogav/EDOpro-server-ts/issues/348)) ([b1328e8](https://github.com/diangogav/EDOpro-server-ts/commit/b1328e8e928180bec14c133a139644cad7cdcc72))
+* **rating:** announce ratings over chat at match start and end ([#351](https://github.com/diangogav/EDOpro-server-ts/issues/351)) ([ccb409b](https://github.com/diangogav/EDOpro-server-ts/commit/ccb409b080d28a40d342464d606f5e5d0a4a8df5))
+* **rating:** announce the rating players keep ([23e91cf](https://github.com/diangogav/EDOpro-server-ts/commit/23e91cfab33503802d03cb385d44351d61294cb9))
+* **rating:** announce the rating players keep ([6622728](https://github.com/diangogav/EDOpro-server-ts/commit/6622728ecc655f521fec1c8eaac39f40b1c07682))
+* **rating:** shared eligibility gate, unlocked read and chat announcement format ([#352](https://github.com/diangogav/EDOpro-server-ts/issues/352)) ([ff45b81](https://github.com/diangogav/EDOpro-server-ts/commit/ff45b81d8e1cfb0a735eef55dc8cc250f452d6b7))
+* **rating:** use target-less ON CONFLICT and cycle 0 for applied rows ([77223d8](https://github.com/diangogav/EDOpro-server-ts/commit/77223d819a1539fa85cf1290c0963712556d09d4))
+* **rating:** use target-less ON CONFLICT and cycle 0 for applied rows ([40213f9](https://github.com/diangogav/EDOpro-server-ts/commit/40213f9c4b2582bd767b32d7049b31419e0d11c3))
+* **rating:** widen the server-side history kind union to reinstatement ([5193b79](https://github.com/diangogav/EDOpro-server-ts/commit/5193b793428733814cfddfce8a9b1f5205619397))
+* **rating:** widen the server-side history kind union to reinstatement ([cd4a3af](https://github.com/diangogav/EDOpro-server-ts/commit/cd4a3af468ea27bbd123b2f8b3a28b5d85bd4d9b))
+* **room:** match lifecycle hooks with bounded announce capability ([#350](https://github.com/diangogav/EDOpro-server-ts/issues/350)) ([06e6057](https://github.com/diangogav/EDOpro-server-ts/commit/06e60575f040423a7209ee41f9c29c176930315f))
+* **rush:** enable Rush Duel as a playable format ([#340](https://github.com/diangogav/EDOpro-server-ts/issues/340)) ([2de5a8a](https://github.com/diangogav/EDOpro-server-ts/commit/2de5a8ad77408f966a4ca5c975800286c702d14a))
+
+
+### Bug Fixes
+
+* **docker:** build the resources and core stages on bookworm ([a2ef932](https://github.com/diangogav/EDOpro-server-ts/commit/a2ef932925b69e21fb3846e8478d280d4de64af4))
+* **docker:** build the resources and core stages on bookworm ([55d0b56](https://github.com/diangogav/EDOpro-server-ts/commit/55d0b566a6f5b17e1849d399be93624efe5bf06d))
+* **docker:** build the server stage on bookworm as well ([cf67913](https://github.com/diangogav/EDOpro-server-ts/commit/cf679137f162ca64a9f2df3fedb50f2b18bd6ccf))
+* **points-ledger:** fan out achievement points to group ranks in reconciliation ([06a925f](https://github.com/diangogav/EDOpro-server-ts/commit/06a925f559b74a31ca5dcddd1c2c5eb5a4963956))
+* **points-ledger:** fan out achievement points to group ranks in reconciliation ([484467f](https://github.com/diangogav/EDOpro-server-ts/commit/484467fdf73e76cbf43fe8c732354321e21f377c))
+* **points-ledger:** flag player_stats rows without ledger entries in reconciliation ([f8ced10](https://github.com/diangogav/EDOpro-server-ts/commit/f8ced10e9ff17212794d24e5058e531ea228bade))
+* **points-ledger:** skip and report backfill rows of hard-deleted users ([ce7bc04](https://github.com/diangogav/EDOpro-server-ts/commit/ce7bc04e706a345146e67dd77ea30fe153a68852))
+* **points-ledger:** skip match rows of hard-deleted users in the backfill ([b948b43](https://github.com/diangogav/EDOpro-server-ts/commit/b948b439e60ed2b1a4135d1311912742f246e20a))
+* **rank:** keep the no-ban-list ladder up to date ([2c8ce09](https://github.com/diangogav/EDOpro-server-ts/commit/2c8ce09696f26f6f123458f4ab13f4b3fcd39312))
+* **rating:** make a lopsided duel cost something, and never go negative ([41c762d](https://github.com/diangogav/EDOpro-server-ts/commit/41c762da6ea5ade8fb44314655a8112ccbf526d5))
+* **rating:** make a lopsided duel cost something, and never go negative ([979acfe](https://github.com/diangogav/EDOpro-server-ts/commit/979acfe792cdcdb07413676d3920d77ac8e94b67))
+* **rating:** write a history row per ladder ([7317c50](https://github.com/diangogav/EDOpro-server-ts/commit/7317c50c1a5f1aeab3ad1c5e340b1ebb23539ee2))
+* **rating:** write a history row per ladder ([10ffa9e](https://github.com/diangogav/EDOpro-server-ts/commit/10ffa9e651176867bd1de5568e75ba31e4c0bef0))
+* **room:** bind mid-duel reconnect to account identity and rate-limit joins ([#345](https://github.com/diangogav/EDOpro-server-ts/issues/345)) ([c64eade](https://github.com/diangogav/EDOpro-server-ts/commit/c64eade1c2b766ef09b2e99aa1cbc89ca1351648))
+* **ygopro:** send the room-creation notice on the ygopro pipeline ([#354](https://github.com/diangogav/EDOpro-server-ts/issues/354)) ([b8db63c](https://github.com/diangogav/EDOpro-server-ts/commit/b8db63c26c809096d6a6db8f7c28e25e19f0876b))
+
+
+### Performance Improvements
+
+* **points-ledger:** batch backfill ledger inserts into multi-row statements ([de82243](https://github.com/diangogav/EDOpro-server-ts/commit/de822436a37349df964c035a5dba94673e3a5149))
+* **points-ledger:** batch backfill ledger inserts into multi-row statements ([fb32028](https://github.com/diangogav/EDOpro-server-ts/commit/fb320285c47e70ee1e0bc02fee8c431701de7611))
+
 ## [2.16.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.15.0...v2.16.0) (2026-08-25)
 
 
