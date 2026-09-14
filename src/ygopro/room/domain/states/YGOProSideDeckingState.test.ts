@@ -15,6 +15,13 @@ import { encodeDeckErrorCode } from "@shared/deck/domain/errors/encodeDeckErrorC
 
 import { ErrorMessageType } from "ygopro-msg-encode";
 
+import { Team } from "@shared/room/Team";
+import { EndMatchByAbandon } from "../../application/EndMatchByAbandon";
+
+jest.mock("../../application/EndMatchByAbandon", () => ({
+	EndMatchByAbandon: { run: jest.fn().mockResolvedValue(undefined) },
+}));
+
 // ---- helpers ----
 
 // A minimal CTOS_UPDATE_DECK payload: mainCount, sideCount, then card codes.
@@ -48,6 +55,7 @@ describe("YGOProSideDeckingState — side-deck timeout chat", () => {
 	const makePlayer = (position: number) =>
 		({
 			position,
+			team: position,
 			name: `p${position}`,
 			sendMessageToClient: jest.fn(),
 			destroy: jest.fn(),
@@ -55,6 +63,7 @@ describe("YGOProSideDeckingState — side-deck timeout chat", () => {
 
 	beforeEach(() => {
 		jest.useFakeTimers();
+		(EndMatchByAbandon.run as jest.Mock).mockClear();
 		eventEmitter = new EventEmitter();
 		mockLogger = {
 			child: jest.fn().mockReturnThis(),
@@ -95,7 +104,7 @@ describe("YGOProSideDeckingState — side-deck timeout chat", () => {
 		expect(player.destroy).not.toHaveBeenCalled();
 	});
 
-	it("broadcasts the disconnect notice and destroys the player on timeout, without a player-facing 'Time is up!' send", () => {
+	it("broadcasts the disconnect notice on timeout, without a player-facing 'Time is up!' send", () => {
 		const player = makePlayer(0);
 		const room = { players: [player], clients: [player] } as unknown as jest.Mocked<YGOProRoom>;
 
@@ -106,7 +115,32 @@ describe("YGOProSideDeckingState — side-deck timeout chat", () => {
 		// initial notice + final-minute warning + one room-wide disconnect
 		// broadcast (also received by the same client, since clients === [player])
 		expect(chatCallCount(player)).toBe(3);
-		expect(player.destroy).toHaveBeenCalledTimes(1);
+	});
+
+	// The whole point of the timer: a player who never sides has abandoned the
+	// match, so the match must actually END. Destroying the socket alone left
+	// the opponent waiting on a room nobody would ever finish.
+	it("ends the match in favour of the opponent when a player never submits", () => {
+		const player = makePlayer(0);
+		const room = { players: [player], clients: [player] } as unknown as jest.Mocked<YGOProRoom>;
+
+		new YGOProSideDeckingState(eventEmitter, mockLogger, mockDeckCreator, mockDeckValidator, room);
+
+		jest.advanceTimersByTime(3 * 60_000);
+
+		expect(EndMatchByAbandon.run).toHaveBeenCalledTimes(1);
+		expect(EndMatchByAbandon.run).toHaveBeenCalledWith(room, Team.PLAYER, expect.anything());
+	});
+
+	it("leaves teardown to the finalizer instead of destroying the socket itself", () => {
+		const player = makePlayer(0);
+		const room = { players: [player], clients: [player] } as unknown as jest.Mocked<YGOProRoom>;
+
+		new YGOProSideDeckingState(eventEmitter, mockLogger, mockDeckCreator, mockDeckValidator, room);
+
+		jest.advanceTimersByTime(3 * 60_000);
+
+		expect(player.destroy).not.toHaveBeenCalled();
 	});
 });
 
