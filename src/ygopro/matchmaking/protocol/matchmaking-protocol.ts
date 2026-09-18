@@ -1,4 +1,5 @@
-import { MatchmakingFormat, OpponentType } from "../domain/QueueEntry";
+import { MatchmakingStatusState, RejectionReason } from "../domain/ParticipantChannel";
+import { MatchmakingFormat, MatchmakingMode, OpponentType } from "../domain/QueueEntry";
 
 /**
  * Matchmaking wire protocol — five dedicated CTOS/STOC opcodes in the same
@@ -19,30 +20,10 @@ export const MAX_OPPONENT_NAME_BYTES = 32;
 
 const ENTER_BODY_LENGTH = 4;
 
-export type MatchmakingMode = "ranked";
-export type MatchmakingState =
-	| "searching"
-	| "cancelled"
-	| "rejected"
-	| "replaced"
-	| "authenticated";
-
-export type RejectionReason =
-	| "none"
-	| "invalid_ticket"
-	| "not_authenticated"
-	| "already_authenticated"
-	| "unknown_format"
-	| "unsupported_mode"
-	| "malformed_frame"
-	| "rate_limited"
-	| "replaced_by_new_connection"
-	| "missing_player_info"
-	| "banned"
-	| "internal_error"
-	| "cancel_too_late"
-	| "already_queued"
-	| "version_mismatch";
+/** Wire-only reason value: encodes "no reason" on a non-rejected STATUS frame.
+ * `RejectionReason` itself (owned by the domain) never carries this member —
+ * absence of a reason is expressed by an optional field there instead. */
+type WireReason = RejectionReason | "none";
 
 export type ParseResult<T> = { ok: true; value: T } | { ok: false; reason: RejectionReason };
 
@@ -76,7 +57,7 @@ const MODE_BY_CODE: Readonly<Partial<Record<number, MatchmakingMode>>> = Object.
 	0: "ranked",
 });
 
-const STATE_TO_CODE: Readonly<Record<MatchmakingState, number>> = Object.freeze({
+const STATE_TO_CODE: Readonly<Record<MatchmakingStatusState, number>> = Object.freeze({
 	searching: 0,
 	cancelled: 1,
 	rejected: 2,
@@ -84,7 +65,7 @@ const STATE_TO_CODE: Readonly<Record<MatchmakingState, number>> = Object.freeze(
 	authenticated: 4,
 });
 
-const REASON_TO_CODE: Readonly<Record<RejectionReason, number>> = Object.freeze({
+const REASON_TO_CODE: Readonly<Record<WireReason, number>> = Object.freeze({
 	none: 0,
 	invalid_ticket: 1,
 	not_authenticated: 2,
@@ -144,9 +125,9 @@ export function parseCtosCancel(body: Buffer): ParseResult<Record<string, never>
 }
 
 export function buildStocMatchmakingStatusFrame(
-	state: MatchmakingState,
+	state: MatchmakingStatusState,
 	waitedMs: number,
-	reason: RejectionReason = "none",
+	reason: WireReason = "none",
 ): Buffer {
 	const body = Buffer.alloc(6);
 	body.writeUInt8(STATE_TO_CODE[state], 0);
