@@ -1,3 +1,5 @@
+import { Logger } from "@shared/logger/domain/Logger";
+
 import { Client } from "../../../edopro/client/domain/Client";
 import { PlayerChangeClientMessage } from "../../../edopro/messages/server-to-client/PlayerChangeClientMessage";
 import { WatchChangeClientMessage } from "../../../edopro/messages/server-to-client/WatchChangeClientMessage";
@@ -13,10 +15,21 @@ import { FinalizeYGOProRoom } from "@ygopro/room/application/FinalizeYGOProRoom"
 import { AbortMatchmakingRoom } from "@ygopro/matchmaking/application/AbortMatchmakingRoom";
 import { MatchmakingQueue } from "@ygopro/matchmaking/application/MatchmakingQueue";
 
+/** A caller that has no logger to inject (e.g. an existing test constructing
+ * this handler directly) still gets safe, silent dequeue behavior. */
+const NOOP_LOGGER: Logger = {
+	debug: () => undefined,
+	error: () => undefined,
+	info: () => undefined,
+	warn: () => undefined,
+	child: () => NOOP_LOGGER,
+};
+
 export class DisconnectHandler {
 	constructor(
 		private readonly socket: ISocket,
 		private readonly roomFinder: RoomFinder,
+		private readonly logger: Logger = NOOP_LOGGER,
 	) {}
 
 	run(address?: string): void {
@@ -100,7 +113,10 @@ export class DisconnectHandler {
 		if (!MatchmakingQueue.isInitialized()) {
 			return;
 		}
-		MatchmakingQueue.getInstance().dequeueBySocketId(this.socket.id as string);
+		const dequeued = MatchmakingQueue.getInstance().dequeueBySocketId(this.socket.id as string);
+		if (dequeued) {
+			this.logger.info("matchmaking.dequeued", { reason: "disconnect" });
+		}
 	}
 
 	private handleYGOPro(room: YGOProRoom): void {

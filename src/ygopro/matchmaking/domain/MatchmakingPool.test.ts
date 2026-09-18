@@ -99,7 +99,7 @@ describe("MatchmakingPool", () => {
 			pool.add(existing);
 			const replacement = ParticipantMother.create({ id: "conn-2", userId: "u-1" });
 
-			pool.add(replacement);
+			expect(pool.add(replacement)).toBe(true);
 
 			expect(existingRemovedBeforeClose).toBe(true);
 			expect(newAddedBeforeClose).toBe(false);
@@ -151,10 +151,19 @@ describe("MatchmakingPool", () => {
 			const store = new InMemoryPoolStore();
 			const pool = buildPool(store, () => 0, new RecordingMatchHandler());
 			const participant = ParticipantMother.create({ id: "conn-5", userId: "u-4" });
-			pool.add(participant);
+			expect(pool.add(participant)).toBe(false);
 
-			expect(() => pool.dequeueBySocketId("unknown-id")).not.toThrow();
+			expect(pool.dequeueBySocketId("unknown-id")).toBe(false);
 			expect(store.get("conn-5")).toBe(participant);
+		});
+
+		it("reports the removal of an id that was queued", () => {
+			const store = new InMemoryPoolStore();
+			const pool = buildPool(store, () => 0, new RecordingMatchHandler());
+			pool.add(ParticipantMother.create({ id: "conn-6", userId: "u-5" }));
+
+			expect(pool.dequeueBySocketId("conn-6")).toBe(true);
+			expect(store.get("conn-6")).toBeUndefined();
 		});
 	});
 

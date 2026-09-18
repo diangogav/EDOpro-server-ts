@@ -1,3 +1,5 @@
+import { EventEmitter } from "stream";
+
 import { mock, MockProxy } from "jest-mock-extended";
 
 import { Commands } from "@shared/messages/Commands";
@@ -88,6 +90,45 @@ describe("YGOProConnectionHandler", () => {
 			await pump(chat);
 
 			expect(socket.send).not.toHaveBeenCalled();
+		});
+	});
+
+	describe("matchmaking frame buffering", () => {
+		it.each([
+			{
+				name: "dispatches the buffered frame once authenticate resolves true",
+				proceed: true,
+				calls: 1,
+			},
+			{
+				name: "never dispatches the buffered frame when authenticate resolves false",
+				proceed: false,
+				calls: 0,
+			},
+		])("$name", async ({ proceed, calls }) => {
+			let resolveAuth!: (proceed: boolean) => void;
+			const authenticate = jest.fn(
+				() => new Promise<boolean>((resolve) => (resolveAuth = resolve)),
+			);
+			const listener = jest.fn();
+			const matchmakingConnectionFactory = (_socket: ISocket, emitter: EventEmitter): void => {
+				emitter.on(Commands.MATCHMAKING_AUTH as unknown as string, listener);
+			};
+			const socket = makeSocket();
+			const pump = registerPump(socket);
+			new YGOProConnectionHandler(logger, roomFinder, matchmakingConnectionFactory).handle(socket, {
+				authenticate,
+			});
+
+			const pumped = pump(buildFrame(Commands.MATCHMAKING_AUTH, Buffer.from([0])));
+			expect(listener).not.toHaveBeenCalled();
+
+			resolveAuth(proceed);
+			// A rejected gate never resolves `ready`, so `pumped` never settles —
+			// await it only on the accepted path; flush a microtask otherwise.
+			await (proceed ? pumped : Promise.resolve());
+
+			expect(listener).toHaveBeenCalledTimes(calls);
 		});
 	});
 

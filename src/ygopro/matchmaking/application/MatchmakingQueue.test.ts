@@ -1,3 +1,5 @@
+import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
+
 import { BOT_FALLBACK_MS, MATCHED_GRACE_MS, QUEUE_TTL_MS } from "../domain/QueueEntry";
 import { MatchmakingQueue, MatchmakingQueueDeps } from "./MatchmakingQueue";
 
@@ -740,9 +742,28 @@ describe("MatchmakingQueue", () => {
 			const queue = MatchmakingQueue.createForTests(makeDeps());
 			enqueue(queue, "t1", "user-1");
 
-			expect(() => queue.dequeueBySocketId("no-such-socket")).not.toThrow();
+			expect(queue.dequeueBySocketId("no-such-socket")).toBe(false);
 
 			expect(queue.get("t1")?.state).toBe("searching");
+		});
+	});
+
+	describe("observability", () => {
+		it("logs a matchmaking.enter event for a poll participant, never a display name", () => {
+			const logger = new LoggerMock();
+			const infoSpy = jest.spyOn(logger, "info");
+			const queue = MatchmakingQueue.createForTests(makeDeps({ logger }));
+
+			queue.enqueue({ ticketId: "t1", userId: "user-1", format: "tcg", displayName: "Yugi" });
+
+			expect(infoSpy).toHaveBeenCalledWith("matchmaking.enter", {
+				userId: "user-1",
+				format: "tcg",
+				mode: "ranked",
+				presence: "poll",
+			});
+			const loggedText = infoSpy.mock.calls.map((call) => JSON.stringify(call)).join(" ");
+			expect(loggedText).not.toContain("Yugi");
 		});
 	});
 

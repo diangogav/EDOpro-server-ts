@@ -56,18 +56,18 @@ describe("InMemoryPoolStore", () => {
 	});
 
 	describe("both indices stay consistent across add and remove", () => {
-		it("removes a participant from both the id index and the userId index", () => {
+		it("removes a participant from both the id index and the userId index, reporting removal", () => {
 			const participant = ParticipantMother.create({ id: "conn-1", userId: "user-4" });
 			store.add(participant);
 
-			store.remove(participant.id);
+			expect(store.remove(participant.id)).toBe(true);
 
 			expect(store.get("conn-1")).toBeUndefined();
 			expect(store.findByUserId("user-4")).toBeUndefined();
 		});
 
-		it("removing an unknown id is a no-op and does not throw", () => {
-			expect(() => store.remove("unknown-id")).not.toThrow();
+		it("removing an unknown id is a no-op, does not throw, and reports no removal", () => {
+			expect(store.remove("unknown-id")).toBe(false);
 		});
 	});
 

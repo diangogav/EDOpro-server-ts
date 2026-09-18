@@ -1,5 +1,6 @@
 import { EventEmitter } from "stream";
 
+import { Logger } from "@shared/logger/domain/Logger";
 import { Commands } from "@shared/messages/Commands";
 import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { ISocket } from "@shared/socket/domain/ISocket";
@@ -28,6 +29,7 @@ export class MatchmakingConnectionHandler {
 		private readonly authenticate: AuthenticateMatchmakingSession,
 		private readonly enter: EnterMatchmaking,
 		private readonly cancel: CancelMatchmaking,
+		private readonly logger: Logger,
 	) {
 		this.eventEmitter.on(Commands.PLAYER_INFO as unknown as string, this.onPlayerInfo);
 		this.eventEmitter.on(Commands.MATCHMAKING_AUTH as unknown as string, this.onAuth);
@@ -42,6 +44,7 @@ export class MatchmakingConnectionHandler {
 	private readonly onAuth = (message: ClientMessage): void => {
 		const result = parseCtosAuth(message.data);
 		if (!result.ok) {
+			this.logger.warn("matchmaking.rejected", { reason: result.reason, opcode: "AUTH" });
 			this.channel.status({ state: "rejected", waitedMs: 0, reason: result.reason });
 
 			return;
@@ -58,6 +61,7 @@ export class MatchmakingConnectionHandler {
 	private readonly onEnter = (message: ClientMessage): void => {
 		const result = parseCtosEnter(message.data);
 		if (!result.ok) {
+			this.logger.warn("matchmaking.rejected", { reason: result.reason, opcode: "ENTER" });
 			this.channel.status({ state: "rejected", waitedMs: 0, reason: result.reason });
 
 			return;
@@ -76,6 +80,7 @@ export class MatchmakingConnectionHandler {
 	private readonly onCancel = (message: ClientMessage): void => {
 		const result = parseCtosCancel(message.data);
 		if (!result.ok) {
+			this.logger.warn("matchmaking.rejected", { reason: result.reason, opcode: "CANCEL" });
 			this.channel.status({ state: "rejected", waitedMs: 0, reason: result.reason });
 
 			return;

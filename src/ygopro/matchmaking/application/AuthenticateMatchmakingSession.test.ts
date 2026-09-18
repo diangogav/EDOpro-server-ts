@@ -32,6 +32,7 @@ describe("AuthenticateMatchmakingSession", () => {
 	let bans: MockProxy<BanChecker>;
 	let displayNames: MockProxy<DisplayNameResolver>;
 	let logger: LoggerMock;
+	let warnSpy: jest.SpyInstance;
 	let useCase: AuthenticateMatchmakingSession;
 	let store: FakeRedis;
 	let enabledBefore: boolean;
@@ -53,6 +54,7 @@ describe("AuthenticateMatchmakingSession", () => {
 		bans = mock<BanChecker>();
 		displayNames = mock<DisplayNameResolver>();
 		logger = new LoggerMock();
+		warnSpy = jest.spyOn(logger, "warn");
 		useCase = new AuthenticateMatchmakingSession(tickets, bans, displayNames, logger);
 
 		store = new FakeRedis();
@@ -102,6 +104,11 @@ describe("AuthenticateMatchmakingSession", () => {
 		expect(tickets.consume).toHaveBeenCalledTimes(config.rateLimit.join.limit);
 		expect(channel.close).toHaveBeenCalledWith("rate_limited");
 		expect(session.isAuthenticated).toBe(false);
+		expect(warnSpy).toHaveBeenCalledWith("matchmaking.rejected", {
+			reason: "rate_limited",
+			opcode: "AUTH",
+			remoteAddress: REMOTE_ADDRESS,
+		});
 	});
 
 	it("fails open and authenticates when the rate limiter's backing store errors", async () => {
@@ -128,6 +135,10 @@ describe("AuthenticateMatchmakingSession", () => {
 			reason: "already_authenticated",
 		});
 		expect(channel.close).not.toHaveBeenCalled();
+		expect(warnSpy).toHaveBeenCalledWith("matchmaking.rejected", {
+			reason: "already_authenticated",
+			opcode: "AUTH",
+		});
 	});
 
 	it("rejects an invalid, expired, or reused ticket, closes the connection, and leaves the session unauthenticated", async () => {
@@ -144,6 +155,10 @@ describe("AuthenticateMatchmakingSession", () => {
 		expect(channel.close).toHaveBeenCalledWith("invalid_ticket");
 		expect(session.isAuthenticated).toBe(false);
 		expect(bans.isBanned).not.toHaveBeenCalled();
+		expect(warnSpy).toHaveBeenCalledWith("matchmaking.rejected", {
+			reason: "invalid_ticket",
+			opcode: "AUTH",
+		});
 	});
 
 	it("rejects a banned user and closes the connection, with the ticket already consumed", async () => {
@@ -155,6 +170,10 @@ describe("AuthenticateMatchmakingSession", () => {
 		expect(tickets.consume).toHaveBeenCalledTimes(1);
 		expect(channel.close).toHaveBeenCalledWith("banned");
 		expect(session.isAuthenticated).toBe(false);
+		expect(warnSpy).toHaveBeenCalledWith("matchmaking.rejected", {
+			reason: "banned",
+			opcode: "AUTH",
+		});
 	});
 
 	it("authenticates successfully with a null display name when the resolver throws", async () => {

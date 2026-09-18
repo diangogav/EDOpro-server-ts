@@ -92,6 +92,7 @@ export function bootstrapMatchmaking(logger: Logger): MatchmakingConnectionFacto
 
 	MatchmakingQueue.init({
 		now: () => Date.now(),
+		logger: mmLogger,
 
 		createRankedRoom: (format: MatchmakingFormat, reservedUserIds: readonly [string, string]) => {
 			const { room, roomPassword } = createMatchmakingRoom({
@@ -184,8 +185,9 @@ export function bootstrapMatchmaking(logger: Logger): MatchmakingConnectionFacto
 			session,
 			channel,
 			authenticate,
-			new EnterMatchmaking(pool, () => Date.now()),
-			new CancelMatchmaking(pool),
+			new EnterMatchmaking(pool, () => Date.now(), mmLogger),
+			new CancelMatchmaking(pool, mmLogger),
+			mmLogger,
 		);
 	};
 }

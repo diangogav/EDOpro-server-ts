@@ -1,3 +1,4 @@
+import { Logger } from "@shared/logger/domain/Logger";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { mercuryConfig } from "@ygopro/config";
 
@@ -27,6 +28,7 @@ export class EnterMatchmaking {
 	public constructor(
 		private readonly pool: MatchmakingPool,
 		private readonly now: () => number,
+		private readonly logger: Logger,
 	) {}
 
 	public execute(input: EnterMatchmakingInput): void {
@@ -69,9 +71,18 @@ export class EnterMatchmaking {
 			admission: { socket, playerInfo },
 		};
 
-		this.pool.add(participant);
+		const replaced = this.pool.add(participant);
+		if (replaced) {
+			this.logger.info("matchmaking.replaced", { userId: participant.userId });
+		}
 		session.queueState = "queued";
 		channel.status({ state: "searching", waitedMs: 0 });
+		this.logger.info("matchmaking.enter", {
+			userId: participant.userId,
+			format,
+			mode,
+			presence: "socket",
+		});
 		this.pool.tick();
 	}
 }

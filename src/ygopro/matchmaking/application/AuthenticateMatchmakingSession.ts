@@ -37,13 +37,18 @@ export class AuthenticateMatchmakingSession {
 		const { ticket, remoteAddress, session, channel } = input;
 
 		if (session.isAuthenticated) {
+			this.logger.warn("matchmaking.rejected", { reason: "already_authenticated", opcode: "AUTH" });
 			channel.status({ state: "rejected", waitedMs: 0, reason: "already_authenticated" });
 
 			return;
 		}
 
 		if (await this.isAuthRateLimited(remoteAddress)) {
-			this.logger.info("Matchmaking AUTH rejected: per-IP rate limit exceeded", { remoteAddress });
+			this.logger.warn("matchmaking.rejected", {
+				reason: "rate_limited",
+				opcode: "AUTH",
+				remoteAddress,
+			});
 			channel.close("rate_limited");
 
 			return;
@@ -51,13 +56,14 @@ export class AuthenticateMatchmakingSession {
 
 		const userId = await this.tickets.consume(ticket);
 		if (!userId) {
+			this.logger.warn("matchmaking.rejected", { reason: "invalid_ticket", opcode: "AUTH" });
 			channel.close("invalid_ticket");
 
 			return;
 		}
 
 		if (await this.bans.isBanned(userId)) {
-			this.logger.info("Matchmaking AUTH rejected: user is banned", { userId });
+			this.logger.warn("matchmaking.rejected", { reason: "banned", opcode: "AUTH" });
 			channel.close("banned");
 
 			return;

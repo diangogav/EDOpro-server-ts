@@ -35,7 +35,8 @@ export class MatchmakingPool {
 	 * removed from the store first, then closed, so the userId index already
 	 * points at the winner before any close-triggered callback can run.
 	 */
-	add(participant: Participant): void {
+	/** Returns `true` when this arrival replaced an existing participant for the same user. */
+	add(participant: Participant): boolean {
 		const existing = this.deps.store.findByUserId(participant.userId);
 		if (existing) {
 			if (participant.presence === "poll") {
@@ -45,15 +46,17 @@ export class MatchmakingPool {
 			existing.channel.close("replaced_by_new_connection");
 		}
 		this.deps.store.add(participant);
+
+		return existing !== undefined;
 	}
 
 	remove(id: string): void {
 		this.deps.store.remove(id);
 	}
 
-	/** No-op when the id was never queued. */
-	dequeueBySocketId(socketId: string): void {
-		this.deps.store.remove(socketId);
+	/** Returns `true` when the id was actually queued and removed; a no-op otherwise. */
+	dequeueBySocketId(socketId: string): boolean {
+		return this.deps.store.remove(socketId);
 	}
 
 	start(): void {

@@ -1,5 +1,7 @@
 import { randomUUID } from "crypto";
 
+import { Logger } from "@shared/logger/domain/Logger";
+
 import { BotFallbackPolicy } from "../domain/BotFallbackPolicy";
 import { CompositePairingPolicy } from "../domain/CompositePairingPolicy";
 import { DuplicateQueueEntryError } from "../domain/DuplicateQueueEntryError";
@@ -62,6 +64,9 @@ export interface MatchmakingQueueDeps {
 	 * participants) routed through a shared provisioning path injects one here.
 	 */
 	matchHandler?: MatchHandler;
+	/** Optional sink for structured observability events. Absent in tests that
+	 * do not care about logging. */
+	logger?: Logger;
 }
 
 export interface EnqueueInput {
@@ -278,6 +283,12 @@ export class MatchmakingQueue {
 
 		this.records.set(input.ticketId, record);
 		this.usersInQueue.set(input.userId, input.ticketId);
+		this.deps.logger?.info("matchmaking.enter", {
+			userId: input.userId,
+			format: input.format,
+			mode: SUPPORTED_QUEUE,
+			presence: "poll",
+		});
 
 		// Opportunistic pairing so a waiting partner is matched without waiting a full tick.
 		this.tick();
@@ -352,9 +363,9 @@ export class MatchmakingQueue {
 		return this.records.get(ticketId);
 	}
 
-	/** No-op when the id has no live pool participant (e.g. a poll-only ticket). */
-	dequeueBySocketId(socketId: string): void {
-		this.pool.dequeueBySocketId(socketId);
+	/** No-op (returns `false`) when the id has no live pool participant (e.g. a poll-only ticket). */
+	dequeueBySocketId(socketId: string): boolean {
+		return this.pool.dequeueBySocketId(socketId);
 	}
 
 	/**
