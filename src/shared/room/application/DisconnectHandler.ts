@@ -11,6 +11,7 @@ import { DuelState } from "../domain/YgoRoom";
 import { RoomFinder } from "./RoomFinder";
 import { FinalizeYGOProRoom } from "@ygopro/room/application/FinalizeYGOProRoom";
 import { AbortMatchmakingRoom } from "@ygopro/matchmaking/application/AbortMatchmakingRoom";
+import { MatchmakingQueue } from "@ygopro/matchmaking/application/MatchmakingQueue";
 
 export class DisconnectHandler {
 	constructor(
@@ -22,6 +23,8 @@ export class DisconnectHandler {
 		if (!this.socket.id) {
 			return;
 		}
+
+		this.dequeueFromMatchmaking();
 
 		const room = this.roomFinder.run(this.socket.id);
 		if (!room) {
@@ -85,6 +88,19 @@ export class DisconnectHandler {
 
 			return;
 		}
+	}
+
+	/**
+	 * A socket is never simultaneously queued and roomed, so this runs before
+	 * the room lookup and is a cheap no-op for every roomed or unqueued
+	 * disconnect. Singleton access mirrors this file's own `AbortMatchmakingRoom`
+	 * precedent instead of threading the queue through every construction site.
+	 */
+	private dequeueFromMatchmaking(): void {
+		if (!MatchmakingQueue.isInitialized()) {
+			return;
+		}
+		MatchmakingQueue.getInstance().dequeueBySocketId(this.socket.id as string);
 	}
 
 	private handleYGOPro(room: YGOProRoom): void {
