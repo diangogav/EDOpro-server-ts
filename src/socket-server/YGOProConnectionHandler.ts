@@ -12,8 +12,15 @@ import { YGOProGameCreatorHandler } from "@ygopro/room/application/YGOProGameCre
 import { YGOProJoinHandler } from "@ygopro/room/application/YGOProJoinHandler";
 import { YGOProMessageRepository } from "@ygopro/room/infrastructure/YGOProMessageRepository";
 import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
+import { MatchmakingConnectionFactory } from "@ygopro/matchmaking/application/MatchmakingConnectionFactory";
 
 import { MessageEmitter } from "../edopro/MessageEmitter";
+
+/** No-op default: a socket server that never received a real factory (e.g. a
+ * unit test constructing this handler directly) simply never wires matchmaking. */
+const noopMatchmakingConnectionFactory: MatchmakingConnectionFactory = () => {
+	/* intentionally empty */
+};
 
 export interface YGOProConnectionOptions {
 	/** Resolves once identity/authorization for this connection is settled;
@@ -29,6 +36,7 @@ export class YGOProConnectionHandler {
 	constructor(
 		private readonly logger: Logger,
 		private readonly roomFinder: RoomFinder,
+		private readonly matchmakingConnectionFactory: MatchmakingConnectionFactory = noopMatchmakingConnectionFactory,
 	) {}
 
 	public handle(socket: ISocket, options: YGOProConnectionOptions = {}): void {
@@ -66,6 +74,11 @@ export class YGOProConnectionHandler {
 			createGameListener,
 			joinGameListener,
 		);
+
+		// Subscribes the matchmaking opcodes on this connection's emitter (D25).
+		// Safe before the ready gate: dispatch to `messageEmitter.handleMessage`
+		// is itself gated below, so nothing reaches these listeners early.
+		this.matchmakingConnectionFactory(socket, eventEmitter);
 
 		let resolveReady!: () => void;
 		const ready = new Promise<void>((resolve) => {

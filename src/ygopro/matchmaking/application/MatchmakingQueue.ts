@@ -357,6 +357,16 @@ export class MatchmakingQueue {
 		this.pool.dequeueBySocketId(socketId);
 	}
 
+	/**
+	 * Exposes the shared pool so socket-native collaborators (`EnterMatchmaking`,
+	 * `CancelMatchmaking`, `ProvisionMatchRoom`'s re-queue port) enqueue/dequeue
+	 * through the exact same store and pairing pipeline poll participants use —
+	 * one pool, two presences (D11).
+	 */
+	getPool(): MatchmakingPool {
+		return this.pool;
+	}
+
 	// ---- the pairing/expiry engine ----
 
 	tick(): void {
