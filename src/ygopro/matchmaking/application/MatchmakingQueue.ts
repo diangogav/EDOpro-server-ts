@@ -1,11 +1,25 @@
+import { randomUUID } from "crypto";
+
+import { BotFallbackPolicy } from "../domain/BotFallbackPolicy";
+import { CompositePairingPolicy } from "../domain/CompositePairingPolicy";
+import { DuplicateQueueEntryError } from "../domain/DuplicateQueueEntryError";
+import { FifoPairingPolicy } from "../domain/FifoPairingPolicy";
+import { Match } from "../domain/Match";
+import { MatchHandler } from "../domain/MatchHandler";
+import { MatchmakingPool } from "../domain/MatchmakingPool";
+import { Participant } from "../domain/Participant";
+import { PoolStore } from "../domain/PoolStore";
 import {
-	BOT_FALLBACK_MS,
 	CLEANUP_INTERVAL_MS,
 	MATCHED_GRACE_MS,
 	MatchmakingFormat,
-	QUEUE_TTL_MS,
 	QueueEntry,
+	SUPPORTED_QUEUE,
 } from "../domain/QueueEntry";
+import { InMemoryPoolStore } from "../infrastructure/InMemoryPoolStore";
+import { PollParticipantChannel } from "../infrastructure/PollParticipantChannel";
+
+export { DuplicateQueueEntryError };
 
 export interface RankedRoomHandle {
 	/** The exact string a client sends in CTOS_JOIN_GAME { pass } to land in this room. */
@@ -40,6 +54,14 @@ export interface MatchmakingQueueDeps {
 	/** Optional sink for per-entry room-creation failures. Injected so the queue
 	 * domain stays free of a concrete logger; the composition root logs. */
 	onRoomCreationError?: (error: unknown) => void;
+	/**
+	 * Overrides how a formed match is turned into a room. Absent by default, in
+	 * which case the facade births the room itself via createRankedRoom/
+	 * createBotRoom/spawnBot — the exact behavior the HTTP poll leg has always
+	 * had. A caller that wants every participant (including future socket
+	 * participants) routed through a shared provisioning path injects one here.
+	 */
+	matchHandler?: MatchHandler;
 }
 
 export interface EnqueueInput {
@@ -61,33 +83,116 @@ export type PollResult =
 			rated: boolean;
 	  };
 
-export class DuplicateQueueEntryError extends Error {
-	constructor(userId: string) {
-		super(`User ${userId} already has an active matchmaking entry`);
-		this.name = "DuplicateQueueEntryError";
+/**
+ * `MatchHandler` used when no `matchHandler` is injected: births a room
+ * directly from `createRankedRoom`/`createBotRoom`/`spawnBot`, mirroring the
+ * queue's pre-pool behavior exactly. A synchronous failure never aborts the
+ * pool's sweep — the match's participants are handed back to the pool for a
+ * later retry, exactly as the pre-pool queue left them "searching" on error.
+ */
+class LegacyRoomMatchHandler implements MatchHandler {
+	constructor(
+		private readonly deps: Pick<
+			MatchmakingQueueDeps,
+			"createRankedRoom" | "createBotRoom" | "spawnBot" | "onRoomCreationError"
+		>,
+		private readonly requeue: (participant: Participant) => void,
+	) {}
+
+	handle(match: Match): void {
+		try {
+			if (match.opponentKind === "bot") {
+				this.handleBotMatch(match);
+			} else {
+				this.handleHumanMatch(match);
+			}
+		} catch (error) {
+			this.deps.onRoomCreationError?.(error);
+			for (const participant of match.participants) {
+				this.requeue(participant);
+			}
+		}
+	}
+
+	private handleHumanMatch(match: Match): void {
+		const [a, b] = match.participants;
+		const { roomId, roomPassword } = this.deps.createRankedRoom(match.format, [a.userId, b.userId]);
+
+		a.channel.found({
+			matchId: match.id,
+			roomId,
+			roomPassword,
+			opponentType: "human",
+			rated: true,
+			opponentName: b.displayName,
+		});
+		b.channel.found({
+			matchId: match.id,
+			roomId,
+			roomPassword,
+			opponentType: "human",
+			rated: true,
+			opponentName: a.displayName,
+		});
+	}
+
+	private handleBotMatch(match: Match): void {
+		const [participant] = match.participants;
+		const { roomId, roomPassword } = this.deps.createBotRoom(match.format, participant.userId);
+
+		participant.channel.found({
+			matchId: match.id,
+			roomId,
+			roomPassword,
+			opponentType: "bot",
+			rated: false,
+			opponentName: null,
+		});
+		this.deps.spawnBot(roomId, match.format);
 	}
 }
 
 /**
- * MatchmakingQueue — in-memory auto-pairing queue for the duel server.
+ * MatchmakingQueue — HTTP-facing facade over the shared matchmaking pool.
  *
- * Node's single thread means synchronous Map operations need no locking: enqueue,
- * poll, cancel, and every tick run to completion without interleaving. All async
- * work (room creation side effects, windbot HTTP) is delegated to injected ports
- * and, for the bot spawn, fired-and-forgotten.
- *
- * The tick (run on an unref'd interval AND opportunistically on enqueue — the
- * state-changing event; poll is a pure read plus heartbeat and never sweeps):
- *   1. TTL sweep: drop searching entries whose last poll fell outside QUEUE_TTL_MS.
- *   2. Pair: two searching entries of the same format → one ranked room, both matched.
- *   3. Bot fallback: a searching entry older than BOT_FALLBACK_MS with no human → bot room.
+ * Keeps its pre-pool public surface (enqueue/poll/cancel/abortRoom/
+ * isUserQueued/get/init/getInstance/isInitialized/resetForTests/start/stop)
+ * plus `dequeueBySocketId` so the three `/api/matchmaking/*` controllers stay
+ * untouched. Internally, every poll participant is enqueued into a
+ * `MatchmakingPool` (store + FIFO/bot-fallback pairing) through a
+ * `PollParticipantChannel` bound to the facade's own `QueueEntry` record —
+ * `found()` mutates that record directly, so the facade's bookkeeping stays
+ * in sync with the pool for free. The facade still owns `records`/
+ * `usersInQueue` on top of the pool's own store because HTTP polling needs a
+ * matched entry to survive the pool's removal-on-match for the
+ * `MATCHED_GRACE_MS` window (idempotent re-polls) and the pre-enqueue
+ * duplicate-user guard.
  */
 export class MatchmakingQueue {
-	private readonly entries = new Map<string, QueueEntry>();
+	private readonly records = new Map<string, QueueEntry>();
 	private readonly usersInQueue = new Map<string, string>(); // userId -> ticketId
+	private readonly store: PoolStore = new InMemoryPoolStore();
+	private readonly pool: MatchmakingPool;
 	private interval: NodeJS.Timeout | null = null;
 
-	private constructor(private readonly deps: MatchmakingQueueDeps) {}
+	private constructor(private readonly deps: MatchmakingQueueDeps) {
+		const newMatchId = () => randomUUID();
+		const botAvailable = () => this.deps.botAvailable?.() ?? true;
+		const pairingPolicy = new CompositePairingPolicy([
+			new FifoPairingPolicy(newMatchId),
+			new BotFallbackPolicy(botAvailable, newMatchId),
+		]);
+		const matchHandler: MatchHandler =
+			deps.matchHandler ??
+			new LegacyRoomMatchHandler(deps, (participant) => this.pool.add(participant));
+
+		this.pool = new MatchmakingPool({
+			store: this.store,
+			pairingPolicy,
+			matchHandler,
+			now: deps.now,
+		});
+	}
 
 	// ---- singleton accessor (mirrors WindbotModule / YGOProRoomList pattern) ----
 
@@ -140,13 +245,12 @@ export class MatchmakingQueue {
 	// ---- public API ----
 
 	enqueue(input: EnqueueInput): QueueEntry {
-		const existingTicket = this.usersInQueue.get(input.userId);
-		if (existingTicket !== undefined) {
+		if (this.usersInQueue.has(input.userId)) {
 			throw new DuplicateQueueEntryError(input.userId);
 		}
 
 		const now = this.deps.now();
-		const entry: QueueEntry = {
+		const record: QueueEntry = {
 			ticketId: input.ticketId,
 			userId: input.userId,
 			format: input.format,
@@ -155,12 +259,29 @@ export class MatchmakingQueue {
 			lastPollAt: now,
 			state: "searching",
 		};
-		this.entries.set(input.ticketId, entry);
+
+		const participant: Participant = {
+			id: input.ticketId,
+			userId: input.userId,
+			format: input.format,
+			mode: SUPPORTED_QUEUE,
+			displayName: record.displayName,
+			enqueuedAt: now,
+			presence: "poll",
+			channel: new PollParticipantChannel(record, this.deps.now),
+		};
+
+		// May throw DuplicateQueueEntryError for a cross-presence collision (a
+		// socket participant already owns this userId in the pool); nothing is
+		// committed to the facade's own bookkeeping in that case.
+		this.pool.add(participant);
+
+		this.records.set(input.ticketId, record);
 		this.usersInQueue.set(input.userId, input.ticketId);
 
 		// Opportunistic pairing so a waiting partner is matched without waiting a full tick.
 		this.tick();
-		return entry;
+		return record;
 	}
 
 	/**
@@ -170,32 +291,33 @@ export class MatchmakingQueue {
 	 * amplify into O(polls) sweeps or room-creation side effects.
 	 */
 	poll(ticketId: string): PollResult | null {
-		const entry = this.entries.get(ticketId);
-		if (!entry) {
+		const record = this.records.get(ticketId);
+		if (!record) {
 			return null;
 		}
 
-		entry.lastPollAt = this.deps.now();
+		record.lastPollAt = this.deps.now();
 
-		if (entry.state === "matched") {
+		if (record.state === "matched") {
 			return {
 				state: "matched",
-				roomPassword: entry.roomPassword as string,
-				opponentType: entry.opponentType as "human" | "bot",
-				opponentName: entry.opponentName ?? null,
-				rated: entry.rated as boolean,
+				roomPassword: record.roomPassword as string,
+				opponentType: record.opponentType as "human" | "bot",
+				opponentName: record.opponentName ?? null,
+				rated: record.rated as boolean,
 			};
 		}
 
-		return { state: "searching", waitedMs: this.deps.now() - entry.enteredAt };
+		return { state: "searching", waitedMs: this.deps.now() - record.enteredAt };
 	}
 
 	cancel(ticketId: string): boolean {
-		const entry = this.entries.get(ticketId);
-		if (!entry) {
+		const record = this.records.get(ticketId);
+		if (!record) {
 			return false;
 		}
-		this.removeEntry(entry);
+		this.pool.remove(ticketId);
+		this.removeRecord(record);
 		return true;
 	}
 
@@ -208,9 +330,10 @@ export class MatchmakingQueue {
 	 */
 	abortRoom(roomId: number): number {
 		let removed = 0;
-		for (const entry of [...this.entries.values()]) {
-			if (entry.roomId !== roomId) continue;
-			this.removeEntry(entry);
+		for (const record of [...this.records.values()]) {
+			if (record.roomId !== roomId) continue;
+			this.pool.remove(record.ticketId);
+			this.removeRecord(record);
 			removed += 1;
 		}
 		return removed;
@@ -226,119 +349,48 @@ export class MatchmakingQueue {
 	}
 
 	get(ticketId: string): QueueEntry | undefined {
-		return this.entries.get(ticketId);
+		return this.records.get(ticketId);
+	}
+
+	/** No-op when the id has no live pool participant (e.g. a poll-only ticket). */
+	dequeueBySocketId(socketId: string): void {
+		this.pool.dequeueBySocketId(socketId);
 	}
 
 	// ---- the pairing/expiry engine ----
 
 	tick(): void {
-		const now = this.deps.now();
-		this.expireStale(now);
-		this.pairHumans();
-		this.botFallback(now);
+		this.pool.tick();
+		this.reconcile(this.deps.now());
 	}
 
-	private expireStale(now: number): void {
-		for (const entry of this.entries.values()) {
-			// Searching entries that fell behind the poll heartbeat are dropped.
-			if (entry.state === "searching" && now - entry.lastPollAt > QUEUE_TTL_MS) {
-				this.entries.delete(entry.ticketId);
-				this.usersInQueue.delete(entry.userId);
+	/**
+	 * Keeps the facade's own bookkeeping in sync with the pool after a tick:
+	 * a `searching` record whose participant the pool's TTL sweep dropped is
+	 * freed here (the pool never learns about `records`/`usersInQueue`), and a
+	 * `matched` record is freed once MATCHED_GRACE_MS elapses since its last
+	 * poll — the pool already removed it from its own store the instant it
+	 * matched, so this grace window is bookkeeping the facade alone owns.
+	 */
+	private reconcile(now: number): void {
+		for (const record of this.records.values()) {
+			if (record.state === "searching") {
+				if (!this.store.get(record.ticketId)) {
+					this.records.delete(record.ticketId);
+					this.usersInQueue.delete(record.userId);
+				}
 				continue;
 			}
 
-			// Matched entries are retained for a grace window so a re-poll still gets
-			// the `matched` result (idempotency), then reaped to free the user — even
-			// if the client never polled the final result. This only cleans up the
-			// QUEUE entry; the created room is reaped separately by MatchmakingRoomReaper.
-			//
-			// The grace is measured from lastPollAt (refreshed on every poll, including
-			// polls of matched entries), NOT matchedAt: an actively-polling client (e.g.
-			// a slow join) is never dropped mid-flow, while a client that stopped polling
-			// (already joined) expires MATCHED_GRACE_MS after its last contact.
-			if (entry.state === "matched" && now - entry.lastPollAt > MATCHED_GRACE_MS) {
-				this.entries.delete(entry.ticketId);
-				this.usersInQueue.delete(entry.userId);
+			if (now - record.lastPollAt > MATCHED_GRACE_MS) {
+				this.records.delete(record.ticketId);
+				this.usersInQueue.delete(record.userId);
 			}
 		}
 	}
 
-	private pairHumans(): void {
-		// Pair by format. Insertion order (Map iteration) gives FIFO fairness.
-		const byFormat = new Map<MatchmakingFormat, QueueEntry[]>();
-		for (const entry of this.entries.values()) {
-			if (entry.state !== "searching") continue;
-			const bucket = byFormat.get(entry.format) ?? [];
-			bucket.push(entry);
-			byFormat.set(entry.format, bucket);
-		}
-
-		for (const bucket of byFormat.values()) {
-			for (let i = 0; i + 1 < bucket.length; i += 2) {
-				const a = bucket[i];
-				const b = bucket[i + 1];
-				// A synchronous throw from the room-creation port must not abort the
-				// whole sweep or bubble a 500 to an unrelated enqueue/poll caller.
-				// On failure, leave BOTH entries searching (a retry next tick, or a
-				// bot fallback / TTL drop, will resolve them) and move on.
-				try {
-					const { roomPassword, roomId } = this.deps.createRankedRoom(a.format, [
-						a.userId,
-						b.userId,
-					]);
-					this.markMatched(a, roomPassword, "human", true, b.displayName, roomId);
-					this.markMatched(b, roomPassword, "human", true, a.displayName, roomId);
-				} catch (error) {
-					this.deps.onRoomCreationError?.(error);
-				}
-			}
-		}
-	}
-
-	private botFallback(now: number): void {
-		const botAvailable = this.deps.botAvailable?.() ?? true;
-		if (!botAvailable) {
-			// Graceful degradation: leave entries searching (a human may still arrive,
-			// or the TTL sweep drops them) rather than crashing or erroring the poll.
-			return;
-		}
-
-		for (const entry of this.entries.values()) {
-			if (entry.state !== "searching") continue;
-			if (now - entry.enteredAt <= BOT_FALLBACK_MS) continue;
-
-			// A synchronous throw from createBotRoom/spawnBot must not abort the sweep
-			// or 500 an unrelated caller. On failure, leave THIS entry searching (a
-			// later tick retries, or the TTL sweep drops it) and continue with the rest.
-			try {
-				const { roomPassword, roomId } = this.deps.createBotRoom(entry.format, entry.userId);
-				this.markMatched(entry, roomPassword, "bot", false, null, roomId);
-				this.deps.spawnBot(roomId, entry.format);
-			} catch (error) {
-				this.deps.onRoomCreationError?.(error);
-			}
-		}
-	}
-
-	private markMatched(
-		entry: QueueEntry,
-		roomPassword: string,
-		opponentType: "human" | "bot",
-		rated: boolean,
-		opponentName: string | null,
-		roomId?: number,
-	): void {
-		entry.state = "matched";
-		entry.matchedAt = this.deps.now();
-		entry.roomPassword = roomPassword;
-		entry.roomId = roomId;
-		entry.opponentType = opponentType;
-		entry.rated = rated;
-		entry.opponentName = opponentName;
-	}
-
-	private removeEntry(entry: QueueEntry): void {
-		this.entries.delete(entry.ticketId);
-		this.usersInQueue.delete(entry.userId);
+	private removeRecord(record: QueueEntry): void {
+		this.records.delete(record.ticketId);
+		this.usersInQueue.delete(record.userId);
 	}
 }

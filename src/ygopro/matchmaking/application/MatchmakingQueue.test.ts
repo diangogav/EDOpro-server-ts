@@ -735,6 +735,36 @@ describe("MatchmakingQueue", () => {
 		});
 	});
 
+	describe("dequeueBySocketId", () => {
+		it("is a no-op for an id with no matching participant", () => {
+			const queue = MatchmakingQueue.createForTests(makeDeps());
+			enqueue(queue, "t1", "user-1");
+
+			expect(() => queue.dequeueBySocketId("no-such-socket")).not.toThrow();
+
+			expect(queue.get("t1")?.state).toBe("searching");
+		});
+	});
+
+	describe("injected matchHandler", () => {
+		it("routes a formed match to the injected handler instead of the legacy room-creation deps", () => {
+			const matchHandler = { handle: jest.fn() };
+			const createRankedRoom = jest.fn();
+			const queue = MatchmakingQueue.createForTests(makeDeps({ createRankedRoom, matchHandler }));
+			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t2", "user-2");
+
+			queue.tick();
+
+			expect(matchHandler.handle).toHaveBeenCalledTimes(1);
+			expect(createRankedRoom).not.toHaveBeenCalled();
+			const [match] = matchHandler.handle.mock.calls[0];
+			expect(
+				match.participants.map((participant: { userId: string }) => participant.userId),
+			).toEqual(["user-1", "user-2"]);
+		});
+	});
+
 	describe("singleton", () => {
 		it("start() installs an unref'd interval and stop() clears it", () => {
 			const unref = jest.fn().mockReturnThis();
