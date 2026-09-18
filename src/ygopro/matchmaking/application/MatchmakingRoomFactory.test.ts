@@ -477,4 +477,19 @@ describe("createMatchmakingRoom — room id uniqueness", () => {
 
 		expect(room.id).toBe(5555);
 	});
+
+	it("uses an injected RoomIdGenerator instead of the default generator", () => {
+		const injectedGenerator = { next: jest.fn().mockReturnValue(7777) };
+
+		const { room } = createMatchmakingRoom({
+			reservedUserIds: ["u-a", "u-b"],
+			rankedOverride: true,
+			roomIdGenerator: injectedGenerator,
+			logger: makeLogger(),
+			emitter: new EventEmitter(),
+		});
+
+		expect(injectedGenerator.next).toHaveBeenCalledTimes(1);
+		expect(room.id).toBe(7777);
+	});
 });

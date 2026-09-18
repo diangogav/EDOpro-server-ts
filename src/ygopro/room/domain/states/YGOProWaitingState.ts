@@ -44,6 +44,11 @@ export class YGOProWaitingState extends YGOProRoomState {
 				void this.handleJoin.bind(this)(message, room, socket),
 		);
 		this.eventEmitter.on(
+			"MATCH_ADMIT",
+			(playerInfo: PlayerInfoMessage, room: YGOProRoom, socket: ISocket) =>
+				void this.handleMatchAdmit.bind(this)(playerInfo, room, socket),
+		);
+		this.eventEmitter.on(
 			Commands.TRY_START as unknown as string,
 			(message: ClientMessage, room: YGOProRoom, client: YGOProClient) =>
 				void this.handleTryStart.bind(this)(message, room, client),
@@ -81,6 +86,35 @@ export class YGOProWaitingState extends YGOProRoomState {
 			return;
 		}
 
+		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
+		await this.admit(room, socket, playerInfoMessage);
+	}
+
+	/**
+	 * Server-side admission door for a match-admitted socket. The client never
+	 * sends a JOIN frame on this path, so there is no version to check — every
+	 * other gate is identical to handleJoin, funnelled through the shared
+	 * admit() so both doors can never drift.
+	 */
+	private async handleMatchAdmit(
+		playerInfo: PlayerInfoMessage,
+		room: YGOProRoom,
+		socket: ISocket,
+	): Promise<void> {
+		this.logger.info(`handleMatchAdmit: socket=${socket.id}`);
+
+		await this.admit(room, socket, playerInfo);
+	}
+
+	/**
+	 * Shared admission gates for both handleJoin and handleMatchAdmit:
+	 * reservation → duplicate-name → mutex-guarded AdmitToRoom.
+	 */
+	private async admit(
+		room: YGOProRoom,
+		socket: ISocket,
+		playerInfo: PlayerInfoMessage,
+	): Promise<void> {
 		// Reservation gate before any admission work: a reserved room's join
 		// string is not a key — only the stamped identities, the bot's
 		// token-marked socket, or a watch-stamped spectator (stands only, by
@@ -90,17 +124,16 @@ export class YGOProWaitingState extends YGOProRoomState {
 			return;
 		}
 
-		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
-		if (isNameTaken(room.players, playerInfoMessage.name)) {
-			this.sendNameTakenError(room, playerInfoMessage.name, socket);
+		if (isNameTaken(room.players, playerInfo.name)) {
+			this.sendNameTakenError(room, playerInfo.name, socket);
 			return;
 		}
 
 		await room.mutex.runExclusive(async () => {
 			const result = await this.admitToRoom.run(
 				socket,
-				playerInfoMessage,
-				room.admissionTarget(socket, playerInfoMessage),
+				playerInfo,
+				room.admissionTarget(socket, playerInfo),
 			);
 
 			this.sendRoomCreationNoticeToCreator(room, socket, result);
