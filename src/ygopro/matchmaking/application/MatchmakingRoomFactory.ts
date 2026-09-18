@@ -4,12 +4,16 @@ import { EventEmitter } from "stream";
 import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
 import { Logger } from "@shared/logger/domain/Logger";
 
-import { generateUnusedRoomId } from "../../room/application/generateUnusedRoomId";
+import { RoomIdGenerator } from "../../room/domain/RoomIdGenerator";
+import { UnusedRoomIdGenerator } from "../../room/infrastructure/UnusedRoomIdGenerator";
 
 import { MatchmakingFormat } from "@ygopro/matchmaking/domain/QueueEntry";
 import { YGOProMessageRepository } from "../../room/infrastructure/YGOProMessageRepository";
 import { YGOProRoom } from "../../room/domain/YGOProRoom";
 import YGOProRoomList from "../../room/infrastructure/YGOProRoomList";
+
+/** Default room id source: the existing collision-checked generator, unchanged. */
+const DEFAULT_ROOM_ID_GENERATOR: RoomIdGenerator = new UnusedRoomIdGenerator();
 
 /**
  * Per-format room command token. Governs the banlist/rule set applied to the room.
@@ -62,6 +66,12 @@ export interface CreateMatchmakingRoomInput {
 	 * the join string alone must never be enough to enter a matchmaking room.
 	 */
 	reservedUserIds: readonly string[];
+	/**
+	 * Room id source. Defaults to `UnusedRoomIdGenerator` (wraps
+	 * `generateUnusedRoomId` unchanged). Injectable for tests that need a
+	 * deterministic id without touching `YGOProRoomList`.
+	 */
+	roomIdGenerator?: RoomIdGenerator;
 	logger: Logger;
 	emitter: EventEmitter;
 	/**
@@ -157,8 +167,9 @@ export function createMatchmakingRoom(input: CreateMatchmakingRoomInput): Matchm
 	// nobody has joined this room yet; each real player supplies their own name.
 	const syntheticPlayerInfo = new PlayerInfoMessage(Buffer.alloc(0), 0);
 
+	const roomIdGenerator = input.roomIdGenerator ?? DEFAULT_ROOM_ID_GENERATOR;
 	const room = YGOProRoom.create(
-		generateUnusedRoomId(),
+		roomIdGenerator.next(),
 		command,
 		input.logger,
 		input.emitter,
