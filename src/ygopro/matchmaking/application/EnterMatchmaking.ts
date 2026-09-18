@@ -38,7 +38,8 @@ export class EnterMatchmaking {
 			return;
 		}
 
-		if (!session.playerInfo) {
+		const playerInfo = session.playerInfo;
+		if (!playerInfo) {
 			channel.status({ state: "rejected", waitedMs: 0, reason: "missing_player_info" });
 
 			return;
@@ -65,6 +66,7 @@ export class EnterMatchmaking {
 			enqueuedAt: this.now(),
 			presence: "socket",
 			channel,
+			admission: { socket, playerInfo },
 		};
 
 		this.pool.add(participant);

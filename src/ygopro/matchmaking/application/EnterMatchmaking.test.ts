@@ -154,6 +154,7 @@ describe("EnterMatchmaking", () => {
 				displayName: "Yugi",
 				presence: "socket",
 			});
+			expect(participant?.admission).toEqual({ socket, playerInfo: session.playerInfo });
 			expect(session.queueState).toBe("queued");
 			expect(channel.status).toHaveBeenCalledWith({ state: "searching", waitedMs: 0 });
 		});
