@@ -5,6 +5,12 @@ import { Logger } from "../shared/logger/domain/Logger";
 import { Commands } from "../shared/messages/Commands";
 import { MessageProcessor } from "../shared/messages/MessageProcessor";
 
+const MATCHMAKING_COMMANDS: readonly Commands[] = [
+	Commands.MATCHMAKING_AUTH,
+	Commands.MATCHMAKING_ENTER,
+	Commands.MATCHMAKING_CANCEL,
+];
+
 export class MessageEmitter {
 	private readonly messageProcessor: MessageProcessor;
 	constructor(
@@ -62,6 +68,13 @@ export class MessageEmitter {
 
 		if (this.messageProcessor.command === Commands.RECONNECT) {
 			this.logger.info(`Emitting RECONNECT event for command ${Commands.RECONNECT}`);
+			this.eventEmitter.emit(
+				this.messageProcessor.command as unknown as string,
+				this.messageProcessor.payload,
+			);
+		}
+
+		if (MATCHMAKING_COMMANDS.includes(this.messageProcessor.command)) {
 			this.eventEmitter.emit(
 				this.messageProcessor.command as unknown as string,
 				this.messageProcessor.payload,

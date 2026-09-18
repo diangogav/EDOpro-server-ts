@@ -7,12 +7,17 @@
 // are touched. We capture the deps object passed to MatchmakingQueue.init and
 // invoke its spawnBot directly.
 
-import { Logger } from "@shared/logger/domain/Logger";
+import { EventEmitter } from "stream";
 
+import { Logger } from "@shared/logger/domain/Logger";
+import { SocketMock } from "@test-support/mocks/socket/SocketMock";
+
+import { Commands } from "@shared/messages/Commands";
+import { buildStocMatchmakingStatusFrame } from "@ygopro/matchmaking/protocol/matchmaking-protocol";
 import {
 	MatchmakingQueue,
 	MatchmakingQueueDeps,
-} from "@ygopro/matchmaking/domain/MatchmakingQueue";
+} from "@ygopro/matchmaking/application/MatchmakingQueue";
 import { MATCHMAKING_BOT_ROSTER } from "@ygopro/matchmaking/domain/MatchmakingBotRoster";
 import { MatchmakingFormat } from "@ygopro/matchmaking/domain/QueueEntry";
 import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
@@ -26,6 +31,8 @@ jest.mock("@ygopro/matchmaking/application/MatchmakingRoomFactory", () => ({
 jest.mock("@ygopro/room/application/FinalizeYGOProRoom", () => ({
 	FinalizeYGOProRoom: { run: jest.fn() },
 }));
+jest.mock("@shared/ticket/infrastructure/redis/RedisTicketRepository");
+jest.mock("@shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository");
 
 function fakeLogger(): Logger {
 	const logger = {
@@ -133,5 +140,41 @@ describe("bootstrapMatchmaking — spawnBot roster identity-pair wiring", () => 
 		spawnBot(123, "tcg");
 
 		expect(getInstance).not.toHaveBeenCalled();
+	});
+});
+
+describe("bootstrapMatchmaking — connection factory", () => {
+	afterEach(() => {
+		MatchmakingQueue.resetForTests();
+		jest.restoreAllMocks();
+	});
+
+	it("returns a MatchmakingConnectionFactory", () => {
+		const factory = bootstrapMatchmaking(fakeLogger());
+
+		expect(typeof factory).toBe("function");
+	});
+
+	it("answers the three CTOS opcodes with rejected/internal_error when matchmaking is not initialized", () => {
+		const factory = bootstrapMatchmaking(fakeLogger());
+		// Simulates the singleton becoming unavailable after bootstrap captured
+		// the factory — the guard this scenario proves is defensive, not a path
+		// index.ts's own composition order ever takes.
+		MatchmakingQueue.resetForTests();
+
+		const socket = new SocketMock();
+		const send = jest.spyOn(socket, "send");
+		const eventEmitter = new EventEmitter();
+		factory(socket, eventEmitter);
+
+		eventEmitter.emit(Commands.MATCHMAKING_AUTH as unknown as string, { data: Buffer.alloc(0) });
+		eventEmitter.emit(Commands.MATCHMAKING_ENTER as unknown as string, { data: Buffer.alloc(0) });
+		eventEmitter.emit(Commands.MATCHMAKING_CANCEL as unknown as string, { data: Buffer.alloc(0) });
+
+		const expectedFrame = buildStocMatchmakingStatusFrame("rejected", 0, "internal_error");
+		expect(send).toHaveBeenCalledTimes(3);
+		for (const call of send.mock.calls) {
+			expect(call[0]).toEqual(expectedFrame);
+		}
 	});
 });

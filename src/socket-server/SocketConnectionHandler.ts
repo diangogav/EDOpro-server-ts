@@ -80,7 +80,7 @@ export class SocketConnectionHandler {
 
 		socket.onClose(() => {
 			connectionLogger.info(`roomId: ${socket.roomId} - client disconnected`);
-			const disconnectHandler = new DisconnectHandler(socket, this.roomFinder);
+			const disconnectHandler = new DisconnectHandler(socket, this.roomFinder, connectionLogger);
 			disconnectHandler.run(socket.remoteAddress);
 		});
 	}

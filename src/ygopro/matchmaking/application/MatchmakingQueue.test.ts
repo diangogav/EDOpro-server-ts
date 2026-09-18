@@ -1,4 +1,6 @@
-import { BOT_FALLBACK_MS, MATCHED_GRACE_MS, QUEUE_TTL_MS } from "./QueueEntry";
+import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
+
+import { BOT_FALLBACK_MS, MATCHED_GRACE_MS, QUEUE_TTL_MS } from "../domain/QueueEntry";
 import { MatchmakingQueue, MatchmakingQueueDeps } from "./MatchmakingQueue";
 
 // ---- helpers ----
@@ -732,6 +734,55 @@ describe("MatchmakingQueue", () => {
 
 			expect(queue.get("t1")).toBeUndefined();
 			expect(() => enqueue(queue, "t2", "user-1")).not.toThrow();
+		});
+	});
+
+	describe("dequeueBySocketId", () => {
+		it("is a no-op for an id with no matching participant", () => {
+			const queue = MatchmakingQueue.createForTests(makeDeps());
+			enqueue(queue, "t1", "user-1");
+
+			expect(queue.dequeueBySocketId("no-such-socket")).toBe(false);
+
+			expect(queue.get("t1")?.state).toBe("searching");
+		});
+	});
+
+	describe("observability", () => {
+		it("logs a matchmaking.enter event for a poll participant, never a display name", () => {
+			const logger = new LoggerMock();
+			const infoSpy = jest.spyOn(logger, "info");
+			const queue = MatchmakingQueue.createForTests(makeDeps({ logger }));
+
+			queue.enqueue({ ticketId: "t1", userId: "user-1", format: "tcg", displayName: "Yugi" });
+
+			expect(infoSpy).toHaveBeenCalledWith("matchmaking.enter", {
+				userId: "user-1",
+				format: "tcg",
+				mode: "ranked",
+				presence: "poll",
+			});
+			const loggedText = infoSpy.mock.calls.map((call) => JSON.stringify(call)).join(" ");
+			expect(loggedText).not.toContain("Yugi");
+		});
+	});
+
+	describe("injected matchHandler", () => {
+		it("routes a formed match to the injected handler instead of the legacy room-creation deps", () => {
+			const matchHandler = { handle: jest.fn() };
+			const createRankedRoom = jest.fn();
+			const queue = MatchmakingQueue.createForTests(makeDeps({ createRankedRoom, matchHandler }));
+			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t2", "user-2");
+
+			queue.tick();
+
+			expect(matchHandler.handle).toHaveBeenCalledTimes(1);
+			expect(createRankedRoom).not.toHaveBeenCalled();
+			const [match] = matchHandler.handle.mock.calls[0];
+			expect(
+				match.participants.map((participant: { userId: string }) => participant.userId),
+			).toEqual(["user-1", "user-2"]);
 		});
 	});
 
