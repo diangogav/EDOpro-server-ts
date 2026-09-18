@@ -7,6 +7,7 @@
  * matchmaking was never initialized.
  */
 
+import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
 import { MatchmakingQueue } from "@ygopro/matchmaking/application/MatchmakingQueue";
 
 import { DisconnectHandler } from "./DisconnectHandler";
@@ -28,21 +29,24 @@ describe("DisconnectHandler — matchmaking dequeue", () => {
 		jest.restoreAllMocks();
 	});
 
-	it("dequeues by socket id when the socket has no room", () => {
+	it("dequeues by socket id when the socket has no room, and logs the dequeue", () => {
 		MatchmakingQueue.init({
 			now: () => 0,
 			createRankedRoom: jest.fn(),
 			createBotRoom: jest.fn(),
 			spawnBot: jest.fn(),
 		});
-		const dequeueSpy = jest.spyOn(MatchmakingQueue.getInstance(), "dequeueBySocketId");
+		jest.spyOn(MatchmakingQueue.getInstance(), "dequeueBySocketId").mockReturnValue(true);
 		const roomFinder = makeRoomFinder(undefined);
 		const socket = makeSocket("sock-queued");
+		const logger = new LoggerMock();
+		const infoSpy = jest.spyOn(logger, "info");
 
-		new DisconnectHandler(socket as never, roomFinder).run();
+		new DisconnectHandler(socket as never, roomFinder, logger).run();
 
-		expect(dequeueSpy).toHaveBeenCalledWith("sock-queued");
+		expect(MatchmakingQueue.getInstance().dequeueBySocketId).toHaveBeenCalledWith("sock-queued");
 		expect(roomFinder.run).toHaveBeenCalledWith("sock-queued");
+		expect(infoSpy).toHaveBeenCalledWith("matchmaking.dequeued", { reason: "disconnect" });
 	});
 
 	it("dequeues before the room lookup even when a room is found", () => {

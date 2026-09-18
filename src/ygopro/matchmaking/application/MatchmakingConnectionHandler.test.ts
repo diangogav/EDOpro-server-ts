@@ -4,6 +4,7 @@ import { mock } from "jest-mock-extended";
 
 import { Commands } from "@shared/messages/Commands";
 import { ClientMessage } from "@shared/messages/MessageProcessor";
+import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
 import { SocketMock } from "@test-support/mocks/socket/SocketMock";
 
 import { ParticipantChannel } from "../domain/ParticipantChannel";
@@ -38,6 +39,7 @@ describe("MatchmakingConnectionHandler", () => {
 	let authenticate: ReturnType<typeof mock<AuthenticateMatchmakingSession>>;
 	let enter: ReturnType<typeof mock<EnterMatchmaking>>;
 	let cancel: ReturnType<typeof mock<CancelMatchmaking>>;
+	let logger: LoggerMock;
 
 	beforeEach(() => {
 		eventEmitter = new EventEmitter();
@@ -47,6 +49,7 @@ describe("MatchmakingConnectionHandler", () => {
 		authenticate = mock<AuthenticateMatchmakingSession>();
 		enter = mock<EnterMatchmaking>();
 		cancel = mock<CancelMatchmaking>();
+		logger = new LoggerMock();
 
 		new MatchmakingConnectionHandler(
 			eventEmitter,
@@ -56,6 +59,7 @@ describe("MatchmakingConnectionHandler", () => {
 			authenticate,
 			enter,
 			cancel,
+			logger,
 		);
 	});
 
@@ -86,7 +90,9 @@ describe("MatchmakingConnectionHandler", () => {
 	});
 
 	describe("MATCHMAKING_AUTH", () => {
-		it("rejects a malformed frame with a status reply and never invokes the use case", () => {
+		it("rejects a malformed frame with a status reply, logs it, and never invokes the use case", () => {
+			const warnSpy = jest.spyOn(logger, "warn");
+
 			eventEmitter.emit(
 				Commands.MATCHMAKING_AUTH as unknown as string,
 				makeMessage(Buffer.alloc(0)),
@@ -98,6 +104,10 @@ describe("MatchmakingConnectionHandler", () => {
 				reason: "malformed_frame",
 			});
 			expect(authenticate.execute).not.toHaveBeenCalled();
+			expect(warnSpy).toHaveBeenCalledWith("matchmaking.rejected", {
+				reason: "malformed_frame",
+				opcode: "AUTH",
+			});
 		});
 
 		it("routes a well-formed frame to AuthenticateMatchmakingSession with the parsed ticket", () => {

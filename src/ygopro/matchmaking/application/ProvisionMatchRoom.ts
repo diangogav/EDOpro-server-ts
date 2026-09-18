@@ -81,6 +81,14 @@ export class ProvisionMatchRoom implements MatchHandler {
 	}
 
 	private provisionRoom(match: Match): void {
+		this.deps.logger.info("matchmaking.match_found", {
+			matchId: match.id,
+			format: match.format,
+			mode: match.mode,
+			rated: match.rated,
+			opponentType: match.opponentKind,
+		});
+
 		const isHumanMatch = match.opponentKind === "human";
 		const reservedUserIds = match.participants.map((participant) => participant.userId);
 

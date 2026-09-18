@@ -10,7 +10,8 @@ export interface PoolStore {
 	add(participant: Participant): void;
 	get(id: string): Participant | undefined;
 	findByUserId(userId: string): Participant | undefined;
-	remove(id: string): void;
+	/** Returns `true` when a participant was actually removed. */
+	remove(id: string): boolean;
 	all(format: MatchmakingFormat, mode: MatchmakingMode): readonly Participant[];
 	depth(format: MatchmakingFormat, mode: MatchmakingMode): number;
 }

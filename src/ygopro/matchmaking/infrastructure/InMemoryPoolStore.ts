@@ -34,9 +34,9 @@ export class InMemoryPoolStore implements PoolStore {
 		return id === undefined ? undefined : this.byId.get(id);
 	}
 
-	remove(id: string): void {
+	remove(id: string): boolean {
 		const participant = this.byId.get(id);
-		if (!participant) return;
+		if (!participant) return false;
 
 		this.byId.delete(id);
 
@@ -47,6 +47,8 @@ export class InMemoryPoolStore implements PoolStore {
 		}
 
 		this.idsByPoolKey.get(poolKey(participant.format, participant.mode))?.delete(id);
+
+		return true;
 	}
 
 	all(format: MatchmakingFormat, mode: MatchmakingMode): readonly Participant[] {

@@ -1,3 +1,4 @@
+import { Logger } from "@shared/logger/domain/Logger";
 import { ISocket } from "@shared/socket/domain/ISocket";
 
 import { MatchmakingPool } from "../domain/MatchmakingPool";
@@ -18,19 +19,26 @@ export interface CancelMatchmakingInput {
  * any room is touched.
  */
 export class CancelMatchmaking {
-	public constructor(private readonly pool: MatchmakingPool) {}
+	public constructor(
+		private readonly pool: MatchmakingPool,
+		private readonly logger: Logger,
+	) {}
 
 	public execute(input: CancelMatchmakingInput): void {
 		const { socket, session, channel } = input;
 
 		if (session.queueState === "matched") {
+			this.logger.warn("matchmaking.rejected", { reason: "cancel_too_late", opcode: "CANCEL" });
 			channel.status({ state: "rejected", waitedMs: 0, reason: "cancel_too_late" });
 
 			return;
 		}
 
 		if (session.queueState === "queued") {
-			this.pool.dequeueBySocketId(socket.id as string);
+			const dequeued = this.pool.dequeueBySocketId(socket.id as string);
+			if (dequeued) {
+				this.logger.info("matchmaking.dequeued", { reason: "cancelled" });
+			}
 			session.queueState = "idle";
 		}
 

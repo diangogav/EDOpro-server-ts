@@ -1,6 +1,7 @@
 import { mock } from "jest-mock-extended";
 
 import { mercuryConfig } from "@ygopro/config";
+import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
 import { SocketMock } from "@test-support/mocks/socket/SocketMock";
 import { ParticipantMother } from "@test-support/mothers/matchmaking/ParticipantMother";
 
@@ -44,6 +45,7 @@ describe("EnterMatchmaking", () => {
 	let pool: MatchmakingPool;
 	let useCase: EnterMatchmaking;
 	let now: number;
+	let logger: LoggerMock;
 
 	beforeEach(() => {
 		store = new InMemoryPoolStore();
@@ -55,7 +57,8 @@ describe("EnterMatchmaking", () => {
 			matchHandler,
 			now: () => now,
 		});
-		useCase = new EnterMatchmaking(pool, () => now);
+		logger = new LoggerMock();
+		useCase = new EnterMatchmaking(pool, () => now, logger);
 	});
 
 	describe("guards", () => {
@@ -136,6 +139,7 @@ describe("EnterMatchmaking", () => {
 	describe("on success", () => {
 		it("adds a socket participant to the pool, marks the session queued, and pushes an immediate searching status", () => {
 			const { socket, session, channel } = makeConnection();
+			const infoSpy = jest.spyOn(logger, "info");
 
 			useCase.execute({
 				socket,
@@ -157,6 +161,39 @@ describe("EnterMatchmaking", () => {
 			expect(participant?.admission).toEqual({ socket, playerInfo: session.playerInfo });
 			expect(session.queueState).toBe("queued");
 			expect(channel.status).toHaveBeenCalledWith({ state: "searching", waitedMs: 0 });
+			expect(infoSpy).toHaveBeenCalledWith("matchmaking.enter", {
+				userId: "user-1",
+				format: "tcg",
+				mode: "ranked",
+				presence: "socket",
+			});
+		});
+
+		it("logs a replacement event and never the display name when a second connection wins the same user", () => {
+			const first = makeConnection();
+			useCase.execute({
+				socket: first.socket,
+				session: first.session,
+				channel: first.channel,
+				format: "tcg",
+				mode: "ranked",
+				clientVersion: mercuryConfig.version,
+			});
+			const infoSpy = jest.spyOn(logger, "info");
+			const second = makeConnection();
+
+			useCase.execute({
+				socket: second.socket,
+				session: second.session,
+				channel: second.channel,
+				format: "tcg",
+				mode: "ranked",
+				clientVersion: mercuryConfig.version,
+			});
+
+			expect(infoSpy).toHaveBeenCalledWith("matchmaking.replaced", { userId: "user-1" });
+			const loggedText = infoSpy.mock.calls.map((call) => JSON.stringify(call)).join(" ");
+			expect(loggedText).not.toContain("Yugi");
 		});
 
 		it("runs an opportunistic tick that can pair with an already-queued compatible participant", () => {

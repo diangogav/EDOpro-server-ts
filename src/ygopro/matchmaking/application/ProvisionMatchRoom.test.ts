@@ -137,6 +137,33 @@ describe("ProvisionMatchRoom", () => {
 		);
 	});
 
+	it("logs a match_found event with match metadata, never a display name", () => {
+		const { room, roomPassword } = makeFakeRoom(8100);
+		createMatchmakingRoomMock.mockReturnValue({ room, roomPassword });
+		const match = makeMatch({
+			id: "match-4",
+			opponentKind: "human",
+			rated: true,
+			participants: [
+				makeSocketParticipant({ userId: "user-a", displayName: "Yugi" }),
+				makeSocketParticipant({ userId: "user-b", displayName: "Kaiba" }),
+			],
+		});
+
+		provision.handle(match);
+
+		expect(logger.info).toHaveBeenCalledWith("matchmaking.match_found", {
+			matchId: "match-4",
+			format: "tcg",
+			mode: "ranked",
+			rated: true,
+			opponentType: "human",
+		});
+		const loggedText = logger.info.mock.calls.map((call) => JSON.stringify(call)).join(" ");
+		expect(loggedText).not.toContain("Yugi");
+		expect(loggedText).not.toContain("Kaiba");
+	});
+
 	it("delivers the roomPassword to a poll participant through found and never admits it", () => {
 		const human = makeSocketParticipant({ userId: "user-a" });
 		const poller = ParticipantMother.create({
