@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 
 import { TicketRepository } from "@shared/ticket/domain/TicketRepository";
 
-import { MatchmakingQueue } from "@ygopro/matchmaking/domain/MatchmakingQueue";
+import { MatchmakingQueue } from "@ygopro/matchmaking/application/MatchmakingQueue";
 
 import { DisplayNameResolver } from "@ygopro/matchmaking/domain/DisplayNameResolver";
 

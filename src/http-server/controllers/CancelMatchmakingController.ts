@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 
-import { MatchmakingQueue } from "@ygopro/matchmaking/domain/MatchmakingQueue";
+import { MatchmakingQueue } from "@ygopro/matchmaking/application/MatchmakingQueue";
 
 export const CancelMatchmakingSchema = z.object({
 	ticketId: z.string().min(1),

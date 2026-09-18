@@ -7,7 +7,7 @@ import { MatchmakingRoomReaper } from "@ygopro/matchmaking/application/Matchmaki
 import { AbortMatchmakingRoom } from "@ygopro/matchmaking/application/AbortMatchmakingRoom";
 import { pickBotFromRoster } from "@ygopro/matchmaking/domain/MatchmakingBotRoster";
 import { CLEANUP_INTERVAL_MS, MatchmakingFormat } from "@ygopro/matchmaking/domain/QueueEntry";
-import { MatchmakingQueue } from "@ygopro/matchmaking/domain/MatchmakingQueue";
+import { MatchmakingQueue } from "@ygopro/matchmaking/application/MatchmakingQueue";
 import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import { WindbotModule } from "@ygopro/windbot/application/WindbotModule";
 

@@ -1,11 +1,11 @@
 import { ParticipantMother } from "@test-support/mothers/matchmaking/ParticipantMother";
 
 import { InMemoryPoolStore } from "../infrastructure/InMemoryPoolStore";
+import { DuplicateQueueEntryError } from "./DuplicateQueueEntryError";
 import { FifoPairingPolicy } from "./FifoPairingPolicy";
 import { Match } from "./Match";
 import { MatchHandler } from "./MatchHandler";
 import { MatchmakingPool } from "./MatchmakingPool";
-import { DuplicateQueueEntryError } from "./MatchmakingQueue";
 import {
 	MatchFoundNotice,
 	MatchmakingStatusUpdate,

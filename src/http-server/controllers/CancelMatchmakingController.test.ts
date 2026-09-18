@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 
-import { MatchmakingQueue } from "@ygopro/matchmaking/domain/MatchmakingQueue";
+import { MatchmakingQueue } from "@ygopro/matchmaking/application/MatchmakingQueue";
 
 import { CancelMatchmakingController } from "./CancelMatchmakingController";
 
