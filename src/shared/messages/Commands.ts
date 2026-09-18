@@ -18,4 +18,9 @@ export enum Commands {
 	PING = 0xff,
 	RECONNECT = 0xfd,
 	EMOTE = 0xfc,
+	MATCHMAKING_AUTH = 0xfb,
+	MATCHMAKING_ENTER = 0xfa,
+	MATCHMAKING_CANCEL = 0xf9,
+	MATCHMAKING_STATUS = 0xf8,
+	MATCHMAKING_FOUND = 0xf7,
 }
