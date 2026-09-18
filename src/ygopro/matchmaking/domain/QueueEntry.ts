@@ -22,7 +22,13 @@ export const MATCHED_GRACE_MS = 30_000;
 export const MATCHMAKING_FORMATS = ["tcg", "jtp", "edison"] as const;
 export const SUPPORTED_QUEUE = "ranked" as const;
 
+/** All accepted matchmaking modes. This domain module is the single source of
+ * truth for `MatchmakingMode`; other bounded contexts re-export from here
+ * instead of redeclaring it. */
+export const MATCHMAKING_MODES = ["ranked"] as const;
+
 export type MatchmakingFormat = (typeof MATCHMAKING_FORMATS)[number];
+export type MatchmakingMode = (typeof MATCHMAKING_MODES)[number];
 
 export type OpponentType = "human" | "bot";
 
