@@ -16,6 +16,7 @@ export enum Commands {
 	TRY_START = 37,
 	TO_DUEL = 32,
 	PING = 0xff,
+	PONG = 0xfe,
 	RECONNECT = 0xfd,
 	EMOTE = 0xfc,
 }
