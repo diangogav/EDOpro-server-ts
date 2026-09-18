@@ -12,7 +12,7 @@ import { Logger } from "@shared/logger/domain/Logger";
 import {
 	MatchmakingQueue,
 	MatchmakingQueueDeps,
-} from "@ygopro/matchmaking/domain/MatchmakingQueue";
+} from "@ygopro/matchmaking/application/MatchmakingQueue";
 import { MATCHMAKING_BOT_ROSTER } from "@ygopro/matchmaking/domain/MatchmakingBotRoster";
 import { MatchmakingFormat } from "@ygopro/matchmaking/domain/QueueEntry";
 import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";

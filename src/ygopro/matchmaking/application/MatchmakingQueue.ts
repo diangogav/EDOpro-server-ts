@@ -5,7 +5,7 @@ import {
 	MatchmakingFormat,
 	QUEUE_TTL_MS,
 	QueueEntry,
-} from "./QueueEntry";
+} from "../domain/QueueEntry";
 
 export interface RankedRoomHandle {
 	/** The exact string a client sends in CTOS_JOIN_GAME { pass } to land in this room. */

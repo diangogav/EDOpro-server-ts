@@ -10,7 +10,7 @@ import { DisplayNameResolver } from "@ygopro/matchmaking/domain/DisplayNameResol
 import {
 	DuplicateQueueEntryError,
 	MatchmakingQueue,
-} from "@ygopro/matchmaking/domain/MatchmakingQueue";
+} from "@ygopro/matchmaking/application/MatchmakingQueue";
 import { MATCHMAKING_FORMATS, SUPPORTED_QUEUE } from "@ygopro/matchmaking/domain/QueueEntry";
 
 export const EnqueueMatchmakingSchema = z.object({

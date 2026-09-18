@@ -1,5 +1,5 @@
+import { DuplicateQueueEntryError } from "./DuplicateQueueEntryError";
 import { MatchHandler } from "./MatchHandler";
-import { DuplicateQueueEntryError } from "./MatchmakingQueue";
 import { PairingPolicy } from "./PairingPolicy";
 import { Participant } from "./Participant";
 import { PoolStore } from "./PoolStore";

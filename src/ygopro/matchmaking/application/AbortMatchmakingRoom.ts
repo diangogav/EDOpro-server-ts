@@ -1,4 +1,4 @@
-import { MatchmakingQueue } from "@ygopro/matchmaking/domain/MatchmakingQueue";
+import { MatchmakingQueue } from "@ygopro/matchmaking/application/MatchmakingQueue";
 import { FinalizeYGOProRoom } from "@ygopro/room/application/FinalizeYGOProRoom";
 import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
 

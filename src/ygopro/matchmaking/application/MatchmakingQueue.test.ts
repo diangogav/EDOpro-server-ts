@@ -1,4 +1,4 @@
-import { BOT_FALLBACK_MS, MATCHED_GRACE_MS, QUEUE_TTL_MS } from "./QueueEntry";
+import { BOT_FALLBACK_MS, MATCHED_GRACE_MS, QUEUE_TTL_MS } from "../domain/QueueEntry";
 import { MatchmakingQueue, MatchmakingQueueDeps } from "./MatchmakingQueue";
 
 // ---- helpers ----
