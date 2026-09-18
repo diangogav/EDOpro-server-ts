@@ -1,5 +1,7 @@
 import { EventEmitter } from "stream";
 
+import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
+
 import { Commands } from "@shared/messages/Commands";
 import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { Logger } from "@shared/logger/domain/Logger";
@@ -534,6 +536,121 @@ describe("YGOProWaitingState.handleJoin", () => {
 
 			expect(mockSocket.send).not.toHaveBeenCalled();
 		});
+	});
+});
+
+describe("YGOProWaitingState.handleMatchAdmit", () => {
+	let eventEmitter: EventEmitter;
+	let mockLogger: jest.Mocked<Logger>;
+	let mockAdmitToRoom: { run: jest.Mock };
+	let mockDeckCreator: jest.Mocked<YGOProDeckCreator>;
+	let mockDeckValidator: jest.Mocked<YGOProDeckValidator>;
+	let mockRoom: jest.Mocked<YGOProRoom>;
+	let mockSocket: jest.Mocked<ISocket>;
+	let admissionTarget: object;
+
+	const makeMockRoom = (): jest.Mocked<YGOProRoom> =>
+		({
+			ranked: true,
+			players: [],
+			league: RoomLeague.Verified,
+			createdBySocketId: "sock-test",
+			mutex: {
+				runExclusive: jest.fn().mockImplementation(async (fn: () => Promise<void>) => fn()),
+			},
+			admissionTarget: jest.fn().mockReturnValue(admissionTarget),
+			reservationAdmits: jest.fn().mockReturnValue(true),
+			rejectReservedJoin: jest.fn(),
+			messageSender: {
+				errorMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
+			},
+		}) as unknown as jest.Mocked<YGOProRoom>;
+
+	const makeMockSocket = (): jest.Mocked<ISocket> =>
+		({
+			id: "sock-test",
+			remoteAddress: "127.0.0.1",
+			closed: false,
+			send: jest.fn(),
+			close: jest.fn(),
+			destroy: jest.fn(),
+			removeAllListeners: jest.fn(),
+		}) as unknown as jest.Mocked<ISocket>;
+
+	// The same "Jaden" UTF-16LE body a captured CTOS_PLAYER_INFO frame yields via
+	// Session.capturePlayerInfo/Session.playerInfo — no password separator.
+	const makeCapturedPlayerInfo = (): PlayerInfoMessage =>
+		new PlayerInfoMessage(Buffer.from(PLAYER_INFO_HEX, "hex"), 40);
+
+	const emitMatchAdmit = (
+		room: jest.Mocked<YGOProRoom>,
+		socket: jest.Mocked<ISocket>,
+		playerInfo: PlayerInfoMessage,
+	): Promise<void> =>
+		new Promise((resolve) => {
+			setImmediate(() => resolve());
+			eventEmitter.emit("MATCH_ADMIT", playerInfo, room, socket);
+		});
+
+	beforeEach(() => {
+		eventEmitter = new EventEmitter();
+		mockLogger = makeLogger();
+		mockAdmitToRoom = makeAdmitToRoom();
+		admissionTarget = { league: "verified" };
+
+		mockDeckCreator = {
+			build: jest.fn(),
+		} as unknown as jest.Mocked<YGOProDeckCreator>;
+
+		mockDeckValidator = {
+			validate: jest.fn().mockReturnValue(null),
+		} as unknown as jest.Mocked<YGOProDeckValidator>;
+
+		mockRoom = makeMockRoom();
+		mockSocket = makeMockSocket();
+
+		new YGOProWaitingState(
+			mockAdmitToRoom as unknown as AdmitToRoom,
+			eventEmitter,
+			mockLogger,
+			mockDeckCreator,
+			mockDeckValidator,
+		);
+	});
+
+	it("admits a reserved socket via reservationAdmits, isNameTaken and AdmitToRoom under the room mutex", async () => {
+		const playerInfo = makeCapturedPlayerInfo();
+
+		await emitMatchAdmit(mockRoom, mockSocket, playerInfo);
+
+		expect(mockRoom.reservationAdmits).toHaveBeenCalledWith(mockSocket);
+		expect(mockRoom.mutex.runExclusive).toHaveBeenCalled();
+		expect(mockRoom.admissionTarget).toHaveBeenCalledWith(mockSocket, playerInfo);
+		expect(mockAdmitToRoom.run).toHaveBeenCalledWith(mockSocket, playerInfo, admissionTarget);
+	});
+
+	it("rejects a non-reserved socket without delegating to AdmitToRoom", async () => {
+		(mockRoom.reservationAdmits as jest.Mock).mockReturnValue(false);
+		const playerInfo = makeCapturedPlayerInfo();
+
+		await emitMatchAdmit(mockRoom, mockSocket, playerInfo);
+
+		expect(mockRoom.rejectReservedJoin).toHaveBeenCalledWith(mockSocket);
+		expect(mockAdmitToRoom.run).not.toHaveBeenCalled();
+		expect(mockRoom.admissionTarget).not.toHaveBeenCalled();
+	});
+
+	it("rejects a duplicate name without delegating to AdmitToRoom", async () => {
+		mockRoom = makeMockRoom();
+		(mockRoom as unknown as { players: unknown[] }).players = [
+			{ name: "Jaden", socket: { remoteAddress: "127.0.0.1", closed: true } },
+		];
+		const playerInfo = makeCapturedPlayerInfo();
+
+		await emitMatchAdmit(mockRoom, mockSocket, playerInfo);
+
+		expect(mockAdmitToRoom.run).not.toHaveBeenCalled();
+		expect(mockSocket.send).toHaveBeenCalled();
 	});
 });
 
