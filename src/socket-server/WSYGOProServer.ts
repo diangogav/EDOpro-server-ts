@@ -5,6 +5,7 @@ import { config } from "src/config";
 import { Logger } from "../shared/logger/domain/Logger";
 import { RoomFinder } from "../shared/room/application/RoomFinder";
 import { WebSocketClientSocket } from "../shared/socket/domain/WebSocketClientSocket";
+import { MatchmakingConnectionFactory } from "@ygopro/matchmaking/application/MatchmakingConnectionFactory";
 import { HandshakeTicketAuthenticator } from "./HandshakeTicketAuthenticator";
 import { YGOProConnectionHandler } from "./YGOProConnectionHandler";
 
@@ -16,9 +17,17 @@ export class WSYGOProServer {
 	private readonly connectionHandler: YGOProConnectionHandler;
 	private readonly handshakeAuth: HandshakeTicketAuthenticator;
 
-	constructor(logger: Logger, handshakeAuth: HandshakeTicketAuthenticator) {
+	constructor(
+		logger: Logger,
+		handshakeAuth: HandshakeTicketAuthenticator,
+		matchmakingConnectionFactory?: MatchmakingConnectionFactory,
+	) {
 		this.handshakeAuth = handshakeAuth;
-		this.connectionHandler = new YGOProConnectionHandler(logger, new RoomFinder());
+		this.connectionHandler = new YGOProConnectionHandler(
+			logger,
+			new RoomFinder(),
+			matchmakingConnectionFactory,
+		);
 		const server = createServer();
 		this.wss = new WebSocketServer({ server });
 	}

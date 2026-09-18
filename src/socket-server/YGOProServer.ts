@@ -4,6 +4,7 @@ import { config } from "src/config";
 import { Logger } from "../shared/logger/domain/Logger";
 import { RoomFinder } from "../shared/room/application/RoomFinder";
 import { TCPClientSocket } from "../shared/socket/domain/TCPClientSocket";
+import { MatchmakingConnectionFactory } from "@ygopro/matchmaking/application/MatchmakingConnectionFactory";
 import { YGOProConnectionHandler } from "./YGOProConnectionHandler";
 
 export class YGOProServer {
@@ -11,9 +12,13 @@ export class YGOProServer {
 	private readonly logger: Logger;
 	private readonly connectionHandler: YGOProConnectionHandler;
 
-	constructor(logger: Logger) {
+	constructor(logger: Logger, matchmakingConnectionFactory?: MatchmakingConnectionFactory) {
 		this.logger = logger;
-		this.connectionHandler = new YGOProConnectionHandler(logger, new RoomFinder());
+		this.connectionHandler = new YGOProConnectionHandler(
+			logger,
+			new RoomFinder(),
+			matchmakingConnectionFactory,
+		);
 		this.server = net.createServer({ keepAlive: true });
 	}
 

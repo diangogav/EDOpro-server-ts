@@ -32,11 +32,6 @@ async function start(): Promise<void> {
 
 	const ticketRepository = new RedisTicketRepository();
 	const server = new Server(logger, ticketRepository);
-	const ygoproServer = new YGOProServer(logger);
-	const wsYgoproServer = new WSYGOProServer(
-		logger,
-		new HandshakeTicketAuthenticator(ticketRepository),
-	);
 
 	const hostServer = new HostServer(logger);
 	const wsHostServer = new WSHostServer(logger);
@@ -70,13 +65,21 @@ async function start(): Promise<void> {
 		logger.info("🤖 Windbot enabled");
 	}
 
+	// After windbot so the queue's bot-fallback availability check reflects it,
+	// and before the ygopro servers so the returned factory can be injected
+	// into their constructors (D25).
+	const matchmakingConnectionFactory = bootstrapMatchmaking(logger);
+	const ygoproServer = new YGOProServer(logger, matchmakingConnectionFactory);
+	const wsYgoproServer = new WSYGOProServer(
+		logger,
+		new HandshakeTicketAuthenticator(ticketRepository),
+		matchmakingConnectionFactory,
+	);
+
 	await server.initialize();
 	WebSocketSingleton.getInstance();
 	hostServer.initialize();
 	wsHostServer.initialize();
-
-	// After windbot so the queue's bot-fallback availability check reflects it.
-	bootstrapMatchmaking(logger);
 
 	ygoproServer.initialize();
 	wsYgoproServer.initialize();
