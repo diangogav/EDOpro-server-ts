@@ -57,7 +57,7 @@ const MODE_BY_CODE: Readonly<Partial<Record<number, MatchmakingMode>>> = Object.
 	0: "ranked",
 });
 
-const STATE_TO_CODE: Readonly<Record<MatchmakingStatusState, number>> = Object.freeze({
+export const STATE_TO_CODE: Readonly<Record<MatchmakingStatusState, number>> = Object.freeze({
 	searching: 0,
 	cancelled: 1,
 	rejected: 2,
@@ -65,7 +65,7 @@ const STATE_TO_CODE: Readonly<Record<MatchmakingStatusState, number>> = Object.f
 	authenticated: 4,
 });
 
-const REASON_TO_CODE: Readonly<Record<WireReason, number>> = Object.freeze({
+export const REASON_TO_CODE: Readonly<Record<WireReason, number>> = Object.freeze({
 	none: 0,
 	invalid_ticket: 1,
 	not_authenticated: 2,
@@ -83,7 +83,7 @@ const REASON_TO_CODE: Readonly<Record<WireReason, number>> = Object.freeze({
 	version_mismatch: 14,
 });
 
-const OPPONENT_TYPE_TO_CODE: Readonly<Record<OpponentType, number>> = Object.freeze({
+export const OPPONENT_TYPE_TO_CODE: Readonly<Record<OpponentType, number>> = Object.freeze({
 	human: 0,
 	bot: 1,
 });
