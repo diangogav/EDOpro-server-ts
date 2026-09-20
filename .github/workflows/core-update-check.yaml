@@ -1,0 +1,40 @@
+name: Core Update Check
+
+# core/libocgcore.so is a prebuilt third-party binary and ProjectIgnis
+# publishes new builds without announcing them, so nothing in the normal build
+# notices when the shipped core falls behind. This job polls for it.
+on:
+  schedule:
+    # Daily at 05:00 UTC. A run that finds nothing costs one 1.8 MB download and
+    # exits, and the branch name is derived from the upstream hash, so the runs
+    # that pile up behind an unmerged bump exit without opening a second PR.
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run the checks and print the report without opening a PR'
+        type: boolean
+        default: false
+
+# The script commits the new binary on a branch and opens the bump PR.
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-core-update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # nm comes from binutils and is how the downloaded core is inspected
+      # without a toolchain.
+      - name: Install jq and binutils
+        run: sudo apt-get update && sudo apt-get install -y jq binutils
+
+      - name: Check for a newer published core
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CORE_UPDATE_DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: bash scripts/check-core-update.sh
