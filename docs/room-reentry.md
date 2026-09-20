@@ -25,7 +25,7 @@ the command shape.
 ## 2. Identity: how the server knows who is joining
 
 Every joining socket resolves to exactly one `PlayerCredential`
-(`src/shared/client/application/CredentialResolver.ts`), in one pass, strongest
+(`src/ygopro/room/admission/application/CredentialResolver.ts`), in one pass, strongest
 first (`src/shared/room/admission/domain/PlayerCredential.ts`):
 
 - **`verified`** — authenticated by the handshake ticket

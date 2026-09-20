@@ -1,0 +1,413 @@
+{
+	"schema_version": 1,
+	"diagram_type": "architecture",
+	"meta": {
+		"title": "Evolution Server Architecture",
+		"locale": "en",
+		"quality_profile": "showcase",
+		"repository": {
+			"url": "https://github.com/diangogav/EDOpro-server-ts",
+			"revision": "d9d3a195298936eab4dad97e45eee6a8693e5552"
+		},
+		"views": [
+			{
+				"id": "edopro-path",
+				"label": "EDOPro duel path",
+				"focus": ["clients", "hostserver", "edoroom", "core", "cards"],
+				"note": "An EDOPro client joins a room; every duel spawns a C++ core child process over stdio."
+			},
+			{
+				"id": "ygopro-path",
+				"label": "YGOPro / Mercury path",
+				"focus": ["clients", "ygoserver", "redis", "ygoroom", "windbot"],
+				"note": "Mercury clients duel on a WASM core in a worker thread; WindBot rejoins as an ordinary client."
+			},
+			{
+				"id": "matchmaking-path",
+				"label": "Matchmaking",
+				"focus": ["webui", "api", "ygoserver", "matchmaking", "ygoroom"],
+				"note": "One queue, two front doors: HTTP enqueue/poll and in-band socket opcodes."
+			},
+			{
+				"id": "ranking-path",
+				"label": "Game over to ranking",
+				"focus": ["edoroom", "ygoroom", "eventbus", "plugins", "postgres"],
+				"note": "Both engines publish GAME_OVER; plugins turn it into ratings and stats."
+			}
+		]
+	},
+	"components": [
+		{
+			"id": "cards",
+			"type": "database",
+			"label": "Card data",
+			"sublabel": "evolution_cards.db",
+			"pos": [560, 40],
+			"size": [170, 64],
+			"sources": [
+				{
+					"path": "src/shared/db/sqlite/infrastructure/data-source.ts"
+				},
+				{
+					"path": "src/ygopro/ygopro/YGOProResourceLoader.ts"
+				}
+			]
+		},
+		{
+			"id": "core",
+			"type": "external",
+			"label": "CoreIntegrator",
+			"sublabel": "C++ ocgcore · child process",
+			"pos": [820, 40],
+			"size": [170, 64],
+			"sources": [
+				{
+					"path": "src/edopro/room/domain/states/dueling/DuelingState.ts"
+				}
+			]
+		},
+		{
+			"id": "clients",
+			"type": "external",
+			"label": "Duel clients",
+			"sublabel": "EDOPro · YGOPro / Mercury",
+			"pos": [40, 230],
+			"size": [170, 64]
+		},
+		{
+			"id": "redis",
+			"type": "database",
+			"label": "Redis",
+			"sublabel": "tickets · rate limits",
+			"pos": [40, 330],
+			"size": [170, 64],
+			"sources": [
+				{
+					"path": "src/shared/ticket/infrastructure/redis/RedisTicketRepository.ts"
+				}
+			]
+		},
+		{
+			"id": "webui",
+			"type": "frontend",
+			"label": "Web UI",
+			"sublabel": "lobby · matchmaking",
+			"pos": [40, 430],
+			"size": [170, 64]
+		},
+		{
+			"id": "hostserver",
+			"type": "backend",
+			"label": "HostServer",
+			"sublabel": "EDOPro TCP · WS :4001",
+			"pos": [300, 170],
+			"size": [170, 64],
+			"sources": [
+				{
+					"path": "src/socket-server/HostServer.ts"
+				},
+				{
+					"path": "src/socket-server/WSHostServer.ts"
+				}
+			]
+		},
+		{
+			"id": "ygoserver",
+			"type": "backend",
+			"label": "YGOProServer",
+			"sublabel": "Mercury TCP · WS :4002",
+			"pos": [300, 330],
+			"size": [170, 64],
+			"sources": [
+				{
+					"path": "src/socket-server/YGOProServer.ts"
+				},
+				{
+					"path": "src/socket-server/WSYGOProServer.ts"
+				}
+			]
+		},
+		{
+			"id": "api",
+			"type": "backend",
+			"label": "Express API",
+			"sublabel": "REST · room-list WS",
+			"pos": [300, 430],
+			"size": [170, 64],
+			"sources": [
+				{
+					"path": "src/http-server/Server.ts"
+				},
+				{
+					"path": "src/web-socket-server/WebSocketSingleton.ts"
+				}
+			]
+		},
+		{
+			"id": "edoroom",
+			"type": "backend",
+			"label": "EDOPro Room",
+			"sublabel": "duel state machine",
+			"pos": [560, 170],
+			"size": [170, 64],
+			"sources": [
+				{
+					"path": "src/edopro/room/domain/Room.ts"
+				},
+				{
+					"path": "src/edopro/room/domain/RoomState.ts"
+				}
+			]
+		},
+		{
+			"id": "ygoroom",
+			"type": "backend",
+			"label": "YGOPro Room",
+			"sublabel": "ocgcore WASM · worker thread",
+			"pos": [560, 330],
+			"size": [170, 64],
+			"sources": [
+				{
+					"path": "src/ygopro/room/domain/YGOProRoom.ts"
+				},
+				{
+					"path": "src/ygopro/ocgcore-worker/ocgcore-worker.ts"
+				}
+			]
+		},
+		{
+			"id": "matchmaking",
+			"type": "backend",
+			"label": "Matchmaking",
+			"sublabel": "queue · pairing · provision",
+			"pos": [560, 430],
+			"size": [170, 64],
+			"sources": [
+				{
+					"path": "src/ygopro/matchmaking/application/MatchmakingQueue.ts"
+				},
+				{
+					"path": "src/ygopro/matchmaking/application/ProvisionMatchRoom.ts"
+				}
+			]
+		},
+		{
+			"id": "eventbus",
+			"type": "messagebus",
+			"label": "EventBus",
+			"sublabel": "GAME_OVER only",
+			"pos": [820, 250],
+			"size": [170, 64],
+			"sources": [
+				{
+					"path": "src/shared/event-bus/EventBus.ts"
+				},
+				{
+					"path": "src/shared/room/domain/match/domain/domain-events/GameOverDomainEvent.ts"
+				}
+			]
+		},
+		{
+			"id": "plugins",
+			"type": "backend",
+			"label": "Plugins",
+			"sublabel": "elo-rating · stats · unranked",
+			"pos": [1080, 250],
+			"size": [170, 64],
+			"sources": [
+				{
+					"path": "src/bootstrap/bootstrapPlugins.ts"
+				},
+				{
+					"path": "src/plugins/elo-rating/index.ts"
+				}
+			]
+		},
+		{
+			"id": "windbot",
+			"type": "external",
+			"label": "WindBot",
+			"sublabel": "rejoins as a TCP client",
+			"pos": [820, 560],
+			"size": [190, 64],
+			"sources": [
+				{
+					"path": "src/ygopro/windbot/infrastructure/HttpWindBotProvider.ts"
+				}
+			]
+		},
+		{
+			"id": "postgres",
+			"type": "database",
+			"label": "PostgreSQL",
+			"sublabel": "only when ranking is enabled",
+			"pos": [1080, 560],
+			"size": [170, 64],
+			"sources": [
+				{
+					"path": "src/bootstrap/bootstrapPersistence.ts"
+				},
+				{
+					"path": "src/shared/stats/rating/infrastructure/RatingPostgresRepository.ts"
+				}
+			]
+		}
+	],
+	"boundaries": [
+		{
+			"kind": "region",
+			"label": "Node.js process (src/index.ts)",
+			"wraps": [
+				"hostserver",
+				"ygoserver",
+				"api",
+				"edoroom",
+				"ygoroom",
+				"matchmaking",
+				"eventbus",
+				"plugins"
+			]
+		}
+	],
+	"connections": [
+		{
+			"id": "clients-hostserver",
+			"from": "clients",
+			"to": "hostserver",
+			"label": "TCP / WS",
+			"variant": "emphasis"
+		},
+		{
+			"id": "clients-ygoserver",
+			"from": "clients",
+			"to": "ygoserver",
+			"label": "TCP / WS",
+			"variant": "emphasis"
+		},
+		{
+			"id": "hostserver-edoroom",
+			"from": "hostserver",
+			"to": "edoroom",
+			"label": "join room"
+		},
+		{
+			"id": "ygoserver-ygoroom",
+			"from": "ygoserver",
+			"to": "ygoroom",
+			"label": "join room"
+		},
+		{
+			"id": "ygoserver-redis",
+			"from": "ygoserver",
+			"to": "redis",
+			"label": "WS ticket auth",
+			"variant": "security",
+			"labelDy": 24
+		},
+		{
+			"id": "ygoserver-matchmaking",
+			"from": "ygoserver",
+			"to": "matchmaking",
+			"label": "queue opcodes",
+			"toSide": "top",
+			"labelDy": 30
+		},
+		{
+			"id": "webui-api",
+			"from": "webui",
+			"to": "api",
+			"label": "REST · room list"
+		},
+		{
+			"id": "api-matchmaking",
+			"from": "api",
+			"to": "matchmaking",
+			"label": "enqueue · poll"
+		},
+		{
+			"id": "matchmaking-ygoroom",
+			"from": "matchmaking",
+			"to": "ygoroom",
+			"label": "provision room",
+			"labelDx": -70
+		},
+		{
+			"id": "edoroom-cards",
+			"from": "edoroom",
+			"to": "cards",
+			"label": "deck check"
+		},
+		{
+			"id": "edoroom-core",
+			"from": "edoroom",
+			"to": "core",
+			"label": "spawn per duel"
+		},
+		{
+			"id": "cards-core",
+			"from": "cards",
+			"to": "core",
+			"label": "same .cdb file",
+			"variant": "dashed"
+		},
+		{
+			"id": "edoroom-eventbus",
+			"from": "edoroom",
+			"to": "eventbus",
+			"label": "GAME_OVER"
+		},
+		{
+			"id": "ygoroom-eventbus",
+			"from": "ygoroom",
+			"to": "eventbus",
+			"label": "GAME_OVER"
+		},
+		{
+			"id": "ygoroom-windbot",
+			"from": "ygoroom",
+			"to": "windbot",
+			"label": "request bot (HTTP)",
+			"variant": "dashed",
+			"labelDy": 72
+		},
+		{
+			"id": "eventbus-plugins",
+			"from": "eventbus",
+			"to": "plugins",
+			"label": "subscribe"
+		},
+		{
+			"id": "plugins-postgres",
+			"from": "plugins",
+			"to": "postgres",
+			"label": "ratings · stats",
+			"labelDy": 150
+		}
+	],
+	"cards": [
+		{
+			"dot": "cyan",
+			"title": "Two duel engines, two mechanisms",
+			"items": [
+				"EDOPro spawns core/CoreIntegrator as a child process per duel, over stdio",
+				"YGOPro / Mercury runs the ocgcore WASM build in a worker thread"
+			]
+		},
+		{
+			"dot": "violet",
+			"title": "Three event surfaces",
+			"items": [
+				"EventBus carries GAME_OVER only, published by both engines",
+				"duel.* events use the synchronous DuelEventDispatcher, never the bus"
+			]
+		},
+		{
+			"dot": "emerald",
+			"title": "Matchmaking and bots",
+			"items": [
+				"One queue, two front doors: HTTP enqueue/poll and in-band socket opcodes",
+				"WindBot is asked over HTTP and dials back in as an ordinary TCP client"
+			]
+		}
+	]
+}
