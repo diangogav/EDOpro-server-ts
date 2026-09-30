@@ -5,6 +5,11 @@ import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { SimpleRoomMessageEmitter } from "../../SimpleRoomMessageEmitter";
 import { YGOProRoom } from "../../room/domain/YGOProRoom";
 
+/** Upper bound for a peer to drain the end-of-duel replay frames before the
+ * socket is hard-terminated. Generous for slow links, small enough that a dead
+ * peer cannot pin the socket. */
+const GRACEFUL_CLOSE_TIMEOUT_MS = 10_000;
+
 export class YGOProClient extends YgoClient {
 	public readonly logger: Logger;
 	private _connectedToCore = false;
@@ -51,6 +56,11 @@ export class YGOProClient extends YgoClient {
 
 	destroy(): void {
 		this._socket.destroy();
+	}
+
+	/** Closes after queued frames flush; see ISocket.closeGracefully. */
+	disconnectGracefully(timeoutMs = GRACEFUL_CLOSE_TIMEOUT_MS): void {
+		this._socket.closeGracefully(timeoutMs);
 	}
 
 	playerPosition(position: number, team: Team): void {

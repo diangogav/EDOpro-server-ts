@@ -8,6 +8,7 @@ export class TCPClientSocket implements ISocket {
 	private readonly socket: Socket;
 
 	private isClosed = false;
+	private isClosing = false;
 	private messageCallback?: (data: Buffer) => void;
 	private closeCallback?: () => void;
 
@@ -56,6 +57,19 @@ export class TCPClientSocket implements ISocket {
 		this.socket.destroy();
 	}
 
+	closeGracefully(timeoutMs: number): void {
+		if (this.isClosing) return;
+		this.isClosing = true;
+		this.removeAllListeners();
+
+		// end() flushes pending writes before sending FIN; destroy() is only the
+		// bounded fallback for a peer that never closes its side.
+		const fallback = setTimeout(() => this.socket.destroy(), timeoutMs);
+		fallback.unref?.();
+		this.socket.once("close", () => clearTimeout(fallback));
+		this.socket.end();
+	}
+
 	setRoomId(roomId: number): void {
 		this.roomId = roomId;
 	}
@@ -69,6 +83,6 @@ export class TCPClientSocket implements ISocket {
 	}
 
 	get closed(): boolean {
-		return this.isClosed || this.socket.closed;
+		return this.isClosed || this.isClosing || this.socket.closed;
 	}
 }

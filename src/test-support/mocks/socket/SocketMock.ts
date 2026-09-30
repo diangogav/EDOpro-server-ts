@@ -29,6 +29,10 @@ export class SocketMock implements ISocket {
 		/* no-op */
 	}
 
+	closeGracefully(_timeoutMs: number): void {
+		/* no-op */
+	}
+
 	removeAllListeners(): void {
 		/* no-op */
 	}

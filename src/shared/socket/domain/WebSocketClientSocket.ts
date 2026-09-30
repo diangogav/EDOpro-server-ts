@@ -8,6 +8,7 @@ export class WebSocketClientSocket implements ISocket {
 	resolvedUserId?: string;
 	private readonly socket: WebSocket;
 	private isClosed = false;
+	private isClosing = false;
 	private messageCallback?: (data: WebSocket.Data) => void;
 	private closeCallback?: () => void;
 
@@ -65,6 +66,19 @@ export class WebSocketClientSocket implements ISocket {
 		this.socket.terminate();
 	}
 
+	closeGracefully(timeoutMs: number): void {
+		if (this.isClosing) return;
+		this.isClosing = true;
+		this.removeAllListeners();
+
+		// ws flushes queued frames before the close frame; terminate() is only the
+		// bounded fallback for a peer that never completes the handshake.
+		const fallback = setTimeout(() => this.socket.terminate(), timeoutMs);
+		fallback.unref?.();
+		this.socket.once("close", () => clearTimeout(fallback));
+		this.socket.close(1000);
+	}
+
 	get remoteAddress(): string | undefined {
 		// Express/WS doesn't have a direct remoteAddress like net.Socket,
 		// but we can try to get it from the underlying socket if available.
@@ -76,6 +90,7 @@ export class WebSocketClientSocket implements ISocket {
 	get closed(): boolean {
 		return (
 			this.isClosed ||
+			this.isClosing ||
 			this.socket.readyState === WebSocket.CLOSED ||
 			this.socket.readyState === WebSocket.CLOSING
 		);

@@ -24,6 +24,13 @@ export interface ISocket {
 	onClose(callback: () => void): void;
 	close(): void;
 	destroy(): void;
+	/**
+	 * Closes after everything already queued for sending has flushed, then falls
+	 * back to a hard destroy if the peer has not closed within `timeoutMs`.
+	 * Detaches message/close listeners first (like `destroy()`), so the close
+	 * never re-enters disconnect handling. `closed` reads true from this call on.
+	 */
+	closeGracefully(timeoutMs: number): void;
 	remoteAddress: string | undefined;
 	closed: boolean;
 	removeAllListeners(): void;
