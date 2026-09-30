@@ -740,10 +740,10 @@ export class YGOProDuelingState extends YGOProRoomState {
 
 		this.room.clients.forEach((client: YGOProClient) => {
 			client.sendMessageToClient(duelEndBuffer);
-			client.destroy();
+			client.disconnectGracefully();
 		});
 
-		this.logger.info("Duel end sent and all clients disconnected");
+		this.logger.info("Duel end sent and all clients closing gracefully");
 	}
 
 	private dispatchGameOverDomainEvent(): void {
