@@ -14,6 +14,7 @@ import { RoomFinder } from "./RoomFinder";
 import { FinalizeYGOProRoom } from "@ygopro/room/application/FinalizeYGOProRoom";
 import { AbortMatchmakingRoom } from "@ygopro/matchmaking/application/AbortMatchmakingRoom";
 import { MatchmakingQueue } from "@ygopro/matchmaking/application/MatchmakingQueue";
+import { AbandonBetweenDuels } from "@ygopro/room/application/AbandonBetweenDuels";
 
 /** A caller that has no logger to inject (e.g. an existing test constructing
  * this handler directly) still gets safe, silent dequeue behavior. */
@@ -149,6 +150,12 @@ export class DisconnectHandler {
 		if (room.noHost) {
 			FinalizeYGOProRoom.run(room);
 
+			return;
+		}
+
+		// Between duels the opponent is waiting on the leaver: give them a grace
+		// window to reconnect, then cancel or award the match.
+		if (AbandonBetweenDuels.playerLeft(room, player, this.logger)) {
 			return;
 		}
 
