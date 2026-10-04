@@ -19,7 +19,7 @@ import { resolveJoinerIdentityWithTimeout } from "../resolveJoinerIdentityWithTi
 import { YGOProRoom } from "../YGOProRoom";
 import { findMidDuelReconnectingPlayer } from "@shared/room/domain/findMidDuelReconnectingPlayer";
 import { config } from "../../../../config";
-import { EndMatchByAbandon } from "../../application/EndMatchByAbandon";
+import { AbandonBetweenDuels } from "../../application/AbandonBetweenDuels";
 import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
 import {
@@ -146,8 +146,9 @@ export class YGOProSideDeckingState extends YGOProRoomState {
 			// releases the opponent, records the result and reaps the room; simply
 			// destroying this socket left the room alive with nobody to finish it
 			// (and, since destroy() strips the close listener, unreachable from the
-			// disconnect path too).
-			void EndMatchByAbandon.run(this.room, player.team, this.logger);
+			// disconnect path too). The shared abandon path also tells the
+			// opponent they won before the room closes.
+			void AbandonBetweenDuels.resolve(this.room, player.team, this.logger);
 			return;
 		}
 
