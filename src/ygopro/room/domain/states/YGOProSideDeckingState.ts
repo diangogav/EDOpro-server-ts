@@ -47,6 +47,7 @@ export class YGOProSideDeckingState extends YGOProRoomState {
 	) {
 		super(eventEmitter);
 		this.logger = logger.child({ file: "MercurySideDeckingState" });
+		this.settleSurrenderBetweenDuels(this.logger);
 		this.eventEmitter.on(
 			"JOIN",
 			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
