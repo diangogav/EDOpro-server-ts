@@ -24,6 +24,7 @@ export class YGOProRockPaperScissorState extends YGOProRoomState {
 	) {
 		super(eventEmitter);
 		this.logger = logger.child({ file: "YGOProRockPaperScissorState" });
+		this.settleSurrenderBetweenDuels(this.logger);
 		this.eventEmitter.on(
 			Commands.RPS_CHOICE as unknown as string,
 			(message: ClientMessage, room: YGOProRoom, client: YGOProClient) =>

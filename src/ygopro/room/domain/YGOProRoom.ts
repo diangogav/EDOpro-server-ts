@@ -15,6 +15,7 @@ import { CredentialResolver } from "@ygopro/room/admission/application/Credentia
 import { RoomAdmission } from "@shared/room/admission/domain/RoomAdmission";
 import { Logger } from "@shared/logger/domain/Logger";
 import { DeckRules, DuelState, YgoRoom } from "@shared/room/domain/YgoRoom";
+import { MatchAbandonClientMessage } from "@shared/messages/server-to-client/MatchAbandonClientMessage";
 import { RoomType } from "@shared/room/domain/RoomType";
 import { MessageRepository } from "@shared/messages/MessageRepository";
 import { ISocket } from "@shared/socket/domain/ISocket";
@@ -858,6 +859,23 @@ export class YGOProRoom extends YgoRoom {
 			);
 			player.sendMessageToClient(playerEnterMessageBuffer);
 		});
+
+		// Between duels the opponent was told this player left; close that notice.
+		if (this.isBetweenDuels()) {
+			const notice = MatchAbandonClientMessage.opponentReconnected();
+			this._players
+				.filter((other: YGOProClient) => other.team !== player.team)
+				.forEach((other: YGOProClient) => other.sendMessageToClient(notice));
+		}
+	}
+
+	/** RPS, choosing order and side decking: the match waits on both players. */
+	isBetweenDuels(): boolean {
+		return (
+			this.duelState === DuelState.RPS ||
+			this.duelState === DuelState.CHOOSING_ORDER ||
+			this.duelState === DuelState.SIDE_DECKING
+		);
 	}
 
 	private createDeckValidator(): YGOProDeckValidator {

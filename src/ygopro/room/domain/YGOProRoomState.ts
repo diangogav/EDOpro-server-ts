@@ -1,4 +1,10 @@
 import { RoomState } from "@edopro/room/domain/RoomState";
+import { Logger } from "@shared/logger/domain/Logger";
+import { Commands } from "@shared/messages/Commands";
+import { ClientMessage } from "@shared/messages/MessageProcessor";
+import { YGOProClient } from "@ygopro/client/domain/YGOProClient";
+
+import { AbandonBetweenDuels } from "../application/AbandonBetweenDuels";
 import { YGOProRoom } from "./YGOProRoom";
 
 export class YGOProRoomState extends RoomState {
@@ -21,5 +27,22 @@ export class YGOProRoomState extends RoomState {
 		team1Player.captain();
 		team0Player.sendMessageToClient(message);
 		team1Player.sendMessageToClient(message);
+	}
+
+	/**
+	 * Between duels there is no duel to concede, so a surrender leaves the whole
+	 * match at once. Tag matches keep their team-agreement rules and are left out.
+	 */
+	protected settleSurrenderBetweenDuels(logger: Logger): void {
+		this.eventEmitter.on(
+			Commands.SURRENDER as unknown as string,
+			(_message: ClientMessage, room: YGOProRoom, client: YGOProClient) => {
+				if (client.isSpectator || room.isTag || !room.isBetweenDuels()) {
+					return;
+				}
+				logger.info("Surrender between duels", { team: client.team });
+				void AbandonBetweenDuels.resolve(room, client.team, logger);
+			},
+		);
 	}
 }

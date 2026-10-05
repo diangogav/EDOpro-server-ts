@@ -371,6 +371,10 @@ export abstract class YgoRoom {
 		return this._match?.isFirstDuel() ?? true;
 	}
 
+	hasPlayedAnyDuel(): boolean {
+		return this._match?.hasPlayedAnyDuel() ?? false;
+	}
+
 	toRealTimePresentation(): { [key: string]: unknown } {
 		return {
 			id: this.id,

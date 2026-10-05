@@ -22,6 +22,7 @@ export class YGOProChoosingOrderState extends YGOProRoomState {
 		super(eventEmitter);
 
 		this.logger = logger.child({ file: "YGOProChoosingOrderState" });
+		this.settleSurrenderBetweenDuels(this.logger);
 
 		this.eventEmitter.on(
 			"JOIN",

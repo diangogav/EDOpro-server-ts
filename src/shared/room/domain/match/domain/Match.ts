@@ -135,6 +135,14 @@ export class Match {
 		return this.playerScore === 0 && this.opponentScore === 0;
 	}
 
+	/**
+	 * Whether any duel of this match reached a result. Unlike `isFirstDuel`, a
+	 * drawn duel counts: it was played even though it left the score at 0-0.
+	 */
+	hasPlayedAnyDuel(): boolean {
+		return this._players.some((player) => player.games.length > 0);
+	}
+
 	private winner(): number {
 		if (this.score.team0 > this.score.team1) {
 			return 0;

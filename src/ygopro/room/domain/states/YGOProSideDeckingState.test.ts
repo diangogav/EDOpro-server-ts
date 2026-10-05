@@ -16,10 +16,10 @@ import { encodeDeckErrorCode } from "@shared/deck/domain/errors/encodeDeckErrorC
 import { ErrorMessageType } from "ygopro-msg-encode";
 
 import { Team } from "@shared/room/Team";
-import { EndMatchByAbandon } from "../../application/EndMatchByAbandon";
+import { AbandonBetweenDuels } from "../../application/AbandonBetweenDuels";
 
-jest.mock("../../application/EndMatchByAbandon", () => ({
-	EndMatchByAbandon: { run: jest.fn().mockResolvedValue(undefined) },
+jest.mock("../../application/AbandonBetweenDuels", () => ({
+	AbandonBetweenDuels: { resolve: jest.fn().mockResolvedValue(undefined) },
 }));
 
 // ---- helpers ----
@@ -63,7 +63,7 @@ describe("YGOProSideDeckingState — side-deck timeout chat", () => {
 
 	beforeEach(() => {
 		jest.useFakeTimers();
-		(EndMatchByAbandon.run as jest.Mock).mockClear();
+		(AbandonBetweenDuels.resolve as jest.Mock).mockClear();
 		eventEmitter = new EventEmitter();
 		mockLogger = {
 			child: jest.fn().mockReturnThis(),
@@ -119,7 +119,8 @@ describe("YGOProSideDeckingState — side-deck timeout chat", () => {
 
 	// The whole point of the timer: a player who never sides has abandoned the
 	// match, so the match must actually END. Destroying the socket alone left
-	// the opponent waiting on a room nobody would ever finish.
+	// the opponent waiting on a room nobody would ever finish. It settles through
+	// the shared abandon path so the opponent is told they won.
 	it("ends the match in favour of the opponent when a player never submits", () => {
 		const player = makePlayer(0);
 		const room = { players: [player], clients: [player] } as unknown as jest.Mocked<YGOProRoom>;
@@ -128,8 +129,8 @@ describe("YGOProSideDeckingState — side-deck timeout chat", () => {
 
 		jest.advanceTimersByTime(3 * 60_000);
 
-		expect(EndMatchByAbandon.run).toHaveBeenCalledTimes(1);
-		expect(EndMatchByAbandon.run).toHaveBeenCalledWith(room, Team.PLAYER, expect.anything());
+		expect(AbandonBetweenDuels.resolve).toHaveBeenCalledTimes(1);
+		expect(AbandonBetweenDuels.resolve).toHaveBeenCalledWith(room, Team.PLAYER, expect.anything());
 	});
 
 	it("leaves teardown to the finalizer instead of destroying the socket itself", () => {

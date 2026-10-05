@@ -589,4 +589,22 @@ describe("Match", () => {
 			expect(match.score).toEqual({ team0: 2, team1: 0 });
 		});
 	});
+	describe("hasPlayedAnyDuel", () => {
+		it("is false before any duel is recorded", () => {
+			match = new Match({ bestOf: 3 });
+			match.initializeHistoricalData(players);
+
+			expect(match.hasPlayedAnyDuel()).toBe(false);
+		});
+
+		it("is true once a duel was recorded, even a draw that leaves the score at 0-0", () => {
+			match = new Match({ bestOf: 3 });
+			match.initializeHistoricalData(players);
+
+			match.duelWinner(2, 5, []);
+
+			expect(match.score).toEqual({ team0: 0, team1: 0 });
+			expect(match.hasPlayedAnyDuel()).toBe(true);
+		});
+	});
 });
