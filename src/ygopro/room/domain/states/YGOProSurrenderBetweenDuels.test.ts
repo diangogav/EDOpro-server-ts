@@ -65,7 +65,12 @@ describe("Surrender between duels", () => {
 	it.each(states)("settles the match for the surrendering team during %s", (_label, build) => {
 		const eventEmitter = new EventEmitter();
 		const client = makeClient();
-		const room = { isTag: false, players: [client], clients: [client] } as unknown as YGOProRoom;
+		const room = {
+			isTag: false,
+			players: [client],
+			clients: [client],
+			isBetweenDuels: () => true,
+		} as unknown as YGOProRoom;
 		build(eventEmitter, room);
 
 		surrender(eventEmitter, room, client);
@@ -92,6 +97,24 @@ describe("Surrender between duels", () => {
 		const eventEmitter = new EventEmitter();
 		const client = makeClient();
 		const room = { isTag: true, players: [client], clients: [client] } as unknown as YGOProRoom;
+		build(eventEmitter, room);
+
+		surrender(eventEmitter, room, client);
+
+		expect(AbandonBetweenDuels.resolve).not.toHaveBeenCalled();
+	});
+
+	it.each(
+		states,
+	)("ignores a surrender once the room left the between-duels phase during %s", (_label, build) => {
+		const eventEmitter = new EventEmitter();
+		const client = makeClient();
+		const room = {
+			isTag: false,
+			players: [client],
+			clients: [client],
+			isBetweenDuels: () => false,
+		} as unknown as YGOProRoom;
 		build(eventEmitter, room);
 
 		surrender(eventEmitter, room, client);

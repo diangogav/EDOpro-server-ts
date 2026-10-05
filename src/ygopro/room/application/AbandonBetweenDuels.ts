@@ -1,6 +1,5 @@
 import { Logger } from "@shared/logger/domain/Logger";
 import { MatchAbandonClientMessage } from "@shared/messages/server-to-client/MatchAbandonClientMessage";
-import { DuelState } from "@shared/room/domain/YgoRoom";
 import { Team } from "@shared/room/Team";
 import { YGOProClient } from "@ygopro/client/domain/YGOProClient";
 
@@ -9,12 +8,6 @@ import { EndMatchByAbandon } from "./EndMatchByAbandon";
 import { FinalizeYGOProRoom } from "./FinalizeYGOProRoom";
 
 export const ABANDON_GRACE_MS = 60_000;
-
-const BETWEEN_DUELS = new Set<DuelState>([
-	DuelState.RPS,
-	DuelState.CHOOSING_ORDER,
-	DuelState.SIDE_DECKING,
-]);
 
 /**
  * Settle a match whose player walked away between duels.
@@ -32,7 +25,7 @@ export class AbandonBetweenDuels {
 	/** Start the grace window for a player whose socket closed. Returns whether
 	 * the leave was ours to handle. */
 	static playerLeft(room: YGOProRoom, player: YGOProClient, logger: Logger): boolean {
-		if (!BETWEEN_DUELS.has(room.duelState)) {
+		if (player.isSpectator || !room.isBetweenDuels()) {
 			return false;
 		}
 
@@ -48,7 +41,7 @@ export class AbandonBetweenDuels {
 			// A reconnect swaps in a fresh socket, so an open one means they came
 			// back. A later phase means they came back and the match moved on: a
 			// mid-duel drop is not ours to settle.
-			if (room.finalizing || !player.socket.closed || !BETWEEN_DUELS.has(room.duelState)) {
+			if (room.finalizing || !player.socket.closed || !room.isBetweenDuels()) {
 				return;
 			}
 			void AbandonBetweenDuels.resolve(room, player.team, logger);
@@ -68,7 +61,7 @@ export class AbandonBetweenDuels {
 	static async resolve(room: YGOProRoom, abandoningTeam: number, logger: Logger): Promise<void> {
 		AbandonBetweenDuels.clearAllGrace(room);
 
-		if (room.finalizing || room.isMatchFinished() || !BETWEEN_DUELS.has(room.duelState)) {
+		if (room.finalizing || room.isMatchFinished() || !room.isBetweenDuels()) {
 			return;
 		}
 
@@ -85,7 +78,17 @@ export class AbandonBetweenDuels {
 
 		const won = MatchAbandonClientMessage.matchWon();
 		stayers.forEach((client) => client.sendMessageToClient(won));
-		await EndMatchByAbandon.run(room, abandoningTeam, logger);
+		try {
+			await EndMatchByAbandon.run(room, abandoningTeam, logger);
+		} catch (error) {
+			// Callers fire and forget, so a failure here would otherwise strand the
+			// stayer on a room nobody closes. The result may be lost; the room is not.
+			logger.error("Ending the abandoned match failed", {
+				roomId: room.id,
+				error: String(error),
+			});
+			FinalizeYGOProRoom.run(room);
+		}
 	}
 
 	private static opponentsOf(room: YGOProRoom, team: number): YGOProClient[] {

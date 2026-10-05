@@ -20,15 +20,18 @@ jest.mock("./EndMatchByAbandon", () => ({
 describe("AbandonBetweenDuels", () => {
 	let logger: jest.Mocked<Logger>;
 
-	const makePlayer = (team: number, position: number) => {
+	const makePlayer = (team: number, position: number, isSpectator = false) => {
 		const socket = { closed: false };
 		return {
 			team,
 			position,
+			isSpectator,
 			socket,
 			sendMessageToClient: jest.fn(),
 		} as unknown as jest.Mocked<YGOProClient> & { socket: { closed: boolean } };
 	};
+
+	const BETWEEN_DUELS = [DuelState.RPS, DuelState.CHOOSING_ORDER, DuelState.SIDE_DECKING];
 
 	const makeRoom = (
 		players: YGOProClient[],
@@ -42,6 +45,9 @@ describe("AbandonBetweenDuels", () => {
 			isMatchFinished: jest.fn().mockReturnValue(false),
 			hasPlayedAnyDuel: jest.fn().mockReturnValue(false),
 			getTeamPlayers: (team: number) => players.filter((player) => player.team === team),
+			isBetweenDuels(this: { duelState: DuelState }) {
+				return BETWEEN_DUELS.includes(this.duelState);
+			},
 			...overrides,
 		}) as unknown as jest.Mocked<YGOProRoom>;
 
@@ -86,6 +92,15 @@ describe("AbandonBetweenDuels", () => {
 			expect(AbandonBetweenDuels.playerLeft(room, leaver, logger)).toBe(false);
 			jest.advanceTimersByTime(ABANDON_GRACE_MS);
 			expect(FinalizeYGOProRoom.run).not.toHaveBeenCalled();
+		});
+
+		it("ignores a spectator leaving", () => {
+			const spectator = makePlayer(Team.PLAYER, 7, true);
+			const stayer = makePlayer(Team.OPPONENT, 1);
+			const room = makeRoom([spectator, stayer]);
+
+			expect(AbandonBetweenDuels.playerLeft(room, spectator, logger)).toBe(false);
+			expect(stayer.sendMessageToClient).not.toHaveBeenCalled();
 		});
 
 		it("tells the players who stayed how long the leaver has to come back", () => {
@@ -152,8 +167,9 @@ describe("AbandonBetweenDuels", () => {
 			const room = makeRoom([leaver, stayer]);
 
 			AbandonBetweenDuels.playerLeft(room, leaver, logger);
-			// A reconnect swaps in a fresh, open socket.
-			leaver.socket.closed = false;
+			leaver.socket.closed = true;
+			// A reconnect swaps in a fresh, open socket; the dead one stays closed.
+			(leaver as unknown as { socket: { closed: boolean } }).socket = { closed: false };
 			jest.advanceTimersByTime(ABANDON_GRACE_MS);
 
 			expect(FinalizeYGOProRoom.run).not.toHaveBeenCalled();
@@ -230,6 +246,20 @@ describe("AbandonBetweenDuels", () => {
 
 			expect(FinalizeYGOProRoom.run).not.toHaveBeenCalled();
 			expect(EndMatchByAbandon.run).not.toHaveBeenCalled();
+		});
+
+		it("still closes the room and logs when awarding the match fails", async () => {
+			const leaver = makePlayer(Team.PLAYER, 0);
+			const stayer = makePlayer(Team.OPPONENT, 1);
+			const room = makeRoom([leaver, stayer], {
+				hasPlayedAnyDuel: jest.fn().mockReturnValue(true),
+			});
+			(EndMatchByAbandon.run as jest.Mock).mockRejectedValueOnce(new Error("hooks down"));
+
+			await expect(AbandonBetweenDuels.resolve(room, Team.PLAYER, logger)).resolves.toBeUndefined();
+
+			expect(logger.error).toHaveBeenCalled();
+			expect(FinalizeYGOProRoom.run).toHaveBeenCalledWith(room);
 		});
 
 		it("does not rewrite a match that already has a result", async () => {

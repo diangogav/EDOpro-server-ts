@@ -869,7 +869,8 @@ export class YGOProRoom extends YgoRoom {
 		}
 	}
 
-	private isBetweenDuels(): boolean {
+	/** RPS, choosing order and side decking: the match waits on both players. */
+	isBetweenDuels(): boolean {
 		return (
 			this.duelState === DuelState.RPS ||
 			this.duelState === DuelState.CHOOSING_ORDER ||

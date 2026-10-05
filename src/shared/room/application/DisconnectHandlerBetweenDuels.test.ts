@@ -49,7 +49,7 @@ const makeClient = (socketId: string, closed: boolean): YGOProClient => {
 
 const createRoom = (state: DuelState, clients: YGOProClient[]): YGOProRoom => {
 	const room = YGOProRoom.create(
-		Math.floor(Math.random() * 100000),
+		4242,
 		"ROOM",
 		makeLogger() as never,
 		new EventEmitter(),

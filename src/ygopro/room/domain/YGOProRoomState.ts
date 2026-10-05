@@ -37,7 +37,7 @@ export class YGOProRoomState extends RoomState {
 		this.eventEmitter.on(
 			Commands.SURRENDER as unknown as string,
 			(_message: ClientMessage, room: YGOProRoom, client: YGOProClient) => {
-				if (client.isSpectator || room.isTag) {
+				if (client.isSpectator || room.isTag || !room.isBetweenDuels()) {
 					return;
 				}
 				logger.info("Surrender between duels", { team: client.team });
