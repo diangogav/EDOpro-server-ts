@@ -178,6 +178,21 @@ describe("AbandonBetweenDuels", () => {
 			expect(FinalizeYGOProRoom.run).toHaveBeenCalledTimes(1);
 		});
 
+		it("leaves a duel that started after the leaver came back alone", () => {
+			const leaver = makePlayer(Team.PLAYER, 0);
+			const stayer = makePlayer(Team.OPPONENT, 1);
+			const room = makeRoom([leaver, stayer]);
+
+			AbandonBetweenDuels.playerLeft(room, leaver, logger);
+			// Reconnected, the duel started, then the same player dropped mid-duel.
+			(room as { duelState: DuelState }).duelState = DuelState.DUELING;
+			leaver.socket.closed = true;
+			jest.advanceTimersByTime(ABANDON_GRACE_MS);
+
+			expect(FinalizeYGOProRoom.run).not.toHaveBeenCalled();
+			expect(EndMatchByAbandon.run).not.toHaveBeenCalled();
+		});
+
 		it("leaves a room that is already being torn down alone", () => {
 			const leaver = makePlayer(Team.PLAYER, 0);
 			const stayer = makePlayer(Team.OPPONENT, 1);
@@ -204,6 +219,17 @@ describe("AbandonBetweenDuels", () => {
 			jest.advanceTimersByTime(ABANDON_GRACE_MS);
 
 			expect(FinalizeYGOProRoom.run).toHaveBeenCalledTimes(1);
+		});
+
+		it("never settles a match whose duel is being played", async () => {
+			const leaver = makePlayer(Team.PLAYER, 0);
+			const stayer = makePlayer(Team.OPPONENT, 1);
+			const room = makeRoom([leaver, stayer], { duelState: DuelState.DUELING });
+
+			await AbandonBetweenDuels.resolve(room, Team.PLAYER, logger);
+
+			expect(FinalizeYGOProRoom.run).not.toHaveBeenCalled();
+			expect(EndMatchByAbandon.run).not.toHaveBeenCalled();
 		});
 
 		it("does not rewrite a match that already has a result", async () => {

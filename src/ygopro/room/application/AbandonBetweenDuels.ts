@@ -45,8 +45,10 @@ export class AbandonBetweenDuels {
 
 		const timer = setTimeout(() => {
 			AbandonBetweenDuels.timersOf(room).delete(player.position);
-			// A reconnect swaps in a fresh socket, so an open one means they came back.
-			if (room.finalizing || !player.socket.closed) {
+			// A reconnect swaps in a fresh socket, so an open one means they came
+			// back. A later phase means they came back and the match moved on: a
+			// mid-duel drop is not ours to settle.
+			if (room.finalizing || !player.socket.closed || !BETWEEN_DUELS.has(room.duelState)) {
 				return;
 			}
 			void AbandonBetweenDuels.resolve(room, player.team, logger);
@@ -66,7 +68,7 @@ export class AbandonBetweenDuels {
 	static async resolve(room: YGOProRoom, abandoningTeam: number, logger: Logger): Promise<void> {
 		AbandonBetweenDuels.clearAllGrace(room);
 
-		if (room.finalizing || room.isMatchFinished()) {
+		if (room.finalizing || room.isMatchFinished() || !BETWEEN_DUELS.has(room.duelState)) {
 			return;
 		}
 
