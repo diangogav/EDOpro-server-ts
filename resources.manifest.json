@@ -92,6 +92,12 @@
 			"file": "lflist/jtp-advanced-marzo-2007.lflist.conf"
 		},
 		{
+			"comment": "Genesys lflist from evolution-assets (overrides the daily-synced copy so EDOPro gets point changes on the same refresh cycle as YGOPro)",
+			"target": "edopro/evolution-lflists/genesys.lflist.conf",
+			"from": "evolution-assets",
+			"file": "lflist/genesys.lflist.conf"
+		},
+		{
 			"comment": "EDOPro databases",
 			"target": "edopro/databases",
 			"from": "edopro-cdbs"
