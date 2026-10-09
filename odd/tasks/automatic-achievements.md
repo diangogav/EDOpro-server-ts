@@ -115,3 +115,12 @@ warnings were fixed in 14ba8e4b (reached-or-exceeded evaluator, per-player
 advisory lock, streak computed in code). Range d99d2918..b71bd6dd assessed
 `medium`, `under_budget`: no review due, pending in the slice.
 Schema PR: https://github.com/diangogav/evolution-types/pull/16
+
+## Performance check (2026-10-09)
+Dev DB: `matches` 182k rows, only PK and `game_id` indexes; each history
+query was a ~29 ms parallel seq scan, ~90 ms per player per match. Fixed in
+evolution-types (same PR #16) with two separate migrations: an index on
+`user_achievements (user_id)` inside the catalog migration, and a standalone
+non-transactional `AddMatchesUserHistoryIndex` creating the partial index
+`matches (user_id, date DESC)` concurrently. Types head fe71664; server
+pointer f226497c (assessed medium, under budget).
