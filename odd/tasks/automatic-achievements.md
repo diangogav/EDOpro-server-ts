@@ -101,3 +101,9 @@ explicit authorization.
   the current group config, so an old list that is no longer current for an
   `onlyCurrent` group (TCG, OCG) does not count toward that ladder; the SQL
   readers were not exercised against a database.
+- Awarder hardening (14ba8e4b): the evaluator returns every code the player
+  qualifies for (reached or exceeded), so a lost award is recovered by the next
+  match; the held check and inserts run in one transaction under a per-player
+  `pg_advisory_xact_lock`; the streak is walked in TypeScript over the latest
+  200 outcomes (`date, created_at, id` descending). `pnpm lint`, `pnpm build`
+  clean; `pnpm test` 225 suites, 2131 tests.
