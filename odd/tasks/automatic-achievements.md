@@ -59,12 +59,12 @@ shows gameplay achievements without "0 pts". Pushes to evolution-types need
 explicit authorization.
 
 ## Tasks
-- [ ] T1 evolution-types: migration `AddAchievementCodeAndCatalog` adding
+- [x] T1 evolution-types: migration `AddAchievementCodeAndCatalog` adding
   `achievements.code varchar(64) null unique`, the unique index on
   `user_achievements (user_id, achievement_id, season)`, and the seed rows
   of the catalog with `earned_points = 0`; entity updates. Route: delegated
   with T2.
-- [ ] T2 EDOpro-server-ts plugin `src/plugins/achievements`: pure domain
+- [x] T2 EDOpro-server-ts plugin `src/plugins/achievements`: pure domain
   evaluator (history summary + current result -> codes to award), ports
   (achievement catalog by code, award with conflict-ignore, match history
   reader), `AchievementAwarder` subscribed to `GAME_OVER`, config gate on
@@ -79,4 +79,18 @@ explicit authorization.
   history per user to award retroactively (idempotent). Route: delegated.
 
 ## Progress and evidence
-(filled per task)
+- T1 (evolution-types d267f98): migration `1788900000000-AddAchievementCodeAndCatalog`
+  and `AchievementEntity.code`; `pnpm build` and `pnpm lint` in EDOpro-server-ts
+  pass. No automated test for the migration; not run against a database.
+  Ladders seeded: TCG, OCG, Edison (rank groups), JTP, Genesys (ban lists).
+- T2 (EDOpro-server-ts d1b28d58, includes the types pointer and the
+  `.gitignore` allowlist entry for `src/plugins/achievements/`): RED
+  `evaluateAchievements.test.ts` failed to compile (module missing), GREEN 15
+  tests; awarder and plugin tests RED on missing modules, GREEN 26 then 67
+  with bootstrap. `pnpm lint`, `pnpm build` clean; `pnpm test` 223 suites,
+  2119 tests passed.
+- Open points: the migration fails if `user_achievements` already holds
+  duplicate (user, achievement, season) rows; ladder wins fold history through
+  the current group config, so an old list that is no longer current for an
+  `onlyCurrent` group (TCG, OCG) does not count toward that ladder; the SQL
+  readers were not exercised against a database.
