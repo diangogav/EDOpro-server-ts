@@ -98,7 +98,6 @@ explicit authorization.
   EDOpro-server-ts d1b399d5 makes `award()` a plain INSERT and moves the types
   pointer. `pnpm lint`, `pnpm build` clean; `pnpm test` 223 suites, 2121 tests.
 - Open points: ladder wins fold history through
-
   the current group config, so an old list that is no longer current for an
   `onlyCurrent` group (TCG, OCG) does not count toward that ladder; the SQL
   readers were not exercised against a database.
