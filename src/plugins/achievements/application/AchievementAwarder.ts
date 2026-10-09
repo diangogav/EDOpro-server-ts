@@ -69,28 +69,29 @@ export class AchievementAwarder implements DomainEventSubscriber<GameOverDomainE
 		}
 
 		const rows = await this.catalog.findByCodes(codes);
-		const held = await this.userAchievementRepository.heldAchievementIds(
-			userProfile.id,
-			rows.map((row) => row.id),
-		);
-		for (const row of rows) {
-			if (held.has(row.id)) {
-				continue;
+		await this.userAchievementRepository.transaction(userProfile.id, async (tx) => {
+			const held = await tx.heldAchievementIds(
+				userProfile.id,
+				rows.map((row) => row.id),
+			);
+			for (const row of rows) {
+				if (held.has(row.id)) {
+					continue;
+				}
+				await tx.award({
+					userId: userProfile.id,
+					achievementId: row.id,
+					season: config.season,
+					labels: this.labelsFor(row.code, ladders),
+				});
+				this.logger.info(`Achievement ${row.code} awarded to ${player.name} (${userProfile.id})`);
 			}
-			const labels = this.labelsFor(row.code, ladders);
-			await this.userAchievementRepository.award({
-				userId: userProfile.id,
-				achievementId: row.id,
-				season: config.season,
-				labels,
-			});
-			this.logger.info(`Achievement ${row.code} awarded to ${player.name} (${userProfile.id})`);
-		}
+		});
 	}
 
 	private codesFor(summary: MatchHistorySummary, ladders: string[], won: boolean): string[] {
 		const candidates: AwardCandidate[] = [];
-		const evaluate = (ladder: string, ladderWinsBefore: number): void => {
+		const evaluate = (ladder: string | null, ladderWinsBefore: number): void => {
 			candidates.push(
 				...evaluateAchievements({
 					rankedWinsBefore: summary.rankedWins,
@@ -104,8 +105,7 @@ export class AchievementAwarder implements DomainEventSubscriber<GameOverDomainE
 		};
 
 		if (ladders.length === 0) {
-			// No ladder: ladderWinsBefore is irrelevant because no format row can match.
-			evaluate(NO_BAN_LIST, 1);
+			evaluate(null, 0);
 		}
 		for (const ladder of ladders) {
 			evaluate(ladder, this.ladderWinsIn(summary, ladder));

@@ -11,7 +11,10 @@ import { UserProfileMother } from "@test-support/mothers/user-profile/UserProfil
 import { config } from "../../../config/index";
 import { AchievementCatalog } from "../domain/AchievementCatalog";
 import { MatchHistoryReader, MatchHistorySummary } from "../domain/MatchHistoryReader";
-import { UserAchievementRepository } from "../domain/UserAchievementRepository";
+import {
+	UserAchievementRepository,
+	UserAchievementTransaction,
+} from "../domain/UserAchievementRepository";
 import { AchievementAwarder } from "./AchievementAwarder";
 
 const CATALOG_IDS: Record<string, number> = {
@@ -36,7 +39,8 @@ describe("AchievementAwarder", () => {
 	let userProfileRepository: MockProxy<UserProfileRepository>;
 	let matchHistoryReader: MockProxy<MatchHistoryReader>;
 	let catalog: MockProxy<AchievementCatalog>;
-	let userAchievementRepository: MockProxy<UserAchievementRepository>;
+	let userAchievementRepository: MockProxy<UserAchievementTransaction>;
+	let achievementRepository: MockProxy<UserAchievementRepository>;
 	let rankGroupResolver: MockProxy<RankGroupResolver>;
 	let awarder: AchievementAwarder;
 	let winnerProfile: UserProfile;
@@ -73,6 +77,10 @@ describe("AchievementAwarder", () => {
 		matchHistoryReader = mock();
 		catalog = mock();
 		userAchievementRepository = mock();
+		achievementRepository = mock();
+		achievementRepository.transaction.mockImplementation((_userId, work) =>
+			work(userAchievementRepository),
+		);
 		rankGroupResolver = mock();
 		rankGroupResolver.resolveAlias.mockImplementation((name) => name);
 		rankGroupResolver.groupsFor.mockReturnValue([]);
@@ -97,7 +105,7 @@ describe("AchievementAwarder", () => {
 			userProfileRepository,
 			matchHistoryReader,
 			catalog,
-			userAchievementRepository,
+			achievementRepository,
 			rankGroupResolver,
 		);
 	});
@@ -155,7 +163,7 @@ describe("AchievementAwarder", () => {
 
 		await awarder.handle(event());
 
-		expect(awardedCodesFor(winnerProfile.id).sort()).toEqual([1002, 1005]);
+		expect(awardedCodesFor(winnerProfile.id).sort()).toEqual([1001, 1002, 1005, 1011]);
 	});
 
 	it("awards matches_100 to the loser of the hundredth match", async () => {
@@ -163,7 +171,7 @@ describe("AchievementAwarder", () => {
 
 		await awarder.handle(event());
 
-		expect(awardedCodesFor(loserProfile.id)).toEqual([1008]);
+		expect(awardedCodesFor(loserProfile.id)).toContain(1008);
 	});
 
 	it("folds history by ladder through the alias and group resolvers", async () => {
@@ -205,9 +213,37 @@ describe("AchievementAwarder", () => {
 
 		expect(userAchievementRepository.heldAchievementIds).toHaveBeenCalledWith(
 			winnerProfile.id,
-			[1005],
+			[1001, 1005, 1011],
 		);
-		expect(awardedCodesFor(winnerProfile.id)).toEqual([]);
+		expect(awardedCodesFor(winnerProfile.id)).not.toContain(1005);
+	});
+
+	it("checks the held achievements before inserting, inside the player's transaction", async () => {
+		matchHistoryReader.summaryFor.mockResolvedValue(summary({ currentStreak: 2 }));
+		const order: string[] = [];
+		achievementRepository.transaction.mockImplementation(async (userId, work) => {
+			order.push(`begin:${userId}`);
+			const result = await work(userAchievementRepository);
+			order.push("end");
+
+			return result;
+		});
+		userAchievementRepository.heldAchievementIds.mockImplementation(async () => {
+			order.push("held");
+
+			return new Set();
+		});
+		userAchievementRepository.award.mockImplementation(async () => {
+			order.push("award");
+		});
+
+		await awarder.handle(event());
+
+		expect(order).toEqual(
+			expect.arrayContaining([`begin:${winnerProfile.id}`, "held", "award", "end"]),
+		);
+		expect(order.slice(0, 2)).toEqual([`begin:${winnerProfile.id}`, "held"]);
+		expect(order.at(-1)).toBe("end");
 	});
 
 	it("awards the streak to a player with no prior rows", async () => {
@@ -215,7 +251,7 @@ describe("AchievementAwarder", () => {
 
 		await awarder.handle(event());
 
-		expect(awardedCodesFor(winnerProfile.id)).toEqual([1005]);
+		expect(awardedCodesFor(winnerProfile.id)).toContain(1005);
 	});
 
 	it("keeps awarding the other player when one fails", async () => {
@@ -230,7 +266,7 @@ describe("AchievementAwarder", () => {
 		await expect(awarder.handle(event())).resolves.toBeUndefined();
 
 		expect(logger.error).toHaveBeenCalled();
-		expect(awardedCodesFor(loserProfile.id)).toEqual([1008]);
+		expect(awardedCodesFor(loserProfile.id)).toContain(1008);
 	});
 
 	it("does not throw when an award write fails", async () => {

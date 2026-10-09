@@ -5,7 +5,7 @@ export type AwardAchievement = {
 	labels: string[];
 };
 
-export interface UserAchievementRepository {
+export interface UserAchievementTransaction {
 	/**
 	 * Ids among `achievementIds` the user already holds in any season. Gameplay
 	 * achievements are awarded once per player, ever; the season-scoped unique
@@ -20,4 +20,13 @@ export interface UserAchievementRepository {
 	 * `heldAchievementIds` before calling this.
 	 */
 	award(award: AwardAchievement): Promise<void>;
+}
+
+export interface UserAchievementRepository {
+	/**
+	 * Runs `work` in one transaction that first takes a per-user lock, so the
+	 * held-achievements check and the inserts of two concurrent awards for the
+	 * same player never interleave.
+	 */
+	transaction<T>(userId: string, work: (tx: UserAchievementTransaction) => Promise<T>): Promise<T>;
 }

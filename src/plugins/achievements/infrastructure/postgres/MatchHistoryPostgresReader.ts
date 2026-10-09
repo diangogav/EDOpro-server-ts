@@ -1,9 +1,12 @@
 import { dataSource } from "../../../../evolution-types/src/data-source";
+import { currentStreak } from "../../domain/currentStreak";
 import { MatchHistoryReader, MatchHistorySummary } from "../../domain/MatchHistoryReader";
 
 // Rows that count as history: not annulled, not soft-deleted, not the match
 // being evaluated.
 const COUNTED = `user_id = $1 AND anulled = false AND deleted_at IS NULL AND game_id <> $2`;
+
+const STREAK_WINDOW = 200;
 
 export class MatchHistoryPostgresReader implements MatchHistoryReader {
 	async summaryFor(
@@ -25,22 +28,19 @@ export class MatchHistoryPostgresReader implements MatchHistoryReader {
 			params,
 		);
 
-		// Streak: counted matches with no counted loss at the same time or later,
-		// i.e. the run of wins ending at the most recent match.
-		const [streak]: Array<{ streak: string }> = await dataSource.query(
-			`SELECT count(*) AS streak FROM matches m
-			 WHERE m.user_id = $1 AND m.anulled = false AND m.deleted_at IS NULL AND m.game_id <> $2
-			   AND NOT EXISTS (
-			     SELECT 1 FROM matches l
-			     WHERE l.user_id = m.user_id AND l.anulled = false AND l.deleted_at IS NULL
-			       AND l.game_id <> $2 AND l.winner = false AND l.date >= m.date)`,
+		// Latest outcomes first; ties on the timestamp fall back to creation
+		// time and id so the order is deterministic. Streak thresholds are far
+		// below the limit.
+		const outcomes: Array<{ winner: boolean }> = await dataSource.query(
+			`SELECT winner FROM matches WHERE ${COUNTED}
+			 ORDER BY date DESC, created_at DESC, id DESC LIMIT ${STREAK_WINDOW}`,
 			params,
 		);
 
 		return {
 			rankedMatches: Number(totals.matches),
 			rankedWins: Number(totals.wins),
-			currentStreak: Number(streak.streak),
+			currentStreak: currentStreak(outcomes.map((row) => row.winner)),
 			ladderWins: Object.fromEntries(
 				ladderRows.map((row) => [row.ban_list_name, Number(row.wins)]),
 			),
