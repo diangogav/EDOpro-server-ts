@@ -18,9 +18,13 @@ missions come later.
 - The game server owns the migration and the awarding (plugin on
   `GAME_OVER`), the API only reads. The client distinguishes gameplay rows
   by non-null `code`.
-- Idempotent awards: unique index on `user_achievements (user_id,
-  achievement_id, season)` plus `ON CONFLICT DO NOTHING`; `format_first_win`
-  is one achievement row per ladder, so the index still holds.
+- Idempotent awards: there is NO unique index on `user_achievements`. The
+  awarder reads the ids the player already holds (any season) and skips them,
+  so gameplay achievements are awarded at most once per player, ever.
+  `format_first_win` is one achievement row per ladder. Reason (owner,
+  2026-10-09): a tournament trophy can legitimately be awarded to the same
+  user more than once (the same recurring tournament won twice), so a unique
+  index over (user, achievement, season) would be wrong for trophy rows.
 - Counts and streaks are computed from the `matches` table excluding the
   current `matchId` plus the current event outcome, so the plugin never
   depends on `basic-stats` having written its row first.
@@ -60,8 +64,7 @@ explicit authorization.
 
 ## Tasks
 - [x] T1 evolution-types: migration `AddAchievementCodeAndCatalog` adding
-  `achievements.code varchar(64) null unique`, the unique index on
-  `user_achievements (user_id, achievement_id, season)`, and the seed rows
+  `achievements.code varchar(64) null unique`, and the seed rows
   of the catalog with `earned_points = 0`; entity updates. Route: delegated
   with T2.
 - [x] T2 EDOpro-server-ts plugin `src/plugins/achievements`: pure domain
@@ -89,8 +92,13 @@ explicit authorization.
   tests; awarder and plugin tests RED on missing modules, GREEN 26 then 67
   with bootstrap. `pnpm lint`, `pnpm build` clean; `pnpm test` 223 suites,
   2119 tests passed.
-- Open points: the migration fails if `user_achievements` already holds
-  duplicate (user, achievement, season) rows; ladder wins fold history through
+- Idempotency change: 4f00f4fe adds `heldAchievementIds` so a gameplay
+  achievement is never re-awarded in a later season; evolution-types 3a2d015
+  removes the unique index on `user_achievements` from the migration;
+  EDOpro-server-ts d1b399d5 makes `award()` a plain INSERT and moves the types
+  pointer. `pnpm lint`, `pnpm build` clean; `pnpm test` 223 suites, 2121 tests.
+- Open points: ladder wins fold history through
+
   the current group config, so an old list that is no longer current for an
   `onlyCurrent` group (TCG, OCG) does not count toward that ladder; the SQL
   readers were not exercised against a database.
