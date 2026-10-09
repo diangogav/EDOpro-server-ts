@@ -69,7 +69,14 @@ export class AchievementAwarder implements DomainEventSubscriber<GameOverDomainE
 		}
 
 		const rows = await this.catalog.findByCodes(codes);
+		const held = await this.userAchievementRepository.heldAchievementIds(
+			userProfile.id,
+			rows.map((row) => row.id),
+		);
 		for (const row of rows) {
+			if (held.has(row.id)) {
+				continue;
+			}
 			const labels = this.labelsFor(row.code, ladders);
 			const created = await this.userAchievementRepository.award({
 				userId: userProfile.id,

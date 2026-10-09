@@ -90,6 +90,7 @@ describe("AchievementAwarder", () => {
 			codes.filter((code) => code in CATALOG_IDS).map((code) => ({ id: CATALOG_IDS[code], code })),
 		);
 		userAchievementRepository.award.mockResolvedValue(true);
+		userAchievementRepository.heldAchievementIds.mockResolvedValue(new Set());
 
 		awarder = new AchievementAwarder(
 			logger,
@@ -198,6 +199,27 @@ describe("AchievementAwarder", () => {
 
 		expect(userAchievementRepository.award).toHaveBeenCalledTimes(1);
 		expect(logger.info).not.toHaveBeenCalledWith(expect.stringContaining("awarded"));
+	});
+
+	it("does not award an achievement the player already holds from another season", async () => {
+		matchHistoryReader.summaryFor.mockResolvedValue(summary({ currentStreak: 2 }));
+		userAchievementRepository.heldAchievementIds.mockResolvedValue(new Set([1005]));
+
+		await awarder.handle(event());
+
+		expect(userAchievementRepository.heldAchievementIds).toHaveBeenCalledWith(
+			winnerProfile.id,
+			[1005],
+		);
+		expect(awardedCodesFor(winnerProfile.id)).toEqual([]);
+	});
+
+	it("awards the streak to a player with no prior rows", async () => {
+		matchHistoryReader.summaryFor.mockResolvedValue(summary({ currentStreak: 2 }));
+
+		await awarder.handle(event());
+
+		expect(awardedCodesFor(winnerProfile.id)).toEqual([1005]);
 	});
 
 	it("keeps awarding the other player when one fails", async () => {

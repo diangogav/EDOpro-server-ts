@@ -5,6 +5,19 @@ import {
 } from "../../domain/UserAchievementRepository";
 
 export class UserAchievementPostgresRepository implements UserAchievementRepository {
+	async heldAchievementIds(userId: string, achievementIds: number[]): Promise<Set<number>> {
+		if (achievementIds.length === 0) {
+			return new Set();
+		}
+
+		const rows: Array<{ achievement_id: number }> = await dataSource.query(
+			`SELECT DISTINCT achievement_id FROM user_achievements WHERE user_id = $1 AND achievement_id = ANY($2)`,
+			[userId, achievementIds],
+		);
+
+		return new Set(rows.map((row) => Number(row.achievement_id)));
+	}
+
 	async award({ userId, achievementId, season, labels }: AwardAchievement): Promise<boolean> {
 		const rows: unknown[] = await dataSource.query(
 			`INSERT INTO user_achievements (id, user_id, achievement_id, labels, unlocked_at, season)
