@@ -14,9 +14,10 @@ export interface UserAchievementRepository {
 	heldAchievementIds(userId: string, achievementIds: number[]): Promise<Set<number>>;
 
 	/**
-	 * Idempotent: awarding the same (user, achievement, season) twice leaves a
-	 * single row. Resolves true when this call created the row, false when it
-	 * already existed.
+	 * Plain insert: the table has no unique index over (user, achievement,
+	 * season) because tournament trophies may legitimately repeat for a player.
+	 * Gameplay rows are one-per-player only because the awarder checks
+	 * `heldAchievementIds` before calling this.
 	 */
-	award(award: AwardAchievement): Promise<boolean>;
+	award(award: AwardAchievement): Promise<void>;
 }

@@ -89,7 +89,7 @@ describe("AchievementAwarder", () => {
 		catalog.findByCodes.mockImplementation(async (codes) =>
 			codes.filter((code) => code in CATALOG_IDS).map((code) => ({ id: CATALOG_IDS[code], code })),
 		);
-		userAchievementRepository.award.mockResolvedValue(true);
+		userAchievementRepository.award.mockResolvedValue();
 		userAchievementRepository.heldAchievementIds.mockResolvedValue(new Set());
 
 		awarder = new AchievementAwarder(
@@ -189,16 +189,12 @@ describe("AchievementAwarder", () => {
 		expect(awardedCodesFor(winnerProfile.id)).toEqual([1001]);
 	});
 
-	it("leaves idempotency to the repository and still logs only new awards", async () => {
-		matchHistoryReader.summaryFor.mockResolvedValue(
-			summary({ rankedWins: 0, ladderWins: { TCG: 1 } }),
-		);
-		userAchievementRepository.award.mockResolvedValue(false);
+	it("logs each award it writes", async () => {
+		matchHistoryReader.summaryFor.mockResolvedValue(summary({ currentStreak: 2 }));
 
 		await awarder.handle(event());
 
-		expect(userAchievementRepository.award).toHaveBeenCalledTimes(1);
-		expect(logger.info).not.toHaveBeenCalledWith(expect.stringContaining("awarded"));
+		expect(logger.info).toHaveBeenCalledWith(expect.stringContaining("streak_3 awarded"));
 	});
 
 	it("does not award an achievement the player already holds from another season", async () => {

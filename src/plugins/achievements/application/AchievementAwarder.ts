@@ -78,15 +78,13 @@ export class AchievementAwarder implements DomainEventSubscriber<GameOverDomainE
 				continue;
 			}
 			const labels = this.labelsFor(row.code, ladders);
-			const created = await this.userAchievementRepository.award({
+			await this.userAchievementRepository.award({
 				userId: userProfile.id,
 				achievementId: row.id,
 				season: config.season,
 				labels,
 			});
-			if (created) {
-				this.logger.info(`Achievement ${row.code} awarded to ${player.name} (${userProfile.id})`);
-			}
+			this.logger.info(`Achievement ${row.code} awarded to ${player.name} (${userProfile.id})`);
 		}
 	}
 

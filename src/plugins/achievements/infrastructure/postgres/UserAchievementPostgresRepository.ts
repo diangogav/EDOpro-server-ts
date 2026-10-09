@@ -18,15 +18,11 @@ export class UserAchievementPostgresRepository implements UserAchievementReposit
 		return new Set(rows.map((row) => Number(row.achievement_id)));
 	}
 
-	async award({ userId, achievementId, season, labels }: AwardAchievement): Promise<boolean> {
-		const rows: unknown[] = await dataSource.query(
+	async award({ userId, achievementId, season, labels }: AwardAchievement): Promise<void> {
+		await dataSource.query(
 			`INSERT INTO user_achievements (id, user_id, achievement_id, labels, unlocked_at, season)
-			 VALUES (gen_random_uuid(), $1, $2, $3, now(), $4)
-			 ON CONFLICT (user_id, achievement_id, season) DO NOTHING
-			 RETURNING id`,
+			 VALUES (gen_random_uuid(), $1, $2, $3, now(), $4)`,
 			[userId, achievementId, JSON.stringify(labels), season],
 		);
-
-		return rows.length > 0;
 	}
 }
