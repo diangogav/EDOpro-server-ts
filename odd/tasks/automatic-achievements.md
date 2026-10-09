@@ -107,3 +107,11 @@ explicit authorization.
   `pg_advisory_xact_lock`; the streak is walked in TypeScript over the latest
   200 outcomes (`date, created_at, id` descending). `pnpm lint`, `pnpm build`
   clean; `pnpm test` 225 suites, 2131 tests.
+
+## Native review, server (2026-10-09)
+Range f3523caf..d99d2918 assessed `medium`; consent granted; single-lens
+review approved and acknowledged (lineage review-f9cbc6fe6b60c3ce). Its three
+warnings were fixed in 14ba8e4b (reached-or-exceeded evaluator, per-player
+advisory lock, streak computed in code). Range d99d2918..b71bd6dd assessed
+`medium`, `under_budget`: no review due, pending in the slice.
+Schema PR: https://github.com/diangogav/evolution-types/pull/16
