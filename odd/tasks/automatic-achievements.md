@@ -80,6 +80,14 @@ explicit authorization.
   when at least one trophy carries points. Route: delegated.
 - [ ] T5 EDOpro-server-ts script `backfill-achievements` replaying `matches`
   history per user to award retroactively (idempotent). Route: delegated.
+- [ ] T6 Unlock feedback (owner request, 2026-10-11). Today the awarder only
+  inserts the row and logs; the player sees the trophy on the next visit to
+  /perfil or /logros. Step 1: the awarder publishes an `AchievementUnlocked`
+  domain event on the EventBus after a successful award (base for the duel
+  message and the social layer). Step 2, pick later: web-only toast after a
+  ranked match (reload the record and diff), or a new duel/matchmaking message
+  that reaches EDOPro/MDPro3 too (needs the client team). After the merges.
+  Route: delegated.
 
 ## Progress and evidence
 - T1 (evolution-types d267f98): migration `1788900000000-AddAchievementCodeAndCatalog`
