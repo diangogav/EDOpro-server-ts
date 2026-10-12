@@ -78,8 +78,16 @@ explicit authorization.
 - [ ] T4 evolution-card-game: `UserAchievement.code: string | null`; the
   showcase hides the points line when `earnedPoints` is 0 and the note only
   when at least one trophy carries points. Route: delegated.
-- [ ] T5 EDOpro-server-ts script `backfill-achievements` replaying `matches`
+- [x] T5 EDOpro-server-ts script `backfill-achievements` replaying `matches`
   history per user to award retroactively (idempotent). Route: delegated.
+  Started 2026-10-12 on branch `feat/backfill-achievements`. Design: pure
+  `replayAchievements(matches, laddersFor)` folds a user's ranked matches in
+  chronological order through `evaluateAchievements`, so lifetime streaks are
+  detected the way the live awarder would have; each code keeps the season of
+  the match that first reached it. The script loads rows per user, reuses the
+  catalog and user-achievement repositories (held-check + per-user lock) and
+  runs dry by default and writes only with `--apply`. Streak needs the full ordered history, so the reader
+  gets a new `historyFor(userId)` rather than reusing `summaryFor`.
 - [ ] T6 Unlock feedback (owner request, 2026-10-11). Today the awarder only
   inserts the row and logs; the player sees the trophy on the next visit to
   /perfil or /logros. Step 1: the awarder publishes an `AchievementUnlocked`
@@ -132,3 +140,14 @@ evolution-types (same PR #16) with two separate migrations: an index on
 non-transactional `AddMatchesUserHistoryIndex` creating the partial index
 `matches (user_id, date DESC)` concurrently. Types head fe71664; server
 pointer f226497c (assessed medium, under budget).
+
+## Backfill (2026-10-12)
+Commit f1550c9b on `feat/backfill-achievements`: `pnpm backfill:achievements`
+(dry run) / `--apply`. Strict TDD observed (RED on missing modules, then
+GREEN); `pnpm test` 228 suites / 2150 tests, `pnpm lint` clean, `pnpm build`
+clean. Native review (reliability lens) approved and acknowledged, lineage
+review-c3bd8d7a5d9f3284. Advisory, non-blocking: the script resolves group
+ladders with no loaded ban lists, so every dated list of an `onlyCurrent`
+group counts as current; for lifetime `format_first_win` that is the intended
+historical reading, not a defect. `postgres.close()` is skipped on error.
+Not yet run against a database; first run should be the dry run on dev.
