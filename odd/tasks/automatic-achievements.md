@@ -80,6 +80,14 @@ explicit authorization.
   when at least one trophy carries points. Route: delegated.
 - [ ] T5 EDOpro-server-ts script `backfill-achievements` replaying `matches`
   history per user to award retroactively (idempotent). Route: delegated.
+  Started 2026-10-12 on branch `feat/backfill-achievements`. Design: pure
+  `replayAchievements(matches, laddersFor)` folds a user's ranked matches in
+  chronological order through `evaluateAchievements`, so lifetime streaks are
+  detected the way the live awarder would have; each code keeps the season of
+  the match that first reached it. The script loads rows per user, reuses the
+  catalog and user-achievement repositories (held-check + per-user lock) and
+  supports `--dry-run`. Streak needs the full ordered history, so the reader
+  gets a new `historyFor(userId)` rather than reusing `summaryFor`.
 - [ ] T6 Unlock feedback (owner request, 2026-10-11). Today the awarder only
   inserts the row and logs; the player sees the trophy on the next visit to
   /perfil or /logros. Step 1: the awarder publishes an `AchievementUnlocked`
