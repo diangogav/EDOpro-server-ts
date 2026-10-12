@@ -86,7 +86,7 @@ explicit authorization.
   detected the way the live awarder would have; each code keeps the season of
   the match that first reached it. The script loads rows per user, reuses the
   catalog and user-achievement repositories (held-check + per-user lock) and
-  supports `--dry-run`. Streak needs the full ordered history, so the reader
+  runs dry by default and writes only with `--apply`. Streak needs the full ordered history, so the reader
   gets a new `historyFor(userId)` rather than reusing `summaryFor`.
 - [ ] T6 Unlock feedback (owner request, 2026-10-11). Today the awarder only
   inserts the row and logs; the player sees the trophy on the next visit to

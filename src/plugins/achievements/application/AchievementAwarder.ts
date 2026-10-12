@@ -11,10 +11,9 @@ import {
 	evaluateAchievements,
 	formatFirstWinCode,
 } from "../domain/evaluateAchievements";
+import { laddersForBanList } from "../domain/laddersForBanList";
 import { MatchHistoryReader, MatchHistorySummary } from "../domain/MatchHistoryReader";
 import { UserAchievementRepository } from "../domain/UserAchievementRepository";
-
-const NO_BAN_LIST = "N/A";
 
 export class AchievementAwarder implements DomainEventSubscriber<GameOverDomainEvent> {
 	static readonly ListenTo = GameOverDomainEvent.DOMAIN_EVENT;
@@ -126,14 +125,7 @@ export class AchievementAwarder implements DomainEventSubscriber<GameOverDomainE
 			.reduce((total, [, wins]) => total + wins, 0);
 	}
 
-	// A played list feeds its own canonical rank and every group ladder it
-	// belongs to; the catalog decides which of those ladders have a row.
 	private laddersFor(banListName: string): string[] {
-		if (!banListName || banListName === NO_BAN_LIST) {
-			return [];
-		}
-		const resolved = this.rankGroupResolver.resolveAlias(banListName);
-
-		return [...new Set([resolved, ...this.rankGroupResolver.groupsFor(resolved)])];
+		return laddersForBanList(this.rankGroupResolver, banListName);
 	}
 }

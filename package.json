@@ -27,7 +27,8 @@
 		"migration:revert": "ts-node -r tsconfig-paths/register --require dotenv/config ./node_modules/typeorm/cli.js migration:revert -d ./src/evolution-types/src/data-source.ts",
 		"perf:protocol": "ts-node -r tsconfig-paths/register src/utils/perf/benchmark-protocol.ts",
 		"perf:ipc": "ts-node -r tsconfig-paths/register src/utils/perf/benchmark-node-cpp-ipc.ts",
-		"backfill:points-ledger": "ts-node -r tsconfig-paths/register --require dotenv/config src/scripts/backfill-points-ledger.ts"
+		"backfill:points-ledger": "ts-node -r tsconfig-paths/register --require dotenv/config src/scripts/backfill-points-ledger.ts",
+		"backfill:achievements": "ts-node -r tsconfig-paths/register --require dotenv/config src/scripts/backfill-achievements.ts"
 	},
 	"keywords": [],
 	"author": "",
