@@ -25,6 +25,7 @@ const plugin: ServerPlugin = {
 				new AchievementCatalogPostgresRepository(),
 				new UserAchievementPostgresRepository(),
 				new RankGroupResolver(getActiveRankGroupsConfig, new InMemoryLoadedBanListNamesProvider()),
+				bus,
 			),
 		);
 	},

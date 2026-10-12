@@ -10,6 +10,8 @@ import { UserProfileMother } from "@test-support/mothers/user-profile/UserProfil
 
 import { config } from "../../../config/index";
 import { AchievementCatalog } from "../domain/AchievementCatalog";
+import { AchievementUnlockedDomainEvent } from "../domain/AchievementUnlockedDomainEvent";
+import { AchievementUnlockedPublisher } from "../domain/AchievementUnlockedPublisher";
 import { MatchHistoryReader, MatchHistorySummary } from "../domain/MatchHistoryReader";
 import {
 	UserAchievementRepository,
@@ -42,6 +44,7 @@ describe("AchievementAwarder", () => {
 	let userAchievementRepository: MockProxy<UserAchievementTransaction>;
 	let achievementRepository: MockProxy<UserAchievementRepository>;
 	let rankGroupResolver: MockProxy<RankGroupResolver>;
+	let publisher: MockProxy<AchievementUnlockedPublisher>;
 	let awarder: AchievementAwarder;
 	let winnerProfile: UserProfile;
 	let loserProfile: UserProfile;
@@ -82,6 +85,8 @@ describe("AchievementAwarder", () => {
 			work(userAchievementRepository),
 		);
 		rankGroupResolver = mock();
+		publisher = mock();
+		publisher.publish.mockResolvedValue();
 		rankGroupResolver.resolveAlias.mockImplementation((name) => name);
 		rankGroupResolver.groupsFor.mockReturnValue([]);
 		winnerProfile = UserProfileMother.create();
@@ -107,6 +112,7 @@ describe("AchievementAwarder", () => {
 			catalog,
 			achievementRepository,
 			rankGroupResolver,
+			publisher,
 		);
 	});
 
@@ -276,5 +282,103 @@ describe("AchievementAwarder", () => {
 		await expect(awarder.handle(event())).resolves.toBeUndefined();
 
 		expect(logger.error).toHaveBeenCalled();
+	});
+
+	describe("unlock events", () => {
+		const published = () => publisher.publish.mock.calls.map(([, unlocked]) => unlocked.data);
+
+		it("publishes one event per inserted row with the exact payload", async () => {
+			matchHistoryReader.summaryFor.mockResolvedValue(
+				summary({ rankedWins: 0, rankedMatches: 0, ladderWins: {} }),
+			);
+			const gameOver = event();
+
+			await awarder.handle(gameOver);
+
+			expect(publisher.publish).toHaveBeenCalledTimes(2);
+			expect(publisher.publish).toHaveBeenCalledWith(
+				AchievementUnlockedDomainEvent.DOMAIN_EVENT,
+				expect.any(AchievementUnlockedDomainEvent),
+			);
+			expect(published()).toEqual(
+				expect.arrayContaining([
+					{
+						userId: winnerProfile.id,
+						username: winnerProfile.username,
+						achievementId: 1001,
+						code: "first_win",
+						season: config.season,
+						labels: [],
+						matchId: gameOver.data.matchId,
+						roomId: gameOver.data.roomId,
+					},
+					{
+						userId: winnerProfile.id,
+						username: winnerProfile.username,
+						achievementId: 1011,
+						code: "format_first_win:TCG",
+						season: config.season,
+						labels: ["TCG"],
+						matchId: gameOver.data.matchId,
+						roomId: gameOver.data.roomId,
+					},
+				]),
+			);
+		});
+
+		it("publishes nothing for achievements already held", async () => {
+			matchHistoryReader.summaryFor.mockResolvedValue(summary({ currentStreak: 2 }));
+			userAchievementRepository.heldAchievementIds.mockResolvedValue(new Set([1001, 1005, 1011]));
+
+			await awarder.handle(event());
+
+			expect(publisher.publish).not.toHaveBeenCalled();
+		});
+
+		it("publishes only the rows actually inserted", async () => {
+			matchHistoryReader.summaryFor.mockResolvedValue(summary({ currentStreak: 2 }));
+			userAchievementRepository.heldAchievementIds.mockResolvedValue(new Set([1001, 1011]));
+
+			await awarder.handle(event());
+
+			expect(published().map((data) => data.achievementId)).toEqual([1005]);
+		});
+
+		it("publishes nothing when the transaction fails", async () => {
+			userAchievementRepository.award.mockRejectedValue(new Error("boom"));
+
+			await awarder.handle(event());
+
+			expect(publisher.publish).not.toHaveBeenCalled();
+		});
+
+		it("publishes only after the transaction has resolved", async () => {
+			const order: string[] = [];
+			achievementRepository.transaction.mockImplementation(async (_userId, work) => {
+				const result = await work(userAchievementRepository);
+				order.push("committed");
+
+				return result;
+			});
+			publisher.publish.mockImplementation(async () => {
+				order.push("published");
+			});
+
+			await awarder.handle(event());
+
+			expect(order[0]).toBe("committed");
+			expect(order).toContain("published");
+		});
+
+		it("keeps awarding the other player when publishing throws", async () => {
+			matchHistoryReader.summaryFor.mockResolvedValue(summary({ rankedMatches: 99 }));
+			publisher.publish.mockRejectedValue(new Error("bus down"));
+
+			await expect(awarder.handle(event())).resolves.toBeUndefined();
+
+			expect(awardedCodesFor(winnerProfile.id)).toContain(1008);
+			expect(awardedCodesFor(loserProfile.id)).toContain(1008);
+			expect(logger.error).toHaveBeenCalled();
+		});
 	});
 });
