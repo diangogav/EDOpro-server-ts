@@ -134,8 +134,11 @@ explicit authorization.
   Done in 3bdab709: strict TDD observed (RED TS2307 on RoomNotify and the
   encoder, TS2353 on `notify`; then GREEN); `pnpm test` 230 suites / 2173
   tests, `pnpm lint` and `pnpm build` clean. `YGOProDuelingState` also builds
-  a MatchContext and got `notify`. Assessed medium, under budget: no review
-  due.
+  a MatchContext and got `notify`. Native review (reliability lens) approved
+  and acknowledged, lineage review-34895c6acb2d8d43. Advisory, non-blocking:
+  `createRoomNotify` loops with forEach, so a throwing send on one connection
+  skips later connections of the same user; player ids in MatchContext come
+  from `client.id`, the same domain `notify` matches on.
 - [ ] T8 evolution-card-game, phase B card: decoder
   `src/protocol/achievements/achievement-protocol.ts`, early branch in
   `ProtocolService._routeFrame` before the vendor path emitting
