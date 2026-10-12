@@ -7,11 +7,11 @@ export class AchievementCatalogPostgresRepository implements AchievementCatalog 
 			return [];
 		}
 
-		const rows: Array<{ id: number; code: string }> = await dataSource.query(
-			`SELECT id, code FROM achievements WHERE code = ANY($1) AND deleted_at IS NULL`,
+		const rows: Array<{ id: number; code: string; name: string }> = await dataSource.query(
+			`SELECT id, code, name FROM achievements WHERE code = ANY($1) AND deleted_at IS NULL`,
 			[codes],
 		);
 
-		return rows.map((row) => ({ id: Number(row.id), code: row.code }));
+		return rows.map((row) => ({ id: Number(row.id), code: row.code, name: row.name }));
 	}
 }

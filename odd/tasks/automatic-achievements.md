@@ -105,6 +105,21 @@ explicit authorization.
   GREEN); `pnpm test` 228 suites / 2157 tests, `pnpm lint` clean, `pnpm
   build` clean. The backfill script does not publish (it never goes through
   the awarder). Step 2 (client notice) still open.
+  Step 2 decision (owner, 2026-10-12): phase A announces unlocks through the
+  match lifecycle hooks, the same path the rating announcer uses. Pushing on
+  `GAME_OVER` is too late (sockets already closing) and matchmaking has no
+  per-user channel. Started on `feat/achievement-announce` (stacked on
+  `feat/achievement-unlocked-event`, PR #408): the awarder becomes a
+  `MatchLifecycleHook` (`onMatchEnding`, 1500 ms shared budget); it awards,
+  publishes `ACHIEVEMENT_UNLOCKED` and `ctx.announce()`s one system chat
+  line per unlock before `DUEL_END`. The `GAME_OVER` bus subscription is
+  dropped: every end path (dueling, abandon, edopro) runs the hooks. Phase B
+  (own opcode + web card) stays open.
+  Phase A done in 7e7d964d: strict TDD observed (RED on the hook shape and
+  on `lifecycleHooks`, then GREEN); `pnpm test` 228 suites / 2164 tests,
+  `pnpm lint` clean, `pnpm build` clean. Native review (reliability lens)
+  approved and acknowledged, lineage review-dd72b88ee483538f; advisory only.
+  `CatalogAchievement` now carries `name` for the announcement text.
 
 ## Progress and evidence
 - T1 (evolution-types d267f98): migration `1788900000000-AddAchievementCodeAndCatalog`

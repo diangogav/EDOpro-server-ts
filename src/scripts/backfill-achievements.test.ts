@@ -38,7 +38,9 @@ describe("runBackfill (achievements)", () => {
 		source.historyFor.mockImplementation((userId) => Promise.resolve(histories[userId]));
 		catalog.findByCodes.mockImplementation((codes) =>
 			Promise.resolve(
-				codes.filter((code) => code in CATALOG).map((code) => ({ id: CATALOG[code], code })),
+				codes
+					.filter((code) => code in CATALOG)
+					.map((code) => ({ id: CATALOG[code], code, name: code })),
 			),
 		);
 		tx.heldAchievementIds.mockResolvedValue(new Set());
@@ -115,7 +117,9 @@ describe("runBackfill (achievements)", () => {
 	it("ignores a ladder code without a catalog row silently", async () => {
 		catalog.findByCodes.mockImplementation((codes) =>
 			Promise.resolve(
-				codes.filter((code) => code === "first_win").map((code) => ({ id: 1001, code })),
+				codes
+					.filter((code) => code === "first_win")
+					.map((code) => ({ id: 1001, code, name: code })),
 			),
 		);
 
@@ -133,7 +137,9 @@ describe("runBackfill (achievements)", () => {
 		knownUserIds = ["user-1", "user-2"];
 		catalog.findByCodes.mockImplementation((codes) =>
 			Promise.resolve(
-				codes.filter((code) => code === "first_win").map((code) => ({ id: 1001, code })),
+				codes
+					.filter((code) => code === "first_win")
+					.map((code) => ({ id: 1001, code, name: code })),
 			),
 		);
 

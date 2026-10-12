@@ -1,10 +1,12 @@
-import { DomainEventSubscriber } from "@shared/event-bus/EventBus";
 import { Logger } from "@shared/logger/domain/Logger";
 import { RankGroupResolver } from "@shared/rank/application/RankGroupResolver";
-import { GameOverDomainEvent } from "@shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
-import { UserProfileRepository } from "@shared/user-profile/domain/UserProfileRepository";
+import {
+	MatchContext,
+	MatchContextPlayer,
+	MatchLifecycleHook,
+} from "@shared/room/domain/lifecycle/MatchLifecycleHook";
+import { YGOProStocChat } from "ygopro-msg-encode";
 
-import { config } from "../../../config/index";
 import { AchievementCatalog, CatalogAchievement } from "../domain/AchievementCatalog";
 import { AchievementUnlockedDomainEvent } from "../domain/AchievementUnlockedDomainEvent";
 import { AchievementUnlockedPublisher } from "../domain/AchievementUnlockedPublisher";
@@ -17,12 +19,19 @@ import { laddersForBanList } from "../domain/laddersForBanList";
 import { MatchHistoryReader, MatchHistorySummary } from "../domain/MatchHistoryReader";
 import { UserAchievementRepository } from "../domain/UserAchievementRepository";
 
-export class AchievementAwarder implements DomainEventSubscriber<GameOverDomainEvent> {
-	static readonly ListenTo = GameOverDomainEvent.DOMAIN_EVENT;
+const ELLIPSIS = "…";
+
+/**
+ * Awards gameplay achievements while the match is ending, so the unlock can be
+ * announced to the room before its sockets close. It runs ahead of the match
+ * row being persisted, which is why the current match is never in the history
+ * it reads.
+ */
+export class AchievementAwarder implements MatchLifecycleHook {
+	readonly name = "achievements";
 
 	constructor(
 		private readonly logger: Logger,
-		private readonly userProfileRepository: UserProfileRepository,
 		private readonly matchHistoryReader: MatchHistoryReader,
 		private readonly catalog: AchievementCatalog,
 		private readonly userAchievementRepository: UserAchievementRepository,
@@ -32,37 +41,36 @@ export class AchievementAwarder implements DomainEventSubscriber<GameOverDomainE
 		this.logger = logger.child({ file: "AchievementAwarder" });
 	}
 
-	async handle(event: GameOverDomainEvent): Promise<void> {
-		if (!event.data.ranked) {
+	async onMatchEnding(ctx: MatchContext): Promise<void> {
+		if (!ctx.ranked) {
 			return;
 		}
 
-		const ladders = this.laddersFor(event.data.banListName);
+		const ladders = this.laddersFor(ctx.banListName);
 
-		for (const player of event.data.players) {
+		for (const player of ctx.players) {
+			if (player.id === null) {
+				continue;
+			}
 			try {
-				await this.awardPlayer(event, player, ladders);
+				await this.awardPlayer(ctx, player, player.id, ladders);
 			} catch (error) {
 				this.logger.error(error instanceof Error ? error : new Error(String(error)), {
 					player: player.name,
-					matchId: event.data.matchId,
+					matchId: ctx.matchId,
 				});
 			}
 		}
 	}
 
 	private async awardPlayer(
-		event: GameOverDomainEvent,
-		player: { name: string; winner: boolean },
+		ctx: MatchContext,
+		player: MatchContextPlayer,
+		userId: string,
 		ladders: string[],
 	): Promise<void> {
-		const userProfile = await this.userProfileRepository.findByUsername(player.name);
-		if (!userProfile) {
-			return;
-		}
-
-		const summary = await this.matchHistoryReader.summaryFor(userProfile.id, {
-			excludeMatchId: event.data.matchId,
+		const summary = await this.matchHistoryReader.summaryFor(userId, {
+			excludeMatchId: ctx.matchId,
 		});
 
 		const codes = this.codesFor(summary, ladders, player.winner);
@@ -71,47 +79,65 @@ export class AchievementAwarder implements DomainEventSubscriber<GameOverDomainE
 		}
 
 		const rows = await this.catalog.findByCodes(codes);
-		const inserted = await this.userAchievementRepository.transaction(
-			userProfile.id,
-			async (tx) => {
-				const held = await tx.heldAchievementIds(
-					userProfile.id,
-					rows.map((row) => row.id),
-				);
-				const awarded: Array<{ row: CatalogAchievement; labels: string[] }> = [];
-				for (const row of rows) {
-					if (held.has(row.id)) {
-						continue;
-					}
-					const labels = this.labelsFor(row.code, ladders);
-					await tx.award({
-						userId: userProfile.id,
-						achievementId: row.id,
-						season: config.season,
-						labels,
-					});
-					awarded.push({ row, labels });
-					this.logger.info(`Achievement ${row.code} awarded to ${player.name} (${userProfile.id})`);
+		const inserted = await this.userAchievementRepository.transaction(userId, async (tx) => {
+			const held = await tx.heldAchievementIds(
+				userId,
+				rows.map((row) => row.id),
+			);
+			const awarded: Array<{ row: CatalogAchievement; labels: string[] }> = [];
+			for (const row of rows) {
+				if (held.has(row.id)) {
+					continue;
 				}
+				const labels = this.labelsFor(row.code, ladders);
+				await tx.award({
+					userId: userId,
+					achievementId: row.id,
+					season: ctx.season,
+					labels,
+				});
+				awarded.push({ row, labels });
+				this.logger.info(`Achievement ${row.code} awarded to ${player.name} (${userId})`);
+			}
 
-				return awarded;
-			},
-		);
+			return awarded;
+		});
 
 		for (const { row, labels } of inserted) {
 			await this.publishUnlocked(
 				new AchievementUnlockedDomainEvent({
-					userId: userProfile.id,
-					username: userProfile.username,
+					userId: userId,
+					username: player.name,
 					achievementId: row.id,
 					code: row.code,
-					season: config.season,
+					season: ctx.season,
 					labels,
-					matchId: event.data.matchId,
-					roomId: event.data.roomId,
+					matchId: ctx.matchId,
+					roomId: ctx.roomId,
 				}),
 			);
+			this.announceUnlocked(ctx, player.name, row.name);
 		}
+	}
+
+	private announceUnlocked(ctx: MatchContext, playerName: string, achievementName: string): void {
+		try {
+			ctx.announce(this.formatUnlock(playerName, achievementName));
+		} catch (error) {
+			this.logger.warn(`Achievement announcement failed: ${String(error)}`);
+		}
+	}
+
+	private formatUnlock(playerName: string, achievementName: string): string {
+		const prefix = `🏆 ${playerName} unlocked "`;
+		const suffix = '"';
+		const room = YGOProStocChat.MAX_LENGTH - prefix.length - suffix.length;
+		const shown =
+			achievementName.length > room
+				? `${achievementName.slice(0, Math.max(room - ELLIPSIS.length, 0))}${ELLIPSIS}`
+				: achievementName;
+
+		return `${prefix}${shown}${suffix}`;
 	}
 
 	private async publishUnlocked(unlocked: AchievementUnlockedDomainEvent): Promise<void> {
