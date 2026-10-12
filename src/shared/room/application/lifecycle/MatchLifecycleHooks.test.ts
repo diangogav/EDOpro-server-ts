@@ -20,6 +20,7 @@ function makeContext(): MatchContext {
 			{ id: "player-2", team: Team.OPPONENT, name: "Rival", winner: false },
 		],
 		announce: jest.fn(),
+		notify: jest.fn(),
 	};
 }
 

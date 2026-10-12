@@ -4,6 +4,7 @@ import { Logger } from "@shared/logger/domain/Logger";
 import { MatchLifecycleHooks } from "@shared/room/application/lifecycle/MatchLifecycleHooks";
 import { MatchContext } from "@shared/room/domain/lifecycle/MatchLifecycleHook";
 import { createRoomAnnounce } from "@shared/room/domain/lifecycle/RoomAnnounce";
+import { createRoomNotify } from "@shared/room/domain/lifecycle/RoomNotify";
 import { GameOverDomainEvent } from "@shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
 import { Team } from "@shared/room/Team";
 import { config } from "src/config";
@@ -61,6 +62,7 @@ export class EndMatchByAbandon {
 				winner: player.winner,
 			})),
 			announce: createRoomAnnounce(room),
+			notify: createRoomNotify(room),
 		};
 	}
 

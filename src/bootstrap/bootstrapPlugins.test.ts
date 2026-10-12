@@ -132,6 +132,7 @@ describe("bootstrapPlugins", () => {
 				season: 1,
 				players: [],
 				announce: () => undefined,
+				notify: () => undefined,
 			});
 			await new Promise((resolve) => setImmediate(resolve));
 
