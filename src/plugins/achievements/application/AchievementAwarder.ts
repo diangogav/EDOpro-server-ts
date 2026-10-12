@@ -5,7 +5,9 @@ import { GameOverDomainEvent } from "@shared/room/domain/match/domain/domain-eve
 import { UserProfileRepository } from "@shared/user-profile/domain/UserProfileRepository";
 
 import { config } from "../../../config/index";
-import { AchievementCatalog } from "../domain/AchievementCatalog";
+import { AchievementCatalog, CatalogAchievement } from "../domain/AchievementCatalog";
+import { AchievementUnlockedDomainEvent } from "../domain/AchievementUnlockedDomainEvent";
+import { AchievementUnlockedPublisher } from "../domain/AchievementUnlockedPublisher";
 import {
 	AwardCandidate,
 	evaluateAchievements,
@@ -25,6 +27,7 @@ export class AchievementAwarder implements DomainEventSubscriber<GameOverDomainE
 		private readonly catalog: AchievementCatalog,
 		private readonly userAchievementRepository: UserAchievementRepository,
 		private readonly rankGroupResolver: RankGroupResolver,
+		private readonly unlockedPublisher: AchievementUnlockedPublisher,
 	) {
 		this.logger = logger.child({ file: "AchievementAwarder" });
 	}
@@ -68,24 +71,58 @@ export class AchievementAwarder implements DomainEventSubscriber<GameOverDomainE
 		}
 
 		const rows = await this.catalog.findByCodes(codes);
-		await this.userAchievementRepository.transaction(userProfile.id, async (tx) => {
-			const held = await tx.heldAchievementIds(
-				userProfile.id,
-				rows.map((row) => row.id),
-			);
-			for (const row of rows) {
-				if (held.has(row.id)) {
-					continue;
+		const inserted = await this.userAchievementRepository.transaction(
+			userProfile.id,
+			async (tx) => {
+				const held = await tx.heldAchievementIds(
+					userProfile.id,
+					rows.map((row) => row.id),
+				);
+				const awarded: Array<{ row: CatalogAchievement; labels: string[] }> = [];
+				for (const row of rows) {
+					if (held.has(row.id)) {
+						continue;
+					}
+					const labels = this.labelsFor(row.code, ladders);
+					await tx.award({
+						userId: userProfile.id,
+						achievementId: row.id,
+						season: config.season,
+						labels,
+					});
+					awarded.push({ row, labels });
+					this.logger.info(`Achievement ${row.code} awarded to ${player.name} (${userProfile.id})`);
 				}
-				await tx.award({
+
+				return awarded;
+			},
+		);
+
+		for (const { row, labels } of inserted) {
+			await this.publishUnlocked(
+				new AchievementUnlockedDomainEvent({
 					userId: userProfile.id,
+					username: userProfile.username,
 					achievementId: row.id,
+					code: row.code,
 					season: config.season,
-					labels: this.labelsFor(row.code, ladders),
-				});
-				this.logger.info(`Achievement ${row.code} awarded to ${player.name} (${userProfile.id})`);
-			}
-		});
+					labels,
+					matchId: event.data.matchId,
+					roomId: event.data.roomId,
+				}),
+			);
+		}
+	}
+
+	private async publishUnlocked(unlocked: AchievementUnlockedDomainEvent): Promise<void> {
+		try {
+			await this.unlockedPublisher.publish(AchievementUnlockedDomainEvent.DOMAIN_EVENT, unlocked);
+		} catch (error) {
+			this.logger.error(error instanceof Error ? error : new Error(String(error)), {
+				achievement: unlocked.data.code,
+				userId: unlocked.data.userId,
+			});
+		}
 	}
 
 	private codesFor(summary: MatchHistorySummary, ladders: string[], won: boolean): string[] {

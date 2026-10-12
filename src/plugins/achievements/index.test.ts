@@ -35,4 +35,13 @@ describe("achievements plugin", () => {
 		expect(bus.subscribe).toHaveBeenCalledTimes(1);
 		expect(bus.subscribe).toHaveBeenCalledWith(GameOverDomainEvent.DOMAIN_EVENT, expect.anything());
 	});
+
+	it("hands the bus to the awarder as its unlock publisher", () => {
+		const bus = { subscribe: jest.fn(), publish: jest.fn() } as unknown as EventBus;
+
+		plugin.register(bus, makeDeps());
+
+		const awarder = (bus.subscribe as jest.Mock).mock.calls[0][1];
+		expect(awarder.unlockedPublisher).toBe(bus);
+	});
 });
