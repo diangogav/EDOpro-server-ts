@@ -121,7 +121,7 @@ explicit authorization.
   approved and acknowledged, lineage review-dd72b88ee483538f; advisory only.
   `CatalogAchievement` now carries `name` for the announcement text.
 
-- [ ] T7 EDOpro-server-ts, phase B wire format (started 2026-10-12 on
+- [x] T7 EDOpro-server-ts, phase B wire format (started 2026-10-12 on
   `feat/achievement-unlock-frame`): `MatchContext.notify(userId, frame)`
   built by `createRoomNotify(room)` next to `RoomAnnounce.ts` and wired at
   the same sites (`edopro/room/domain/RoomState.ts`,
@@ -131,6 +131,11 @@ explicit authorization.
   server and web; 0xf5 appears inside a 0xf3 payload in DeckError, so it was
   not taken). The awarder sends one frame per inserted row to the unlocking
   player only; the room-wide chat line stays. Route: delegated writer.
+  Done in 3bdab709: strict TDD observed (RED TS2307 on RoomNotify and the
+  encoder, TS2353 on `notify`; then GREEN); `pnpm test` 230 suites / 2173
+  tests, `pnpm lint` and `pnpm build` clean. `YGOProDuelingState` also builds
+  a MatchContext and got `notify`. Assessed medium, under budget: no review
+  due.
 - [ ] T8 evolution-card-game, phase B card: decoder
   `src/protocol/achievements/achievement-protocol.ts`, early branch in
   `ProtocolService._routeFrame` before the vendor path emitting
