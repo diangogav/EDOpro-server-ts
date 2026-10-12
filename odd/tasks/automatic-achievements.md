@@ -121,6 +121,25 @@ explicit authorization.
   approved and acknowledged, lineage review-dd72b88ee483538f; advisory only.
   `CatalogAchievement` now carries `name` for the announcement text.
 
+- [ ] T7 EDOpro-server-ts, phase B wire format (started 2026-10-12 on
+  `feat/achievement-unlock-frame`): `MatchContext.notify(userId, frame)`
+  built by `createRoomNotify(room)` next to `RoomAnnounce.ts` and wired at
+  the same sites (`edopro/room/domain/RoomState.ts`,
+  `edopro/room/application/FinishDuelHandler.ts`, `EndMatchByAbandon`);
+  `AchievementUnlockedClientMessage` encodes STOC `0xf1` as
+  `[size u16 LE][0xf1][achievementId u16 LE][code utf8]` (0xf1 is unused by
+  server and web; 0xf5 appears inside a 0xf3 payload in DeckError, so it was
+  not taken). The awarder sends one frame per inserted row to the unlocking
+  player only; the room-wide chat line stays. Route: delegated writer.
+- [ ] T8 evolution-card-game, phase B card: decoder
+  `src/protocol/achievements/achievement-protocol.ts`, early branch in
+  `ProtocolService._routeFrame` before the vendor path emitting
+  `protocol:achievement-unlocked` ({achievementId, code}); store
+  `achievementUnlockStore` reset where `ratingAnnouncementStore.reset()` runs
+  in `DuelOverlay.svelte`; card in `WinScreen.svelte` beside `win-rating`
+  reusing `atlasLabels.nodeName` and the catalog store for icon/name. Route:
+  delegated writer.
+
 ## Progress and evidence
 - T1 (evolution-types d267f98): migration `1788900000000-AddAchievementCodeAndCatalog`
   and `AchievementEntity.code`; `pnpm build` and `pnpm lint` in EDOpro-server-ts
