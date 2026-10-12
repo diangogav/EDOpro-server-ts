@@ -101,6 +101,10 @@ explicit authorization.
   (`AchievementUnlockedDomainEvent`: userId, username, achievementId, code,
   season, labels, matchId, roomId) once per inserted row, after the award
   transaction commits, so a rolled-back award never announces itself.
+  Done in eebc6cd5: strict TDD observed (RED on publish assertions, then
+  GREEN); `pnpm test` 228 suites / 2157 tests, `pnpm lint` clean, `pnpm
+  build` clean. The backfill script does not publish (it never goes through
+  the awarder). Step 2 (client notice) still open.
 
 ## Progress and evidence
 - T1 (evolution-types d267f98): migration `1788900000000-AddAchievementCodeAndCatalog`
