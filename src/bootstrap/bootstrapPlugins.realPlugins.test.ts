@@ -60,7 +60,7 @@ describe("bootstrapPlugins against the real src/plugins directory", () => {
 				"achievements",
 			]),
 		);
-		expect(bus.subscribe).toHaveBeenCalledTimes(4);
+		expect(bus.subscribe).toHaveBeenCalledTimes(3);
 	});
 
 	it("issues zero Postgres queries when ranking is disabled and GAME_OVER is published", async () => {
@@ -89,7 +89,7 @@ describe("bootstrapPlugins against the real src/plugins directory", () => {
 		getRepositorySpy.mockRestore();
 	});
 
-	it("registers rating-announcer's lifecycle hook only when ranking is enabled", async () => {
+	it("registers the ranking lifecycle hooks only when ranking is enabled", async () => {
 		const bus = { subscribe: jest.fn() } as unknown as EventBus;
 		const registerSpy = jest
 			.spyOn(container.get(MatchLifecycleHooks), "register")
@@ -101,7 +101,10 @@ describe("bootstrapPlugins against the real src/plugins directory", () => {
 
 		const enabledReport = await bootstrapPlugins(bus, makeDeps(true));
 		expect(enabledReport.loaded).toContain("rating-announcer");
-		expect(registerSpy).toHaveBeenCalledTimes(1);
+		expect(registerSpy.mock.calls.map(([hook]) => hook.name).sort()).toEqual([
+			"achievements",
+			"rating-announcer",
+		]);
 
 		registerSpy.mockRestore();
 	});

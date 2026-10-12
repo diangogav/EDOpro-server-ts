@@ -1,6 +1,7 @@
 export type CatalogAchievement = {
 	id: number;
 	code: string;
+	name: string;
 };
 
 export interface AchievementCatalog {

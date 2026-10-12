@@ -1,14 +1,12 @@
 import { mock, MockProxy } from "jest-mock-extended";
 import { Logger } from "@shared/logger/domain/Logger";
+import { MatchContext } from "@shared/room/domain/lifecycle/MatchLifecycleHook";
 import { RankGroupResolver } from "@shared/rank/application/RankGroupResolver";
+import { YGOProStocChat } from "ygopro-msg-encode";
 import { Team } from "@shared/room/Team";
 import { UserProfile } from "@shared/user-profile/domain/UserProfile";
-import { UserProfileRepository } from "@shared/user-profile/domain/UserProfileRepository";
-import { GameOverDomainEventMother } from "@test-support/mothers/player/GameOverDomainEventMother";
-import { PlayerMother } from "@test-support/mothers/player/PlayerMother";
 import { UserProfileMother } from "@test-support/mothers/user-profile/UserProfileMother";
 
-import { config } from "../../../config/index";
 import { AchievementCatalog } from "../domain/AchievementCatalog";
 import { AchievementUnlockedDomainEvent } from "../domain/AchievementUnlockedDomainEvent";
 import { AchievementUnlockedPublisher } from "../domain/AchievementUnlockedPublisher";
@@ -18,6 +16,8 @@ import {
 	UserAchievementTransaction,
 } from "../domain/UserAchievementRepository";
 import { AchievementAwarder } from "./AchievementAwarder";
+
+const SEASON = 99;
 
 const CATALOG_IDS: Record<string, number> = {
 	first_win: 1001,
@@ -38,7 +38,7 @@ const summary = (overrides: Partial<MatchHistorySummary> = {}): MatchHistorySumm
 
 describe("AchievementAwarder", () => {
 	let logger: MockProxy<Logger>;
-	let userProfileRepository: MockProxy<UserProfileRepository>;
+	let announce: jest.Mock;
 	let matchHistoryReader: MockProxy<MatchHistoryReader>;
 	let catalog: MockProxy<AchievementCatalog>;
 	let userAchievementRepository: MockProxy<UserAchievementTransaction>;
@@ -49,24 +49,19 @@ describe("AchievementAwarder", () => {
 	let winnerProfile: UserProfile;
 	let loserProfile: UserProfile;
 
-	const event = (overrides = {}) =>
-		GameOverDomainEventMother.create({
-			ranked: true,
-			banListName: "TCG",
-			players: [
-				PlayerMother.create({
-					name: winnerProfile.username,
-					team: Team.PLAYER,
-					winner: true,
-				}).toPresentation(),
-				PlayerMother.create({
-					name: loserProfile.username,
-					team: Team.OPPONENT,
-					winner: false,
-				}).toPresentation(),
-			],
-			...overrides,
-		});
+	const event = (overrides: Partial<MatchContext> = {}): MatchContext => ({
+		roomId: 12,
+		matchId: "match-1",
+		ranked: true,
+		banListName: "TCG",
+		season: SEASON,
+		players: [
+			{ id: winnerProfile.id, team: Team.PLAYER, name: winnerProfile.username, winner: true },
+			{ id: loserProfile.id, team: Team.OPPONENT, name: loserProfile.username, winner: false },
+		],
+		announce,
+		...overrides,
+	});
 
 	const awardedCodesFor = (userId: string): number[] =>
 		userAchievementRepository.award.mock.calls
@@ -76,7 +71,7 @@ describe("AchievementAwarder", () => {
 	beforeEach(() => {
 		logger = mock<Logger>();
 		logger.child.mockReturnValue(logger);
-		userProfileRepository = mock();
+		announce = jest.fn();
 		matchHistoryReader = mock();
 		catalog = mock();
 		userAchievementRepository = mock();
@@ -91,23 +86,17 @@ describe("AchievementAwarder", () => {
 		rankGroupResolver.groupsFor.mockReturnValue([]);
 		winnerProfile = UserProfileMother.create();
 		loserProfile = UserProfileMother.create();
-		userProfileRepository.findByUsername.mockImplementation(async (username) =>
-			username === winnerProfile.username
-				? winnerProfile
-				: username === loserProfile.username
-					? loserProfile
-					: null,
-		);
 		matchHistoryReader.summaryFor.mockResolvedValue(summary());
 		catalog.findByCodes.mockImplementation(async (codes) =>
-			codes.filter((code) => code in CATALOG_IDS).map((code) => ({ id: CATALOG_IDS[code], code })),
+			codes
+				.filter((code) => code in CATALOG_IDS)
+				.map((code) => ({ id: CATALOG_IDS[code], code, name: `Name of ${code}` })),
 		);
 		userAchievementRepository.award.mockResolvedValue();
 		userAchievementRepository.heldAchievementIds.mockResolvedValue(new Set());
 
 		awarder = new AchievementAwarder(
 			logger,
-			userProfileRepository,
 			matchHistoryReader,
 			catalog,
 			achievementRepository,
@@ -117,28 +106,35 @@ describe("AchievementAwarder", () => {
 	});
 
 	it("does nothing for an unranked match", async () => {
-		await awarder.handle(event({ ranked: false }));
+		await awarder.onMatchEnding(event({ ranked: false }));
 
-		expect(userProfileRepository.findByUsername).not.toHaveBeenCalled();
+		expect(matchHistoryReader.summaryFor).not.toHaveBeenCalled();
+		expect(announce).not.toHaveBeenCalled();
 		expect(userAchievementRepository.award).not.toHaveBeenCalled();
 	});
 
-	it("skips players without a profile", async () => {
-		userProfileRepository.findByUsername.mockResolvedValue(null);
+	it("skips players without a user id", async () => {
+		const ctx = event();
+		await awarder.onMatchEnding({
+			...ctx,
+			players: [{ ...ctx.players[0], id: null }, ctx.players[1]],
+		});
 
-		await awarder.handle(event());
+		expect(matchHistoryReader.summaryFor).toHaveBeenCalledTimes(1);
+		expect(matchHistoryReader.summaryFor).toHaveBeenCalledWith(loserProfile.id, expect.anything());
+	});
 
-		expect(matchHistoryReader.summaryFor).not.toHaveBeenCalled();
-		expect(userAchievementRepository.award).not.toHaveBeenCalled();
+	it("is a lifecycle hook named achievements", () => {
+		expect(awarder.name).toBe("achievements");
 	});
 
 	it("reads the history excluding the current match", async () => {
 		const gameOver = event();
 
-		await awarder.handle(gameOver);
+		await awarder.onMatchEnding(gameOver);
 
 		expect(matchHistoryReader.summaryFor).toHaveBeenCalledWith(winnerProfile.id, {
-			excludeMatchId: gameOver.data.matchId,
+			excludeMatchId: gameOver.matchId,
 		});
 	});
 
@@ -147,18 +143,18 @@ describe("AchievementAwarder", () => {
 			summary({ rankedWins: 0, rankedMatches: 0, ladderWins: {} }),
 		);
 
-		await awarder.handle(event());
+		await awarder.onMatchEnding(event());
 
 		expect(userAchievementRepository.award).toHaveBeenCalledWith({
 			userId: winnerProfile.id,
 			achievementId: 1001,
-			season: config.season,
+			season: SEASON,
 			labels: [],
 		});
 		expect(userAchievementRepository.award).toHaveBeenCalledWith({
 			userId: winnerProfile.id,
 			achievementId: 1011,
-			season: config.season,
+			season: SEASON,
 			labels: ["TCG"],
 		});
 		expect(awardedCodesFor(loserProfile.id)).toEqual([]);
@@ -167,7 +163,7 @@ describe("AchievementAwarder", () => {
 	it("awards wins and streak thresholds reached by the win", async () => {
 		matchHistoryReader.summaryFor.mockResolvedValue(summary({ rankedWins: 9, currentStreak: 2 }));
 
-		await awarder.handle(event());
+		await awarder.onMatchEnding(event());
 
 		expect(awardedCodesFor(winnerProfile.id).sort()).toEqual([1001, 1002, 1005, 1011]);
 	});
@@ -175,7 +171,7 @@ describe("AchievementAwarder", () => {
 	it("awards matches_100 to the loser of the hundredth match", async () => {
 		matchHistoryReader.summaryFor.mockResolvedValue(summary({ rankedMatches: 99 }));
 
-		await awarder.handle(event());
+		await awarder.onMatchEnding(event());
 
 		expect(awardedCodesFor(loserProfile.id)).toContain(1008);
 	});
@@ -188,7 +184,7 @@ describe("AchievementAwarder", () => {
 			summary({ ladderWins: { "2009.04 Edison": 0, "2010.03 Edison": 0 } }),
 		);
 
-		await awarder.handle(event({ banListName: "2010.03 Edison" }));
+		await awarder.onMatchEnding(event({ banListName: "2010.03 Edison" }));
 
 		expect(userAchievementRepository.award).toHaveBeenCalledWith(
 			expect.objectContaining({ achievementId: 1013, labels: ["Edison"] }),
@@ -198,7 +194,7 @@ describe("AchievementAwarder", () => {
 	it("skips the ladder row when the ban list is N/A", async () => {
 		matchHistoryReader.summaryFor.mockResolvedValue(summary({ rankedWins: 0, ladderWins: {} }));
 
-		await awarder.handle(event({ banListName: "N/A" }));
+		await awarder.onMatchEnding(event({ banListName: "N/A" }));
 
 		expect(awardedCodesFor(winnerProfile.id)).toEqual([1001]);
 	});
@@ -206,7 +202,7 @@ describe("AchievementAwarder", () => {
 	it("logs each award it writes", async () => {
 		matchHistoryReader.summaryFor.mockResolvedValue(summary({ currentStreak: 2 }));
 
-		await awarder.handle(event());
+		await awarder.onMatchEnding(event());
 
 		expect(logger.info).toHaveBeenCalledWith(expect.stringContaining("streak_3 awarded"));
 	});
@@ -215,7 +211,7 @@ describe("AchievementAwarder", () => {
 		matchHistoryReader.summaryFor.mockResolvedValue(summary({ currentStreak: 2 }));
 		userAchievementRepository.heldAchievementIds.mockResolvedValue(new Set([1005]));
 
-		await awarder.handle(event());
+		await awarder.onMatchEnding(event());
 
 		expect(userAchievementRepository.heldAchievementIds).toHaveBeenCalledWith(
 			winnerProfile.id,
@@ -243,7 +239,7 @@ describe("AchievementAwarder", () => {
 			order.push("award");
 		});
 
-		await awarder.handle(event());
+		await awarder.onMatchEnding(event());
 
 		expect(order).toEqual(
 			expect.arrayContaining([`begin:${winnerProfile.id}`, "held", "award", "end"]),
@@ -255,7 +251,7 @@ describe("AchievementAwarder", () => {
 	it("awards the streak to a player with no prior rows", async () => {
 		matchHistoryReader.summaryFor.mockResolvedValue(summary({ currentStreak: 2 }));
 
-		await awarder.handle(event());
+		await awarder.onMatchEnding(event());
 
 		expect(awardedCodesFor(winnerProfile.id)).toContain(1005);
 	});
@@ -269,7 +265,7 @@ describe("AchievementAwarder", () => {
 			return summary({ rankedMatches: 99 });
 		});
 
-		await expect(awarder.handle(event())).resolves.toBeUndefined();
+		await expect(awarder.onMatchEnding(event())).resolves.toBeUndefined();
 
 		expect(logger.error).toHaveBeenCalled();
 		expect(awardedCodesFor(loserProfile.id)).toContain(1008);
@@ -279,7 +275,7 @@ describe("AchievementAwarder", () => {
 		matchHistoryReader.summaryFor.mockResolvedValue(summary({ rankedMatches: 99 }));
 		userAchievementRepository.award.mockRejectedValue(new Error("boom"));
 
-		await expect(awarder.handle(event())).resolves.toBeUndefined();
+		await expect(awarder.onMatchEnding(event())).resolves.toBeUndefined();
 
 		expect(logger.error).toHaveBeenCalled();
 	});
@@ -293,7 +289,7 @@ describe("AchievementAwarder", () => {
 			);
 			const gameOver = event();
 
-			await awarder.handle(gameOver);
+			await awarder.onMatchEnding(gameOver);
 
 			expect(publisher.publish).toHaveBeenCalledTimes(2);
 			expect(publisher.publish).toHaveBeenCalledWith(
@@ -307,20 +303,20 @@ describe("AchievementAwarder", () => {
 						username: winnerProfile.username,
 						achievementId: 1001,
 						code: "first_win",
-						season: config.season,
+						season: SEASON,
 						labels: [],
-						matchId: gameOver.data.matchId,
-						roomId: gameOver.data.roomId,
+						matchId: gameOver.matchId,
+						roomId: gameOver.roomId,
 					},
 					{
 						userId: winnerProfile.id,
 						username: winnerProfile.username,
 						achievementId: 1011,
 						code: "format_first_win:TCG",
-						season: config.season,
+						season: SEASON,
 						labels: ["TCG"],
-						matchId: gameOver.data.matchId,
-						roomId: gameOver.data.roomId,
+						matchId: gameOver.matchId,
+						roomId: gameOver.roomId,
 					},
 				]),
 			);
@@ -330,7 +326,7 @@ describe("AchievementAwarder", () => {
 			matchHistoryReader.summaryFor.mockResolvedValue(summary({ currentStreak: 2 }));
 			userAchievementRepository.heldAchievementIds.mockResolvedValue(new Set([1001, 1005, 1011]));
 
-			await awarder.handle(event());
+			await awarder.onMatchEnding(event());
 
 			expect(publisher.publish).not.toHaveBeenCalled();
 		});
@@ -339,7 +335,7 @@ describe("AchievementAwarder", () => {
 			matchHistoryReader.summaryFor.mockResolvedValue(summary({ currentStreak: 2 }));
 			userAchievementRepository.heldAchievementIds.mockResolvedValue(new Set([1001, 1011]));
 
-			await awarder.handle(event());
+			await awarder.onMatchEnding(event());
 
 			expect(published().map((data) => data.achievementId)).toEqual([1005]);
 		});
@@ -347,7 +343,7 @@ describe("AchievementAwarder", () => {
 		it("publishes nothing when the transaction fails", async () => {
 			userAchievementRepository.award.mockRejectedValue(new Error("boom"));
 
-			await awarder.handle(event());
+			await awarder.onMatchEnding(event());
 
 			expect(publisher.publish).not.toHaveBeenCalled();
 		});
@@ -364,7 +360,7 @@ describe("AchievementAwarder", () => {
 				order.push("published");
 			});
 
-			await awarder.handle(event());
+			await awarder.onMatchEnding(event());
 
 			expect(order[0]).toBe("committed");
 			expect(order).toContain("published");
@@ -374,11 +370,82 @@ describe("AchievementAwarder", () => {
 			matchHistoryReader.summaryFor.mockResolvedValue(summary({ rankedMatches: 99 }));
 			publisher.publish.mockRejectedValue(new Error("bus down"));
 
-			await expect(awarder.handle(event())).resolves.toBeUndefined();
+			await expect(awarder.onMatchEnding(event())).resolves.toBeUndefined();
 
 			expect(awardedCodesFor(winnerProfile.id)).toContain(1008);
 			expect(awardedCodesFor(loserProfile.id)).toContain(1008);
 			expect(logger.error).toHaveBeenCalled();
+		});
+	});
+
+	describe("announcements", () => {
+		it("announces once per inserted row with the catalog name", async () => {
+			matchHistoryReader.summaryFor.mockResolvedValue(
+				summary({ rankedWins: 0, rankedMatches: 0, ladderWins: {} }),
+			);
+
+			await awarder.onMatchEnding(event());
+
+			expect(announce).toHaveBeenCalledTimes(2);
+			expect(announce).toHaveBeenCalledWith(
+				`🏆 ${winnerProfile.username} unlocked "Name of first_win"`,
+			);
+			expect(announce).toHaveBeenCalledWith(
+				`🏆 ${winnerProfile.username} unlocked "Name of format_first_win:TCG"`,
+			);
+		});
+
+		it("does not announce rows the player already holds", async () => {
+			matchHistoryReader.summaryFor.mockResolvedValue(summary({ currentStreak: 2 }));
+			userAchievementRepository.heldAchievementIds.mockResolvedValue(new Set([1001, 1011]));
+
+			await awarder.onMatchEnding(event());
+
+			expect(announce).toHaveBeenCalledTimes(1);
+			expect(announce).toHaveBeenCalledWith(
+				`🏆 ${winnerProfile.username} unlocked "Name of streak_3"`,
+			);
+		});
+
+		it("announces after the transaction commits", async () => {
+			const order: string[] = [];
+			achievementRepository.transaction.mockImplementation(async (_userId, work) => {
+				const result = await work(userAchievementRepository);
+				order.push("committed");
+
+				return result;
+			});
+			announce.mockImplementation(() => order.push("announced"));
+
+			await awarder.onMatchEnding(event());
+
+			expect(order[0]).toBe("committed");
+			expect(order).toContain("announced");
+		});
+
+		it("keeps the event publish and the other player when announce throws", async () => {
+			matchHistoryReader.summaryFor.mockResolvedValue(summary({ rankedMatches: 99 }));
+			announce.mockImplementation(() => {
+				throw new Error("socket closed");
+			});
+
+			await expect(awarder.onMatchEnding(event())).resolves.toBeUndefined();
+
+			expect(announce).toHaveBeenCalled();
+			expect(publisher.publish).toHaveBeenCalledTimes(announce.mock.calls.length);
+			expect(awardedCodesFor(loserProfile.id)).toContain(1008);
+			expect(logger.warn).toHaveBeenCalled();
+		});
+
+		it("keeps every announcement under the system chat limit", async () => {
+			catalog.findByCodes.mockResolvedValue([
+				{ id: 1001, code: "first_win", name: "x".repeat(500) },
+			]);
+
+			await awarder.onMatchEnding(event());
+
+			const [message] = announce.mock.calls[0];
+			expect(message.length).toBeLessThanOrEqual(YGOProStocChat.MAX_LENGTH);
 		});
 	});
 });
