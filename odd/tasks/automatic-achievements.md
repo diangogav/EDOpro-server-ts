@@ -96,6 +96,11 @@ explicit authorization.
   ranked match (reload the record and diff), or a new duel/matchmaking message
   that reaches EDOPro/MDPro3 too (needs the client team). After the merges.
   Route: delegated.
+  Step 1 started 2026-10-12 on `feat/achievement-unlocked-event`: the awarder
+  receives the EventBus and publishes `ACHIEVEMENT_UNLOCKED`
+  (`AchievementUnlockedDomainEvent`: userId, username, achievementId, code,
+  season, labels, matchId, roomId) once per inserted row, after the award
+  transaction commits, so a rolled-back award never announces itself.
 
 ## Progress and evidence
 - T1 (evolution-types d267f98): migration `1788900000000-AddAchievementCodeAndCatalog`
