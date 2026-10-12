@@ -139,7 +139,7 @@ explicit authorization.
   `createRoomNotify` loops with forEach, so a throwing send on one connection
   skips later connections of the same user; player ids in MatchContext come
   from `client.id`, the same domain `notify` matches on.
-- [ ] T8 evolution-card-game, phase B card: decoder
+- [x] T8 evolution-card-game, phase B card: decoder
   `src/protocol/achievements/achievement-protocol.ts`, early branch in
   `ProtocolService._routeFrame` before the vendor path emitting
   `protocol:achievement-unlocked` ({achievementId, code}); store
@@ -147,6 +147,16 @@ explicit authorization.
   in `DuelOverlay.svelte`; card in `WinScreen.svelte` beside `win-rating`
   reusing `atlasLabels.nodeName` and the catalog store for icon/name. Route:
   delegated writer.
+  Done in ab3380d2 on `feat/achievement-unlock-card`: strict TDD observed
+  (RED on missing modules and 4 failing WinScreen assertions, then GREEN);
+  `npm run test` 688 files / 7303 tests, lint and svelte-check with only
+  pre-existing warnings, build clean. `push` ignores a repeated
+  achievementId; WinScreen loads the catalog on demand and falls back to the
+  raw code. Native review (reliability lens) approved and acknowledged,
+  lineage review-c961d0341cba9059. Advisory: the store resets only on leave;
+  frames arrive only at match end, so no stale cross-game state is possible
+  today. Overlay glue (event to store) is untested; loadCatalog rejections are
+  unobserved but degrade to the fallback.
 
 ## Progress and evidence
 - T1 (evolution-types d267f98): migration `1788900000000-AddAchievementCodeAndCatalog`
