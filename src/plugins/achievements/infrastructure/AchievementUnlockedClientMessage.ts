@@ -8,7 +8,11 @@ export class AchievementUnlockedClientMessage {
 		const id = Buffer.alloc(2);
 		id.writeUint16LE(achievementId);
 
-		const data = Buffer.concat([Buffer.from([ACHIEVEMENT_UNLOCKED]), id, Buffer.from(code, "utf8")]);
+		const data = Buffer.concat([
+			Buffer.from([ACHIEVEMENT_UNLOCKED]),
+			id,
+			Buffer.from(code, "utf8"),
+		]);
 		const size = Buffer.alloc(2);
 		size.writeUint16LE(data.length);
 
