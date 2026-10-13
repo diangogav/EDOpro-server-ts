@@ -121,6 +121,43 @@ explicit authorization.
   approved and acknowledged, lineage review-dd72b88ee483538f; advisory only.
   `CatalogAchievement` now carries `name` for the announcement text.
 
+- [x] T7 EDOpro-server-ts, phase B wire format (started 2026-10-12 on
+  `feat/achievement-unlock-frame`): `MatchContext.notify(userId, frame)`
+  built by `createRoomNotify(room)` next to `RoomAnnounce.ts` and wired at
+  the same sites (`edopro/room/domain/RoomState.ts`,
+  `edopro/room/application/FinishDuelHandler.ts`, `EndMatchByAbandon`);
+  `AchievementUnlockedClientMessage` encodes STOC `0xf1` as
+  `[size u16 LE][0xf1][achievementId u16 LE][code utf8]` (0xf1 is unused by
+  server and web; 0xf5 appears inside a 0xf3 payload in DeckError, so it was
+  not taken). The awarder sends one frame per inserted row to the unlocking
+  player only; the room-wide chat line stays. Route: delegated writer.
+  Done in 3bdab709: strict TDD observed (RED TS2307 on RoomNotify and the
+  encoder, TS2353 on `notify`; then GREEN); `pnpm test` 230 suites / 2173
+  tests, `pnpm lint` and `pnpm build` clean. `YGOProDuelingState` also builds
+  a MatchContext and got `notify`. Native review (reliability lens) approved
+  and acknowledged, lineage review-34895c6acb2d8d43. Advisory, non-blocking:
+  `createRoomNotify` loops with forEach, so a throwing send on one connection
+  skips later connections of the same user; player ids in MatchContext come
+  from `client.id`, the same domain `notify` matches on.
+- [x] T8 evolution-card-game, phase B card: decoder
+  `src/protocol/achievements/achievement-protocol.ts`, early branch in
+  `ProtocolService._routeFrame` before the vendor path emitting
+  `protocol:achievement-unlocked` ({achievementId, code}); store
+  `achievementUnlockStore` reset where `ratingAnnouncementStore.reset()` runs
+  in `DuelOverlay.svelte`; card in `WinScreen.svelte` beside `win-rating`
+  reusing `atlasLabels.nodeName` and the catalog store for icon/name. Route:
+  delegated writer.
+  Done in ab3380d2 on `feat/achievement-unlock-card`: strict TDD observed
+  (RED on missing modules and 4 failing WinScreen assertions, then GREEN);
+  `npm run test` 688 files / 7303 tests, lint and svelte-check with only
+  pre-existing warnings, build clean. `push` ignores a repeated
+  achievementId; WinScreen loads the catalog on demand and falls back to the
+  raw code. Native review (reliability lens) approved and acknowledged,
+  lineage review-c961d0341cba9059. Advisory: the store resets only on leave;
+  frames arrive only at match end, so no stale cross-game state is possible
+  today. Overlay glue (event to store) is untested; loadCatalog rejections are
+  unobserved but degrade to the fallback.
+
 ## Progress and evidence
 - T1 (evolution-types d267f98): migration `1788900000000-AddAchievementCodeAndCatalog`
   and `AchievementEntity.code`; `pnpm build` and `pnpm lint` in EDOpro-server-ts

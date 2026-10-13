@@ -22,6 +22,7 @@ import { ReconnectionAckMessage } from "@shared/messages/server-to-client/Reconn
 import { MatchLifecycleHooks } from "@shared/room/application/lifecycle/MatchLifecycleHooks";
 import { MatchContext } from "@shared/room/domain/lifecycle/MatchLifecycleHook";
 import { createRoomAnnounce } from "@shared/room/domain/lifecycle/RoomAnnounce";
+import { createRoomNotify } from "@shared/room/domain/lifecycle/RoomNotify";
 import { config } from "src/config";
 
 import { YGOProClient } from "../../../client/domain/YGOProClient";
@@ -602,6 +603,7 @@ export class YGOProDuelingState extends YGOProRoomState {
 				winner: player.winner,
 			})),
 			announce: createRoomAnnounce(this.room),
+			notify: createRoomNotify(this.room),
 		};
 	}
 

@@ -19,6 +19,7 @@ import { container } from "../../../shared/dependency-injection";
 import { MatchLifecycleHooks } from "../../../shared/room/application/lifecycle/MatchLifecycleHooks";
 import { MatchContext } from "../../../shared/room/domain/lifecycle/MatchLifecycleHook";
 import { createRoomAnnounce } from "../../../shared/room/domain/lifecycle/RoomAnnounce";
+import { createRoomNotify } from "../../../shared/room/domain/lifecycle/RoomNotify";
 import { createSystemChat } from "../../../shared/room/domain/chat/SystemChat";
 import { config } from "../../../config";
 import { YgoRoom } from "../../../shared/room/domain/YgoRoom";
@@ -179,6 +180,7 @@ export abstract class RoomState {
 				winner: false,
 			})),
 			announce: createRoomAnnounce(room),
+			notify: createRoomNotify(room),
 		};
 	}
 

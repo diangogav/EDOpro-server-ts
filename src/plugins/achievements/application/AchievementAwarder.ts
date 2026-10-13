@@ -15,6 +15,7 @@ import {
 	evaluateAchievements,
 	formatFirstWinCode,
 } from "../domain/evaluateAchievements";
+import { AchievementUnlockedClientMessage } from "../infrastructure/AchievementUnlockedClientMessage";
 import { laddersForBanList } from "../domain/laddersForBanList";
 import { MatchHistoryReader, MatchHistorySummary } from "../domain/MatchHistoryReader";
 import { UserAchievementRepository } from "../domain/UserAchievementRepository";
@@ -117,6 +118,7 @@ export class AchievementAwarder implements MatchLifecycleHook {
 				}),
 			);
 			this.announceUnlocked(ctx, player.name, row.name);
+			this.notifyUnlocked(ctx, userId, row);
 		}
 	}
 
@@ -125,6 +127,14 @@ export class AchievementAwarder implements MatchLifecycleHook {
 			ctx.announce(this.formatUnlock(playerName, achievementName));
 		} catch (error) {
 			this.logger.warn(`Achievement announcement failed: ${String(error)}`);
+		}
+	}
+
+	private notifyUnlocked(ctx: MatchContext, userId: string, row: CatalogAchievement): void {
+		try {
+			ctx.notify(userId, AchievementUnlockedClientMessage.create(row.id, row.code));
+		} catch (error) {
+			this.logger.warn(`Achievement unlock notification failed: ${String(error)}`);
 		}
 	}
 

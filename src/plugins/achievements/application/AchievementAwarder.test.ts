@@ -10,6 +10,7 @@ import { UserProfileMother } from "@test-support/mothers/user-profile/UserProfil
 import { AchievementCatalog } from "../domain/AchievementCatalog";
 import { AchievementUnlockedDomainEvent } from "../domain/AchievementUnlockedDomainEvent";
 import { AchievementUnlockedPublisher } from "../domain/AchievementUnlockedPublisher";
+import { AchievementUnlockedClientMessage } from "../infrastructure/AchievementUnlockedClientMessage";
 import { MatchHistoryReader, MatchHistorySummary } from "../domain/MatchHistoryReader";
 import {
 	UserAchievementRepository,
@@ -39,6 +40,7 @@ const summary = (overrides: Partial<MatchHistorySummary> = {}): MatchHistorySumm
 describe("AchievementAwarder", () => {
 	let logger: MockProxy<Logger>;
 	let announce: jest.Mock;
+	let notify: jest.Mock;
 	let matchHistoryReader: MockProxy<MatchHistoryReader>;
 	let catalog: MockProxy<AchievementCatalog>;
 	let userAchievementRepository: MockProxy<UserAchievementTransaction>;
@@ -60,6 +62,7 @@ describe("AchievementAwarder", () => {
 			{ id: loserProfile.id, team: Team.OPPONENT, name: loserProfile.username, winner: false },
 		],
 		announce,
+		notify,
 		...overrides,
 	});
 
@@ -72,6 +75,7 @@ describe("AchievementAwarder", () => {
 		logger = mock<Logger>();
 		logger.child.mockReturnValue(logger);
 		announce = jest.fn();
+		notify = jest.fn();
 		matchHistoryReader = mock();
 		catalog = mock();
 		userAchievementRepository = mock();
@@ -375,6 +379,55 @@ describe("AchievementAwarder", () => {
 			expect(awardedCodesFor(winnerProfile.id)).toContain(1008);
 			expect(awardedCodesFor(loserProfile.id)).toContain(1008);
 			expect(logger.error).toHaveBeenCalled();
+		});
+	});
+
+	describe("unlock frame", () => {
+		it("notifies only the unlocking player with one frame per inserted row", async () => {
+			matchHistoryReader.summaryFor.mockResolvedValue(
+				summary({ rankedWins: 0, rankedMatches: 0, ladderWins: {} }),
+			);
+
+			await awarder.onMatchEnding(event());
+
+			expect(notify).toHaveBeenCalledTimes(2);
+			expect(notify).toHaveBeenCalledWith(
+				winnerProfile.id,
+				AchievementUnlockedClientMessage.create(1001, "first_win"),
+			);
+			expect(notify).toHaveBeenCalledWith(
+				winnerProfile.id,
+				AchievementUnlockedClientMessage.create(1011, "format_first_win:TCG"),
+			);
+			expect(notify).not.toHaveBeenCalledWith(loserProfile.id, expect.anything());
+		});
+
+		it("does not notify rows the player already holds", async () => {
+			matchHistoryReader.summaryFor.mockResolvedValue(summary({ currentStreak: 2 }));
+			userAchievementRepository.heldAchievementIds.mockResolvedValue(new Set([1001, 1011]));
+
+			await awarder.onMatchEnding(event());
+
+			expect(notify).toHaveBeenCalledTimes(1);
+			expect(notify).toHaveBeenCalledWith(
+				winnerProfile.id,
+				AchievementUnlockedClientMessage.create(1005, "streak_3"),
+			);
+		});
+
+		it("keeps the announcement, the event and the other player when notify throws", async () => {
+			matchHistoryReader.summaryFor.mockResolvedValue(summary({ rankedMatches: 99 }));
+			notify.mockImplementation(() => {
+				throw new Error("socket closed");
+			});
+
+			await expect(awarder.onMatchEnding(event())).resolves.toBeUndefined();
+
+			expect(notify).toHaveBeenCalled();
+			expect(announce).toHaveBeenCalledTimes(notify.mock.calls.length);
+			expect(publisher.publish).toHaveBeenCalledTimes(notify.mock.calls.length);
+			expect(awardedCodesFor(loserProfile.id)).toContain(1008);
+			expect(logger.warn).toHaveBeenCalled();
 		});
 	});
 
