@@ -52,6 +52,7 @@ describe("WSYGOProServer", () => {
 	let logger: MockProxy<Logger>;
 	let mockClientSocket: {
 		resolvedUserId?: string;
+		supportsLobbyMetadata?: boolean;
 		close: jest.Mock;
 		send: jest.Mock;
 		onMessage: jest.Mock;
@@ -110,6 +111,20 @@ describe("WSYGOProServer", () => {
 
 	afterEach(() => {
 		jest.restoreAllMocks();
+	});
+
+	it.each([
+		undefined,
+		"",
+		"0",
+		"1",
+		"2",
+	])("negotiates lobby metadata only for version 1 (%j)", async (header) => {
+		handshakeAuth.authenticate.mockResolvedValue({ status: "anonymous" });
+		const request = makeRequest();
+		request.headers["x-evolution-lobby"] = header;
+		await connectionCallback(makeRawSocket(), request);
+		expect(mockClientSocket.supportsLobbyMetadata).toBe(header === "1");
 	});
 
 	describe("connection handler — ticket authentication", () => {

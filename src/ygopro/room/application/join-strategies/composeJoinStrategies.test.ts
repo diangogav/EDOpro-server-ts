@@ -1,6 +1,7 @@
 import { composeJoinStrategies } from "./composeJoinStrategies";
 import { AIJoinTokenStrategy } from "./AIJoinTokenStrategy";
 import { WindBotJoinStrategy } from "./WindBotJoinStrategy";
+import { InviteJoinStrategy } from "./InviteJoinStrategy";
 import { WatchJoinStrategy } from "./WatchJoinStrategy";
 import { TicketJoinStrategy } from "./TicketJoinStrategy";
 import { DefaultJoinStrategy } from "./DefaultJoinStrategy";
@@ -22,24 +23,26 @@ const makeModule = (): WindbotModule =>
 	});
 
 describe("composeJoinStrategies", () => {
-	it("returns the base chain [Watch, Ticket, Default] when windbot is absent", () => {
+	it("returns the base chain [Invite, Watch, Ticket, Default] when windbot is absent", () => {
 		const strategies = composeJoinStrategies();
 
-		expect(strategies).toHaveLength(3);
-		expect(strategies[0]).toBeInstanceOf(WatchJoinStrategy);
-		expect(strategies[1]).toBeInstanceOf(TicketJoinStrategy);
-		expect(strategies[2]).toBeInstanceOf(DefaultJoinStrategy);
+		expect(strategies).toHaveLength(4);
+		expect(strategies[0]).toBeInstanceOf(InviteJoinStrategy);
+		expect(strategies[1]).toBeInstanceOf(WatchJoinStrategy);
+		expect(strategies[2]).toBeInstanceOf(TicketJoinStrategy);
+		expect(strategies[3]).toBeInstanceOf(DefaultJoinStrategy);
 	});
 
 	it("prepends [AIJoinToken, WindBot] before the base chain when windbot is present", () => {
 		const strategies = composeJoinStrategies(makeModule());
 
-		expect(strategies).toHaveLength(5);
+		expect(strategies).toHaveLength(6);
 		expect(strategies[0]).toBeInstanceOf(AIJoinTokenStrategy);
 		expect(strategies[1]).toBeInstanceOf(WindBotJoinStrategy);
-		expect(strategies[2]).toBeInstanceOf(WatchJoinStrategy);
-		expect(strategies[3]).toBeInstanceOf(TicketJoinStrategy);
-		expect(strategies[4]).toBeInstanceOf(DefaultJoinStrategy);
+		expect(strategies[2]).toBeInstanceOf(InviteJoinStrategy);
+		expect(strategies[3]).toBeInstanceOf(WatchJoinStrategy);
+		expect(strategies[4]).toBeInstanceOf(TicketJoinStrategy);
+		expect(strategies[5]).toBeInstanceOf(DefaultJoinStrategy);
 	});
 });
 

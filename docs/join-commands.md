@@ -366,3 +366,69 @@ list.
 `w` is a join command, not a rule token: it is deliberately absent from
 `RuleMappings`/`isRecognizedToken`, so a bare `w` can never become a pairing
 pool (§5).
+
+
+## Public lobby invitations
+
+`j,<inviteId>` joins one existing public waiting lobby as a player. `inviteId` is
+the case-sensitive, 16-character base64url identity of that room instance, not
+the reusable four-digit room number and not an authentication credential. The
+complete command uses 18 of the JOIN pass field's 20 UTF-16 units. The `j` prefix
+is reserved: malformed or expired invitations reject and never create a room.
+
+`GET /api/rooms` publishes `inviteId` only while a public, unreserved room has a
+free player seat. Private, matchmaking, reserved, full, and started rooms do not
+accept invitations. A join racing the last seat or start is rejected under the
+existing admission mutex; it cannot silently become a spectator. Existing
+ticket/PIN authentication and league admission still apply. Private passwords,
+game tickets, reconnect tokens, decks, and player identities are never part of
+an invitation. Private rooms retain their explicit existing password join path.
+
+Upgraded WebSocket clients request `X-Evolution-Lobby: 1` in the handshake. After
+JOIN_GAME and TYPE_CHANGE, eligible seated clients receive the negotiated STOC
+extension `[size:u16 LE=18][opcode:u8=0xf2][version:u8=1][inviteId:16 ASCII bytes]`.
+Older clients receive no new frame. Clients scope the metadata to the admitted
+connection generation and retire it on disconnect, spectating, and DUEL_START.
+Room occupancy and duel state remain the normal authoritative lobby packets.
+Clients must resolve an invitation against the public room list before issuing
+`j,` so connecting to an older server cannot treat that command as a room name.
+
+## First-party room option boundaries
+
+Rules apply by tiers (mode, format, then priority modifiers); within each tier,
+later tokens override earlier tokens. Commands are case-insensitive for rules
+but preserve their exact raw spelling/order for pairing identity. `OT` opens
+the card scope while preserving the format list; `TO` selects TCG-only cards and
+the first TCG list. An explicit `LF` must follow `TO` to override that list.
+`NU` is not supported by this parser and must not be offered as a working option.
+
+The client exposes LP 1–99999, starting hand 1–40, draw 1–35, Master Rule 1–5,
+and exact server list indices. `DR0` becomes 1 and `ST0` becomes 5 on the server,
+so clients reject those values instead of claiming zero. The timer UI uses
+seconds: `TM1` through `TM60` mean minutes, `TM61` through `TM999` mean seconds,
+and `TM0` means zero. Thus only zero, 61–999 seconds, or whole minutes through
+3600 seconds are exactly representable (60 seconds is `TM1`).
+
+`GET /api/resources/version` includes `banlists.ygopro[].index`, the actual
+one-based `LF` index before unnamed rows are filtered. Clients must use this
+index rather than infer array positions: out-of-range server indices currently
+resolve to no banlist. `LF` and `NF` are mutually exclusive in the client.
+Default-equivalent values may omit their redundant tokens. Every command still
+fits the hard 20-unit field; clients must reject overlong combinations and never
+truncate a room name, remove a requested option, or silently change the rules.
+HTTP ranked matchmaking remains the dedicated two-player tcg/jtp/edison queue;
+Tag and custom casual options use the socket room pairing/named-room path.
+
+### Deployment compatibility
+
+| Client / server combination | Presence and invitations | Room options |
+| --- | --- | --- |
+| Older client + updated server | No new metadata frames without the opt-in header; normal room joins unchanged | Existing command parser unchanged |
+| Updated client + older server | Ordinary presence works; invitation preflight finds no instance key and rejects without sending `j,` | Existing supported tokens work within 20 units; LF picker unavailable without explicit indices |
+| Updated client + updated server | Public waiting room invitations target one room instance and retain normal admission | Exact LF picker and supported modifiers available; overlong combinations reject |
+| Private or reserved room | No public invite key; use the existing explicit password/matchmaking path | Existing admission and reservations preserved |
+
+No evolution-api migration or endpoint change is required. Deploying the updated
+EDOpro-server-ts service enables invitations and exact LF metadata; updated
+players supply the opt-in handshake and consume those contracts. No resource
+bundle update is required for these protocol changes.

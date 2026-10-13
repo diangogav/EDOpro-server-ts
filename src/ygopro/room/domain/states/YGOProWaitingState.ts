@@ -130,6 +130,14 @@ export class YGOProWaitingState extends YGOProRoomState {
 		}
 
 		await room.mutex.runExclusive(async () => {
+			if (
+				socket.inviteForRoomId !== undefined &&
+				socket.inviteForRoomId === room.id &&
+				!room.canAcceptInvitation()
+			) {
+				room.rejectInvitation(socket);
+				return;
+			}
 			const result = await this.admitToRoom.run(
 				socket,
 				playerInfo,

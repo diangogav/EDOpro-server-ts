@@ -130,7 +130,7 @@ describe("GetResourceVersionController", () => {
 		};
 
 		expect(body.banlists.edopro).toEqual([{ name: "2026.04 OCG", hash: 111 }]);
-		expect(body.banlists.ygopro).toEqual([{ name: "2026.04", hash: 222 }]);
+		expect(body.banlists.ygopro).toEqual([{ name: "2026.04", hash: 222, index: 1 }]);
 		expect(body.banlists.reloadedAt).toBe("2026-07-14T12:00:00.000Z");
 	});
 
@@ -144,4 +144,13 @@ describe("GetResourceVersionController", () => {
 
 		expect(body.banlists.edopro).toEqual([{ name: "Named", hash: 2 }]);
 	});
+});
+
+it("preserves actual one-based LF indices when unnamed lists are omitted", () => {
+	banlistState.ygopro = [
+		{ name: null, hash: 1 },
+		{ name: "Named", hash: 2 },
+	];
+	const body = run().body() as { banlists: { ygopro: unknown[] } };
+	expect(body.banlists.ygopro).toEqual([{ name: "Named", hash: 2, index: 2 }]);
 });

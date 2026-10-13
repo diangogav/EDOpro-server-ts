@@ -2,6 +2,10 @@ export interface ISocket {
 	id?: string;
 	roomId?: number;
 	resolvedUserId?: string;
+	/** Opt-in X-Evolution-Lobby: 1 handshake; older clients receive no extra frames. */
+	supportsLobbyMetadata?: boolean;
+	/** Public lobby instance chosen by InviteJoinStrategy; never a credential. */
+	inviteForRoomId?: number;
 	/** Set on a server-driven bot connection whose one-shot, room-bound join
 	 * token was already consumed and validated — such a socket carries no user
 	 * identity but is pre-authorized for EXACTLY the room the token named.

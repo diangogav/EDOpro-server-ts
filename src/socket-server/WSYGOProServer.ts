@@ -66,6 +66,7 @@ export class WSYGOProServer {
 			});
 
 			const ygoClientSocket = new WebSocketClientSocket(socket);
+			ygoClientSocket.supportsLobbyMetadata = request.headers["x-evolution-lobby"] === "1";
 
 			// Gate: the connection handler registers the pump BEFORE this resolves,
 			// so the first PlayerInfo / JoinGame binary frame is never dropped if
