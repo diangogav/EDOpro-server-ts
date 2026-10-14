@@ -565,16 +565,16 @@ export class OCGCore {
 	}
 
 	async sendReconnectTimeLimitAndResponseState(client: YGOProClient): Promise<void> {
-		const clientDuelPos = client.position;
-		const opponentDuelPos = 1 - clientDuelPos;
-
-		await this.sendTimeLimitMessage(opponentDuelPos, client);
+		// Timer banks belong to teams, not Tag seat positions. Send the active
+		// bank last because TIME_LIMIT also identifies whose clock is running.
+		const activeTeam = this.responsePlayer?.team ?? client.team;
+		await this.sendTimeLimitMessage(1 - activeTeam, client);
 
 		if (client === this.responsePlayer) {
 			await this.sendLastHintToClient(client);
 			await this.resendResponseRequestToClient(client);
 		} else {
-			await this.sendWaitingAndTimeLimitToClient(client);
+			await this.sendWaitingAndTimeLimitToClient(client, activeTeam);
 		}
 	}
 
@@ -598,16 +598,19 @@ export class OCGCore {
 		const msg = new YGOProStocGameMsg().fromPartial({ msg: playerView });
 		client.sendMessageToClient(Buffer.from(msg.toFullPayload()));
 
-		await this.setResponseTimer(client.position);
+		await this.setResponseTimer(client.team);
 	}
 
-	private async sendWaitingAndTimeLimitToClient(client: YGOProClient): Promise<void> {
+	private async sendWaitingAndTimeLimitToClient(
+		client: YGOProClient,
+		activeTeam: number,
+	): Promise<void> {
 		const waitingMsg = new YGOProStocGameMsg().fromPartial({
 			msg: new YGOProMsgWaiting(),
 		});
 		client.sendMessageToClient(Buffer.from(waitingMsg.toFullPayload()));
 
-		await this.sendTimeLimitMessage(client.position, client);
+		await this.sendTimeLimitMessage(activeTeam, client);
 	}
 
 	private findLastHintForClient(client: YGOProClient): YGOProMsgHint | null {
@@ -978,7 +981,11 @@ export class OCGCore {
 		if (!this.hasTimeLimit || ![0, 1].includes(originalDuelPos)) {
 			return;
 		}
-		const leftTime = Math.max(0, this.timerState.leftMs[originalDuelPos] || 0);
+		// A reconnect snapshot must include the time already spent on the
+		// running bank, without settling or replacing its authoritative timer.
+		const elapsedMs =
+			this.timerState.runningPos === originalDuelPos ? this.timerState.elapsedMs() : 0;
+		const leftTime = Math.max(0, (this.timerState.leftMs[originalDuelPos] || 0) - elapsedMs);
 		const ingameDuelPos = this.toIngamePosition(originalDuelPos);
 		const timeLimitMessage = new YGOProStocTimeLimit().fromPartial({
 			player: ingameDuelPos,
