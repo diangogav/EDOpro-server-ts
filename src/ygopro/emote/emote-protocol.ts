@@ -1,8 +1,12 @@
 /**
  * Emote wire protocol (server side) — the custom CTOS/STOC 0xfc opcode, in the
- * same family as PING/PONG and RECONNECT. The client sends CTOS 0xfc with a
- * catalog id; the server validates + rate-limits, then broadcasts STOC 0xfc
+ * same family as PING/PONG and RECONNECT. The client sends CTOS 0xfc with an
+ * emote id; the server bounds its size + rate-limits, then broadcasts STOC 0xfc
  * carrying the sender's seat so every viewer maps it to the right HUD side.
+ *
+ * The server keeps no emote catalog. Ids are either default emotes or emote
+ * pack refs ("<pack-slug>/<emote-key>"), and only the receiving client can tell
+ * which ones the sender may use, so it plays known ids and drops the rest.
  *
  * Frame layout (ygopro framing: [size:u16 LE][opcode:u8][body...], size counts
  * the opcode but not the 2-byte prefix):
@@ -15,31 +19,18 @@ export const EMOTE_OPCODE = 0xfc;
 /** Cooldown between accepted emotes, per client. */
 export const EMOTE_COOLDOWN_MS = 2500;
 
-/** Longest id the wire accepts — bounds a malformed/oversized frame. */
-export const MAX_ID_LENGTH = 24;
+/**
+ * Longest id body, in bytes, the server relays. Every accepted frame is
+ * broadcast to the whole room, so this bounds what one client can fan out.
+ */
+export const MAX_ID_BYTES = 48;
 
 /**
- * Ids the server accepts, mirroring the client emote catalog. An unknown id is
- * dropped (never broadcast), so a client cannot inject arbitrary strings.
+ * Build the STOC emote frame broadcast to the room. A Buffer id is relayed
+ * byte for byte, so the frame never grows past what the sender sent.
  */
-export const EMOTE_IDS: ReadonlySet<string> = new Set([
-	"wave",
-	"thumbsup",
-	"fire",
-	"thinking",
-	"cool",
-	"mindblown",
-	"sweat",
-	"cry",
-]);
-
-export function isValidEmoteId(id: string): boolean {
-	return id.length > 0 && id.length <= MAX_ID_LENGTH && EMOTE_IDS.has(id);
-}
-
-/** Build the STOC emote frame broadcast to the room. */
-export function buildStocEmoteFrame(playerType: number, emoteId: string): Buffer {
-	const idBytes = Buffer.from(emoteId, "utf8");
+export function buildStocEmoteFrame(playerType: number, emoteId: string | Buffer): Buffer {
+	const idBytes = Buffer.isBuffer(emoteId) ? emoteId : Buffer.from(emoteId, "utf8");
 	const size = 1 /* opcode */ + 1 /* playerType */ + idBytes.length;
 	const frame = Buffer.alloc(2 + size);
 	frame.writeUInt16LE(size, 0);
