@@ -13,10 +13,17 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
         id: release
         with:
-          release-type: node
+          # Release settings and changelog sections live in release-please-config.json;
+          # the last released version lives in .release-please-manifest.json.
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          # Pull requests opened with the default GITHUB_TOKEN do not trigger other
+          # workflows, so the release PR never runs CI. Set RELEASE_PLEASE_TOKEN
+          # (GitHub App token or fine-grained PAT) to have it checked like any PR.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
       - name: Checkout 🛬
         if: ${{ steps.release.outputs.release_created }}
         uses: actions/checkout@v7
@@ -25,7 +32,6 @@ jobs:
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git remote add gh-token "https://${{ secrets.GITHUB_TOKEN }}@github.com/googleapis/release-please-action.git"
           git tag -d v${{ steps.release.outputs.major }} || true
           git tag -d v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }} || true
           git push origin :v${{ steps.release.outputs.major }} || true
