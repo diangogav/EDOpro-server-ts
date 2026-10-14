@@ -1,4 +1,6 @@
 import { EventEmitter } from "stream";
+import { randomBytes } from "crypto";
+import { lobbyMetadata } from "./LobbyMetadata";
 
 import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
 import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
@@ -69,6 +71,8 @@ const PRIORITY_TIER = Object.values(priorityRuleMappings);
 const RULE_MAPPING_TIERS = [MODE_TIER, FORMAT_TIER, PRIORITY_TIER];
 
 export class YGOProRoom extends YgoRoom {
+	/** Unique across room deletion/recreation and server restarts; public, never auth. */
+	public readonly inviteId = randomBytes(12).toString("base64url");
 	readonly name: string;
 	readonly password: string;
 	readonly league: RoomLeague;
@@ -457,6 +461,27 @@ export class YGOProRoom extends YgoRoom {
 		return client;
 	}
 
+	public canAcceptInvitation(): boolean {
+		return (
+			this.password === "" &&
+			!this.isMatchmaking &&
+			!this.reservedUserIds?.length &&
+			!this.finalizing &&
+			this.duelState === DuelState.WAITING &&
+			this.hasFreeSeat()
+		);
+	}
+
+	public rejectInvitation(socket: ISocket): void {
+		const chat = new YGOProStocChat().fromPartial({
+			player_type: ChatColor.RED,
+			msg: "This invitation is no longer available for a player seat.",
+		});
+		socket.send(Buffer.from(chat.toFullPayload()));
+		socket.send(this.messageSender.errorMessage(ErrorMessageType.JOINERROR, 0));
+		socket.close();
+	}
+
 	// Adapter that lets AdmitToRoom apply its decision on this room without
 	// knowing about sockets or wire messages. Captures the connecting socket and
 	// player info so the use case only deals in domain values.
@@ -464,6 +489,12 @@ export class YGOProRoom extends YgoRoom {
 		return {
 			league: this.league,
 			freeSeat: () => {
+				if (
+					socket.inviteForRoomId !== undefined &&
+					socket.inviteForRoomId === this.id &&
+					!this.canAcceptInvitation()
+				)
+					return null;
 				// A watch joiner ("w,<roomId>") asked for the stands: offering it no
 				// seat routes the unchanged admission policy to spectator. Only the
 				// seat offer is affected — ranked-guest rejection, league checks and
@@ -477,12 +508,25 @@ export class YGOProRoom extends YgoRoom {
 				return place ? new Seat(place.position, place.team) : null;
 			},
 			seatPlayer: async (credential: PlayerCredential, seat: Seat) => {
+				if (
+					socket.inviteForRoomId !== undefined &&
+					socket.inviteForRoomId === this.id &&
+					(!this.canAcceptInvitation() || socket.closed)
+				) {
+					this.rejectInvitation(socket);
+					return;
+				}
 				const userId = credential.kind === "guest" ? null : credential.userId;
 				const player = this.buildPlayer(socket, playerInfo.name, userId, seat.position, seat.team);
 				player.setCredential(credential);
 				this.addPlayerUnsafe(player);
 			},
 			admitSpectator: async (credential: PlayerCredential) => {
+				// Invite intent is a player seat, never silent spectator fallback.
+				if (socket.inviteForRoomId !== undefined && socket.inviteForRoomId === this.id) {
+					this.rejectInvitation(socket);
+					return;
+				}
 				const spectator = this.createSpectatorUnsafe(socket, playerInfo.name);
 				spectator.setCredential(credential);
 				this.addSpectatorUnsafe(spectator);
@@ -625,6 +669,19 @@ export class YGOProRoom extends YgoRoom {
 		});
 	}
 
+	private sendLobbyMetadata(socket: ISocket): void {
+		if (
+			socket.supportsLobbyMetadata &&
+			this.password === "" &&
+			!this.isMatchmaking &&
+			!this.reservedUserIds?.length &&
+			!this.finalizing &&
+			this.duelState === DuelState.WAITING
+		) {
+			socket.send(lobbyMetadata(this.inviteId));
+		}
+	}
+
 	addPlayerUnsafe(player: YGOProClient): void {
 		player.sendMessageToClient(
 			this._messageRepository.joinGameMessage(this.hostInfo, this.banListHash),
@@ -635,6 +692,7 @@ export class YGOProRoom extends YgoRoom {
 		player.sendMessageToClient(
 			this._messageRepository.typeChangeMessage(player.position, player.host),
 		);
+		this.sendLobbyMetadata(player.socket);
 
 		this.clients.forEach((_client: YGOProClient) => {
 			const playerEnterMessageBuffer = this._messageRepository.playerEnterMessage(
@@ -729,6 +787,7 @@ export class YGOProRoom extends YgoRoom {
 		player.sendMessageToClient(
 			this._messageRepository.typeChangeMessage(player.position, player.host),
 		);
+		this.sendLobbyMetadata(player.socket);
 		this.sendSpectatorCount({ enqueue: false });
 	}
 
@@ -937,6 +996,7 @@ export class YGOProRoom extends YgoRoom {
 
 		return {
 			id: this.id,
+			inviteId: this.canAcceptInvitation() ? this.inviteId : null,
 			command: this.name,
 			status: this.duelState,
 			started,

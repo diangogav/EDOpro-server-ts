@@ -36,11 +36,12 @@ Strategy chain, first `matches()` wins
 |---|----------|--------------|----------|
 | 1 | `AIJoinTokenStrategy` | windbot enabled AND `rawPass` starts with `AIJOIN#` | The bot itself connecting back: consumes a one-shot token, finds the room **by id**, marks the client internal. |
 | 2 | `WindBotJoinStrategy` | windbot enabled AND `ai` among config tokens | Creates an AI room, resolves the bot (by name after `#`, or format-scoped random via `resolveBotPool`), fires the bot request. Rejects tag mode. |
-| 3 | `WatchJoinStrategy` | command segment is exactly `w,<digits>` (see §9) | Intentional spectating **by room id**: finds the room via `findById`, gates on an exact password match, marks the socket with watch intent and routes the JOIN. Never creates a room. |
-| 4 | `TicketJoinStrategy` | socket authenticated via WS ticket (`resolvedUserId`) | Shared `findOrCreateRoom` helper (`rankedOverride=true`) — see §5 for the pairing-vs-non-pairing lookup it performs. |
-| 5 | `DefaultJoinStrategy` | always | Shared `findOrCreateRoom` helper (`rankedOverride=undefined`) — see §5 for the pairing-vs-non-pairing lookup it performs. Admission is delegated to the room state (§6). |
+| 3 | `InviteJoinStrategy` | first command token is `j` (reserved, strict `j,<16-character inviteId>` validation) | Joins one existing public waiting room incarnation with a player seat. Never creates or spectates; ticket authentication remains intact. |
+| 4 | `WatchJoinStrategy` | command segment is exactly `w,<digits>` (see §9) | Intentional spectating **by room id**: finds the room via `findById`, gates on an exact password match, marks the socket with watch intent and routes the JOIN. Never creates a room. |
+| 5 | `TicketJoinStrategy` | socket authenticated via WS ticket (`resolvedUserId`) | Shared `findOrCreateRoom` helper (`rankedOverride=true`) — see §5 for the pairing-vs-non-pairing lookup it performs. |
+| 6 | `DefaultJoinStrategy` | always | Shared `findOrCreateRoom` helper (`rankedOverride=undefined`) — see §5 for the pairing-vs-non-pairing lookup it performs. Admission is delegated to the room state (§6). |
 
-`WatchJoinStrategy` must sit BEFORE `TicketJoinStrategy`: the ticket strategy
+`InviteJoinStrategy` and `WatchJoinStrategy` must sit BEFORE `TicketJoinStrategy`: the ticket strategy
 matches on socket auth alone, not command shape, so a ticketed socket sending
 `w,1234` would otherwise fall into `findOrCreateRoom` and mint a junk room
 literally named `w,1234` instead of watching room 1234.
@@ -368,3 +369,39 @@ list.
 `w` is a join command, not a rule token: it is deliberately absent from
 `RuleMappings`/`isRecognizedToken`, so a bare `w` can never become a pairing
 pool (§5).
+
+## Public lobby invitations
+
+`j,<inviteId>` joins one existing public waiting lobby as a player. `inviteId` is
+the case-sensitive, 16-character base64url identity of that room instance, not
+the reusable four-digit room number and not an authentication credential. The
+complete command uses 18 of the JOIN pass field's 20 UTF-16 units. The `j` prefix
+is reserved: malformed or expired invitations reject and never create a room.
+
+`GET /api/rooms` publishes `inviteId` only while a public, unreserved room has a
+free player seat. Private, matchmaking, reserved, full, and started rooms do not
+accept invitations. A join racing the last seat or start is rejected under the
+existing admission mutex; it cannot silently become a spectator. Existing
+ticket/PIN authentication and league admission still apply. Private passwords,
+game tickets, reconnect tokens, decks, and player identities are never part of
+an invitation. Private rooms retain their explicit existing password join path.
+
+Upgraded WebSocket clients request `X-Evolution-Lobby: 1` in the handshake. After
+JOIN_GAME and TYPE_CHANGE, eligible seated clients receive the negotiated STOC
+extension `[size:u16 LE=18][opcode:u8=0xf2][version:u8=1][inviteId:16 ASCII bytes]`.
+Older clients receive no new frame. Clients scope the metadata to the admitted
+connection generation and retire it on disconnect, spectating, and DUEL_START.
+Room occupancy and duel state remain the normal authoritative lobby packets.
+Clients must resolve an invitation against the public room list before issuing
+`j,` so connecting to an older server cannot treat that command as a room name.
+
+### Invitation deployment compatibility
+
+Older clients receive no new metadata frame unless they opt in. Updated clients
+must reject missing invitation keys on older servers before sending `j,`.
+Public waiting rooms with free seats support invitations; private, reserved,
+full and started rooms retain their existing admission paths.
+
+Deploy the updated EDOpro-server-ts service and a client that negotiates and
+consumes the invitation metadata. No evolution-api migration, resource bundle
+update or banlist-index API change is required for invitations.

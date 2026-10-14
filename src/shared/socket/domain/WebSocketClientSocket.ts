@@ -6,6 +6,7 @@ export class WebSocketClientSocket implements ISocket {
 	id?: string;
 	roomId?: number;
 	resolvedUserId?: string;
+	public supportsLobbyMetadata?: boolean;
 	private readonly socket: WebSocket;
 	private isClosed = false;
 	private isClosing = false;

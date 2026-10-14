@@ -3,6 +3,7 @@ import { JoinStrategy } from "./JoinStrategy";
 import { AIJoinTokenStrategy } from "./AIJoinTokenStrategy";
 import { WindBotJoinStrategy } from "./WindBotJoinStrategy";
 import { WatchJoinStrategy } from "./WatchJoinStrategy";
+import { InviteJoinStrategy } from "./InviteJoinStrategy";
 import { TicketJoinStrategy } from "./TicketJoinStrategy";
 import { DefaultJoinStrategy } from "./DefaultJoinStrategy";
 
@@ -14,7 +15,12 @@ import { DefaultJoinStrategy } from "./DefaultJoinStrategy";
 // sending "w,<id>" would otherwise reach findOrCreateRoom and mint a junk
 // room literally named "w,<id>" instead of watching room <id>.
 export function composeJoinStrategies(windbot?: WindbotModule): JoinStrategy[] {
-	const baseChain = [new WatchJoinStrategy(), new TicketJoinStrategy(), new DefaultJoinStrategy()];
+	const baseChain = [
+		new InviteJoinStrategy(),
+		new WatchJoinStrategy(),
+		new TicketJoinStrategy(),
+		new DefaultJoinStrategy(),
+	];
 
 	if (!windbot) {
 		return baseChain;
