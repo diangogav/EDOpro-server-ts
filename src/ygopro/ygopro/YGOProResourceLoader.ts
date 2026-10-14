@@ -72,6 +72,9 @@ export class YGOProResourceLoader {
 	// standard/extended keep their own fields below: the resource-version
 	// endpoint reports them and the reload timer refreshes them.
 	private readonly namedPoolStorages = new Map<string, CardStorage>();
+	// Kept beside the storages so the periodic refresh can tell whether a named
+	// pool's databases changed on disk.
+	private readonly namedPoolSha512 = new Map<string, Buffer>();
 	private readonly namedPoolLoading = new Map<string, Promise<CardStorage>>();
 
 	private standardLoadingPromise?: Promise<CardStorage>;
@@ -170,8 +173,9 @@ export class YGOProResourceLoader {
 		const { cards } = selectPoolPaths(this.resolvedPools, pool, this.logger);
 
 		const loading = this.loadingLock.acquire(async () => {
-			const { cardStorage } = await this.loadCardStorageFromPaths(cards, pool);
+			const { cardStorage, sha512 } = await this.loadCardStorageFromPaths(cards, pool);
 			this.namedPoolStorages.set(pool, cardStorage);
+			this.namedPoolSha512.set(pool, sha512);
 			return cardStorage;
 		});
 		this.namedPoolLoading.set(pool, loading);
@@ -275,6 +279,20 @@ export class YGOProResourceLoader {
 				(storage, sha512) => {
 					this.extendedCardStorage = storage;
 					this.extendedSha512 = sha512;
+				},
+			);
+		}
+
+		// Only pools somebody already requested are refreshed; the rest stay unloaded.
+		for (const pool of [...this.namedPoolStorages.keys()]) {
+			await this.reloadStorageIfChanged(
+				selectPoolPaths(this.resolvedPools, pool, this.logger).cards,
+				pool,
+				this.namedPoolStorages.get(pool),
+				this.namedPoolSha512.get(pool),
+				(storage, sha512) => {
+					this.namedPoolStorages.set(pool, storage);
+					this.namedPoolSha512.set(pool, sha512);
 				},
 			);
 		}
