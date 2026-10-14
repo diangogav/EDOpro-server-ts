@@ -29,7 +29,9 @@ export class GetResourceVersionController {
 			},
 			banlists: {
 				edopro: toBanListVersions(EdoProBanListMemoryRepository.get()),
-				ygopro: toBanListVersions(YGOProBanListMemoryRepository.get()),
+				ygopro: YGOProBanListMemoryRepository.get()
+					.map((banList, index) => ({ name: banList.name, hash: banList.hash, index: index + 1 }))
+					.filter((banList) => banList.name !== null),
 				reloadedAt: getBanListReloadedAt(),
 			},
 		});

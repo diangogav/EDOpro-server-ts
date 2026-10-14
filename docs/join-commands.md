@@ -58,7 +58,9 @@ branch described in §5, is identical for both.
 `YGOProRoom.create` (`src/ygopro/room/domain/YGOProRoom.ts:198-233`) lowercases
 each token and applies three tiers from
 `src/ygopro/room/domain/RuleMappings.ts`, in order — later tiers overwrite
-earlier ones for the same option; **two matches inside one tier throw**:
+earlier ones for the same option. Within each tier, tokens run in their input
+order and later tokens overwrite the same fields. A single token matching more
+than one mapping within that tier throws; multiple distinct tokens are allowed:
 
 1. **`ruleMappings`** (mode): `m`/`match`, `t`/`tag`.
 2. **`formatRuleMappings`** (format presets): `edison`/`ed`, `hat`, `tengu`,
