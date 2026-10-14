@@ -181,3 +181,53 @@ describe("RoomState — Mercury emote gate (only seated duelists send)", () => {
 		expect(socket.send).not.toHaveBeenCalled();
 	});
 });
+
+describe("RoomState — Mercury emote ids are relayed without a catalog check", () => {
+	let eventEmitter: EventEmitter;
+
+	beforeEach(() => {
+		eventEmitter = new EventEmitter();
+		new TestRoomState(eventEmitter);
+	});
+
+	const makeDuelist = () =>
+		({
+			isSpectator: false,
+			position: 0,
+			tryEmote: () => true,
+		}) as unknown as never;
+
+	const sendEmote = (id: string) => {
+		const socket = makeSocket();
+		eventEmitter.emit(
+			Commands.EMOTE as unknown as string,
+			makeEmoteMessage(id),
+			makeMercuryRoom(socket),
+			makeDuelist(),
+		);
+		return socket;
+	};
+
+	it("broadcasts an emote pack ref the server has never seen", () => {
+		const socket = sendEmote("halloween-duelist/attack");
+
+		expect(socket.send).toHaveBeenCalledTimes(1);
+		const frame: Buffer = socket.send.mock.calls[0][0];
+		expect(frame.subarray(4).toString("utf8")).toBe("halloween-duelist/attack");
+	});
+
+	it("broadcasts an id of exactly 48 bytes", () => {
+		expect(sendEmote("a".repeat(48)).send).toHaveBeenCalledTimes(1);
+	});
+
+	it("drops an id longer than 48 bytes, counting bytes rather than characters", () => {
+		expect(sendEmote("a".repeat(49)).send).not.toHaveBeenCalled();
+		// 24 two-byte characters = 48 bytes (accepted); 25 = 50 bytes (dropped).
+		expect(sendEmote("é".repeat(24)).send).toHaveBeenCalledTimes(1);
+		expect(sendEmote("é".repeat(25)).send).not.toHaveBeenCalled();
+	});
+
+	it("drops an empty id", () => {
+		expect(sendEmote("").send).not.toHaveBeenCalled();
+	});
+});
