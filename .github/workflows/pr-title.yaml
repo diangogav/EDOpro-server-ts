@@ -1,0 +1,24 @@
+name: 'PR Title'
+
+# Merges are squashed with the PR title as the commit message, and
+# release-please builds the changelog from those commits, so every PR title
+# must follow Conventional Commits.
+#
+# pull_request_target runs in the base repository context, so the check also
+# runs on fork PRs without waiting for workflow approval. It is safe here
+# because the job only reads the PR title through the API and never checks
+# out or executes code from the PR.
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  conventional-title:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
