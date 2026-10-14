@@ -4,6 +4,7 @@
 		".": {
 			"release-type": "node",
 			"include-component-in-tag": false,
+			"include-commit-authors": true,
 			"pull-request-title-pattern": "chore(main): release ${version}",
 			"pull-request-header": "Merging this PR creates the GitHub release and its version tags.",
 			"changelog-sections": [
