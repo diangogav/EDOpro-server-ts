@@ -662,7 +662,7 @@ describe("ResourcePoolResolver — named pools", () => {
 		resolvePools(opts({ manifestPath, resourcesDir: tmpDir, logger }));
 
 		const missingWarns = logger.warn.mock.calls.filter((args) =>
-			String(args[0]).includes("formats/rush"),
+			String(args[0]).includes(path.join("formats", "rush")),
 		);
 		expect(missingWarns.length).toBeGreaterThan(0);
 	});
