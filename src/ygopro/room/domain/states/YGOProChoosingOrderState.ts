@@ -67,7 +67,7 @@ export class YGOProChoosingOrderState extends YGOProRoomState {
 			player.sendMessageToClient(room.messageSender.selectTpMessage());
 		}
 
-		player.sendMessageToClient(ReconnectionTokenIssuer.rotate(player, room.id));
+		player.sendMessageToClient(ReconnectionTokenIssuer.rotate(player, room.id, token));
 		player.clearReconnecting();
 	}
 

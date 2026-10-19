@@ -102,6 +102,10 @@ const RECONNECT_SAME_DECK_MESSAGE = "Reconnect with the same deck you were using
 export class DuelingState extends RoomState {
 	private static readonly MAX_MESSAGES_PER_TICK = 1000;
 
+	// Token each client presented in EXPRESS_RECONNECT. The rotation happens later,
+	// when the core answers with RECONNECT, so it has to be carried across.
+	private readonly presentedTokens = new WeakMap<Client, string>();
+
 	constructor(
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
@@ -405,7 +409,9 @@ export class DuelingState extends RoomState {
 
 		// Rotate the token after a successful reconnection (single-use).
 		player.clearReconnecting();
-		player.sendMessage(ReconnectionTokenIssuer.rotate(player, this.room.id));
+		const presentedToken = this.presentedTokens.get(player);
+		this.presentedTokens.delete(player);
+		player.sendMessage(ReconnectionTokenIssuer.rotate(player, this.room.id, presentedToken));
 
 		if (player.cache) {
 			this.logger.info(`Sending last cached message to ${player.name} after reconnection`);
@@ -630,6 +636,7 @@ export class DuelingState extends RoomState {
 		}
 
 		this.logger.info(`DUELING_STATE: Match found for player ${player.name}. Restoring session.`);
+		this.presentedTokens.set(player, token);
 
 		// 1. Send success status
 		socket.send(ReconnectionAckMessage.success());

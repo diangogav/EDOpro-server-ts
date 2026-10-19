@@ -86,7 +86,7 @@ export class SideDeckingState extends RoomState {
 		player.sendMessage(SideDeckClientMessage.create());
 
 		// Rotate the token after a successful reconnection (single-use).
-		player.sendMessage(ReconnectionTokenIssuer.rotate(player, room.id));
+		player.sendMessage(ReconnectionTokenIssuer.rotate(player, room.id, token));
 
 		player.clearReconnecting();
 	}

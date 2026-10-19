@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import { EventEmitter } from "stream";
+import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { ChatColor, YGOProStocChat } from "ygopro-msg-encode";
 import { Logger } from "@shared/logger/domain/Logger";
 import { Reconnect } from "@edopro/room/application/Reconnect";
@@ -409,6 +410,19 @@ describe("DuelingState", () => {
 				expect.stringMatching(/^[0-9a-f]{32}$/),
 			);
 			expect(player.sendMessage).toHaveBeenCalled();
+		});
+
+		it("core RECONNECT: rotates relative to the token the client presented in EXPRESS_RECONNECT", () => {
+			const player = makeRealClient({ reconnectionToken: "current", position: 0 });
+			(mockRoom as any).players = [player];
+			(state as any).presentedTokens.set(player, "presented");
+			const rotate = jest.spyOn(ReconnectionTokenIssuer, "rotate");
+
+			(state as any).handleCoreReconnect({ position: 0, team: 0, cacheable: false });
+
+			expect(rotate).toHaveBeenCalledWith(player, mockRoom.id, "presented");
+			expect((state as any).presentedTokens.has(player)).toBe(false);
+			rotate.mockRestore();
 		});
 
 		it("core RECONNECT: does NOT broadcast a 'has entered to the duel' chat notice", () => {

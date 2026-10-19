@@ -81,7 +81,7 @@ export class RockPaperScissorState extends RoomState {
 		}
 
 		// Rotate the token after a successful reconnection (single-use).
-		player.sendMessage(ReconnectionTokenIssuer.rotate(player, room.id));
+		player.sendMessage(ReconnectionTokenIssuer.rotate(player, room.id, token));
 		player.clearReconnecting();
 	}
 

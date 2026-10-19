@@ -33,26 +33,40 @@ export class ReconnectionTokenIssuer {
 		return ReconnectionTokenClientMessage.create(token);
 	}
 
-	// Issue a new token and demote the current one to "previous": it keeps
-	// resolving for PREVIOUS_TOKEN_OVERLAP_MS, then is unregistered. Called after
-	// every successful reconnection, so a token is replaced on each use.
-	static rotate(client: YgoClient, roomId: number): Buffer {
-		this.dropPrevious(client);
-		const oldToken = client.reconnectionToken;
-		if (oldToken) {
-			const timer = setTimeout(() => {
-				TokenIndex.getInstance().unregister(oldToken);
-				this.previousTokens.delete(client);
-			}, PREVIOUS_TOKEN_OVERLAP_MS);
-			timer.unref?.();
-			this.previousTokens.set(client, { token: oldToken, timer });
+	// Issue a new token and keep one "previous" token resolvable for
+	// PREVIOUS_TOKEN_OVERLAP_MS, then unregister it. Called after every successful
+	// reconnection. Normally the current token is demoted to previous. If the client
+	// presented the already-overlapping previous token, the current one never reached
+	// it: the presented token stays previous (window restarted) and the undelivered
+	// current token is dropped, so a repeated drop can still retry with what it holds.
+	static rotate(client: YgoClient, roomId: number, presentedToken?: string): Buffer {
+		const previous = this.previousTokens.get(client);
+		const current = client.reconnectionToken;
+		const keep = presentedToken && previous?.token === presentedToken ? presentedToken : current;
+
+		this.dropPrevious(client, keep);
+		if (current && current !== keep) {
+			TokenIndex.getInstance().unregister(current);
+		}
+		if (keep) {
+			this.holdAsPrevious(client, keep);
 		}
 
 		return this.issue(client, roomId);
 	}
 
+	private static holdAsPrevious(client: YgoClient, token: string): void {
+		const timer = setTimeout(() => {
+			TokenIndex.getInstance().unregister(token);
+			this.previousTokens.delete(client);
+		}, PREVIOUS_TOKEN_OVERLAP_MS);
+		timer.unref?.();
+		this.previousTokens.set(client, { token, timer });
+	}
+
 	// Revoke the client's current and overlapping previous tokens: de-register
-	// them from the global index and clear the current one on the client. Idempotent — safe to call on a client with no token.
+	// them from the global index and clear the current one on the client.
+	// Idempotent — safe to call on a client with no token.
 	// Called on room teardown so tokens never outlive their room: TokenIndex is an
 	// in-memory singleton with no TTL, so without this every finished match would
 	// leak its players' tokens (and leave them pointing at destroyed clients).
@@ -65,11 +79,15 @@ export class ReconnectionTokenIssuer {
 		client.clearReconnectionToken();
 	}
 
-	private static dropPrevious(client: YgoClient): void {
+	// Cancel the previous token's timer and forget it. Unregisters it from the
+	// index unless it is `keep`, which is about to be held again.
+	private static dropPrevious(client: YgoClient, keep?: string | null): void {
 		const previous = this.previousTokens.get(client);
 		if (!previous) return;
 		clearTimeout(previous.timer);
-		TokenIndex.getInstance().unregister(previous.token);
+		if (previous.token !== keep) {
+			TokenIndex.getInstance().unregister(previous.token);
+		}
 		this.previousTokens.delete(client);
 	}
 
