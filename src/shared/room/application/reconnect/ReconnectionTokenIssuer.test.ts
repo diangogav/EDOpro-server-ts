@@ -1,4 +1,4 @@
-import { ReconnectionTokenIssuer } from "./ReconnectionTokenIssuer";
+import { PREVIOUS_TOKEN_OVERLAP_MS, ReconnectionTokenIssuer } from "./ReconnectionTokenIssuer";
 import { TokenIndex } from "@shared/room/domain/TokenIndex";
 import { YgoClient } from "@shared/client/domain/YgoClient";
 
@@ -19,8 +19,14 @@ const makeClient = (name = "P"): YgoClient => {
 };
 
 describe("ReconnectionTokenIssuer", () => {
-	beforeEach(() => TokenIndex.getInstance().clear());
-	afterEach(() => TokenIndex.getInstance().clear());
+	beforeEach(() => {
+		jest.useFakeTimers();
+		TokenIndex.getInstance().clear();
+	});
+	afterEach(() => {
+		jest.useRealTimers();
+		TokenIndex.getInstance().clear();
+	});
 
 	describe("issue", () => {
 		it("mints a 32-hex token, stores it on the client and registers it", () => {
@@ -49,7 +55,7 @@ describe("ReconnectionTokenIssuer", () => {
 	});
 
 	describe("rotate", () => {
-		it("invalidates the previous token and registers a fresh one", () => {
+		it("registers a fresh token and keeps the previous one resolvable", () => {
 			const client = makeClient();
 			ReconnectionTokenIssuer.issue(client, 7);
 			const oldToken = client.reconnectionToken!;
@@ -58,11 +64,69 @@ describe("ReconnectionTokenIssuer", () => {
 			const newToken = client.reconnectionToken!;
 
 			expect(newToken).not.toBe(oldToken);
-			expect(TokenIndex.getInstance().find(oldToken)).toBeUndefined();
 			expect(TokenIndex.getInstance().find(newToken)).toEqual({
 				client,
 				roomId: 7,
 			});
+		});
+
+		it("keeps the previous token resolvable to the same client and room during the overlap", () => {
+			const client = makeClient();
+			ReconnectionTokenIssuer.issue(client, 7);
+			const oldToken = client.reconnectionToken!;
+
+			ReconnectionTokenIssuer.rotate(client, 7);
+			jest.advanceTimersByTime(PREVIOUS_TOKEN_OVERLAP_MS - 1);
+
+			expect(ReconnectionTokenIssuer.resolve(oldToken, 7, () => true)).toBe(client);
+		});
+
+		it("unregisters the previous token once the overlap elapses", () => {
+			const client = makeClient();
+			ReconnectionTokenIssuer.issue(client, 7);
+			const oldToken = client.reconnectionToken!;
+			ReconnectionTokenIssuer.rotate(client, 7);
+			const newToken = client.reconnectionToken!;
+
+			jest.advanceTimersByTime(PREVIOUS_TOKEN_OVERLAP_MS);
+
+			expect(TokenIndex.getInstance().find(oldToken)).toBeUndefined();
+			expect(TokenIndex.getInstance().find(newToken)).toBeDefined();
+			expect(jest.getTimerCount()).toBe(0);
+		});
+
+		it("keeps at most one previous token when rotating again after using it", () => {
+			const client = makeClient();
+			ReconnectionTokenIssuer.issue(client, 7);
+			const first = client.reconnectionToken!;
+			ReconnectionTokenIssuer.rotate(client, 7);
+			const second = client.reconnectionToken!;
+			ReconnectionTokenIssuer.rotate(client, 7);
+			const third = client.reconnectionToken!;
+
+			expect(TokenIndex.getInstance().find(first)).toBeUndefined();
+			expect(TokenIndex.getInstance().find(second)).toBeDefined();
+			expect(TokenIndex.getInstance().find(third)).toBeDefined();
+			expect(jest.getTimerCount()).toBe(1);
+
+			jest.advanceTimersByTime(PREVIOUS_TOKEN_OVERLAP_MS);
+
+			expect(TokenIndex.getInstance().find(second)).toBeUndefined();
+			expect(TokenIndex.getInstance().find(third)).toBeDefined();
+			expect(jest.getTimerCount()).toBe(0);
+		});
+
+		it("does not let a stale timer drop a newer registration", () => {
+			const client = makeClient();
+			ReconnectionTokenIssuer.issue(client, 7);
+			ReconnectionTokenIssuer.rotate(client, 7);
+			jest.advanceTimersByTime(PREVIOUS_TOKEN_OVERLAP_MS / 2);
+			ReconnectionTokenIssuer.rotate(client, 7);
+			const current = client.reconnectionToken!;
+
+			jest.advanceTimersByTime(PREVIOUS_TOKEN_OVERLAP_MS / 2);
+
+			expect(TokenIndex.getInstance().find(current)).toBeDefined();
 		});
 
 		it("issues even when the client has no previous token", () => {
@@ -85,6 +149,20 @@ describe("ReconnectionTokenIssuer", () => {
 
 			expect(TokenIndex.getInstance().find(token)).toBeUndefined();
 			expect(client.reconnectionToken).toBeNull();
+		});
+
+		it("also unregisters an overlapping previous token and cancels its timer", () => {
+			const client = makeClient();
+			ReconnectionTokenIssuer.issue(client, 5);
+			const oldToken = client.reconnectionToken!;
+			ReconnectionTokenIssuer.rotate(client, 5);
+			const newToken = client.reconnectionToken!;
+
+			ReconnectionTokenIssuer.revoke(client);
+
+			expect(TokenIndex.getInstance().find(oldToken)).toBeUndefined();
+			expect(TokenIndex.getInstance().find(newToken)).toBeUndefined();
+			expect(jest.getTimerCount()).toBe(0);
 		});
 
 		it("is a no-op when the client has no token", () => {

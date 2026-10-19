@@ -227,7 +227,7 @@ describe("SideDeckingState", () => {
 			expect(mockSocket.send).toHaveBeenCalledWith(SUCCESS_ACK);
 			expect(mockClient.setSocket).toHaveBeenCalled();
 			expect(mockClient.sendMessage).toHaveBeenCalled(); // DuelStart + SideDeck
-			expect(TokenIndex.getInstance().find("old")).toBeUndefined();
+			expect(TokenIndex.getInstance().find("old")).toBeDefined();
 			expect(mockClient.setReconnectionToken).toHaveBeenCalledWith(
 				expect.stringMatching(/^[0-9a-f]{32}$/),
 			);

@@ -195,8 +195,8 @@ describe("YGOProDuelingState.handleExpressReconnect", () => {
 		// Board re-sync (resyncBoard) was triggered end-to-end.
 		expect(ocgCore.sendStartMessageForReconnect).toHaveBeenCalledWith(player);
 		expect(ocgCore.sendReconnectTimeLimitAndResponseState).toHaveBeenCalledWith(player);
-		// Token rotated: old gone, fresh 32-hex issued.
-		expect(TokenIndex.getInstance().find("tok")).toBeUndefined();
+		// Token rotated: old stays valid for the overlap, fresh 32-hex issued.
+		expect(TokenIndex.getInstance().find("tok")).toBeDefined();
 		expect(player.setReconnectionToken).toHaveBeenCalledWith(expect.stringMatching(HEX32));
 		expect(player.clearReconnecting).toHaveBeenCalled();
 	});
@@ -260,7 +260,7 @@ describe("YGOProSideDeckingState.handleExpressReconnect", () => {
 		expect(room.reconnect).toHaveBeenCalledWith(player, socket);
 		expect(player.sendMessageToClient).toHaveBeenCalledWith(DUEL_START);
 		expect(player.sendMessageToClient).toHaveBeenCalledWith(CHANGE_SIDE);
-		expect(TokenIndex.getInstance().find("tok")).toBeUndefined();
+		expect(TokenIndex.getInstance().find("tok")).toBeDefined();
 		expect(player.setReconnectionToken).toHaveBeenCalledWith(expect.stringMatching(HEX32));
 		expect(player.clearReconnecting).toHaveBeenCalled();
 	});
@@ -324,7 +324,7 @@ describe("YGOProRockPaperScissorState.handleExpressReconnect", () => {
 		expect(room.reconnect).toHaveBeenCalledWith(player, socket);
 		expect(player.sendMessageToClient).toHaveBeenCalledWith(DUEL_START);
 		expect(player.sendMessageToClient).toHaveBeenCalledWith(SELECT_HAND);
-		expect(TokenIndex.getInstance().find("tok")).toBeUndefined();
+		expect(TokenIndex.getInstance().find("tok")).toBeDefined();
 		expect(player.clearReconnecting).toHaveBeenCalled();
 	});
 
@@ -390,7 +390,7 @@ describe("YGOProChoosingOrderState.handleExpressReconnect", () => {
 		expect(room.reconnect).toHaveBeenCalledWith(player, socket);
 		expect(player.sendMessageToClient).toHaveBeenCalledWith(DUEL_START);
 		expect(player.sendMessageToClient).toHaveBeenCalledWith(SELECT_TP);
-		expect(TokenIndex.getInstance().find("tok")).toBeUndefined();
+		expect(TokenIndex.getInstance().find("tok")).toBeDefined();
 	});
 
 	it("does NOT re-prompt the turn choice for the non-choosing player", () => {

@@ -393,7 +393,7 @@ describe("DuelingState", () => {
 			expect(mockSocket.destroy).toHaveBeenCalled();
 		});
 
-		it("core RECONNECT: rotates the token (old gone, new 32-hex issued)", () => {
+		it("core RECONNECT: rotates the token (old kept for the overlap, new 32-hex issued)", () => {
 			const player = makeRealClient({ reconnectionToken: "old", position: 0 });
 			(mockRoom as any).players = [player];
 			TokenIndex.getInstance().register("old", player, mockRoom.id);
@@ -404,7 +404,7 @@ describe("DuelingState", () => {
 				cacheable: false,
 			});
 
-			expect(TokenIndex.getInstance().find("old")).toBeUndefined();
+			expect(TokenIndex.getInstance().find("old")).toBeDefined();
 			expect(player.setReconnectionToken).toHaveBeenCalledWith(
 				expect.stringMatching(/^[0-9a-f]{32}$/),
 			);
