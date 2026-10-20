@@ -53,6 +53,7 @@ import {
 import { EvrpSerializer } from "../replay/EvrpSerializer";
 import { GameOverDomainEvent } from "@shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
+import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 export class YGOProDuelingState extends YGOProRoomState {
 	private readonly eventBus: EventBus;
@@ -371,7 +372,7 @@ export class YGOProDuelingState extends YGOProRoomState {
 			(client) => client instanceof YGOProClient,
 		) as YGOProClient | null;
 		if (!player) {
-			this.logger.info(`EXPRESS_RECONNECT: no player for token ${token}`);
+			this.logger.info(`EXPRESS_RECONNECT: no player for token ${redactSecret(token)}`);
 			socket.send(ReconnectionAckMessage.failure());
 			socket.destroy();
 			return;

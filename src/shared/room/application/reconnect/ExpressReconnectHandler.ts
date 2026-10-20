@@ -8,6 +8,7 @@ import { ReconnectionAckMessage } from "@shared/messages/server-to-client/Reconn
 import { TokenIndex } from "@shared/room/domain/TokenIndex";
 import { YgoRoom } from "@shared/room/domain/YgoRoom";
 import { ISocket } from "@shared/socket/domain/ISocket";
+import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 // Generic, transport-agnostic express-reconnect router. It lives at the
 // CONNECTION level: it receives the raw 0xfd RECONNECT frame (emitted by
@@ -37,7 +38,7 @@ export class ExpressReconnectHandler {
 
 	private handle(message: ClientMessage): void {
 		const token = message.data.toString("utf8");
-		this.logger.info(`Express reconnect: checking token ${token}`);
+		this.logger.info(`Express reconnect: checking token ${redactSecret(token)}`);
 
 		const entry = TokenIndex.getInstance().find(token);
 		if (entry && this.clientGuard(entry.client)) {
@@ -52,7 +53,7 @@ export class ExpressReconnectHandler {
 			}
 		}
 
-		this.logger.info(`Express reconnect: no player found for token ${token}`);
+		this.logger.info(`Express reconnect: no player found for token ${redactSecret(token)}`);
 		this.socket.send(ReconnectionAckMessage.failure());
 		this.socket.destroy();
 	}

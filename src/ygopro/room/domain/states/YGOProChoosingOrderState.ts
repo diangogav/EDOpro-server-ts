@@ -13,6 +13,7 @@ import { findMidDuelReconnectingPlayer } from "@shared/room/domain/findMidDuelRe
 import { TurnPlayerResult, YGOProCtosTpResult, YGOProStocDuelStart } from "ygopro-msg-encode";
 import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
+import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 export class YGOProChoosingOrderState extends YGOProRoomState {
 	constructor(
@@ -51,7 +52,7 @@ export class YGOProChoosingOrderState extends YGOProRoomState {
 			(client) => client instanceof YGOProClient,
 		) as YGOProClient | null;
 		if (!player) {
-			this.logger.info(`EXPRESS_RECONNECT: no player for token ${token}`);
+			this.logger.info(`EXPRESS_RECONNECT: no player for token ${redactSecret(token)}`);
 			socket.send(ReconnectionAckMessage.failure());
 			socket.destroy();
 			return;

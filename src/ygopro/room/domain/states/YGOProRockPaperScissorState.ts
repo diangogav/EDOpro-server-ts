@@ -14,6 +14,7 @@ import { Team } from "@shared/room/Team";
 import { YGOProRoomState } from "../YGOProRoomState";
 import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
+import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 export class YGOProRockPaperScissorState extends YGOProRoomState {
 	private handResult = [0, 0];
@@ -52,7 +53,7 @@ export class YGOProRockPaperScissorState extends YGOProRoomState {
 			(client) => client instanceof YGOProClient,
 		) as YGOProClient | null;
 		if (!player) {
-			this.logger.info(`EXPRESS_RECONNECT: no player for token ${token}`);
+			this.logger.info(`EXPRESS_RECONNECT: no player for token ${redactSecret(token)}`);
 			socket.send(ReconnectionAckMessage.failure());
 			socket.destroy();
 			return;

@@ -34,6 +34,7 @@ import { Reconnect } from "../../../application/Reconnect";
 import { DuelFinishReason } from "../../DuelFinishReason";
 import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";
+import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 interface Message {
 	type: string;
@@ -615,7 +616,7 @@ export class DuelingState extends RoomState {
 	): Promise<void> {
 		this.logger.info("DUELING_STATE: EXPRESS_RECONNECT - START");
 		const token = message.data.toString("utf8");
-		this.logger.info(`DUELING_STATE: Token received: ${token}`);
+		this.logger.info(`DUELING_STATE: Token received: ${redactSecret(token)}`);
 
 		const player = ReconnectionTokenIssuer.resolve(
 			token,
@@ -623,7 +624,9 @@ export class DuelingState extends RoomState {
 			(client) => client instanceof Client,
 		) as Client | null;
 		if (!player) {
-			this.logger.info(`DUELING_STATE: Player not found for token ${token} or room mismatch`);
+			this.logger.info(
+				`DUELING_STATE: Player not found for token ${redactSecret(token)} or room mismatch`,
+			);
 			socket.send(ReconnectionAckMessage.failure());
 			socket.destroy();
 			return;

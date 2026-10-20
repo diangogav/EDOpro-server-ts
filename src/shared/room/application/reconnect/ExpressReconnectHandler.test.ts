@@ -62,6 +62,19 @@ describe("ExpressReconnectHandler (generic)", () => {
 		expect(room.emit).not.toHaveBeenCalled();
 	});
 
+	it("never writes the full token to the logs", () => {
+		const token = "0123456789abcdef0123456789abcdef";
+		TokenIndex.getInstance().register(token, client, 1);
+
+		emitReconnect(reconnectMessage(token));
+		emitReconnect(reconnectMessage("fedcba9876543210fedcba9876543210"));
+
+		const logged = logger.info.mock.calls.map((call) => String(call[0])).join("\n");
+		expect(logged).not.toContain(token);
+		expect(logged).not.toContain("fedcba9876543210fedcba9876543210");
+		expect(logged).toContain("012345…");
+	});
+
 	it("rejects when the client-type guard fails", () => {
 		clientGuard.mockReturnValue(false);
 		TokenIndex.getInstance().register("tok", client, 1);

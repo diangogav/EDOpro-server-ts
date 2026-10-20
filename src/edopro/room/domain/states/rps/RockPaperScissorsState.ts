@@ -17,6 +17,7 @@ import { RpsChoiceCommandStrategy } from "./RpsChoiceCommandStrategy";
 import { ReconnectionTokenIssuer } from "../../../../../shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { findReconnectingPlayer } from "../../../../../shared/room/domain/findReconnectingPlayer";
 import { ReconnectionAckMessage } from "../../../../../shared/messages/server-to-client/ReconnectionAckMessage";
+import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 export class RockPaperScissorState extends RoomState {
 	constructor(
@@ -64,7 +65,7 @@ export class RockPaperScissorState extends RoomState {
 			(client) => client instanceof Client,
 		) as Client | null;
 		if (!player) {
-			this.logger.info(`RockPaperScissorState: no player for token ${token}`);
+			this.logger.info(`RockPaperScissorState: no player for token ${redactSecret(token)}`);
 			socket.send(ReconnectionAckMessage.failure());
 			socket.destroy();
 			return;

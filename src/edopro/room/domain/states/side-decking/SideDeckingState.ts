@@ -21,6 +21,7 @@ import { RoomState } from "../../RoomState";
 import { ReconnectionTokenIssuer } from "../../../../../shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { findReconnectingPlayer } from "../../../../../shared/room/domain/findReconnectingPlayer";
 import { ReconnectionAckMessage } from "../../../../../shared/messages/server-to-client/ReconnectionAckMessage";
+import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 export class SideDeckingState extends RoomState {
 	constructor(
@@ -67,7 +68,9 @@ export class SideDeckingState extends RoomState {
 			(client) => client instanceof Client,
 		) as Client | null;
 		if (!player) {
-			this.logger.info(`SIDE_DECKING: Player not found for token ${token} or room mismatch`);
+			this.logger.info(
+				`SIDE_DECKING: Player not found for token ${redactSecret(token)} or room mismatch`,
+			);
 			socket.send(ReconnectionAckMessage.failure());
 			socket.destroy();
 			return;

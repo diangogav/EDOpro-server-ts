@@ -1,4 +1,5 @@
 import { Redis } from "@shared/db/redis/infrastructure/Redis";
+import { redactSecret } from "@shared/logger/domain/redactSecret";
 import LoggerFactory from "@shared/logger/infrastructure/LoggerFactory";
 import { TicketRepository } from "../../domain/TicketRepository";
 
@@ -25,7 +26,7 @@ export class RedisTicketRepository implements TicketRepository {
 	async consume(uuid: string): Promise<string | null> {
 		if (!UUID_RE.test(uuid)) {
 			this.logger.warn("Ticket consume rejected: token is not a valid UUID v4", {
-				uuidPreview: uuid.slice(0, 8),
+				uuidPreview: redactSecret(uuid),
 			});
 			return null;
 		}
@@ -41,11 +42,11 @@ export class RedisTicketRepository implements TicketRepository {
 			if (userId == null) {
 				this.logger.warn(
 					"Ticket consume rejected: key not found (expired, already consumed, or issued against a different Redis)",
-					{ key: `ticket:${uuid}` },
+					{ key: `ticket:${redactSecret(uuid)}` },
 				);
 				return null;
 			}
-			this.logger.info("Ticket consumed", { key: `ticket:${uuid}`, userId });
+			this.logger.info("Ticket consumed", { key: `ticket:${redactSecret(uuid)}`, userId });
 			return userId;
 		} catch (error) {
 			this.logger.error("Ticket consume rejected: Redis error (fail-closed)", {

@@ -30,6 +30,7 @@ import {
 	YGOProStocDuelStart,
 	YGOProStocWaitingSide,
 } from "ygopro-msg-encode";
+import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 const SIDE_TIMEOUT_MINUTES = config.sideTimeoutMinutes;
 const TICK_INTERVAL_MS = 60_000;
@@ -79,7 +80,7 @@ export class YGOProSideDeckingState extends YGOProRoomState {
 			(client) => client instanceof YGOProClient,
 		) as YGOProClient | null;
 		if (!player) {
-			this.logger.info(`EXPRESS_RECONNECT: no player for token ${token}`);
+			this.logger.info(`EXPRESS_RECONNECT: no player for token ${redactSecret(token)}`);
 			socket.send(ReconnectionAckMessage.failure());
 			socket.destroy();
 			return;
