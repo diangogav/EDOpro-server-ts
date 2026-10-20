@@ -13,6 +13,9 @@ import {
  */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+// Upper bound on one ticket lookup so a stalled Redis cannot hold a WS handshake open.
+export const TICKET_STORE_TIMEOUT_MS = 2000;
+
 /**
  * Redis adapter for single-use ticket consumption.
  *
@@ -24,9 +27,6 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f
  * Every rejection is logged with its reason so ranked-auth failures are
  * diagnosable in production (the consume result is otherwise just null).
  */
-// Upper bound on one ticket lookup so a stalled Redis cannot hold a WS handshake open.
-export const TICKET_STORE_TIMEOUT_MS = 2000;
-
 export class RedisTicketRepository implements TicketRepository, HandshakeTicketStore {
 	private readonly logger = LoggerFactory.getLogger({ file: "RedisTicketRepository" });
 

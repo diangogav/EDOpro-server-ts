@@ -28,7 +28,33 @@ describe("frameForLog", () => {
 		expect(logged).toContain(`len=${data.length}`);
 	});
 
+	it("redacts a secret frame that follows another frame in the same chunk", () => {
+		const secret = Buffer.from("0123456789abcdef0123456789abcdef", "utf8");
+		const ping = frame(Commands.PING, Buffer.from([1, 2]));
+		const data = Buffer.concat([ping, frame(Commands.RECONNECT, secret)]);
+
+		const logged = frameForLog(data);
+
+		expect(logged).not.toContain(secret.toString("hex"));
+		expect(logged).toContain(ping.toString("hex"));
+		expect(logged).toContain(`<redacted 0xfd len=${data.length - ping.length}>`);
+	});
+
+	it("hides a trailing partial frame instead of dumping it", () => {
+		const ping = frame(Commands.PING, Buffer.from([1, 2]));
+		const partial = frame(Commands.RECONNECT, Buffer.from("0123456789abcdef", "utf8")).subarray(
+			0,
+			9,
+		);
+
+		const logged = frameForLog(Buffer.concat([ping, partial]));
+
+		expect(logged).toContain(ping.toString("hex"));
+		expect(logged).toContain("<partial len=9>");
+		expect(logged).not.toContain(partial.toString("hex"));
+	});
+
 	it("tolerates frames shorter than a header", () => {
-		expect(frameForLog(Buffer.from([1]))).toBe("01");
+		expect(frameForLog(Buffer.from([1]))).toBe("<partial len=1>");
 	});
 });

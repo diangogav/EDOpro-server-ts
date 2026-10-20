@@ -214,9 +214,9 @@ export class DuelingState extends RoomState {
 
 		this.logger.info("Starting Duel");
 
-		// The reconnection token is issued once at match start (WaitingState), not
-		// match. Reconnections re-send the same token.
-		// match. It is only rotated after each successful reconnection.
+		// The reconnection token is issued once per match, at match start
+		// (WaitingState). It never changes mid-match: each reconnection re-sends
+		// the same value.
 		const core = spawn(
 			`./core/CoreIntegrator`,
 			[

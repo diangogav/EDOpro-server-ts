@@ -78,7 +78,10 @@ describe("ExpressReconnectHandler (generic)", () => {
 
 	describe("identity binding", () => {
 		const verifiedClient = (userId: string) =>
-			({ name: "Alice", credential: { kind: "verified", userId } }) as unknown as YgoClient;
+			({
+				name: "Alice",
+				credential: { kind: "verified", userId },
+			}) as unknown as YgoClient;
 
 		it("accepts a verified seat when the socket resolved the same account", () => {
 			TokenIndex.getInstance().register("tok", verifiedClient("u1"), 1);
@@ -171,6 +174,28 @@ describe("ExpressReconnectHandler (generic)", () => {
 				}),
 			]);
 		});
+	});
+
+	it("names the rejection outcome in the log message", () => {
+		const verified = {
+			name: "Alice",
+			isStrongAuth: true,
+			credential: { kind: "verified", userId: "u1" },
+		} as unknown as YgoClient;
+		TokenIndex.getInstance().register("aaaaaaaaaaaaaaaa", verified, 1);
+		TokenIndex.getInstance().register("cccccccccccccccc", client, 999);
+		socket.resolvedUserId = "u2";
+
+		emitReconnect(reconnectMessage("aaaaaaaaaaaaaaaa"));
+		emitReconnect(reconnectMessage("cccccccccccccccc"));
+		emitReconnect(reconnectMessage("bbbbbbbbbbbbbbbb"));
+
+		const messages = logger.info.mock.calls.map(([message]) => message);
+		expect(messages).toContain(
+			"Express reconnect: account does not match seat owner for token aaaaaa\u2026",
+		);
+		expect(messages).toContain("Express reconnect: room not found for token cccccc\u2026");
+		expect(messages).toContain("Express reconnect: no player found for token bbbbbb\u2026");
 	});
 
 	it("rejects when the client-type guard fails", () => {

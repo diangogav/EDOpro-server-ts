@@ -11,6 +11,14 @@ import { logReconnectAttempt, ReconnectOutcome } from "./logReconnectAttempt";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { redactSecret } from "@shared/logger/domain/redactSecret";
 
+const REJECTION_REASON: Record<ReconnectOutcome, string> = {
+	unknown_token: "no player found for token",
+	room_not_found: "room not found for token",
+	identity_mismatch: "account does not match seat owner for token",
+	forwarded: "forwarded token",
+	matched: "matched token",
+};
+
 // Generic, transport-agnostic express-reconnect router. It lives at the
 // CONNECTION level: it receives the raw 0xfd RECONNECT frame (emitted by
 // MessageEmitter on the per-connection emitter when a freshly reopened socket
@@ -80,7 +88,7 @@ export class ExpressReconnectHandler {
 		identityChecked: boolean,
 		outcome: ReconnectOutcome,
 	): void {
-		this.logger.info(`Express reconnect: no player found for token ${redactSecret(token)}`);
+		this.logger.info(`Express reconnect: ${REJECTION_REASON[outcome]} ${redactSecret(token)}`);
 		logReconnectAttempt(this.logger, {
 			path: "token",
 			outcome,
@@ -96,16 +104,16 @@ export class ExpressReconnectHandler {
 	// A verified seat belongs to one account: when the reconnecting socket proved
 	// an account through its handshake ticket, it must be that same account.
 	// Sockets without a resolved identity (TCP, ticketless WS) are not checked.
+	private checksIdentity(client: YgoClient): boolean {
+		return client.credential?.kind === "verified" && Boolean(this.socket.resolvedUserId);
+	}
+
 	private identityMatches(client: YgoClient): boolean {
 		const credential = client.credential;
-		if (!this.checksIdentity(client) || credential?.kind !== "verified") {
+		if (credential?.kind !== "verified" || !this.socket.resolvedUserId) {
 			return true;
 		}
 
 		return credential.userId === this.socket.resolvedUserId;
-	}
-
-	private checksIdentity(client: YgoClient): boolean {
-		return client.credential?.kind === "verified" && Boolean(this.socket.resolvedUserId);
 	}
 }

@@ -308,6 +308,8 @@ export class YGOProDuelingState extends YGOProRoomState {
 				return;
 			}
 
+			// Ranked rooms bind an external seat to the joiner's account, so the
+			// server compared the socket's account against the seat owner only there.
 			logReconnectAttempt(this.logger, {
 				path: "by-name",
 				outcome: "matched",
