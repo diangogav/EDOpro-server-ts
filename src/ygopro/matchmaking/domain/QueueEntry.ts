@@ -6,7 +6,7 @@
  *  - a ticket with no human match within the bot-fallback window gets a bot game.
  */
 export const QUEUE_TTL_MS = 8_000;
-export const BOT_FALLBACK_MS = 15_000;
+export const BOT_FALLBACK_MS = 60_000;
 export const CLEANUP_INTERVAL_MS = 2_000;
 /**
  * Grace window a matched entry is retained after pairing. Within it, a client

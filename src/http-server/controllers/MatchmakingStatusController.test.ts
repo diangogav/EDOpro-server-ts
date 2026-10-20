@@ -5,6 +5,20 @@ import { BOT_FALLBACK_MS, QUEUE_TTL_MS } from "@ygopro/matchmaking/domain/QueueE
 
 import { MatchmakingStatusController } from "./MatchmakingStatusController";
 
+// Polls every id just inside the TTL window until `until`, as a real client
+// heartbeats, so the entries survive to the bot-fallback threshold.
+const keepPolling = (
+	q: { poll(id: string): unknown },
+	clock: { t: number },
+	ids: string[],
+	until: number,
+): void => {
+	for (let t = QUEUE_TTL_MS - 1; t < until; t += QUEUE_TTL_MS - 1) {
+		clock.t = t;
+		for (const id of ids) q.poll(id);
+	}
+};
+
 function fakeResponse(): { res: Response; body: () => unknown; status: () => number } {
 	let statusCode = 0;
 	let payload: unknown;
@@ -94,8 +108,7 @@ describe("MatchmakingStatusController", () => {
 		q.enqueue({ ticketId: "t1", userId: "user-1", format: "tcg" });
 
 		// Heartbeat inside the TTL window so the entry survives to the bot fallback.
-		clock.t = QUEUE_TTL_MS - 1;
-		q.poll("t1");
+		keepPolling(q, clock, ["t1"], BOT_FALLBACK_MS + 1);
 		clock.t = BOT_FALLBACK_MS + 1;
 		q.tick();
 
