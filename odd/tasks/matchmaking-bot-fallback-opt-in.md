@@ -9,19 +9,19 @@ bot match, unconditionally. MDPro3 players complain: they queued to face humans;
 they would play solo mode.
 
 ## Scope
-- Per-ticket `allowBotFallback` flag accepted at enqueue, on both the HTTP poll path and the socket
-  protocol path. Absent means `false`.
-- `BotFallbackPolicy` skips participants that did not opt in; they keep waiting for a human.
+- Per-ticket `botFallbackAfterMs` accepted at enqueue, on both the HTTP poll path and the socket
+  protocol path. Absent means the ticket never gets a bot; present, it is clamped to [30s, 5min].
+- `BotFallbackPolicy` skips participants without a delay; they keep waiting for a human.
 - Shared contract doc (`evolution-card-game/docs/architecture/matchmaking-contract.md`) documents the
-  flag.
+  field.
 
 ## Out of scope
-Playing a bot while queued (phase 2, web client), web client sending the flag (follow-up), changing
-`BOT_FALLBACK_MS`.
+Playing a bot while queued (phase 2, web client), web client sending `botFallbackAfterMs`
+(follow-up), a server-side maximum wait, wait-time observability (follow-up).
 
 ## Constraints
-- Default `false` so MDPro3 stops receiving bots with no client change.
-- Consequence: the web client also stops receiving bots until it sends `allowBotFallback: true`.
+- Absent delay means no bot, so MDPro3 stops receiving bots with no client change.
+- Consequence: the web client also stops receiving bots until it sends `botFallbackAfterMs`.
 
 ## TDD
 Strict TDD enabled (session config). Runner: `npx jest` (package.json `test`).
@@ -70,5 +70,9 @@ max wait was rejected: clients already end the wait by cancelling.
 - T4 done in evolution-card-game 31583158.
 
 ## Next step
-Push/PR (user decision); then the web client sends `allowBotFallback: true` (follow-up).
+Push/PR (user decision); then the web client sends `botFallbackAfterMs` (follow-up).
+Review of fec8006a approved and acknowledged (lineage review-77c2abf129d109ed). Non-blocking
+follow-ups: human-over-bot precedence tests in `MatchmakingQueue.test.ts:491-492` and
+`CompositePairingPolicy.test.ts` no longer opt any ticket in; long waits are not logged or counted;
+harness duplicates the clamp literals and accepts values above uint32.
 
