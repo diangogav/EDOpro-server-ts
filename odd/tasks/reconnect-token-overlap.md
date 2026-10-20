@@ -1,3 +1,5 @@
+> Superseded by odd/tasks/reconnect-hardening.md (A1: one fixed token per match).
+
 # Reconnect token overlap
 
 ## Objective

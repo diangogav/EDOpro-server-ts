@@ -384,8 +384,8 @@ export class YGOProDuelingState extends YGOProRoomState {
 		room.reconnect(player, socket);
 		// 3. Replay the live board state.
 		await this.resyncBoard(player);
-		// 4. Rotate the token (single-use) and finish.
-		player.sendMessageToClient(ReconnectionTokenIssuer.rotate(player, room.id, token));
+		// 4. Re-send the same token and finish.
+		player.sendMessageToClient(ReconnectionTokenIssuer.resend(player, room.id));
 		player.clearReconnecting();
 	}
 

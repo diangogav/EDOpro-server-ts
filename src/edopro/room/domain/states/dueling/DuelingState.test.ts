@@ -1,6 +1,6 @@
+import { ReconnectionTokenClientMessage } from "@shared/messages/server-to-client/ReconnectionTokenClientMessage";
 import "reflect-metadata";
 import { EventEmitter } from "stream";
-import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { ChatColor, YGOProStocChat } from "ygopro-msg-encode";
 import { Logger } from "@shared/logger/domain/Logger";
 import { Reconnect } from "@edopro/room/application/Reconnect";
@@ -175,7 +175,9 @@ describe("DuelingState", () => {
 		const [, stderrCallback] = (mockCore.stderr.on as jest.Mock).mock.calls[0];
 		stderrCallback(Buffer.from("core crashed"));
 
-		expect(mockLogger.error).toHaveBeenCalledWith("core crashed", { roomId: mockRoom.id });
+		expect(mockLogger.error).toHaveBeenCalledWith("core crashed", {
+			roomId: mockRoom.id,
+		});
 		expect(mockClient.socket.send).not.toHaveBeenCalled();
 	});
 
@@ -394,7 +396,7 @@ describe("DuelingState", () => {
 			expect(mockSocket.destroy).toHaveBeenCalled();
 		});
 
-		it("core RECONNECT: rotates the token (old kept for the overlap, new 32-hex issued)", () => {
+		it("core RECONNECT: re-sends the same token (still valid, not rotated)", () => {
 			const player = makeRealClient({ reconnectionToken: "old", position: 0 });
 			(mockRoom as any).players = [player];
 			TokenIndex.getInstance().register("old", player, mockRoom.id);
@@ -406,23 +408,8 @@ describe("DuelingState", () => {
 			});
 
 			expect(TokenIndex.getInstance().find("old")).toBeDefined();
-			expect(player.setReconnectionToken).toHaveBeenCalledWith(
-				expect.stringMatching(/^[0-9a-f]{32}$/),
-			);
-			expect(player.sendMessage).toHaveBeenCalled();
-		});
-
-		it("core RECONNECT: rotates relative to the token the client presented in EXPRESS_RECONNECT", () => {
-			const player = makeRealClient({ reconnectionToken: "current", position: 0 });
-			(mockRoom as any).players = [player];
-			(state as any).presentedTokens.set(player, "presented");
-			const rotate = jest.spyOn(ReconnectionTokenIssuer, "rotate");
-
-			(state as any).handleCoreReconnect({ position: 0, team: 0, cacheable: false });
-
-			expect(rotate).toHaveBeenCalledWith(player, mockRoom.id, "presented");
-			expect((state as any).presentedTokens.has(player)).toBe(false);
-			rotate.mockRestore();
+			expect(player.setReconnectionToken).not.toHaveBeenCalled();
+			expect(player.sendMessage).toHaveBeenCalledWith(ReconnectionTokenClientMessage.create("old"));
 		});
 
 		it("core RECONNECT: does NOT broadcast a 'has entered to the duel' chat notice", () => {

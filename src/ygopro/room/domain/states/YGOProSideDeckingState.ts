@@ -94,7 +94,7 @@ export class YGOProSideDeckingState extends YGOProRoomState {
 			player.sendMessageToClient(room.messageSender.changeSideMessage());
 		}
 
-		player.sendMessageToClient(ReconnectionTokenIssuer.rotate(player, room.id, token));
+		player.sendMessageToClient(ReconnectionTokenIssuer.resend(player, room.id));
 		player.clearReconnecting();
 	}
 

@@ -160,8 +160,8 @@ export class WaitingState extends RoomState {
 
 			// Issue a per-player reconnection token at match start so every duel
 			// phase (RPS, choosing order, dueling, side-decking) supports reconnect
-			// by token. It is rotated after each successful reconnection, never
-			// re-issued per game.
+			// by token. Reconnections re-send the same token, never re-issued per
+			// game.
 			room.players.forEach((client: Client) => {
 				client.sendMessage(ReconnectionTokenIssuer.issue(client, room.id));
 			});

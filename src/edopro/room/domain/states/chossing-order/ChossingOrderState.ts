@@ -79,8 +79,8 @@ export class ChossingOrderState extends RoomState {
 			player.sendMessage(ChooseOrderClientMessage.create());
 		}
 
-		// Rotate the token after a successful reconnection (single-use).
-		player.sendMessage(ReconnectionTokenIssuer.rotate(player, room.id, token));
+		// Re-send the same token so the client refreshes its stored session.
+		player.sendMessage(ReconnectionTokenIssuer.resend(player, room.id));
 		player.clearReconnecting();
 	}
 
