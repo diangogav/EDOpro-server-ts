@@ -17,7 +17,7 @@ they would play solo mode.
 
 ## Out of scope
 Playing a bot while queued (phase 2, web client), web client sending `botFallbackAfterMs`
-(follow-up), a server-side maximum wait, wait-time observability (follow-up).
+(T6), a server-side maximum wait.
 
 ## Constraints
 - Absent delay means no bot, so MDPro3 stops receiving bots with no client change.
@@ -36,6 +36,11 @@ Strict TDD enabled (session config). Runner: `npx jest` (package.json `test`).
   body. Also tighten the opt-out protocol assertion and harness flag parsing flagged by review.
   Route: delegated direct (writer; 2+ non-trivial files).
 - [x] T4 Contract doc documents `botFallbackAfterMs`. Route: direct inline.
+- [x] T5 Server follow-ups: precedence tests opt one ticket in; log each ticket's queue exit with
+  outcome and waited time (observability of long waits); harness reuses the domain clamp constants and
+  rejects values above uint32. Route: delegated direct (writer).
+- [x] T6 Web client (evolution-card-game) sends `botFallbackAfterMs: 60000` on every enqueue path,
+  keeping today's 60s bot fallback for web players. Route: delegated direct (writer, other repo).
 
 Accepted change (2026-10-20): the user chose a client-chosen delay over a fixed 60s. A server-side
 max wait was rejected: clients already end the wait by cancelling.
@@ -68,6 +73,17 @@ max wait was rejected: clients already end the wait by cancelling.
   tests assert whole results. Checks: `npx jest` 242 suites / 2377 tests passed, `npx tsc --noEmit`
   clean, `pnpm lint` clean; parent spot check `npx jest src/ygopro/matchmaking` 243 passed.
 - T4 done in evolution-card-game 31583158.
+
+- T5 done in 53c0b0b6. `MatchmakingPool` logs `matchmaking.exit` { participantId, outcome, waitedMs,
+  format, presence, hasBotFallback } at every removal; precedence tests opt in and were proven RED by
+  swapping policy order; harness rejects values above uint32. Checks: `npx jest` 2388 passed,
+  `npx tsc --noEmit` and `pnpm lint` clean; parent spot check domain 66 passed. Known gap: if a match
+  handler throws and re-adds participants, a second exit line follows the `matched_*` one.
+- T6 done in evolution-card-game 9b151045: the web client has no HTTP enqueue; the socket ENTER
+  (`LobbyManager.connectForMatchmaking`, also used for requeue) sends 60000 ms. Review (1 lens)
+  approved and acknowledged (lineage review-c82bd35e7ccc4896).
+- Deploy order: the server must ship before the web client; `main` rejects any ENTER body that is
+  not exactly 4 bytes.
 
 ## Next step
 Push/PR (user decision); then the web client sends `botFallbackAfterMs` (follow-up).
