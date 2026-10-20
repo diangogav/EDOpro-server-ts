@@ -41,7 +41,7 @@ export class ExpressReconnectHandler {
 		this.logger.info(`Express reconnect: checking token ${redactSecret(token)}`);
 
 		const entry = TokenIndex.getInstance().find(token);
-		if (entry && this.clientGuard(entry.client)) {
+		if (entry && this.clientGuard(entry.client) && this.identityMatches(entry.client)) {
 			const room = this.resolveRoom(entry.roomId);
 			if (room) {
 				this.logger.info(
@@ -56,5 +56,18 @@ export class ExpressReconnectHandler {
 		this.logger.info(`Express reconnect: no player found for token ${redactSecret(token)}`);
 		this.socket.send(ReconnectionAckMessage.failure());
 		this.socket.destroy();
+	}
+
+	// A verified seat belongs to one account: when the reconnecting socket proved
+	// an account through its handshake ticket, it must be that same account.
+	// Sockets without a resolved identity (TCP, ticketless WS) are not checked.
+	private identityMatches(client: YgoClient): boolean {
+		const credential = client.credential;
+		const socketUserId = this.socket.resolvedUserId;
+		if (credential?.kind !== "verified" || !socketUserId) {
+			return true;
+		}
+
+		return credential.userId === socketUserId;
 	}
 }

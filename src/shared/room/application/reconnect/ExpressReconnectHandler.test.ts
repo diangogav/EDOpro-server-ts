@@ -75,6 +75,53 @@ describe("ExpressReconnectHandler (generic)", () => {
 		expect(logged).toContain("012345…");
 	});
 
+	describe("identity binding", () => {
+		const verifiedClient = (userId: string) =>
+			({ name: "Alice", credential: { kind: "verified", userId } }) as unknown as YgoClient;
+
+		it("accepts a verified seat when the socket resolved the same account", () => {
+			TokenIndex.getInstance().register("tok", verifiedClient("u1"), 1);
+			socket.resolvedUserId = "u1";
+
+			emitReconnect(reconnectMessage("tok"));
+
+			expect(room.emit).toHaveBeenCalledWith("EXPRESS_RECONNECT", expect.anything(), socket);
+			expect(socket.destroy).not.toHaveBeenCalled();
+		});
+
+		it("rejects a verified seat when the socket resolved a different account", () => {
+			TokenIndex.getInstance().register("tok", verifiedClient("u1"), 1);
+			socket.resolvedUserId = "u2";
+
+			emitReconnect(reconnectMessage("tok"));
+
+			expect(socket.send).toHaveBeenCalledWith(FAILURE_ACK);
+			expect(socket.destroy).toHaveBeenCalled();
+			expect(room.emit).not.toHaveBeenCalled();
+		});
+
+		it("accepts a verified seat from a ticketless socket", () => {
+			TokenIndex.getInstance().register("tok", verifiedClient("u1"), 1);
+
+			emitReconnect(reconnectMessage("tok"));
+
+			expect(room.emit).toHaveBeenCalled();
+		});
+
+		it("does not bind non-verified seats", () => {
+			const guest = {
+				name: "G",
+				credential: { kind: "guest", name: "G" },
+			} as unknown as YgoClient;
+			TokenIndex.getInstance().register("tok", guest, 1);
+			socket.resolvedUserId = "u2";
+
+			emitReconnect(reconnectMessage("tok"));
+
+			expect(room.emit).toHaveBeenCalled();
+		});
+	});
+
 	it("rejects when the client-type guard fails", () => {
 		clientGuard.mockReturnValue(false);
 		TokenIndex.getInstance().register("tok", client, 1);
