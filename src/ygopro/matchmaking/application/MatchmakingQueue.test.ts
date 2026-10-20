@@ -1,6 +1,11 @@
 import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
 
-import { BOT_FALLBACK_MS, MATCHED_GRACE_MS, QUEUE_TTL_MS } from "../domain/QueueEntry";
+import {
+	BOT_FALLBACK_MAX_MS,
+	BOT_FALLBACK_MIN_MS,
+	MATCHED_GRACE_MS,
+	QUEUE_TTL_MS,
+} from "../domain/QueueEntry";
 import { MatchmakingQueue, MatchmakingQueueDeps } from "./MatchmakingQueue";
 
 // Polls every id just inside the TTL window until `until`, as a real client
@@ -40,8 +45,8 @@ const enqueue = (
 	queue: MatchmakingQueue,
 	ticketId: string,
 	userId: string,
-	allowBotFallback?: boolean,
-) => queue.enqueue({ ticketId, userId, format: "tcg", allowBotFallback });
+	botFallbackAfterMs?: number,
+) => queue.enqueue({ ticketId, userId, format: "tcg", botFallbackAfterMs });
 
 describe("MatchmakingQueue", () => {
 	afterEach(() => {
@@ -57,7 +62,6 @@ describe("MatchmakingQueue", () => {
 			const entry = queue.get("t1");
 
 			expect(entry).toMatchObject({
-				allowBotFallback: false,
 				ticketId: "t1",
 				userId: "user-1",
 				state: "searching",
@@ -144,11 +148,11 @@ describe("MatchmakingQueue", () => {
 			const queue = MatchmakingQueue.createForTests(
 				makeDeps({ now: () => clock.t, createBotRoom }),
 			);
-			enqueue(queue, "t1", "user-1", true);
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
 
 			// Keep the entry alive across the TTL window; the fallback fires later.
-			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
-			clock.t = BOT_FALLBACK_MS + 1;
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MIN_MS + 1);
+			clock.t = BOT_FALLBACK_MIN_MS + 1;
 			queue.tick();
 
 			expect(createBotRoom).toHaveBeenCalledWith("tcg", "user-1");
@@ -211,10 +215,10 @@ describe("MatchmakingQueue", () => {
 			const queue = MatchmakingQueue.createForTests(
 				makeDeps({ now: () => clock.t, createBotRoom }),
 			);
-			enqueue(queue, "t1", "user-1", true);
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
 
-			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
-			clock.t = BOT_FALLBACK_MS + 1;
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MIN_MS + 1);
+			clock.t = BOT_FALLBACK_MIN_MS + 1;
 
 			expect(queue.poll("t1")).toMatchObject({ state: "searching" });
 			expect(createBotRoom).not.toHaveBeenCalled();
@@ -276,12 +280,7 @@ describe("MatchmakingQueue", () => {
 	describe("abortRoom", () => {
 		it("releases both users from an aborted matched room so they can queue again", () => {
 			const queue = MatchmakingQueue.createForTests(
-				makeDeps({
-					createRankedRoom: () => ({
-						roomId: 4242,
-						roomPassword: "to,mm-r1#pw1",
-					}),
-				}),
+				makeDeps({ createRankedRoom: () => ({ roomId: 4242, roomPassword: "to,mm-r1#pw1" }) }),
 			);
 			enqueue(queue, "t1", "user-1");
 			enqueue(queue, "t2", "user-2");
@@ -393,10 +392,10 @@ describe("MatchmakingQueue", () => {
 		it("keeps opponentName null for a bot match (no userId leak on the bot path)", () => {
 			const clock = { t: 0 };
 			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t }));
-			enqueue(queue, "t1", "user-1", true);
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
 
-			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
-			clock.t = BOT_FALLBACK_MS + 1;
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MIN_MS + 1);
+			clock.t = BOT_FALLBACK_MIN_MS + 1;
 			queue.tick();
 
 			const s1 = queue.poll("t1");
@@ -415,12 +414,12 @@ describe("MatchmakingQueue", () => {
 			const queue = MatchmakingQueue.createForTests(
 				makeDeps({ now: () => clock.t, createBotRoom, spawnBot }),
 			);
-			enqueue(queue, "t1", "user-1", true);
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
 
 			// Keep polling within the TTL window, as a real client does, so the
 			// entry survives to the bot-fallback threshold instead of being swept.
-			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
-			clock.t = BOT_FALLBACK_MS + 1;
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MIN_MS + 1);
+			clock.t = BOT_FALLBACK_MIN_MS + 1;
 			queue.tick();
 
 			const e1 = queue.get("t1");
@@ -431,7 +430,7 @@ describe("MatchmakingQueue", () => {
 			expect(spawnBot).toHaveBeenCalledWith(4242, "tcg");
 		});
 
-		it("keeps a ticket that did not opt in searching for a human past the fallback window", () => {
+		it("keeps a ticket without a fallback delay searching for a human past the longest fallback delay", () => {
 			const clock = { t: 0 };
 			const createBotRoom = jest.fn();
 			const queue = MatchmakingQueue.createForTests(
@@ -439,8 +438,8 @@ describe("MatchmakingQueue", () => {
 			);
 			enqueue(queue, "t1", "user-1");
 
-			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS * 3);
-			clock.t = BOT_FALLBACK_MS * 3;
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MAX_MS + 1);
+			clock.t = BOT_FALLBACK_MAX_MS + 1;
 			queue.tick();
 
 			expect(createBotRoom).not.toHaveBeenCalled();
@@ -453,7 +452,7 @@ describe("MatchmakingQueue", () => {
 				.mockReturnValue({ roomId: 1, roomPassword: "to,mm-r1#pw1" });
 			const createBotRoom = jest.fn();
 			const queue = MatchmakingQueue.createForTests(makeDeps({ createRankedRoom, createBotRoom }));
-			enqueue(queue, "t1", "user-1", true);
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
 			enqueue(queue, "t2", "user-2");
 
 			expect(createRankedRoom).toHaveBeenCalledTimes(1);
@@ -467,10 +466,10 @@ describe("MatchmakingQueue", () => {
 			const queue = MatchmakingQueue.createForTests(
 				makeDeps({ now: () => clock.t, createBotRoom }),
 			);
-			enqueue(queue, "t1", "user-1", true);
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
 
-			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS - 1);
-			clock.t = BOT_FALLBACK_MS - 1;
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MIN_MS - 1);
+			clock.t = BOT_FALLBACK_MIN_MS - 1;
 			queue.tick();
 
 			expect(createBotRoom).not.toHaveBeenCalled();
@@ -489,8 +488,8 @@ describe("MatchmakingQueue", () => {
 			enqueue(queue, "t1", "user-1");
 			enqueue(queue, "t2", "user-2");
 
-			keepPolling(queue, clock, ["t1", "t2"], BOT_FALLBACK_MS + 1);
-			clock.t = BOT_FALLBACK_MS + 1;
+			keepPolling(queue, clock, ["t1", "t2"], BOT_FALLBACK_MIN_MS + 1);
+			clock.t = BOT_FALLBACK_MIN_MS + 1;
 			queue.tick();
 
 			expect(createRankedRoom).toHaveBeenCalledTimes(1);
@@ -501,16 +500,12 @@ describe("MatchmakingQueue", () => {
 			const clock = { t: 0 };
 			const createBotRoom = jest.fn();
 			const queue = MatchmakingQueue.createForTests(
-				makeDeps({
-					now: () => clock.t,
-					createBotRoom,
-					botAvailable: () => false,
-				}),
+				makeDeps({ now: () => clock.t, createBotRoom, botAvailable: () => false }),
 			);
-			enqueue(queue, "t1", "user-1", true);
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
 
-			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
-			clock.t = BOT_FALLBACK_MS + 1;
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MIN_MS + 1);
+			clock.t = BOT_FALLBACK_MIN_MS + 1;
 			queue.tick();
 
 			expect(createBotRoom).not.toHaveBeenCalled();
@@ -580,10 +575,10 @@ describe("MatchmakingQueue", () => {
 			const queue = MatchmakingQueue.createForTests(
 				makeDeps({ now: () => clock.t, createBotRoom, spawnBot, onRoomCreationError }),
 			);
-			enqueue(queue, "t1", "user-1", true);
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
 
-			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
-			clock.t = BOT_FALLBACK_MS + 1;
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MIN_MS + 1);
+			clock.t = BOT_FALLBACK_MIN_MS + 1;
 
 			expect(() => queue.tick()).not.toThrow();
 			expect(onRoomCreationError).toHaveBeenCalled();
@@ -607,10 +602,10 @@ describe("MatchmakingQueue", () => {
 			const queue = MatchmakingQueue.createForTests(
 				makeDeps({ now: () => clock.t, createBotRoom, spawnBot, onRoomCreationError: jest.fn() }),
 			);
-			enqueue(queue, "t1", "user-1", true); // lone → bot-fallback candidate
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS); // lone → bot-fallback candidate
 
-			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
-			clock.t = BOT_FALLBACK_MS + 1;
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MIN_MS + 1);
+			clock.t = BOT_FALLBACK_MIN_MS + 1;
 
 			// First tick: bot port throws, entry stays searching, no crash.
 			expect(() => queue.tick()).not.toThrow();
@@ -760,14 +755,14 @@ describe("MatchmakingQueue", () => {
 		it("frees a bot-matched user after the grace window too", () => {
 			const clock = { t: 0 };
 			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t }));
-			enqueue(queue, "t1", "user-1", true);
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
 
-			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
-			clock.t = BOT_FALLBACK_MS + 1;
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MIN_MS + 1);
+			clock.t = BOT_FALLBACK_MIN_MS + 1;
 			queue.tick(); // matched to a bot
 			expect(queue.get("t1")?.state).toBe("matched");
 
-			clock.t = BOT_FALLBACK_MS + 1 + MATCHED_GRACE_MS + 1;
+			clock.t = BOT_FALLBACK_MIN_MS + 1 + MATCHED_GRACE_MS + 1;
 			queue.tick();
 
 			expect(queue.get("t1")).toBeUndefined();

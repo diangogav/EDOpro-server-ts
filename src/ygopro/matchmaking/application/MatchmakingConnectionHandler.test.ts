@@ -167,19 +167,29 @@ describe("MatchmakingConnectionHandler", () => {
 				format: "jtp",
 				mode: "ranked",
 				clientVersion: 1234,
-				allowBotFallback: false,
 			});
 		});
 
-		it("forwards the opted-in bot fallback flag from a five-byte frame", () => {
+		it("forwards the bot fallback delay from an eight-byte frame", () => {
+			const delay = Buffer.alloc(4);
+			delay.writeUInt32LE(90_000, 0);
+			eventEmitter.emit(
+				Commands.MATCHMAKING_ENTER as unknown as string,
+				makeMessage(Buffer.concat([buildEnterBody(0, 0, 1234), delay])),
+			);
+
+			expect(enter.execute).toHaveBeenCalledWith(
+				expect.objectContaining({ botFallbackAfterMs: 90_000 }),
+			);
+		});
+
+		it("rejects a five-byte frame as malformed and never invokes the use case", () => {
 			eventEmitter.emit(
 				Commands.MATCHMAKING_ENTER as unknown as string,
 				makeMessage(Buffer.concat([buildEnterBody(0, 0, 1234), Buffer.from([1])])),
 			);
 
-			expect(enter.execute).toHaveBeenCalledWith(
-				expect.objectContaining({ allowBotFallback: true }),
-			);
+			expect(enter.execute).not.toHaveBeenCalled();
 		});
 	});
 

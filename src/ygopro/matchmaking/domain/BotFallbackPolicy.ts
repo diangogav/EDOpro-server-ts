@@ -1,13 +1,13 @@
 import { Match } from "./Match";
 import { PairingPolicy } from "./PairingPolicy";
 import { Participant } from "./Participant";
-import { BOT_FALLBACK_MS } from "./QueueEntry";
+import { clampBotFallbackDelay } from "./QueueEntry";
 
 /**
- * Pairs a candidate that opted in (`allowBotFallback`) and has waited past
- * `BOT_FALLBACK_MS` with an unrated bot match, one match per participant.
- * Candidates that did not opt in are never paired here and keep waiting for a
- * human. No-op while no bot is available.
+ * Pairs a candidate that carries a fallback delay (`botFallbackAfterMs`) and has
+ * waited longer than that delay, clamped to the supported range, with an unrated
+ * bot match, one match per participant. Candidates without a delay are never
+ * paired here and keep waiting for a human. No-op while no bot is available.
  */
 export class BotFallbackPolicy implements PairingPolicy {
 	constructor(
@@ -21,8 +21,10 @@ export class BotFallbackPolicy implements PairingPolicy {
 		const matches: Match[] = [];
 
 		for (const participant of candidates) {
-			if (!participant.allowBotFallback) continue;
-			if (now - participant.enqueuedAt <= BOT_FALLBACK_MS) continue;
+			if (participant.botFallbackAfterMs === undefined) continue;
+			if (now - participant.enqueuedAt <= clampBotFallbackDelay(participant.botFallbackAfterMs)) {
+				continue;
+			}
 
 			matches.push({
 				id: this.newMatchId(),

@@ -18,8 +18,10 @@ function enterBody(formatCode: number, modeCode: number, clientVersion = 0): Buf
 	return body;
 }
 
-function enterBodyWithFallback(allowBotFallbackByte: number): Buffer {
-	return Buffer.concat([enterBody(0, 0), Buffer.from([allowBotFallbackByte])]);
+function enterBodyWithDelay(delayMs: number, clientVersion = 0): Buffer {
+	const delay = Buffer.alloc(4);
+	delay.writeUInt32LE(delayMs, 0);
+	return Buffer.concat([enterBody(0, 0, clientVersion), delay]);
 }
 
 function authBody(ticket: string, declaredLength = Buffer.byteLength(ticket, "utf8")): Buffer {
@@ -46,31 +48,29 @@ describe("parseCtosAuth", () => {
 });
 
 describe("parseCtosEnter", () => {
-	it("parses format, mode and clientVersion from the fixed 4-byte body", () => {
+	it("parses a 4-byte body as format, mode and clientVersion with no fallback delay", () => {
 		expect(parseCtosEnter(enterBody(1, 0, 42))).toEqual({
 			ok: true,
-			value: { format: "jtp", mode: "ranked", clientVersion: 42, allowBotFallback: false },
+			value: { format: "jtp", mode: "ranked", clientVersion: 42 },
 		});
 	});
 
-	it("rejects a body shorter than 4 bytes or longer than 5 bytes", () => {
-		expect(parseCtosEnter(Buffer.alloc(3))).toEqual({ ok: false, reason: "malformed_frame" });
-		expect(parseCtosEnter(Buffer.alloc(6))).toEqual({ ok: false, reason: "malformed_frame" });
-	});
-
-	it("reads the optional fifth byte as allowBotFallback", () => {
-		const optedIn = parseCtosEnter(enterBodyWithFallback(1));
-		const optedOut = parseCtosEnter(enterBodyWithFallback(0));
-
-		expect(optedIn.ok && optedIn.value.allowBotFallback).toBe(true);
-		expect(optedOut.ok && optedOut.value.allowBotFallback).toBe(false);
-	});
-
-	it("rejects a fifth byte that is neither 0 nor 1", () => {
-		expect(parseCtosEnter(enterBodyWithFallback(2))).toEqual({
-			ok: false,
-			reason: "malformed_frame",
+	it("parses an 8-byte body, reading the trailing uint32 LE as botFallbackAfterMs", () => {
+		expect(parseCtosEnter(enterBodyWithDelay(90_000, 7))).toEqual({
+			ok: true,
+			value: { format: "tcg", mode: "ranked", clientVersion: 7, botFallbackAfterMs: 90_000 },
 		});
+	});
+
+	it("keeps the full uint32 range of botFallbackAfterMs", () => {
+		expect(parseCtosEnter(enterBodyWithDelay(0xffffffff))).toEqual({
+			ok: true,
+			value: { format: "tcg", mode: "ranked", clientVersion: 0, botFallbackAfterMs: 0xffffffff },
+		});
+	});
+
+	it.each([0, 3, 5, 6, 7, 9])("rejects a %i-byte body as malformed", (length) => {
+		expect(parseCtosEnter(Buffer.alloc(length))).toEqual({ ok: false, reason: "malformed_frame" });
 	});
 
 	it("rejects out-of-range format/mode bytes via the frozen code tables", () => {
@@ -79,12 +79,18 @@ describe("parseCtosEnter", () => {
 	});
 
 	it("resolves formats through a fixed code table pinned to the wire contract, not array indexing", () => {
-		const tcg = parseCtosEnter(enterBody(0, 0));
-		const jtp = parseCtosEnter(enterBody(1, 0));
-		const edison = parseCtosEnter(enterBody(2, 0));
-		expect(tcg.ok && tcg.value.format).toBe("tcg");
-		expect(jtp.ok && jtp.value.format).toBe("jtp");
-		expect(edison.ok && edison.value.format).toBe("edison");
+		expect(parseCtosEnter(enterBody(0, 0))).toEqual({
+			ok: true,
+			value: { format: "tcg", mode: "ranked", clientVersion: 0 },
+		});
+		expect(parseCtosEnter(enterBody(1, 0))).toEqual({
+			ok: true,
+			value: { format: "jtp", mode: "ranked", clientVersion: 0 },
+		});
+		expect(parseCtosEnter(enterBody(2, 0))).toEqual({
+			ok: true,
+			value: { format: "edison", mode: "ranked", clientVersion: 0 },
+		});
 	});
 });
 

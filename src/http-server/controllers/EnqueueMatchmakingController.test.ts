@@ -82,29 +82,36 @@ describe("EnqueueMatchmakingController", () => {
 		expect(MatchmakingQueue.getInstance().get(body.ticketId)).toBeDefined();
 	});
 
-	it("defaults allowBotFallback to false when the field is absent", async () => {
+	it("leaves the queued entry without a fallback delay when the field is absent", async () => {
 		const out = await run(
 			{ format: "tcg", queue: "ranked", ticket: "the-ticket" },
 			makeTickets("user-1"),
 		);
 
 		const body = out.body() as { ticketId: string };
-		expect(MatchmakingQueue.getInstance().get(body.ticketId)?.allowBotFallback).toBe(false);
+		expect(MatchmakingQueue.getInstance().get(body.ticketId)?.botFallbackAfterMs).toBeUndefined();
 	});
 
-	it("carries allowBotFallback: true onto the queued entry", async () => {
+	it("carries botFallbackAfterMs onto the queued entry", async () => {
 		const out = await run(
-			{ format: "tcg", queue: "ranked", ticket: "the-ticket", allowBotFallback: true },
+			{ format: "tcg", queue: "ranked", ticket: "the-ticket", botFallbackAfterMs: 90_000 },
 			makeTickets("user-1"),
 		);
 
+		expect(out.status()).toBe(200);
 		const body = out.body() as { ticketId: string };
-		expect(MatchmakingQueue.getInstance().get(body.ticketId)?.allowBotFallback).toBe(true);
+		expect(MatchmakingQueue.getInstance().get(body.ticketId)?.botFallbackAfterMs).toBe(90_000);
 	});
 
-	it("rejects a non-boolean allowBotFallback (400)", async () => {
+	it.each([
+		["a string", "90000"],
+		["a boolean", true],
+		["a non-integer", 45_000.5],
+		["a negative number", -1],
+		["null", null],
+	])("rejects botFallbackAfterMs given as %s (400)", async (_label, value) => {
 		const out = await run(
-			{ format: "tcg", queue: "ranked", ticket: "the-ticket", allowBotFallback: "yes" },
+			{ format: "tcg", queue: "ranked", ticket: "the-ticket", botFallbackAfterMs: value },
 			makeTickets("user-1"),
 		);
 

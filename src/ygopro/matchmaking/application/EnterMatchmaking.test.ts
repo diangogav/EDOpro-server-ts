@@ -170,11 +170,15 @@ describe("EnterMatchmaking", () => {
 		});
 
 		it.each([
-			{ name: "defaults the participant to no bot fallback", input: {}, expected: false },
 			{
-				name: "carries an opted-in bot fallback onto the participant",
-				input: { allowBotFallback: true },
-				expected: true,
+				name: "leaves the participant without a bot fallback delay",
+				input: {},
+				expected: undefined,
+			},
+			{
+				name: "carries the bot fallback delay onto the participant",
+				input: { botFallbackAfterMs: 90_000 },
+				expected: 90_000,
 			},
 		])("$name", ({ input, expected }) => {
 			const { socket, session, channel } = makeConnection();
@@ -189,7 +193,7 @@ describe("EnterMatchmaking", () => {
 				...input,
 			});
 
-			expect(store.get(socket.id as string)?.allowBotFallback).toBe(expected);
+			expect(store.get(socket.id as string)?.botFallbackAfterMs).toBe(expected);
 		});
 
 		it("logs a replacement event and never the display name when a second connection wins the same user", () => {

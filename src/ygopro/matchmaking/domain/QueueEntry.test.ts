@@ -1,4 +1,10 @@
-import { MATCHMAKING_FORMATS, MatchmakingFormat } from "./QueueEntry";
+import {
+	BOT_FALLBACK_MAX_MS,
+	BOT_FALLBACK_MIN_MS,
+	clampBotFallbackDelay,
+	MATCHMAKING_FORMATS,
+	MatchmakingFormat,
+} from "./QueueEntry";
 
 describe("MATCHMAKING_FORMATS", () => {
 	it('is exactly ["tcg","jtp","edison"] as a const array', () => {
@@ -25,5 +31,23 @@ describe("MatchmakingFormat", () => {
 	it('accepts "jtp" as a valid MatchmakingFormat', () => {
 		const fmt: MatchmakingFormat = "jtp";
 		expect(MATCHMAKING_FORMATS as readonly string[]).toContain(fmt);
+	});
+});
+
+describe("clampBotFallbackDelay", () => {
+	it("raises a delay below the minimum to the minimum", () => {
+		expect(clampBotFallbackDelay(0)).toBe(BOT_FALLBACK_MIN_MS);
+		expect(clampBotFallbackDelay(BOT_FALLBACK_MIN_MS - 1)).toBe(BOT_FALLBACK_MIN_MS);
+	});
+
+	it("lowers a delay above the maximum to the maximum", () => {
+		expect(clampBotFallbackDelay(BOT_FALLBACK_MAX_MS + 1)).toBe(BOT_FALLBACK_MAX_MS);
+		expect(clampBotFallbackDelay(Number.MAX_SAFE_INTEGER)).toBe(BOT_FALLBACK_MAX_MS);
+	});
+
+	it("keeps a delay inside the range unchanged", () => {
+		expect(clampBotFallbackDelay(BOT_FALLBACK_MIN_MS)).toBe(BOT_FALLBACK_MIN_MS);
+		expect(clampBotFallbackDelay(45_000)).toBe(45_000);
+		expect(clampBotFallbackDelay(BOT_FALLBACK_MAX_MS)).toBe(BOT_FALLBACK_MAX_MS);
 	});
 });

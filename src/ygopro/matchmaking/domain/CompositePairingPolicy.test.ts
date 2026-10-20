@@ -1,6 +1,6 @@
 import { ParticipantMother } from "@test-support/mothers/matchmaking/ParticipantMother";
 
-import { BOT_FALLBACK_MS } from "./QueueEntry";
+import { BOT_FALLBACK_MIN_MS } from "./QueueEntry";
 import { BotFallbackPolicy } from "./BotFallbackPolicy";
 import { CompositePairingPolicy } from "./CompositePairingPolicy";
 import { FifoPairingPolicy } from "./FifoPairingPolicy";
@@ -13,18 +13,18 @@ describe("CompositePairingPolicy", () => {
 		const human1 = ParticipantMother.create({
 			id: "a",
 			userId: "u-a",
-			enqueuedAt: now - BOT_FALLBACK_MS - 5_000,
+			enqueuedAt: now - BOT_FALLBACK_MIN_MS - 5_000,
 		});
 		const human2 = ParticipantMother.create({
 			id: "b",
 			userId: "u-b",
-			enqueuedAt: now - BOT_FALLBACK_MS - 4_000,
+			enqueuedAt: now - BOT_FALLBACK_MIN_MS - 4_000,
 		});
 		const stale = ParticipantMother.create({
 			id: "c",
 			userId: "u-c",
-			enqueuedAt: now - BOT_FALLBACK_MS - 1,
-			allowBotFallback: true,
+			enqueuedAt: now - BOT_FALLBACK_MIN_MS - 1,
+			botFallbackAfterMs: BOT_FALLBACK_MIN_MS,
 		});
 		let nextId = 0;
 		const newMatchId = () => `match-${++nextId}`;
@@ -47,12 +47,12 @@ describe("CompositePairingPolicy", () => {
 		const human1 = ParticipantMother.create({
 			id: "a",
 			userId: "u-a",
-			enqueuedAt: now - BOT_FALLBACK_MS - 1,
+			enqueuedAt: now - BOT_FALLBACK_MIN_MS - 1,
 		});
 		const human2 = ParticipantMother.create({
 			id: "b",
 			userId: "u-b",
-			enqueuedAt: now - BOT_FALLBACK_MS - 1,
+			enqueuedAt: now - BOT_FALLBACK_MIN_MS - 1,
 		});
 		let nextId = 0;
 		const newMatchId = () => `match-${++nextId}`;

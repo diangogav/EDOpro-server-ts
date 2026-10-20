@@ -30,7 +30,6 @@ export class ParticipantMother {
 			mode: "ranked",
 			displayName: faker.internet.username(),
 			enqueuedAt: Date.now(),
-			allowBotFallback: false,
 			presence: "socket",
 			channel: new NoopParticipantChannel(),
 			...overrides,

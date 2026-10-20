@@ -3,11 +3,14 @@
  * (evolution-card-game/docs/architecture/matchmaking-contract.md):
  *  - the client short-polls status every ~2s; that poll doubles as the heartbeat.
  *  - a ticket that misses the poll window is dropped (TTL).
- *  - a ticket that opted in to the bot fallback and found no human match within
- *    the bot-fallback window gets a bot game; any other ticket keeps waiting for a human.
+ *  - a ticket that carries a bot-fallback delay and found no human match within
+ *    that delay gets a bot game; a ticket without one keeps waiting for a human.
+ *    The client chooses the delay; the server clamps it to
+ *    [BOT_FALLBACK_MIN_MS, BOT_FALLBACK_MAX_MS].
  */
 export const QUEUE_TTL_MS = 8_000;
-export const BOT_FALLBACK_MS = 60_000;
+export const BOT_FALLBACK_MIN_MS = 30_000;
+export const BOT_FALLBACK_MAX_MS = 300_000;
 export const CLEANUP_INTERVAL_MS = 2_000;
 /**
  * Grace window a matched entry is retained after pairing. Within it, a client
@@ -17,6 +20,11 @@ export const CLEANUP_INTERVAL_MS = 2_000;
  * the created room is owned/reaped separately by MatchmakingRoomReaper.
  */
 export const MATCHED_GRACE_MS = 30_000;
+
+/** Clamps a client-requested bot-fallback delay into the supported range. */
+export function clampBotFallbackDelay(requestedMs: number): number {
+	return Math.min(BOT_FALLBACK_MAX_MS, Math.max(BOT_FALLBACK_MIN_MS, requestedMs));
+}
 
 /** All accepted matchmaking formats. Used as the single source of truth for the
  * Zod enum, type derivation, and per-format record maps. */
@@ -45,8 +53,9 @@ export interface QueueEntry {
 	readonly userId: string;
 	readonly format: MatchmakingFormat;
 	readonly enteredAt: number;
-	/** Opt-in to an unrated bot game after `BOT_FALLBACK_MS` without a human match. */
-	readonly allowBotFallback: boolean;
+	/** Requested wait, in ms, before an unrated bot game is accepted. Clamped by
+	 * `clampBotFallbackDelay` when applied; absent means the ticket waits for a human only. */
+	readonly botFallbackAfterMs?: number;
 	/** Public name resolved at enqueue; null when the user has no resolvable name.
 	 * The matched payload's opponentName comes from here — never from userId. */
 	readonly displayName: string | null;
