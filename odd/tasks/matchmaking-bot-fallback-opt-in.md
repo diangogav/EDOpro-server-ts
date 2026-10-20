@@ -47,8 +47,11 @@ Strict TDD enabled (session config). Runner: `npx jest` (package.json `test`).
   `npx tsc --noEmit` clean, `pnpm lint` clean; parent spot check `npx jest src/ygopro/matchmaking`
   24 suites / 231 tests passed.
 - T2 done in evolution-card-game 5803e93a (branch `docs/matchmaking-bot-fallback-opt-in`).
-- Review: assessed high (process_boundary on `src/utils/matchmaking-harness.ts`); native review pending.
+- Review: assessed high (process_boundary on `src/utils/matchmaking-harness.ts`); consent granted;
+  4-lens native review approved and acknowledged (lineage review-17cecaf7f29dcffd, authority burned).
+  Non-blocking follow-ups: unbounded human wait with no metric/log when fallback is skipped;
+  weak opt-out assertion in `matchmaking-protocol.test.ts:61-67`; harness flag parsing suggestions.
 
 ## Next step
-Native review of the server slice; then the web client sends `allowBotFallback: true` (follow-up).
+Push/PR (user decision); then the web client sends `allowBotFallback: true` (follow-up).
 
