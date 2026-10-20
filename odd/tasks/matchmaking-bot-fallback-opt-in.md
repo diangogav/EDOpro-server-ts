@@ -31,9 +31,19 @@ Strict TDD enabled (session config). Runner: `npx jest` (package.json `test`).
   `BotFallbackPolicy`; tests. Route: delegated direct (writer; 2+ non-trivial files).
 - [x] T2 Contract doc in evolution-card-game documents `allowBotFallback`. Route: direct inline.
 
+- [x] T3 Server: replace boolean `allowBotFallback` with `botFallbackAfterMs` (client-chosen delay,
+  clamped to [30s, 5min]; absent means no bot). Socket: optional uint32 LE ms after the 4-byte ENTER
+  body. Also tighten the opt-out protocol assertion and harness flag parsing flagged by review.
+  Route: delegated direct (writer; 2+ non-trivial files).
+- [x] T4 Contract doc documents `botFallbackAfterMs`. Route: direct inline.
+
+Accepted change (2026-10-20): the user chose a client-chosen delay over a fixed 60s. A server-side
+max wait was rejected: clients already end the wait by cancelling.
+
 ## Acceptance criteria
 - Ticket without the flag never gets a bot, however long it waits.
-- Ticket with `allowBotFallback: true` gets a bot after `BOT_FALLBACK_MS` when one is available.
+- Ticket with `botFallbackAfterMs` gets a bot after that delay (clamped to [30s, 5min]) when one is
+  available.
 - Human pairing unaffected.
 
 ## Checks
@@ -51,6 +61,13 @@ Strict TDD enabled (session config). Runner: `npx jest` (package.json `test`).
   4-lens native review approved and acknowledged (lineage review-17cecaf7f29dcffd, authority burned).
   Non-blocking follow-ups: unbounded human wait with no metric/log when fallback is skipped;
   weak opt-out assertion in `matchmaking-protocol.test.ts:61-67`; harness flag parsing suggestions.
+
+- T3 done in fec8006a. HTTP `botFallbackAfterMs` (non-negative integer, else 400); socket ENTER is
+  4 bytes (no bot) or 8 bytes with a uint32 LE delay; `clampBotFallbackDelay` with
+  `BOT_FALLBACK_MIN_MS`/`BOT_FALLBACK_MAX_MS` in `QueueEntry.ts`; harness flag fails loudly; protocol
+  tests assert whole results. Checks: `npx jest` 242 suites / 2377 tests passed, `npx tsc --noEmit`
+  clean, `pnpm lint` clean; parent spot check `npx jest src/ygopro/matchmaking` 243 passed.
+- T4 done in evolution-card-game 31583158.
 
 ## Next step
 Push/PR (user decision); then the web client sends `allowBotFallback: true` (follow-up).
