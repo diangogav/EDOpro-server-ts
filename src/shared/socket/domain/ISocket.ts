@@ -23,6 +23,8 @@ export interface ISocket {
 	 * stamp for room A must never affect any other room — readers must always
 	 * compare it against their own room id. */
 	watchForRoomId?: number;
+	/** Wire transport of this connection, for diagnostics. */
+	readonly transport: "ws" | "tcp";
 	send(message: Buffer): void;
 	onMessage(callback: (message: Buffer) => void): void;
 	onClose(callback: () => void): void;

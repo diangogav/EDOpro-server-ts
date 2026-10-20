@@ -34,6 +34,7 @@ import { Reconnect } from "../../../application/Reconnect";
 import { DuelFinishReason } from "../../DuelFinishReason";
 import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";
+import { logReconnectAttempt } from "@shared/room/application/reconnect/logReconnectAttempt";
 import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 interface Message {
@@ -732,6 +733,13 @@ export class DuelingState extends RoomState {
 			return;
 		}
 
+		logReconnectAttempt(this.logger, {
+			path: "by-name",
+			outcome: "matched",
+			socket,
+			client: reconnectingPlayer,
+			identityChecked: false,
+		});
 		await this.reconnect.run(playerInfoMessage, reconnectingPlayer, joinMessage, socket, room);
 	}
 

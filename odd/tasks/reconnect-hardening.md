@@ -33,7 +33,7 @@ PR A — token and identity
 - [x] A4 Takeover closes the old socket (WS close 4001 "session superseded"; TCP end/destroy).
 - [x] A5 Ticket validation infrastructure error (Redis down) degrades the socket to anonymous
       instead of rejecting; an invalid/consumed ticket is still rejected.
-- [ ] A6 Structured reconnect telemetry log: path (token / by-name), outcome, client transport,
+- [x] A6 Structured reconnect telemetry log: path (token / by-name), outcome, client transport,
       verified or not, redacted token prefix.
 PR B — liveness and settlement
 - [ ] B1 Verify mid-duel no-show settlement (ranked result recorded when the clock runs out with
@@ -49,6 +49,7 @@ PR B — liveness and settlement
 - A3 done: ExpressReconnectHandler.identityMatches; auth gate verified (every inbound frame awaits `ready`, resolved only after resolvedUserId is set in WSYGOProServer); gate test added. RED: mismatch test failed, GREEN 20 reconnect tests.
 - A4 done: `ISocket.closeSuperseded()` (WS close 4001 "session superseded", terminate fallback 2000 ms; TCP end + destroy fallback); YGOProRoom.reconnect closes the previous socket after attaching the new one. EDOpro `Client.setSocket` already destroys a different previous socket (listeners removed first), unchanged. RED: compile/test failures in socket + room suites; GREEN 433 tests.
 - A5 done: `TicketConsumeResult` (consumed/invalid/unavailable) + `HandshakeTicketStore.consumeWithStatus`; Redis error, missing instance or >2000 ms => unavailable; HandshakeTicketAuthenticator returns `unavailable`, WSYGOProServer warns and proceeds anonymous. `TicketRepository.consume` (matchmaking, enqueue) stays fail-closed. RED: Redis/authenticator/server suites failed; GREEN 297 tests across ticket, socket-server, http-server, matchmaking.
+- A6 done: `logReconnectAttempt` emits "reconnect.attempt" {path, outcome, transport, verified, identityChecked, tokenPrefix}; token path in ExpressReconnectHandler (outcomes forwarded/unknown_token/room_not_found/identity_mismatch), by-name at the 4 YGOPro + 4 EDOpro mid-duel join doors (outcome matched); `ISocket.transport` added. RED: handler telemetry tests failed; GREEN. Full: npm test 238 suites / 2314 tests pass, tsc and lint clean.
 
 ## Superseded
 odd/tasks/reconnect-token-overlap.md (60s overlap + presented token) is replaced by A1.

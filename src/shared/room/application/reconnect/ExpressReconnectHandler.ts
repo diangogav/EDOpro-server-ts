@@ -7,6 +7,7 @@ import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
 import { TokenIndex } from "@shared/room/domain/TokenIndex";
 import { YgoRoom } from "@shared/room/domain/YgoRoom";
+import { logReconnectAttempt, ReconnectOutcome } from "./logReconnectAttempt";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { redactSecret } from "@shared/logger/domain/redactSecret";
 
@@ -41,19 +42,53 @@ export class ExpressReconnectHandler {
 		this.logger.info(`Express reconnect: checking token ${redactSecret(token)}`);
 
 		const entry = TokenIndex.getInstance().find(token);
-		if (entry && this.clientGuard(entry.client) && this.identityMatches(entry.client)) {
+		const client = entry && this.clientGuard(entry.client) ? entry.client : null;
+		const identityChecked = client !== null && this.checksIdentity(client);
+
+		if (client && entry) {
+			if (!this.identityMatches(client)) {
+				this.reject(token, client, identityChecked, "identity_mismatch");
+
+				return;
+			}
 			const room = this.resolveRoom(entry.roomId);
 			if (room) {
-				this.logger.info(
-					`Express reconnect: match for ${entry.client.name} in room ${entry.roomId}`,
-				);
+				this.logger.info(`Express reconnect: match for ${client.name} in room ${entry.roomId}`);
+				logReconnectAttempt(this.logger, {
+					path: "token",
+					outcome: "forwarded",
+					socket: this.socket,
+					client,
+					identityChecked,
+					token,
+				});
 				room.emit("EXPRESS_RECONNECT", message, this.socket);
 
 				return;
 			}
+			this.reject(token, client, identityChecked, "room_not_found");
+
+			return;
 		}
 
+		this.reject(token, null, false, "unknown_token");
+	}
+
+	private reject(
+		token: string,
+		client: YgoClient | null,
+		identityChecked: boolean,
+		outcome: ReconnectOutcome,
+	): void {
 		this.logger.info(`Express reconnect: no player found for token ${redactSecret(token)}`);
+		logReconnectAttempt(this.logger, {
+			path: "token",
+			outcome,
+			socket: this.socket,
+			client,
+			identityChecked,
+			token,
+		});
 		this.socket.send(ReconnectionAckMessage.failure());
 		this.socket.destroy();
 	}
@@ -63,11 +98,14 @@ export class ExpressReconnectHandler {
 	// Sockets without a resolved identity (TCP, ticketless WS) are not checked.
 	private identityMatches(client: YgoClient): boolean {
 		const credential = client.credential;
-		const socketUserId = this.socket.resolvedUserId;
-		if (credential?.kind !== "verified" || !socketUserId) {
+		if (!this.checksIdentity(client) || credential?.kind !== "verified") {
 			return true;
 		}
 
-		return credential.userId === socketUserId;
+		return credential.userId === this.socket.resolvedUserId;
+	}
+
+	private checksIdentity(client: YgoClient): boolean {
+		return client.credential?.kind === "verified" && Boolean(this.socket.resolvedUserId);
 	}
 }

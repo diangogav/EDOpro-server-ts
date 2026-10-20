@@ -8,6 +8,7 @@ import {
 } from "./sessionSuperseded";
 
 export class WebSocketClientSocket implements ISocket {
+	readonly transport = "ws" as const;
 	id?: string;
 	roomId?: number;
 	resolvedUserId?: string;

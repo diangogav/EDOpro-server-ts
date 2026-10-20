@@ -30,6 +30,7 @@ import {
 	YGOProStocDuelStart,
 	YGOProStocWaitingSide,
 } from "ygopro-msg-encode";
+import { logReconnectAttempt } from "@shared/room/application/reconnect/logReconnectAttempt";
 import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 const SIDE_TIMEOUT_MINUTES = config.sideTimeoutMinutes;
@@ -264,6 +265,13 @@ export class YGOProSideDeckingState extends YGOProRoomState {
 				return;
 			}
 
+			logReconnectAttempt(this.logger, {
+				path: "by-name",
+				outcome: "matched",
+				socket,
+				client: playerAlreadyInRoom,
+				identityChecked: room.ranked && playerAlreadyInRoom.credential?.kind === "external",
+			});
 			room.reconnect(playerAlreadyInRoom, socket);
 			playerAlreadyInRoom.sendMessageToClient(room.messageSender.duelStartMessage());
 			if (!playerAlreadyInRoom.isReady) {

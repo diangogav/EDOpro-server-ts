@@ -150,10 +150,21 @@ describe.each(states)("$label.handleJoin — ranked identity binding", ({ build 
 		(room.resolveJoinerIdentity as jest.Mock).mockResolvedValue("acc-1");
 		const socket = makeSocket();
 
-		await build(room).handleJoin(makeJoinMessage(), room, socket);
+		const state = build(room);
+		await state.handleJoin(makeJoinMessage(), room, socket);
 
 		expect(room.reconnect).toHaveBeenCalledWith(seat, socket);
 		expect(room.createSpectatorUnsafe).not.toHaveBeenCalled();
+		expect((state as unknown as { logger: Logger }).logger.info).toHaveBeenCalledWith(
+			"reconnect.attempt",
+			expect.objectContaining({
+				path: "by-name",
+				outcome: "matched",
+				verified: false,
+				identityChecked: true,
+				tokenPrefix: null,
+			}),
+		);
 	});
 
 	it("sends a name-only joiner with NO account to the stands and leaves the seat untouched", async () => {

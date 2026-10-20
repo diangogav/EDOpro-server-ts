@@ -53,6 +53,7 @@ import {
 import { EvrpSerializer } from "../replay/EvrpSerializer";
 import { GameOverDomainEvent } from "@shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
+import { logReconnectAttempt } from "@shared/room/application/reconnect/logReconnectAttempt";
 import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 export class YGOProDuelingState extends YGOProRoomState {
@@ -307,6 +308,13 @@ export class YGOProDuelingState extends YGOProRoomState {
 				return;
 			}
 
+			logReconnectAttempt(this.logger, {
+				path: "by-name",
+				outcome: "matched",
+				socket,
+				client: playerAlreadyInRoom,
+				identityChecked: this.room.ranked && playerAlreadyInRoom.credential?.kind === "external",
+			});
 			this.room.reconnect(playerAlreadyInRoom, socket);
 		});
 	}

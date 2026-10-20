@@ -13,6 +13,7 @@ import { findMidDuelReconnectingPlayer } from "@shared/room/domain/findMidDuelRe
 import { TurnPlayerResult, YGOProCtosTpResult, YGOProStocDuelStart } from "ygopro-msg-encode";
 import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
+import { logReconnectAttempt } from "@shared/room/application/reconnect/logReconnectAttempt";
 import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 export class YGOProChoosingOrderState extends YGOProRoomState {
@@ -144,6 +145,13 @@ export class YGOProChoosingOrderState extends YGOProRoomState {
 				return;
 			}
 
+			logReconnectAttempt(this.logger, {
+				path: "by-name",
+				outcome: "matched",
+				socket,
+				client: playerAlreadyInRoom,
+				identityChecked: room.ranked && playerAlreadyInRoom.credential?.kind === "external",
+			});
 			room.reconnect(playerAlreadyInRoom, socket);
 			playerAlreadyInRoom.sendMessageToClient(room.messageSender.duelStartMessage());
 			room.sendDeckCountMessage(playerAlreadyInRoom);

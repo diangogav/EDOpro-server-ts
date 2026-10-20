@@ -30,6 +30,7 @@ describe("ExpressReconnectHandler (generic)", () => {
 		TokenIndex.getInstance().clear();
 		emitter = new EventEmitter();
 		socket = {
+			transport: "ws",
 			send: jest.fn(),
 			destroy: jest.fn(),
 		} as unknown as jest.Mocked<ISocket>;
@@ -119,6 +120,56 @@ describe("ExpressReconnectHandler (generic)", () => {
 			emitReconnect(reconnectMessage("tok"));
 
 			expect(room.emit).toHaveBeenCalled();
+		});
+	});
+
+	describe("telemetry", () => {
+		const attemptLogs = () =>
+			logger.info.mock.calls.filter((call) => call[0] === "reconnect.attempt").map((c) => c[1]);
+
+		it("logs a forwarded token attempt", () => {
+			const verified = {
+				name: "Alice",
+				isStrongAuth: true,
+				credential: { kind: "verified", userId: "u1" },
+			} as unknown as YgoClient;
+			TokenIndex.getInstance().register("0123456789abcdef", verified, 1);
+			socket.resolvedUserId = "u1";
+
+			emitReconnect(reconnectMessage("0123456789abcdef"));
+
+			expect(attemptLogs()).toEqual([
+				{
+					path: "token",
+					outcome: "forwarded",
+					transport: "ws",
+					verified: true,
+					identityChecked: true,
+					tokenPrefix: "012345…",
+				},
+			]);
+		});
+
+		it("logs unknown tokens and identity mismatches with their outcome", () => {
+			const verified = {
+				name: "Alice",
+				isStrongAuth: true,
+				credential: { kind: "verified", userId: "u1" },
+			} as unknown as YgoClient;
+			TokenIndex.getInstance().register("aaaaaaaaaaaaaaaa", verified, 1);
+			socket.resolvedUserId = "u2";
+
+			emitReconnect(reconnectMessage("bbbbbbbbbbbbbbbb"));
+			emitReconnect(reconnectMessage("aaaaaaaaaaaaaaaa"));
+
+			expect(attemptLogs()).toEqual([
+				expect.objectContaining({ outcome: "unknown_token", verified: false }),
+				expect.objectContaining({
+					outcome: "identity_mismatch",
+					verified: true,
+					identityChecked: true,
+				}),
+			]);
 		});
 	});
 

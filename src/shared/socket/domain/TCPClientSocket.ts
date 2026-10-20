@@ -4,6 +4,7 @@ import { ISocket } from "./ISocket";
 import { SUPERSEDED_CLOSE_TIMEOUT_MS } from "./sessionSuperseded";
 
 export class TCPClientSocket implements ISocket {
+	readonly transport = "tcp" as const;
 	id?: string;
 	roomId?: number;
 	private readonly socket: Socket;
