@@ -116,6 +116,69 @@ describe("AbandonBetweenDuels", () => {
 			expect(leaver.sendMessageToClient).not.toHaveBeenCalled();
 		});
 
+		describe("grace measured from the last frame received", () => {
+			const leaverSilentFor = (silentMs: number, transport: "ws" | "tcp" = "ws") => {
+				const leaver = makePlayer(Team.PLAYER, 0);
+				(leaver.socket as { lastInboundAt?: number }).lastInboundAt = Date.now() - silentMs;
+				(leaver.socket as { transport?: "ws" | "tcp" }).transport = transport;
+				const stayer = makePlayer(Team.OPPONENT, 1);
+				const room = makeRoom([leaver, stayer], {
+					hasPlayedAnyDuel: jest.fn().mockReturnValue(true),
+				});
+				leaver.socket.closed = true;
+
+				return { leaver, stayer, room };
+			};
+
+			it("only waits out what is left of the window after detection latency", () => {
+				const { leaver, stayer, room } = leaverSilentFor(40_000);
+
+				AbandonBetweenDuels.playerLeft(room, leaver, logger);
+
+				expect(stayer.sendMessageToClient).toHaveBeenCalledWith(
+					MatchAbandonClientMessage.opponentDisconnected(20),
+				);
+				jest.advanceTimersByTime(19_999);
+				expect(EndMatchByAbandon.run).not.toHaveBeenCalled();
+				jest.advanceTimersByTime(1);
+				expect(EndMatchByAbandon.run).toHaveBeenCalledWith(room, Team.PLAYER, logger);
+			});
+
+			it("settles at once when the leaver had already been silent for the whole window", () => {
+				const { leaver, room } = leaverSilentFor(ABANDON_GRACE_MS + 30_000);
+
+				AbandonBetweenDuels.playerLeft(room, leaver, logger);
+				jest.advanceTimersByTime(0);
+
+				expect(EndMatchByAbandon.run).toHaveBeenCalledWith(room, Team.PLAYER, logger);
+			});
+
+			it("grants the full window to a TCP leaver, whose silence is not a sign of death", () => {
+				const { leaver, stayer, room } = leaverSilentFor(ABANDON_GRACE_MS + 30_000, "tcp");
+
+				AbandonBetweenDuels.playerLeft(room, leaver, logger);
+
+				expect(stayer.sendMessageToClient).toHaveBeenCalledWith(
+					MatchAbandonClientMessage.opponentDisconnected(60),
+				);
+				jest.advanceTimersByTime(ABANDON_GRACE_MS - 1);
+				expect(EndMatchByAbandon.run).not.toHaveBeenCalled();
+				jest.advanceTimersByTime(1);
+				expect(EndMatchByAbandon.run).toHaveBeenCalledWith(room, Team.PLAYER, logger);
+			});
+
+			it("never grants more than the full window", () => {
+				const { leaver, room } = leaverSilentFor(-5_000);
+
+				AbandonBetweenDuels.playerLeft(room, leaver, logger);
+				jest.advanceTimersByTime(ABANDON_GRACE_MS - 1);
+				expect(EndMatchByAbandon.run).not.toHaveBeenCalled();
+				jest.advanceTimersByTime(1);
+
+				expect(EndMatchByAbandon.run).toHaveBeenCalled();
+			});
+		});
+
 		it("decides nothing before the grace window ends", () => {
 			const leaver = makePlayer(Team.PLAYER, 0);
 			const stayer = makePlayer(Team.OPPONENT, 1);

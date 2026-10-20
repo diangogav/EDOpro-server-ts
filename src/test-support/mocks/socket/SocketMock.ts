@@ -9,6 +9,7 @@ export class SocketMock implements ISocket {
 	resolvedUserId?: string;
 	remoteAddress = faker.internet.ip();
 	closed = false;
+	lastInboundAt = Date.now();
 
 	send(_message: Buffer): void {
 		/* no-op */

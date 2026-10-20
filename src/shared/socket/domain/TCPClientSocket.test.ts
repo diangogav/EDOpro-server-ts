@@ -3,6 +3,7 @@ import { Socket } from "net";
 
 import { SUPERSEDED_CLOSE_TIMEOUT_MS } from "./sessionSuperseded";
 import { TCPClientSocket } from "./TCPClientSocket";
+import { TCP_KEEPALIVE_INITIAL_DELAY_MS } from "./tcpKeepAlive";
 
 const makeRawSocket = () => {
 	const raw = new EventEmitter() as EventEmitter & {
@@ -102,5 +103,33 @@ describe("TCPClientSocket.closeSuperseded", () => {
 
 		jest.advanceTimersByTime(1);
 		expect(raw.destroy).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("TCPClientSocket keepalive", () => {
+	it("enables keepalive probes so a dead peer is eventually noticed", () => {
+		const raw = makeRawSocket();
+		new TCPClientSocket(raw as unknown as Socket);
+
+		expect(raw.setKeepAlive).toHaveBeenCalledWith(true, TCP_KEEPALIVE_INITIAL_DELAY_MS);
+	});
+});
+
+describe("TCPClientSocket lastInboundAt", () => {
+	beforeEach(() => {
+		jest.useFakeTimers();
+		jest.setSystemTime(10_000);
+	});
+	afterEach(() => jest.useRealTimers());
+
+	it("starts at the moment of connection and moves forward on inbound data", () => {
+		const raw = makeRawSocket();
+		const socket = new TCPClientSocket(raw as unknown as Socket);
+		expect(socket.lastInboundAt).toBe(10_000);
+
+		jest.setSystemTime(33_000);
+		raw.emit("data", Buffer.from([1]));
+
+		expect(socket.lastInboundAt).toBe(33_000);
 	});
 });

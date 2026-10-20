@@ -101,8 +101,19 @@ Four listeners collapse into **two connection handlers**:
 Only the **YGOPro WebSocket** listener authenticates its handshake
 (`HandshakeTicketAuthenticator`: `Authorization: Bearer`, falling back to a
 `?ticket=` query parameter because browsers cannot set WebSocket headers). It
-also runs a ping/pong heartbeat that terminates half-open sockets. The EDOPro
-WebSocket listener has neither.
+also runs a ping/pong heartbeat that terminates half-open sockets (default
+15 s, `YGOPRO_WEBSOCKET_HEARTBEAT_MS`; one missed pong ends the socket, so a dead
+peer is noticed within two intervals). The EDOPro WebSocket listener has neither.
+
+Raw TCP listeners (EDOPro, MDPro, YGO Mobile) have no application-level idle
+timeout, because those clients are legitimately silent while thinking or waiting
+on the opponent. Node only exposes the keepalive idle delay (1 s), so the probe
+interval and count come from the kernel: `docker-compose.prod.yaml` sets
+`net.ipv4.tcp_keepalive_intvl=5` and `tcp_keepalive_probes=3`, which notices a
+vanished peer in about 16 s instead of the ~11 min Linux default. Keepalive probes
+are answered by the peer's kernel, so idle-but-alive clients are unaffected. On
+other deployments set the same sysctls; the server logs a warning at boot when
+the effective detection time exceeds 60 s.
 
 ### 3.2 Framing
 

@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import "src/shared/error-handler/error-handler";
 
+import { checkTcpKeepAliveTuning } from "src/shared/socket/domain/tcpKeepAlive";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 
 import { config } from "./config";
@@ -29,6 +30,7 @@ async function start(): Promise<void> {
 	const logger = LoggerFactory.getLogger();
 
 	logger.info("🚀 Evolution server starting…");
+	checkTcpKeepAliveTuning(logger);
 
 	const ticketRepository = new RedisTicketRepository();
 	const server = new Server(logger, ticketRepository);

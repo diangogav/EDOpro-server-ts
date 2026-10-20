@@ -31,7 +31,8 @@ export class AbandonBetweenDuels {
 
 		AbandonBetweenDuels.clearGrace(room, player.position);
 
-		const notice = MatchAbandonClientMessage.opponentDisconnected(ABANDON_GRACE_MS / 1000);
+		const graceMs = AbandonBetweenDuels.remainingGraceMs(player);
+		const notice = MatchAbandonClientMessage.opponentDisconnected(Math.ceil(graceMs / 1000));
 		AbandonBetweenDuels.opponentsOf(room, player.team).forEach((client) =>
 			client.sendMessageToClient(notice),
 		);
@@ -45,7 +46,7 @@ export class AbandonBetweenDuels {
 				return;
 			}
 			void AbandonBetweenDuels.resolve(room, player.team, logger);
-		}, ABANDON_GRACE_MS);
+		}, graceMs);
 		AbandonBetweenDuels.timersOf(room).set(player.position, timer);
 
 		logger.info("Player left between duels", {
@@ -55,6 +56,24 @@ export class AbandonBetweenDuels {
 		});
 
 		return true;
+	}
+
+	/**
+	 * The window runs from the leaver's last sign of life, not from the moment the
+	 * server noticed the drop: a half-open connection can take a while to be
+	 * detected, and that latency must not stretch the opponent's wait.
+	 * Only WebSocket silence means anything: heartbeat pongs keep it fresh. A TCP
+	 * client may be alive but quiet for minutes (keepalive replies never reach the
+	 * socket), so it always gets the full window.
+	 */
+	private static remainingGraceMs(player: YGOProClient): number {
+		const lastInboundAt = player.socket.lastInboundAt;
+		if (player.socket.transport !== "ws" || lastInboundAt === undefined) {
+			return ABANDON_GRACE_MS;
+		}
+		const silentMs = Date.now() - lastInboundAt;
+
+		return Math.min(ABANDON_GRACE_MS, Math.max(0, ABANDON_GRACE_MS - silentMs));
 	}
 
 	/** Settle the match now: the abandoning team leaves it for good. */
