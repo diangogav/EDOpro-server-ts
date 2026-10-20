@@ -3,6 +3,20 @@ import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
 import { BOT_FALLBACK_MS, MATCHED_GRACE_MS, QUEUE_TTL_MS } from "../domain/QueueEntry";
 import { MatchmakingQueue, MatchmakingQueueDeps } from "./MatchmakingQueue";
 
+// Polls every id just inside the TTL window until `until`, as a real client
+// heartbeats, so the entries survive to the bot-fallback threshold.
+const keepPolling = (
+	q: { poll(id: string): unknown },
+	clock: { t: number },
+	ids: string[],
+	until: number,
+): void => {
+	for (let t = QUEUE_TTL_MS - 1; t < until; t += QUEUE_TTL_MS - 1) {
+		clock.t = t;
+		for (const id of ids) q.poll(id);
+	}
+};
+
 // ---- helpers ----
 
 const makeDeps = (overrides: Partial<MatchmakingQueueDeps> = {}): MatchmakingQueueDeps => {
@@ -128,8 +142,7 @@ describe("MatchmakingQueue", () => {
 			enqueue(queue, "t1", "user-1");
 
 			// Keep the entry alive across the TTL window; the fallback fires later.
-			clock.t = QUEUE_TTL_MS - 1;
-			queue.poll("t1");
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
 			clock.t = BOT_FALLBACK_MS + 1;
 			queue.tick();
 
@@ -195,8 +208,7 @@ describe("MatchmakingQueue", () => {
 			);
 			enqueue(queue, "t1", "user-1");
 
-			clock.t = QUEUE_TTL_MS - 1;
-			queue.poll("t1");
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
 			clock.t = BOT_FALLBACK_MS + 1;
 
 			expect(queue.poll("t1")).toMatchObject({ state: "searching" });
@@ -378,8 +390,7 @@ describe("MatchmakingQueue", () => {
 			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t }));
 			enqueue(queue, "t1", "user-1");
 
-			clock.t = QUEUE_TTL_MS - 1;
-			queue.poll("t1");
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
 			clock.t = BOT_FALLBACK_MS + 1;
 			queue.tick();
 
@@ -403,8 +414,7 @@ describe("MatchmakingQueue", () => {
 
 			// Keep polling within the TTL window, as a real client does, so the
 			// entry survives to the bot-fallback threshold instead of being swept.
-			clock.t = QUEUE_TTL_MS - 1;
-			queue.poll("t1");
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
 			clock.t = BOT_FALLBACK_MS + 1;
 			queue.tick();
 
@@ -424,8 +434,7 @@ describe("MatchmakingQueue", () => {
 			);
 			enqueue(queue, "t1", "user-1");
 
-			clock.t = QUEUE_TTL_MS - 1;
-			queue.poll("t1");
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS - 1);
 			clock.t = BOT_FALLBACK_MS - 1;
 			queue.tick();
 
@@ -445,9 +454,7 @@ describe("MatchmakingQueue", () => {
 			enqueue(queue, "t1", "user-1");
 			enqueue(queue, "t2", "user-2");
 
-			clock.t = QUEUE_TTL_MS - 1;
-			queue.poll("t1");
-			queue.poll("t2");
+			keepPolling(queue, clock, ["t1", "t2"], BOT_FALLBACK_MS + 1);
 			clock.t = BOT_FALLBACK_MS + 1;
 			queue.tick();
 
@@ -467,8 +474,7 @@ describe("MatchmakingQueue", () => {
 			);
 			enqueue(queue, "t1", "user-1");
 
-			clock.t = QUEUE_TTL_MS - 1;
-			queue.poll("t1");
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
 			clock.t = BOT_FALLBACK_MS + 1;
 			queue.tick();
 
@@ -541,8 +547,7 @@ describe("MatchmakingQueue", () => {
 			);
 			enqueue(queue, "t1", "user-1");
 
-			clock.t = QUEUE_TTL_MS - 1;
-			queue.poll("t1");
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
 			clock.t = BOT_FALLBACK_MS + 1;
 
 			expect(() => queue.tick()).not.toThrow();
@@ -569,8 +574,7 @@ describe("MatchmakingQueue", () => {
 			);
 			enqueue(queue, "t1", "user-1"); // lone → bot-fallback candidate
 
-			clock.t = QUEUE_TTL_MS - 1;
-			queue.poll("t1");
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
 			clock.t = BOT_FALLBACK_MS + 1;
 
 			// First tick: bot port throws, entry stays searching, no crash.
@@ -723,8 +727,7 @@ describe("MatchmakingQueue", () => {
 			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t }));
 			enqueue(queue, "t1", "user-1");
 
-			clock.t = QUEUE_TTL_MS - 1;
-			queue.poll("t1");
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
 			clock.t = BOT_FALLBACK_MS + 1;
 			queue.tick(); // matched to a bot
 			expect(queue.get("t1")?.state).toBe("matched");
