@@ -62,10 +62,13 @@ export class AbandonBetweenDuels {
 	 * The window runs from the leaver's last sign of life, not from the moment the
 	 * server noticed the drop: a half-open connection can take a while to be
 	 * detected, and that latency must not stretch the opponent's wait.
+	 * Only WebSocket silence means anything: heartbeat pongs keep it fresh. A TCP
+	 * client may be alive but quiet for minutes (keepalive replies never reach the
+	 * socket), so it always gets the full window.
 	 */
 	private static remainingGraceMs(player: YGOProClient): number {
 		const lastInboundAt = player.socket.lastInboundAt;
-		if (lastInboundAt === undefined) {
+		if (player.socket.transport !== "ws" || lastInboundAt === undefined) {
 			return ABANDON_GRACE_MS;
 		}
 		const silentMs = Date.now() - lastInboundAt;
