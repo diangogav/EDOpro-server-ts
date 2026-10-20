@@ -16,8 +16,7 @@ they would play solo mode.
   field.
 
 ## Out of scope
-Playing a bot while queued (phase 2, web client), web client sending `botFallbackAfterMs`
-(T6), a server-side maximum wait.
+Playing a bot while queued (phase 2, web client), a server-side maximum wait.
 
 ## Constraints
 - Absent delay means no bot, so MDPro3 stops receiving bots with no client change.
@@ -86,9 +85,7 @@ max wait was rejected: clients already end the wait by cancelling.
   not exactly 4 bytes.
 
 ## Next step
-Push/PR (user decision); then the web client sends `botFallbackAfterMs` (follow-up).
-Review of fec8006a approved and acknowledged (lineage review-77c2abf129d109ed). Non-blocking
-follow-ups: human-over-bot precedence tests in `MatchmakingQueue.test.ts:491-492` and
-`CompositePairingPolicy.test.ts` no longer opt any ticket in; long waits are not logged or counted;
-harness duplicates the clamp literals and accepts values above uint32.
-
+All tasks done. Review of 53c0b0b6 approved and acknowledged (lineage review-6fa5f3331e8531e1).
+Open the server and web client PRs; deploy the server first. Rollback: reverting the server alone
+breaks web matchmaking (the old parser rejects 8-byte ENTER bodies), so revert the web client first.
+Non-blocking follow-ups: the exit log fires before the match handler runs and omits the delay value.
