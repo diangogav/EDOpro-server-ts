@@ -17,8 +17,9 @@
  *   --timeout <ms>         give up and exit non-zero, default 60000
  *   --bot-fallback-after-ms <ms>
  *                          accept an unrated bot match after waiting this long
- *                          (non-negative integer; the server clamps it to
- *                          30000..300000), default none (wait for a human)
+ *                          (non-negative integer up to 4294967295; the server
+ *                          clamps it to its supported range), default none
+ *                          (wait for a human)
  *   --cancel-after <ms>    send CANCEL after entering the queue
  *
  * A ticket is single-use and issued by the API. Seed one by hand with:
@@ -44,6 +45,8 @@ import {
 
 /** CTOS_PLAYER_INFO carries a fixed 40-byte UTF-16LE name field. */
 const PLAYER_INFO_NAME_BYTES = 40;
+/** The bot-fallback delay travels as a uint32 on the wire. */
+const MAX_UINT32 = 0xffffffff;
 /** Ranked is the only mode the queue accepts today. */
 const RANKED_MODE = 0;
 const FORMAT_TO_CODE: Readonly<Record<MatchmakingFormat, number>> = Object.freeze({
@@ -141,9 +144,9 @@ export function parseOptions(argv: readonly string[]): Options {
 	const botFallback = flags.get("bot-fallback-after-ms");
 	if (
 		(botFallback === undefined && argv.includes("--bot-fallback-after-ms")) ||
-		(botFallback !== undefined && !/^\d+$/.test(botFallback))
+		(botFallback !== undefined && (!/^\d+$/.test(botFallback) || Number(botFallback) > MAX_UINT32))
 	) {
-		throw new Error("--bot-fallback-after-ms must be a non-negative integer");
+		throw new Error("--bot-fallback-after-ms must be a non-negative integer up to 4294967295");
 	}
 
 	return {

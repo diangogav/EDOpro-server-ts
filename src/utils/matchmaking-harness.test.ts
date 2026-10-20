@@ -119,8 +119,15 @@ describe("matchmaking harness options", () => {
 		);
 	});
 
+	it("accepts the largest delay that fits the uint32 socket field", () => {
+		expect(
+			parseOptions([...base, "--bot-fallback-after-ms", "4294967295"]).botFallbackAfterMs,
+		).toBe(0xffffffff);
+	});
+
 	it.each([
 		"abc",
+		"4294967296",
 		"-1",
 		"1.5",
 		"",

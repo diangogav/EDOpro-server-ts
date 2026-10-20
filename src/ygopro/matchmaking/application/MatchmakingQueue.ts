@@ -199,6 +199,7 @@ export class MatchmakingQueue {
 			pairingPolicy,
 			matchHandler,
 			now: deps.now,
+			logger: deps.logger,
 		});
 	}
 

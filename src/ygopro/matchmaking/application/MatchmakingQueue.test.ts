@@ -485,15 +485,16 @@ describe("MatchmakingQueue", () => {
 			const queue = MatchmakingQueue.createForTests(
 				makeDeps({ now: () => clock.t, createRankedRoom, createBotRoom }),
 			);
-			enqueue(queue, "t1", "user-1");
-			enqueue(queue, "t2", "user-2");
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
 
-			keepPolling(queue, clock, ["t1", "t2"], BOT_FALLBACK_MIN_MS + 1);
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MIN_MS + 1);
 			clock.t = BOT_FALLBACK_MIN_MS + 1;
-			queue.tick();
+			enqueue(queue, "t2", "user-2", BOT_FALLBACK_MIN_MS);
 
 			expect(createRankedRoom).toHaveBeenCalledTimes(1);
 			expect(createBotRoom).not.toHaveBeenCalled();
+			expect(queue.get("t1")?.opponentType).toBe("human");
+			expect(queue.get("t2")?.opponentType).toBe("human");
 		});
 
 		it("keeps the entry searching when the bot spawner is unavailable", () => {
@@ -797,6 +798,26 @@ describe("MatchmakingQueue", () => {
 			});
 			const loggedText = infoSpy.mock.calls.map((call) => JSON.stringify(call)).join(" ");
 			expect(loggedText).not.toContain("Yugi");
+		});
+
+		it("logs a matchmaking.exit event with the waited time when a ticket is cancelled", () => {
+			const clock = { t: 1_000 };
+			const logger = new LoggerMock();
+			const infoSpy = jest.spyOn(logger, "info");
+			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t, logger }));
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
+
+			clock.t = 8_000;
+			queue.cancel("t1");
+
+			expect(infoSpy).toHaveBeenCalledWith("matchmaking.exit", {
+				participantId: "t1",
+				outcome: "cancelled",
+				waitedMs: 7_000,
+				format: "tcg",
+				presence: "poll",
+				hasBotFallback: true,
+			});
 		});
 	});
 

@@ -1,3 +1,5 @@
+import { Logger } from "@shared/logger/domain/Logger";
+import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
 import { ParticipantMother } from "@test-support/mothers/matchmaking/ParticipantMother";
 
 import { InMemoryPoolStore } from "../infrastructure/InMemoryPoolStore";
@@ -55,6 +57,7 @@ function buildPool(
 	store: PoolStore,
 	now: () => number,
 	matchHandler: MatchHandler,
+	logger?: Logger,
 ): MatchmakingPool {
 	let nextId = 0;
 	return new MatchmakingPool({
@@ -62,6 +65,7 @@ function buildPool(
 		pairingPolicy: new FifoPairingPolicy(() => `match-${++nextId}`),
 		matchHandler,
 		now,
+		logger,
 	});
 }
 
@@ -248,6 +252,192 @@ describe("MatchmakingPool", () => {
 				{ state: "searching", waitedMs: 0 },
 				{ state: "searching", waitedMs: 2_000 },
 			]);
+		});
+	});
+	describe("queue exit logging", () => {
+		const setup = (now: () => number, matchHandler: MatchHandler = new RecordingMatchHandler()) => {
+			const logger = new LoggerMock();
+			const infoSpy = jest.spyOn(logger, "info");
+			const store = new InMemoryPoolStore();
+			const pool = buildPool(store, now, matchHandler, logger);
+			return { pool, infoSpy };
+		};
+		const exitCalls = (infoSpy: jest.SpyInstance) =>
+			infoSpy.mock.calls.filter(([message]) => message === "matchmaking.exit");
+
+		it("logs a human match for each paired participant with its waited time", () => {
+			const { pool, infoSpy } = setup(() => 5_000);
+			pool.add(ParticipantMother.create({ id: "a", userId: "u-a", enqueuedAt: 1_000 }));
+			pool.add(
+				ParticipantMother.create({
+					id: "b",
+					userId: "u-b",
+					enqueuedAt: 2_000,
+					format: "tcg",
+					botFallbackAfterMs: 60_000,
+				}),
+			);
+
+			pool.tick();
+
+			expect(exitCalls(infoSpy)).toEqual([
+				[
+					"matchmaking.exit",
+					{
+						participantId: "a",
+						outcome: "matched_human",
+						waitedMs: 4_000,
+						format: "tcg",
+						presence: "socket",
+						hasBotFallback: false,
+					},
+				],
+				[
+					"matchmaking.exit",
+					{
+						participantId: "b",
+						outcome: "matched_human",
+						waitedMs: 3_000,
+						format: "tcg",
+						presence: "socket",
+						hasBotFallback: true,
+					},
+				],
+			]);
+		});
+
+		it("logs a bot match for a single-participant match", () => {
+			const handler = new RecordingMatchHandler();
+			const logger = new LoggerMock();
+			const infoSpy = jest.spyOn(logger, "info");
+			const pool = new MatchmakingPool({
+				store: new InMemoryPoolStore(),
+				pairingPolicy: {
+					pair: (candidates) => [
+						{
+							id: "m-1",
+							format: "tcg",
+							mode: "ranked",
+							rated: false,
+							opponentKind: "bot",
+							participants: [candidates[0]],
+						},
+					],
+				},
+				matchHandler: handler,
+				now: () => 70_000,
+				logger,
+			});
+			pool.add(
+				ParticipantMother.create({
+					id: "solo",
+					userId: "u-solo",
+					enqueuedAt: 0,
+					presence: "poll",
+					botFallbackAfterMs: 60_000,
+				}),
+			);
+
+			pool.tick();
+
+			expect(exitCalls(infoSpy)).toEqual([
+				[
+					"matchmaking.exit",
+					{
+						participantId: "solo",
+						outcome: "matched_bot",
+						waitedMs: 70_000,
+						format: "tcg",
+						presence: "poll",
+						hasBotFallback: true,
+					},
+				],
+			]);
+		});
+
+		it("logs an expired outcome when the sweep drops a dead participant", () => {
+			const { pool, infoSpy } = setup(() => 9_000);
+			const channel = new RecordingChannel();
+			channel.setAlive(false);
+			pool.add(ParticipantMother.create({ id: "dead", userId: "u-d", enqueuedAt: 1_000, channel }));
+
+			pool.tick();
+
+			expect(exitCalls(infoSpy)).toEqual([
+				[
+					"matchmaking.exit",
+					expect.objectContaining({ participantId: "dead", outcome: "expired", waitedMs: 8_000 }),
+				],
+			]);
+		});
+
+		it("logs a cancelled outcome when a participant is removed by id", () => {
+			const { pool, infoSpy } = setup(() => 4_000);
+			pool.add(ParticipantMother.create({ id: "t1", userId: "u-1", enqueuedAt: 1_000 }));
+
+			pool.remove("t1");
+
+			expect(exitCalls(infoSpy)).toEqual([
+				[
+					"matchmaking.exit",
+					expect.objectContaining({ participantId: "t1", outcome: "cancelled", waitedMs: 3_000 }),
+				],
+			]);
+		});
+
+		it("logs a dequeued outcome when a socket participant leaves", () => {
+			const { pool, infoSpy } = setup(() => 4_000);
+			pool.add(ParticipantMother.create({ id: "sock", userId: "u-1", enqueuedAt: 0 }));
+
+			pool.dequeueBySocketId("sock");
+
+			expect(exitCalls(infoSpy)).toEqual([
+				[
+					"matchmaking.exit",
+					expect.objectContaining({ participantId: "sock", outcome: "dequeued", waitedMs: 4_000 }),
+				],
+			]);
+		});
+
+		it("logs a replaced outcome for the participant a new connection supersedes", () => {
+			const { pool, infoSpy } = setup(() => 2_000);
+			pool.add(ParticipantMother.create({ id: "old", userId: "u-1", enqueuedAt: 500 }));
+
+			pool.add(ParticipantMother.create({ id: "new", userId: "u-1", enqueuedAt: 2_000 }));
+
+			expect(exitCalls(infoSpy)).toEqual([
+				[
+					"matchmaking.exit",
+					expect.objectContaining({ participantId: "old", outcome: "replaced", waitedMs: 1_500 }),
+				],
+			]);
+		});
+
+		it("does not log when the removed id was not queued", () => {
+			const { pool, infoSpy } = setup(() => 0);
+
+			pool.remove("ghost");
+			pool.dequeueBySocketId("ghost");
+
+			expect(exitCalls(infoSpy)).toEqual([]);
+		});
+
+		it("never logs the user id or display name", () => {
+			const { pool, infoSpy } = setup(() => 1_000);
+			pool.add(
+				ParticipantMother.create({
+					id: "t1",
+					userId: "secret-user",
+					displayName: "SecretName",
+					enqueuedAt: 0,
+				}),
+			);
+
+			pool.remove("t1");
+
+			const text = JSON.stringify(infoSpy.mock.calls);
+			expect(text).not.toContain("secret-user");
+			expect(text).not.toContain("SecretName");
 		});
 	});
 });

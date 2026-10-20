@@ -48,11 +48,13 @@ describe("CompositePairingPolicy", () => {
 			id: "a",
 			userId: "u-a",
 			enqueuedAt: now - BOT_FALLBACK_MIN_MS - 1,
+			botFallbackAfterMs: BOT_FALLBACK_MIN_MS,
 		});
 		const human2 = ParticipantMother.create({
 			id: "b",
 			userId: "u-b",
 			enqueuedAt: now - BOT_FALLBACK_MIN_MS - 1,
+			botFallbackAfterMs: BOT_FALLBACK_MIN_MS,
 		});
 		let nextId = 0;
 		const newMatchId = () => `match-${++nextId}`;
