@@ -10,7 +10,7 @@
  */
 export const QUEUE_TTL_MS = 8_000;
 export const BOT_FALLBACK_MIN_MS = 30_000;
-export const BOT_FALLBACK_MAX_MS = 300_000;
+export const BOT_FALLBACK_MAX_MS = 1_200_000;
 export const CLEANUP_INTERVAL_MS = 2_000;
 /**
  * Grace window a matched entry is retained after pairing. Within it, a client

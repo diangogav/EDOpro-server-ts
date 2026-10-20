@@ -50,4 +50,9 @@ describe("clampBotFallbackDelay", () => {
 		expect(clampBotFallbackDelay(45_000)).toBe(45_000);
 		expect(clampBotFallbackDelay(BOT_FALLBACK_MAX_MS)).toBe(BOT_FALLBACK_MAX_MS);
 	});
+
+	it("accepts delays of up to 20 minutes", () => {
+		expect(clampBotFallbackDelay(20 * 60_000)).toBe(20 * 60_000);
+		expect(clampBotFallbackDelay(20 * 60_000 + 1)).toBe(20 * 60_000);
+	});
 });
