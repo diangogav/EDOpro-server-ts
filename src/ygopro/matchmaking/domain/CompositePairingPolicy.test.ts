@@ -24,6 +24,7 @@ describe("CompositePairingPolicy", () => {
 			id: "c",
 			userId: "u-c",
 			enqueuedAt: now - BOT_FALLBACK_MS - 1,
+			allowBotFallback: true,
 		});
 		let nextId = 0;
 		const newMatchId = () => `match-${++nextId}`;

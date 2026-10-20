@@ -15,6 +15,8 @@ export interface EnterMatchmakingInput {
 	readonly format: MatchmakingFormat;
 	readonly mode: MatchmakingMode;
 	readonly clientVersion: number;
+	/** Opt-in to the bot fallback; absent means the session waits for a human only. */
+	readonly allowBotFallback?: boolean;
 }
 
 /**
@@ -66,6 +68,7 @@ export class EnterMatchmaking {
 			mode,
 			displayName: session.displayName,
 			enqueuedAt: this.now(),
+			allowBotFallback: input.allowBotFallback ?? false,
 			presence: "socket",
 			channel,
 			admission: { socket, playerInfo },

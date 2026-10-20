@@ -18,6 +18,10 @@ function enterBody(formatCode: number, modeCode: number, clientVersion = 0): Buf
 	return body;
 }
 
+function enterBodyWithFallback(allowBotFallbackByte: number): Buffer {
+	return Buffer.concat([enterBody(0, 0), Buffer.from([allowBotFallbackByte])]);
+}
+
 function authBody(ticket: string, declaredLength = Buffer.byteLength(ticket, "utf8")): Buffer {
 	return Buffer.concat([Buffer.from([declaredLength]), Buffer.from(ticket, "utf8")]);
 }
@@ -45,13 +49,28 @@ describe("parseCtosEnter", () => {
 	it("parses format, mode and clientVersion from the fixed 4-byte body", () => {
 		expect(parseCtosEnter(enterBody(1, 0, 42))).toEqual({
 			ok: true,
-			value: { format: "jtp", mode: "ranked", clientVersion: 42 },
+			value: { format: "jtp", mode: "ranked", clientVersion: 42, allowBotFallback: false },
 		});
 	});
 
-	it("rejects a body shorter or longer than the fixed 4 bytes", () => {
+	it("rejects a body shorter than 4 bytes or longer than 5 bytes", () => {
 		expect(parseCtosEnter(Buffer.alloc(3))).toEqual({ ok: false, reason: "malformed_frame" });
-		expect(parseCtosEnter(Buffer.alloc(5))).toEqual({ ok: false, reason: "malformed_frame" });
+		expect(parseCtosEnter(Buffer.alloc(6))).toEqual({ ok: false, reason: "malformed_frame" });
+	});
+
+	it("reads the optional fifth byte as allowBotFallback", () => {
+		const optedIn = parseCtosEnter(enterBodyWithFallback(1));
+		const optedOut = parseCtosEnter(enterBodyWithFallback(0));
+
+		expect(optedIn.ok && optedIn.value.allowBotFallback).toBe(true);
+		expect(optedOut.ok && optedOut.value.allowBotFallback).toBe(false);
+	});
+
+	it("rejects a fifth byte that is neither 0 nor 1", () => {
+		expect(parseCtosEnter(enterBodyWithFallback(2))).toEqual({
+			ok: false,
+			reason: "malformed_frame",
+		});
 	});
 
 	it("rejects out-of-range format/mode bytes via the frozen code tables", () => {

@@ -82,6 +82,35 @@ describe("EnqueueMatchmakingController", () => {
 		expect(MatchmakingQueue.getInstance().get(body.ticketId)).toBeDefined();
 	});
 
+	it("defaults allowBotFallback to false when the field is absent", async () => {
+		const out = await run(
+			{ format: "tcg", queue: "ranked", ticket: "the-ticket" },
+			makeTickets("user-1"),
+		);
+
+		const body = out.body() as { ticketId: string };
+		expect(MatchmakingQueue.getInstance().get(body.ticketId)?.allowBotFallback).toBe(false);
+	});
+
+	it("carries allowBotFallback: true onto the queued entry", async () => {
+		const out = await run(
+			{ format: "tcg", queue: "ranked", ticket: "the-ticket", allowBotFallback: true },
+			makeTickets("user-1"),
+		);
+
+		const body = out.body() as { ticketId: string };
+		expect(MatchmakingQueue.getInstance().get(body.ticketId)?.allowBotFallback).toBe(true);
+	});
+
+	it("rejects a non-boolean allowBotFallback (400)", async () => {
+		const out = await run(
+			{ format: "tcg", queue: "ranked", ticket: "the-ticket", allowBotFallback: "yes" },
+			makeTickets("user-1"),
+		);
+
+		expect(out.status()).toBe(400);
+	});
+
 	it("rejects a request with a missing/invalid schema (400)", async () => {
 		const out = await run({ format: "tcg" }, makeTickets("user-1"));
 		expect(out.status()).toBe(400);

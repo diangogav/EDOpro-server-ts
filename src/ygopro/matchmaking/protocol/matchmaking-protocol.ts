@@ -8,7 +8,7 @@ import { MatchmakingFormat, MatchmakingMode, OpponentType } from "../domain/Queu
  */
 
 export const MATCHMAKING_AUTH = 0xfb; // CTOS: [ticketLen:u8][ticket:utf-8]
-export const MATCHMAKING_ENTER = 0xfa; // CTOS: [format:u8][mode:u8][clientVersion:u16 LE]
+export const MATCHMAKING_ENTER = 0xfa; // CTOS: [format:u8][mode:u8][clientVersion:u16 LE][allowBotFallback:u8 optional, 0|1]
 export const MATCHMAKING_CANCEL = 0xf9; // CTOS: empty
 export const MATCHMAKING_STATUS = 0xf8; // STOC: [state:u8][waitedMs:u32 LE][reason:u8]
 export const MATCHMAKING_FOUND = 0xf7; // STOC: [opponentType:u8][rated:u8][roomId:u16 LE][matchIdLen:u8][matchId][opponentNameLen:u8][opponentName]
@@ -19,6 +19,7 @@ export const MAX_TICKET_BYTES = 64;
 export const MAX_OPPONENT_NAME_BYTES = 32;
 
 const ENTER_BODY_LENGTH = 4;
+const ENTER_BODY_LENGTH_WITH_FALLBACK = 5;
 
 /** Wire-only reason value: encodes "no reason" on a non-rejected STATUS frame.
  * `RejectionReason` itself (owned by the domain) never carries this member —
@@ -35,6 +36,7 @@ export interface CtosEnter {
 	readonly format: MatchmakingFormat;
 	readonly mode: MatchmakingMode;
 	readonly clientVersion: number;
+	readonly allowBotFallback: boolean;
 }
 
 export interface MatchmakingFoundNotice {
@@ -101,7 +103,7 @@ export function parseCtosAuth(body: Buffer): ParseResult<CtosAuth> {
 }
 
 export function parseCtosEnter(body: Buffer): ParseResult<CtosEnter> {
-	if (body.length !== ENTER_BODY_LENGTH) {
+	if (body.length !== ENTER_BODY_LENGTH && body.length !== ENTER_BODY_LENGTH_WITH_FALLBACK) {
 		return { ok: false, reason: "malformed_frame" };
 	}
 	const format = FORMAT_BY_CODE[body.readUInt8(0)];
@@ -113,7 +115,20 @@ export function parseCtosEnter(body: Buffer): ParseResult<CtosEnter> {
 		return { ok: false, reason: "unsupported_mode" };
 	}
 
-	return { ok: true, value: { format, mode, clientVersion: body.readUInt16LE(2) } };
+	// The optional trailing byte is a strict boolean; absent means no opt-in.
+	let allowBotFallback = false;
+	if (body.length === ENTER_BODY_LENGTH_WITH_FALLBACK) {
+		const flag = body.readUInt8(4);
+		if (flag > 1) {
+			return { ok: false, reason: "malformed_frame" };
+		}
+		allowBotFallback = flag === 1;
+	}
+
+	return {
+		ok: true,
+		value: { format, mode, clientVersion: body.readUInt16LE(2), allowBotFallback },
+	};
 }
 
 export function parseCtosCancel(body: Buffer): ParseResult<Record<string, never>> {

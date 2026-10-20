@@ -8,6 +8,7 @@ const makeRecord = (overrides: Partial<QueueEntry> = {}): QueueEntry => ({
 	userId: "user-1",
 	format: "tcg",
 	displayName: null,
+	allowBotFallback: false,
 	enteredAt: 0,
 	lastPollAt: 0,
 	state: "searching",

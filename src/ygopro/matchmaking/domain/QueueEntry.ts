@@ -3,7 +3,8 @@
  * (evolution-card-game/docs/architecture/matchmaking-contract.md):
  *  - the client short-polls status every ~2s; that poll doubles as the heartbeat.
  *  - a ticket that misses the poll window is dropped (TTL).
- *  - a ticket with no human match within the bot-fallback window gets a bot game.
+ *  - a ticket that opted in to the bot fallback and found no human match within
+ *    the bot-fallback window gets a bot game; any other ticket keeps waiting for a human.
  */
 export const QUEUE_TTL_MS = 8_000;
 export const BOT_FALLBACK_MS = 60_000;
@@ -44,6 +45,8 @@ export interface QueueEntry {
 	readonly userId: string;
 	readonly format: MatchmakingFormat;
 	readonly enteredAt: number;
+	/** Opt-in to an unrated bot game after `BOT_FALLBACK_MS` without a human match. */
+	readonly allowBotFallback: boolean;
 	/** Public name resolved at enqueue; null when the user has no resolvable name.
 	 * The matched payload's opponentName comes from here — never from userId. */
 	readonly displayName: string | null;

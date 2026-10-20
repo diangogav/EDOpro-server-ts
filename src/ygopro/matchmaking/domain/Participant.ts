@@ -26,6 +26,9 @@ export interface Participant {
 	/** Public name resolved at auth/enqueue; null when unresolvable. */
 	readonly displayName: string | null;
 	readonly enqueuedAt: number;
+	/** Whether this participant accepts an unrated bot match after waiting past
+	 * `BOT_FALLBACK_MS`. Opt-in per enqueue; when false it waits for a human only. */
+	readonly allowBotFallback: boolean;
 	readonly presence: ParticipantPresence;
 	readonly channel: ParticipantChannel;
 	/**

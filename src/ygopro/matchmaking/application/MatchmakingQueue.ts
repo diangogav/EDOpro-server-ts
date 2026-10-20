@@ -75,6 +75,8 @@ export interface EnqueueInput {
 	format: MatchmakingFormat;
 	/** Public name pre-resolved by the caller; omitted/null when unresolvable. */
 	displayName?: string | null;
+	/** Opt-in to the bot fallback; absent means the ticket waits for a human only. */
+	allowBotFallback?: boolean;
 }
 
 export type PollResult =
@@ -260,6 +262,7 @@ export class MatchmakingQueue {
 			userId: input.userId,
 			format: input.format,
 			displayName: input.displayName ?? null,
+			allowBotFallback: input.allowBotFallback ?? false,
 			enteredAt: now,
 			lastPollAt: now,
 			state: "searching",
@@ -272,6 +275,7 @@ export class MatchmakingQueue {
 			mode: SUPPORTED_QUEUE,
 			displayName: record.displayName,
 			enqueuedAt: now,
+			allowBotFallback: record.allowBotFallback,
 			presence: "poll",
 			channel: new PollParticipantChannel(record, this.deps.now),
 		};

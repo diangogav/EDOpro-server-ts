@@ -105,7 +105,7 @@ describe("MatchmakingStatusController", () => {
 		MatchmakingQueue.resetForTests();
 		MatchmakingQueue.init({ ...makeDeps(), now: () => clock.t });
 		const q = MatchmakingQueue.getInstance();
-		q.enqueue({ ticketId: "t1", userId: "user-1", format: "tcg" });
+		q.enqueue({ ticketId: "t1", userId: "user-1", format: "tcg", allowBotFallback: true });
 
 		// Heartbeat inside the TTL window so the entry survives to the bot fallback.
 		keepPolling(q, clock, ["t1"], BOT_FALLBACK_MS + 1);

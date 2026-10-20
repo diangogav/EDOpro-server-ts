@@ -4,8 +4,10 @@ import { Participant } from "./Participant";
 import { BOT_FALLBACK_MS } from "./QueueEntry";
 
 /**
- * Pairs any candidate that has waited past `BOT_FALLBACK_MS` with an unrated
- * bot match, one match per participant. No-op while no bot is available.
+ * Pairs a candidate that opted in (`allowBotFallback`) and has waited past
+ * `BOT_FALLBACK_MS` with an unrated bot match, one match per participant.
+ * Candidates that did not opt in are never paired here and keep waiting for a
+ * human. No-op while no bot is available.
  */
 export class BotFallbackPolicy implements PairingPolicy {
 	constructor(
@@ -19,6 +21,7 @@ export class BotFallbackPolicy implements PairingPolicy {
 		const matches: Match[] = [];
 
 		for (const participant of candidates) {
+			if (!participant.allowBotFallback) continue;
 			if (now - participant.enqueuedAt <= BOT_FALLBACK_MS) continue;
 
 			matches.push({
