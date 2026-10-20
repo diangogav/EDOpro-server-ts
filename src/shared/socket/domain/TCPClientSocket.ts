@@ -2,6 +2,7 @@ import { Socket } from "net";
 
 import { ISocket } from "./ISocket";
 import { SUPERSEDED_CLOSE_TIMEOUT_MS } from "./sessionSuperseded";
+import { TCP_KEEPALIVE_INITIAL_DELAY_MS } from "./tcpKeepAlive";
 
 export class TCPClientSocket implements ISocket {
 	readonly transport = "tcp" as const;
@@ -16,7 +17,7 @@ export class TCPClientSocket implements ISocket {
 
 	constructor(socket: Socket) {
 		this.socket = socket;
-		this.socket.setKeepAlive(true, 1000);
+		this.socket.setKeepAlive(true, TCP_KEEPALIVE_INITIAL_DELAY_MS);
 		this.socket.on("close", () => {
 			this.isClosed = true;
 		});

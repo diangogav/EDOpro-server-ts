@@ -75,6 +75,13 @@ services:
         condition: service_healthy
       valkey:
         condition: service_healthy
+    # Dead TCP peers (EDOPro/MDPro over raw TCP) are noticed through kernel keepalive
+    # probes: Node sets only the idle delay (1 s), so the interval and probe count come
+    # from here. 1 s + 3 x 5 s = ~16 s instead of the ~11 min Linux default. Probes are
+    # answered by the peer's kernel, so idle-but-alive clients are never dropped.
+    sysctls:
+      net.ipv4.tcp_keepalive_intvl: 5
+      net.ipv4.tcp_keepalive_probes: 3
     restart: unless-stopped
     networks:
       - evolutionygo-network

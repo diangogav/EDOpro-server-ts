@@ -3,6 +3,7 @@ import { Socket } from "net";
 
 import { SUPERSEDED_CLOSE_TIMEOUT_MS } from "./sessionSuperseded";
 import { TCPClientSocket } from "./TCPClientSocket";
+import { TCP_KEEPALIVE_INITIAL_DELAY_MS } from "./tcpKeepAlive";
 
 const makeRawSocket = () => {
 	const raw = new EventEmitter() as EventEmitter & {
@@ -102,5 +103,14 @@ describe("TCPClientSocket.closeSuperseded", () => {
 
 		jest.advanceTimersByTime(1);
 		expect(raw.destroy).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("TCPClientSocket keepalive", () => {
+	it("enables keepalive probes so a dead peer is eventually noticed", () => {
+		const raw = makeRawSocket();
+		new TCPClientSocket(raw as unknown as Socket);
+
+		expect(raw.setKeepAlive).toHaveBeenCalledWith(true, TCP_KEEPALIVE_INITIAL_DELAY_MS);
 	});
 });
