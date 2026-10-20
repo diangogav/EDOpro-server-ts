@@ -30,7 +30,7 @@ PR A — token and identity
 - [x] A2 No secrets in logs: tokens and tickets redacted (short prefix or hash) at every log site.
 - [x] A3 Identity binding: when the seat is verified and the reconnecting socket carries a
       resolvedUserId, they must match; ticketless sockets accepted as today.
-- [ ] A4 Takeover closes the old socket (WS close 4001 "session superseded"; TCP end/destroy).
+- [x] A4 Takeover closes the old socket (WS close 4001 "session superseded"; TCP end/destroy).
 - [ ] A5 Ticket validation infrastructure error (Redis down) degrades the socket to anonymous
       instead of rejecting; an invalid/consumed ticket is still rejected.
 - [ ] A6 Structured reconnect telemetry log: path (token / by-name), outcome, client transport,
@@ -47,6 +47,7 @@ PR B — liveness and settlement
 - A2 done: `redactSecret` (6-char prefix + ellipsis) at 9 state/handler log sites + RedisTicketRepository. RED: ExpressReconnectHandler log test failed; GREEN after change (22 reconnect/ticket tests pass).
 - A2 addendum: debug "Incoming message" hex dumps (WS + TCP handlers) hid the raw 0xfd/0xfb frames; `frameForLog` hides RECONNECT and MATCHMAKING_AUTH payloads.
 - A3 done: ExpressReconnectHandler.identityMatches; auth gate verified (every inbound frame awaits `ready`, resolved only after resolvedUserId is set in WSYGOProServer); gate test added. RED: mismatch test failed, GREEN 20 reconnect tests.
+- A4 done: `ISocket.closeSuperseded()` (WS close 4001 "session superseded", terminate fallback 2000 ms; TCP end + destroy fallback); YGOProRoom.reconnect closes the previous socket after attaching the new one. EDOpro `Client.setSocket` already destroys a different previous socket (listeners removed first), unchanged. RED: compile/test failures in socket + room suites; GREEN 433 tests.
 
 ## Superseded
 odd/tasks/reconnect-token-overlap.md (60s overlap + presented token) is replaced by A1.

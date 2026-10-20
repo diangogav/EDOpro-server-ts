@@ -1,6 +1,11 @@
 import WebSocket from "ws";
 
 import { ISocket } from "./ISocket";
+import {
+	SESSION_SUPERSEDED_CLOSE_CODE,
+	SESSION_SUPERSEDED_CLOSE_REASON,
+	SUPERSEDED_CLOSE_TIMEOUT_MS,
+} from "./sessionSuperseded";
 
 export class WebSocketClientSocket implements ISocket {
 	id?: string;
@@ -68,6 +73,18 @@ export class WebSocketClientSocket implements ISocket {
 	}
 
 	closeGracefully(timeoutMs: number): void {
+		this.closeWith(timeoutMs, 1000);
+	}
+
+	closeSuperseded(): void {
+		this.closeWith(
+			SUPERSEDED_CLOSE_TIMEOUT_MS,
+			SESSION_SUPERSEDED_CLOSE_CODE,
+			SESSION_SUPERSEDED_CLOSE_REASON,
+		);
+	}
+
+	private closeWith(timeoutMs: number, code: number, reason?: string): void {
 		if (this.isClosing) return;
 		this.isClosing = true;
 		this.removeAllListeners();
@@ -77,7 +94,11 @@ export class WebSocketClientSocket implements ISocket {
 		const fallback = setTimeout(() => this.socket.terminate(), timeoutMs);
 		fallback.unref?.();
 		this.socket.once("close", () => clearTimeout(fallback));
-		this.socket.close(1000);
+		if (reason === undefined) {
+			this.socket.close(code);
+		} else {
+			this.socket.close(code, reason);
+		}
 	}
 
 	get remoteAddress(): string | undefined {

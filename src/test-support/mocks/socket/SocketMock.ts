@@ -33,6 +33,10 @@ export class SocketMock implements ISocket {
 		/* no-op */
 	}
 
+	closeSuperseded(): void {
+		/* no-op */
+	}
+
 	removeAllListeners(): void {
 		/* no-op */
 	}

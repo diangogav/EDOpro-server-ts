@@ -1,6 +1,7 @@
 import { Socket } from "net";
 
 import { ISocket } from "./ISocket";
+import { SUPERSEDED_CLOSE_TIMEOUT_MS } from "./sessionSuperseded";
 
 export class TCPClientSocket implements ISocket {
 	id?: string;
@@ -68,6 +69,10 @@ export class TCPClientSocket implements ISocket {
 		fallback.unref?.();
 		this.socket.once("close", () => clearTimeout(fallback));
 		this.socket.end();
+	}
+
+	closeSuperseded(): void {
+		this.closeGracefully(SUPERSEDED_CLOSE_TIMEOUT_MS);
 	}
 
 	setRoomId(roomId: number): void {
