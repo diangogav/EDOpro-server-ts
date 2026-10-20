@@ -25,6 +25,9 @@ export interface ISocket {
 	watchForRoomId?: number;
 	/** Wire transport of this connection, for diagnostics. */
 	readonly transport: "ws" | "tcp";
+	/** Epoch ms of the last sign of life from the peer: any inbound frame or, on
+	 * WebSocket, a heartbeat pong. Starts at connection time. */
+	readonly lastInboundAt: number;
 	send(message: Buffer): void;
 	onMessage(callback: (message: Buffer) => void): void;
 	onClose(callback: () => void): void;

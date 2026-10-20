@@ -9,6 +9,7 @@ export class TCPClientSocket implements ISocket {
 	id?: string;
 	roomId?: number;
 	private readonly socket: Socket;
+	private inboundAt = Date.now();
 
 	private isClosed = false;
 	private isClosing = false;
@@ -18,6 +19,9 @@ export class TCPClientSocket implements ISocket {
 	constructor(socket: Socket) {
 		this.socket = socket;
 		this.socket.setKeepAlive(true, TCP_KEEPALIVE_INITIAL_DELAY_MS);
+		this.socket.on("data", () => {
+			this.inboundAt = Date.now();
+		});
 		this.socket.on("close", () => {
 			this.isClosed = true;
 		});
@@ -83,6 +87,10 @@ export class TCPClientSocket implements ISocket {
 
 	setId(id: string): void {
 		this.id = id;
+	}
+
+	get lastInboundAt(): number {
+		return this.inboundAt;
 	}
 
 	get remoteAddress(): string | undefined {

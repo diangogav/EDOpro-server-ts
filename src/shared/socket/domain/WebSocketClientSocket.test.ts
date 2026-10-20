@@ -189,3 +189,37 @@ describe("WebSocketClientSocket.closeSuperseded", () => {
 		expect(raw.terminate).not.toHaveBeenCalled();
 	});
 });
+
+describe("WebSocketClientSocket lastInboundAt", () => {
+	beforeEach(() => {
+		jest.useFakeTimers();
+		jest.setSystemTime(10_000);
+	});
+	afterEach(() => jest.useRealTimers());
+
+	const makeEmitterSocket = () => new EventEmitter() as unknown as WebSocket;
+
+	it("starts at the moment of connection", () => {
+		expect(new WebSocketClientSocket(makeEmitterSocket()).lastInboundAt).toBe(10_000);
+	});
+
+	it("moves forward on every inbound message", () => {
+		const raw = makeEmitterSocket();
+		const socket = new WebSocketClientSocket(raw);
+
+		jest.setSystemTime(25_000);
+		raw.emit("message", Buffer.from([1]));
+
+		expect(socket.lastInboundAt).toBe(25_000);
+	});
+
+	it("moves forward on a heartbeat pong, even with no message listener attached", () => {
+		const raw = makeEmitterSocket();
+		const socket = new WebSocketClientSocket(raw);
+
+		jest.setSystemTime(40_000);
+		raw.emit("pong");
+
+		expect(socket.lastInboundAt).toBe(40_000);
+	});
+});

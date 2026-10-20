@@ -14,6 +14,7 @@ export class WebSocketClientSocket implements ISocket {
 	resolvedUserId?: string;
 	public supportsLobbyMetadata?: boolean;
 	private readonly socket: WebSocket;
+	private inboundAt = Date.now();
 	private isClosed = false;
 	private isClosing = false;
 	private messageCallback?: (data: WebSocket.Data) => void;
@@ -21,6 +22,13 @@ export class WebSocketClientSocket implements ISocket {
 
 	constructor(socket: WebSocket) {
 		this.socket = socket;
+		// Listens independently of onMessage so heartbeat pongs and frames that
+		// arrive while the pump is detached still count as proof of life.
+		const markInbound = () => {
+			this.inboundAt = Date.now();
+		};
+		this.socket.on("message", markInbound);
+		this.socket.on("pong", markInbound);
 		this.socket.on("close", () => {
 			this.isClosed = true;
 		});
@@ -100,6 +108,10 @@ export class WebSocketClientSocket implements ISocket {
 		} else {
 			this.socket.close(code, reason);
 		}
+	}
+
+	get lastInboundAt(): number {
+		return this.inboundAt;
 	}
 
 	get remoteAddress(): string | undefined {

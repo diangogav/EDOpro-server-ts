@@ -114,3 +114,22 @@ describe("TCPClientSocket keepalive", () => {
 		expect(raw.setKeepAlive).toHaveBeenCalledWith(true, TCP_KEEPALIVE_INITIAL_DELAY_MS);
 	});
 });
+
+describe("TCPClientSocket lastInboundAt", () => {
+	beforeEach(() => {
+		jest.useFakeTimers();
+		jest.setSystemTime(10_000);
+	});
+	afterEach(() => jest.useRealTimers());
+
+	it("starts at the moment of connection and moves forward on inbound data", () => {
+		const raw = makeRawSocket();
+		const socket = new TCPClientSocket(raw as unknown as Socket);
+		expect(socket.lastInboundAt).toBe(10_000);
+
+		jest.setSystemTime(33_000);
+		raw.emit("data", Buffer.from([1]));
+
+		expect(socket.lastInboundAt).toBe(33_000);
+	});
+});
