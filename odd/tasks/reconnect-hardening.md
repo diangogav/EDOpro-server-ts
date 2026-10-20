@@ -39,7 +39,7 @@ PR A — token and identity
       whose resolvedUserId equals the seat owner (outcomes identity_missing / identity_mismatch);
       non-verified seats stay token-only. Route: inline.
 PR B — liveness and settlement
-- [ ] B1 Verify mid-duel no-show settlement (ranked result recorded when the clock runs out with
+- [x] B1 Verify mid-duel no-show settlement (ranked result recorded when the clock runs out with
       the player absent); fix if missing.
 - [ ] B2 Half-open detection: TCP keepalive interval/probes or app-level idle detection so a dead
       TCP peer is noticed in well under a minute; WS heartbeat reviewed.
@@ -55,6 +55,7 @@ PR B — liveness and settlement
 - A6 done: `logReconnectAttempt` emits "reconnect.attempt" {path, outcome, transport, verified, identityChecked, tokenPrefix}; token path in ExpressReconnectHandler (outcomes forwarded/unknown_token/room_not_found/identity_mismatch), by-name at the 4 YGOPro + 4 EDOpro mid-duel join doors (outcome matched); `ISocket.transport` added. RED: handler telemetry tests failed; GREEN. Full: npm test 238 suites / 2314 tests pass, tsc and lint clean.
 - A-review follow-ups: `frameForLog` walks every frame in a chunk (partial tail prints `<partial len=N>`); reject log names its outcome; identity predicate simplified; DuelingState/RedisTicketRepository comments fixed; by-name `identityChecked` documented. RED: 3 frameForLog tests failed; GREEN: reconnect/logger suites pass.
 - A7 done: `ExpressReconnectHandler.identityOutcome` (verified seat + no/other resolvedUserId => failure ack + destroy, `identity_missing` added to `ReconnectOutcome`). Ticketless-reconnect test inverted; telemetry test added. TCP: `MatchmakingReconnectIdentity.test.ts` proves 0xfb, awaited, then 0xfd succeeds; pipelined 0xfb+0xfd loses the race (AUTH runs async via `void authenticate.execute`), documented in docs/room-reentry.md. RED: 2 handler tests failed; GREEN: 30 tests. Constraint change: ticketless sockets no longer reconnect verified seats.
+- B1 done (verified, no fix needed): neither engine pauses the clock on disconnect. YGOPro: `OCGCore` response timer -> `FINISH_DUEL_BY_TIMEOUT` -> `handleWinCondition` -> `MatchLifecycleHooks.runEnding` (ranked result + ratings) when the match is decided, else side decking, where `SIDE_TIMEOUT_MINUTES` (default 3) resolves the abandon via `EndMatchByAbandon`. EDOpro: `Room` timers -> `FinishDuelHandler` TIMEOUT -> `runEnding` + `RoomList.deleteRoom`. Tests `YGOProMidDuelNoShow.test.ts` and `RoomMidDuelNoShow.test.ts` pass on first run (behavior already correct, so no RED). Known residual: a mid-duel drop that ends a non-final duel gets no 60 s abandon grace (the player was already gone when side decking began), the 3 min side-deck timeout settles it instead; rooms with `time_limit` 0 have no clock, so a lone absentee is only reaped when both players are gone.
 
 ## Superseded
 odd/tasks/reconnect-token-overlap.md (60s overlap + presented token) is replaced by A1.
