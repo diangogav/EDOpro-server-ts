@@ -15,6 +15,9 @@ export interface EnterMatchmakingInput {
 	readonly format: MatchmakingFormat;
 	readonly mode: MatchmakingMode;
 	readonly clientVersion: number;
+	/** Requested wait, in ms, before a bot game is accepted; absent means the
+	 * session waits for a human only. Clamped by the pairing policy. */
+	readonly botFallbackAfterMs?: number;
 }
 
 /**
@@ -66,6 +69,7 @@ export class EnterMatchmaking {
 			mode,
 			displayName: session.displayName,
 			enqueuedAt: this.now(),
+			botFallbackAfterMs: input.botFallbackAfterMs,
 			presence: "socket",
 			channel,
 			admission: { socket, playerInfo },

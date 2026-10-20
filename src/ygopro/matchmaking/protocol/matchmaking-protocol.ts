@@ -8,7 +8,7 @@ import { MatchmakingFormat, MatchmakingMode, OpponentType } from "../domain/Queu
  */
 
 export const MATCHMAKING_AUTH = 0xfb; // CTOS: [ticketLen:u8][ticket:utf-8]
-export const MATCHMAKING_ENTER = 0xfa; // CTOS: [format:u8][mode:u8][clientVersion:u16 LE]
+export const MATCHMAKING_ENTER = 0xfa; // CTOS: [format:u8][mode:u8][clientVersion:u16 LE][botFallbackAfterMs:u32 LE optional]
 export const MATCHMAKING_CANCEL = 0xf9; // CTOS: empty
 export const MATCHMAKING_STATUS = 0xf8; // STOC: [state:u8][waitedMs:u32 LE][reason:u8]
 export const MATCHMAKING_FOUND = 0xf7; // STOC: [opponentType:u8][rated:u8][roomId:u16 LE][matchIdLen:u8][matchId][opponentNameLen:u8][opponentName]
@@ -19,6 +19,7 @@ export const MAX_TICKET_BYTES = 64;
 export const MAX_OPPONENT_NAME_BYTES = 32;
 
 const ENTER_BODY_LENGTH = 4;
+const ENTER_BODY_LENGTH_WITH_FALLBACK = 8;
 
 /** Wire-only reason value: encodes "no reason" on a non-rejected STATUS frame.
  * `RejectionReason` itself (owned by the domain) never carries this member —
@@ -35,6 +36,8 @@ export interface CtosEnter {
 	readonly format: MatchmakingFormat;
 	readonly mode: MatchmakingMode;
 	readonly clientVersion: number;
+	/** Requested bot-fallback delay in ms; absent when the client sent no delay. */
+	readonly botFallbackAfterMs?: number;
 }
 
 export interface MatchmakingFoundNotice {
@@ -101,7 +104,7 @@ export function parseCtosAuth(body: Buffer): ParseResult<CtosAuth> {
 }
 
 export function parseCtosEnter(body: Buffer): ParseResult<CtosEnter> {
-	if (body.length !== ENTER_BODY_LENGTH) {
+	if (body.length !== ENTER_BODY_LENGTH && body.length !== ENTER_BODY_LENGTH_WITH_FALLBACK) {
 		return { ok: false, reason: "malformed_frame" };
 	}
 	const format = FORMAT_BY_CODE[body.readUInt8(0)];
@@ -113,7 +116,16 @@ export function parseCtosEnter(body: Buffer): ParseResult<CtosEnter> {
 		return { ok: false, reason: "unsupported_mode" };
 	}
 
-	return { ok: true, value: { format, mode, clientVersion: body.readUInt16LE(2) } };
+	const clientVersion = body.readUInt16LE(2);
+	// The optional trailing uint32 LE is the bot-fallback delay; absent means no bot.
+	if (body.length === ENTER_BODY_LENGTH_WITH_FALLBACK) {
+		return {
+			ok: true,
+			value: { format, mode, clientVersion, botFallbackAfterMs: body.readUInt32LE(4) },
+		};
+	}
+
+	return { ok: true, value: { format, mode, clientVersion } };
 }
 
 export function parseCtosCancel(body: Buffer): ParseResult<Record<string, never>> {

@@ -26,6 +26,10 @@ export interface Participant {
 	/** Public name resolved at auth/enqueue; null when unresolvable. */
 	readonly displayName: string | null;
 	readonly enqueuedAt: number;
+	/** Requested wait, in ms, before this participant accepts an unrated bot match.
+	 * Clamped by `clampBotFallbackDelay` when applied; absent means it waits for a
+	 * human only. */
+	readonly botFallbackAfterMs?: number;
 	readonly presence: ParticipantPresence;
 	readonly channel: ParticipantChannel;
 	/**

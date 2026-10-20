@@ -169,6 +169,33 @@ describe("EnterMatchmaking", () => {
 			});
 		});
 
+		it.each([
+			{
+				name: "leaves the participant without a bot fallback delay",
+				input: {},
+				expected: undefined,
+			},
+			{
+				name: "carries the bot fallback delay onto the participant",
+				input: { botFallbackAfterMs: 90_000 },
+				expected: 90_000,
+			},
+		])("$name", ({ input, expected }) => {
+			const { socket, session, channel } = makeConnection();
+
+			useCase.execute({
+				socket,
+				session,
+				channel,
+				format: "tcg",
+				mode: "ranked",
+				clientVersion: mercuryConfig.version,
+				...input,
+			});
+
+			expect(store.get(socket.id as string)?.botFallbackAfterMs).toBe(expected);
+		});
+
 		it("logs a replacement event and never the display name when a second connection wins the same user", () => {
 			const first = makeConnection();
 			useCase.execute({

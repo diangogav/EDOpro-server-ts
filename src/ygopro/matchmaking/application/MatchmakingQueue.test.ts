@@ -1,6 +1,11 @@
 import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
 
-import { BOT_FALLBACK_MS, MATCHED_GRACE_MS, QUEUE_TTL_MS } from "../domain/QueueEntry";
+import {
+	BOT_FALLBACK_MAX_MS,
+	BOT_FALLBACK_MIN_MS,
+	MATCHED_GRACE_MS,
+	QUEUE_TTL_MS,
+} from "../domain/QueueEntry";
 import { MatchmakingQueue, MatchmakingQueueDeps } from "./MatchmakingQueue";
 
 // Polls every id just inside the TTL window until `until`, as a real client
@@ -36,8 +41,12 @@ const makeDeps = (overrides: Partial<MatchmakingQueueDeps> = {}): MatchmakingQue
 	};
 };
 
-const enqueue = (queue: MatchmakingQueue, ticketId: string, userId: string) =>
-	queue.enqueue({ ticketId, userId, format: "tcg" });
+const enqueue = (
+	queue: MatchmakingQueue,
+	ticketId: string,
+	userId: string,
+	botFallbackAfterMs?: number,
+) => queue.enqueue({ ticketId, userId, format: "tcg", botFallbackAfterMs });
 
 describe("MatchmakingQueue", () => {
 	afterEach(() => {
@@ -139,11 +148,11 @@ describe("MatchmakingQueue", () => {
 			const queue = MatchmakingQueue.createForTests(
 				makeDeps({ now: () => clock.t, createBotRoom }),
 			);
-			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
 
 			// Keep the entry alive across the TTL window; the fallback fires later.
-			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
-			clock.t = BOT_FALLBACK_MS + 1;
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MIN_MS + 1);
+			clock.t = BOT_FALLBACK_MIN_MS + 1;
 			queue.tick();
 
 			expect(createBotRoom).toHaveBeenCalledWith("tcg", "user-1");
@@ -206,10 +215,10 @@ describe("MatchmakingQueue", () => {
 			const queue = MatchmakingQueue.createForTests(
 				makeDeps({ now: () => clock.t, createBotRoom }),
 			);
-			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
 
-			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
-			clock.t = BOT_FALLBACK_MS + 1;
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MIN_MS + 1);
+			clock.t = BOT_FALLBACK_MIN_MS + 1;
 
 			expect(queue.poll("t1")).toMatchObject({ state: "searching" });
 			expect(createBotRoom).not.toHaveBeenCalled();
@@ -271,12 +280,7 @@ describe("MatchmakingQueue", () => {
 	describe("abortRoom", () => {
 		it("releases both users from an aborted matched room so they can queue again", () => {
 			const queue = MatchmakingQueue.createForTests(
-				makeDeps({
-					createRankedRoom: () => ({
-						roomId: 4242,
-						roomPassword: "to,mm-r1#pw1",
-					}),
-				}),
+				makeDeps({ createRankedRoom: () => ({ roomId: 4242, roomPassword: "to,mm-r1#pw1" }) }),
 			);
 			enqueue(queue, "t1", "user-1");
 			enqueue(queue, "t2", "user-2");
@@ -388,10 +392,10 @@ describe("MatchmakingQueue", () => {
 		it("keeps opponentName null for a bot match (no userId leak on the bot path)", () => {
 			const clock = { t: 0 };
 			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t }));
-			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
 
-			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
-			clock.t = BOT_FALLBACK_MS + 1;
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MIN_MS + 1);
+			clock.t = BOT_FALLBACK_MIN_MS + 1;
 			queue.tick();
 
 			const s1 = queue.poll("t1");
@@ -410,12 +414,12 @@ describe("MatchmakingQueue", () => {
 			const queue = MatchmakingQueue.createForTests(
 				makeDeps({ now: () => clock.t, createBotRoom, spawnBot }),
 			);
-			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
 
 			// Keep polling within the TTL window, as a real client does, so the
 			// entry survives to the bot-fallback threshold instead of being swept.
-			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
-			clock.t = BOT_FALLBACK_MS + 1;
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MIN_MS + 1);
+			clock.t = BOT_FALLBACK_MIN_MS + 1;
 			queue.tick();
 
 			const e1 = queue.get("t1");
@@ -426,7 +430,7 @@ describe("MatchmakingQueue", () => {
 			expect(spawnBot).toHaveBeenCalledWith(4242, "tcg");
 		});
 
-		it("does not trigger bot fallback before the window elapses", () => {
+		it("keeps a ticket without a fallback delay searching for a human past the longest fallback delay", () => {
 			const clock = { t: 0 };
 			const createBotRoom = jest.fn();
 			const queue = MatchmakingQueue.createForTests(
@@ -434,8 +438,38 @@ describe("MatchmakingQueue", () => {
 			);
 			enqueue(queue, "t1", "user-1");
 
-			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS - 1);
-			clock.t = BOT_FALLBACK_MS - 1;
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MAX_MS + 1);
+			clock.t = BOT_FALLBACK_MAX_MS + 1;
+			queue.tick();
+
+			expect(createBotRoom).not.toHaveBeenCalled();
+			expect(queue.get("t1")?.state).toBe("searching");
+		});
+
+		it("still pairs an opted-in ticket with a human before the fallback window", () => {
+			const createRankedRoom = jest
+				.fn()
+				.mockReturnValue({ roomId: 1, roomPassword: "to,mm-r1#pw1" });
+			const createBotRoom = jest.fn();
+			const queue = MatchmakingQueue.createForTests(makeDeps({ createRankedRoom, createBotRoom }));
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
+			enqueue(queue, "t2", "user-2");
+
+			expect(createRankedRoom).toHaveBeenCalledTimes(1);
+			expect(createBotRoom).not.toHaveBeenCalled();
+			expect(queue.get("t1")?.opponentType).toBe("human");
+		});
+
+		it("does not trigger bot fallback before the window elapses", () => {
+			const clock = { t: 0 };
+			const createBotRoom = jest.fn();
+			const queue = MatchmakingQueue.createForTests(
+				makeDeps({ now: () => clock.t, createBotRoom }),
+			);
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
+
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MIN_MS - 1);
+			clock.t = BOT_FALLBACK_MIN_MS - 1;
 			queue.tick();
 
 			expect(createBotRoom).not.toHaveBeenCalled();
@@ -451,31 +485,28 @@ describe("MatchmakingQueue", () => {
 			const queue = MatchmakingQueue.createForTests(
 				makeDeps({ now: () => clock.t, createRankedRoom, createBotRoom }),
 			);
-			enqueue(queue, "t1", "user-1");
-			enqueue(queue, "t2", "user-2");
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
 
-			keepPolling(queue, clock, ["t1", "t2"], BOT_FALLBACK_MS + 1);
-			clock.t = BOT_FALLBACK_MS + 1;
-			queue.tick();
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MIN_MS + 1);
+			clock.t = BOT_FALLBACK_MIN_MS + 1;
+			enqueue(queue, "t2", "user-2", BOT_FALLBACK_MIN_MS);
 
 			expect(createRankedRoom).toHaveBeenCalledTimes(1);
 			expect(createBotRoom).not.toHaveBeenCalled();
+			expect(queue.get("t1")?.opponentType).toBe("human");
+			expect(queue.get("t2")?.opponentType).toBe("human");
 		});
 
 		it("keeps the entry searching when the bot spawner is unavailable", () => {
 			const clock = { t: 0 };
 			const createBotRoom = jest.fn();
 			const queue = MatchmakingQueue.createForTests(
-				makeDeps({
-					now: () => clock.t,
-					createBotRoom,
-					botAvailable: () => false,
-				}),
+				makeDeps({ now: () => clock.t, createBotRoom, botAvailable: () => false }),
 			);
-			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
 
-			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
-			clock.t = BOT_FALLBACK_MS + 1;
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MIN_MS + 1);
+			clock.t = BOT_FALLBACK_MIN_MS + 1;
 			queue.tick();
 
 			expect(createBotRoom).not.toHaveBeenCalled();
@@ -545,10 +576,10 @@ describe("MatchmakingQueue", () => {
 			const queue = MatchmakingQueue.createForTests(
 				makeDeps({ now: () => clock.t, createBotRoom, spawnBot, onRoomCreationError }),
 			);
-			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
 
-			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
-			clock.t = BOT_FALLBACK_MS + 1;
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MIN_MS + 1);
+			clock.t = BOT_FALLBACK_MIN_MS + 1;
 
 			expect(() => queue.tick()).not.toThrow();
 			expect(onRoomCreationError).toHaveBeenCalled();
@@ -572,10 +603,10 @@ describe("MatchmakingQueue", () => {
 			const queue = MatchmakingQueue.createForTests(
 				makeDeps({ now: () => clock.t, createBotRoom, spawnBot, onRoomCreationError: jest.fn() }),
 			);
-			enqueue(queue, "t1", "user-1"); // lone → bot-fallback candidate
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS); // lone → bot-fallback candidate
 
-			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
-			clock.t = BOT_FALLBACK_MS + 1;
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MIN_MS + 1);
+			clock.t = BOT_FALLBACK_MIN_MS + 1;
 
 			// First tick: bot port throws, entry stays searching, no crash.
 			expect(() => queue.tick()).not.toThrow();
@@ -725,14 +756,14 @@ describe("MatchmakingQueue", () => {
 		it("frees a bot-matched user after the grace window too", () => {
 			const clock = { t: 0 };
 			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t }));
-			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
 
-			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MS + 1);
-			clock.t = BOT_FALLBACK_MS + 1;
+			keepPolling(queue, clock, ["t1"], BOT_FALLBACK_MIN_MS + 1);
+			clock.t = BOT_FALLBACK_MIN_MS + 1;
 			queue.tick(); // matched to a bot
 			expect(queue.get("t1")?.state).toBe("matched");
 
-			clock.t = BOT_FALLBACK_MS + 1 + MATCHED_GRACE_MS + 1;
+			clock.t = BOT_FALLBACK_MIN_MS + 1 + MATCHED_GRACE_MS + 1;
 			queue.tick();
 
 			expect(queue.get("t1")).toBeUndefined();
@@ -767,6 +798,26 @@ describe("MatchmakingQueue", () => {
 			});
 			const loggedText = infoSpy.mock.calls.map((call) => JSON.stringify(call)).join(" ");
 			expect(loggedText).not.toContain("Yugi");
+		});
+
+		it("logs a matchmaking.exit event with the waited time when a ticket is cancelled", () => {
+			const clock = { t: 1_000 };
+			const logger = new LoggerMock();
+			const infoSpy = jest.spyOn(logger, "info");
+			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t, logger }));
+			enqueue(queue, "t1", "user-1", BOT_FALLBACK_MIN_MS);
+
+			clock.t = 8_000;
+			queue.cancel("t1");
+
+			expect(infoSpy).toHaveBeenCalledWith("matchmaking.exit", {
+				participantId: "t1",
+				outcome: "cancelled",
+				waitedMs: 7_000,
+				format: "tcg",
+				presence: "poll",
+				hasBotFallback: true,
+			});
 		});
 	});
 

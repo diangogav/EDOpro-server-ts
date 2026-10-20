@@ -17,6 +17,7 @@ export const EnqueueMatchmakingSchema = z.object({
 	format: z.enum(MATCHMAKING_FORMATS),
 	queue: z.literal(SUPPORTED_QUEUE),
 	ticket: z.string().min(1),
+	botFallbackAfterMs: z.number().int().nonnegative().optional(),
 });
 
 /**
@@ -76,6 +77,7 @@ export class EnqueueMatchmakingController {
 				userId,
 				format: validation.data.format,
 				displayName,
+				botFallbackAfterMs: validation.data.botFallbackAfterMs,
 			});
 		} catch (error) {
 			if (error instanceof DuplicateQueueEntryError) {

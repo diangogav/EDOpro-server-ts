@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 
 import { MatchmakingQueue } from "@ygopro/matchmaking/application/MatchmakingQueue";
-import { BOT_FALLBACK_MS, QUEUE_TTL_MS } from "@ygopro/matchmaking/domain/QueueEntry";
+import { BOT_FALLBACK_MIN_MS, QUEUE_TTL_MS } from "@ygopro/matchmaking/domain/QueueEntry";
 
 import { MatchmakingStatusController } from "./MatchmakingStatusController";
 
@@ -66,11 +66,7 @@ describe("MatchmakingStatusController", () => {
 	});
 
 	it("returns 200 searching with waitedMs for a queued ticket", () => {
-		MatchmakingQueue.getInstance().enqueue({
-			ticketId: "t1",
-			userId: "user-1",
-			format: "tcg",
-		});
+		MatchmakingQueue.getInstance().enqueue({ ticketId: "t1", userId: "user-1", format: "tcg" });
 
 		const out = run({ ticketId: "t1" });
 		expect(out.status()).toBe(200);
@@ -84,11 +80,7 @@ describe("MatchmakingStatusController", () => {
 
 		const out = run({ ticketId: "t1" });
 		expect(out.status()).toBe(200);
-		expect(out.body()).toMatchObject({
-			state: "matched",
-			opponentType: "human",
-			rated: true,
-		});
+		expect(out.body()).toMatchObject({ state: "matched", opponentType: "human", rated: true });
 	});
 
 	it("serializes the opponent's display name on the matched payload", () => {
@@ -105,11 +97,16 @@ describe("MatchmakingStatusController", () => {
 		MatchmakingQueue.resetForTests();
 		MatchmakingQueue.init({ ...makeDeps(), now: () => clock.t });
 		const q = MatchmakingQueue.getInstance();
-		q.enqueue({ ticketId: "t1", userId: "user-1", format: "tcg" });
+		q.enqueue({
+			ticketId: "t1",
+			userId: "user-1",
+			format: "tcg",
+			botFallbackAfterMs: BOT_FALLBACK_MIN_MS,
+		});
 
 		// Heartbeat inside the TTL window so the entry survives to the bot fallback.
-		keepPolling(q, clock, ["t1"], BOT_FALLBACK_MS + 1);
-		clock.t = BOT_FALLBACK_MS + 1;
+		keepPolling(q, clock, ["t1"], BOT_FALLBACK_MIN_MS + 1);
+		clock.t = BOT_FALLBACK_MIN_MS + 1;
 		q.tick();
 
 		const out = run({ ticketId: "t1" });

@@ -4,7 +4,13 @@ import {
 	MATCHMAKING_FOUND,
 	MATCHMAKING_STATUS,
 } from "../ygopro/matchmaking/protocol/matchmaking-protocol";
-import { describeFound, describeStatus, takeFrames } from "./matchmaking-harness";
+import {
+	describeFound,
+	describeStatus,
+	enterFrame,
+	parseOptions,
+	takeFrames,
+} from "./matchmaking-harness";
 
 describe("matchmaking harness decoding", () => {
 	it("reads a status frame the server built", () => {
@@ -97,5 +103,53 @@ describe("matchmaking harness decoding", () => {
 
 		expect(frames).toHaveLength(0);
 		expect(consumed).toBe(0);
+	});
+});
+
+describe("matchmaking harness options", () => {
+	const base = ["--ticket", "t-1", "--name", "Duelist"];
+
+	it("leaves the bot fallback delay unset by default", () => {
+		expect(parseOptions(base).botFallbackAfterMs).toBeUndefined();
+	});
+
+	it("reads --bot-fallback-after-ms as an integer", () => {
+		expect(parseOptions([...base, "--bot-fallback-after-ms", "45000"]).botFallbackAfterMs).toBe(
+			45_000,
+		);
+	});
+
+	it("accepts the largest delay that fits the uint32 socket field", () => {
+		expect(
+			parseOptions([...base, "--bot-fallback-after-ms", "4294967295"]).botFallbackAfterMs,
+		).toBe(0xffffffff);
+	});
+
+	it.each([
+		"abc",
+		"4294967296",
+		"-1",
+		"1.5",
+		"",
+		"true",
+	])("rejects --bot-fallback-after-ms %p with a usage error", (value) => {
+		expect(() => parseOptions([...base, "--bot-fallback-after-ms", value])).toThrow(
+			/--bot-fallback-after-ms must be a non-negative integer/,
+		);
+	});
+});
+
+describe("matchmaking harness enter frame", () => {
+	const bodyOf = (frame: Buffer) => takeFrames(frame).frames[0]?.body as Buffer;
+
+	it("sends a 4-byte ENTER body without a delay", () => {
+		expect(bodyOf(enterFrame("tcg", undefined))).toHaveLength(4);
+	});
+
+	it("appends the delay as a uint32 LE", () => {
+		const body = bodyOf(enterFrame("tcg", 90_000));
+
+		expect(body).toHaveLength(8);
+		expect(body.readUInt32LE(4)).toBe(90_000);
 	});
 });

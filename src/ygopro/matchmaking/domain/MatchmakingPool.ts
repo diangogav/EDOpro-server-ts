@@ -1,3 +1,5 @@
+import { Logger } from "@shared/logger/domain/Logger";
+
 import { DuplicateQueueEntryError } from "./DuplicateQueueEntryError";
 import { MatchHandler } from "./MatchHandler";
 import { PairingPolicy } from "./PairingPolicy";
@@ -16,7 +18,18 @@ export interface MatchmakingPoolDeps {
 	pairingPolicy: PairingPolicy;
 	matchHandler: MatchHandler;
 	now: () => number;
+	/** Optional sink for one structured line per participant leaving the pool. */
+	logger?: Logger;
 }
+
+/** Why a participant left the pool. */
+export type QueueExitOutcome =
+	| "matched_human"
+	| "matched_bot"
+	| "cancelled"
+	| "dequeued"
+	| "expired"
+	| "replaced";
 
 /**
  * Store-backed matchmaking pool keyed by format+mode. Owns the same-user
@@ -42,7 +55,7 @@ export class MatchmakingPool {
 			if (participant.presence === "poll") {
 				throw new DuplicateQueueEntryError(participant.userId);
 			}
-			this.deps.store.remove(existing.id);
+			this.removeAndLog(existing, "replaced");
 			existing.channel.close("replaced_by_new_connection");
 		}
 		this.deps.store.add(participant);
@@ -51,12 +64,12 @@ export class MatchmakingPool {
 	}
 
 	remove(id: string): void {
-		this.deps.store.remove(id);
+		this.removeByIdAndLog(id, "cancelled");
 	}
 
 	/** Returns `true` when the id was actually queued and removed; a no-op otherwise. */
 	dequeueBySocketId(socketId: string): boolean {
-		return this.deps.store.remove(socketId);
+		return this.removeByIdAndLog(socketId, "dequeued");
 	}
 
 	start(): void {
@@ -87,7 +100,7 @@ export class MatchmakingPool {
 	private sweepDead(now: number): void {
 		for (const participant of this.everyParticipant()) {
 			if (!participant.channel.isAlive(now)) {
-				this.deps.store.remove(participant.id);
+				this.removeAndLog(participant, "expired");
 			}
 		}
 	}
@@ -99,11 +112,35 @@ export class MatchmakingPool {
 
 			for (const match of this.deps.pairingPolicy.pair(candidates, now)) {
 				for (const participant of match.participants) {
-					this.deps.store.remove(participant.id);
+					this.removeAndLog(
+						participant,
+						match.opponentKind === "bot" ? "matched_bot" : "matched_human",
+					);
 				}
 				this.deps.matchHandler.handle(match);
 			}
 		}
+	}
+
+	private removeByIdAndLog(id: string, outcome: QueueExitOutcome): boolean {
+		const participant = this.deps.store.get(id);
+		if (!participant) return false;
+		return this.removeAndLog(participant, outcome);
+	}
+
+	private removeAndLog(participant: Participant, outcome: QueueExitOutcome): boolean {
+		const removed = this.deps.store.remove(participant.id);
+		if (removed) {
+			this.deps.logger?.info("matchmaking.exit", {
+				participantId: participant.id,
+				outcome,
+				waitedMs: this.deps.now() - participant.enqueuedAt,
+				format: participant.format,
+				presence: participant.presence,
+				hasBotFallback: participant.botFallbackAfterMs !== undefined,
+			});
+		}
+		return removed;
 	}
 
 	private publishStatus(now: number): void {

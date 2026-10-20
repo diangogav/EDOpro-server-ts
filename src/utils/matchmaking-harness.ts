@@ -15,6 +15,11 @@
  *   --port <port>          default 7711 (Mercury TCP)
  *   --format <name>        tcg | jtp | edison, default tcg
  *   --timeout <ms>         give up and exit non-zero, default 60000
+ *   --bot-fallback-after-ms <ms>
+ *                          accept an unrated bot match after waiting this long
+ *                          (non-negative integer up to 4294967295; the server
+ *                          clamps it to its supported range), default none
+ *                          (wait for a human)
  *   --cancel-after <ms>    send CANCEL after entering the queue
  *
  * A ticket is single-use and issued by the API. Seed one by hand with:
@@ -40,6 +45,8 @@ import {
 
 /** CTOS_PLAYER_INFO carries a fixed 40-byte UTF-16LE name field. */
 const PLAYER_INFO_NAME_BYTES = 40;
+/** The bot-fallback delay travels as a uint32 on the wire. */
+const MAX_UINT32 = 0xffffffff;
 /** Ranked is the only mode the queue accepts today. */
 const RANKED_MODE = 0;
 const FORMAT_TO_CODE: Readonly<Record<MatchmakingFormat, number>> = Object.freeze({
@@ -82,11 +89,17 @@ function authFrame(ticket: string): Buffer {
 	return frame(MATCHMAKING_AUTH, body);
 }
 
-function enterFrame(format: MatchmakingFormat): Buffer {
-	const body = Buffer.alloc(4);
+export function enterFrame(
+	format: MatchmakingFormat,
+	botFallbackAfterMs: number | undefined,
+): Buffer {
+	const body = Buffer.alloc(botFallbackAfterMs === undefined ? 4 : 8);
 	body.writeUInt8(FORMAT_TO_CODE[format], 0);
 	body.writeUInt8(RANKED_MODE, 1);
 	body.writeUInt16LE(mercuryConfig.version, 2);
+	if (botFallbackAfterMs !== undefined) {
+		body.writeUInt32LE(botFallbackAfterMs, 4);
+	}
 
 	return frame(MATCHMAKING_ENTER, body);
 }
@@ -97,11 +110,12 @@ interface Options {
 	name: string;
 	ticket: string;
 	format: MatchmakingFormat;
+	botFallbackAfterMs: number | undefined;
 	timeoutMs: number;
 	cancelAfterMs: number | null;
 }
 
-function parseOptions(argv: readonly string[]): Options {
+export function parseOptions(argv: readonly string[]): Options {
 	const flags = new Map<string, string>();
 	for (let i = 0; i < argv.length; i += 2) {
 		const flag = argv[i];
@@ -127,12 +141,21 @@ function parseOptions(argv: readonly string[]): Options {
 
 	const cancelAfter = flags.get("cancel-after");
 
+	const botFallback = flags.get("bot-fallback-after-ms");
+	if (
+		(botFallback === undefined && argv.includes("--bot-fallback-after-ms")) ||
+		(botFallback !== undefined && (!/^\d+$/.test(botFallback) || Number(botFallback) > MAX_UINT32))
+	) {
+		throw new Error("--bot-fallback-after-ms must be a non-negative integer up to 4294967295");
+	}
+
 	return {
 		host: flags.get("host") ?? "127.0.0.1",
 		port: Number(flags.get("port") ?? 7711),
 		name,
 		ticket,
 		format,
+		botFallbackAfterMs: botFallback === undefined ? undefined : Number(botFallback),
 		timeoutMs: Number(flags.get("timeout") ?? 60_000),
 		cancelAfterMs: cancelAfter !== undefined ? Number(cancelAfter) : null,
 	};
@@ -163,11 +186,7 @@ export function takeFrames(buffer: Buffer): { frames: WireFrame[]; consumed: num
 	return { frames: taken, consumed: offset };
 }
 
-export function describeStatus(body: Buffer): {
-	state: string;
-	waitedMs: number;
-	reason: string;
-} {
+export function describeStatus(body: Buffer): { state: string; waitedMs: number; reason: string } {
 	if (body.length !== 6) {
 		return { state: `malformed(${body.length}B)`, waitedMs: 0, reason: "none" };
 	}
@@ -236,7 +255,7 @@ function run(options: Options): void {
 			);
 			if (status.state === ("authenticated" satisfies MatchmakingStatusState) && !entered) {
 				entered = true;
-				socket.write(enterFrame(options.format));
+				socket.write(enterFrame(options.format, options.botFallbackAfterMs));
 				console.log(
 					`[harness] sent ENTER format=${options.format} version=${mercuryConfig.version}`,
 				);

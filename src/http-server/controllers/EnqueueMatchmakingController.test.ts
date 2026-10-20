@@ -82,6 +82,42 @@ describe("EnqueueMatchmakingController", () => {
 		expect(MatchmakingQueue.getInstance().get(body.ticketId)).toBeDefined();
 	});
 
+	it("leaves the queued entry without a fallback delay when the field is absent", async () => {
+		const out = await run(
+			{ format: "tcg", queue: "ranked", ticket: "the-ticket" },
+			makeTickets("user-1"),
+		);
+
+		const body = out.body() as { ticketId: string };
+		expect(MatchmakingQueue.getInstance().get(body.ticketId)?.botFallbackAfterMs).toBeUndefined();
+	});
+
+	it("carries botFallbackAfterMs onto the queued entry", async () => {
+		const out = await run(
+			{ format: "tcg", queue: "ranked", ticket: "the-ticket", botFallbackAfterMs: 90_000 },
+			makeTickets("user-1"),
+		);
+
+		expect(out.status()).toBe(200);
+		const body = out.body() as { ticketId: string };
+		expect(MatchmakingQueue.getInstance().get(body.ticketId)?.botFallbackAfterMs).toBe(90_000);
+	});
+
+	it.each([
+		["a string", "90000"],
+		["a boolean", true],
+		["a non-integer", 45_000.5],
+		["a negative number", -1],
+		["null", null],
+	])("rejects botFallbackAfterMs given as %s (400)", async (_label, value) => {
+		const out = await run(
+			{ format: "tcg", queue: "ranked", ticket: "the-ticket", botFallbackAfterMs: value },
+			makeTickets("user-1"),
+		);
+
+		expect(out.status()).toBe(400);
+	});
+
 	it("rejects a request with a missing/invalid schema (400)", async () => {
 		const out = await run({ format: "tcg" }, makeTickets("user-1"));
 		expect(out.status()).toBe(400);

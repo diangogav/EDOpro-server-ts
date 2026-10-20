@@ -74,6 +74,7 @@ export class MatchmakingConnectionHandler {
 			format: result.value.format,
 			mode: result.value.mode,
 			clientVersion: result.value.clientVersion,
+			botFallbackAfterMs: result.value.botFallbackAfterMs,
 		});
 	};
 
