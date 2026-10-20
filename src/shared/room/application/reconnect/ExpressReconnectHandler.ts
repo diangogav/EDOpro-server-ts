@@ -14,6 +14,7 @@ import { redactSecret } from "@shared/logger/domain/redactSecret";
 const REJECTION_REASON: Record<ReconnectOutcome, string> = {
 	unknown_token: "no player found for token",
 	room_not_found: "room not found for token",
+	identity_missing: "no account on the connection for the seat owner's token",
 	identity_mismatch: "account does not match seat owner for token",
 	forwarded: "forwarded token",
 	matched: "matched token",
@@ -54,8 +55,9 @@ export class ExpressReconnectHandler {
 		const identityChecked = client !== null && this.checksIdentity(client);
 
 		if (client && entry) {
-			if (!this.identityMatches(client)) {
-				this.reject(token, client, identityChecked, "identity_mismatch");
+			const identityOutcome = this.identityOutcome(client);
+			if (identityOutcome) {
+				this.reject(token, client, identityChecked, identityOutcome);
 
 				return;
 			}
@@ -101,19 +103,23 @@ export class ExpressReconnectHandler {
 		this.socket.destroy();
 	}
 
-	// A verified seat belongs to one account: when the reconnecting socket proved
-	// an account through its handshake ticket, it must be that same account.
-	// Sockets without a resolved identity (TCP, ticketless WS) are not checked.
+	// A verified seat belongs to one account: the reconnecting socket must have
+	// proven that same account (handshake ticket on WS, MATCHMAKING_AUTH on TCP).
+	// A socket without a resolved identity is refused, including when the ticket
+	// store was unavailable at handshake. Non-verified seats are token-only.
 	private checksIdentity(client: YgoClient): boolean {
-		return client.credential?.kind === "verified" && Boolean(this.socket.resolvedUserId);
+		return client.credential?.kind === "verified";
 	}
 
-	private identityMatches(client: YgoClient): boolean {
+	private identityOutcome(client: YgoClient): "identity_missing" | "identity_mismatch" | null {
 		const credential = client.credential;
-		if (credential?.kind !== "verified" || !this.socket.resolvedUserId) {
-			return true;
+		if (credential?.kind !== "verified") {
+			return null;
+		}
+		if (!this.socket.resolvedUserId) {
+			return "identity_missing";
 		}
 
-		return credential.userId === this.socket.resolvedUserId;
+		return credential.userId === this.socket.resolvedUserId ? null : "identity_mismatch";
 	}
 }

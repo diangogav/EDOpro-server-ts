@@ -10,6 +10,7 @@ export type ReconnectOutcome =
 	| "matched" // by-name seat found
 	| "unknown_token"
 	| "room_not_found"
+	| "identity_missing" // verified seat, but the connection carries no account
 	| "identity_mismatch";
 
 // One structured info line per reconnect attempt, so reconnect health can be

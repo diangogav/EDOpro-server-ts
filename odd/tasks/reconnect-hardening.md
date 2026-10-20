@@ -17,7 +17,7 @@ old socket never closed on takeover, and TCP half-open detection relying on OS k
 - Token STOC still sent after every successful reconnect (same value). Web client relies on it to
   refresh its stored session and clear the reconnecting state.
 - By-name reconnect for non-verified seats: unchanged.
-- Ticketless sockets (TCP, custom rooms, WindBot, EDOPro, MDPro4) keep working as today.
+- Ticketless sockets keep working for non-verified seats; verified seats need the owner's identity (A7).
 
 ## Contract shared with the web client
 - WebSocket close code 4001, reason "session superseded": sent to the OLD socket when a reconnect
@@ -35,6 +35,9 @@ PR A — token and identity
       instead of rejecting; an invalid/consumed ticket is still rejected.
 - [x] A6 Structured reconnect telemetry log: path (token / by-name), outcome, client transport,
       verified or not, redacted token prefix.
+- [x] A7 Require identity for verified seats: a verified seat's token reconnect needs a socket
+      whose resolvedUserId equals the seat owner (outcomes identity_missing / identity_mismatch);
+      non-verified seats stay token-only. Route: inline.
 PR B — liveness and settlement
 - [ ] B1 Verify mid-duel no-show settlement (ranked result recorded when the clock runs out with
       the player absent); fix if missing.
@@ -51,6 +54,7 @@ PR B — liveness and settlement
 - A5 done: `TicketConsumeResult` (consumed/invalid/unavailable) + `HandshakeTicketStore.consumeWithStatus`; Redis error, missing instance or >2000 ms => unavailable; HandshakeTicketAuthenticator returns `unavailable`, WSYGOProServer warns and proceeds anonymous. `TicketRepository.consume` (matchmaking, enqueue) stays fail-closed. RED: Redis/authenticator/server suites failed; GREEN 297 tests across ticket, socket-server, http-server, matchmaking.
 - A6 done: `logReconnectAttempt` emits "reconnect.attempt" {path, outcome, transport, verified, identityChecked, tokenPrefix}; token path in ExpressReconnectHandler (outcomes forwarded/unknown_token/room_not_found/identity_mismatch), by-name at the 4 YGOPro + 4 EDOpro mid-duel join doors (outcome matched); `ISocket.transport` added. RED: handler telemetry tests failed; GREEN. Full: npm test 238 suites / 2314 tests pass, tsc and lint clean.
 - A-review follow-ups: `frameForLog` walks every frame in a chunk (partial tail prints `<partial len=N>`); reject log names its outcome; identity predicate simplified; DuelingState/RedisTicketRepository comments fixed; by-name `identityChecked` documented. RED: 3 frameForLog tests failed; GREEN: reconnect/logger suites pass.
+- A7 done: `ExpressReconnectHandler.identityOutcome` (verified seat + no/other resolvedUserId => failure ack + destroy, `identity_missing` added to `ReconnectOutcome`). Ticketless-reconnect test inverted; telemetry test added. TCP: `MatchmakingReconnectIdentity.test.ts` proves 0xfb, awaited, then 0xfd succeeds; pipelined 0xfb+0xfd loses the race (AUTH runs async via `void authenticate.execute`), documented in docs/room-reentry.md. RED: 2 handler tests failed; GREEN: 30 tests. Constraint change: ticketless sockets no longer reconnect verified seats.
 
 ## Superseded
 odd/tasks/reconnect-token-overlap.md (60s overlap + presented token) is replaced by A1.

@@ -104,8 +104,22 @@ describe("ExpressReconnectHandler (generic)", () => {
 			expect(room.emit).not.toHaveBeenCalled();
 		});
 
-		it("accepts a verified seat from a ticketless socket", () => {
+		it("rejects a verified seat when the socket carries no account", () => {
 			TokenIndex.getInstance().register("tok", verifiedClient("u1"), 1);
+
+			emitReconnect(reconnectMessage("tok"));
+
+			expect(socket.send).toHaveBeenCalledWith(FAILURE_ACK);
+			expect(socket.destroy).toHaveBeenCalled();
+			expect(room.emit).not.toHaveBeenCalled();
+		});
+
+		it("accepts a non-verified seat from a ticketless socket", () => {
+			const guest = {
+				name: "G",
+				credential: { kind: "guest", name: "G" },
+			} as unknown as YgoClient;
+			TokenIndex.getInstance().register("tok", guest, 1);
 
 			emitReconnect(reconnectMessage("tok"));
 
@@ -151,6 +165,29 @@ describe("ExpressReconnectHandler (generic)", () => {
 					tokenPrefix: "012345…",
 				},
 			]);
+		});
+
+		it("logs a verified seat reconnecting without an account as identity_missing", () => {
+			const verified = {
+				name: "Alice",
+				isStrongAuth: true,
+				credential: { kind: "verified", userId: "u1" },
+			} as unknown as YgoClient;
+			TokenIndex.getInstance().register("aaaaaaaaaaaaaaaa", verified, 1);
+
+			emitReconnect(reconnectMessage("aaaaaaaaaaaaaaaa"));
+
+			expect(attemptLogs()).toEqual([
+				expect.objectContaining({
+					outcome: "identity_missing",
+					verified: true,
+					identityChecked: true,
+					tokenPrefix: "aaaaaa…",
+				}),
+			]);
+			expect(logger.info).toHaveBeenCalledWith(
+				"Express reconnect: no account on the connection for the seat owner's token aaaaaa\u2026",
+			);
 		});
 
 		it("logs unknown tokens and identity mismatches with their outcome", () => {

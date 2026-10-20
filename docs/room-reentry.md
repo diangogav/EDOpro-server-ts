@@ -48,15 +48,33 @@ The strong path, used by the evolution client. When a player is seated, the
 server issues a **reconnection token**
 (`src/shared/room/application/reconnect/ReconnectionTokenIssuer.ts`):
 
-- 128-bit (`crypto.randomBytes(16)`), single-use (rotated on every reconnect),
+- 128-bit (`crypto.randomBytes(16)`), a fixed value per match (re-sent unchanged after every reconnect),
   bound to one room id, revoked when the room tears down.
 - The client reconnects by sending a connection-level `0xfd` frame with the
   token; the handler resolves the room from the token entry itself
   (`ExpressReconnectHandler.ts`), never from client-supplied room data.
 
 Because the token is proof of a prior admitted seat, this path **bypasses the
-join-command gates entirely** — including the watch stamp and the identity
-check below. Possessing the token *is* the authorization. It is also **not**
+join-command gates entirely** — including the watch stamp and the by-name
+identity check below. For seats that are not verified, possessing the token
+*is* the authorization.
+
+**Verified seats also require the owner's identity.** When the seat's client
+credential is `verified`, the reconnecting socket must carry
+`resolvedUserId` equal to that account; otherwise the handler sends the failure
+ack and destroys the socket (outcomes `identity_missing` / `identity_mismatch`,
+logged redacted in `reconnect.attempt` with `identityChecked: true`). Seats
+that are not verified (custom rooms, WindBot, EDOPro, guests) stay token-only.
+
+- WebSocket: open the new socket with a fresh `?ticket=`; the handshake sets
+  `resolvedUserId`. If the ticket store is unavailable the socket degrades to
+  anonymous (it cannot prove an account), so a verified seat cannot
+  token-reconnect until Redis is back.
+- TCP: the client must send `MATCHMAKING_AUTH` (0xfb) with a valid ticket on the
+  new connection and **wait for its `authenticated` STATUS reply** before
+  sending 0xfd. Authentication is asynchronous and the two frames are
+  dispatched back to back, so a pipelined 0xfb+0xfd reaches the reconnect
+  handler before the identity is set and is refused. It is also **not**
 subject to the join rate limit (§7): a flapping mobile client resuming its own
 duel is never throttled.
 
