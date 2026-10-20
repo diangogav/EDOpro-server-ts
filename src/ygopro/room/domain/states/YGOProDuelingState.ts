@@ -53,6 +53,8 @@ import {
 import { EvrpSerializer } from "../replay/EvrpSerializer";
 import { GameOverDomainEvent } from "@shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
+import { logReconnectAttempt } from "@shared/room/application/reconnect/logReconnectAttempt";
+import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 export class YGOProDuelingState extends YGOProRoomState {
 	private readonly eventBus: EventBus;
@@ -306,6 +308,15 @@ export class YGOProDuelingState extends YGOProRoomState {
 				return;
 			}
 
+			// Ranked rooms bind an external seat to the joiner's account, so the
+			// server compared the socket's account against the seat owner only there.
+			logReconnectAttempt(this.logger, {
+				path: "by-name",
+				outcome: "matched",
+				socket,
+				client: playerAlreadyInRoom,
+				identityChecked: this.room.ranked && playerAlreadyInRoom.credential?.kind === "external",
+			});
 			this.room.reconnect(playerAlreadyInRoom, socket);
 		});
 	}
@@ -371,7 +382,7 @@ export class YGOProDuelingState extends YGOProRoomState {
 			(client) => client instanceof YGOProClient,
 		) as YGOProClient | null;
 		if (!player) {
-			this.logger.info(`EXPRESS_RECONNECT: no player for token ${token}`);
+			this.logger.info(`EXPRESS_RECONNECT: no player for token ${redactSecret(token)}`);
 			socket.send(ReconnectionAckMessage.failure());
 			socket.destroy();
 			return;
@@ -384,8 +395,8 @@ export class YGOProDuelingState extends YGOProRoomState {
 		room.reconnect(player, socket);
 		// 3. Replay the live board state.
 		await this.resyncBoard(player);
-		// 4. Rotate the token (single-use) and finish.
-		player.sendMessageToClient(ReconnectionTokenIssuer.rotate(player, room.id));
+		// 4. Re-send the same token and finish.
+		player.sendMessageToClient(ReconnectionTokenIssuer.resend(player, room.id));
 		player.clearReconnecting();
 	}
 

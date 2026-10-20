@@ -155,12 +155,14 @@ describe("WSYGOProServer", () => {
 			expect(mockClientSocket.close).toHaveBeenCalled();
 		});
 
-		it("closes the socket when Redis is unavailable (consume returns null fail-closed)", async () => {
-			handshakeAuth.authenticate.mockResolvedValue({ status: "rejected" });
+		it("keeps the socket open as anonymous and warns when the ticket store is unavailable", async () => {
+			handshakeAuth.authenticate.mockResolvedValue({ status: "unavailable" });
 
 			await connectionCallback(makeRawSocket(), makeRequest());
 
-			expect(mockClientSocket.close).toHaveBeenCalled();
+			expect(mockClientSocket.close).not.toHaveBeenCalled();
+			expect(mockClientSocket.resolvedUserId).toBeUndefined();
+			expect(logger.warn).toHaveBeenCalled();
 		});
 
 		it("does not call authenticate and does not close when Authorization header is absent", async () => {

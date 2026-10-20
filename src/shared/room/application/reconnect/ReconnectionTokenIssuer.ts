@@ -23,15 +23,16 @@ export class ReconnectionTokenIssuer {
 		return ReconnectionTokenClientMessage.create(token);
 	}
 
-	// Invalidate the client's current token (if any) and issue a new one. Called
-	// after every successful reconnection so a token is single-use.
-	static rotate(client: YgoClient, roomId: number): Buffer {
-		const oldToken = client.reconnectionToken;
-		if (oldToken) {
-			TokenIndex.getInstance().unregister(oldToken);
+	// Frame carrying the client's existing token. The token is fixed for the whole
+	// match: every successful reconnection re-sends the same value so the client
+	// can refresh its stored session. Issues one only if the client has none.
+	static resend(client: YgoClient, roomId: number): Buffer {
+		const token = client.reconnectionToken;
+		if (!token) {
+			return this.issue(client, roomId);
 		}
 
-		return this.issue(client, roomId);
+		return ReconnectionTokenClientMessage.create(token);
 	}
 
 	// Revoke the client's current token: de-register it from the global index and

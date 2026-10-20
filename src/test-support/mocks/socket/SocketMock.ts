@@ -3,6 +3,7 @@ import { faker } from "@faker-js/faker";
 import { ISocket } from "@shared/socket/domain/ISocket";
 
 export class SocketMock implements ISocket {
+	readonly transport = "tcp" as const;
 	id = faker.string.uuid();
 	roomId = 0;
 	resolvedUserId?: string;
@@ -30,6 +31,10 @@ export class SocketMock implements ISocket {
 	}
 
 	closeGracefully(_timeoutMs: number): void {
+		/* no-op */
+	}
+
+	closeSuperseded(): void {
 		/* no-op */
 	}
 

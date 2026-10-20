@@ -1,6 +1,7 @@
 import { randomUUID as uuidv4 } from "crypto";
 import { EventEmitter } from "stream";
 
+import { frameForLog } from "@shared/logger/domain/frameForLog";
 import { Logger } from "@shared/logger/domain/Logger";
 import { Commands } from "@shared/messages/Commands";
 import { DisconnectHandler } from "@shared/room/application/DisconnectHandler";
@@ -87,7 +88,7 @@ export class YGOProConnectionHandler {
 
 		socket.onMessage(async (data: Buffer) => {
 			options.onInboundFrame?.();
-			connectionLogger.debug(`Incoming message: ${data.toString("hex")}`);
+			connectionLogger.debug(`Incoming message: ${frameForLog(data)}`);
 			await ready;
 
 			if (data.length >= 3 && data.readUInt8(2) === Commands.PING) {

@@ -147,5 +147,24 @@ describe("YGOProConnectionHandler", () => {
 			expect(sent.readUInt8(3)).toBe(0x01);
 			expect(socket.destroy).toHaveBeenCalledTimes(1);
 		});
+
+		it("does not dispatch a reconnect frame until the handshake auth gate resolves", async () => {
+			let resolveAuth!: (proceed: boolean) => void;
+			const authenticate = jest.fn(
+				() => new Promise<boolean>((resolve) => (resolveAuth = resolve)),
+			);
+			const socket = makeSocket();
+			const pump = registerPump(socket);
+			new YGOProConnectionHandler(logger, roomFinder).handle(socket, { authenticate });
+
+			const pumped = pump(buildFrame(Commands.RECONNECT, Buffer.from("unknown-token", "utf8")));
+			await Promise.resolve();
+			expect(socket.send).not.toHaveBeenCalled();
+
+			resolveAuth(true);
+			await pumped;
+
+			expect(socket.send).toHaveBeenCalledTimes(1);
+		});
 	});
 });

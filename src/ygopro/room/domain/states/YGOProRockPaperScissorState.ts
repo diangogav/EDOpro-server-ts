@@ -14,6 +14,8 @@ import { Team } from "@shared/room/Team";
 import { YGOProRoomState } from "../YGOProRoomState";
 import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
+import { logReconnectAttempt } from "@shared/room/application/reconnect/logReconnectAttempt";
+import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 export class YGOProRockPaperScissorState extends YGOProRoomState {
 	private handResult = [0, 0];
@@ -52,7 +54,7 @@ export class YGOProRockPaperScissorState extends YGOProRoomState {
 			(client) => client instanceof YGOProClient,
 		) as YGOProClient | null;
 		if (!player) {
-			this.logger.info(`EXPRESS_RECONNECT: no player for token ${token}`);
+			this.logger.info(`EXPRESS_RECONNECT: no player for token ${redactSecret(token)}`);
 			socket.send(ReconnectionAckMessage.failure());
 			socket.destroy();
 			return;
@@ -69,7 +71,7 @@ export class YGOProRockPaperScissorState extends YGOProRoomState {
 			player.sendMessageToClient(room.messageSender.selectHandMessage());
 		}
 
-		player.sendMessageToClient(ReconnectionTokenIssuer.rotate(player, room.id));
+		player.sendMessageToClient(ReconnectionTokenIssuer.resend(player, room.id));
 		player.clearReconnecting();
 	}
 
@@ -135,6 +137,13 @@ export class YGOProRockPaperScissorState extends YGOProRoomState {
 				return;
 			}
 
+			logReconnectAttempt(this.logger, {
+				path: "by-name",
+				outcome: "matched",
+				socket,
+				client: playerAlreadyInRoom,
+				identityChecked: room.ranked && playerAlreadyInRoom.credential?.kind === "external",
+			});
 			room.reconnect(playerAlreadyInRoom, socket);
 
 			playerAlreadyInRoom.sendMessageToClient(room.messageSender.duelStartMessage());

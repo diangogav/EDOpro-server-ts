@@ -11,7 +11,7 @@ import { YGOProRoom } from "./YGOProRoom";
 describe("YGOProRoom.reconnect — abandon notice", () => {
 	const makeClient = (team: number, position: number) => {
 		const client = Object.create(YGOProClient.prototype) as YGOProClient;
-		let socket = { removeAllListeners: jest.fn() };
+		let socket = { removeAllListeners: jest.fn(), closeSuperseded: jest.fn() };
 		Object.defineProperty(client, "socket", { get: () => socket, configurable: true });
 		Object.defineProperty(client, "team", { get: () => team, configurable: true });
 		Object.defineProperty(client, "position", { get: () => position, configurable: true });
@@ -56,7 +56,10 @@ describe("YGOProRoom.reconnect — abandon notice", () => {
 		const waiting = makeClient(Team.OPPONENT, 1);
 		const room = makeRoom(state, [returning, waiting]);
 
-		room.reconnect(returning, { removeAllListeners: jest.fn() } as never);
+		room.reconnect(returning, {
+			removeAllListeners: jest.fn(),
+			closeSuperseded: jest.fn(),
+		} as never);
 
 		expect(waiting.sendMessageToClient).toHaveBeenCalledWith(
 			MatchAbandonClientMessage.opponentReconnected(),
@@ -68,8 +71,55 @@ describe("YGOProRoom.reconnect — abandon notice", () => {
 		const waiting = makeClient(Team.OPPONENT, 1);
 		const room = makeRoom(DuelState.DUELING, [returning, waiting]);
 
-		room.reconnect(returning, { removeAllListeners: jest.fn() } as never);
+		room.reconnect(returning, {
+			removeAllListeners: jest.fn(),
+			closeSuperseded: jest.fn(),
+		} as never);
 
 		expect(waiting.sendMessageToClient).not.toHaveBeenCalled();
+	});
+
+	describe("takeover", () => {
+		const oldSocketOf = (client: YGOProClient) =>
+			client.socket as unknown as {
+				removeAllListeners: jest.Mock;
+				closeSuperseded: jest.Mock;
+				closed?: boolean;
+			};
+
+		it("closes the previous socket as superseded after attaching the new one", () => {
+			const returning = makeClient(Team.PLAYER, 0);
+			const oldSocket = oldSocketOf(returning);
+			const calls: string[] = [];
+			oldSocket.removeAllListeners.mockImplementation(() => calls.push("detach"));
+			oldSocket.closeSuperseded.mockImplementation(() => calls.push("close"));
+			(returning.setSocket as jest.Mock).mockImplementation(() => calls.push("attach"));
+			const room = makeRoom(DuelState.DUELING, [returning]);
+
+			room.reconnect(returning, { removeAllListeners: jest.fn() } as never);
+
+			expect(calls).toEqual(["detach", "attach", "close"]);
+		});
+
+		it("leaves an already closed previous socket alone", () => {
+			const returning = makeClient(Team.PLAYER, 0);
+			const oldSocket = oldSocketOf(returning);
+			oldSocket.closed = true;
+			const room = makeRoom(DuelState.DUELING, [returning]);
+
+			room.reconnect(returning, { removeAllListeners: jest.fn() } as never);
+
+			expect(oldSocket.closeSuperseded).not.toHaveBeenCalled();
+		});
+
+		it("never closes the socket that is taking over", () => {
+			const returning = makeClient(Team.PLAYER, 0);
+			const oldSocket = oldSocketOf(returning);
+			const room = makeRoom(DuelState.DUELING, [returning]);
+
+			room.reconnect(returning, oldSocket as never);
+
+			expect(oldSocket.closeSuperseded).not.toHaveBeenCalled();
+		});
 	});
 });

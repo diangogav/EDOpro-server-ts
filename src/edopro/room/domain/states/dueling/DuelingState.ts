@@ -34,6 +34,8 @@ import { Reconnect } from "../../../application/Reconnect";
 import { DuelFinishReason } from "../../DuelFinishReason";
 import { Room } from "../../Room";
 import { RoomState } from "../../RoomState";
+import { logReconnectAttempt } from "@shared/room/application/reconnect/logReconnectAttempt";
+import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 interface Message {
 	type: string;
@@ -212,9 +214,9 @@ export class DuelingState extends RoomState {
 
 		this.logger.info("Starting Duel");
 
-		// The reconnection token is issued once at match start (WaitingState), not
-		// per-game, so it survives across RPS, side-decking and every duel in a
-		// match. It is only rotated after each successful reconnection.
+		// The reconnection token is issued once per match, at match start
+		// (WaitingState). It never changes mid-match: each reconnection re-sends
+		// the same value.
 		const core = spawn(
 			`./core/CoreIntegrator`,
 			[
@@ -403,9 +405,9 @@ export class DuelingState extends RoomState {
 
 		player.sendMessage(CatchUpClientMessage.create({ catchingUp: false }));
 
-		// Rotate the token after a successful reconnection (single-use).
+		// Re-send the same token so the client refreshes its stored session.
 		player.clearReconnecting();
-		player.sendMessage(ReconnectionTokenIssuer.rotate(player, this.room.id));
+		player.sendMessage(ReconnectionTokenIssuer.resend(player, this.room.id));
 
 		if (player.cache) {
 			this.logger.info(`Sending last cached message to ${player.name} after reconnection`);
@@ -615,7 +617,7 @@ export class DuelingState extends RoomState {
 	): Promise<void> {
 		this.logger.info("DUELING_STATE: EXPRESS_RECONNECT - START");
 		const token = message.data.toString("utf8");
-		this.logger.info(`DUELING_STATE: Token received: ${token}`);
+		this.logger.info(`DUELING_STATE: Token received: ${redactSecret(token)}`);
 
 		const player = ReconnectionTokenIssuer.resolve(
 			token,
@@ -623,7 +625,9 @@ export class DuelingState extends RoomState {
 			(client) => client instanceof Client,
 		) as Client | null;
 		if (!player) {
-			this.logger.info(`DUELING_STATE: Player not found for token ${token} or room mismatch`);
+			this.logger.info(
+				`DUELING_STATE: Player not found for token ${redactSecret(token)} or room mismatch`,
+			);
 			socket.send(ReconnectionAckMessage.failure());
 			socket.destroy();
 			return;
@@ -729,6 +733,13 @@ export class DuelingState extends RoomState {
 			return;
 		}
 
+		logReconnectAttempt(this.logger, {
+			path: "by-name",
+			outcome: "matched",
+			socket,
+			client: reconnectingPlayer,
+			identityChecked: false,
+		});
 		await this.reconnect.run(playerInfoMessage, reconnectingPlayer, joinMessage, socket, room);
 	}
 

@@ -1,5 +1,7 @@
+import { EventEmitter } from "events";
 import WebSocket from "ws";
 
+import { SUPERSEDED_CLOSE_TIMEOUT_MS } from "./sessionSuperseded";
 import { WebSocketClientSocket } from "./WebSocketClientSocket";
 
 jest.mock("ws");
@@ -109,5 +111,81 @@ describe("WebSocketClientSocket", () => {
 			expect(raw.terminate).toHaveBeenCalled();
 			expect(raw.close).not.toHaveBeenCalled();
 		});
+	});
+});
+
+describe("WebSocketClientSocket.closeSuperseded", () => {
+	beforeEach(() => jest.useFakeTimers());
+	afterEach(() => jest.useRealTimers());
+
+	const makeEmitterSocket = () => {
+		const raw = new EventEmitter() as EventEmitter & {
+			readyState: number;
+			close: jest.Mock;
+			terminate: jest.Mock;
+			send: jest.Mock;
+		};
+		raw.readyState = WebSocket.OPEN;
+		raw.send = jest.fn();
+		raw.close = jest.fn((_code?: number, _reason?: string) => {
+			raw.readyState = WebSocket.CLOSING;
+		});
+		raw.terminate = jest.fn();
+		return raw;
+	};
+
+	it("closes with code 4001 and reason 'session superseded'", () => {
+		const raw = makeEmitterSocket();
+
+		new WebSocketClientSocket(raw as unknown as WebSocket).closeSuperseded();
+
+		expect(raw.close).toHaveBeenCalledWith(4001, "session superseded");
+		expect(raw.terminate).not.toHaveBeenCalled();
+	});
+
+	it("does not run disconnect handling when the old socket finally closes", () => {
+		const raw = makeEmitterSocket();
+		const socket = new WebSocketClientSocket(raw as unknown as WebSocket);
+		const onClose = jest.fn();
+		const onMessage = jest.fn();
+		socket.onClose(onClose);
+		socket.onMessage(onMessage);
+
+		socket.closeSuperseded();
+		raw.emit("close");
+		raw.emit("message", Buffer.from([1]));
+
+		expect(onClose).not.toHaveBeenCalled();
+		expect(onMessage).not.toHaveBeenCalled();
+	});
+
+	it("reports closed immediately", () => {
+		const raw = makeEmitterSocket();
+		const socket = new WebSocketClientSocket(raw as unknown as WebSocket);
+
+		socket.closeSuperseded();
+
+		expect(socket.closed).toBe(true);
+	});
+
+	it("terminates only after the bounded fallback when the peer never completes the close", () => {
+		const raw = makeEmitterSocket();
+		new WebSocketClientSocket(raw as unknown as WebSocket).closeSuperseded();
+
+		jest.advanceTimersByTime(SUPERSEDED_CLOSE_TIMEOUT_MS - 1);
+		expect(raw.terminate).not.toHaveBeenCalled();
+
+		jest.advanceTimersByTime(1);
+		expect(raw.terminate).toHaveBeenCalledTimes(1);
+	});
+
+	it("never terminates once the close event arrived", () => {
+		const raw = makeEmitterSocket();
+		new WebSocketClientSocket(raw as unknown as WebSocket).closeSuperseded();
+
+		raw.emit("close");
+		jest.advanceTimersByTime(SUPERSEDED_CLOSE_TIMEOUT_MS * 2);
+
+		expect(raw.terminate).not.toHaveBeenCalled();
 	});
 });

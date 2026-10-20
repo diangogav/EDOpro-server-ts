@@ -23,6 +23,8 @@ export interface ISocket {
 	 * stamp for room A must never affect any other room — readers must always
 	 * compare it against their own room id. */
 	watchForRoomId?: number;
+	/** Wire transport of this connection, for diagnostics. */
+	readonly transport: "ws" | "tcp";
 	send(message: Buffer): void;
 	onMessage(callback: (message: Buffer) => void): void;
 	onClose(callback: () => void): void;
@@ -35,6 +37,14 @@ export interface ISocket {
 	 * never re-enters disconnect handling. `closed` reads true from this call on.
 	 */
 	closeGracefully(timeoutMs: number): void;
+	/**
+	 * Closes a socket whose seat was taken over by a newer connection. WebSocket
+	 * peers receive close code 4001 "session superseded" (clients must not
+	 * auto-reconnect on it); TCP peers are ended. Detaches listeners first, so the
+	 * close never re-enters disconnect handling, and falls back to a hard destroy
+	 * after a bounded wait. `closed` reads true from this call on.
+	 */
+	closeSuperseded(): void;
 	remoteAddress: string | undefined;
 	closed: boolean;
 	removeAllListeners(): void;

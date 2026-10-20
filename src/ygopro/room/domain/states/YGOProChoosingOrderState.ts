@@ -13,6 +13,8 @@ import { findMidDuelReconnectingPlayer } from "@shared/room/domain/findMidDuelRe
 import { TurnPlayerResult, YGOProCtosTpResult, YGOProStocDuelStart } from "ygopro-msg-encode";
 import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
+import { logReconnectAttempt } from "@shared/room/application/reconnect/logReconnectAttempt";
+import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 export class YGOProChoosingOrderState extends YGOProRoomState {
 	constructor(
@@ -51,7 +53,7 @@ export class YGOProChoosingOrderState extends YGOProRoomState {
 			(client) => client instanceof YGOProClient,
 		) as YGOProClient | null;
 		if (!player) {
-			this.logger.info(`EXPRESS_RECONNECT: no player for token ${token}`);
+			this.logger.info(`EXPRESS_RECONNECT: no player for token ${redactSecret(token)}`);
 			socket.send(ReconnectionAckMessage.failure());
 			socket.destroy();
 			return;
@@ -67,7 +69,7 @@ export class YGOProChoosingOrderState extends YGOProRoomState {
 			player.sendMessageToClient(room.messageSender.selectTpMessage());
 		}
 
-		player.sendMessageToClient(ReconnectionTokenIssuer.rotate(player, room.id));
+		player.sendMessageToClient(ReconnectionTokenIssuer.resend(player, room.id));
 		player.clearReconnecting();
 	}
 
@@ -143,6 +145,13 @@ export class YGOProChoosingOrderState extends YGOProRoomState {
 				return;
 			}
 
+			logReconnectAttempt(this.logger, {
+				path: "by-name",
+				outcome: "matched",
+				socket,
+				client: playerAlreadyInRoom,
+				identityChecked: room.ranked && playerAlreadyInRoom.credential?.kind === "external",
+			});
 			room.reconnect(playerAlreadyInRoom, socket);
 			playerAlreadyInRoom.sendMessageToClient(room.messageSender.duelStartMessage());
 			room.sendDeckCountMessage(playerAlreadyInRoom);

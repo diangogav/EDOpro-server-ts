@@ -1,3 +1,4 @@
+import { ReconnectionTokenClientMessage } from "@shared/messages/server-to-client/ReconnectionTokenClientMessage";
 import { EventEmitter } from "stream";
 import { Logger } from "@shared/logger/domain/Logger";
 import { Reconnect } from "@edopro/room/application/Reconnect";
@@ -218,7 +219,7 @@ describe("SideDeckingState", () => {
 			TokenIndex.getInstance().clear();
 		});
 
-		it("valid token: success ack + setSocket + token rotated", () => {
+		it("valid token: success ack + setSocket + token re-sent", () => {
 			TokenIndex.getInstance().register("old", mockClient, 1);
 			const message = { data: Buffer.from("old", "utf8") } as ClientMessage;
 
@@ -227,9 +228,10 @@ describe("SideDeckingState", () => {
 			expect(mockSocket.send).toHaveBeenCalledWith(SUCCESS_ACK);
 			expect(mockClient.setSocket).toHaveBeenCalled();
 			expect(mockClient.sendMessage).toHaveBeenCalled(); // DuelStart + SideDeck
-			expect(TokenIndex.getInstance().find("old")).toBeUndefined();
-			expect(mockClient.setReconnectionToken).toHaveBeenCalledWith(
-				expect.stringMatching(/^[0-9a-f]{32}$/),
+			expect(TokenIndex.getInstance().find("old")).toBeDefined();
+			expect(mockClient.setReconnectionToken).not.toHaveBeenCalled();
+			expect(mockClient.sendMessage).toHaveBeenCalledWith(
+				ReconnectionTokenClientMessage.create("old"),
 			);
 		});
 

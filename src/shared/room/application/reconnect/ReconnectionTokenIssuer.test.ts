@@ -1,3 +1,4 @@
+import { ReconnectionTokenClientMessage } from "@shared/messages/server-to-client/ReconnectionTokenClientMessage";
 import { ReconnectionTokenIssuer } from "./ReconnectionTokenIssuer";
 import { TokenIndex } from "@shared/room/domain/TokenIndex";
 import { YgoClient } from "@shared/client/domain/YgoClient";
@@ -48,29 +49,41 @@ describe("ReconnectionTokenIssuer", () => {
 		});
 	});
 
-	describe("rotate", () => {
-		it("invalidates the previous token and registers a fresh one", () => {
+	describe("resend", () => {
+		it("re-sends the same token and keeps it registered", () => {
 			const client = makeClient();
 			ReconnectionTokenIssuer.issue(client, 7);
-			const oldToken = client.reconnectionToken!;
+			const token = client.reconnectionToken!;
 
-			ReconnectionTokenIssuer.rotate(client, 7);
-			const newToken = client.reconnectionToken!;
+			const frame = ReconnectionTokenIssuer.resend(client, 7);
 
-			expect(newToken).not.toBe(oldToken);
-			expect(TokenIndex.getInstance().find(oldToken)).toBeUndefined();
-			expect(TokenIndex.getInstance().find(newToken)).toEqual({
+			expect(frame).toEqual(ReconnectionTokenClientMessage.create(token));
+			expect(client.reconnectionToken).toBe(token);
+			expect(TokenIndex.getInstance().find(token)).toEqual({
 				client,
 				roomId: 7,
 			});
 		});
 
-		it("issues even when the client has no previous token", () => {
+		it("returns the same frame on every call", () => {
+			const client = makeClient();
+			ReconnectionTokenIssuer.issue(client, 7);
+
+			expect(ReconnectionTokenIssuer.resend(client, 7)).toEqual(
+				ReconnectionTokenIssuer.resend(client, 7),
+			);
+		});
+
+		it("issues when the client has no token yet", () => {
 			const client = makeClient();
 
-			ReconnectionTokenIssuer.rotate(client, 3);
+			ReconnectionTokenIssuer.resend(client, 3);
 
 			expect(client.reconnectionToken).toMatch(/^[0-9a-f]{32}$/);
+			expect(TokenIndex.getInstance().find(client.reconnectionToken!)).toEqual({
+				client,
+				roomId: 3,
+			});
 		});
 	});
 

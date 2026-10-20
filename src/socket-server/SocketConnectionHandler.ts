@@ -10,6 +10,7 @@ import RoomList from "../edopro/room/infrastructure/RoomList";
 import { Client } from "../edopro/client/domain/Client";
 import { GameCreatorHandler } from "../edopro/room/application/GameCreatorHandler";
 import { JoinHandler } from "../edopro/room/application/JoinHandler";
+import { frameForLog } from "@shared/logger/domain/frameForLog";
 import { Logger } from "../shared/logger/domain/Logger";
 import { DisconnectHandler } from "../shared/room/application/DisconnectHandler";
 import { RoomFinder } from "../shared/room/application/RoomFinder";
@@ -60,9 +61,7 @@ export class SocketConnectionHandler {
 		);
 
 		socket.onMessage((data: Buffer) => {
-			connectionLogger.debug(
-				`roomId: ${socket.roomId} - Incoming message: ${data.toString("hex")}`,
-			);
+			connectionLogger.debug(`roomId: ${socket.roomId} - Incoming message: ${frameForLog(data)}`);
 
 			if (data.length >= 3) {
 				const command = data.readUInt8(2);

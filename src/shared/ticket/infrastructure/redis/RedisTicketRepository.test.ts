@@ -1,5 +1,5 @@
 import { Redis } from "@shared/db/redis/infrastructure/Redis";
-import { RedisTicketRepository } from "./RedisTicketRepository";
+import { RedisTicketRepository, TICKET_STORE_TIMEOUT_MS } from "./RedisTicketRepository";
 
 jest.mock("@shared/db/redis/infrastructure/Redis", () => ({
 	Redis: {
@@ -76,6 +76,65 @@ describe("RedisTicketRepository", () => {
 			const result = await repo.consume(VALID_UUID);
 
 			expect(result).toBeNull();
+		});
+	});
+
+	describe("consumeWithStatus()", () => {
+		it("reports a hit as consumed", async () => {
+			(Redis.getInstance as jest.Mock).mockReturnValue(makeRedisInstance("user-abc"));
+
+			await expect(repo.consumeWithStatus(VALID_UUID)).resolves.toEqual({
+				status: "consumed",
+				userId: "user-abc",
+			});
+		});
+
+		it("reports a missing or already consumed ticket as invalid", async () => {
+			(Redis.getInstance as jest.Mock).mockReturnValue(makeRedisInstance(null));
+
+			await expect(repo.consumeWithStatus(VALID_UUID)).resolves.toEqual({ status: "invalid" });
+		});
+
+		it("reports a malformed ticket as invalid without touching Redis", async () => {
+			const redisInstance = makeRedisInstance("user-xyz");
+			(Redis.getInstance as jest.Mock).mockReturnValue(redisInstance);
+
+			await expect(repo.consumeWithStatus("not-a-uuid")).resolves.toEqual({ status: "invalid" });
+			expect(redisInstance.getdel).not.toHaveBeenCalled();
+		});
+
+		it("reports a Redis error as unavailable", async () => {
+			(Redis.getInstance as jest.Mock).mockReturnValue({
+				getdel: jest.fn().mockRejectedValue(new Error("ECONNREFUSED")),
+			});
+
+			await expect(repo.consumeWithStatus(VALID_UUID)).resolves.toEqual({
+				status: "unavailable",
+			});
+		});
+
+		it("reports a missing Redis instance as unavailable", async () => {
+			(Redis.getInstance as jest.Mock).mockReturnValue(undefined);
+
+			await expect(repo.consumeWithStatus(VALID_UUID)).resolves.toEqual({
+				status: "unavailable",
+			});
+		});
+
+		it("reports a Redis call that never answers as unavailable after the timeout", async () => {
+			jest.useFakeTimers();
+			try {
+				(Redis.getInstance as jest.Mock).mockReturnValue({
+					getdel: jest.fn().mockReturnValue(new Promise(() => undefined)),
+				});
+
+				const pending = repo.consumeWithStatus(VALID_UUID);
+				await jest.advanceTimersByTimeAsync(TICKET_STORE_TIMEOUT_MS);
+
+				await expect(pending).resolves.toEqual({ status: "unavailable" });
+			} finally {
+				jest.useRealTimers();
+			}
 		});
 	});
 });

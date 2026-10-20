@@ -17,6 +17,8 @@ import { RpsChoiceCommandStrategy } from "./RpsChoiceCommandStrategy";
 import { ReconnectionTokenIssuer } from "../../../../../shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { findReconnectingPlayer } from "../../../../../shared/room/domain/findReconnectingPlayer";
 import { ReconnectionAckMessage } from "../../../../../shared/messages/server-to-client/ReconnectionAckMessage";
+import { logReconnectAttempt } from "@shared/room/application/reconnect/logReconnectAttempt";
+import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 export class RockPaperScissorState extends RoomState {
 	constructor(
@@ -64,7 +66,7 @@ export class RockPaperScissorState extends RoomState {
 			(client) => client instanceof Client,
 		) as Client | null;
 		if (!player) {
-			this.logger.info(`RockPaperScissorState: no player for token ${token}`);
+			this.logger.info(`RockPaperScissorState: no player for token ${redactSecret(token)}`);
 			socket.send(ReconnectionAckMessage.failure());
 			socket.destroy();
 			return;
@@ -80,8 +82,8 @@ export class RockPaperScissorState extends RoomState {
 			player.sendMessage(RPSChooseClientMessage.create());
 		}
 
-		// Rotate the token after a successful reconnection (single-use).
-		player.sendMessage(ReconnectionTokenIssuer.rotate(player, room.id));
+		// Re-send the same token so the client refreshes its stored session.
+		player.sendMessage(ReconnectionTokenIssuer.resend(player, room.id));
 		player.clearReconnecting();
 	}
 
@@ -130,6 +132,13 @@ export class RockPaperScissorState extends RoomState {
 			return;
 		}
 
+		logReconnectAttempt(this.logger, {
+			path: "by-name",
+			outcome: "matched",
+			socket,
+			client: reconnectingPlayer,
+			identityChecked: false,
+		});
 		await this.reconnect.run(playerInfoMessage, reconnectingPlayer, joinMessage, socket, room);
 	}
 }

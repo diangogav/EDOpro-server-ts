@@ -1,3 +1,4 @@
+import { ReconnectionTokenClientMessage } from "@shared/messages/server-to-client/ReconnectionTokenClientMessage";
 import { EventEmitter } from "stream";
 
 import { Commands } from "@shared/messages/Commands";
@@ -70,7 +71,12 @@ describe("YGOProWaitingState — reconnection token issuance at match start", ()
 		({
 			host,
 			team: host ? 0 : 1,
-			logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
+			logger: {
+				info: jest.fn(),
+				warn: jest.fn(),
+				error: jest.fn(),
+				debug: jest.fn(),
+			},
 			captain: jest.fn(),
 			sendMessageToClient: jest.fn(),
 			setReconnectionToken: jest.fn(),
@@ -179,11 +185,17 @@ describe("YGOProDuelingState.handleExpressReconnect", () => {
 	let room: jest.Mocked<YGOProRoom>;
 
 	beforeEach(() => {
-		socket = { send: jest.fn(), destroy: jest.fn() } as unknown as jest.Mocked<ISocket>;
-		room = { id: 1, reconnect: jest.fn() } as unknown as jest.Mocked<YGOProRoom>;
+		socket = {
+			send: jest.fn(),
+			destroy: jest.fn(),
+		} as unknown as jest.Mocked<ISocket>;
+		room = {
+			id: 1,
+			reconnect: jest.fn(),
+		} as unknown as jest.Mocked<YGOProRoom>;
 	});
 
-	it("reassociates the socket, replays the board and rotates the token", async () => {
+	it("reassociates the socket, replays the board and re-sends the same token", async () => {
 		const player = makeClient({ token: "tok" });
 		TokenIndex.getInstance().register("tok", player, 1);
 		const ocgCore = makeOcgCore();
@@ -195,9 +207,12 @@ describe("YGOProDuelingState.handleExpressReconnect", () => {
 		// Board re-sync (resyncBoard) was triggered end-to-end.
 		expect(ocgCore.sendStartMessageForReconnect).toHaveBeenCalledWith(player);
 		expect(ocgCore.sendReconnectTimeLimitAndResponseState).toHaveBeenCalledWith(player);
-		// Token rotated: old gone, fresh 32-hex issued.
-		expect(TokenIndex.getInstance().find("tok")).toBeUndefined();
-		expect(player.setReconnectionToken).toHaveBeenCalledWith(expect.stringMatching(HEX32));
+		// Same token re-sent, still registered.
+		expect(TokenIndex.getInstance().find("tok")).toBeDefined();
+		expect(player.setReconnectionToken).not.toHaveBeenCalled();
+		expect(player.sendMessageToClient).toHaveBeenCalledWith(
+			ReconnectionTokenClientMessage.create("tok"),
+		);
 		expect(player.clearReconnecting).toHaveBeenCalled();
 	});
 
@@ -239,7 +254,10 @@ describe("YGOProSideDeckingState.handleExpressReconnect", () => {
 	const DUEL_START = Buffer.from([0x01, 0x00, 0x05]);
 
 	beforeEach(() => {
-		socket = { send: jest.fn(), destroy: jest.fn() } as unknown as jest.Mocked<ISocket>;
+		socket = {
+			send: jest.fn(),
+			destroy: jest.fn(),
+		} as unknown as jest.Mocked<ISocket>;
 		room = {
 			id: 1,
 			reconnect: jest.fn(),
@@ -250,7 +268,7 @@ describe("YGOProSideDeckingState.handleExpressReconnect", () => {
 		} as unknown as jest.Mocked<YGOProRoom>;
 	});
 
-	it("reconnects, asks for the side deck again (not ready) and rotates the token", () => {
+	it("reconnects, asks for the side deck again (not ready) and re-sends the same token", () => {
 		const player = makeClient({ isReady: false, token: "tok" });
 		TokenIndex.getInstance().register("tok", player, 1);
 
@@ -260,8 +278,11 @@ describe("YGOProSideDeckingState.handleExpressReconnect", () => {
 		expect(room.reconnect).toHaveBeenCalledWith(player, socket);
 		expect(player.sendMessageToClient).toHaveBeenCalledWith(DUEL_START);
 		expect(player.sendMessageToClient).toHaveBeenCalledWith(CHANGE_SIDE);
-		expect(TokenIndex.getInstance().find("tok")).toBeUndefined();
-		expect(player.setReconnectionToken).toHaveBeenCalledWith(expect.stringMatching(HEX32));
+		expect(TokenIndex.getInstance().find("tok")).toBeDefined();
+		expect(player.setReconnectionToken).not.toHaveBeenCalled();
+		expect(player.sendMessageToClient).toHaveBeenCalledWith(
+			ReconnectionTokenClientMessage.create("tok"),
+		);
 		expect(player.clearReconnecting).toHaveBeenCalled();
 	});
 
@@ -302,7 +323,10 @@ describe("YGOProRockPaperScissorState.handleExpressReconnect", () => {
 	let room: jest.Mocked<YGOProRoom>;
 
 	beforeEach(() => {
-		socket = { send: jest.fn(), destroy: jest.fn() } as unknown as jest.Mocked<ISocket>;
+		socket = {
+			send: jest.fn(),
+			destroy: jest.fn(),
+		} as unknown as jest.Mocked<ISocket>;
 		room = {
 			id: 1,
 			reconnect: jest.fn(),
@@ -324,7 +348,10 @@ describe("YGOProRockPaperScissorState.handleExpressReconnect", () => {
 		expect(room.reconnect).toHaveBeenCalledWith(player, socket);
 		expect(player.sendMessageToClient).toHaveBeenCalledWith(DUEL_START);
 		expect(player.sendMessageToClient).toHaveBeenCalledWith(SELECT_HAND);
-		expect(TokenIndex.getInstance().find("tok")).toBeUndefined();
+		expect(TokenIndex.getInstance().find("tok")).toBeDefined();
+		expect(player.sendMessageToClient).toHaveBeenCalledWith(
+			ReconnectionTokenClientMessage.create("tok"),
+		);
 		expect(player.clearReconnecting).toHaveBeenCalled();
 	});
 
@@ -376,7 +403,10 @@ describe("YGOProChoosingOrderState.handleExpressReconnect", () => {
 		}) as unknown as jest.Mocked<YGOProRoom>;
 
 	beforeEach(() => {
-		socket = { send: jest.fn(), destroy: jest.fn() } as unknown as jest.Mocked<ISocket>;
+		socket = {
+			send: jest.fn(),
+			destroy: jest.fn(),
+		} as unknown as jest.Mocked<ISocket>;
 	});
 
 	it("re-prompts the turn choice when the reconnecting player is the chooser", () => {
@@ -390,7 +420,10 @@ describe("YGOProChoosingOrderState.handleExpressReconnect", () => {
 		expect(room.reconnect).toHaveBeenCalledWith(player, socket);
 		expect(player.sendMessageToClient).toHaveBeenCalledWith(DUEL_START);
 		expect(player.sendMessageToClient).toHaveBeenCalledWith(SELECT_TP);
-		expect(TokenIndex.getInstance().find("tok")).toBeUndefined();
+		expect(TokenIndex.getInstance().find("tok")).toBeDefined();
+		expect(player.sendMessageToClient).toHaveBeenCalledWith(
+			ReconnectionTokenClientMessage.create("tok"),
+		);
 	});
 
 	it("does NOT re-prompt the turn choice for the non-choosing player", () => {

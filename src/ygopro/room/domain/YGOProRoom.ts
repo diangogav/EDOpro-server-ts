@@ -903,8 +903,14 @@ export class YGOProRoom extends YgoRoom {
 	}
 
 	reconnect(player: YGOProClient, socket: ISocket): void {
-		player.socket.removeAllListeners();
+		const previousSocket = player.socket;
+		previousSocket.removeAllListeners();
 		player.setSocket(socket);
+		// A takeover while the old connection still looks open (half-open peer,
+		// second tab) must not leave it dangling: tell it the session moved on.
+		if (previousSocket !== socket && !previousSocket.closed) {
+			previousSocket.closeSuperseded();
+		}
 		player.reconnecting();
 		player.sendMessageToClient(
 			this._messageRepository.joinGameMessage(this.hostInfo, this.banListHash),

@@ -21,6 +21,8 @@ import { RoomState } from "../../RoomState";
 import { ReconnectionTokenIssuer } from "../../../../../shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { findReconnectingPlayer } from "../../../../../shared/room/domain/findReconnectingPlayer";
 import { ReconnectionAckMessage } from "../../../../../shared/messages/server-to-client/ReconnectionAckMessage";
+import { logReconnectAttempt } from "@shared/room/application/reconnect/logReconnectAttempt";
+import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 export class SideDeckingState extends RoomState {
 	constructor(
@@ -67,7 +69,9 @@ export class SideDeckingState extends RoomState {
 			(client) => client instanceof Client,
 		) as Client | null;
 		if (!player) {
-			this.logger.info(`SIDE_DECKING: Player not found for token ${token} or room mismatch`);
+			this.logger.info(
+				`SIDE_DECKING: Player not found for token ${redactSecret(token)} or room mismatch`,
+			);
 			socket.send(ReconnectionAckMessage.failure());
 			socket.destroy();
 			return;
@@ -85,8 +89,8 @@ export class SideDeckingState extends RoomState {
 		player.sendMessage(DuelStartClientMessage.create());
 		player.sendMessage(SideDeckClientMessage.create());
 
-		// Rotate the token after a successful reconnection (single-use).
-		player.sendMessage(ReconnectionTokenIssuer.rotate(player, room.id));
+		// Re-send the same token so the client refreshes its stored session.
+		player.sendMessage(ReconnectionTokenIssuer.resend(player, room.id));
 
 		player.clearReconnecting();
 	}
@@ -112,6 +116,13 @@ export class SideDeckingState extends RoomState {
 			return;
 		}
 
+		logReconnectAttempt(this.logger, {
+			path: "by-name",
+			outcome: "matched",
+			socket,
+			client: reconnectingPlayer,
+			identityChecked: false,
+		});
 		await this.reconnect.run(playerInfoMessage, reconnectingPlayer, joinMessage, socket, room);
 	}
 

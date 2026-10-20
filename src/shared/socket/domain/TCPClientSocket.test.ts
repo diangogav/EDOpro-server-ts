@@ -1,6 +1,7 @@
 import { EventEmitter } from "events";
 import { Socket } from "net";
 
+import { SUPERSEDED_CLOSE_TIMEOUT_MS } from "./sessionSuperseded";
 import { TCPClientSocket } from "./TCPClientSocket";
 
 const makeRawSocket = () => {
@@ -71,5 +72,35 @@ describe("TCPClientSocket.closeGracefully", () => {
 		jest.advanceTimersByTime(5000);
 
 		expect(raw.destroy).not.toHaveBeenCalled();
+	});
+});
+
+describe("TCPClientSocket.closeSuperseded", () => {
+	beforeEach(() => jest.useFakeTimers());
+	afterEach(() => jest.useRealTimers());
+
+	it("ends the socket and does not run disconnect handling", () => {
+		const raw = makeRawSocket();
+		const socket = new TCPClientSocket(raw as unknown as Socket);
+		const onClose = jest.fn();
+		socket.onClose(onClose);
+
+		socket.closeSuperseded();
+		raw.emit("close");
+
+		expect(raw.end).toHaveBeenCalled();
+		expect(onClose).not.toHaveBeenCalled();
+		expect(socket.closed).toBe(true);
+	});
+
+	it("destroys after the bounded fallback when the peer never closes", () => {
+		const raw = makeRawSocket();
+		new TCPClientSocket(raw as unknown as Socket).closeSuperseded();
+
+		jest.advanceTimersByTime(SUPERSEDED_CLOSE_TIMEOUT_MS - 1);
+		expect(raw.destroy).not.toHaveBeenCalled();
+
+		jest.advanceTimersByTime(1);
+		expect(raw.destroy).toHaveBeenCalledTimes(1);
 	});
 });

@@ -30,6 +30,8 @@ import {
 	YGOProStocDuelStart,
 	YGOProStocWaitingSide,
 } from "ygopro-msg-encode";
+import { logReconnectAttempt } from "@shared/room/application/reconnect/logReconnectAttempt";
+import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 const SIDE_TIMEOUT_MINUTES = config.sideTimeoutMinutes;
 const TICK_INTERVAL_MS = 60_000;
@@ -79,7 +81,7 @@ export class YGOProSideDeckingState extends YGOProRoomState {
 			(client) => client instanceof YGOProClient,
 		) as YGOProClient | null;
 		if (!player) {
-			this.logger.info(`EXPRESS_RECONNECT: no player for token ${token}`);
+			this.logger.info(`EXPRESS_RECONNECT: no player for token ${redactSecret(token)}`);
 			socket.send(ReconnectionAckMessage.failure());
 			socket.destroy();
 			return;
@@ -94,7 +96,7 @@ export class YGOProSideDeckingState extends YGOProRoomState {
 			player.sendMessageToClient(room.messageSender.changeSideMessage());
 		}
 
-		player.sendMessageToClient(ReconnectionTokenIssuer.rotate(player, room.id));
+		player.sendMessageToClient(ReconnectionTokenIssuer.resend(player, room.id));
 		player.clearReconnecting();
 	}
 
@@ -263,6 +265,13 @@ export class YGOProSideDeckingState extends YGOProRoomState {
 				return;
 			}
 
+			logReconnectAttempt(this.logger, {
+				path: "by-name",
+				outcome: "matched",
+				socket,
+				client: playerAlreadyInRoom,
+				identityChecked: room.ranked && playerAlreadyInRoom.credential?.kind === "external",
+			});
 			room.reconnect(playerAlreadyInRoom, socket);
 			playerAlreadyInRoom.sendMessageToClient(room.messageSender.duelStartMessage());
 			if (!playerAlreadyInRoom.isReady) {
