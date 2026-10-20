@@ -25,6 +25,8 @@ describe("Client", () => {
 			close: jest.fn(),
 			destroy: jest.fn(),
 			closeGracefully: jest.fn(),
+			closeSuperseded: jest.fn(),
+			transport: "tcp",
 			remoteAddress: "127.0.0.1",
 			roomId: 1,
 			closed: false,
