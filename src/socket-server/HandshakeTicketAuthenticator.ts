@@ -1,20 +1,30 @@
 import { IncomingMessage } from "http";
 
-import { TicketRepository } from "../shared/ticket/domain/TicketRepository";
+import { HandshakeTicketStore } from "../shared/ticket/domain/TicketRepository";
 
 export type HandshakeAuthResult =
 	| { status: "anonymous" }
 	| { status: "authenticated"; userId: string }
-	| { status: "rejected" };
+	| { status: "rejected" }
+	// The ticket store could not answer: the ticket's validity is unknown, so the
+	// socket proceeds anonymous instead of being rejected.
+	| { status: "unavailable" };
 
 export class HandshakeTicketAuthenticator {
-	constructor(private readonly tickets: TicketRepository) {}
+	constructor(private readonly tickets: HandshakeTicketStore) {}
 
 	async authenticate(request: IncomingMessage): Promise<HandshakeAuthResult> {
 		const token = this.extractToken(request);
 		if (token === undefined) return { status: "anonymous" };
-		const userId = await this.tickets.consume(token);
-		return userId === null ? { status: "rejected" } : { status: "authenticated", userId };
+		const result = await this.tickets.consumeWithStatus(token);
+		switch (result.status) {
+			case "consumed":
+				return { status: "authenticated", userId: result.userId };
+			case "invalid":
+				return { status: "rejected" };
+			case "unavailable":
+				return { status: "unavailable" };
+		}
 	}
 
 	private extractToken(request: IncomingMessage): string | undefined {

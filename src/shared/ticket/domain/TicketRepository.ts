@@ -17,3 +17,24 @@ export interface TicketRepository {
 	 */
 	consume(uuid: string): Promise<string | null>;
 }
+
+/**
+ * Outcome of consuming a ticket, telling a bad ticket apart from a store that
+ * could not answer:
+ * - `consumed`: valid ticket, `userId` is trustworthy
+ * - `invalid`: malformed, unknown, expired or already consumed
+ * - `unavailable`: the backing store errored, timed out or is not configured
+ */
+export type TicketConsumeResult =
+	| { readonly status: "consumed"; readonly userId: string }
+	| { readonly status: "invalid" }
+	| { readonly status: "unavailable" };
+
+/**
+ * Port for callers that can degrade gracefully when the store is down (the WS
+ * handshake treats the socket as anonymous). Callers that must stay fail-closed
+ * use `TicketRepository.consume`.
+ */
+export interface HandshakeTicketStore {
+	consumeWithStatus(uuid: string): Promise<TicketConsumeResult>;
+}

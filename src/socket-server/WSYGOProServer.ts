@@ -16,12 +16,14 @@ export class WSYGOProServer {
 	private readonly wss: WebSocketServer;
 	private readonly connectionHandler: YGOProConnectionHandler;
 	private readonly handshakeAuth: HandshakeTicketAuthenticator;
+	private readonly logger: Logger;
 
 	constructor(
 		logger: Logger,
 		handshakeAuth: HandshakeTicketAuthenticator,
 		matchmakingConnectionFactory?: MatchmakingConnectionFactory,
 	) {
+		this.logger = logger;
 		this.handshakeAuth = handshakeAuth;
 		this.connectionHandler = new YGOProConnectionHandler(
 			logger,
@@ -88,6 +90,14 @@ export class WSYGOProServer {
 			const auth = await this.handshakeAuth.authenticate(request);
 			if (auth.status === "authenticated") {
 				ygoClientSocket.resolvedUserId = auth.userId;
+			}
+			if (auth.status === "unavailable") {
+				// Ticket validity is unknown: carry on anonymous (no resolvedUserId), so
+				// ranked/verified-only gates still refuse the seat but casual play and
+				// token reconnects keep working.
+				this.logger.warn("Handshake ticket store unavailable; treating socket as anonymous", {
+					remoteAddress: ygoClientSocket.remoteAddress,
+				});
 			}
 			if (auth.status === "rejected") {
 				ygoClientSocket.close();
