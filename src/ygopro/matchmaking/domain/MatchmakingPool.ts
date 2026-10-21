@@ -36,7 +36,7 @@ export type QueueExitOutcome =
 	| "declined"
 	| "accept_timeout";
 
-export type MatchResponseOutcome = "accepted" | "declined" | "unknown_match";
+export type MatchResponseOutcome = "accepted" | "declined" | "requeued" | "unknown_match";
 
 /** Bot matches never wait; a human match waits when anyone in it opted in. */
 function requiresAcceptStep(match: Match): boolean {
@@ -61,6 +61,12 @@ function requiresAcceptStep(match: Match): boolean {
 export class MatchmakingPool {
 	private interval: NodeJS.Timeout | null = null;
 	private readonly pending = new PendingMatches();
+	/**
+	 * Participants an abandoned match put back in the pool, keyed by match id,
+	 * until that match's accept window closes: their own answer to it may still
+	 * be in flight and must not be rejected as unknown.
+	 */
+	private readonly requeuedByMatchId = new Map<string, { ids: Set<string>; until: number }>();
 
 	constructor(private readonly deps: MatchmakingPoolDeps) {}
 
@@ -120,7 +126,8 @@ export class MatchmakingPool {
 	 */
 	accept(matchId: string, participantId: string): MatchResponseOutcome {
 		const pending = this.findLivePending(matchId, participantId);
-		if (!pending) return "unknown_match";
+		if (!pending)
+			return this.wasRequeuedFrom(matchId, participantId) ? "requeued" : "unknown_match";
 
 		pending.accepted.add(participantId);
 		this.deps.logger?.info("matchmaking.accepted", { matchId, participantId });
@@ -137,7 +144,7 @@ export class MatchmakingPool {
 	/** Records a DECLINE: the decliner leaves the queue and the others return to the pool. */
 	decline(matchId: string, participantId: string): MatchResponseOutcome {
 		const pending = this.findLivePending(matchId, participantId);
-		if (!pending) return "unknown_match";
+		if (!pending) return this.declineAfterRequeue(matchId, participantId);
 
 		const decliner = pending.match.participants.find(
 			(participant) => participant.id === participantId,
@@ -171,6 +178,7 @@ export class MatchmakingPool {
 		const now = this.deps.now();
 		this.sweepDead(now);
 		this.resolvePending(now);
+		this.forgetClosedRequeues(now);
 		this.pairAndDispatch(now);
 		this.publishStatus(now);
 	}
@@ -253,6 +261,39 @@ export class MatchmakingPool {
 		}
 	}
 
+	private wasRequeuedFrom(matchId: string, participantId: string): boolean {
+		const record = this.requeuedByMatchId.get(matchId);
+
+		return record !== undefined && this.deps.now() < record.until && record.ids.has(participantId);
+	}
+
+	/**
+	 * A DECLINE that arrives after the opponent already abandoned the match
+	 * still means "take me out of the queue": the participant leaves wherever
+	 * the requeue put it (back in the pool or inside a newer proposal).
+	 */
+	private declineAfterRequeue(matchId: string, participantId: string): MatchResponseOutcome {
+		if (!this.wasRequeuedFrom(matchId, participantId)) return "unknown_match";
+		this.requeuedByMatchId.get(matchId)?.ids.delete(participantId);
+
+		const participant =
+			this.deps.store.get(participantId) ??
+			this.pending.findByParticipantId(participantId)?.participant;
+		if (!participant) return "unknown_match";
+		if (!this.removeByIdAndLog(participantId, "declined")) {
+			this.leavePending(participantId, "declined");
+		}
+		participant.channel.close("declined");
+
+		return "declined";
+	}
+
+	private forgetClosedRequeues(now: number): void {
+		for (const [matchId, record] of this.requeuedByMatchId) {
+			if (now >= record.until) this.requeuedByMatchId.delete(matchId);
+		}
+	}
+
 	private findLivePending(matchId: string, participantId: string): PendingMatch | undefined {
 		const pending = this.pending.get(matchId);
 		if (!pending || this.deps.now() >= pending.deadline) return undefined;
@@ -291,8 +332,14 @@ export class MatchmakingPool {
 		}
 
 		const now = this.deps.now();
-		for (const participant of match.participants) {
-			if (leaving.includes(participant)) continue;
+		const requeued = match.participants.filter((participant) => !leaving.includes(participant));
+		if (requeued.length > 0) {
+			this.requeuedByMatchId.set(match.id, {
+				ids: new Set(requeued.map((participant) => participant.id)),
+				until: pending.deadline,
+			});
+		}
+		for (const participant of requeued) {
 			this.add(participant);
 			participant.channel.status({ state: "searching", waitedMs: now - participant.enqueuedAt });
 		}

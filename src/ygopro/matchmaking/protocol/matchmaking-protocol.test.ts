@@ -1,3 +1,7 @@
+import { MATCH_ABANDON } from "@shared/messages/server-to-client/MatchAbandonClientMessage";
+import { ACHIEVEMENT_UNLOCKED } from "src/plugins/achievements/infrastructure/AchievementUnlockedClientMessage";
+import { LOBBY_METADATA } from "@ygopro/room/domain/LobbyMetadata";
+import { STOC_EVRP_EXPORT } from "@ygopro/room/domain/replay/evrp-constants";
 import {
 	MATCHMAKING_FOUND,
 	MATCHMAKING_PROPOSED,
@@ -166,7 +170,7 @@ describe("parseCtosMatchResponse", () => {
 });
 
 describe("buildStocMatchmakingProposedFrame", () => {
-	it("lays out [size LE][0xf6][matchIdLen][matchId][acceptWithinMs u32 LE]", () => {
+	it("lays out [size LE][0xef][matchIdLen][matchId][acceptWithinMs u32 LE]", () => {
 		const matchId = "9d3f6b1a-1111-4c11-8a11-abcdefabcdef";
 		const frame = buildStocMatchmakingProposedFrame({ matchId, acceptWithinMs: 20_000 });
 
@@ -260,5 +264,18 @@ describe("buildStocMatchmakingFoundFrame", () => {
 		expect(nameLen).toBeLessThanOrEqual(MAX_OPPONENT_NAME_BYTES);
 		expect(nameLen).toBe(30); // 10 complete 3-byte characters
 		expect(nameBytes.toString("utf8")).toBe("字".repeat(10));
+	});
+});
+
+describe("server-to-client opcode allocation", () => {
+	it("gives the match proposal an opcode no other server-to-client extension uses", () => {
+		expect([
+			MATCH_ABANDON,
+			ACHIEVEMENT_UNLOCKED,
+			LOBBY_METADATA,
+			STOC_EVRP_EXPORT,
+			MATCHMAKING_STATUS,
+			MATCHMAKING_FOUND,
+		]).not.toContain(MATCHMAKING_PROPOSED);
 	});
 });

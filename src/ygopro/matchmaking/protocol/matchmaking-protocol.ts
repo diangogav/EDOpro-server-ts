@@ -19,7 +19,7 @@ export const MATCHMAKING_ENTER = 0xfa; // CTOS: [format:u8][mode:u8][clientVersi
 export const MATCHMAKING_CANCEL = 0xf9; // CTOS: empty
 export const MATCHMAKING_STATUS = 0xf8; // STOC: [state:u8][waitedMs:u32 LE][reason:u8]
 export const MATCHMAKING_FOUND = 0xf7; // STOC: [opponentType:u8][rated:u8][roomId:u16 LE][matchIdLen:u8][matchId][opponentNameLen:u8][opponentName]
-export const MATCHMAKING_PROPOSED = 0xf6; // STOC: [matchIdLen:u8][matchId][acceptWithinMs:u32 LE]
+export const MATCHMAKING_PROPOSED = 0xef; // STOC: [matchIdLen:u8][matchId][acceptWithinMs:u32 LE]
 export const MATCHMAKING_ACCEPT = 0xf5; // CTOS: [matchIdLen:u8][matchId:utf-8]
 export const MATCHMAKING_DECLINE = 0xf4; // CTOS: [matchIdLen:u8][matchId:utf-8]
 

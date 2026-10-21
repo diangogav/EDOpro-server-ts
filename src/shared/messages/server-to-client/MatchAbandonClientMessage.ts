@@ -5,7 +5,7 @@
 //   kind 0x02 MATCH_CANCELLED — no duel was played, nothing is recorded
 //   kind 0x03 MATCH_WON — the receiver wins the match by abandon
 // The terminal kinds are followed by the room teardown (STOC_DUEL_END + close).
-const MATCH_ABANDON = 0xf6;
+export const MATCH_ABANDON = 0xf6;
 
 export class MatchAbandonClientMessage {
 	static opponentDisconnected(graceSeconds: number): Buffer {

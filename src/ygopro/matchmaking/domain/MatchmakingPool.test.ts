@@ -491,6 +491,48 @@ describe("MatchmakingPool", () => {
 		const legacy = (id: string, enqueuedAt: number, channel = new RecordingChannel()) =>
 			ParticipantMother.create({ id, userId: `u-${id}`, enqueuedAt, channel });
 
+		it("removes the second decliner too when both players decline one after the other", () => {
+			const { pool, store } = setup(5_000);
+			const bChannel = new RecordingChannel();
+			pool.add(optedIn("a", 0));
+			pool.add(optedIn("b", 1_000, bChannel));
+			pool.tick();
+
+			expect(pool.decline("match-1", "a")).toBe("declined");
+			expect(pool.decline("match-1", "b")).toBe("declined");
+
+			expect(pool.isQueued("b")).toBe(false);
+			expect(store.get("b")).toBeUndefined();
+			expect(bChannel.closeCalls).toEqual(["declined"]);
+		});
+
+		it("keeps a player searching when they accept a match the opponent already declined", () => {
+			const { pool, store } = setup(5_000);
+			const bChannel = new RecordingChannel();
+			pool.add(optedIn("a", 0));
+			pool.add(optedIn("b", 1_000, bChannel));
+			pool.tick();
+			pool.decline("match-1", "a");
+
+			expect(pool.accept("match-1", "b")).toBe("requeued");
+
+			expect(store.get("b")?.id).toBe("b");
+			expect(bChannel.closeCalls).toEqual([]);
+		});
+
+		it("forgets a declined match once its accept window is over", () => {
+			const { pool, advanceTo } = setup(5_000);
+			pool.add(optedIn("a", 0));
+			pool.add(optedIn("b", 1_000));
+			pool.tick();
+			pool.decline("match-1", "a");
+
+			advanceTo(5_000 + MATCH_ACCEPT_TIMEOUT_MS);
+			pool.tick();
+
+			expect(pool.decline("match-1", "b")).toBe("unknown_match");
+		});
+
 		it("provisions a pair where nobody opted in immediately, exactly as before", () => {
 			const { pool, matchHandler, logged } = setup(5_000);
 			const aChannel = new RecordingChannel();

@@ -228,7 +228,7 @@ optional trailing accept-step byte in `ENTER` (value `1`) gets a "match found"
 prompt before any room exists. When a human pair contains at least one opted-in
 participant, the pool holds the match as pending instead of provisioning it:
 both participants leave the pairing pool, opted-in ones receive
-`MATCHMAKING_PROPOSED` (`0xf6`, match id plus `acceptWithinMs`), and the others
+`MATCHMAKING_PROPOSED` (`0xef`, match id plus `acceptWithinMs`), and the others
 count as already accepted. Opted-in clients answer with `MATCHMAKING_ACCEPT`
 (`0xf5`) or `MATCHMAKING_DECLINE` (`0xf4`), both carrying the match id; a
 response for an unknown or expired match, or from someone outside it, is
