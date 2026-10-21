@@ -41,7 +41,7 @@ export async function bootstrapPersistence(logger: Logger): Promise<void> {
 		// the lists each enabled group is actually fed by right now.
 		const summary = formatRankGroupsSummary(
 			rankGroupsConfig,
-			new InMemoryLoadedBanListNamesProvider().names(),
+			new InMemoryLoadedBanListNamesProvider().nameSets(),
 			new Date(),
 		);
 		if (summary !== null) {

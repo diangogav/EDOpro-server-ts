@@ -7,7 +7,7 @@ function makeResolver(
 	loadedNames: string[],
 	now: Date,
 ): RankGroupResolver {
-	const provider: LoadedBanListNamesProvider = { names: () => loadedNames };
+	const provider: LoadedBanListNamesProvider = { nameSets: () => [loadedNames] };
 
 	return new RankGroupResolver(
 		() => config,
@@ -58,7 +58,7 @@ describe("RankGroupResolver", () => {
 
 	it("re-reads loaded names on every call so a hot reload is reflected", () => {
 		const names = ["2026.05 TCG"];
-		const provider: LoadedBanListNamesProvider = { names: () => [...names] };
+		const provider: LoadedBanListNamesProvider = { nameSets: () => [[...names]] };
 		const resolver = new RankGroupResolver(
 			() => ({
 				aliases: {},
@@ -71,6 +71,27 @@ describe("RankGroupResolver", () => {
 		expect(resolver.groupsFor("2026.05 TCG")).toEqual(["TCG"]);
 
 		names.push("2026.07 TCG");
+		expect(resolver.groupsFor("2026.05 TCG")).toEqual([]);
+	});
+
+	it("keeps the lagging server's newest list feeding the group", () => {
+		const provider: LoadedBanListNamesProvider = {
+			nameSets: () => [
+				["2026.09 TCG", "2026.10 TCG"],
+				["2026.05 TCG", "2026.09 TCG"],
+			],
+		};
+		const resolver = new RankGroupResolver(
+			() => ({
+				aliases: {},
+				groups: [{ name: "TCG", enabled: true, onlyCurrent: true, members: ["* TCG"] }],
+			}),
+			provider,
+			() => new Date(Date.UTC(2026, 9, 21)),
+		);
+
+		expect(resolver.groupsFor("2026.09 TCG")).toEqual(["TCG"]);
+		expect(resolver.groupsFor("2026.10 TCG")).toEqual(["TCG"]);
 		expect(resolver.groupsFor("2026.05 TCG")).toEqual([]);
 	});
 });

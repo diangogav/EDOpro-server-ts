@@ -100,47 +100,47 @@ describe("resolveGroupsFor", () => {
 	const today = new Date(Date.UTC(2026, 5, 1)); // 2026-06-01
 
 	it("resolves the current dated list of an onlyCurrent group, ignoring future-dated siblings", () => {
-		expect(resolveGroupsFor("2026.05 TCG", groups, loaded, today)).toEqual(["TCG"]);
+		expect(resolveGroupsFor("2026.05 TCG", groups, [loaded], today)).toEqual(["TCG"]);
 	});
 
 	it("does not resolve a retro list into an onlyCurrent group", () => {
-		expect(resolveGroupsFor("2025.04 TCG", groups, loaded, today)).toEqual([]);
+		expect(resolveGroupsFor("2025.04 TCG", groups, [loaded], today)).toEqual([]);
 	});
 
 	it("does not resolve a future-dated list into an onlyCurrent group", () => {
-		expect(resolveGroupsFor("2026.10 TCG", groups, loaded, today)).toEqual([]);
+		expect(resolveGroupsFor("2026.10 TCG", groups, [loaded], today)).toEqual([]);
 	});
 
 	it("treats a dateless matching name as always current", () => {
-		expect(resolveGroupsFor("RD", groups, loaded, today)).toEqual(["Rush"]);
+		expect(resolveGroupsFor("RD", groups, [loaded], today)).toEqual(["Rush"]);
 	});
 
 	it("resolves any matching member into a group that is not onlyCurrent", () => {
-		expect(resolveGroupsFor("2010.03 Edison", groups, loaded, today)).toEqual(["Edison Forever"]);
-		expect(resolveGroupsFor("2005.04 Edison", groups, loaded, today)).toEqual(["Edison Forever"]);
+		expect(resolveGroupsFor("2010.03 Edison", groups, [loaded], today)).toEqual(["Edison Forever"]);
+		expect(resolveGroupsFor("2005.04 Edison", groups, [loaded], today)).toEqual(["Edison Forever"]);
 	});
 
 	it("never resolves a disabled group", () => {
-		const resolved = resolveGroupsFor("2026.05 TCG", groups, loaded, today);
+		const resolved = resolveGroupsFor("2026.05 TCG", groups, [loaded], today);
 		expect(resolved).not.toContain("Disabled TCG");
 	});
 
 	it('never resolves "N/A" or "Global" into any group', () => {
-		expect(resolveGroupsFor("N/A", groups, loaded, today)).toEqual([]);
-		expect(resolveGroupsFor("Global", groups, loaded, today)).toEqual([]);
+		expect(resolveGroupsFor("N/A", groups, [loaded], today)).toEqual([]);
+		expect(resolveGroupsFor("Global", groups, [loaded], today)).toEqual([]);
 	});
 
 	it("resolves nothing for a name no member matches", () => {
-		expect(resolveGroupsFor("JTP (Original)", groups, loaded, today)).toEqual([]);
+		expect(resolveGroupsFor("JTP (Original)", groups, [loaded], today)).toEqual([]);
 	});
 
 	it("treats a played list newer than every loaded sibling as current even if not loaded itself", () => {
-		expect(resolveGroupsFor("2026.06 TCG", groups, loaded, today)).toEqual(["TCG"]);
+		expect(resolveGroupsFor("2026.06 TCG", groups, [loaded], today)).toEqual(["TCG"]);
 	});
 
 	it("treats a list dated exactly today as current", () => {
 		const firstOfMay = new Date(Date.UTC(2026, 4, 1)); // 2026-05-01
-		expect(resolveGroupsFor("2026.05 TCG", groups, loaded, firstOfMay)).toEqual(["TCG"]);
+		expect(resolveGroupsFor("2026.05 TCG", groups, [loaded], firstOfMay)).toEqual(["TCG"]);
 	});
 
 	it("can resolve several groups at once", () => {
@@ -148,7 +148,37 @@ describe("resolveGroupsFor", () => {
 			{ name: "TCG", enabled: true, onlyCurrent: true, members: ["* TCG"] },
 			{ name: "All Formats", enabled: true, onlyCurrent: false, members: ["* TCG", "* OCG"] },
 		];
-		expect(resolveGroupsFor("2026.05 TCG", multi, loaded, today)).toEqual(["TCG", "All Formats"]);
+		expect(resolveGroupsFor("2026.05 TCG", multi, [loaded], today)).toEqual(["TCG", "All Formats"]);
+	});
+});
+
+describe("resolveGroupsFor across servers", () => {
+	const tcg: RankGroupDefinition = {
+		name: "TCG",
+		enabled: true,
+		onlyCurrent: true,
+		members: ["* TCG"],
+	};
+	const edopro = ["2026.05 TCG", "2026.09 TCG", "2026.10 TCG"];
+	const ygopro = ["2026.05 TCG", "2026.09 TCG"];
+	const today = new Date(Date.UTC(2026, 9, 21)); // 2026-10-21
+
+	it("keeps a server's newest list current while another server already loaded a newer one", () => {
+		expect(resolveGroupsFor("2026.09 TCG", [tcg], [edopro, ygopro], today)).toEqual(["TCG"]);
+		expect(resolveGroupsFor("2026.10 TCG", [tcg], [edopro, ygopro], today)).toEqual(["TCG"]);
+	});
+
+	it("still rejects a list older than every server's newest one", () => {
+		expect(resolveGroupsFor("2026.05 TCG", [tcg], [edopro, ygopro], today)).toEqual([]);
+	});
+
+	it("drops the older list once every server loaded the newer one", () => {
+		const caughtUp = [...ygopro, "2026.10 TCG"];
+		expect(resolveGroupsFor("2026.09 TCG", [tcg], [edopro, caughtUp], today)).toEqual([]);
+	});
+
+	it("ignores a server that loaded no list of the group", () => {
+		expect(resolveGroupsFor("2026.09 TCG", [tcg], [edopro, ["2026.07 OCG"]], today)).toEqual([]);
 	});
 });
 
@@ -176,7 +206,7 @@ describe("currentListsFor", () => {
 	const today = new Date(Date.UTC(2026, 7, 1)); // 2026-08-01
 
 	it("collects every loaded name matching a member as matched", () => {
-		expect(currentListsFor(tcg, loaded, today).matched).toEqual([
+		expect(currentListsFor(tcg, [loaded], today).matched).toEqual([
 			"2025.04 TCG",
 			"2026.05 TCG",
 			"2026.10 TCG",
@@ -184,17 +214,17 @@ describe("currentListsFor", () => {
 	});
 
 	it("marks only the max-dated match not after today as current", () => {
-		expect(currentListsFor(tcg, loaded, today).current).toEqual(["2026.05 TCG"]);
+		expect(currentListsFor(tcg, [loaded], today).current).toEqual(["2026.05 TCG"]);
 	});
 
 	it("keeps a future-dated match out of current while still matched", () => {
-		const { matched, current } = currentListsFor(tcg, loaded, today);
+		const { matched, current } = currentListsFor(tcg, [loaded], today);
 		expect(matched).toContain("2026.10 TCG");
 		expect(current).not.toContain("2026.10 TCG");
 	});
 
 	it("treats every dateless match as current alongside the max-dated one", () => {
-		expect(currentListsFor(rush, loaded, today)).toEqual({
+		expect(currentListsFor(rush, [loaded], today)).toEqual({
 			matched: ["2026.07.01 Rush Duel", "RD"],
 			current: ["2026.07.01 Rush Duel", "RD"],
 		});
@@ -207,12 +237,12 @@ describe("currentListsFor", () => {
 			onlyCurrent: false,
 			members: ["* Speed Duel"],
 		};
-		expect(currentListsFor(speed, loaded, today)).toEqual({ matched: [], current: [] });
+		expect(currentListsFor(speed, [loaded], today)).toEqual({ matched: [], current: [] });
 	});
 
 	it("leaves current empty when every dated match is in the future", () => {
 		const early = new Date(Date.UTC(2024, 0, 1));
-		expect(currentListsFor(tcg, loaded, early)).toEqual({
+		expect(currentListsFor(tcg, [loaded], early)).toEqual({
 			matched: ["2025.04 TCG", "2026.05 TCG", "2026.10 TCG"],
 			current: [],
 		});
@@ -220,16 +250,26 @@ describe("currentListsFor", () => {
 
 	it("includes a list dated exactly today as current", () => {
 		const firstOfMay = new Date(Date.UTC(2026, 4, 1)); // 2026-05-01
-		expect(currentListsFor(tcg, loaded, firstOfMay).current).toEqual(["2026.05 TCG"]);
+		expect(currentListsFor(tcg, [loaded], firstOfMay).current).toEqual(["2026.05 TCG"]);
 	});
 
 	it("keeps every tied max-dated match current, consistently with resolveGroupsFor", () => {
 		const tied = ["2026.05 TCG", "2026.05.01 Extra TCG"];
-		const { current } = currentListsFor(tcg, tied, today);
+		const { current } = currentListsFor(tcg, [tied], today);
 		expect(current).toEqual(tied);
 		for (const name of tied) {
-			expect(resolveGroupsFor(name, [tcg], tied, today)).toEqual(["TCG"]);
+			expect(resolveGroupsFor(name, [tcg], [tied], today)).toEqual(["TCG"]);
 		}
+	});
+
+	it("reports every server's newest list as current while servers disagree", () => {
+		const edopro = ["2026.09 TCG", "2026.10 TCG"];
+		const ygopro = ["2026.05 TCG", "2026.09 TCG"];
+		const october = new Date(Date.UTC(2026, 9, 21)); // 2026-10-21
+		expect(currentListsFor(tcg, [edopro, ygopro], october)).toEqual({
+			matched: ["2026.09 TCG", "2026.10 TCG", "2026.05 TCG"],
+			current: ["2026.09 TCG", "2026.10 TCG"],
+		});
 	});
 
 	it("never reports a non-groupable name as current", () => {
@@ -239,7 +279,7 @@ describe("currentListsFor", () => {
 			onlyCurrent: false,
 			members: ["Global"],
 		};
-		expect(currentListsFor(global, ["Global"], today)).toEqual({
+		expect(currentListsFor(global, [["Global"]], today)).toEqual({
 			matched: ["Global"],
 			current: [],
 		});

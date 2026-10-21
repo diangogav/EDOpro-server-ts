@@ -29,27 +29,37 @@ describe("InMemoryLoadedBanListNamesProvider", () => {
 		ygoproBanListMemoryRepository.replaceAll([]);
 	});
 
-	it("combines the names loaded in both servers' repositories", () => {
+	it("keeps each server's loaded names in its own set, EDOPro first", () => {
 		edoproBanListMemoryRepository.replaceAll([edoproList("2026.05 TCG")]);
 		ygoproBanListMemoryRepository.replaceAll([ygoproList("2026.05 OCG")]);
 
-		expect(provider.names().sort()).toEqual(["2026.05 OCG", "2026.05 TCG"]);
+		expect(provider.nameSets()).toEqual([["2026.05 TCG"], ["2026.05 OCG"]]);
 	});
 
-	it("dedupes a name loaded on both sides and skips nameless lists", () => {
+	it("keeps a name loaded on both sides in both sets and skips nameless lists", () => {
 		edoproBanListMemoryRepository.replaceAll([edoproList("2026.05 TCG")]);
 		ygoproBanListMemoryRepository.replaceAll([ygoproList("2026.05 TCG"), ygoproList()]);
 
-		expect(provider.names()).toEqual(["2026.05 TCG"]);
+		expect(provider.nameSets()).toEqual([["2026.05 TCG"], ["2026.05 TCG"]]);
+	});
+
+	it("dedupes a name repeated within one server", () => {
+		edoproBanListMemoryRepository.replaceAll([]);
+		ygoproBanListMemoryRepository.replaceAll([
+			ygoproList("2026.09 TCG"),
+			ygoproList("2026.09 TCG"),
+		]);
+
+		expect(provider.nameSets()).toEqual([[], ["2026.09 TCG"]]);
 	});
 
 	it("reflects a hot reload on the next call", () => {
 		edoproBanListMemoryRepository.replaceAll([edoproList("2026.05 TCG")]);
 		ygoproBanListMemoryRepository.replaceAll([]);
 
-		expect(provider.names()).toEqual(["2026.05 TCG"]);
+		expect(provider.nameSets()).toEqual([["2026.05 TCG"], []]);
 
 		edoproBanListMemoryRepository.replaceAll([edoproList("2026.07 TCG")]);
-		expect(provider.names()).toEqual(["2026.07 TCG"]);
+		expect(provider.nameSets()).toEqual([["2026.07 TCG"], []]);
 	});
 });
