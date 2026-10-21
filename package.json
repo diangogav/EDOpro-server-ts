@@ -28,7 +28,8 @@
 		"perf:protocol": "ts-node -r tsconfig-paths/register src/utils/perf/benchmark-protocol.ts",
 		"perf:ipc": "ts-node -r tsconfig-paths/register src/utils/perf/benchmark-node-cpp-ipc.ts",
 		"backfill:points-ledger": "ts-node -r tsconfig-paths/register --require dotenv/config src/scripts/backfill-points-ledger.ts",
-		"backfill:achievements": "ts-node -r tsconfig-paths/register --require dotenv/config src/scripts/backfill-achievements.ts"
+		"backfill:achievements": "ts-node -r tsconfig-paths/register --require dotenv/config src/scripts/backfill-achievements.ts",
+		"backfill:group-window": "ts-node -r tsconfig-paths/register --require dotenv/config src/scripts/backfill-group-window.ts"
 	},
 	"keywords": [],
 	"author": "",
