@@ -24,4 +24,10 @@ export enum Commands {
 	MATCHMAKING_CANCEL = 0xf9,
 	MATCHMAKING_STATUS = 0xf8,
 	MATCHMAKING_FOUND = 0xf7,
+	/** STOC: an opted-in participant must ACCEPT or DECLINE the proposed match. */
+	MATCHMAKING_PROPOSED = 0xef,
+	/** CTOS: accepts a proposed match by id. */
+	MATCHMAKING_ACCEPT = 0xf5,
+	/** CTOS: declines a proposed match by id. */
+	MATCHMAKING_DECLINE = 0xf4,
 }

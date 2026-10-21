@@ -36,6 +36,17 @@ describe("PollParticipantChannel", () => {
 		});
 	});
 
+	describe("proposed", () => {
+		it("is a no-op that never mutates the record; poll tickets never opt into the accept step", () => {
+			const record = makeRecord();
+			const channel = new PollParticipantChannel(record, () => 0);
+
+			channel.proposed({ matchId: "match-1", acceptWithinMs: 20_000 });
+
+			expect(record).toEqual(makeRecord());
+		});
+	});
+
 	describe("found", () => {
 		it("mutates the record with the match outcome and sends no frame", () => {
 			const record = makeRecord();

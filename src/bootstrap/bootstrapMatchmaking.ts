@@ -11,6 +11,7 @@ import { AbortMatchmakingRoom } from "@ygopro/matchmaking/application/AbortMatch
 import { AuthenticateMatchmakingSession } from "@ygopro/matchmaking/application/AuthenticateMatchmakingSession";
 import { CancelMatchmaking } from "@ygopro/matchmaking/application/CancelMatchmaking";
 import { EnterMatchmaking } from "@ygopro/matchmaking/application/EnterMatchmaking";
+import { RespondToMatchProposal } from "@ygopro/matchmaking/application/RespondToMatchProposal";
 import { MatchmakingConnectionFactory } from "@ygopro/matchmaking/application/MatchmakingConnectionFactory";
 import { MatchmakingConnectionHandler } from "@ygopro/matchmaking/application/MatchmakingConnectionHandler";
 import { MatchmakingQueue } from "@ygopro/matchmaking/application/MatchmakingQueue";
@@ -33,6 +34,8 @@ const MATCHMAKING_CTOS_COMMANDS: readonly Commands[] = [
 	Commands.MATCHMAKING_AUTH,
 	Commands.MATCHMAKING_ENTER,
 	Commands.MATCHMAKING_CANCEL,
+	Commands.MATCHMAKING_ACCEPT,
+	Commands.MATCHMAKING_DECLINE,
 ];
 
 /**
@@ -188,6 +191,7 @@ export function bootstrapMatchmaking(logger: Logger): MatchmakingConnectionFacto
 			new EnterMatchmaking(pool, () => Date.now(), mmLogger),
 			new CancelMatchmaking(pool, mmLogger),
 			mmLogger,
+			new RespondToMatchProposal(pool, mmLogger),
 		);
 	};
 }

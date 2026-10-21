@@ -2,7 +2,11 @@ import { mock, MockProxy } from "jest-mock-extended";
 
 import { ISocket } from "@shared/socket/domain/ISocket";
 
-import { MATCHMAKING_FOUND, MATCHMAKING_STATUS } from "../protocol/matchmaking-protocol";
+import {
+	MATCHMAKING_FOUND,
+	MATCHMAKING_PROPOSED,
+	MATCHMAKING_STATUS,
+} from "../protocol/matchmaking-protocol";
 import { SocketParticipantChannel } from "./SocketParticipantChannel";
 
 describe("SocketParticipantChannel", () => {
@@ -32,6 +36,19 @@ describe("SocketParticipantChannel", () => {
 			const frame = socket.send.mock.calls[0][0] as Buffer;
 			expect(frame.readUInt8(3)).toBe(2); // rejected
 			expect(frame.readUInt8(8)).toBe(1); // invalid_ticket
+		});
+	});
+
+	describe("proposed", () => {
+		it("sends a PROPOSED frame carrying the match id and the time left to accept", () => {
+			channel.proposed({ matchId: "match-1", acceptWithinMs: 20_000 });
+
+			expect(socket.send).toHaveBeenCalledTimes(1);
+			const frame = socket.send.mock.calls[0][0] as Buffer;
+			expect(frame.readUInt8(2)).toBe(MATCHMAKING_PROPOSED);
+			const matchIdLen = frame.readUInt8(3);
+			expect(frame.subarray(4, 4 + matchIdLen).toString("utf8")).toBe("match-1");
+			expect(frame.readUInt32LE(4 + matchIdLen)).toBe(20_000);
 		});
 	});
 

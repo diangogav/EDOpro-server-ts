@@ -1,25 +1,38 @@
-import { MatchmakingStatusState, RejectionReason } from "../domain/ParticipantChannel";
+import {
+	MatchmakingStatusState,
+	MatchProposalNotice,
+	RejectionReason,
+} from "../domain/ParticipantChannel";
 import { MatchmakingFormat, MatchmakingMode, OpponentType } from "../domain/QueueEntry";
 
 /**
- * Matchmaking wire protocol — five dedicated CTOS/STOC opcodes in the same
+ * Matchmaking wire protocol — eight dedicated CTOS/STOC opcodes in the same
  * family as PING/PONG, RECONNECT and EMOTE. Framing: [size:u16 LE][opcode:u8]
  * [body...], size counts the opcode but not the 2-byte prefix.
+ *
+ * The accept step (PROPOSED/ACCEPT/DECLINE) is opt-in per ticket: a client
+ * that never sends the ENTER accept-step byte never receives PROPOSED.
  */
 
 export const MATCHMAKING_AUTH = 0xfb; // CTOS: [ticketLen:u8][ticket:utf-8]
-export const MATCHMAKING_ENTER = 0xfa; // CTOS: [format:u8][mode:u8][clientVersion:u16 LE][botFallbackAfterMs:u32 LE optional]
+export const MATCHMAKING_ENTER = 0xfa; // CTOS: [format:u8][mode:u8][clientVersion:u16 LE][botFallbackAfterMs:u32 LE optional][acceptStep:u8 optional]
 export const MATCHMAKING_CANCEL = 0xf9; // CTOS: empty
 export const MATCHMAKING_STATUS = 0xf8; // STOC: [state:u8][waitedMs:u32 LE][reason:u8]
 export const MATCHMAKING_FOUND = 0xf7; // STOC: [opponentType:u8][rated:u8][roomId:u16 LE][matchIdLen:u8][matchId][opponentNameLen:u8][opponentName]
+export const MATCHMAKING_PROPOSED = 0xef; // STOC: [matchIdLen:u8][matchId][acceptWithinMs:u32 LE]
+export const MATCHMAKING_ACCEPT = 0xf5; // CTOS: [matchIdLen:u8][matchId:utf-8]
+export const MATCHMAKING_DECLINE = 0xf4; // CTOS: [matchIdLen:u8][matchId:utf-8]
 
 /** Bounds a malformed/oversized ticket before it ever reaches Redis. */
 export const MAX_TICKET_BYTES = 64;
 /** Longer DB names are truncated on a code-point boundary before encoding. */
 export const MAX_OPPONENT_NAME_BYTES = 32;
+/** Server match ids are UUIDs (36 bytes); anything longer is not one of ours. */
+export const MAX_MATCH_ID_BYTES = 64;
 
 const ENTER_BODY_LENGTH = 4;
 const ENTER_BODY_LENGTH_WITH_FALLBACK = 8;
+const ACCEPT_STEP_BYTE_LENGTH = 1;
 
 /** Wire-only reason value: encodes "no reason" on a non-rejected STATUS frame.
  * `RejectionReason` itself (owned by the domain) never carries this member —
@@ -38,6 +51,13 @@ export interface CtosEnter {
 	readonly clientVersion: number;
 	/** Requested bot-fallback delay in ms; absent when the client sent no delay. */
 	readonly botFallbackAfterMs?: number;
+	/** Whether the client handles PROPOSED/ACCEPT/DECLINE; absent when the client
+	 * sent no accept-step byte, which means it is not opted in. */
+	readonly supportsAcceptStep?: boolean;
+}
+
+export interface CtosMatchResponse {
+	readonly matchId: string;
 }
 
 export interface MatchmakingFoundNotice {
@@ -84,6 +104,9 @@ export const REASON_TO_CODE: Readonly<Record<WireReason, number>> = Object.freez
 	cancel_too_late: 12,
 	already_queued: 13,
 	version_mismatch: 14,
+	unknown_match: 15,
+	declined: 16,
+	accept_timeout: 17,
 });
 
 export const OPPONENT_TYPE_TO_CODE: Readonly<Record<OpponentType, number>> = Object.freeze({
@@ -104,7 +127,11 @@ export function parseCtosAuth(body: Buffer): ParseResult<CtosAuth> {
 }
 
 export function parseCtosEnter(body: Buffer): ParseResult<CtosEnter> {
-	if (body.length !== ENTER_BODY_LENGTH && body.length !== ENTER_BODY_LENGTH_WITH_FALLBACK) {
+	const hasAcceptStep =
+		body.length === ENTER_BODY_LENGTH + ACCEPT_STEP_BYTE_LENGTH ||
+		body.length === ENTER_BODY_LENGTH_WITH_FALLBACK + ACCEPT_STEP_BYTE_LENGTH;
+	const optionsLength = body.length - (hasAcceptStep ? ACCEPT_STEP_BYTE_LENGTH : 0);
+	if (optionsLength !== ENTER_BODY_LENGTH && optionsLength !== ENTER_BODY_LENGTH_WITH_FALLBACK) {
 		return { ok: false, reason: "malformed_frame" };
 	}
 	const format = FORMAT_BY_CODE[body.readUInt8(0)];
@@ -118,14 +145,37 @@ export function parseCtosEnter(body: Buffer): ParseResult<CtosEnter> {
 
 	const clientVersion = body.readUInt16LE(2);
 	// The optional trailing uint32 LE is the bot-fallback delay; absent means no bot.
-	if (body.length === ENTER_BODY_LENGTH_WITH_FALLBACK) {
-		return {
-			ok: true,
-			value: { format, mode, clientVersion, botFallbackAfterMs: body.readUInt32LE(4) },
-		};
+	const botFallbackAfterMs =
+		optionsLength === ENTER_BODY_LENGTH_WITH_FALLBACK ? body.readUInt32LE(4) : undefined;
+	// The optional last byte is the accept-step opt-in (0 or 1); absent means not opted in.
+	const acceptStepByte = hasAcceptStep ? body.readUInt8(optionsLength) : undefined;
+	if (acceptStepByte !== undefined && acceptStepByte > 1) {
+		return { ok: false, reason: "malformed_frame" };
 	}
 
-	return { ok: true, value: { format, mode, clientVersion } };
+	return {
+		ok: true,
+		value: {
+			format,
+			mode,
+			clientVersion,
+			...(botFallbackAfterMs !== undefined && { botFallbackAfterMs }),
+			...(acceptStepByte !== undefined && { supportsAcceptStep: acceptStepByte === 1 }),
+		},
+	};
+}
+
+/** Parses the shared body of CTOS `MATCHMAKING_ACCEPT` and `MATCHMAKING_DECLINE`. */
+export function parseCtosMatchResponse(body: Buffer): ParseResult<CtosMatchResponse> {
+	if (body.length < 1) {
+		return { ok: false, reason: "malformed_frame" };
+	}
+	const matchIdLen = body.readUInt8(0);
+	if (matchIdLen === 0 || matchIdLen > MAX_MATCH_ID_BYTES || body.length !== 1 + matchIdLen) {
+		return { ok: false, reason: "malformed_frame" };
+	}
+
+	return { ok: true, value: { matchId: body.subarray(1).toString("utf8") } };
 }
 
 export function parseCtosCancel(body: Buffer): ParseResult<Record<string, never>> {
@@ -165,6 +215,15 @@ export function buildStocMatchmakingFoundFrame(notice: MatchmakingFoundNotice): 
 	]);
 
 	return buildFrame(MATCHMAKING_FOUND, body);
+}
+
+export function buildStocMatchmakingProposedFrame(notice: MatchProposalNotice): Buffer {
+	const matchIdBytes = Buffer.from(notice.matchId, "utf8");
+	const acceptWithin = Buffer.alloc(4);
+	acceptWithin.writeUInt32LE(notice.acceptWithinMs, 0);
+	const body = Buffer.concat([Buffer.from([matchIdBytes.length]), matchIdBytes, acceptWithin]);
+
+	return buildFrame(MATCHMAKING_PROPOSED, body);
 }
 
 function buildFrame(opcode: number, body: Buffer): Buffer {

@@ -1,4 +1,5 @@
 import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
+import { ParticipantMother } from "@test-support/mothers/matchmaking/ParticipantMother";
 
 import {
 	BOT_FALLBACK_MAX_MS,
@@ -837,6 +838,68 @@ describe("MatchmakingQueue", () => {
 			expect(
 				match.participants.map((participant: { userId: string }) => participant.userId),
 			).toEqual(["user-1", "user-2"]);
+		});
+	});
+
+	describe("accept step", () => {
+		it("never holds a match between two poll tickets; they are matched on the same tick as before", () => {
+			const queue = MatchmakingQueue.createForTests(makeDeps());
+			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t2", "user-2");
+
+			expect(queue.poll("t1")).toMatchObject({ state: "matched", opponentType: "human" });
+			expect(queue.poll("t2")).toMatchObject({ state: "matched", opponentType: "human" });
+		});
+
+		it("keeps a poll ticket's record while its match with an opted-in socket participant is pending", () => {
+			const clock = { t: 0 };
+			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t }));
+			const pool = queue.getPool();
+			pool.add(
+				ParticipantMother.create({
+					id: "sock-1",
+					userId: "user-sock",
+					enqueuedAt: 0,
+					supportsAcceptStep: true,
+				}),
+			);
+			enqueue(queue, "t1", "user-1");
+
+			clock.t = 1_000;
+			queue.tick();
+
+			expect(queue.poll("t1")).toEqual({ state: "searching", waitedMs: 1_000 });
+			expect(queue.isUserQueued("user-1")).toBe(true);
+			expect(pool.isQueued("sock-1")).toBe(true);
+			expect(pool.depthByFormat().tcg).toBe(0);
+		});
+
+		it("delivers the matched result to the poll ticket once the opted-in opponent accepts", () => {
+			const queue = MatchmakingQueue.createForTests(makeDeps());
+			const pool = queue.getPool();
+			let matchId = "";
+			pool.add(
+				ParticipantMother.create({
+					id: "sock-1",
+					userId: "user-sock",
+					enqueuedAt: 0,
+					supportsAcceptStep: true,
+					channel: {
+						status: jest.fn(),
+						found: jest.fn(),
+						close: jest.fn(),
+						isAlive: () => true,
+						proposed: (notice) => {
+							matchId = notice.matchId;
+						},
+					},
+				}),
+			);
+			enqueue(queue, "t1", "user-1");
+
+			expect(pool.accept(matchId, "sock-1")).toBe("accepted");
+
+			expect(queue.poll("t1")).toMatchObject({ state: "matched", opponentType: "human" });
 		});
 	});
 

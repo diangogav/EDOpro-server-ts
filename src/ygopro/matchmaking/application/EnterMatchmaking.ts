@@ -18,6 +18,9 @@ export interface EnterMatchmakingInput {
 	/** Requested wait, in ms, before a bot game is accepted; absent means the
 	 * session waits for a human only. Clamped by the pairing policy. */
 	readonly botFallbackAfterMs?: number;
+	/** Whether the client answers a proposed match with ACCEPT/DECLINE; absent
+	 * means it is not opted in and keeps immediate seating. */
+	readonly supportsAcceptStep?: boolean;
 }
 
 /**
@@ -70,6 +73,7 @@ export class EnterMatchmaking {
 			displayName: session.displayName,
 			enqueuedAt: this.now(),
 			botFallbackAfterMs: input.botFallbackAfterMs,
+			supportsAcceptStep: input.supportsAcceptStep,
 			presence: "socket",
 			channel,
 			admission: { socket, playerInfo },

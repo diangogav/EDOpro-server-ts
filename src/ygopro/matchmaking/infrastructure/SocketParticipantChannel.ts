@@ -4,11 +4,13 @@ import {
 	MatchFoundNotice,
 	MatchmakingStatusState,
 	MatchmakingStatusUpdate,
+	MatchProposalNotice,
 	ParticipantChannel,
 	RejectionReason,
 } from "../domain/ParticipantChannel";
 import {
 	buildStocMatchmakingFoundFrame,
+	buildStocMatchmakingProposedFrame,
 	buildStocMatchmakingStatusFrame,
 } from "../protocol/matchmaking-protocol";
 
@@ -36,6 +38,10 @@ export class SocketParticipantChannel implements ParticipantChannel {
 				opponentName: notice.opponentName,
 			}),
 		);
+	}
+
+	public proposed(notice: MatchProposalNotice): void {
+		this.socket.send(buildStocMatchmakingProposedFrame(notice));
 	}
 
 	public close(reason: RejectionReason): void {

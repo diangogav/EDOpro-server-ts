@@ -394,7 +394,8 @@ export class MatchmakingQueue {
 	/**
 	 * Keeps the facade's own bookkeeping in sync with the pool after a tick:
 	 * a `searching` record whose participant the pool's TTL sweep dropped is
-	 * freed here (the pool never learns about `records`/`usersInQueue`), and a
+	 * freed here (the pool never learns about `records`/`usersInQueue`) — one
+	 * held in a match pending an opponent's accept is still queued — and a
 	 * `matched` record is freed once MATCHED_GRACE_MS elapses since its last
 	 * poll — the pool already removed it from its own store the instant it
 	 * matched, so this grace window is bookkeeping the facade alone owns.
@@ -402,7 +403,7 @@ export class MatchmakingQueue {
 	private reconcile(now: number): void {
 		for (const record of this.records.values()) {
 			if (record.state === "searching") {
-				if (!this.store.get(record.ticketId)) {
+				if (!this.pool.isQueued(record.ticketId)) {
 					this.records.delete(record.ticketId);
 					this.usersInQueue.delete(record.userId);
 				}
