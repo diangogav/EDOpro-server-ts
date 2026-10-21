@@ -30,7 +30,10 @@ export type RejectionReason =
 	| "internal_error"
 	| "cancel_too_late"
 	| "already_queued"
-	| "version_mismatch";
+	| "version_mismatch"
+	| "unknown_match"
+	| "declined"
+	| "accept_timeout";
 
 export interface MatchmakingStatusUpdate {
 	readonly state: MatchmakingStatusState;
@@ -48,6 +51,13 @@ export interface MatchFoundNotice {
 	readonly opponentName: string | null;
 }
 
+/** A human match awaiting this participant's ACCEPT/DECLINE. */
+export interface MatchProposalNotice {
+	readonly matchId: string;
+	/** Time left, in ms, before an unanswered proposal counts as declined. */
+	readonly acceptWithinMs: number;
+}
+
 /**
  * Port a `Participant` uses to reach its connection. No `ISocket` in the
  * matchmaking domain — implementations translate these calls into a socket
@@ -56,6 +66,8 @@ export interface MatchFoundNotice {
 export interface ParticipantChannel {
 	status(update: MatchmakingStatusUpdate): void;
 	found(notice: MatchFoundNotice): void;
+	/** Only ever called for a participant that opted into the accept step. */
+	proposed(notice: MatchProposalNotice): void;
 	close(reason: RejectionReason): void;
 	isAlive(now: number): boolean;
 }

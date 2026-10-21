@@ -13,6 +13,7 @@ import { AuthenticateMatchmakingSession } from "./AuthenticateMatchmakingSession
 import { CancelMatchmaking } from "./CancelMatchmaking";
 import { EnterMatchmaking } from "./EnterMatchmaking";
 import { MatchmakingConnectionHandler } from "./MatchmakingConnectionHandler";
+import { RespondToMatchProposal } from "./RespondToMatchProposal";
 
 const makeMessage = (data: Buffer): ClientMessage => ({ data }) as unknown as ClientMessage;
 
@@ -39,6 +40,7 @@ describe("MatchmakingConnectionHandler", () => {
 	let authenticate: ReturnType<typeof mock<AuthenticateMatchmakingSession>>;
 	let enter: ReturnType<typeof mock<EnterMatchmaking>>;
 	let cancel: ReturnType<typeof mock<CancelMatchmaking>>;
+	let respond: ReturnType<typeof mock<RespondToMatchProposal>>;
 	let logger: LoggerMock;
 
 	beforeEach(() => {
@@ -49,6 +51,7 @@ describe("MatchmakingConnectionHandler", () => {
 		authenticate = mock<AuthenticateMatchmakingSession>();
 		enter = mock<EnterMatchmaking>();
 		cancel = mock<CancelMatchmaking>();
+		respond = mock<RespondToMatchProposal>();
 		logger = new LoggerMock();
 
 		new MatchmakingConnectionHandler(
@@ -60,14 +63,35 @@ describe("MatchmakingConnectionHandler", () => {
 			enter,
 			cancel,
 			logger,
+			respond,
 		);
 	});
 
-	it("subscribes to PLAYER_INFO and the three CTOS matchmaking opcodes exactly once", () => {
+	it("subscribes to PLAYER_INFO and the five CTOS matchmaking opcodes exactly once", () => {
 		expect(eventEmitter.listenerCount(Commands.PLAYER_INFO as unknown as string)).toBe(1);
 		expect(eventEmitter.listenerCount(Commands.MATCHMAKING_AUTH as unknown as string)).toBe(1);
 		expect(eventEmitter.listenerCount(Commands.MATCHMAKING_ENTER as unknown as string)).toBe(1);
 		expect(eventEmitter.listenerCount(Commands.MATCHMAKING_CANCEL as unknown as string)).toBe(1);
+		expect(eventEmitter.listenerCount(Commands.MATCHMAKING_ACCEPT as unknown as string)).toBe(1);
+		expect(eventEmitter.listenerCount(Commands.MATCHMAKING_DECLINE as unknown as string)).toBe(1);
+	});
+
+	it("leaves ACCEPT and DECLINE unsubscribed when no proposal responder is wired", () => {
+		const bare = new EventEmitter();
+
+		new MatchmakingConnectionHandler(
+			bare,
+			socket,
+			session,
+			channel,
+			authenticate,
+			enter,
+			cancel,
+			logger,
+		);
+
+		expect(bare.listenerCount(Commands.MATCHMAKING_ACCEPT as unknown as string)).toBe(0);
+		expect(bare.listenerCount(Commands.MATCHMAKING_DECLINE as unknown as string)).toBe(0);
 	});
 
 	it("captures PLAYER_INFO bytes into the session", () => {
@@ -183,13 +207,62 @@ describe("MatchmakingConnectionHandler", () => {
 			);
 		});
 
-		it("rejects a five-byte frame as malformed and never invokes the use case", () => {
+		it("forwards the accept-step opt-in from a five-byte frame", () => {
 			eventEmitter.emit(
 				Commands.MATCHMAKING_ENTER as unknown as string,
 				makeMessage(Buffer.concat([buildEnterBody(0, 0, 1234), Buffer.from([1])])),
 			);
 
+			expect(enter.execute).toHaveBeenCalledWith(
+				expect.objectContaining({ supportsAcceptStep: true }),
+			);
+		});
+
+		it("rejects an accept-step byte other than 0 or 1 as malformed and never invokes the use case", () => {
+			eventEmitter.emit(
+				Commands.MATCHMAKING_ENTER as unknown as string,
+				makeMessage(Buffer.concat([buildEnterBody(0, 0, 1234), Buffer.from([2])])),
+			);
+
+			expect(channel.status).toHaveBeenCalledWith({
+				state: "rejected",
+				waitedMs: 0,
+				reason: "malformed_frame",
+			});
 			expect(enter.execute).not.toHaveBeenCalled();
+		});
+	});
+
+	describe.each([
+		{ command: Commands.MATCHMAKING_ACCEPT, response: "accept", opcode: "ACCEPT" },
+		{ command: Commands.MATCHMAKING_DECLINE, response: "decline", opcode: "DECLINE" },
+	])("MATCHMAKING_$opcode", ({ command, response, opcode }) => {
+		it("routes a well-formed frame to RespondToMatchProposal with the parsed match id", () => {
+			eventEmitter.emit(command as unknown as string, makeMessage(buildAuthBody("match-1")));
+
+			expect(respond.execute).toHaveBeenCalledWith({
+				socket,
+				channel,
+				matchId: "match-1",
+				response,
+			});
+		});
+
+		it("rejects a malformed frame with a status reply and never invokes the use case", () => {
+			const warnSpy = jest.spyOn(logger, "warn");
+
+			eventEmitter.emit(command as unknown as string, makeMessage(Buffer.alloc(0)));
+
+			expect(channel.status).toHaveBeenCalledWith({
+				state: "rejected",
+				waitedMs: 0,
+				reason: "malformed_frame",
+			});
+			expect(warnSpy).toHaveBeenCalledWith("matchmaking.rejected", {
+				reason: "malformed_frame",
+				opcode,
+			});
+			expect(respond.execute).not.toHaveBeenCalled();
 		});
 	});
 

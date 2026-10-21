@@ -8,6 +8,7 @@
  */
 
 import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
+import { ParticipantMother } from "@test-support/mothers/matchmaking/ParticipantMother";
 import { MatchmakingQueue } from "@ygopro/matchmaking/application/MatchmakingQueue";
 
 import { DisconnectHandler } from "./DisconnectHandler";
@@ -65,6 +66,44 @@ describe("DisconnectHandler — matchmaking dequeue", () => {
 		new DisconnectHandler(socket as never, roomFinder).run();
 
 		expect(dequeueSpy).toHaveBeenCalledWith("sock-with-room");
+	});
+
+	it("counts a disconnect during a pending accept step as a decline, returning the opponent to the pool", () => {
+		const matchHandler = { handle: jest.fn() };
+		MatchmakingQueue.init({
+			now: () => 0,
+			createRankedRoom: jest.fn(),
+			createBotRoom: jest.fn(),
+			spawnBot: jest.fn(),
+			matchHandler,
+		});
+		const pool = MatchmakingQueue.getInstance().getPool();
+		pool.add(
+			ParticipantMother.create({
+				id: "sock-pending",
+				userId: "u-pending",
+				enqueuedAt: 0,
+				supportsAcceptStep: true,
+			}),
+		);
+		pool.add(
+			ParticipantMother.create({ id: "sock-opponent", userId: "u-opponent", enqueuedAt: 1 }),
+		);
+		pool.tick();
+		const logger = new LoggerMock();
+		const infoSpy = jest.spyOn(logger, "info");
+
+		new DisconnectHandler(
+			makeSocket("sock-pending") as never,
+			makeRoomFinder(undefined),
+			logger,
+		).run();
+
+		expect(infoSpy).toHaveBeenCalledWith("matchmaking.dequeued", { reason: "disconnect" });
+		expect(pool.isQueued("sock-pending")).toBe(false);
+		expect(pool.isQueued("sock-opponent")).toBe(true);
+		expect(pool.depthByFormat().tcg).toBe(1);
+		expect(matchHandler.handle).not.toHaveBeenCalled();
 	});
 
 	it("is a no-op when matchmaking was never initialized", () => {

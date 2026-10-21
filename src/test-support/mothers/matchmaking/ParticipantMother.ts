@@ -12,6 +12,10 @@ class NoopParticipantChannel implements ParticipantChannel {
 		/* no-op */
 	}
 
+	proposed(): void {
+		/* no-op */
+	}
+
 	close(): void {
 		/* no-op */
 	}

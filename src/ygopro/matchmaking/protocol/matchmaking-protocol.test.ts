@@ -1,13 +1,18 @@
 import {
 	MATCHMAKING_FOUND,
+	MATCHMAKING_PROPOSED,
 	MATCHMAKING_STATUS,
+	MAX_MATCH_ID_BYTES,
 	MAX_OPPONENT_NAME_BYTES,
 	MAX_TICKET_BYTES,
+	REASON_TO_CODE,
 	buildStocMatchmakingFoundFrame,
+	buildStocMatchmakingProposedFrame,
 	buildStocMatchmakingStatusFrame,
 	parseCtosAuth,
 	parseCtosCancel,
 	parseCtosEnter,
+	parseCtosMatchResponse,
 } from "./matchmaking-protocol";
 
 function enterBody(formatCode: number, modeCode: number, clientVersion = 0): Buffer {
@@ -69,7 +74,40 @@ describe("parseCtosEnter", () => {
 		});
 	});
 
-	it.each([0, 3, 5, 6, 7, 9])("rejects a %i-byte body as malformed", (length) => {
+	it("parses a 5-byte body, reading the trailing byte as the accept-step opt-in", () => {
+		expect(parseCtosEnter(Buffer.concat([enterBody(0, 0, 3), Buffer.from([1])]))).toEqual({
+			ok: true,
+			value: { format: "tcg", mode: "ranked", clientVersion: 3, supportsAcceptStep: true },
+		});
+	});
+
+	it("parses a 9-byte body as botFallbackAfterMs followed by the accept-step opt-in", () => {
+		expect(
+			parseCtosEnter(Buffer.concat([enterBodyWithDelay(60_000, 3), Buffer.from([0])])),
+		).toEqual({
+			ok: true,
+			value: {
+				format: "tcg",
+				mode: "ranked",
+				clientVersion: 3,
+				botFallbackAfterMs: 60_000,
+				supportsAcceptStep: false,
+			},
+		});
+	});
+
+	it("rejects an accept-step byte other than 0 or 1 as malformed", () => {
+		expect(parseCtosEnter(Buffer.concat([enterBody(0, 0), Buffer.from([2])]))).toEqual({
+			ok: false,
+			reason: "malformed_frame",
+		});
+		expect(parseCtosEnter(Buffer.concat([enterBodyWithDelay(0), Buffer.from([0xff])]))).toEqual({
+			ok: false,
+			reason: "malformed_frame",
+		});
+	});
+
+	it.each([0, 3, 6, 7, 10])("rejects a %i-byte body as malformed", (length) => {
 		expect(parseCtosEnter(Buffer.alloc(length))).toEqual({ ok: false, reason: "malformed_frame" });
 	});
 
@@ -98,6 +136,54 @@ describe("parseCtosCancel", () => {
 	it("accepts an empty body and rejects a non-empty one", () => {
 		expect(parseCtosCancel(Buffer.alloc(0))).toEqual({ ok: true, value: {} });
 		expect(parseCtosCancel(Buffer.from([1]))).toEqual({ ok: false, reason: "malformed_frame" });
+	});
+});
+
+describe("parseCtosMatchResponse", () => {
+	it("parses a length-prefixed match id", () => {
+		const matchId = "9d3f6b1a-1111-4c11-8a11-abcdefabcdef";
+		expect(parseCtosMatchResponse(authBody(matchId))).toEqual({ ok: true, value: { matchId } });
+	});
+
+	it("rejects an empty body, a length mismatch, an empty id and an oversized id", () => {
+		expect(parseCtosMatchResponse(Buffer.alloc(0))).toEqual({
+			ok: false,
+			reason: "malformed_frame",
+		});
+		expect(parseCtosMatchResponse(Buffer.from([5, 0x61]))).toEqual({
+			ok: false,
+			reason: "malformed_frame",
+		});
+		expect(parseCtosMatchResponse(Buffer.from([0]))).toEqual({
+			ok: false,
+			reason: "malformed_frame",
+		});
+		expect(parseCtosMatchResponse(authBody("m".repeat(MAX_MATCH_ID_BYTES + 1)))).toEqual({
+			ok: false,
+			reason: "malformed_frame",
+		});
+	});
+});
+
+describe("buildStocMatchmakingProposedFrame", () => {
+	it("lays out [size LE][0xf6][matchIdLen][matchId][acceptWithinMs u32 LE]", () => {
+		const matchId = "9d3f6b1a-1111-4c11-8a11-abcdefabcdef";
+		const frame = buildStocMatchmakingProposedFrame({ matchId, acceptWithinMs: 20_000 });
+
+		expect(frame.readUInt16LE(0)).toBe(1 + 1 + matchId.length + 4);
+		expect(frame.readUInt8(2)).toBe(MATCHMAKING_PROPOSED);
+		expect(frame.readUInt8(3)).toBe(matchId.length);
+		expect(frame.subarray(4, 4 + matchId.length).toString("utf8")).toBe(matchId);
+		expect(frame.readUInt32LE(4 + matchId.length)).toBe(20_000);
+	});
+});
+
+describe("REASON_TO_CODE", () => {
+	it("appends the accept-step reasons after the existing codes", () => {
+		expect(REASON_TO_CODE.version_mismatch).toBe(14);
+		expect(REASON_TO_CODE.unknown_match).toBe(15);
+		expect(REASON_TO_CODE.declined).toBe(16);
+		expect(REASON_TO_CODE.accept_timeout).toBe(17);
 	});
 });
 

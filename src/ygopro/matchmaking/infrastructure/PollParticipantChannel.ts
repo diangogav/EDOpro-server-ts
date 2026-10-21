@@ -1,6 +1,7 @@
 import {
 	MatchFoundNotice,
 	MatchmakingStatusUpdate,
+	MatchProposalNotice,
 	ParticipantChannel,
 	RejectionReason,
 } from "../domain/ParticipantChannel";
@@ -21,6 +22,10 @@ export class PollParticipantChannel implements ParticipantChannel {
 
 	status(_update: MatchmakingStatusUpdate): void {
 		// Poll participants are pulled, never pushed (D19).
+	}
+
+	proposed(_notice: MatchProposalNotice): void {
+		// Poll tickets never opt into the accept step; they count as accepted.
 	}
 
 	found(notice: MatchFoundNotice): void {

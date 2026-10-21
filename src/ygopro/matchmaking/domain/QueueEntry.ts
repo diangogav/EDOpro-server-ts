@@ -20,6 +20,12 @@ export const CLEANUP_INTERVAL_MS = 2_000;
  * the created room is owned/reaped separately by MatchmakingRoomReaper.
  */
 export const MATCHED_GRACE_MS = 30_000;
+/**
+ * How long a proposed human match waits for every opted-in participant to
+ * accept. Unanswered participants then leave the queue and the others return
+ * to the pool with their original enqueue time.
+ */
+export const MATCH_ACCEPT_TIMEOUT_MS = 20_000;
 
 /** Clamps a client-requested bot-fallback delay into the supported range. */
 export function clampBotFallbackDelay(requestedMs: number): number {

@@ -223,6 +223,23 @@ server-side. Details belong in a future `matchmaking.md`; at this level, what
 matters is that it produces an ordinary `YGOProRoom` that the rest of the
 engine cannot distinguish from a hand-created one.
 
+**The accept step is opt-in per ticket.** A socket client that sends the
+optional trailing accept-step byte in `ENTER` (value `1`) gets a "match found"
+prompt before any room exists. When a human pair contains at least one opted-in
+participant, the pool holds the match as pending instead of provisioning it:
+both participants leave the pairing pool, opted-in ones receive
+`MATCHMAKING_PROPOSED` (`0xf6`, match id plus `acceptWithinMs`), and the others
+count as already accepted. Opted-in clients answer with `MATCHMAKING_ACCEPT`
+(`0xf5`) or `MATCHMAKING_DECLINE` (`0xf4`), both carrying the match id; a
+response for an unknown or expired match, or from someone outside it, is
+rejected with STATUS reason `unknown_match`. Once everyone accepted, the match
+goes to `ProvisionMatchRoom` unchanged. A decline, a disconnect, or the 20 s
+deadline (`MATCH_ACCEPT_TIMEOUT_MS`) removes that participant from the queue,
+closing its connection with reason `declined` or `accept_timeout`, and returns
+the others to the pool with their original enqueue time, so FIFO pairs them
+first. Clients that never send the byte (MDPro4, older web builds, every HTTP
+poll ticket) and bot-fallback matches keep today's immediate seating.
+
 Lobby screens can read the live demand without joining: `GET /api/matchmaking/depth`
 returns `{ "formats": { "tcg": 3, "jtp": 0, "edison": 1 } }`, the number of
 players queued per format right now (counts only, no identities). It has its own
