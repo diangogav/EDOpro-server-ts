@@ -15,9 +15,27 @@ describe("formatRankGroupsSummary", () => {
 	const today = new Date(Date.UTC(2026, 7, 31)); // 2026-08-31
 
 	it("shows the lists feeding every enabled group in one boot-style line", () => {
-		expect(formatRankGroupsSummary(config, loaded, today)).toBe(
+		expect(formatRankGroupsSummary(config, [loaded], today)).toBe(
 			"🏆 Rank groups → TCG: 2026.05 TCG · OCG: 2026.07 OCG · Rush: 2026.07.01 Rush Duel + RD · Speed: (no loaded list)",
 		);
+	});
+
+	it("shows every server's newest list while the servers disagree", () => {
+		const tcgOnly: RankGroupsConfig = {
+			aliases: {},
+			groups: [{ name: "TCG", enabled: true, onlyCurrent: true, members: ["* TCG"] }],
+		};
+		const october = new Date(Date.UTC(2026, 9, 21)); // 2026-10-21
+		expect(
+			formatRankGroupsSummary(
+				tcgOnly,
+				[
+					["2026.09 TCG", "2026.10 TCG"],
+					["2026.05 TCG", "2026.09 TCG"],
+				],
+				october,
+			),
+		).toBe("🏆 Rank groups → TCG: 2026.09 TCG + 2026.10 TCG");
 	});
 
 	it("omits disabled groups", () => {
@@ -29,7 +47,7 @@ describe("formatRankGroupsSummary", () => {
 			],
 		};
 
-		expect(formatRankGroupsSummary(withDisabled, loaded, today)).toBe(
+		expect(formatRankGroupsSummary(withDisabled, [loaded], today)).toBe(
 			"🏆 Rank groups → TCG: 2026.05 TCG",
 		);
 	});
@@ -37,7 +55,7 @@ describe("formatRankGroupsSummary", () => {
 	it("shows only the current list, not retro or future-dated matches", () => {
 		const names = ["2025.04 TCG", "2026.05 TCG", "2026.10 TCG"];
 
-		expect(formatRankGroupsSummary(config, names, today)).toBe(
+		expect(formatRankGroupsSummary(config, [names], today)).toBe(
 			"🏆 Rank groups → TCG: 2026.05 TCG · OCG: (no loaded list) · Rush: (no loaded list) · Speed: (no loaded list)",
 		);
 	});
@@ -48,13 +66,13 @@ describe("formatRankGroupsSummary", () => {
 			groups: [{ name: "Tengu", enabled: true, onlyCurrent: true, members: ["* Tengu"] }],
 		};
 
-		expect(formatRankGroupsSummary(aliased, ["2011.09 Tengu Plant"], today)).toBe(
+		expect(formatRankGroupsSummary(aliased, [["2011.09 Tengu Plant"]], today)).toBe(
 			"🏆 Rank groups → Tengu: 2011.09 Tengu",
 		);
 	});
 
 	it("returns null when the config has no groups", () => {
-		expect(formatRankGroupsSummary({ aliases: {}, groups: [] }, loaded, today)).toBeNull();
+		expect(formatRankGroupsSummary({ aliases: {}, groups: [] }, [loaded], today)).toBeNull();
 	});
 
 	it("returns null when every group is disabled", () => {
@@ -63,6 +81,6 @@ describe("formatRankGroupsSummary", () => {
 			groups: [{ name: "Worlds", enabled: false, onlyCurrent: false, members: ["* Worlds"] }],
 		};
 
-		expect(formatRankGroupsSummary(allDisabled, loaded, today)).toBeNull();
+		expect(formatRankGroupsSummary(allDisabled, [loaded], today)).toBeNull();
 	});
 });

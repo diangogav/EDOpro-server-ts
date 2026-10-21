@@ -66,15 +66,18 @@ function matchesGroup(name: string, group: RankGroupDefinition): boolean {
 /**
  * Group names the given (already alias-resolved) banlist name feeds.
  *
- * A group resolves when a member matches the name and, for onlyCurrent
- * groups, the name is CURRENT: among the loaded banlist names matching the
- * group with a date not after `today`, it carries the max date. A dateless
+ * `loadedNameSets` holds the loaded banlist names of each server, one set per
+ * server. A group resolves when a member matches the name and, for
+ * onlyCurrent groups, the name is CURRENT: its date is not after `today` and
+ * not before the newest matching list of the most lagging server, so every
+ * server's newest list keeps feeding the group while another server already
+ * loaded a newer one. A server with no dated match does not lag. A dateless
  * matching name is always current; a future-dated one never is.
  */
 export function resolveGroupsFor(
 	banListName: string,
 	groups: RankGroupDefinition[],
-	loadedBanListNames: string[],
+	loadedNameSets: string[][],
 	today: Date,
 ): string[] {
 	if (!banListName || NON_GROUPABLE_NAMES.has(banListName)) {
@@ -89,8 +92,7 @@ export function resolveGroupsFor(
 		.filter((group) => group.enabled)
 		.filter((group) => matchesGroup(banListName, group))
 		.filter(
-			(group) =>
-				!group.onlyCurrent || isCurrent(playedKey, group, loadedBanListNames, referenceKey),
+			(group) => !group.onlyCurrent || isCurrent(playedKey, group, loadedNameSets, referenceKey),
 		)
 		.map((group) => group.name);
 }
@@ -98,7 +100,7 @@ export function resolveGroupsFor(
 function isCurrent(
 	playedKey: number | null,
 	group: RankGroupDefinition,
-	loadedBanListNames: string[],
+	loadedNameSets: string[][],
 	referenceKey: number,
 ): boolean {
 	if (playedKey === null) {
@@ -108,9 +110,23 @@ function isCurrent(
 		return false;
 	}
 
-	const maxLoadedKey = maxCurrentDatedKey(group, loadedBanListNames, referenceKey);
+	const floorKey = currencyFloorKey(group, loadedNameSets, referenceKey);
 
-	return maxLoadedKey === null || playedKey >= maxLoadedKey;
+	return floorKey === null || playedKey >= floorKey;
+}
+
+// Oldest of the servers' newest matching dated keys not after the reference
+// day, or null when no server loaded such a match.
+function currencyFloorKey(
+	group: RankGroupDefinition,
+	loadedNameSets: string[][],
+	referenceKey: number,
+): number | null {
+	const newestKeys = loadedNameSets
+		.map((names) => maxCurrentDatedKey(group, names, referenceKey))
+		.filter((key): key is number => key !== null);
+
+	return newestKeys.length === 0 ? null : Math.min(...newestKeys);
 }
 
 // Max YYYYMMDD key not after the reference day among the loaded names
@@ -131,28 +147,33 @@ function maxCurrentDatedKey(
 }
 
 /**
- * Splits the loaded (already alias-resolved) banlist names into the ones
- * matching the group's members and the subset feeding it right now: every
- * dateless match plus the max-dated match not after `today`. Future-dated
- * matches are matched but never current. Currency mirrors `resolveGroupsFor`,
- * so a tie on the max date keeps every tied list current.
+ * Splits the loaded (already alias-resolved) banlist names of every server
+ * into the ones matching the group's members and the subset feeding it right
+ * now: every dateless match plus every dated match from the most lagging
+ * server's newest list up to `today`. Future-dated matches are matched but
+ * never current. Currency mirrors `resolveGroupsFor`, so a tie on the max
+ * date keeps every tied list current.
  */
 export function currentListsFor(
 	group: RankGroupDefinition,
-	loadedNames: string[],
+	loadedNameSets: string[][],
 	today: Date,
 ): { matched: string[]; current: string[] } {
-	const matched = loadedNames.filter((name) => matchesGroup(name, group));
+	const matched = [...new Set(loadedNameSets.flat())].filter((name) => matchesGroup(name, group));
 	const referenceKey = todayKey(today);
-	const maxKey = maxCurrentDatedKey(group, matched, referenceKey);
+	const floorKey = currencyFloorKey(group, loadedNameSets, referenceKey);
 	const current = matched.filter((name) => {
 		if (NON_GROUPABLE_NAMES.has(name)) {
 			return false;
 		}
 
 		const date = parseBanListDatePrefix(name);
+		if (date === null) {
+			return true;
+		}
+		const key = dateKey(date);
 
-		return date === null ? true : dateKey(date) === maxKey;
+		return floorKey !== null && key >= floorKey && key <= referenceKey;
 	});
 
 	return { matched, current };

@@ -9,7 +9,7 @@ import { currentListsFor, resolveAlias } from "../domain/RankGroupResolution";
  */
 export function formatRankGroupsSummary(
 	config: RankGroupsConfig,
-	loadedBanListNames: string[],
+	loadedNameSets: string[][],
 	today: Date,
 ): string | null {
 	const enabledGroups = config.groups.filter((group) => group.enabled);
@@ -17,9 +17,11 @@ export function formatRankGroupsSummary(
 		return null;
 	}
 
-	const resolvedNames = loadedBanListNames.map((name) => resolveAlias(name, config.aliases));
+	const resolvedNameSets = loadedNameSets.map((names) =>
+		names.map((name) => resolveAlias(name, config.aliases)),
+	);
 	const segments = enabledGroups.map((group) => {
-		const { current } = currentListsFor(group, resolvedNames, today);
+		const { current } = currentListsFor(group, resolvedNameSets, today);
 
 		return `${group.name}: ${current.length === 0 ? "(no loaded list)" : current.join(" + ")}`;
 	});

@@ -26,8 +26,10 @@ export class RankGroupResolver {
 	 */
 	groupsFor(banListName: string): string[] {
 		const { aliases, groups } = this.configProvider();
-		const loadedNames = this.loadedBanListNames.names().map((name) => resolveAlias(name, aliases));
+		const loadedNameSets = this.loadedBanListNames
+			.nameSets()
+			.map((names) => names.map((name) => resolveAlias(name, aliases)));
 
-		return resolveGroupsFor(banListName, groups, loadedNames, this.now());
+		return resolveGroupsFor(banListName, groups, loadedNameSets, this.now());
 	}
 }
