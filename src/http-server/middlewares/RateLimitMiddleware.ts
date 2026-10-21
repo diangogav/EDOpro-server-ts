@@ -10,6 +10,9 @@ const MAX_REQUESTS = 60;
 // so its budget can be far smaller than the read/poll budget while still
 // covering several players behind one shared NAT IP.
 const ENQUEUE_MAX_REQUESTS = 20;
+// Lobby screens poll the public queue counts; a dedicated bucket keeps that
+// traffic from eating the status-poll budget of a player behind the same IP.
+const QUEUE_DEPTH_MAX_REQUESTS = 30;
 
 export { isRateLimited };
 export type { RateLimitStore };
@@ -72,4 +75,10 @@ export const RateLimitMiddleware = createRateLimitMiddleware("inspect", MAX_REQU
 export const EnqueueRateLimitMiddleware = createRateLimitMiddleware(
 	"enqueue",
 	ENQUEUE_MAX_REQUESTS,
+);
+
+/** Dedicated bucket for the public GET /api/matchmaking/depth counts. */
+export const QueueDepthRateLimitMiddleware = createRateLimitMiddleware(
+	"queue-depth",
+	QUEUE_DEPTH_MAX_REQUESTS,
 );

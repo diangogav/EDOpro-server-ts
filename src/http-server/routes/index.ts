@@ -7,6 +7,7 @@ import { UserProfileDisplayNameResolver } from "../../ygopro/matchmaking/infrast
 import { CancelMatchmakingController } from "../controllers/CancelMatchmakingController";
 import { CreateRoomController } from "../controllers/CreateRoomController";
 import { EnqueueMatchmakingController } from "../controllers/EnqueueMatchmakingController";
+import { MatchmakingDepthController } from "../controllers/MatchmakingDepthController";
 import { MatchmakingStatusController } from "../controllers/MatchmakingStatusController";
 import { GetBanListDetailController } from "../controllers/GetBanListDetailController";
 import { GetBanListsController } from "../controllers/GetBanListsController";
@@ -21,6 +22,7 @@ import { ServerMessagesController } from "../controllers/ServerMessagesControlle
 import { AuthAdminMiddleware } from "../middlewares/AuthAdminMiddleware";
 import {
 	EnqueueRateLimitMiddleware,
+	QueueDepthRateLimitMiddleware,
 	RateLimitMiddleware,
 } from "../middlewares/RateLimitMiddleware";
 
@@ -35,6 +37,10 @@ export function loadRoutes(app: Express, logger: Logger, tickets: TicketReposito
 
 	app.post("/api/matchmaking/queue", EnqueueRateLimitMiddleware, (req, res) =>
 		new EnqueueMatchmakingController(logger, tickets, matchmakingDisplayNames).run(req, res),
+	);
+
+	app.get("/api/matchmaking/depth", QueueDepthRateLimitMiddleware, (req, res) =>
+		new MatchmakingDepthController().run(req, res),
 	);
 
 	app.get("/api/matchmaking/status", RateLimitMiddleware, (req, res) =>

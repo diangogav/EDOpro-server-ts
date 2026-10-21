@@ -440,4 +440,21 @@ describe("MatchmakingPool", () => {
 			expect(text).not.toContain("SecretName");
 		});
 	});
+
+	describe("depthByFormat", () => {
+		it("counts the queued participants of every format, including empty ones", () => {
+			const store = new InMemoryPoolStore();
+			const pool = buildPool(store, () => 0, new RecordingMatchHandler());
+			pool.add(ParticipantMother.create({ id: "a", userId: "u-a", format: "edison" }));
+			pool.add(ParticipantMother.create({ id: "b", userId: "u-b", format: "tcg" }));
+
+			expect(pool.depthByFormat()).toEqual({ tcg: 1, jtp: 0, edison: 1 });
+		});
+
+		it("reports zero for every format when nobody is queued", () => {
+			const pool = buildPool(new InMemoryPoolStore(), () => 0, new RecordingMatchHandler());
+
+			expect(pool.depthByFormat()).toEqual({ tcg: 0, jtp: 0, edison: 0 });
+		});
+	});
 });
