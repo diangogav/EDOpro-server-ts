@@ -129,7 +129,7 @@ The numeric opcode (`src/shared/messages/Commands.ts`) is cast to a string and
 emitted on a plain Node `EventEmitter`. Two pumps sit on the same socket:
 
 - **Connection level** (`MessageEmitter`) re-emits a **whitelist** only:
-  `PLAYER_INFO`, `CREATE_GAME`, `JOIN_GAME`, `RECONNECT`, and the three
+  `PLAYER_INFO`, `CREATE_GAME`, `JOIN_GAME`, `RECONNECT`, and the five
   matchmaking opcodes. Handlers for `CREATE_GAME` / `JOIN_GAME` are constructed
   lazily, the first time that opcode arrives.
 - **Room level** (`RoomMessageEmitter` on EDOPro, `SimpleRoomMessageEmitter` on

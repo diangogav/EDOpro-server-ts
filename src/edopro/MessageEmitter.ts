@@ -9,6 +9,8 @@ const MATCHMAKING_COMMANDS: readonly Commands[] = [
 	Commands.MATCHMAKING_AUTH,
 	Commands.MATCHMAKING_ENTER,
 	Commands.MATCHMAKING_CANCEL,
+	Commands.MATCHMAKING_ACCEPT,
+	Commands.MATCHMAKING_DECLINE,
 ];
 
 export class MessageEmitter {

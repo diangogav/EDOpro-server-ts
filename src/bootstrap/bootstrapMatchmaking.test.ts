@@ -155,7 +155,7 @@ describe("bootstrapMatchmaking — connection factory", () => {
 		expect(typeof factory).toBe("function");
 	});
 
-	it("answers the three CTOS opcodes with rejected/internal_error when matchmaking is not initialized", () => {
+	it("answers every CTOS matchmaking opcode with rejected/internal_error when matchmaking is not initialized", () => {
 		const factory = bootstrapMatchmaking(fakeLogger());
 		// Simulates the singleton becoming unavailable after bootstrap captured
 		// the factory — the guard this scenario proves is defensive, not a path
@@ -170,11 +170,30 @@ describe("bootstrapMatchmaking — connection factory", () => {
 		eventEmitter.emit(Commands.MATCHMAKING_AUTH as unknown as string, { data: Buffer.alloc(0) });
 		eventEmitter.emit(Commands.MATCHMAKING_ENTER as unknown as string, { data: Buffer.alloc(0) });
 		eventEmitter.emit(Commands.MATCHMAKING_CANCEL as unknown as string, { data: Buffer.alloc(0) });
+		eventEmitter.emit(Commands.MATCHMAKING_ACCEPT as unknown as string, { data: Buffer.alloc(0) });
+		eventEmitter.emit(Commands.MATCHMAKING_DECLINE as unknown as string, { data: Buffer.alloc(0) });
 
 		const expectedFrame = buildStocMatchmakingStatusFrame("rejected", 0, "internal_error");
-		expect(send).toHaveBeenCalledTimes(3);
+		expect(send).toHaveBeenCalledTimes(5);
 		for (const call of send.mock.calls) {
 			expect(call[0]).toEqual(expectedFrame);
+		}
+	});
+
+	it("routes ACCEPT and DECLINE frames to the match-proposal responder", () => {
+		const factory = bootstrapMatchmaking(fakeLogger());
+		const socket = new SocketMock();
+		const send = jest.spyOn(socket, "send");
+		const eventEmitter = new EventEmitter();
+		factory(socket, eventEmitter);
+
+		eventEmitter.emit(Commands.MATCHMAKING_ACCEPT as unknown as string, { data: Buffer.alloc(0) });
+		eventEmitter.emit(Commands.MATCHMAKING_DECLINE as unknown as string, { data: Buffer.alloc(0) });
+
+		// An empty body is malformed: reaching the handler is what answers it.
+		expect(send).toHaveBeenCalledTimes(2);
+		for (const call of send.mock.calls) {
+			expect(call[0]).toEqual(buildStocMatchmakingStatusFrame("rejected", 0, "malformed_frame"));
 		}
 	});
 });

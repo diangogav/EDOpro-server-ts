@@ -33,6 +33,8 @@ describe("MessageEmitter", () => {
 		["MATCHMAKING_AUTH", Commands.MATCHMAKING_AUTH],
 		["MATCHMAKING_ENTER", Commands.MATCHMAKING_ENTER],
 		["MATCHMAKING_CANCEL", Commands.MATCHMAKING_CANCEL],
+		["MATCHMAKING_ACCEPT", Commands.MATCHMAKING_ACCEPT],
+		["MATCHMAKING_DECLINE", Commands.MATCHMAKING_DECLINE],
 	])("%s", (_name, command) => {
 		it("emits once on the connection event emitter", () => {
 			const listener = jest.fn();
