@@ -152,6 +152,23 @@ export class MatchmakingPool {
 		}
 	}
 
+	/**
+	 * Players currently queued per format, every mode summed; formats nobody
+	 * is queued in report 0. Entries that dropped since the last tick are
+	 * still counted until the next sweep (at most one cleanup interval).
+	 */
+	depthByFormat(): Record<MatchmakingFormat, number> {
+		const depth = Object.fromEntries(MATCHMAKING_FORMATS.map((format) => [format, 0])) as Record<
+			MatchmakingFormat,
+			number
+		>;
+		for (const [format, mode] of this.poolKeys()) {
+			depth[format] += this.deps.store.depth(format, mode);
+		}
+
+		return depth;
+	}
+
 	private *everyParticipant(): IterableIterator<Participant> {
 		for (const [format, mode] of this.poolKeys()) {
 			yield* this.deps.store.all(format, mode);

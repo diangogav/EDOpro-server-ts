@@ -4,6 +4,7 @@ import { TicketRepository } from "@shared/ticket/domain/TicketRepository";
 
 import {
 	EnqueueRateLimitMiddleware,
+	QueueDepthRateLimitMiddleware,
 	RateLimitMiddleware,
 } from "../middlewares/RateLimitMiddleware";
 import { loadRoutes } from "./index";
@@ -73,5 +74,15 @@ describe("loadRoutes — matchmaking rate limiting", () => {
 			findRoute(calls.delete, "/api/matchmaking/queue"),
 			RateLimitMiddleware,
 		);
+	});
+
+	it("wires its own rate limiter before the public GET /api/matchmaking/depth handler", () => {
+		const { app, calls } = makeApp();
+
+		loadRoutes(app, makeLogger(), makeTickets());
+
+		const route = findRoute(calls.get, "/api/matchmaking/depth");
+		expectLimiterBeforeHandler(route, QueueDepthRateLimitMiddleware);
+		expect(route).not.toContain(RateLimitMiddleware);
 	});
 });

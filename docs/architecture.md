@@ -223,6 +223,11 @@ server-side. Details belong in a future `matchmaking.md`; at this level, what
 matters is that it produces an ordinary `YGOProRoom` that the rest of the
 engine cannot distinguish from a hand-created one.
 
+Lobby screens can read the live demand without joining: `GET /api/matchmaking/depth`
+returns `{ "formats": { "tcg": 3, "jtp": 0, "edison": 1 } }`, the number of
+players queued per format right now (counts only, no identities). It has its own
+rate-limit bucket (`queue-depth`, 30/min per IP) and `Cache-Control: public, max-age=5`.
+
 **WindBot joins by dialling in.** The server never pushes a bot into a room. It
 mints a one-shot token bound to `(roomId, botName, deck)`, calls the WindBot
 HTTP endpoint with `password=AIJOIN#<token>`, and the bot then connects to the
