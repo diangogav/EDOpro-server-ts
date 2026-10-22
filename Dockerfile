@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Stage 1: Clone repositories and assemble resources
-FROM public.ecr.aws/docker/library/node:24.11.0-bookworm-slim AS resources-builder
+FROM public.ecr.aws/docker/library/node:24.22.1-bookworm-slim AS resources-builder
 
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends wget git ca-certificates jq && \
@@ -22,7 +22,7 @@ RUN bash scripts/clone_repositories.sh && bash scripts/setup_resources.sh
 
 
 # Stage 2: Build CoreIntegrator (C++)
-FROM public.ecr.aws/docker/library/node:24.11.0-bookworm-slim AS core-builder
+FROM public.ecr.aws/docker/library/node:24.22.1-bookworm-slim AS core-builder
 
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
@@ -43,7 +43,7 @@ RUN cmake -B build -S . -DCMAKE_BUILD_TYPE=Release && \
 
 
 # Stage 3: Build Node.js server
-FROM public.ecr.aws/docker/library/node:24.11.0-bookworm AS server-builder
+FROM public.ecr.aws/docker/library/node:24.22.1-bookworm AS server-builder
 
 WORKDIR /server
 
@@ -69,7 +69,7 @@ RUN pnpm build && \
 
 
 # Stage 4: Final image
-FROM public.ecr.aws/docker/library/node:24.11.0-slim
+FROM public.ecr.aws/docker/library/node:24.22.1-slim
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl wget git ca-certificates jq liblua5.3-dev libsqlite3-dev libevent-dev dumb-init && \
