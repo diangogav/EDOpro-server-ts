@@ -42,6 +42,18 @@ export function lflistScanPaths(pools: ResolvedPools): string[] {
 }
 
 /**
+ * Search order for the extended pool: the extensions delta first, then standard.
+ *
+ * Both card rows and scripts resolve to the first match, and prereleases ship
+ * updated rows and fixed scripts for cards that already exist in standard. This
+ * mirrors srvpro2, where `expansions/` is searched before the base resources.
+ */
+export function extendedSearchOrder(pools: ResolvedPools): string[] {
+	const delta = pools.extended.filter((dir) => !pools.standard.includes(dir));
+	return [...delta, ...pools.standard];
+}
+
+/**
  * Resolve a pool name to the paths a duel needs.
  *
  * An unknown name falls back to standard rather than to nothing: an empty pool
@@ -58,7 +70,8 @@ export function selectPoolPaths(
 	}
 
 	if (name === EXTENDED_POOL) {
-		return { scripts: pools.extended, cards: pools.extended };
+		const paths = extendedSearchOrder(pools);
+		return { scripts: paths, cards: paths };
 	}
 
 	const named = pools.named[name];

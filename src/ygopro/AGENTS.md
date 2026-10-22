@@ -31,6 +31,7 @@ This module implements the srvpro2-compatible server for YGOPro clients (Koishi,
 - `YGOProResourceLoader` (singleton) loads two `CardStorage` instances at startup.
 - **Standard pool** (`runtime.ygopro.standard` in manifest): Available to all rooms.
 - **Extended pool** (standard + `runtime.ygopro.extended` in manifest): Only for PRE/ART formats.
+- **Extended search order**: `extendedSearchOrder()` puts the extensions before standard for the card rows and scripts that duels load, so prerelease updates and script fixes for existing cards win (same as srvpro2's `expansions/`).
 - `CardYGOProRepository` resolves the correct pool based on the room's `useExtendedCardPool` flag.
 - Unknown cards return `UnknownCardError` — never silently ignored.
 
@@ -50,7 +51,7 @@ This module implements the srvpro2-compatible server for YGOPro clients (Koishi,
 ### [SOP-YGO-001] Adding a New Room Format
 
 1. Add the format to `formatRuleMappings` in `RuleMappings.ts` with correct `rule`, `duel_rule`, `lflist`, `time_limit`.
-2. If it needs pre-release/art cards, add the format name to `extendedCardPoolFormats`.
+2. If it needs pre-release/art cards, map the format name to the `extended` pool in `formatCardPools` (`RuleMappings.ts`).
 3. Add a banlist `lflist.conf` to the corresponding `resources/ygopro/formats/<format>/` directory.
 4. Add tests in `YGOProRoom.test.ts`.
 

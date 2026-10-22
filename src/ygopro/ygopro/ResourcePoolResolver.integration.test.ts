@@ -32,6 +32,7 @@ import os from "node:os";
 import { YGOProCdb, CardDataEntry } from "ygopro-cdb-encode";
 import initSqlJs from "sql.js";
 import { resolvePools } from "./ResourcePoolResolver";
+import { extendedSearchOrder } from "./PoolSelection";
 import { CardStorage } from "./card-storage";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 
@@ -131,8 +132,13 @@ describe("ResourcePoolResolver integration — RFD-007", () => {
 		await writeCdb(SQL, goatDir, makeCard(CODE_GOAT, "Goat Card SHOULD NOT APPEAR"));
 		writeLflist(goatDir, `#[Goat]\n!GOAT\n3001 0\n`);
 
-		// extensions/prereleases: card 4001 (extended only)
-		await writeCdb(SQL, prerelDir, makeCard(CODE_PRERELEASE, "Prerelease Card"));
+		// extensions/prereleases: card 4001 (extended only) + an update of base card 1001
+		await writeCdb(
+			SQL,
+			prerelDir,
+			makeCard(CODE_PRERELEASE, "Prerelease Card"),
+			makeCard(CODE_BASE, "Prerelease Update Of Base Card"),
+		);
 		writeLflist(prerelDir, `#[Prereleases]\n!Prereleases\n4001 0\n`);
 
 		// Write manifest
@@ -316,6 +322,22 @@ describe("ResourcePoolResolver integration — RFD-007", () => {
 
 			const extendedStorage = await loadCardsFromPaths(extended);
 			expect(extendedStorage.readCard(CODE_PRERELEASE)).toBeDefined();
+		});
+
+		it("prerelease update of a base card wins in the extended search order", async () => {
+			const pools = resolvePools({
+				manifestPath,
+				resourcesDir: tmpDir,
+				logger: LoggerFactory.getLogger(),
+			});
+
+			const extendedCards = await loadCardsWithNames(extendedSearchOrder(pools));
+			const standardCards = await loadCardsWithNames(pools.standard);
+
+			const byCode = (cards: CardDataEntry[]) =>
+				cards.find((c) => (c.code ?? 0) >>> 0 === CODE_BASE)?.name;
+			expect(byCode(extendedCards)).toBe("Prerelease Update Of Base Card");
+			expect(byCode(standardCards)).toBe("Base Card");
 		});
 	});
 

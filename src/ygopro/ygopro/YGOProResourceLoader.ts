@@ -10,7 +10,13 @@ import { Logger } from "src/shared/logger/domain/Logger";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 import { config } from "src/config";
 import { resolvePools } from "./ResourcePoolResolver";
-import { DEFAULT_POOL, EXTENDED_POOL, lflistScanPaths, selectPoolPaths } from "./PoolSelection";
+import {
+	DEFAULT_POOL,
+	EXTENDED_POOL,
+	extendedSearchOrder,
+	lflistScanPaths,
+	selectPoolPaths,
+} from "./PoolSelection";
 import { resolveForkCorePath } from "./ocgcoreFork";
 
 const CARD_STORAGE_RELOAD_INTERVAL_MS = 10 * 60 * 1000;
@@ -228,7 +234,7 @@ export class YGOProResourceLoader {
 			return this.extendedLoadingPromise;
 		}
 		const loading = this.loadingLock.acquire(async () => {
-			const allPaths = [...this.ygoproPaths, ...this.extraFolderPaths];
+			const allPaths = extendedSearchOrder(this.resolvedPools);
 			const { cardStorage, sha512 } = await this.loadCardStorageFromPaths(allPaths, "extended");
 			this.extendedCardStorage = cardStorage;
 			this.extendedSha512 = sha512;
@@ -270,7 +276,7 @@ export class YGOProResourceLoader {
 		);
 
 		if (this.hasExtraFolderPaths) {
-			const allPaths = [...this.ygoproPaths, ...this.extraFolderPaths];
+			const allPaths = extendedSearchOrder(this.resolvedPools);
 			await this.reloadStorageIfChanged(
 				allPaths,
 				"extended",
