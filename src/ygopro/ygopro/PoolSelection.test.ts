@@ -1,3 +1,7 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { DirScriptReaderEx } from "koishipro-core.js";
 import type { Logger } from "src/shared/logger/domain/Logger";
 import type { ResolvedPools } from "./ResourcePoolResolver";
 import { DEFAULT_POOL, EXTENDED_POOL, lflistScanPaths, selectPoolPaths } from "./PoolSelection";
@@ -33,11 +37,51 @@ describe("selectPoolPaths", () => {
 		});
 	});
 
-	it("maps the extended pool to standard plus the extensions delta", () => {
-		expect(selectPoolPaths(POOLS, EXTENDED_POOL, makeLogger())).toEqual({
-			scripts: [BASE, OCG, PRERELEASES],
-			cards: [BASE, OCG, PRERELEASES],
-		});
+	it("searches the extensions delta first for extended scripts", () => {
+		// The script reader returns the first match, and prereleases ship fixed
+		// scripts for cards that already exist in base.
+		expect(selectPoolPaths(POOLS, EXTENDED_POOL, makeLogger()).scripts).toEqual([
+			PRERELEASES,
+			BASE,
+			OCG,
+		]);
+	});
+
+	it("boots extended duels with the extensions copy of a script that base also has", async () => {
+		const root = fs.mkdtempSync(path.join(os.tmpdir(), "pool-selection-"));
+		try {
+			const base = path.join(root, "base");
+			const prereleases = path.join(root, "prereleases");
+			for (const [dir, body] of [
+				[base, "-- base"],
+				[prereleases, "-- fixed"],
+			]) {
+				fs.mkdirSync(path.join(dir, "script"), { recursive: true });
+				fs.writeFileSync(path.join(dir, "script", "c39275698.lua"), body);
+			}
+			const pools: ResolvedPools = {
+				standard: [base],
+				extended: [base, prereleases],
+				named: {},
+			};
+
+			const reader = await DirScriptReaderEx(
+				...selectPoolPaths(pools, EXTENDED_POOL, makeLogger()).scripts,
+			);
+
+			expect(Buffer.from(reader("./script/c39275698.lua") ?? []).toString()).toBe("-- fixed");
+		} finally {
+			fs.rmSync(root, { recursive: true, force: true });
+		}
+	});
+
+	it("searches the extensions delta first for extended cards", () => {
+		// Prereleases ship updated rows (new set codes, categories) for existing cards.
+		expect(selectPoolPaths(POOLS, EXTENDED_POOL, makeLogger()).cards).toEqual([
+			PRERELEASES,
+			BASE,
+			OCG,
+		]);
 	});
 
 	it("returns a named pool's independent script and card paths", () => {
