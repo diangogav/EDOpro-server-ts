@@ -3,7 +3,7 @@ import LoggerFactory from "@shared/logger/infrastructure/LoggerFactory";
 import { ServerPlugin } from "@shared/plugin/ServerPlugin";
 import { RankGroupResolver } from "@shared/rank/application/RankGroupResolver";
 import { getActiveRankGroupsConfig } from "@shared/rank/infrastructure/RankGroupsConfigLoader";
-import { InMemoryLoadedBanListNamesProvider } from "@shared/rank/infrastructure/InMemoryLoadedBanListNamesProvider";
+import { createLoadedBanListNamesProvider } from "src/bootstrap/loadedBanListNamesProvider";
 
 import { AchievementUnlockedDomainEvent } from "./domain/AchievementUnlockedDomainEvent";
 import { AchievementUnlockedPublisher } from "./domain/AchievementUnlockedPublisher";
@@ -35,7 +35,7 @@ const plugin: ServerPlugin = {
 			new MatchHistoryPostgresReader(),
 			new AchievementCatalogPostgresRepository(),
 			new UserAchievementPostgresRepository(),
-			new RankGroupResolver(getActiveRankGroupsConfig, new InMemoryLoadedBanListNamesProvider()),
+			new RankGroupResolver(getActiveRankGroupsConfig, createLoadedBanListNamesProvider()),
 			unlockedPublisher,
 		),
 	],

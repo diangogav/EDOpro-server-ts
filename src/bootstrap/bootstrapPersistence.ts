@@ -3,7 +3,7 @@ import { EdoProCardDbHotReload } from "@edopro/card/infrastructure/sqlite/EdoPro
 import { EdoProSQLiteTypeORM } from "@edopro/card/infrastructure/sqlite/EdoProSQLiteTypeORM";
 import { Logger } from "@shared/logger/domain/Logger";
 import { formatRankGroupsSummary } from "@shared/rank/application/RankGroupsSummary";
-import { InMemoryLoadedBanListNamesProvider } from "@shared/rank/infrastructure/InMemoryLoadedBanListNamesProvider";
+import { createLoadedBanListNamesProvider } from "src/bootstrap/loadedBanListNamesProvider";
 import { RankGroupPostgresRepository } from "@shared/rank/infrastructure/RankGroupPostgresRepository";
 import { RankGroupSeeder } from "@shared/rank/infrastructure/RankGroupSeeder";
 import {
@@ -41,7 +41,7 @@ export async function bootstrapPersistence(logger: Logger): Promise<void> {
 		// the lists each enabled group is actually fed by right now.
 		const summary = formatRankGroupsSummary(
 			rankGroupsConfig,
-			new InMemoryLoadedBanListNamesProvider().nameSets(),
+			createLoadedBanListNamesProvider().nameSets(),
 			new Date(),
 		);
 		if (summary !== null) {
