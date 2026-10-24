@@ -20,7 +20,7 @@ Branch: `refactor/shared-kernel-room-ports`. Delivery: one PR, one commit per ta
 | T3 | S1, S2, S3 | inline | done (RED 4 suites → GREEN; 1132 tests) | c4678c3b |
 | T4 | S1, S2, S3 | inline | done (RED order test → GREEN; branch bodies diffed identical; 2500 tests) | cb4481b7 |
 | T5 | S4 | inline | done (planted alias + relative imports both rejected; repo lint clean) | 6b6d7e35 |
-| T6 | S5 | inline | done except un-draft (draft until #436 merges) | 18696da3 (on #435) |
+| T6 | S5 | inline | done (#435 rebased on #436, marked ready) | e8d369ab (on #435) |
 
 - T1: `YgoRoom` uses `YgoClient` instead of `Client | YGOProClient`.
 - T2: `InMemoryLoadedBanListNamesProvider` → per-flow `LoadedBanListNamesSource` + shared composite; single instance built outside shared.
@@ -39,3 +39,6 @@ Route evidence: units are sequential (T3/T4 share the connection handlers and se
 - L4: #435 rebased onto main and updated for the ports (18696da3); kept draft until #436 merges, per "el de agents debería ser después del otro refactor".
 - L5 (user): "agreguemos los tests" — after review advisory R3-edopro-policy-branch-coverage. Added EdoproDisconnectPolicy.test.ts (7 cases: handles, empty room, host leaves, guest leaves, spectator leaves, last spectator deletes, unknown socket); two planted mutants (status 0xa, missing spectator deleteRoom) each fail one test.
 - L6 (user): "si, agrega el test de ygopro" — after review advisory R3-ygopro-matchmaking-abort-branch-direct-test. Added YGOProDisconnectPolicy.test.ts (10 cases incl. check order); planted mutants (matchmaking/empty-room order swapped, missing player.destroy) each fail one test.
+- L7 (user): "mergeado" — #436 merged as 6a05aced. #435 rebased onto it, persistence path in root AGENTS.md fixed, marked ready.
+- L8 (user): "si" — after review advisories on #435: script matches exact AGENTS.md basenames that exist on disk (probed with SUBAGENTS.md and a deleted AGENTS.md), Key Commands lists the script, T6 commit column fixed.
+- L9 (user): "corrige" — ygopro guide states which abandon path publishes GameOverDomainEvent; script reads ls-files -z (probed with a "módulo ñ" directory).
