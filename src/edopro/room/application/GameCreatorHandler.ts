@@ -1,6 +1,5 @@
-import { ServerErrorClientMessage } from "@edopro/messages/server-to-client/ServerErrorMessageClientMessage";
+import { AuthenticatePlayer } from "@edopro/room/application/AuthenticatePlayer";
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
-import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 import { EventEmitter } from "stream";
 
 import { config } from "../../../config";
@@ -55,9 +54,8 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 			return;
 		}
 
-		const user = await this.userAuth.run(playerInfoMessage);
-		if (!(user instanceof UserProfile)) {
-			this.socket.send(ServerErrorClientMessage.create(user));
+		const user = await new AuthenticatePlayer(this.userAuth).run(playerInfoMessage, this.socket);
+		if (!user) {
 			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 
 			return;

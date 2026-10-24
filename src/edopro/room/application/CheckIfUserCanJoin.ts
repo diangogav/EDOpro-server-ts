@@ -1,7 +1,6 @@
-import { ServerErrorClientMessage } from "@edopro/messages/server-to-client/ServerErrorMessageClientMessage";
+import { AuthenticatePlayer } from "@edopro/room/application/AuthenticatePlayer";
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { ISocket } from "src/shared/socket/domain/ISocket";
-import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 
 import { UserAuth } from "@shared/user-auth/application/UserAuth";
 
@@ -19,13 +18,8 @@ export class CheckIfUseCanJoin {
 	 * it cannot decode.
 	 */
 	async check(playerInfo: PlayerInfoMessage, socket: ISocket): Promise<boolean> {
-		const user = await this.userAuth.run(playerInfo);
-		if (!(user instanceof UserProfile)) {
-			socket.send(ServerErrorClientMessage.create(user));
+		const user = await new AuthenticatePlayer(this.userAuth).run(playerInfo, socket);
 
-			return false;
-		}
-
-		return true;
+		return user !== null;
 	}
 }
