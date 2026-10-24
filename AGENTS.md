@@ -3,7 +3,7 @@
 ## How to Use This Guide
 
 - **Start here**: This file defines the rules, patterns, and workflows for the `EDOpro-server-ts` project.
-- **Strict Adherence**: You must follow the "Prime Directives" and "Auto-invoke Skills" without exception.
+- **Strict Adherence**: You must follow the "Prime Directives" and "Auto-invoke SOPs" without exception.
 - **Context**: This is a high-performance Hexagonal/DDD architecture.
 
 ## Project Overview
@@ -13,7 +13,7 @@
 | **Core Domain** | `src/edopro/`, `src/shared/`            | TypeScript, DDD  | Business logic, Entities, Value Objects          |
 | **API**         | `src/http-server/`                      | Express, Diod    | REST endpoints for management                    |
 | **Realtime**    | `src/socket-server/`                    | WS, Net          | WebSocket & TCP socket handling                  |
-| **Persistence** | `src/shared/infrastructure/persistence` | TypeORM, Redis   | PostgreSQL (Users), SQLite (Game), Redis (Cache) |
+| **Persistence** | `src/evolution-types/src`, `src/shared/db` | TypeORM, Redis   | PostgreSQL (Users), SQLite (Game), Redis (Cache) |
 | **Clients**     | `src/edopro/`, `src/ygopro/`            | Custom Protocols | Implementations for EDOPro and YGOPro clients    |
 
 ---
@@ -47,31 +47,20 @@ As an AI agent, you must strictly adhere to these rules. **Violation of these ru
 
 ---
 
-## Available Skills
-
-Use these skills for detailed patterns on-demand:
-
-| Skill                  | Description                                                                                 | Location                                       |
-| ---------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `typescript-expert`    | Deep knowledge of type-level programming, performance, and tooling                          | `.agents/skills/typescript-expert/SKILL.md`    |
-| `systematic-debugging` | Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes | `.agents/skills/systematic-debugging/SKILL.md` |
-
-## Auto-invoke Skills
+## Auto-invoke SOPs
 
 When performing these actions, **ALWAYS** follow the corresponding Standard Operating Procedure (SOP) below:
 
-| Action                                              | Skill / SOP                                     |
-| --------------------------------------------------- | ----------------------------------------------- |
-| "Implement feature...", "Create use case..."        | **[SOP-001] Feature Implementation (DDD)**      |
-| "Write tests...", "Fix bug...", "Add unit test"     | **[SOP-002] Testing Strategy**                  |
-| "Add field to DB", "Update schema", "New entity"    | **[SOP-003] Database Migration**                |
-| "Create new module", "New architecture component"   | **[SOP-004] Module Creation**                   |
-| "Fix complex type error", "Optimize TS build"       | **typescript-expert**                           |
-| "Debug an issue", "Fix bug", "Why is this failing?" | **systematic-debugging**                        |
+| Action                                            | SOP                                        |
+| ------------------------------------------------- | ------------------------------------------ |
+| "Implement feature...", "Create use case..."      | **[SOP-001] Feature Implementation (DDD)** |
+| "Write tests...", "Fix bug...", "Add unit test"   | **[SOP-002] Testing Strategy**             |
+| "Add field to DB", "Update schema", "New entity"  | **[SOP-003] Database Migration**           |
+| "Create new module", "New architecture component" | **[SOP-004] Module Creation**              |
 
 ---
 
-## Standard Operating Procedures (Skills)
+## Standard Operating Procedures
 
 ### [SOP-001] Feature Implementation (DDD)
 
@@ -96,7 +85,7 @@ When performing these actions, **ALWAYS** follow the corresponding Standard Oper
 
 **Goal**: Consistent, co-located tests. Full conventions in [docs/testing.md](./docs/testing.md).
 
-1.  **Co-locate the test**: create `[Thing].test.ts` next to `src/[module]/[Thing].ts`. Do **not** add to the root `tests/` folder (legacy, being migrated out).
+1.  **Co-locate the test**: create `[Thing].test.ts` next to `src/[module]/[Thing].ts`. Do **not** create a separate `tests/` tree.
 2.  **Build test data**:
     - Shared domain entities → use/create a `*Mother` (static `create(overrides?)`, faker defaults):
       ```typescript
@@ -131,7 +120,7 @@ When performing these actions, **ALWAYS** follow the corresponding Standard Oper
     ```bash
     MIGRATION_NAME=NameOfChange pnpm migration:generate
     ```
-3.  **Verify**: Inspect the generated file in `src/shared/infrastructure/persistence/typeorm/migrations/`.
+3.  **Verify**: Inspect the generated file in `src/evolution-types/src/migrations/`.
 4.  **Apply**:
     ```bash
     pnpm migration:run
@@ -164,19 +153,37 @@ When performing these actions, **ALWAYS** follow the corresponding Standard Oper
 | `pnpm test path/to/file`   | Run specific test file               |
 | `pnpm lint`                | Check code style                     |
 | `pnpm lint:fix`            | Fix code style                       |
+| `scripts/generate-claude-md.sh` | Link a `CLAUDE.md` to every tracked `AGENTS.md` (run after adding one) |
 
 ### Path Aliases
 
 - `@edopro/*` → `src/edopro/*`
 - `@shared/*` → `src/shared/*`
-- `@http/*` → `src/http-server/*`
+- `@ygopro/*` → `src/ygopro/*`
+- `@plugins/*` → `src/plugins/*`
+- `@test-support/*` → `src/test-support/*`
 
 ### Multi-Client Architecture
 
-The server acts as a bridge between different client protocols and the C++ Duel Engine:
+The server runs two independent match flows over the same shared kernel. Read the module guide before touching a flow: [`src/edopro/AGENTS.md`](./src/edopro/AGENTS.md), [`src/ygopro/AGENTS.md`](./src/ygopro/AGENTS.md).
 
-- **EDOPro**: Binary TCP protocol.
-- **YGOPro**: Binary TCP protocol (srvpro2-compatible) for Koishi, YGO Mobile, and YGOPro clients.
-- **Engine**: C++ ocgcore via worker threads (WASM).
+| Aspect               | EDOPro (`src/edopro/`)                          | YGOPro (`src/ygopro/`)                                     |
+| -------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
+| Reference            | Multirole                                       | srvpro2                                                    |
+| Servers              | `HostServer` / `WSHostServer`                   | `YGOProServer` ("Mercury" TCP) / `WSYGOProServer` (ticket) |
+| Room creation        | Explicit `CREATE_GAME` with binary options      | Inside JOIN, from the `command#password` string            |
+| Join routing         | Room id + password                              | Join strategy chain (AI, windbot, invite, watch, ticket)   |
+| Matchmaking, windbot | No                                              | Yes                                                        |
+| Engine               | C++ `CoreIntegrator` child process (JSON stdio) | WASM ocgcore in a worker thread                            |
+| Per-player filtering | In the C++ core                                 | In TS (`OCGCore.deliverToTargets`)                         |
+| Message encoding     | Hand-written buffers                            | `ygopro-msg-encode`                                        |
+| Deck validator       | `Deck.validate()` (shared chain)                | `YGOProDeckValidator` (shared chain + availability)        |
+| Cards                | SQLite `CardEntity`                             | `YGOProResourceLoader`, one reader per `cardPool`          |
+| Banlist key          | Hash                                            | lflist index                                               |
+| Room list            | `RoomList`                                      | `YGOProRoomList`                                           |
 
-Ensure changes in `shared/` do not break protocol-specific implementations in `edopro/` or `ygopro/`.
+**Shared by both flows** (changes here affect both): `YgoRoom` (mutex, state), `Commands` and `MessageProcessor`, `MessageEmitter` (also dispatches the `MATCHMAKING_*` opcodes YGOPro uses) and `PlayerInfoMessage` in `src/shared/messages/`, `UserAuth` (returns a `ServerErrorMessage`; each flow encodes it), `RoomFinder` and `DisconnectHandler` (they only orchestrate; each flow plugs in a `RoomLocator` and a `RoomDisconnectPolicy`), deck validators, `EventBus`, `MatchLifecycleHooks`, and plugins.
+
+**Shared kernel boundary**: `src/shared/` never imports `src/edopro/` or `src/ygopro/` (Biome `noRestrictedImports` fails the lint). When shared code needs protocol behavior, define a port in `src/shared/` and implement it in each flow; wire the implementations in `src/bootstrap/` (`createRoomFinder`, `createDisconnectHandler`, `createLoadedBanListNamesProvider`). A new room type registers its locator and disconnect policy there.
+
+**`GameOverDomainEvent`** is published in three places that must stay in sync: `FinishDuelHandler` (EDOPro), `YGOProDuelingState` and `EndMatchByAbandon` (YGOPro).
