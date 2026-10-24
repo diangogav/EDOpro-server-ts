@@ -38,7 +38,7 @@ export class RoomCreator {
 			startHand: 5,
 			drawCount: 1,
 			timeLimit: 700,
-			rule: payload.rule || 4, // 0 = OCG, 1 = TCG, 2 = OCG/TCG, 3 = Prerelease, 4 = Anything Goes
+			rule: payload.rule ?? 4, // 0 = OCG, 1 = TCG, 2 = OCG/TCG, 3 = Prerelease, 4 = Anything Goes
 			noCheck: false,
 			noShuffle: false,
 			banListHash: banlist.hash,

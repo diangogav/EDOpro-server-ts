@@ -398,33 +398,33 @@ describe("YGOProRoom", () => {
 			expect(room.cardPool).toBe(EXTENDED_POOL);
 		});
 
-		it("Should create a tcgpre room with rule 5 (no scope restriction) and extended card pool", () => {
+		it("Should create a tcgpre room limited to TCG cards on the extended card pool", () => {
 			const room = YGOProRoomMother.create({ command: "tcgpre,tm800#123" });
-			expect(room.hostInfo.rule).toBe(5);
+			expect(room.hostInfo.rule).toBe(1);
 			expect(room.hostInfo.duel_rule).toBe(5);
 			expect(room.hostInfo.time_limit).toBe(800);
 			expect(room.cardPool).toBe(EXTENDED_POOL);
 		});
 
-		it("Should create an ocgpre room with rule 5 (no scope restriction) and extended card pool", () => {
+		it("Should create an ocgpre room limited to OCG cards on the extended card pool", () => {
 			const room = YGOProRoomMother.create({ command: "ocgpre#123" });
-			expect(room.hostInfo.rule).toBe(5);
+			expect(room.hostInfo.rule).toBe(0);
 			expect(room.hostInfo.lflist).toBe(0);
 			expect(room.hostInfo.duel_rule).toBe(5);
 			expect(room.cardPool).toBe(EXTENDED_POOL);
 		});
 
-		it("Should create a tcgart room with rule 5 (no scope restriction) and extended card pool", () => {
+		it("Should create a tcgart room limited to TCG cards on the extended card pool", () => {
 			const room = YGOProRoomMother.create({ command: "tcgart,tm800#123" });
-			expect(room.hostInfo.rule).toBe(5);
+			expect(room.hostInfo.rule).toBe(1);
 			expect(room.hostInfo.duel_rule).toBe(5);
 			expect(room.hostInfo.time_limit).toBe(800);
 			expect(room.cardPool).toBe(EXTENDED_POOL);
 		});
 
-		it("Should create an ocgart room with rule 5 (no scope restriction) and extended card pool", () => {
+		it("Should create an ocgart room limited to OCG cards on the extended card pool", () => {
 			const room = YGOProRoomMother.create({ command: "ocgart#123" });
-			expect(room.hostInfo.rule).toBe(5);
+			expect(room.hostInfo.rule).toBe(0);
 			expect(room.hostInfo.lflist).toBe(0);
 			expect(room.hostInfo.duel_rule).toBe(5);
 			expect(room.cardPool).toBe(EXTENDED_POOL);
@@ -438,6 +438,19 @@ describe("YGOProRoom", () => {
 		it("Should NOT use extended card pool for ot format", () => {
 			const room = YGOProRoomMother.create({ command: "ot#123" });
 			expect(room.cardPool).toBe(DEFAULT_POOL);
+		});
+	});
+
+	describe("room list presentation", () => {
+		it("reports the Mercury all-cards rule as the EDOPro anything-goes rule", () => {
+			const room = YGOProRoomMother.create({ command: "pre#123" });
+			expect(room.hostInfo.rule).toBe(5);
+			expect(room.toPresentation().rule).toBe(4);
+		});
+
+		it("keeps the OCG-only and TCG-only rules, which both numberings share", () => {
+			expect(YGOProRoomMother.create({ command: "oo#123" }).toPresentation().rule).toBe(0);
+			expect(YGOProRoomMother.create({ command: "to#123" }).toPresentation().rule).toBe(1);
 		});
 	});
 
