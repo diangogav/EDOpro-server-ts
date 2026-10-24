@@ -21,9 +21,9 @@ jest.mock("../../../web-socket-server/WebSocketSingleton", () => {
 
 import { EventEmitter } from "stream";
 
-import { DisconnectHandler } from "./DisconnectHandler";
-import { DuelState } from "../domain/YgoRoom";
-import { RoomFinder } from "./RoomFinder";
+import { createDisconnectHandler } from "src/bootstrap/disconnectHandler";
+import { DuelState } from "@shared/room/domain/YgoRoom";
+import { RoomFinder } from "@shared/room/application/RoomFinder";
 import { YGOProClient } from "@ygopro/client/domain/YGOProClient";
 import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
 import MercuryRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
@@ -97,7 +97,7 @@ const makeRoomFinder = (room: YGOProRoom): RoomFinder =>
 
 const runDisconnect = (room: YGOProRoom, humanSocketId: string): void => {
 	const socket = makeSocket(humanSocketId, true);
-	const handler = new DisconnectHandler(socket as never, makeRoomFinder(room));
+	const handler = createDisconnectHandler(socket as never, makeRoomFinder(room));
 	handler.run();
 };
 

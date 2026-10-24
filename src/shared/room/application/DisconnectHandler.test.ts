@@ -1,116 +1,81 @@
-/**
- * DisconnectHandler — matchmaking queue dequeue on disconnect (D17).
- *
- * A socket can be queued in matchmaking with no room at all. On disconnect,
- * DisconnectHandler must dequeue it from the shared pool before (and
- * independently of) any room lookup, and must stay a safe no-op when
- * matchmaking was never initialized.
- */
-
+import { ISocket } from "@shared/socket/domain/ISocket";
+import { SocketDisconnectListener } from "@shared/socket/domain/SocketDisconnectListener";
 import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
-import { ParticipantMother } from "@test-support/mothers/matchmaking/ParticipantMother";
-import { MatchmakingQueue } from "@ygopro/matchmaking/application/MatchmakingQueue";
 
+import { RoomDisconnectPolicy } from "../domain/RoomDisconnectPolicy";
+import { YgoRoom } from "../domain/YgoRoom";
 import { DisconnectHandler } from "./DisconnectHandler";
 import { RoomFinder } from "./RoomFinder";
 
-const makeSocket = (id: string) => ({
-	id,
-	closed: false,
-	send: jest.fn(),
-	removeAllListeners: jest.fn(),
-});
+const room = { id: 7 } as unknown as YgoRoom;
 
-const makeRoomFinder = (room: unknown): RoomFinder =>
-	({ run: jest.fn().mockReturnValue(room) }) as unknown as RoomFinder;
+function makeFinder(found: YgoRoom | null, calls: string[]): RoomFinder {
+	return {
+		run: jest.fn(() => {
+			calls.push("lookup");
 
-describe("DisconnectHandler — matchmaking dequeue", () => {
-	afterEach(() => {
-		MatchmakingQueue.resetForTests();
-		jest.restoreAllMocks();
-	});
+			return found;
+		}),
+	} as unknown as RoomFinder;
+}
 
-	it("dequeues by socket id when the socket has no room, and logs the dequeue", () => {
-		MatchmakingQueue.init({
-			now: () => 0,
-			createRankedRoom: jest.fn(),
-			createBotRoom: jest.fn(),
-			spawnBot: jest.fn(),
-		});
-		jest.spyOn(MatchmakingQueue.getInstance(), "dequeueBySocketId").mockReturnValue(true);
-		const roomFinder = makeRoomFinder(undefined);
-		const socket = makeSocket("sock-queued");
+function makePolicy(name: string, handles: boolean, calls: string[]): RoomDisconnectPolicy {
+	return {
+		handles: jest.fn(() => handles),
+		onDisconnect: jest.fn(() => {
+			calls.push(name);
+		}),
+	};
+}
+
+function makeListener(calls: string[]): SocketDisconnectListener {
+	return {
+		onSocketClosed: jest.fn(() => {
+			calls.push("listener");
+		}),
+	};
+}
+
+describe("DisconnectHandler", () => {
+	const socket = { id: "sock-1" } as ISocket;
+
+	it("runs the listeners, then the room lookup, then the first policy that handles the room", () => {
+		const calls: string[] = [];
+		const skipped = makePolicy("skipped", false, calls);
+		const chosen = makePolicy("chosen", true, calls);
+		const later = makePolicy("later", true, calls);
+		const listener = makeListener(calls);
 		const logger = new LoggerMock();
-		const infoSpy = jest.spyOn(logger, "info");
-
-		new DisconnectHandler(socket as never, roomFinder, logger).run();
-
-		expect(MatchmakingQueue.getInstance().dequeueBySocketId).toHaveBeenCalledWith("sock-queued");
-		expect(roomFinder.run).toHaveBeenCalledWith("sock-queued");
-		expect(infoSpy).toHaveBeenCalledWith("matchmaking.dequeued", { reason: "disconnect" });
-	});
-
-	it("dequeues before the room lookup even when a room is found", () => {
-		MatchmakingQueue.init({
-			now: () => 0,
-			createRankedRoom: jest.fn(),
-			createBotRoom: jest.fn(),
-			spawnBot: jest.fn(),
-		});
-		const dequeueSpy = jest.spyOn(MatchmakingQueue.getInstance(), "dequeueBySocketId");
-		// An unrecognized room shape short-circuits handle()/handleYGOPro() with
-		// no side effects, isolating this assertion to the dequeue-ordering claim.
-		const roomFinder = makeRoomFinder({});
-		const socket = makeSocket("sock-with-room");
-
-		new DisconnectHandler(socket as never, roomFinder).run();
-
-		expect(dequeueSpy).toHaveBeenCalledWith("sock-with-room");
-	});
-
-	it("counts a disconnect during a pending accept step as a decline, returning the opponent to the pool", () => {
-		const matchHandler = { handle: jest.fn() };
-		MatchmakingQueue.init({
-			now: () => 0,
-			createRankedRoom: jest.fn(),
-			createBotRoom: jest.fn(),
-			spawnBot: jest.fn(),
-			matchHandler,
-		});
-		const pool = MatchmakingQueue.getInstance().getPool();
-		pool.add(
-			ParticipantMother.create({
-				id: "sock-pending",
-				userId: "u-pending",
-				enqueuedAt: 0,
-				supportsAcceptStep: true,
-			}),
-		);
-		pool.add(
-			ParticipantMother.create({ id: "sock-opponent", userId: "u-opponent", enqueuedAt: 1 }),
-		);
-		pool.tick();
-		const logger = new LoggerMock();
-		const infoSpy = jest.spyOn(logger, "info");
 
 		new DisconnectHandler(
-			makeSocket("sock-pending") as never,
-			makeRoomFinder(undefined),
+			socket,
+			makeFinder(room, calls),
+			[skipped, chosen, later],
+			[listener],
 			logger,
 		).run();
 
-		expect(infoSpy).toHaveBeenCalledWith("matchmaking.dequeued", { reason: "disconnect" });
-		expect(pool.isQueued("sock-pending")).toBe(false);
-		expect(pool.isQueued("sock-opponent")).toBe(true);
-		expect(pool.depthByFormat().tcg).toBe(1);
-		expect(matchHandler.handle).not.toHaveBeenCalled();
+		expect(calls).toEqual(["listener", "lookup", "chosen"]);
+		expect(listener.onSocketClosed).toHaveBeenCalledWith("sock-1", logger);
+		expect(chosen.onDisconnect).toHaveBeenCalledWith(room, socket, logger);
+		expect(later.handles).not.toHaveBeenCalled();
 	});
 
-	it("is a no-op when matchmaking was never initialized", () => {
-		const roomFinder = makeRoomFinder(undefined);
-		const socket = makeSocket("sock-no-mm");
+	it("runs only the listeners when the socket has no room", () => {
+		const calls: string[] = [];
+		const policy = makePolicy("policy", true, calls);
 
-		expect(() => new DisconnectHandler(socket as never, roomFinder).run()).not.toThrow();
-		expect(MatchmakingQueue.isInitialized()).toBe(false);
+		new DisconnectHandler(socket, makeFinder(null, calls), [policy], [makeListener(calls)]).run();
+
+		expect(calls).toEqual(["listener", "lookup"]);
+		expect(policy.handles).not.toHaveBeenCalled();
+	});
+
+	it("does nothing when the socket has no id", () => {
+		const calls: string[] = [];
+
+		new DisconnectHandler({} as ISocket, makeFinder(room, calls), [], [makeListener(calls)]).run();
+
+		expect(calls).toEqual([]);
 	});
 });
