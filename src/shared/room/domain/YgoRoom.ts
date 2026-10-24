@@ -5,8 +5,6 @@ import { Duel } from "@shared/room/Duel";
 import { Team } from "@shared/room/Team";
 import { EventEmitter } from "stream";
 
-import { Client } from "../../../edopro/client/domain/Client";
-import { YGOProClient } from "@ygopro/client/domain/YGOProClient";
 import { YgoClient } from "../../client/domain/YgoClient";
 import { ISocket } from "../../socket/domain/ISocket";
 import { Mutex } from "async-mutex";
@@ -128,7 +126,7 @@ export abstract class YgoRoom {
 		this.emitter.emit(event, message, this, socket);
 	}
 
-	emitRoomEvent(event: string, message: unknown, client?: Client | YGOProClient): void {
+	emitRoomEvent(event: string, message: unknown, client?: YgoClient): void {
 		this.emitter.emit(event, message, this, client);
 	}
 
@@ -215,7 +213,7 @@ export abstract class YgoRoom {
 
 	calculatePlaceUnsafe(startPosition?: number): { position: number; team: number } | null {
 		const team0 = this.players
-			.filter((client: Client) => client.team === 0)
+			.filter((client: YgoClient) => client.team === 0)
 			.map((client) => client.position);
 
 		const availableTeam0Positions = this.getDifference(this.t0Positions, team0);
@@ -231,7 +229,7 @@ export abstract class YgoRoom {
 		}
 
 		const team1 = this.players
-			.filter((client: Client) => client.team === 1)
+			.filter((client: YgoClient) => client.team === 1)
 			.map((client) => client.position);
 
 		const availableTeam1Positions = this.getDifference(this.t1Positions, team1);
@@ -265,7 +263,7 @@ export abstract class YgoRoom {
 	}
 
 	initializeHistoricalData(): void {
-		const players = this._players.map((client: Client) => ({
+		const players = this._players.map((client: YgoClient) => ({
 			id: client.id,
 			team: client.team,
 			name: client.name,
@@ -299,8 +297,8 @@ export abstract class YgoRoom {
 
 	playerNames(team: number): string {
 		return this.players
-			.filter((player: Client) => player.team === team)
-			.map((item: Client) => `${item.name}`)
+			.filter((player: YgoClient) => player.team === team)
+			.map((item: YgoClient) => `${item.name}`)
 			.join(",");
 	}
 
@@ -383,7 +381,7 @@ export abstract class YgoRoom {
 			banList: {
 				name: this.currentDuel?.banListName,
 			},
-			players: this.players.map((client: Client) => ({
+			players: this.players.map((client: YgoClient) => ({
 				position: client.position,
 				username: client.name,
 				lps: this.currentDuel?.lps[client.team],
