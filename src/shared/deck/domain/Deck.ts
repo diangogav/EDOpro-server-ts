@@ -1,5 +1,5 @@
 import { DeckRules } from "@shared/room/domain/YgoRoom";
-import { EdoproBanList } from "../../../edopro/ban-list/domain/BanList";
+import { BanList } from "@shared/ban-list/BanList";
 import { DeckError } from "./errors/DeckError";
 import { AvailableCardValidationHandler } from "./validators/AvailableCardValidationHandler";
 import { DeckLimitsValidationHandler } from "./validators/DeckLimitsValidationHandler";
@@ -18,7 +18,7 @@ export class Deck {
 	readonly main: Card[];
 	readonly side: Card[];
 	readonly extra: Card[];
-	private readonly banList: EdoproBanList;
+	private readonly banList: BanList;
 	private readonly deckRules: DeckRules;
 
 	constructor({
@@ -31,7 +31,7 @@ export class Deck {
 		main?: Card[];
 		side?: Card[];
 		extra?: Card[];
-		banList: EdoproBanList;
+		banList: BanList;
 		deckRules: DeckRules;
 	}) {
 		this.main = main;

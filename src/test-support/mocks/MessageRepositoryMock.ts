@@ -1,4 +1,4 @@
-import { MessageRepository } from "@shared/messages/MessageRepository";
+import { MessageRepository } from "@ygopro/room/domain/messages/MessageRepository";
 
 export class MessageRepositoryMock extends MessageRepository {
 	selectHandMessage = jest.fn().mockReturnValue(Buffer.from("select-hand"));

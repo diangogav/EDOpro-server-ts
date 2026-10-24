@@ -1,4 +1,4 @@
-import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
+import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { EventEmitter } from "stream";
 
 import { ChatColor } from "ygopro-msg-encode";
@@ -11,7 +11,7 @@ import { Logger } from "../../../shared/logger/domain/Logger";
 import { JoinMessageHandler } from "../../../shared/room/domain/JoinMessageHandler";
 import { createSystemChat } from "../../../shared/room/domain/chat/SystemChat";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
-import { CheckIfUseCanJoin } from "../../../shared/user-auth/application/CheckIfUserCanJoin";
+import { CheckIfUseCanJoin } from "@edopro/room/application/CheckIfUserCanJoin";
 import { JoinGameMessage } from "../../messages/client-to-server/JoinGameMessage";
 import { Commands } from "../../../shared/messages/Commands";
 import { ClientMessage } from "../../../shared/messages/MessageProcessor";

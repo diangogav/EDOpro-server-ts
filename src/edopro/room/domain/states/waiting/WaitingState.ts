@@ -1,5 +1,5 @@
+import { AuthenticatePlayer } from "@edopro/room/application/AuthenticatePlayer";
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
-import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 import { EventEmitter } from "stream";
 
 import { ChatColor } from "ygopro-msg-encode";
@@ -11,7 +11,7 @@ import { Client } from "../../../../client/domain/Client";
 import { DeckCreator } from "../../../../deck/application/DeckCreator";
 import { UpdateDeckMessageParser } from "../../../../deck/application/UpdateDeckMessageSizeCalculator";
 import { JoinGameMessage } from "../../../../messages/client-to-server/JoinGameMessage";
-import { PlayerInfoMessage } from "../../../../messages/client-to-server/PlayerInfoMessage";
+import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../../../shared/messages/Commands";
 import { ClientMessage } from "../../../../../shared/messages/MessageProcessor";
 import { ErrorMessages } from "../../../../messages/server-to-client/error-messages/ErrorMessages";
@@ -272,10 +272,9 @@ export class WaitingState extends RoomState {
 			let userId: string | null = null;
 
 			if (room.ranked) {
-				const user = await this.userAuth.run(playerInfoMessage);
+				const user = await new AuthenticatePlayer(this.userAuth).run(playerInfoMessage, socket);
 
-				if (!(user instanceof UserProfile)) {
-					socket.send(user as Buffer);
+				if (!user) {
 					socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 
 					return;

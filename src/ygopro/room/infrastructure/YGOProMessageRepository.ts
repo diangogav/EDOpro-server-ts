@@ -1,4 +1,4 @@
-import { MessageRepository } from "@shared/messages/MessageRepository";
+import { MessageRepository } from "@ygopro/room/domain/messages/MessageRepository";
 import {
 	ErrorMessageType,
 	YGOProMsgWin,

@@ -4,7 +4,7 @@ import { DuelStartClientMessage } from "../../../shared/messages/server-to-clien
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { createSystemChat } from "../../../shared/room/domain/chat/SystemChat";
 import { JoinGameMessage } from "../../messages/client-to-server/JoinGameMessage";
-import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
+import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { CatchUpClientMessage } from "../../messages/server-to-client/CatchUpClientMessage";
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
 import { Room } from "../domain/Room";

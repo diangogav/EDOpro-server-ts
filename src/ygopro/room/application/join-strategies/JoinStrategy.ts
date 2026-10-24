@@ -1,10 +1,10 @@
 import { EventEmitter } from "stream";
 
-import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
+import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { Logger } from "@shared/logger/domain/Logger";
-import { MessageRepository } from "@shared/messages/MessageRepository";
+import { MessageRepository } from "@ygopro/room/domain/messages/MessageRepository";
 
 /**
  * Everything handleJoinGame has available at the point it dispatches.

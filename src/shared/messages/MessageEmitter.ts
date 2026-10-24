@@ -1,9 +1,9 @@
 import { generateUniqueId } from "src/utils/generateUniqueId";
 import { EventEmitter } from "stream";
 
-import { Logger } from "../shared/logger/domain/Logger";
-import { Commands } from "../shared/messages/Commands";
-import { MessageProcessor } from "../shared/messages/MessageProcessor";
+import { Logger } from "@shared/logger/domain/Logger";
+import { Commands } from "./Commands";
+import { MessageProcessor } from "./MessageProcessor";
 
 const MATCHMAKING_COMMANDS: readonly Commands[] = [
 	Commands.MATCHMAKING_AUTH,

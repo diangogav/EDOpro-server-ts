@@ -1,4 +1,4 @@
-import { PlayerInfoMessage } from "./PlayerInfoMessage";
+import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 
 describe("PlayerInfoMessage", () => {
 	it("should parse name only", () => {

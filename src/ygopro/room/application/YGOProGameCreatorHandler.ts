@@ -4,7 +4,7 @@ import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { Logger } from "@shared/logger/domain/Logger";
 import { GameCreatorMessageHandler } from "@shared/room/domain/GameCreatorMessageHandler";
 import { Commands } from "@shared/messages/Commands";
-import { MessageRepository } from "@shared/messages/MessageRepository";
+import { MessageRepository } from "@ygopro/room/domain/messages/MessageRepository";
 
 export class YGOProGameCreatorHandler implements GameCreatorMessageHandler {
 	private readonly logger: Logger;

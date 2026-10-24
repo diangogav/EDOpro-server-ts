@@ -1,4 +1,4 @@
-import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
+import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { Logger } from "@shared/logger/domain/Logger";
 import { PlayerCredential } from "@shared/room/admission/domain/PlayerCredential";
 import { ISocket } from "@shared/socket/domain/ISocket";
