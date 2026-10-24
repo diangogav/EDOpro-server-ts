@@ -1,5 +1,3 @@
-import { Rule } from "@shared/deck/domain/Rule";
-
 /**
  * EDOPro lobby duel flag constants.
  *
@@ -90,17 +88,4 @@ const DUEL_RULE_MAP: Record<number, LobbyDuelInfo> = {
  */
 export function getLobbyDuelInfo(duelRule: number): LobbyDuelInfo {
 	return DUEL_RULE_MAP[duelRule] ?? { duelFlag: 0, forbiddenTypes: 0 };
-}
-
-/**
- * Given a Mercury card-pool rule (0 OCG, 1 TCG, 2 SC, 3 Custom, 4 No unique,
- * 5 All), returns the EDOPro `allowed` value the lobby
- * expects (0 OCG, 1 TCG, 2 OCG/TCG, 3 Prerelease, 4 Anything goes). The client
- * labels a room with system string 1900 + rule and only defines 1900-1904, so a
- * raw 5 renders as "???" and never matches the rule filter. OCG and TCG share
- * both numberings; the client has no label for the others, so they map to
- * anything goes.
- */
-export function toEdoproRule(rule: number): number {
-	return rule === Rule.ONLY_OCG || rule === Rule.ONLY_TCG ? rule : Rule.ALL;
 }

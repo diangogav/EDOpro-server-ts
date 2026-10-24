@@ -9,6 +9,13 @@ import YGOProBanListMemoryRepository from "@ygopro/ban-list/infrastructure/YGOPr
 import { YGOProBanList } from "@ygopro/ban-list/domain/YGOProBanList";
 import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
 import { EdoproBanList } from "@edopro/ban-list/domain/BanList";
+import { Card } from "@shared/card/domain/Card";
+import { CardTypes } from "@shared/card/domain/CardTypes";
+import { Deck } from "@shared/deck/domain/Deck";
+import { OCGCardError } from "@shared/deck/domain/errors/OCGCardError";
+import { Rule } from "@shared/deck/domain/Rule";
+import { YGOProRule } from "./host-info/YGOProRule";
+import { formatRuleMappings } from "./RuleMappings";
 import { YGOProRoom } from "./YGOProRoom";
 import { DEFAULT_POOL, EXTENDED_POOL, RUSH_POOL } from "src/ygopro/ygopro/PoolSelection";
 import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
@@ -438,6 +445,34 @@ describe("YGOProRoom", () => {
 		it("Should NOT use extended card pool for ot format", () => {
 			const room = YGOProRoomMother.create({ command: "ot#123" });
 			expect(room.cardPool).toBe(DEFAULT_POOL);
+		});
+	});
+
+	describe("card-pool rule wiring", () => {
+		afterEach(() => {
+			jest.restoreAllMocks();
+		});
+
+		it("validates decks with the room's YGOPro rule and keeps the EDOPro rule in DeckRules", () => {
+			jest.spyOn(formatRuleMappings.ocg, "get").mockReturnValue({ rule: YGOProRule.CUSTOM });
+			const room = YGOProRoomMother.create({ command: "ocg#123" });
+			const deckRules = room["_deckRules"];
+			const officialCards = Array.from(
+				{ length: 40 },
+				(_, index) =>
+					new Card({
+						alias: "0",
+						code: String(300 + index),
+						type: CardTypes.TYPE_MONSTER,
+						category: 0,
+						variant: 0x3,
+					}),
+			);
+			const deck = new Deck({ main: officialCards, banList: new EdoproBanList(), deckRules });
+
+			expect(room.hostInfo.rule).toBe(YGOProRule.CUSTOM);
+			expect(deckRules.rule).toBe(Rule.ALL);
+			expect(room["createDeckValidator"]().validate(deck)).toBeInstanceOf(OCGCardError);
 		});
 	});
 
