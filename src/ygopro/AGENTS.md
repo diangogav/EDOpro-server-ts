@@ -1,62 +1,39 @@
-# YGOPro Module Guidelines
+# YGOPro Match Flow
 
-## Context
+srvpro2-compatible server for YGOPro clients (Koishi, YGO Mobile, YGOPro). **srvpro2** is the source of truth for protocol behavior; do not copy Multirole patterns from `src/edopro/`. See the comparison table in the root `AGENTS.md`.
 
-This module implements the srvpro2-compatible server for YGOPro clients (Koishi, YGO Mobile, YGOPro). It handles binary TCP connections using the YGOPro protocol. srvpro2 is the source of truth for protocol behavior.
+## Flow
 
-## Key Responsibilities
+1. **Connect**: `YGOProServer` (TCP, `config.servers.mercury.port` — "Mercury" is this TCP server, not WebSocket) / `WSYGOProServer` (WS, gated by `HandshakeTicketAuthenticator`) → `src/socket-server/YGOProConnectionHandler.ts`. Frames wait on the `ready` (auth) promise, then go to the shared `src/shared/messages/MessageEmitter.ts`; matchmaking opcodes go through `matchmakingConnectionFactory`.
+2. **Create room — inside JOIN**: `YGOProGameCreatorHandler` is a no-op. `room/application/YGOProJoinHandler.ts` decodes `YGOProCtosJoinGame`, splits `pass` into `command#password`, and resolves a join strategy (`room/application/join-strategies/composeJoinStrategies.ts`, in order): `AIJoinToken` (`AIJOIN#`) → `WindBot` (`ai`) → `Invite` (`j,`) → `Watch` (`w,<id>`) → `Ticket` (authenticated socket, forces ranked) → `Default` (`findOrCreateRoom`).
+3. **Room options**: `YGOProRoom.create` (`room/domain/YGOProRoom.ts`) parses comma-separated format tokens through `RuleMappings.ts` (`ruleMappings` → `formatRuleMappings` → `priorityRuleMappings`), resolves `cardPool` (`standard`/`extended`/`rush`) via `formatCardPools`, and decides ranked/casual with `RoomLeague.determine`. Matchmaking (`matchmaking/application/MatchmakingRoomFactory.ts`) reuses `YGOProRoom.create`.
+4. **Room states**: `YGOProRoom` (extends shared `YgoRoom`) swaps `room/domain/states/YGOPro*State.ts` — Waiting → RockPaperScissor → ChoosingOrder → Dueling → SideDecking → RPS/ChoosingOrder. Admission goes through `room/admission/application/AdmitToRoom.ts`.
+5. **Deck validation**: `deck/domain/YGOProDeckValidator.ts` = shared validators + ygopro-only `CardAvailabilityValidationHandler` (srvpro2 bitwise scope check). Runs in waiting and side-decking only when `shouldValidateDeck()` is true.
+6. **Duel engine**: `YGOProDuelingState` builds `OCGCore` (`ocgcore-worker/ocgcore.ts`), a **WASM ocgcore in a worker thread** (`yuzuthread` + `koishipro-core.js`), fed with the room's pool scripts and card reader.
+   - Messages are typed `YGOProMsg*` objects from `ygopro-msg-encode`, passed through `GameMessageMiddleware`.
+   - **Per-player filtering is done in TypeScript**: `OCGCore.deliverToTargets` sends `playerView(side)` / `teammateView()` / `observerView()`.
+   - Client → engine: `Commands.RESPONSE` → `ocgCore.setResponse` → `advance`.
+7. **Game over**: a `YGOProMsgWin` middleware hook → `determineNextPhase` → `MatchLifecycleHooks.runEnding` → `finalizeWithReplays` (YRP + EVRP built in TS) → `GameOverDomainEvent` → room removed; otherwise `transitionToSideDecking`. Abandon paths: `EndMatchByAbandon`, `AbandonBetweenDuels`, `FinalizeYGOProRoom`.
+8. **Spectators/reconnect/disconnect**: spectators join with `w,` or by joining a dueling room; `EXPRESS_RECONNECT` + `sendReconnectTimeLimitAndResponseState`; disconnects use the `YGOProRoom` branch of shared `DisconnectHandler` (with windbot and matchmaking teardown).
 
-- **Protocol**: Binary TCP protocol compatible with srvpro2.
-- **Room**: `YGOProRoom` with format-based configuration (TCG, OCG, PRE, Edison, GOAT, etc.).
-- **Duel**: ocgcore execution via worker threads using `yuzuthread` and `koishipro-core.js`.
-- **Card Storage**: Dual card pool (standard + extended) loaded from `.cdb` files via `YGOProResourceLoader`.
+## Resources
 
-## Module-Specific Rules
+- `ygopro/YGOProResourceLoader.ts` (singleton) builds one card reader and script path list per pool from `resources.manifest.json`; `card/infrastructure/CardYGOProRepository.ts` reads cards for a given `cardPool`. The `rush` pool replaces standard instead of extending it.
+- Extended pools search extensions before standard (`extendedSearchOrder` in `PoolSelection.ts`), so prerelease rows and script fixes win, like srvpro2's `expansions/`.
+- Banlists: `YGOProBanListLoader` → `YGOProBanListMemoryRepository`, looked up by **lflist index**. Rooms also resolve the EDOPro banlist hash by name, so EDOPro banlists must load first.
+- Format sources live in `resources/ygopro/alternatives/<format>/` (`cards.cdb`, `lflist.conf`, `script/`), assembled into the gitignored `resources/current/`.
 
-### 1. Binary Protocol Handling
+## SOPs
 
-- Use `ygopro-msg-encode` for message encoding/decoding.
-- **Packet Structure**: Same as YGOPro/srvpro2 binary protocol.
-- **Strict Typing**: Validate all client input. Do not trust client data.
+### Adding a room format
 
-### 2. Room Management (`src/ygopro/room/`)
+1. Add it to `formatRuleMappings` in `room/domain/RuleMappings.ts` (`rule`, `duel_rule`, `lflist`, `time_limit`).
+2. If it needs prerelease/art/rush cards, map it in `formatCardPools`.
+3. Add its resources under `resources/ygopro/alternatives/<format>/` and register them in `resources.manifest.json`.
+4. Add tests in `room/domain/YGOProRoom.test.ts`.
 
-- `YGOProRoom` is the central entity.
-- **Format Commands**: Parsed via `RuleMappings.ts` (ruleMappings, formatRuleMappings, priorityRuleMappings).
-- **Card Pool**: `useExtendedCardPool` flag determines standard vs extended card storage.
-- **State Machine**: Room states (Waiting, RPS, ChoosingOrder, Dueling, SideDecking) via `YGOProRoomState`.
+### Adding a message handler
 
-### 3. Card Database Architecture
-
-- `YGOProResourceLoader` (singleton) loads two `CardStorage` instances at startup.
-- **Standard pool** (`runtime.ygopro.standard` in manifest): Available to all rooms.
-- **Extended pool** (standard + `runtime.ygopro.extended` in manifest): Only for PRE/ART formats.
-- **Extended search order**: `extendedSearchOrder()` puts the extensions before standard for the card rows and scripts that duels load, so prerelease updates and script fixes for existing cards win (same as srvpro2's `expansions/`).
-- `CardYGOProRepository` resolves the correct pool based on the room's `useExtendedCardPool` flag.
-- Unknown cards return `UnknownCardError` — never silently ignored.
-
-### 4. Deck Validation
-
-- `MercuryDeckValidator` uses Chain of Responsibility pattern.
-- `CardAvailabilityValidationHandler` uses srvpro2's bitwise scope check: `(cardOt & availFlag) === availFlag`.
-- Rule values follow srvpro2 protocol (0=OCG, 1=TCG, 5=ALL), not the shared `Rule` enum.
-
-### 5. Source of Truth
-
-- **srvpro2** is the reference for protocol behavior and message handling.
-- **Multirole** is the reference for the EDOPro module — do NOT mix their patterns.
-
-## Common Tasks (SOPs)
-
-### [SOP-YGO-001] Adding a New Room Format
-
-1. Add the format to `formatRuleMappings` in `RuleMappings.ts` with correct `rule`, `duel_rule`, `lflist`, `time_limit`.
-2. If it needs pre-release/art cards, map the format name to the `extended` pool in `formatCardPools` (`RuleMappings.ts`).
-3. Add a banlist `lflist.conf` to the corresponding `resources/ygopro/formats/<format>/` directory.
-4. Add tests in `YGOProRoom.test.ts`.
-
-### [SOP-YGO-002] Adding a New Message Handler
-
-1. Identify the command code in `Commands.ts`.
-2. Create the handler in the appropriate room state (`YGOProWaitingState`, `YGOProDuelingState`, etc.).
-3. Compare behavior with srvpro2 source code.
+1. Find the command code in `src/shared/messages/Commands.ts` (shared with EDOPro — never change existing values).
+2. Handle it in the relevant `YGOPro*State`.
+3. Compare behavior with the srvpro2 source.
