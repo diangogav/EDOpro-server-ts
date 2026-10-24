@@ -14,6 +14,8 @@ export class UnrankedMatchPostgresRepository implements UnrankedMatchRepository 
 			bestOf: unrankedMatch.data.bestOf,
 			playerNames: unrankedMatch.data.playerNames,
 			opponentNames: unrankedMatch.data.opponentNames,
+			playerIds: unrankedMatch.data.playerIds,
+			opponentIds: unrankedMatch.data.opponentIds,
 			date: unrankedMatch.data.date,
 			banListName: unrankedMatch.data.banListName,
 			banListHash: unrankedMatch.data.banListHash,
