@@ -64,9 +64,9 @@ order and later tokens overwrite the same fields. A single token matching more
 than one mapping within that tier throws; multiple distinct tokens are allowed:
 
 1. **`ruleMappings`** (mode): `m`/`match`, `t`/`tag`.
-2. **`formatRuleMappings`** (format presets): `edison`/`ed`, `hat`, `tengu`,
-   `md`, `jtp`, `jtp-2007-03`, `jm`, `gx`, `mdc`, `goat`,
-   `genesys`/`g`/`g<N>`/`genesys<N>`, `rush`, `rushpre`, `speed`, `world`,
+2. **`formatRuleMappings`** (format presets): `edison`/`ed`, `tengu`,
+   `md`, `jtp`, `jtp-2007-03`, `jm` (the JTP family plays master rule 1),
+   `genesys`/`g`/`g<N>`/`genesys<N>`, `rush`, `rushpre`, `world`,
    `pre`, `ocg`, `tcgpre`, `ocgpre`, `tcgart`, `ocgart`.
 3. **`priorityRuleMappings`** (modifiers, win over format tokens): `bo<N>`,
    `lp<N>`, `tm<N>`/`time<N>`, `mr<N>`/`duelrule<N>`, `ot`/`tcg`, `otto`,

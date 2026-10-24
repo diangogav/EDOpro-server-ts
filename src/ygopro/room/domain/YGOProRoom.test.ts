@@ -490,12 +490,17 @@ describe("YGOProRoom", () => {
 	});
 
 	describe("JTP Format", () => {
-		it("Should create a jtp room with rule 5, duel_rule 2 and start hand 5", () => {
+		it("Should create a jtp room with rule 5, duel_rule 1 and start hand 5", () => {
 			const room = YGOProRoomMother.create({ command: "jtp,st5#123" });
 			expect(room.hostInfo.rule).toBe(5);
-			expect(room.hostInfo.duel_rule).toBe(2);
+			expect(room.hostInfo.duel_rule).toBe(1);
 			expect(room.hostInfo.start_hand).toBe(5);
 			expect(room.cardPool).toBe(DEFAULT_POOL);
+		});
+
+		it("plays the advanced 2007-03 list and the match variant under master rule 1", () => {
+			expect(YGOProRoomMother.create({ command: "jtp-2007-03#123" }).hostInfo.duel_rule).toBe(1);
+			expect(YGOProRoomMother.create({ command: "jm#123" }).hostInfo.duel_rule).toBe(1);
 		});
 	});
 
@@ -505,16 +510,6 @@ describe("YGOProRoom", () => {
 			expect(room.hostInfo.rule).toBe(5);
 			expect(room.hostInfo.duel_rule).toBe(2);
 			expect(room.hostInfo.mode).toBe(GameMode.MATCH);
-			expect(room.cardPool).toBe(DEFAULT_POOL);
-		});
-	});
-
-	describe("HAT Format", () => {
-		it("Should create a hat room with rule 5, duel_rule 2 and time_limit 450", () => {
-			const room = YGOProRoomMother.create({ command: "hat#123" });
-			expect(room.hostInfo.rule).toBe(5);
-			expect(room.hostInfo.duel_rule).toBe(2);
-			expect(room.hostInfo.time_limit).toBe(450);
 			expect(room.cardPool).toBe(DEFAULT_POOL);
 		});
 	});
@@ -585,26 +580,6 @@ describe("YGOProRoom", () => {
 			);
 			expect(ranked.toRoomListDTO().ranked).toBe(true);
 			expect(casual.toRoomListDTO().ranked).toBe(false);
-		});
-	});
-
-	describe("GX Format", () => {
-		it("Should create a gx room with rule 5, duel_rule 1 and time limit 500", () => {
-			const room = YGOProRoomMother.create({ command: "gx,tm500#123" });
-			expect(room.hostInfo.rule).toBe(5);
-			expect(room.hostInfo.duel_rule).toBe(1);
-			expect(room.hostInfo.time_limit).toBe(500);
-			expect(room.cardPool).toBe(DEFAULT_POOL);
-		});
-	});
-
-	describe("Goat Format", () => {
-		it("Should create a room with Goat format if command contains goat", () => {
-			const room = YGOProRoomMother.create({ command: "goat#123" });
-			expect(room.hostInfo.rule).toBe(5);
-			expect(room.hostInfo.lflist).toBe(0);
-			expect(room.hostInfo.time_limit).toBe(450);
-			expect(room.hostInfo.duel_rule).toBe(4);
 		});
 	});
 

@@ -23,7 +23,13 @@ describe("isRecognizedToken", () => {
 
 	it("recognizes tokens from the format tier", () => {
 		expect(isRecognizedToken("edison")).toBe(true);
-		expect(isRecognizedToken("goat")).toBe(true);
+		expect(isRecognizedToken("tengu")).toBe(true);
+	});
+
+	it("does not recognize formats that are not served", () => {
+		for (const token of ["goat", "hat", "gx", "mdc", "speed"]) {
+			expect(isRecognizedToken(token)).toBe(false);
+		}
 	});
 
 	it("recognizes tokens from the priority tier, including parametric ones", () => {
@@ -97,34 +103,33 @@ describe("OCG-list-meaning lflist tokens resolve via getFirstOCGIndex, not a lit
 
 // resolveAliasIndex falls back to index 0 when an alias has no matching
 // banlist (mislabeling the room with whatever list sits first) but warns so
-// the miss is diagnosable — gx/mdc are dead tokens today because their lists
-// are not shipped.
+// the miss is diagnosable.
 describe("resolveAliasIndex — warns on alias miss instead of silently mislabeling", () => {
 	afterEach(() => {
 		MercuryBanListMemoryRepository.clear();
 		jest.restoreAllMocks();
 	});
 
-	it("warns when the gx alias has no matching banlist loaded", () => {
+	it("warns when the tengu alias has no matching banlist loaded", () => {
 		const warnSpy = jest
 			.spyOn(LoggerFactory.getLogger(), "warn")
 			.mockImplementation(() => undefined);
 
-		const rule = formatRuleMappings.gx.get("gx");
+		const rule = formatRuleMappings.tengu.get("tengu");
 
 		expect(rule.lflist).toBe(0);
-		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("gx"));
+		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("tengu"));
 	});
 
-	it("warns when the mdc alias has no matching banlist loaded", () => {
+	it("warns when the md alias has no matching banlist loaded", () => {
 		const warnSpy = jest
 			.spyOn(LoggerFactory.getLogger(), "warn")
 			.mockImplementation(() => undefined);
 
-		const rule = formatRuleMappings.mdc.get("mdc");
+		const rule = formatRuleMappings.md.get("md");
 
 		expect(rule.lflist).toBe(0);
-		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("mdc"));
+		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("md"));
 	});
 
 	it("does NOT warn when the alias resolves to a real banlist", () => {
@@ -139,10 +144,10 @@ describe("resolveAliasIndex — warns on alias miss instead of silently mislabel
 		expect(warnSpy).not.toHaveBeenCalled();
 	});
 
-	// Memoize per alias so a missing-banlist alias (e.g. "gx"/"mdc") warns once
-	// instead of re-warning on every room creation that uses it.
+	// Memoize per alias so a missing-banlist alias warns once instead of
+	// re-warning on every room creation that uses it.
 	//
-	// Uses "hat" (not "gx"/"mdc", already exercised by the tests above) so
+	// Uses "jtp" (not "tengu"/"md", already exercised by the tests above) so
 	// this test's outcome doesn't depend on the per-alias memoization state
 	// left behind by sibling tests running first.
 	it("warns only ONCE per alias even when resolved repeatedly", () => {
@@ -150,12 +155,12 @@ describe("resolveAliasIndex — warns on alias miss instead of silently mislabel
 			.spyOn(LoggerFactory.getLogger(), "warn")
 			.mockImplementation(() => undefined);
 
-		formatRuleMappings.hat.get("hat");
-		formatRuleMappings.hat.get("hat");
-		formatRuleMappings.hat.get("hat");
+		formatRuleMappings.jtp.get("jtp");
+		formatRuleMappings.jtp.get("jtp");
+		formatRuleMappings.jtp.get("jtp");
 
 		expect(warnSpy).toHaveBeenCalledTimes(1);
-		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("hat"));
+		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("jtp"));
 	});
 });
 
@@ -225,7 +230,7 @@ describe("jm mapping (jtp best-of-3, used by matchmaking)", () => {
 		expect(rule.mode).toBe(GameMode.MATCH);
 		expect(rule.best_of).toBe(3);
 		expect(rule.rule).toBe(5);
-		expect(rule.duel_rule).toBe(2);
+		expect(rule.duel_rule).toBe(1);
 	});
 
 	it("validates only the exact token", () => {
@@ -298,13 +303,13 @@ describe("edm mapping (edison best-of-3, used by matchmaking)", () => {
 });
 
 describe("jtp-2007-03 mapping (JTP Advanced March 2007)", () => {
-	it("maps the historical JTP variant to MR2 over the open JTP pool", () => {
+	it("maps the historical JTP variant to master rule 1 over the open JTP pool", () => {
 		const findIndex = jest
 			.spyOn(MercuryBanListMemoryRepository, "findIndexByAlias")
 			.mockReturnValue(7);
 		const rule = formatRuleMappings["jtp-2007-03"].get("jtp-2007-03");
 		expect(rule.rule).toBe(5);
-		expect(rule.duel_rule).toBe(2);
+		expect(rule.duel_rule).toBe(1);
 		expect(rule.lflist).toBe(7);
 		expect(findIndex).toHaveBeenCalledWith("adv2007-03");
 		findIndex.mockRestore();
