@@ -13,7 +13,7 @@
 | **Core Domain** | `src/edopro/`, `src/shared/`            | TypeScript, DDD  | Business logic, Entities, Value Objects          |
 | **API**         | `src/http-server/`                      | Express, Diod    | REST endpoints for management                    |
 | **Realtime**    | `src/socket-server/`                    | WS, Net          | WebSocket & TCP socket handling                  |
-| **Persistence** | `src/shared/infrastructure/persistence` | TypeORM, Redis   | PostgreSQL (Users), SQLite (Game), Redis (Cache) |
+| **Persistence** | `src/evolution-types/src`, `src/shared/db` | TypeORM, Redis   | PostgreSQL (Users), SQLite (Game), Redis (Cache) |
 | **Clients**     | `src/edopro/`, `src/ygopro/`            | Custom Protocols | Implementations for EDOPro and YGOPro clients    |
 
 ---
