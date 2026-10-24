@@ -208,6 +208,7 @@ Both pools are loaded at startup and refreshed every 10 minutes if the underlyin
 | `HOST_PORT` | EDOPro server port | `7911` |
 | `YGOPRO_PORT` | YGOPro server port | `7711` |
 | `HTTP_PORT` | HTTP API port | `7922` |
+| `TOURNAMENT_DATABASE_PATH` | Optional absolute path to the persistent community-bracket SQLite file | unset (disabled) |
 | `WEBSOCKET_PORT` | WebSocket port | `4000` |
 | `RESOURCES_DIR` | Root of the assembled resource tree (symlink target) | `./resources/current` |
 | `MANIFEST_PATH` | Path to `resources.manifest.json` used for pool derivation | `./resources.manifest.json` |
@@ -265,6 +266,8 @@ pools.extended.slice(pools.standard.length).forEach(p => console.log(' E', p));
   <source media="(prefers-color-scheme: dark)" srcset="./docs/architecture/server-architecture.dark.png">
   <img alt="Evolution Server architecture: duel clients enter through HostServer (EDOPro) or YGOProServer (Mercury); EDOPro rooms spawn a C++ core child process per duel while YGOPro rooms run ocgcore WASM in a worker thread; matchmaking provisions rooms from HTTP and socket queues; both engines publish GAME_OVER to the EventBus, and plugins persist ratings to PostgreSQL" src="./docs/architecture/server-architecture.light.png">
 </picture>
+
+Community tournament REST API (normal accounts, optional characters, organizer-reported results): [docs/tournaments.md](./docs/tournaments.md).
 
 Interactive version with source links, guided views and search: [docs/architecture/server-architecture.html](./docs/architecture/server-architecture.html) (open it locally in a browser). The diagram source is [server-architecture.archify.json](./docs/architecture/server-architecture.archify.json).
 

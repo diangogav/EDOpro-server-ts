@@ -63,31 +63,32 @@ describe("RoomActionQueue (Lock-Free Queue)", () => {
 	});
 
 	describe("RoomActionQueue Stress Test", () => {
-		it("maneja 1000 acciones mezcladas sin inconsistencia", async () => {
-			const queue = new RoomActionQueue();
-			let counter = 0;
-
-			for (let i = 0; i < 1000; i++) {
-				if (i % 2 === 0) {
-					queue.enqueue(() => {
-						counter++;
-					});
-				} else {
-					queue.enqueue(async () => {
-						await new Promise((r) => {
-							setTimeout(r, 1);
+		it("drains 1000 mixed synchronous and asynchronous actions consistently", async () => {
+			jest.useFakeTimers();
+			try {
+				const queue = new RoomActionQueue();
+				let counter = 0;
+				for (let i = 0; i < 1000; i++) {
+					if (i % 2 === 0) {
+						queue.enqueue(() => {
+							counter++;
 						});
-						counter++;
-					});
+					} else {
+						queue.enqueue(async () => {
+							await new Promise<void>((resolve) => {
+								setTimeout(resolve, 1);
+							});
+							counter++;
+						});
+					}
 				}
+				// Verify ordering/draining independently of the host timer resolution.
+				await jest.runAllTimersAsync();
+				await queue.drain();
+				expect(counter).toBe(1000);
+			} finally {
+				jest.useRealTimers();
 			}
-
-			await new Promise((resolve) => {
-				setTimeout(resolve, 200);
-			});
-
-			await queue.drain();
-			expect(counter).toBe(1000);
 		});
 	});
 });

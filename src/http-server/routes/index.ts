@@ -1,5 +1,7 @@
 import { Express } from "express";
 
+import { loadTournamentRoutes } from "./tournaments";
+
 import { TicketRepository } from "../../shared/ticket/domain/TicketRepository";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { UserProfilePostgresRepository } from "../../shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
@@ -33,6 +35,14 @@ export function loadRoutes(app: Express, logger: Logger, tickets: TicketReposito
 
 	const matchmakingDisplayNames = new UserProfileDisplayNameResolver(
 		new UserProfilePostgresRepository(),
+	);
+
+	loadTournamentRoutes(
+		app,
+		logger,
+		tickets,
+		matchmakingDisplayNames,
+		process.env.TOURNAMENT_DATABASE_PATH,
 	);
 
 	app.post("/api/matchmaking/queue", EnqueueRateLimitMiddleware, (req, res) =>
