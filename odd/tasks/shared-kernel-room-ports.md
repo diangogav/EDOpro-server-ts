@@ -19,8 +19,8 @@ Branch: `refactor/shared-kernel-room-ports`. Delivery: one PR, one commit per ta
 | T2 | S1, S2, S3 | inline | done (RED 3 suites → GREEN; 314 tests) | 95c75d4a |
 | T3 | S1, S2, S3 | inline | done (RED 4 suites → GREEN; 1132 tests) | c4678c3b |
 | T4 | S1, S2, S3 | inline | done (RED order test → GREEN; branch bodies diffed identical; 2500 tests) | cb4481b7 |
-| T5 | S4 | inline | done (planted alias + relative imports both rejected; repo lint clean) | this commit |
-| T6 | S5 | inline | pending | |
+| T5 | S4 | inline | done (planted alias + relative imports both rejected; repo lint clean) | 6b6d7e35 |
+| T6 | S5 | inline | done except un-draft (draft until #436 merges) | 18696da3 (on #435) |
 
 - T1: `YgoRoom` uses `YgoClient` instead of `Client | YGOProClient`.
 - T2: `InMemoryLoadedBanListNamesProvider` → per-flow `LoadedBanListNamesSource` + shared composite; single instance built outside shared.
@@ -35,3 +35,5 @@ Route evidence: units are sequential (T3/T4 share the connection handlers and se
 
 - L1 (2026-10-24, user): "el otro refactor es el grupo 2... ya mergee btw" — then approved the group 2 design with "si".
 - L2: Design from a read-only map of the four files: `YgoRoom` only uses the client types as annotations (members exist on `YgoClient`); `ExpressReconnectHandler` already inverts per flow with injected lambdas; mutex calls in disconnect paths are fire-and-forget and must stay so.
+- L3: PR #436 opened with T1-T5 (1b437217, 95c75d4a, c4678c3b, cb4481b7, 6b6d7e35). Checks: `pnpm test` 2500 pass (254 suites), tsc app+test configs clean, biome lint clean; shared → client imports 0.
+- L4: #435 rebased onto main and updated for the ports (18696da3); kept draft until #436 merges, per "el de agents debería ser después del otro refactor".
