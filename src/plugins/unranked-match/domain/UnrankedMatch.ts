@@ -4,6 +4,9 @@ export interface UnrankedMatchData {
 	readonly bestOf: number;
 	readonly playerNames: string[];
 	readonly opponentNames: string[];
+	/** Ids of the registered players on each side; guests have none and are left out. */
+	readonly playerIds: string[];
+	readonly opponentIds: string[];
 	readonly date: Date;
 	readonly banListName: string;
 	readonly banListHash: string;

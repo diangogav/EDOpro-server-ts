@@ -7,6 +7,13 @@ import { UnrankedMatchRepository } from "../domain/UnrankedMatchRepository";
 import { UnrankedMatch } from "../domain/UnrankedMatch";
 import { UnrankedDuel } from "../domain/UnrankedDuel";
 import { Team } from "src/shared/room/Team";
+import { PlayerMatchSummary } from "src/shared/player/domain/Player";
+
+// Same shape as matches.player_ids: only registered users carry an id, so a
+// guest-only side yields an empty list rather than null placeholders.
+function registeredIds(players: PlayerMatchSummary[]): string[] {
+	return players.map((p) => p.id).filter((id): id is string => id !== null);
+}
 
 export class UnrankedMatchSaver implements DomainEventSubscriber<GameOverDomainEvent> {
 	static readonly ListenTo = GameOverDomainEvent.DOMAIN_EVENT;
@@ -50,6 +57,8 @@ export class UnrankedMatchSaver implements DomainEventSubscriber<GameOverDomainE
 			bestOf: event.data.bestOf,
 			playerNames: team0Players.map((p) => p.name),
 			opponentNames: team1Players.map((p) => p.name),
+			playerIds: registeredIds(team0Players),
+			opponentIds: registeredIds(team1Players),
 			date: event.data.date,
 			banListName,
 			banListHash,
