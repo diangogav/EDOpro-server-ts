@@ -41,3 +41,4 @@ Route evidence: units are sequential (T3/T4 share the connection handlers and se
 - L6 (user): "si, agrega el test de ygopro" — after review advisory R3-ygopro-matchmaking-abort-branch-direct-test. Added YGOProDisconnectPolicy.test.ts (10 cases incl. check order); planted mutants (matchmaking/empty-room order swapped, missing player.destroy) each fail one test.
 - L7 (user): "mergeado" — #436 merged as 6a05aced. #435 rebased onto it, persistence path in root AGENTS.md fixed, marked ready.
 - L8 (user): "si" — after review advisories on #435: script matches exact AGENTS.md basenames that exist on disk (probed with SUBAGENTS.md and a deleted AGENTS.md), Key Commands lists the script, T6 commit column fixed.
+- L9 (user): "corrige" — ygopro guide states which abandon path publishes GameOverDomainEvent; script reads ls-files -z (probed with a "módulo ñ" directory).
