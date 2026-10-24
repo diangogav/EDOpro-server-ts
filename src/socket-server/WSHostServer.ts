@@ -5,7 +5,7 @@ import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { CheckIfUseCanJoin } from "@edopro/room/application/CheckIfUserCanJoin";
 import { Logger } from "../shared/logger/domain/Logger";
-import { RoomFinder } from "../shared/room/application/RoomFinder";
+import { createRoomFinder } from "src/bootstrap/roomFinder";
 import { WebSocketClientSocket } from "../shared/socket/domain/WebSocketClientSocket";
 import { SocketConnectionHandler } from "./SocketConnectionHandler";
 
@@ -19,7 +19,7 @@ export class WSHostServer {
 		const server = createServer();
 		this.wss = new WebSocketServer({ server });
 
-		const roomFinder = new RoomFinder();
+		const roomFinder = createRoomFinder();
 		const userAuth = new UserAuth(new UserProfilePostgresRepository());
 		const checkIfUserCanJoin = new CheckIfUseCanJoin(userAuth);
 

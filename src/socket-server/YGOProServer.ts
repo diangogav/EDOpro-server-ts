@@ -2,7 +2,7 @@ import net, { Socket } from "net";
 import { config } from "src/config";
 
 import { Logger } from "../shared/logger/domain/Logger";
-import { RoomFinder } from "../shared/room/application/RoomFinder";
+import { createRoomFinder } from "src/bootstrap/roomFinder";
 import { TCPClientSocket } from "../shared/socket/domain/TCPClientSocket";
 import { MatchmakingConnectionFactory } from "@ygopro/matchmaking/application/MatchmakingConnectionFactory";
 import { YGOProConnectionHandler } from "./YGOProConnectionHandler";
@@ -16,7 +16,7 @@ export class YGOProServer {
 		this.logger = logger;
 		this.connectionHandler = new YGOProConnectionHandler(
 			logger,
-			new RoomFinder(),
+			createRoomFinder(),
 			matchmakingConnectionFactory,
 		);
 		this.server = net.createServer({ keepAlive: true });

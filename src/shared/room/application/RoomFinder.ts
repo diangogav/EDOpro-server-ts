@@ -1,26 +1,18 @@
-import RoomList from "../../../edopro/room/infrastructure/RoomList";
-import MercuryRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
+import { RoomLocator } from "../domain/RoomLocator";
 import { YgoRoom } from "../domain/YgoRoom";
 
+/** Asks each protocol's locator in order and returns the first room found. */
 export class RoomFinder {
+	constructor(private readonly locators: RoomLocator[]) {}
+
 	run(socketId: string): YgoRoom | null {
-		const rooms = [...RoomList.getRooms(), ...MercuryRoomList.getRooms()];
-		let room: YgoRoom | null = null;
-		for (const item of rooms) {
-			const allClients = [...item.players, ...item.spectators];
-			const found = allClients.find((client) => client.socket.id === socketId);
-			if (found) {
-				room = item;
-				break;
+		for (const locator of this.locators) {
+			const room = locator.findBySocketId(socketId);
+			if (room) {
+				return room;
 			}
 		}
 
-		if (!room) {
-			const mercuryRooms = MercuryRoomList.getRooms();
-
-			return mercuryRooms.find((mercuryRoom) => mercuryRoom.createdBySocketId === socketId) ?? null;
-		}
-
-		return room;
+		return null;
 	}
 }

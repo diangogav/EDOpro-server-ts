@@ -16,8 +16,8 @@ Branch: `refactor/shared-kernel-room-ports`. Delivery: one PR, one commit per ta
 | ID | Specs | Route | Status | Commit |
 |----|-------|-------|--------|--------|
 | T1 | S1, S2 | inline | done (type-only; tsc + 1043 room tests green) | 1b437217 |
-| T2 | S1, S2, S3 | inline | done (RED 3 suites → GREEN; 314 tests) | this commit |
-| T3 | S1, S2, S3 | inline | pending | |
+| T2 | S1, S2, S3 | inline | done (RED 3 suites → GREEN; 314 tests) | 95c75d4a |
+| T3 | S1, S2, S3 | inline | done (RED 4 suites → GREEN; 1132 tests) | this commit |
 | T4 | S1, S2, S3 | inline | pending | |
 | T5 | S4 | inline | pending | |
 | T6 | S5 | inline | pending | |

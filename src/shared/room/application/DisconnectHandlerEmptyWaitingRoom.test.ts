@@ -22,6 +22,7 @@ import { EventEmitter } from "stream";
 import { DisconnectHandler } from "./DisconnectHandler";
 import { DuelState } from "../domain/YgoRoom";
 import { RoomFinder } from "./RoomFinder";
+import { createRoomFinder } from "src/bootstrap/roomFinder";
 import { YGOProClient } from "@ygopro/client/domain/YGOProClient";
 import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
 import MercuryRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
@@ -167,7 +168,7 @@ describe("DisconnectHandler.handleYGOPro() — empty-room teardown", () => {
 		const guest = makeClient("sock-guest", false);
 		const room = createRoom(91003, "sock-creator", [creator, guest]);
 		const roomId = room.id;
-		const finder = new RoomFinder();
+		const finder = createRoomFinder();
 
 		// Creator's `close`: its socket is now closed, the guest is still connected.
 		socketOf(creator).closed = true;

@@ -3,7 +3,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { config } from "src/config";
 
 import { Logger } from "../shared/logger/domain/Logger";
-import { RoomFinder } from "../shared/room/application/RoomFinder";
+import { createRoomFinder } from "src/bootstrap/roomFinder";
 import { WebSocketClientSocket } from "../shared/socket/domain/WebSocketClientSocket";
 import { MatchmakingConnectionFactory } from "@ygopro/matchmaking/application/MatchmakingConnectionFactory";
 import { HandshakeTicketAuthenticator } from "./HandshakeTicketAuthenticator";
@@ -27,7 +27,7 @@ export class WSYGOProServer {
 		this.handshakeAuth = handshakeAuth;
 		this.connectionHandler = new YGOProConnectionHandler(
 			logger,
-			new RoomFinder(),
+			createRoomFinder(),
 			matchmakingConnectionFactory,
 		);
 		const server = createServer();
