@@ -18,9 +18,9 @@ import { AbandonBetweenDuels } from "@ygopro/room/application/AbandonBetweenDuel
 import { YGOProClient } from "@ygopro/client/domain/YGOProClient";
 import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
 
-import { DuelState } from "../domain/YgoRoom";
-import { DisconnectHandler } from "./DisconnectHandler";
-import { RoomFinder } from "./RoomFinder";
+import { DuelState } from "@shared/room/domain/YgoRoom";
+import { createDisconnectHandler } from "src/bootstrap/disconnectHandler";
+import { RoomFinder } from "@shared/room/application/RoomFinder";
 
 const makeLogger = () => ({
 	child: jest.fn().mockReturnThis(),
@@ -67,7 +67,7 @@ const createRoom = (state: DuelState, clients: YGOProClient[]): YGOProRoom => {
 
 const runDisconnect = (room: YGOProRoom): void => {
 	const finder = { run: () => room } as unknown as RoomFinder;
-	new DisconnectHandler(makeSocket("sock-leaver", true) as never, finder).run();
+	createDisconnectHandler(makeSocket("sock-leaver", true) as never, finder).run();
 };
 
 describe("DisconnectHandler.handleYGOPro() — leaving between duels", () => {

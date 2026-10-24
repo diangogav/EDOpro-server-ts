@@ -4,7 +4,7 @@ import { EventEmitter } from "stream";
 import { frameForLog } from "@shared/logger/domain/frameForLog";
 import { Logger } from "@shared/logger/domain/Logger";
 import { Commands } from "@shared/messages/Commands";
-import { DisconnectHandler } from "@shared/room/application/DisconnectHandler";
+import { createDisconnectHandler } from "src/bootstrap/disconnectHandler";
 import { RoomFinder } from "@shared/room/application/RoomFinder";
 import { ExpressReconnectHandler } from "@shared/room/application/reconnect/ExpressReconnectHandler";
 import { ISocket } from "@shared/socket/domain/ISocket";
@@ -104,8 +104,8 @@ export class YGOProConnectionHandler {
 
 		socket.onClose(() => {
 			connectionLogger.info(`roomId: ${socket.roomId} - client disconnected`);
-			const disconnectHandler = new DisconnectHandler(socket, this.roomFinder, connectionLogger);
-			disconnectHandler.run(socket.remoteAddress);
+			const disconnectHandler = createDisconnectHandler(socket, this.roomFinder, connectionLogger);
+			disconnectHandler.run();
 		});
 
 		if (options.authenticate) {

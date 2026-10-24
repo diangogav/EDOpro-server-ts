@@ -22,9 +22,9 @@ jest.mock("@edopro/client/domain/Client");
 import { Client } from "@edopro/client/domain/Client";
 import { Room } from "@edopro/room/domain/Room";
 
-import { DisconnectHandler } from "./DisconnectHandler";
-import { RoomFinder } from "./RoomFinder";
-import { DuelState } from "../domain/YgoRoom";
+import { createDisconnectHandler } from "src/bootstrap/disconnectHandler";
+import { RoomFinder } from "@shared/room/application/RoomFinder";
+import { DuelState } from "@shared/room/domain/YgoRoom";
 
 describe("DisconnectHandler — edopro mid-duel disconnect", () => {
 	it("does NOT broadcast a 'has left the duel' chat notice to the surviving player", () => {
@@ -45,8 +45,8 @@ describe("DisconnectHandler — edopro mid-duel disconnect", () => {
 
 		const roomFinder = { run: jest.fn().mockReturnValue(room) } as unknown as RoomFinder;
 
-		const handler = new DisconnectHandler(leaverSocket as never, roomFinder);
-		handler.run("127.0.0.1");
+		const handler = createDisconnectHandler(leaverSocket as never, roomFinder);
+		handler.run();
 
 		expect(survivor.sendMessage).not.toHaveBeenCalled();
 		expect(leaver.sendMessage).not.toHaveBeenCalled();

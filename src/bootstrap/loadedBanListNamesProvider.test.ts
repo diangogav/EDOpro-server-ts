@@ -3,7 +3,7 @@ import { EdoproBanList } from "src/edopro/ban-list/domain/BanList";
 import ygoproBanListMemoryRepository from "src/ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository";
 import { YGOProBanList } from "src/ygopro/ban-list/domain/YGOProBanList";
 
-import { InMemoryLoadedBanListNamesProvider } from "./InMemoryLoadedBanListNamesProvider";
+import { createLoadedBanListNamesProvider } from "./loadedBanListNamesProvider";
 
 function edoproList(name: string): EdoproBanList {
 	const banList = new EdoproBanList();
@@ -21,8 +21,8 @@ function ygoproList(name?: string): YGOProBanList {
 	return banList;
 }
 
-describe("InMemoryLoadedBanListNamesProvider", () => {
-	const provider = new InMemoryLoadedBanListNamesProvider();
+describe("createLoadedBanListNamesProvider", () => {
+	const provider = createLoadedBanListNamesProvider();
 
 	afterEach(() => {
 		edoproBanListMemoryRepository.replaceAll([]);

@@ -19,9 +19,10 @@ jest.mock("../../../web-socket-server/WebSocketSingleton", () => {
 
 import { EventEmitter } from "stream";
 
-import { DisconnectHandler } from "./DisconnectHandler";
-import { DuelState } from "../domain/YgoRoom";
-import { RoomFinder } from "./RoomFinder";
+import { createDisconnectHandler } from "src/bootstrap/disconnectHandler";
+import { DuelState } from "@shared/room/domain/YgoRoom";
+import { RoomFinder } from "@shared/room/application/RoomFinder";
+import { createRoomFinder } from "src/bootstrap/roomFinder";
 import { YGOProClient } from "@ygopro/client/domain/YGOProClient";
 import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
 import MercuryRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
@@ -113,7 +114,7 @@ const removeRoomBroadcasts = (broadcast: jest.Mock) =>
 	broadcast.mock.calls.filter(([arg]) => arg?.action === "REMOVE-ROOM");
 
 const disconnect = (socketId: string, finder: RoomFinder): void => {
-	new DisconnectHandler(makeSocket(socketId, true) as never, finder).run();
+	createDisconnectHandler(makeSocket(socketId, true) as never, finder).run();
 };
 
 // ---------- tests ----------
@@ -167,7 +168,7 @@ describe("DisconnectHandler.handleYGOPro() — empty-room teardown", () => {
 		const guest = makeClient("sock-guest", false);
 		const room = createRoom(91003, "sock-creator", [creator, guest]);
 		const roomId = room.id;
-		const finder = new RoomFinder();
+		const finder = createRoomFinder();
 
 		// Creator's `close`: its socket is now closed, the guest is still connected.
 		socketOf(creator).closed = true;

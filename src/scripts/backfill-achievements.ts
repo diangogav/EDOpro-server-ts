@@ -2,7 +2,7 @@ import "reflect-metadata";
 
 import { Logger } from "@shared/logger/domain/Logger";
 import { RankGroupResolver } from "@shared/rank/application/RankGroupResolver";
-import { InMemoryLoadedBanListNamesProvider } from "@shared/rank/infrastructure/InMemoryLoadedBanListNamesProvider";
+import { createLoadedBanListNamesProvider } from "src/bootstrap/loadedBanListNamesProvider";
 import {
 	getActiveRankGroupsConfig,
 	loadRankGroupsConfig,
@@ -141,7 +141,7 @@ async function main(): Promise<void> {
 	setActiveRankGroupsConfig(loadRankGroupsConfig(config.rankGroups.path, logger));
 	const resolver = new RankGroupResolver(
 		getActiveRankGroupsConfig,
-		new InMemoryLoadedBanListNamesProvider(),
+		createLoadedBanListNamesProvider(),
 	);
 
 	await runBackfill(
