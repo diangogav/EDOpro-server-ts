@@ -25,11 +25,11 @@ export class DeckRuleValidationHandler implements DeckValidationHandler {
 		for (const card of deck.allCards) {
 			if (this.deckRules.rule === Rule.ONLY_OCG) {
 				if (!this.isValidOCG(card)) {
-					return new OCGCardError(Number(card.code));
+					return new TCGCardError(Number(card.code));
 				}
 			} else if (this.deckRules.rule === Rule.ONLY_TCG) {
 				if (!this.isValidTCG(card)) {
-					return new TCGCardError(Number(card.code));
+					return new OCGCardError(Number(card.code));
 				}
 			}
 		}
