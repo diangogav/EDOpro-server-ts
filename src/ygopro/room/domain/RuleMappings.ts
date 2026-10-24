@@ -17,7 +17,7 @@ function extractNumberFromCommand(input: string): number | null {
 	return match ? parseFloat(match[0]) : null;
 }
 
-// Tracked per alias so a missing alias (gx/mdc today) warns once instead of
+// Tracked per alias so a missing alias warns once instead of
 // re-logging the same, already-known miss on every room creation that uses
 // it. (Module state, so this is "once per alias per module instance" — Jest
 // gives each test FILE a fresh module registry, so this caps repeats to once
@@ -29,9 +29,7 @@ const aliasesWarnedAsMissing = new Set<string>();
  * Shared resolver for the "look up a format's banlist alias, default to
  * `fallback` if it's not loaded" pattern. A miss logs a warning (once per
  * alias — see aliasesWarnedAsMissing) instead of silently mislabeling the
- * room with whichever list sits at `fallback` (index 0 by default) — see
- * gx/mdc below, which are dead tokens today because their lists are not
- * shipped in this corpus.
+ * room with whichever list sits at `fallback` (index 0 by default).
  */
 function resolveAliasIndex(alias: string, fallback = 0): number {
 	const index = MercuryBanListMemoryRepository.findIndexByAlias(alias);
@@ -475,19 +473,6 @@ export const formatRuleMappings: RuleMappings = {
 			return value === "edm";
 		},
 	},
-	hat: {
-		get: () => {
-			return {
-				rule: 5,
-				lflist: resolveAliasIndex("hat"),
-				duel_rule: 2,
-				time_limit: 450,
-			};
-		},
-		validate: (value) => {
-			return value === "hat";
-		},
-	},
 	tengu: {
 		get: () => {
 			return {
@@ -519,7 +504,7 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: resolveAliasIndex("jtp"),
-				duel_rule: 2,
+				duel_rule: 1,
 			};
 		},
 		validate: (value) => {
@@ -531,7 +516,7 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: resolveAliasIndex("adv2007-03"),
-				duel_rule: 2,
+				duel_rule: 1,
 			};
 		},
 		validate: (value) => {
@@ -546,57 +531,13 @@ export const formatRuleMappings: RuleMappings = {
 			return {
 				rule: 5,
 				lflist: resolveAliasIndex("jtp"),
-				duel_rule: 2,
+				duel_rule: 1,
 				mode: GameMode.MATCH,
 				best_of: 3,
 			};
 		},
 		validate: (value) => {
 			return value === "jm";
-		},
-	},
-	// NOTE: the "gx" banlist is NOT shipped in this corpus, so resolveAliasIndex
-	// always misses and falls back to index 0 (logging a warning). Kept as a
-	// forward-compatible token, not deleted — do not remove without shipping
-	// the corresponding banlist.
-	gx: {
-		get: () => {
-			return {
-				rule: 5,
-				lflist: resolveAliasIndex("gx"),
-				duel_rule: 1,
-			};
-		},
-		validate: (value) => {
-			return value === "gx";
-		},
-	},
-	// NOTE: the "mdc" banlist is NOT shipped in this corpus, so resolveAliasIndex
-	// always misses and falls back to index 0 (logging a warning). Kept as a
-	// forward-compatible token, not deleted — do not remove without shipping
-	// the corresponding banlist.
-	mdc: {
-		get: () => {
-			return {
-				rule: 5,
-				lflist: resolveAliasIndex("mdc"),
-				duel_rule: 2,
-			};
-		},
-		validate: (value) => {
-			return value === "mdc";
-		},
-	},
-	goat: {
-		get: () => {
-			return {
-				rule: 5,
-				lflist: resolveAliasIndex("goat"),
-				duel_rule: 4,
-			};
-		},
-		validate: (value) => {
-			return value === "goat";
 		},
 	},
 	genesys: {
@@ -659,19 +600,6 @@ export const formatRuleMappings: RuleMappings = {
 		},
 		validate: (value) => {
 			return value === "rushpre";
-		},
-	},
-	speed: {
-		get: () => {
-			const index = MercuryBanListMemoryRepository.findIndexByAlias("speed");
-			return {
-				rule: 5,
-				lflist: index !== -1 ? index : 3,
-				duel_rule: 4,
-			};
-		},
-		validate: (value) => {
-			return value === "speed";
 		},
 	},
 	world: {
