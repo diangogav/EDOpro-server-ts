@@ -81,8 +81,9 @@ Notes worth knowing:
   duel_rule 5).
 - `ocg` → `{ rule: 0, lflist: 0, time_limit: 450 }`;
   `md` → `{ rule: 5, lflist: alias("md"), duel_rule: 5, time_limit: 450 }`;
-  `tcgpre` → `{ rule: 5, duel_rule: 5, time_limit: 450 }` (default TCG lflist);
-  `ocgpre` → `{ rule: 5, duel_rule: 5, lflist: 0, time_limit: 450 }`;
+  `tcgpre` → `{ rule: 1, duel_rule: 5, time_limit: 450 }` (default TCG lflist,
+  TCG-scope cards only); `ocgpre` → `{ rule: 0, duel_rule: 5, lflist: 0,
+  time_limit: 450 }` (OCG-scope cards only); `pre` keeps `rule: 5` (any scope);
   `tcgart`/`ocgart` are byte-identical to `tcgpre`/`ocgpre` in ruleset, but
   kept as separate tokens on purpose — token = room identity (§4/§5), so
   merging them would silently merge two distinct pairing pools.
