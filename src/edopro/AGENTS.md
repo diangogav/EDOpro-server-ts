@@ -15,7 +15,7 @@ EDOPro clients (Windows/Linux/Android/iOS). **Multirole** is the reference imple
    - Server → client packets are hand-written buffer classes in `messages/server-to-client/`.
    - Client → engine: `Commands.RESPONSE` → `room.sendMessageToCpp(...)` → `duel.stdin` (with drain backpressure).
 7. **Game over**: `room/application/FinishDuelHandler.ts` → `MatchLifecycleHooks.runEnding` → `RoomList.deleteRoom` → `GameOverDomainEvent` on the `EventBus` (consumed by plugins). If the match is not finished, it moves to `sideDecking()`.
-8. **Reconnect/disconnect**: reconnection token issued in `WaitingState`; mid-duel reconnect uses the core's `RECONNECT` message; disconnects go through shared `DisconnectHandler`.
+8. **Reconnect/disconnect**: reconnection token issued in `WaitingState`; mid-duel reconnect uses the core's `RECONNECT` message; disconnects reach `room/application/EdoproDisconnectPolicy.ts` through the shared `DisconnectHandler`.
 
 ## Resources
 

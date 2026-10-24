@@ -14,7 +14,7 @@ srvpro2-compatible server for YGOPro clients (Koishi, YGO Mobile, YGOPro). **srv
    - **Per-player filtering is done in TypeScript**: `OCGCore.deliverToTargets` sends `playerView(side)` / `teammateView()` / `observerView()`.
    - Client → engine: `Commands.RESPONSE` → `ocgCore.setResponse` → `advance`.
 7. **Game over**: a `YGOProMsgWin` middleware hook → `determineNextPhase` → `MatchLifecycleHooks.runEnding` → `finalizeWithReplays` (YRP + EVRP built in TS) → `GameOverDomainEvent` → room removed; otherwise `transitionToSideDecking`. Abandon paths: `EndMatchByAbandon`, `AbandonBetweenDuels`, `FinalizeYGOProRoom`.
-8. **Spectators/reconnect/disconnect**: spectators join with `w,` or by joining a dueling room; `EXPRESS_RECONNECT` + `sendReconnectTimeLimitAndResponseState`; disconnects use the `YGOProRoom` branch of shared `DisconnectHandler` (with windbot and matchmaking teardown).
+8. **Spectators/reconnect/disconnect**: spectators join with `w,` or by joining a dueling room; `EXPRESS_RECONNECT` + `sendReconnectTimeLimitAndResponseState`; disconnects reach `room/application/YGOProDisconnectPolicy.ts` (windbot and matchmaking teardown) through the shared `DisconnectHandler`, after `MatchmakingDisconnectListener` dequeues the socket.
 
 ## Resources
 

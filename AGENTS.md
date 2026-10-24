@@ -181,6 +181,8 @@ The server runs two independent match flows over the same shared kernel. Read th
 | Banlist key          | Hash                                            | lflist index                                               |
 | Room list            | `RoomList`                                      | `YGOProRoomList`                                           |
 
-**Shared by both flows** (changes here affect both): `YgoRoom` (mutex, state), `Commands` and `MessageProcessor`, `MessageEmitter` (also dispatches the `MATCHMAKING_*` opcodes YGOPro uses) and `PlayerInfoMessage` in `src/shared/messages/`, `UserAuth` (returns a `ServerErrorMessage`; each flow encodes it), `DisconnectHandler` and `RoomFinder` (branch per room type with `instanceof` — a new room type needs a branch in each), deck validators, `EventBus`, `MatchLifecycleHooks`, and plugins.
+**Shared by both flows** (changes here affect both): `YgoRoom` (mutex, state), `Commands` and `MessageProcessor`, `MessageEmitter` (also dispatches the `MATCHMAKING_*` opcodes YGOPro uses) and `PlayerInfoMessage` in `src/shared/messages/`, `UserAuth` (returns a `ServerErrorMessage`; each flow encodes it), `RoomFinder` and `DisconnectHandler` (they only orchestrate; each flow plugs in a `RoomLocator` and a `RoomDisconnectPolicy`), deck validators, `EventBus`, `MatchLifecycleHooks`, and plugins.
+
+**Shared kernel boundary**: `src/shared/` never imports `src/edopro/` or `src/ygopro/` (Biome `noRestrictedImports` fails the lint). When shared code needs protocol behavior, define a port in `src/shared/` and implement it in each flow; wire the implementations in `src/bootstrap/` (`createRoomFinder`, `createDisconnectHandler`, `createLoadedBanListNamesProvider`). A new room type registers its locator and disconnect policy there.
 
 **`GameOverDomainEvent`** is published in three places that must stay in sync: `FinishDuelHandler` (EDOPro), `YGOProDuelingState` and `EndMatchByAbandon` (YGOPro).
