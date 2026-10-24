@@ -583,6 +583,16 @@ describe("YGOProRoom", () => {
 		});
 	});
 
+	describe("unserved formats", () => {
+		it("opens a default room for a removed format token", () => {
+			const defaults = YGOProRoomMother.create({ command: "#123" }).hostInfo;
+
+			for (const token of ["goat", "hat", "gx", "mdc", "speed"]) {
+				expect(YGOProRoomMother.create({ command: `${token}#123` }).hostInfo).toEqual(defaults);
+			}
+		});
+	});
+
 	describe("Mode Match Best of X", () => {
 		it("Should create a room with Match mode Best of 3 if command contains bo0", () => {
 			const room = YGOProRoomMother.create({ command: "bo0#123" });

@@ -118,7 +118,7 @@ describe("resolveAliasIndex — warns on alias miss instead of silently mislabel
 		const rule = formatRuleMappings.tengu.get("tengu");
 
 		expect(rule.lflist).toBe(0);
-		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("tengu"));
+		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('banlist alias "tengu"'));
 	});
 
 	it("warns when the md alias has no matching banlist loaded", () => {
@@ -129,7 +129,7 @@ describe("resolveAliasIndex — warns on alias miss instead of silently mislabel
 		const rule = formatRuleMappings.md.get("md");
 
 		expect(rule.lflist).toBe(0);
-		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("md"));
+		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('banlist alias "md"'));
 	});
 
 	it("does NOT warn when the alias resolves to a real banlist", () => {
@@ -147,20 +147,20 @@ describe("resolveAliasIndex — warns on alias miss instead of silently mislabel
 	// Memoize per alias so a missing-banlist alias warns once instead of
 	// re-warning on every room creation that uses it.
 	//
-	// Uses "jtp" (not "tengu"/"md", already exercised by the tests above) so
-	// this test's outcome doesn't depend on the per-alias memoization state
-	// left behind by sibling tests running first.
+	// Uses the JTP Advanced alias, which no other test in this file resolves
+	// through resolveAliasIndex, so the outcome doesn't depend on the
+	// per-alias memoization state left behind by sibling tests.
 	it("warns only ONCE per alias even when resolved repeatedly", () => {
 		const warnSpy = jest
 			.spyOn(LoggerFactory.getLogger(), "warn")
 			.mockImplementation(() => undefined);
 
-		formatRuleMappings.jtp.get("jtp");
-		formatRuleMappings.jtp.get("jtp");
-		formatRuleMappings.jtp.get("jtp");
+		formatRuleMappings["jtp-2007-03"].get("jtp-2007-03");
+		formatRuleMappings["jtp-2007-03"].get("jtp-2007-03");
+		formatRuleMappings["jtp-2007-03"].get("jtp-2007-03");
 
 		expect(warnSpy).toHaveBeenCalledTimes(1);
-		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("jtp"));
+		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('banlist alias "adv2007-03"'));
 	});
 });
 
