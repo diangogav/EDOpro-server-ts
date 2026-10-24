@@ -1,6 +1,6 @@
 import EventEmitter from "events";
 
-import { PlayerInfoMessage } from "../../../../edopro/messages/client-to-server/PlayerInfoMessage";
+import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../../shared/messages/Commands";
 import { ClientMessage } from "../../../../shared/messages/MessageProcessor";
 import { YGOProRoomState } from "../YGOProRoomState";

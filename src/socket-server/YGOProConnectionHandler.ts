@@ -15,7 +15,7 @@ import { YGOProMessageRepository } from "@ygopro/room/infrastructure/YGOProMessa
 import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import { MatchmakingConnectionFactory } from "@ygopro/matchmaking/application/MatchmakingConnectionFactory";
 
-import { MessageEmitter } from "../edopro/MessageEmitter";
+import { MessageEmitter } from "@shared/messages/MessageEmitter";
 
 /** No-op default: a socket server that never received a real factory (e.g. a
  * unit test constructing this handler directly) simply never wires matchmaking. */

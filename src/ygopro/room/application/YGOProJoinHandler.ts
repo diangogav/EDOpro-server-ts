@@ -5,10 +5,10 @@ import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { Logger } from "@shared/logger/domain/Logger";
 import { JoinMessageHandler } from "@shared/room/domain/JoinMessageHandler";
 import { ISocket } from "@shared/socket/domain/ISocket";
-import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
+import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 
 import { ErrorMessageType, YGOProCtosJoinGame } from "ygopro-msg-encode";
-import { MessageRepository } from "@shared/messages/MessageRepository";
+import { MessageRepository } from "@ygopro/room/domain/messages/MessageRepository";
 import { Redis } from "@shared/db/redis/infrastructure/Redis";
 import { isRateLimited } from "@shared/rate-limit/application/isRateLimited";
 

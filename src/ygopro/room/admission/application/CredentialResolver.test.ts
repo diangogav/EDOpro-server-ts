@@ -1,9 +1,9 @@
-import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
+import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { UserAuth } from "@shared/user-auth/application/UserAuth";
 import { UserProfile } from "@shared/user-profile/domain/UserProfile";
 import { UserProfileRepository } from "@shared/user-profile/domain/UserProfileRepository";
-import { ServerErrorClientMessage } from "@edopro/messages/server-to-client/ServerErrorMessageClientMessage";
+import { ServerErrorMessage } from "@shared/user-auth/domain/ServerErrorMessage";
 
 import { CredentialResolver } from "./CredentialResolver";
 
@@ -70,7 +70,7 @@ describe("CredentialResolver", () => {
 		});
 
 		it("falls back to guest when the PIN is invalid", async () => {
-			userAuth.run.mockResolvedValue({} as ServerErrorClientMessage);
+			userAuth.run.mockResolvedValue(ServerErrorMessage.INVALID_PASSWORD);
 
 			const credential = await resolver.resolve(socketWith(null), playerInfo("Player", "9999"));
 

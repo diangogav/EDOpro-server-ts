@@ -3,7 +3,7 @@ import { randomBytes } from "crypto";
 import { lobbyMetadata } from "./LobbyMetadata";
 
 import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
-import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
+import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { RoomState } from "@edopro/room/domain/RoomState";
 
 import { Team } from "@shared/room/Team";
@@ -19,7 +19,7 @@ import { Logger } from "@shared/logger/domain/Logger";
 import { DeckRules, DuelState, YgoRoom } from "@shared/room/domain/YgoRoom";
 import { MatchAbandonClientMessage } from "@shared/messages/server-to-client/MatchAbandonClientMessage";
 import { RoomType } from "@shared/room/domain/RoomType";
-import { MessageRepository } from "@shared/messages/MessageRepository";
+import { MessageRepository } from "@ygopro/room/domain/messages/MessageRepository";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { Deck } from "@shared/deck/domain/Deck";
 

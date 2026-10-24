@@ -3,7 +3,7 @@ import { EventEmitter } from "stream";
 import { Commands } from "@shared/messages/Commands";
 import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
 
-import { MessageEmitter } from "./MessageEmitter";
+import { MessageEmitter } from "@shared/messages/MessageEmitter";
 
 function buildFrame(command: number, body: Buffer = Buffer.alloc(0)): Buffer {
 	const size = Buffer.alloc(2);

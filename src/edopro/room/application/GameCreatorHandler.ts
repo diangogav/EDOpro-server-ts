@@ -1,3 +1,4 @@
+import { ServerErrorClientMessage } from "@edopro/messages/server-to-client/ServerErrorMessageClientMessage";
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 import { EventEmitter } from "stream";
@@ -8,7 +9,7 @@ import { GameCreatorMessageHandler } from "../../../shared/room/domain/GameCreat
 import { roomCreationNotice } from "../../../shared/room/domain/chat/RoomCreationNotice";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
-import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
+import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../shared/messages/Commands";
 import { ClientMessage } from "../../../shared/messages/MessageProcessor";
 import { CreateGameClientMessage } from "../../messages/server-to-client/CreateGameClientMessage";
@@ -56,7 +57,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 
 		const user = await this.userAuth.run(playerInfoMessage);
 		if (!(user instanceof UserProfile)) {
-			this.socket.send(user as Buffer);
+			this.socket.send(ServerErrorClientMessage.create(user));
 			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 
 			return;

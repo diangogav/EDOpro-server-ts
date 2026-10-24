@@ -3,7 +3,7 @@ import { PlayerChangeClientMessage } from "@edopro/messages/server-to-client/Pla
 import { ChildProcessWithoutNullStreams } from "child_process";
 import shuffle from "shuffle-array";
 import { PlayerEnterClientMessage } from "src/shared/messages/server-to-client/PlayerEnterClientMessage";
-import { CheckIfUseCanJoin } from "src/shared/user-auth/application/CheckIfUserCanJoin";
+import { CheckIfUseCanJoin } from "@edopro/room/application/CheckIfUserCanJoin";
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { EventEmitter } from "stream";
@@ -18,7 +18,7 @@ import { Client } from "../../client/domain/Client";
 import { DeckCreator } from "../../deck/application/DeckCreator";
 import { Deck } from "../../../shared/deck/domain/Deck";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
-import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
+import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { JSONMessageProcessor } from "../../messages/JSONMessageProcessor";
 import { MessageProcessor } from "../../../shared/messages/MessageProcessor";
 import { Replay } from "../../replay/Replay";

@@ -1,11 +1,11 @@
-import { CheckIfUseCanJoin } from "src/shared/user-auth/application/CheckIfUserCanJoin";
+import { CheckIfUseCanJoin } from "@edopro/room/application/CheckIfUserCanJoin";
 
 import { PlayerEnterClientMessage } from "../../../shared/messages/server-to-client/PlayerEnterClientMessage";
 import { TypeChangeClientMessage } from "../../../shared/messages/server-to-client/TypeChangeClientMessage";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { Client } from "../../client/domain/Client";
 import { JoinGameMessage } from "../../messages/client-to-server/JoinGameMessage";
-import { PlayerInfoMessage } from "../../messages/client-to-server/PlayerInfoMessage";
+import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
 import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientMessage";
 import { ErrorMessages } from "../../messages/server-to-client/error-messages/ErrorMessages";

@@ -5,7 +5,7 @@ import { DuelStartClientMessage } from "../../../../../shared/messages/server-to
 import { ISocket } from "../../../../../shared/socket/domain/ISocket";
 import { Client } from "../../../../client/domain/Client";
 import { JoinGameMessage } from "../../../../messages/client-to-server/JoinGameMessage";
-import { PlayerInfoMessage } from "../../../../messages/client-to-server/PlayerInfoMessage";
+import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../../../shared/messages/Commands";
 import { ClientMessage } from "../../../../../shared/messages/MessageProcessor";
 import { ChooseOrderClientMessage } from "../../../../messages/server-to-client/ChooseOrderClientMessage";

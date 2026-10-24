@@ -1,7 +1,6 @@
 import { BufferToUTF16 } from "../../../utils/BufferToUTF16";
-import { Message } from "../Message";
 
-export class PlayerInfoMessage implements Message {
+export class PlayerInfoMessage {
 	public static readonly MAX_BYTES_LENGTH: number = 40;
 	public readonly name: string;
 	public readonly password: string | null;

@@ -1,3 +1,4 @@
+import { ServerErrorClientMessage } from "@edopro/messages/server-to-client/ServerErrorMessageClientMessage";
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 import { EventEmitter } from "stream";
@@ -11,7 +12,7 @@ import { Client } from "../../../../client/domain/Client";
 import { DeckCreator } from "../../../../deck/application/DeckCreator";
 import { UpdateDeckMessageParser } from "../../../../deck/application/UpdateDeckMessageSizeCalculator";
 import { JoinGameMessage } from "../../../../messages/client-to-server/JoinGameMessage";
-import { PlayerInfoMessage } from "../../../../messages/client-to-server/PlayerInfoMessage";
+import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../../../shared/messages/Commands";
 import { ClientMessage } from "../../../../../shared/messages/MessageProcessor";
 import { ErrorMessages } from "../../../../messages/server-to-client/error-messages/ErrorMessages";
@@ -275,7 +276,7 @@ export class WaitingState extends RoomState {
 				const user = await this.userAuth.run(playerInfoMessage);
 
 				if (!(user instanceof UserProfile)) {
-					socket.send(user as Buffer);
+					socket.send(ServerErrorClientMessage.create(user));
 					socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 
 					return;

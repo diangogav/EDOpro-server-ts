@@ -5,7 +5,7 @@ import { WebSocket, WebSocketServer } from "ws";
 import { Logger } from "@shared/logger/domain/Logger";
 import { WebSocketClientSocket } from "../shared/socket/domain/WebSocketClientSocket";
 import { Commands } from "../shared/messages/Commands";
-import { MessageEmitter } from "../edopro/MessageEmitter";
+import { MessageEmitter } from "@shared/messages/MessageEmitter";
 import { HandshakeTicketAuthenticator } from "./HandshakeTicketAuthenticator";
 import { WSYGOProServer } from "./WSYGOProServer";
 
@@ -16,10 +16,10 @@ jest.mock("crypto", () => ({ randomUUID: jest.fn().mockReturnValue("test-socket-
 jest.mock("src/config", () => ({
 	config: { servers: { mercury: { wsPort: 7800, wsHeartbeatIntervalMs: 30000 } } },
 }));
-jest.mock("src/shared/user-auth/application/CheckIfUserCanJoin");
+jest.mock("@edopro/room/application/CheckIfUserCanJoin");
 jest.mock("src/shared/user-auth/application/UserAuth");
 jest.mock("src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository");
-jest.mock("../edopro/MessageEmitter");
+jest.mock("@shared/messages/MessageEmitter");
 jest.mock("../shared/room/application/DisconnectHandler");
 jest.mock("../shared/room/application/RoomFinder");
 jest.mock("../shared/socket/domain/WebSocketClientSocket");

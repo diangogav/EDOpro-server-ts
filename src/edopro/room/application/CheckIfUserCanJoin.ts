@@ -1,8 +1,9 @@
-import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
+import { ServerErrorClientMessage } from "@edopro/messages/server-to-client/ServerErrorMessageClientMessage";
+import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { ISocket } from "src/shared/socket/domain/ISocket";
 import { UserProfile } from "src/shared/user-profile/domain/UserProfile";
 
-import { UserAuth } from "./UserAuth";
+import { UserAuth } from "@shared/user-auth/application/UserAuth";
 
 export class CheckIfUseCanJoin {
 	constructor(private readonly userAuth: UserAuth) {}
@@ -20,7 +21,7 @@ export class CheckIfUseCanJoin {
 	async check(playerInfo: PlayerInfoMessage, socket: ISocket): Promise<boolean> {
 		const user = await this.userAuth.run(playerInfo);
 		if (!(user instanceof UserProfile)) {
-			socket.send(user as Buffer);
+			socket.send(ServerErrorClientMessage.create(user));
 
 			return false;
 		}

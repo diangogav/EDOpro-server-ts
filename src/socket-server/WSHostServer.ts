@@ -3,7 +3,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { config } from "src/config";
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
-import { CheckIfUseCanJoin } from "src/shared/user-auth/application/CheckIfUserCanJoin";
+import { CheckIfUseCanJoin } from "@edopro/room/application/CheckIfUserCanJoin";
 import { Logger } from "../shared/logger/domain/Logger";
 import { RoomFinder } from "../shared/room/application/RoomFinder";
 import { WebSocketClientSocket } from "../shared/socket/domain/WebSocketClientSocket";

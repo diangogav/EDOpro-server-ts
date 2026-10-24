@@ -1,4 +1,4 @@
-import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
+import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 
 export class PlayerInfoMessageMother {
 	static create(): PlayerInfoMessage {

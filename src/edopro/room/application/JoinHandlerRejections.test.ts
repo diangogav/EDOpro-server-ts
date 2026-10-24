@@ -5,7 +5,7 @@ import { ChatColor, YGOProStocChat } from "ygopro-msg-encode";
 import { Logger } from "@shared/logger/domain/Logger";
 import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { ISocket } from "@shared/socket/domain/ISocket";
-import { CheckIfUseCanJoin } from "@shared/user-auth/application/CheckIfUserCanJoin";
+import { CheckIfUseCanJoin } from "@edopro/room/application/CheckIfUserCanJoin";
 
 import RoomList from "@edopro/room/infrastructure/RoomList";
 import { Room } from "@edopro/room/domain/Room";

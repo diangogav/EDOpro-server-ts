@@ -1,15 +1,15 @@
 import { ISocket } from "@shared/socket/domain/ISocket";
-import { CheckIfUseCanJoin } from "@shared/user-auth/application/CheckIfUserCanJoin";
+import { CheckIfUseCanJoin } from "@edopro/room/application/CheckIfUserCanJoin";
 import { Client } from "@edopro/client/domain/Client";
 import { JoinGameMessage } from "@edopro/messages/client-to-server/JoinGameMessage";
-import { PlayerInfoMessage } from "@edopro/messages/client-to-server/PlayerInfoMessage";
+import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { Reconnect } from "./Reconnect";
 import { Room } from "@edopro/room/domain/Room";
 
 // Mock dependencies
 jest.mock("@edopro/room/domain/Room");
 jest.mock("@edopro/client/domain/Client");
-jest.mock("@shared/user-auth/application/CheckIfUserCanJoin");
+jest.mock("@edopro/room/application/CheckIfUserCanJoin");
 jest.mock("@edopro/messages/server-to-client/JoinGameClientMessage");
 jest.mock("@shared/messages/server-to-client/TypeChangeClientMessage");
 jest.mock("@shared/messages/server-to-client/PlayerEnterClientMessage");

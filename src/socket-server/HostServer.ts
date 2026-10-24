@@ -1,6 +1,6 @@
 import net, { Socket } from "net";
 import { config } from "src/config";
-import { CheckIfUseCanJoin } from "src/shared/user-auth/application/CheckIfUserCanJoin";
+import { CheckIfUseCanJoin } from "@edopro/room/application/CheckIfUserCanJoin";
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 

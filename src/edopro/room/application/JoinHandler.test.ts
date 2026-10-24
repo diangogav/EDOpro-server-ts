@@ -4,7 +4,7 @@ import { Logger } from "@shared/logger/domain/Logger";
 import { Commands } from "@shared/messages/Commands";
 import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { ISocket } from "@shared/socket/domain/ISocket";
-import { CheckIfUseCanJoin } from "@shared/user-auth/application/CheckIfUserCanJoin";
+import { CheckIfUseCanJoin } from "@edopro/room/application/CheckIfUserCanJoin";
 
 import { createMatchmakingRoom } from "@ygopro/matchmaking/application/MatchmakingRoomFactory";
 import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
