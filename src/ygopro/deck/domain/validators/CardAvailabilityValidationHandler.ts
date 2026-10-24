@@ -1,27 +1,24 @@
-import { ScopeCode, Card } from "@shared/card/domain/Card";
+import { Card } from "@shared/card/domain/Card";
 import { Deck } from "@shared/deck/domain/Deck";
 import { DeckError } from "@shared/deck/domain/errors/DeckError";
 import { NotOfficialCardError } from "@shared/deck/domain/errors/NotOfficialCardError";
 import { OCGCardError } from "@shared/deck/domain/errors/OCGCardError";
 import { TCGCardError } from "@shared/deck/domain/errors/TCGCardError";
 import { DeckValidationHandler } from "@shared/deck/domain/validators/DeckValidationHandler";
-import { Rule } from "@shared/deck/domain/Rule";
+import { AvailFlag, YGOProRule, availFlagFor } from "@ygopro/room/domain/host-info/YGOProRule";
 
 /**
- * Card availability validation aligned with srvpro2's checkAvail logic.
+ * Card availability check for Mercury rooms.
  *
- * Uses bitwise checks instead of numeric comparison (Multirole style).
- * Key differences vs shared OfficialCardValidationHandler:
- * - Cards with ANIME flag (0x4) always pass (custom card bypass)
- * - Bitwise match: (cardOt & availFlag) === availFlag
- * - Prerelease cards with OCG+TCG bits pass in OCG_TCG mode
+ * A card passes when its `ot` carries every bit the room's rule requires:
+ * (cardOt & availFlag) === availFlag. Custom cards (0x4) always pass.
  */
 export class CardAvailabilityValidationHandler implements DeckValidationHandler {
 	private readonly availFlag: number;
 	private nextHandler: DeckValidationHandler | null = null;
 
-	constructor(rule: Rule) {
-		this.availFlag = CardAvailabilityValidationHandler.ruleToAvailFlag(rule);
+	constructor(rule: YGOProRule) {
+		this.availFlag = availFlagFor(rule);
 	}
 
 	setNextHandler(handler: DeckValidationHandler): DeckValidationHandler {
@@ -49,7 +46,7 @@ export class CardAvailabilityValidationHandler implements DeckValidationHandler 
 		const ot = card.variant;
 		const code = Number(card.code);
 
-		if (ot & ScopeCode.ANIME) {
+		if (ot & AvailFlag.CUSTOM) {
 			return null;
 		}
 
@@ -57,30 +54,14 @@ export class CardAvailabilityValidationHandler implements DeckValidationHandler 
 			return null;
 		}
 
-		if (ot & ScopeCode.OCG && this.availFlag !== ScopeCode.OCG) {
+		if (ot & AvailFlag.OCG && this.availFlag !== AvailFlag.OCG) {
 			return new OCGCardError(code);
 		}
 
-		if (ot & ScopeCode.TCG && this.availFlag !== ScopeCode.TCG) {
+		if (ot & AvailFlag.TCG && this.availFlag !== AvailFlag.TCG) {
 			return new TCGCardError(code);
 		}
 
 		return new NotOfficialCardError(code);
-	}
-
-	private static ruleToAvailFlag(rule: Rule): number {
-		switch (rule) {
-			case Rule.ONLY_OCG:
-				return ScopeCode.OCG;
-			case Rule.ONLY_TCG:
-				return ScopeCode.TCG;
-			case Rule.OCG_TCG:
-			case Rule.PRE_RELEASE:
-				return ScopeCode.OCG_TCG;
-			case Rule.ALL:
-				return 0;
-			default:
-				return 0;
-		}
 	}
 }

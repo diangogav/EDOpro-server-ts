@@ -11,6 +11,7 @@ import { GenesysRulesValidationHandler } from "@shared/deck/domain/validators/Ge
 import { MaxCopiesValidationHandler } from "@shared/deck/domain/validators/MaxCopiesValidationHandler";
 import { EdoproBanList } from "@edopro/ban-list/domain/BanList";
 import { CreditLimitValidationHandler } from "@shared/deck/domain/validators/CreditLimitValidationHandler";
+import { YGOProRule } from "@ygopro/room/domain/host-info/YGOProRule";
 import { CardAvailabilityValidationHandler } from "./validators/CardAvailabilityValidationHandler";
 
 /**
@@ -19,12 +20,13 @@ import { CardAvailabilityValidationHandler } from "./validators/CardAvailability
  * Uses the same Chain of Responsibility pattern as shared/Deck.validate()
  * but replaces the Multirole-aligned scope validators
  * (OfficialCardValidationHandler, DeckRuleValidationHandler, PrereleaseValidationHandler)
- * with a single CardAvailabilityValidationHandler that uses srvpro2's bitwise logic.
+ * with a single CardAvailabilityValidationHandler that checks the room's YGOProRule.
  */
 export class YGOProDeckValidator {
 	constructor(
 		private readonly deckRules: DeckRules,
 		private readonly banList: EdoproBanList,
+		private readonly rule: YGOProRule,
 	) {}
 
 	validate(deck: Deck): DeckError | null {
@@ -47,7 +49,7 @@ export class YGOProDeckValidator {
 			// Rush Duel's Legend rule. Inert for every list that declares no
 			// credit limits, so it costs nothing on the other formats.
 			.setNextHandler(new CreditLimitValidationHandler(this.banList))
-			.setNextHandler(new CardAvailabilityValidationHandler(this.deckRules.rule))
+			.setNextHandler(new CardAvailabilityValidationHandler(this.rule))
 			.setNextHandler(new NoLimitedCardValidationHandler(this.banList))
 			.setNextHandler(new AvailableCardValidationHandler(this.banList));
 
