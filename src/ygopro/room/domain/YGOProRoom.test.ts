@@ -441,6 +441,19 @@ describe("YGOProRoom", () => {
 		});
 	});
 
+	describe("room list presentation", () => {
+		it("reports the Mercury all-cards rule as the EDOPro anything-goes rule", () => {
+			const room = YGOProRoomMother.create({ command: "pre#123" });
+			expect(room.hostInfo.rule).toBe(5);
+			expect(room.toPresentation().rule).toBe(4);
+		});
+
+		it("keeps the OCG-only and TCG-only rules, which both numberings share", () => {
+			expect(YGOProRoomMother.create({ command: "oo#123" }).toPresentation().rule).toBe(0);
+			expect(YGOProRoomMother.create({ command: "to#123" }).toPresentation().rule).toBe(1);
+		});
+	});
+
 	describe("JTP Format", () => {
 		it("Should create a jtp room with rule 5, duel_rule 2 and start hand 5", () => {
 			const room = YGOProRoomMother.create({ command: "jtp,st5#123" });

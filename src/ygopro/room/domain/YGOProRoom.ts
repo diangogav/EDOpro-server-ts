@@ -37,7 +37,7 @@ import { YGOProRockPaperScissorState } from "./states/YGOProRockPaperScissorStat
 import { YGOProSideDeckingState } from "./states/YGOProSideDeckingState";
 import { YGOProWaitingState } from "./states/YGOProWaitingState";
 import { HostInfo } from "./host-info/HostInfo";
-import { getLobbyDuelInfo } from "./LobbyDuelFlags";
+import { getLobbyDuelInfo, toEdoproRule } from "./LobbyDuelFlags";
 
 import {
 	ChatColor,
@@ -968,7 +968,7 @@ export class YGOProRoom extends YgoRoom {
 			start_hand: this._hostInfo.start_hand,
 			draw_count: this._hostInfo.draw_count,
 			time_limit: this._hostInfo.time_limit,
-			rule: this._hostInfo.rule,
+			rule: toEdoproRule(this._hostInfo.rule),
 			no_check: Boolean(this._hostInfo.no_check_deck),
 			no_shuffle: Boolean(this._hostInfo.no_shuffle_deck),
 			banlist_hash: this._edoBanListHash ?? this.banListHash,
