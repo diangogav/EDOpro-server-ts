@@ -18,8 +18,8 @@ Branch: `refactor/shared-kernel-room-ports`. Delivery: one PR, one commit per ta
 | T1 | S1, S2 | inline | done (type-only; tsc + 1043 room tests green) | 1b437217 |
 | T2 | S1, S2, S3 | inline | done (RED 3 suites → GREEN; 314 tests) | 95c75d4a |
 | T3 | S1, S2, S3 | inline | done (RED 4 suites → GREEN; 1132 tests) | c4678c3b |
-| T4 | S1, S2, S3 | inline | done (RED order test → GREEN; branch bodies diffed identical; 2500 tests) | this commit |
-| T5 | S4 | inline | pending | |
+| T4 | S1, S2, S3 | inline | done (RED order test → GREEN; branch bodies diffed identical; 2500 tests) | cb4481b7 |
+| T5 | S4 | inline | done (planted alias + relative imports both rejected; repo lint clean) | this commit |
 | T6 | S5 | inline | pending | |
 
 - T1: `YgoRoom` uses `YgoClient` instead of `Client | YGOProClient`.

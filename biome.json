@@ -157,6 +157,33 @@
 					"suspicious": { "noExplicitAny": "off" }
 				}
 			}
+		},
+		{
+			"includes": ["src/shared/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"patterns": [
+									{
+										"group": [
+											"@edopro/**",
+											"@ygopro/**",
+											"src/edopro/**",
+											"src/ygopro/**",
+											"**/edopro/**",
+											"**/ygopro/**"
+										],
+										"message": "src/shared must not depend on a client protocol: define a port in shared and implement it in src/edopro or src/ygopro."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
 		}
 	],
 	"assist": {
