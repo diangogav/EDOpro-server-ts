@@ -153,6 +153,7 @@ When performing these actions, **ALWAYS** follow the corresponding Standard Oper
 | `pnpm test path/to/file`   | Run specific test file               |
 | `pnpm lint`                | Check code style                     |
 | `pnpm lint:fix`            | Fix code style                       |
+| `scripts/generate-claude-md.sh` | Link a `CLAUDE.md` to every tracked `AGENTS.md` (run after adding one) |
 
 ### Path Aliases
 

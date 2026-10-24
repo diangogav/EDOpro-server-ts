@@ -5,8 +5,13 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 base_dir="$(dirname "$script_dir")"
 
-# Only tracked AGENTS.md files: cloned repositories, resources and worktrees are skipped.
-git -C "$base_dir" ls-files '*AGENTS.md' | while read -r agents_file; do
+# Only tracked files named exactly AGENTS.md: cloned repositories, resources and
+# worktrees are skipped, and so is a tracked AGENTS.md deleted from the working tree.
+git -C "$base_dir" ls-files ':(glob)**/AGENTS.md' | while read -r agents_file; do
+  if [[ ! -f "$base_dir/$agents_file" ]]; then
+    continue
+  fi
+
   dir="$base_dir/$(dirname "$agents_file")"
   claude_file="$dir/CLAUDE.md"
 
