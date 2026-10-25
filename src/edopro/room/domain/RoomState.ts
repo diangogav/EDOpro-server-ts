@@ -188,12 +188,24 @@ export abstract class RoomState {
 		return withBanListName.banListName ?? "N/A";
 	}
 
+	/**
+	 * The seat a duelist is announced as in STOC_CHAT/emote frames, mirroring
+	 * srvpro2's getIngamePos: once the turn choice swaps positions the seat
+	 * flips its team bit, which is bit 0 in a single duel and bit 1 in Tag
+	 * (teams sit at 0-1 and 2-3), so Tag partners keep their own seats.
+	 */
+	private mercuryIngameSeat(room: YGOProRoom, client: YgoClient): number {
+		if (!room.isPositionSwapped) {
+			return client.position;
+		}
+
+		return client.position ^ (room.isTag ? 0b10 : 0b01);
+	}
+
 	private handleMercuryChat(message: ClientMessage, room: YGOProRoom, client: YgoClient): void {
 		const playerType = client.isSpectator
 			? NetPlayerType.OBSERVER
-			: room.isPositionSwapped
-				? client.position ^ 1
-				: client.position;
+			: this.mercuryIngameSeat(room, client);
 
 		const content = BufferToUTF16(message.data, message.data.length);
 		// STOC_CHAT (opcode 0x19) only carries player_type + msg — there is no name field,
@@ -232,8 +244,7 @@ export abstract class RoomState {
 
 		// Seat resolution mirrors handleMercuryChat so the client maps the sender
 		// to the correct HUD side (accounting for a swapped board).
-		const ygoproRoom = room as YGOProRoom;
-		const playerType = ygoproRoom.isPositionSwapped ? client.position ^ 1 : client.position;
+		const playerType = this.mercuryIngameSeat(room as YGOProRoom, client);
 
 		const frame = buildStocEmoteFrame(playerType, message.data);
 		room.clients.forEach((c: YgoClient) => {

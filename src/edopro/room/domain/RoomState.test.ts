@@ -231,3 +231,79 @@ describe("RoomState — Mercury emote ids are relayed without a catalog check", 
 		expect(sendEmote("").send).not.toHaveBeenCalled();
 	});
 });
+
+// srvpro2 announces a duelist as `pos ^ (1 << teamOffsetBit)` once the turn
+// choice swaps positions: teamOffsetBit is 1 in Tag (teams sit at 0-1 and
+// 2-3), so the swap flips teams, not teammates.
+describe("RoomState — Mercury sender seat after a position swap", () => {
+	let eventEmitter: EventEmitter;
+
+	beforeEach(() => {
+		eventEmitter = new EventEmitter();
+		new TestRoomState(eventEmitter);
+	});
+
+	const makeRoom = (
+		socket: { send: jest.Mock },
+		opts: { isTag: boolean; isPositionSwapped: boolean },
+	) => ({ roomType: RoomType.MERCURY, clients: [{ socket }], ...opts }) as unknown as never;
+
+	const makeDuelist = (position: number) =>
+		({
+			name: `seat ${position}`,
+			isSpectator: false,
+			position,
+			team: position >> 1,
+			tryEmote: () => true,
+		}) as unknown as never;
+
+	// STOC_CHAT: [u16 length][u8 opcode][u16 player_type][msg]
+	const chatSeat = (position: number, opts: { isTag: boolean; isPositionSwapped: boolean }) => {
+		const socket = makeSocket();
+		eventEmitter.emit(
+			Commands.CHAT as unknown as string,
+			makeChatMessage("hola"),
+			makeRoom(socket, opts),
+			makeDuelist(position),
+		);
+		return (socket.send.mock.calls[0][0] as Buffer).readUInt16LE(3);
+	};
+
+	// STOC emote: [u16 length][u8 opcode][u8 player_type][id]
+	const emoteSeat = (position: number, opts: { isTag: boolean; isPositionSwapped: boolean }) => {
+		const socket = makeSocket();
+		eventEmitter.emit(
+			Commands.EMOTE as unknown as string,
+			makeEmoteMessage("wave"),
+			makeRoom(socket, opts),
+			makeDuelist(position),
+		);
+		return (socket.send.mock.calls[0][0] as Buffer).readUInt8(3);
+	};
+
+	it.each([
+		[0, 2],
+		[1, 3],
+		[2, 0],
+		[3, 1],
+	])("announces Tag seat %i as seat %i in chat and emotes", (position, expected) => {
+		const swappedTag = { isTag: true, isPositionSwapped: true };
+
+		expect(chatSeat(position, swappedTag)).toBe(expected);
+		expect(emoteSeat(position, swappedTag)).toBe(expected);
+	});
+
+	it("still flips the seat with ^ 1 in a swapped single duel", () => {
+		const swappedSingle = { isTag: false, isPositionSwapped: true };
+
+		expect(chatSeat(0, swappedSingle)).toBe(1);
+		expect(emoteSeat(1, swappedSingle)).toBe(0);
+	});
+
+	it("keeps the lobby seat when positions are not swapped", () => {
+		const tag = { isTag: true, isPositionSwapped: false };
+
+		expect(chatSeat(2, tag)).toBe(2);
+		expect(emoteSeat(3, tag)).toBe(3);
+	});
+});
