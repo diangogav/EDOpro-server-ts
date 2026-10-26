@@ -5,6 +5,7 @@ export type Game = {
 	result: "winner" | "loser" | "deuce";
 	turns: number;
 	ipAddress: string | null;
+	client: string | null;
 };
 
 export type PlayerMatchSummary = {
@@ -48,6 +49,11 @@ export class Player {
 
 	get games(): Game[] {
 		return this._games;
+	}
+
+	/** Handshake client of the player's last game; null when it sent none. */
+	get client(): string | null {
+		return this._games.at(-1)?.client ?? null;
 	}
 
 	toPresentation(): PlayerMatchSummary {

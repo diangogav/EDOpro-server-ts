@@ -69,6 +69,7 @@ export class WSYGOProServer {
 
 			const ygoClientSocket = new WebSocketClientSocket(socket);
 			ygoClientSocket.supportsLobbyMetadata = request.headers["x-evolution-lobby"] === "1";
+			ygoClientSocket.clientName = readClientName(request);
 
 			// Gate: the connection handler registers the pump BEFORE this resolves,
 			// so the first PlayerInfo / JoinGame binary frame is never dropped if
@@ -107,4 +108,25 @@ export class WSYGOProServer {
 			resolveAuthenticated(auth.status !== "rejected");
 		});
 	}
+}
+
+const CLIENT_NAME_PATTERN = /^[a-z0-9-]{1,32}$/;
+
+/**
+ * Self-reported client name from the handshake `?client=` query param. It only
+ * labels match rows for stats, so anything outside a short slug is dropped
+ * rather than stored.
+ */
+function readClientName(request: IncomingMessage): string | undefined {
+	if (request.url === undefined) return undefined;
+	let raw: string | null;
+	try {
+		// request.url is relative (e.g. "/?client=evoduel"); the base is only for parsing.
+		raw = new URL(request.url, "http://placeholder").searchParams.get("client");
+	} catch {
+		// A malformed request-target (e.g. "//") must not reject the connection handler.
+		return undefined;
+	}
+	const name = raw?.toLowerCase();
+	return name !== undefined && CLIENT_NAME_PATTERN.test(name) ? name : undefined;
 }

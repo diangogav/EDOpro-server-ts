@@ -13,9 +13,13 @@ export type MatchHistory = {
 		result: "winner" | "loser" | "deuce";
 		turns: number;
 		ipAddress: string | null;
+		client: string | null;
 		// score: number;
 	}[];
 };
+
+/** Per-player connection data captured when a duel ends. */
+export type PlayerConnection = { name: string; ipAddress: string | null; client?: string | null };
 
 export class Match {
 	private playerScore = 0;
@@ -39,19 +43,18 @@ export class Match {
 		}));
 	}
 
-	duelWinner(
-		winner: number,
-		turns: number,
-		ips: { name: string; ipAddress: string | null }[],
-	): void {
+	duelWinner(winner: number, turns: number, ips: PlayerConnection[]): void {
 		this._players.forEach((player) => {
-			const ipAddress = ips.find((data) => data.name === player.name)?.ipAddress ?? null;
+			const connection = ips.find((data) => data.name === player.name);
+			const ipAddress = connection?.ipAddress ?? null;
+			const client = connection?.client ?? null;
 
 			if (winner === this.DRAW) {
 				player.games.push({
 					result: "deuce",
 					turns,
 					ipAddress,
+					client,
 					// score: 1,
 				});
 			} else if (player.team === winner) {
@@ -59,6 +62,7 @@ export class Match {
 					result: "winner",
 					turns,
 					ipAddress,
+					client,
 					// score: 1,
 				});
 			} else {
@@ -66,6 +70,7 @@ export class Match {
 					result: "loser",
 					turns,
 					ipAddress,
+					client,
 					// score: 0,
 				});
 			}
@@ -99,7 +104,7 @@ export class Match {
 	 * points are all counted off these records, so an awarded game that left no
 	 * record would pay the winner as if the match had been closer than it was.
 	 */
-	forfeit(winnerTeam: number, ips: { name: string; ipAddress: string | null }[]): number {
+	forfeit(winnerTeam: number, ips: PlayerConnection[]): number {
 		let awarded = 0;
 
 		// duelWinner moves the score on every call, so the match always reaches a

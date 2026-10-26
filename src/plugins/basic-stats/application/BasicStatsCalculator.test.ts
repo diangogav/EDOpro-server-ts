@@ -199,6 +199,35 @@ describe("BasicStatsCalculator", () => {
 		);
 	});
 
+	it("stores each player's handshake client on their match row", async () => {
+		const tagged = PlayerMother.create({
+			team: Team.PLAYER,
+			winner: true,
+			games: [GameMother.create({ result: "winner", client: "evoduel" })],
+		});
+		const untagged = PlayerMother.create({
+			team: Team.OPPONENT,
+			winner: false,
+			games: [GameMother.create({ result: "loser", client: null })],
+		});
+		const event = GameOverDomainEventMother.create({
+			players: [tagged.toPresentation(), untagged.toPresentation()],
+			ranked: true,
+			banListName: "N/A",
+		});
+
+		await basicStatsCalculator.handle(event);
+
+		expect(matchResumeCreator.run).toHaveBeenNthCalledWith(
+			1,
+			expect.objectContaining({ userId: playerUserProfile.id, client: "evoduel" }),
+		);
+		expect(matchResumeCreator.run).toHaveBeenNthCalledWith(
+			2,
+			expect.objectContaining({ userId: opponentUserProfile.id, client: null }),
+		);
+	});
+
 	it("persists each duel resume under its real duelId when the event carries one per game", async () => {
 		const event = GameOverDomainEventMother.create({
 			players: [player.toPresentation(), opponent.toPresentation()],

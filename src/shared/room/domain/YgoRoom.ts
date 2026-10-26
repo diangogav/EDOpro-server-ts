@@ -156,6 +156,7 @@ export abstract class YgoRoom {
 		const ips = this._players.map((client) => ({
 			name: client.name,
 			ipAddress: client.socket.remoteAddress ?? null,
+			client: client.socket.clientName ?? null,
 		}));
 
 		this._match.duelWinner(winner, this.turn, ips);
@@ -176,6 +177,7 @@ export abstract class YgoRoom {
 		const ips = this._players.map((client) => ({
 			name: client.name,
 			ipAddress: client.socket.remoteAddress ?? null,
+			client: client.socket.clientName ?? null,
 		}));
 
 		const awarded = this._match.forfeit(winnerTeam, ips);

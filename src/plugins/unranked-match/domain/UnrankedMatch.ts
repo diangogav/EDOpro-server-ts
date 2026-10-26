@@ -7,6 +7,9 @@ export interface UnrankedMatchData {
 	/** Ids of the registered players on each side; guests have none and are left out. */
 	readonly playerIds: string[];
 	readonly opponentIds: string[];
+	/** Handshake client per player, aligned with the names; "" when a player sent none. */
+	readonly playerClients: string[];
+	readonly opponentClients: string[];
 	readonly date: Date;
 	readonly banListName: string;
 	readonly banListHash: string;
