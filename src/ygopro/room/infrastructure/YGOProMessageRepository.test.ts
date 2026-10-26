@@ -16,6 +16,7 @@ const hostInfo: HostInfo = {
 	time_limit: 450,
 	max_deck_points: 100,
 	best_of: 1,
+	tcg_segoc_nonpublic: 0,
 };
 
 const EDISON_HASH = 2186248606;

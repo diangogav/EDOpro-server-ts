@@ -170,6 +170,17 @@ describe("YGOProRoom", () => {
 		expect(room.hostInfo.no_shuffle_deck).toBe(0);
 	});
 
+	it("creates a room with TCG SEGOC rulings when the tcgsegoc param is sent", () => {
+		const room = YGOProRoomMother.create({ command: "tcg,TCGSEGOC#123" });
+		expect(room.hostInfo.tcg_segoc_nonpublic).toBe(1);
+		expect(room.hostInfo.rule).toBe(5);
+	});
+
+	it("creates a room with OCG SEGOC rulings when the tcgsegoc param is not sent", () => {
+		const room = YGOProRoomMother.create({ command: "tcg#123" });
+		expect(room.hostInfo.tcg_segoc_nonpublic).toBe(0);
+	});
+
 	it("Should create a room without deck checking if nc param is send", () => {
 		const room = YGOProRoomMother.create({ command: "m,nc#123" });
 		expect(room.hostInfo.no_check_deck).toBe(1);
