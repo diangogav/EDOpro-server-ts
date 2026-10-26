@@ -4,6 +4,8 @@ export interface ISocket {
 	resolvedUserId?: string;
 	/** Opt-in X-Evolution-Lobby: 1 handshake; older clients receive no extra frames. */
 	supportsLobbyMetadata?: boolean;
+	/** Client name from the WS handshake `?client=` (e.g. "evoduel"), recorded per match; never trusted for auth. */
+	clientName?: string;
 	/** Public lobby instance chosen by InviteJoinStrategy; never a credential. */
 	inviteForRoomId?: number;
 	/** Set on a server-driven bot connection whose one-shot, room-bound join

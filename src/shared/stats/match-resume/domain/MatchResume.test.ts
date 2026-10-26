@@ -19,6 +19,7 @@ describe("MatchResume", () => {
 			winner: true,
 			season: 3,
 			points: 7,
+			client: "evoduel",
 		};
 
 		expect(MatchResume.create(data).data).toEqual(data);

@@ -121,6 +121,17 @@ describe("Match", () => {
 			expect(history[1].games[0].turns).toBe(8);
 			expect(history[1].games[0].ipAddress).toBe("127.0.0.2");
 		});
+
+		it("records each player's handshake client, null when it sent none", () => {
+			match.duelWinner(0, 5, [
+				{ name: "Player One", ipAddress: "127.0.0.1", client: "evoduel" },
+				{ name: "Player Two", ipAddress: "127.0.0.2", client: null },
+			]);
+
+			const history = match.playersHistory;
+			expect(history[0].games[0].client).toBe("evoduel");
+			expect(history[1].games[0].client).toBeNull();
+		});
 	});
 
 	describe("duelWinner - Team 1 wins", () => {

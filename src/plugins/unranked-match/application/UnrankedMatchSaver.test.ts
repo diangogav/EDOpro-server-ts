@@ -50,6 +50,7 @@ describe("UnrankedMatchSaver", () => {
 					result: "winner",
 					turns: 5,
 					ipAddress: "127.0.0.1",
+					client: null,
 				},
 			],
 			score: 1,
@@ -65,6 +66,7 @@ describe("UnrankedMatchSaver", () => {
 					result: "loser",
 					turns: 5,
 					ipAddress: "127.0.0.2",
+					client: null,
 				},
 			],
 			score: 0,
@@ -151,6 +153,44 @@ describe("UnrankedMatchSaver", () => {
 		expect(unrankedMatchRepository.saveMatch).toHaveBeenCalledWith(
 			expect.objectContaining({
 				data: expect.objectContaining({ playerIds: ["user-a"], opponentIds: ["user-b"] }),
+			}),
+		);
+	});
+
+	it("stores each player's handshake client aligned with the team names", async () => {
+		const event = new GameOverDomainEvent({
+			ranked: false,
+			players: [
+				PlayerMother.create({
+					team: Team.PLAYER,
+					games: [GameMother.create({ client: "evoduel" })],
+				}).toPresentation(),
+				PlayerMother.create({
+					team: Team.PLAYER,
+					games: [GameMother.create({ client: null })],
+				}).toPresentation(),
+				PlayerMother.create({
+					team: Team.OPPONENT,
+					games: [GameMother.create({ client: "evoduel" })],
+				}).toPresentation(),
+			],
+			bestOf: 1,
+			date: new Date(),
+			banListHash: 123,
+			banListName: "N/A",
+			roomId: 7,
+			matchId: "match-uuid-1",
+			duelIds: ["duel-uuid-1"],
+		});
+
+		await unrankedMatchSaver.handle(event);
+
+		expect(unrankedMatchRepository.saveMatch).toHaveBeenCalledWith(
+			expect.objectContaining({
+				data: expect.objectContaining({
+					playerClients: ["evoduel", ""],
+					opponentClients: ["evoduel"],
+				}),
 			}),
 		);
 	});

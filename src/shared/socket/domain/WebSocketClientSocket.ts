@@ -13,6 +13,7 @@ export class WebSocketClientSocket implements ISocket {
 	roomId?: number;
 	resolvedUserId?: string;
 	public supportsLobbyMetadata?: boolean;
+	public clientName?: string;
 	private readonly socket: WebSocket;
 	private inboundAt = Date.now();
 	private isClosed = false;

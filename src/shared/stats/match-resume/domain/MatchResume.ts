@@ -15,6 +15,7 @@ export interface MatchResumeData {
 	readonly winner: boolean;
 	readonly season: number;
 	readonly points: number;
+	readonly client: string | null;
 }
 
 export class MatchResume {

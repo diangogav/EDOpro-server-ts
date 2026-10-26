@@ -121,6 +121,7 @@ async function run() {
 					points: player.score - opponent.score,
 					playerIds: [],
 					opponentIds: [],
+					client: null,
 				});
 				const games = player.games;
 				for (const game of games) {

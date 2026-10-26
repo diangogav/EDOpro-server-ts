@@ -13,6 +13,8 @@ export type MatchHistory = {
 		result: "winner" | "loser" | "deuce";
 		turns: number;
 		ipAddress: string | null;
+		// EDOPro clients never send a handshake client name.
+		client: null;
 		// score: number;
 	}[];
 };
@@ -51,6 +53,7 @@ export class Match {
 					result: "winner",
 					turns,
 					ipAddress,
+					client: null,
 					// score: 1,
 				});
 			} else {
@@ -58,6 +61,7 @@ export class Match {
 					result: "loser",
 					turns,
 					ipAddress,
+					client: null,
 					// score: 0,
 				});
 			}

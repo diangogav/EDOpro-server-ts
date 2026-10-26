@@ -130,6 +130,7 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 				winner: player.winner,
 				season: config.season,
 				points,
+				client: player.client,
 			});
 
 			this.logger.info(

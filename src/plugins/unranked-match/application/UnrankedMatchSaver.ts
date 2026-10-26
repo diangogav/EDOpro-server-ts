@@ -15,6 +15,12 @@ function registeredIds(players: PlayerMatchSummary[]): string[] {
 	return players.map((p) => p.id).filter((id): id is string => id !== null);
 }
 
+// Aligned with the team's names; a player who sent no client keeps an empty
+// slot so positions still line up.
+function clientsOf(players: PlayerMatchSummary[]): string[] {
+	return players.map((p) => p.games.at(-1)?.client ?? "");
+}
+
 export class UnrankedMatchSaver implements DomainEventSubscriber<GameOverDomainEvent> {
 	static readonly ListenTo = GameOverDomainEvent.DOMAIN_EVENT;
 
@@ -59,6 +65,8 @@ export class UnrankedMatchSaver implements DomainEventSubscriber<GameOverDomainE
 			opponentNames: team1Players.map((p) => p.name),
 			playerIds: registeredIds(team0Players),
 			opponentIds: registeredIds(team1Players),
+			playerClients: clientsOf(team0Players),
+			opponentClients: clientsOf(team1Players),
 			date: event.data.date,
 			banListName,
 			banListHash,

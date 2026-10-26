@@ -53,6 +53,7 @@ describe("WSYGOProServer", () => {
 	let mockClientSocket: {
 		resolvedUserId?: string;
 		supportsLobbyMetadata?: boolean;
+		clientName?: string;
 		close: jest.Mock;
 		send: jest.Mock;
 		onMessage: jest.Mock;
@@ -125,6 +126,22 @@ describe("WSYGOProServer", () => {
 		request.headers["x-evolution-lobby"] = header;
 		await connectionCallback(makeRawSocket(), request);
 		expect(mockClientSocket.supportsLobbyMetadata).toBe(header === "1");
+	});
+
+	it.each([
+		["/?client=evoduel", "evoduel"],
+		["/?ticket=abc&client=EvoDuel", "evoduel"],
+		["/", undefined],
+		["/?client=", undefined],
+		["/?client=bad%20name", undefined],
+		[`/?client=${"a".repeat(33)}`, undefined],
+		["//", undefined],
+	])("records the handshake client name from %s", async (url, expected) => {
+		handshakeAuth.authenticate.mockResolvedValue({ status: "anonymous" });
+		const request = makeRequest();
+		(request as { url?: string }).url = url;
+		await connectionCallback(makeRawSocket(), request);
+		expect(mockClientSocket.clientName).toBe(expected);
 	});
 
 	describe("connection handler — ticket authentication", () => {
