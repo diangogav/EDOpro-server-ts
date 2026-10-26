@@ -1,5 +1,5 @@
 import YGOProDeck from "ygopro-deck-encode";
-import { HostInfo } from "ygopro-msg-encode";
+import { HostInfo } from "@ygopro/room/domain/host-info/HostInfo";
 import { TransportType } from "yuzuthread";
 import { CardStorage } from "../ygopro";
 

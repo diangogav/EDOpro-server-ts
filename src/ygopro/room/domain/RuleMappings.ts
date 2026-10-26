@@ -209,6 +209,17 @@ export const priorityRuleMappings: RuleMappings = {
 		},
 	},
 
+	tcgsegoc: {
+		get: () => {
+			return {
+				tcg_segoc_nonpublic: 1,
+			};
+		},
+		validate: (value) => {
+			return value === "tcgsegoc";
+		},
+	},
+
 	nc: {
 		get: () => {
 			return {

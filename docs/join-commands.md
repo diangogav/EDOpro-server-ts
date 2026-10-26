@@ -70,7 +70,7 @@ than one mapping within that tier throws; multiple distinct tokens are allowed:
    `pre`, `ocg`, `tcgpre`, `ocgpre`, `tcgart`, `ocgart`.
 3. **`priorityRuleMappings`** (modifiers, win over format tokens): `bo<N>`,
    `lp<N>`, `tm<N>`/`time<N>`, `mr<N>`/`duelrule<N>`, `ot`/`tcg`, `otto`,
-   `toot`/`tt`, `ns`, `nc`, `dr<N>`, `st<N>`, `to`/`tcgonly`/`tor`,
+   `toot`/`tt`, `ns`, `nc`, `tcgsegoc`, `dr<N>`, `st<N>`, `to`/`tcgonly`/`tor`,
    `lf*`/`lflist*`, `nf`/`nolflist`, `oor`/`oo`/`ocgonly`, `or`, `tr`, `oomr`,
    `omr`, `tomr`, `tmr`.
 
@@ -79,6 +79,13 @@ Notes worth knowing:
 - **`tcg` is an alias of `ot`** (priority tier): payload is `{ rule: 5 }` only —
   banlist and duel rule stay at the host defaults (first TCG banlist,
   duel_rule 5).
+- **`tcgsegoc`** (priority tier) → `{ tcg_segoc_nonpublic: 1 }`: the duel
+  uses the TCG SEGOC ruling, where Trigger Effects activating from a non-public
+  location (hand, Deck, face-down) join SEGOC with the public triggers. Without
+  it the core keeps the OCG ruling and offers them only after the public ones.
+  `calculateDuelOptions` maps it to the fork core's `DUEL_TCG_SEGOC_NONPUBLIC`
+  (`0x200`), so it needs the ocgcore fork; the stock core ignores the bit. It
+  combines with any format, e.g. `tcg,tcgsegoc#room`.
 - `ocg` → `{ rule: 0, lflist: 0, time_limit: 450 }`;
   `md` → `{ rule: 5, lflist: alias("md"), duel_rule: 5, time_limit: 450 }`;
   `tcgpre` → `{ rule: 1, duel_rule: 5, time_limit: 450 }` (default TCG lflist,

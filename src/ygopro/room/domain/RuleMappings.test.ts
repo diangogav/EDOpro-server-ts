@@ -21,6 +21,11 @@ describe("isRecognizedToken", () => {
 		expect(isRecognizedToken("tag")).toBe(true);
 	});
 
+	it("recognizes the tcgsegoc modifier", () => {
+		expect(isRecognizedToken("tcgsegoc")).toBe(true);
+		expect(isRecognizedToken("TCGSEGOC")).toBe(true);
+	});
+
 	it("recognizes tokens from the format tier", () => {
 		expect(isRecognizedToken("edison")).toBe(true);
 		expect(isRecognizedToken("tengu")).toBe(true);

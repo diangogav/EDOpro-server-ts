@@ -203,6 +203,7 @@ export class YGOProRoom extends YgoRoom {
 			time_limit: 450,
 			max_deck_points: 100,
 			best_of: BEST_OF[GameMode.SINGLE],
+			tcg_segoc_nonpublic: 0,
 		};
 
 		const [configuration, password = ""] = command.split("#");
