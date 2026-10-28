@@ -243,6 +243,7 @@ export class YGOProDuelingState extends YGOProRoomState {
 		});
 
 		this.notifyDuelStart(this.room);
+		this.room.reservedDuel?.markStarted(this.room.matchId);
 		this.ocgCore.advance();
 	}
 
@@ -589,6 +590,9 @@ export class YGOProDuelingState extends YGOProRoomState {
 		);
 
 		if (this.room.isMatchFinished()) {
+			// From here the outcome belongs to the game-over subscriber: a
+			// teardown racing the replays must not record the room as abandoned.
+			this.room.reservedDuel?.markGameOver();
 			await container.get(MatchLifecycleHooks).runEnding(this.buildEndContext());
 			await this.finalizeWithReplays();
 			this.dispatchGameOverDomainEvent();
@@ -772,6 +776,10 @@ export class YGOProDuelingState extends YGOProRoomState {
 				banListHash: this.room.edoBanListHash,
 				banListName: this.room.banListName ?? "N/A",
 				ranked: this.room.ranked,
+				...(this.room.reservedDuel && {
+					reservationId: this.room.reservedDuel.id,
+					duelWinReasons: this.room.duelWinReasons(),
+				}),
 			}),
 		);
 	}
@@ -815,6 +823,9 @@ export class YGOProDuelingState extends YGOProRoomState {
 	}
 
 	private broadcastRoomUpdate(): void {
+		if (!this.room.isListed) {
+			return;
+		}
 		WebSocketSingleton.getInstance().broadcast({
 			action: "UPDATE-ROOM",
 			data: this.room.toRealTimePresentation(),

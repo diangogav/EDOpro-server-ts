@@ -35,6 +35,11 @@ export default {
 		return rooms;
 	},
 
+	/** Rooms shown to the public: room lists and their real-time broadcasts. */
+	getListedRooms(): YGOProRoom[] {
+		return rooms.filter((room) => room.isListed);
+	},
+
 	/**
 	 * Exact (case-sensitive) name match. Returns the FIRST room with that name
 	 * and ignores room state — other callers (join strategies' spectate-or-join

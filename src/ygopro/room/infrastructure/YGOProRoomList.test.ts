@@ -316,3 +316,23 @@ function randomId(): number {
 	idCounter += 1;
 	return idCounter;
 }
+
+describe("YGOProRoomList.getListedRooms", () => {
+	afterEach(() => {
+		const rooms = YGOProRoomList.getRooms();
+		while (rooms.length) {
+			YGOProRoomList.deleteRoom(rooms[0]);
+		}
+	});
+
+	it("leaves out rooms that ask not to be listed", () => {
+		const listed = YGOProRoomMother.create({ command: "edison#a" });
+		const unlisted = YGOProRoomMother.create({ command: "edison#b" });
+		Object.defineProperty(unlisted, "isListed", { get: () => false });
+		YGOProRoomList.addRoom(listed);
+		YGOProRoomList.addRoom(unlisted);
+
+		expect(YGOProRoomList.getListedRooms()).toEqual([listed]);
+		expect(YGOProRoomList.getRooms()).toHaveLength(2);
+	});
+});

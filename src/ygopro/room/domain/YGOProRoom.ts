@@ -22,6 +22,7 @@ import { RoomType } from "@shared/room/domain/RoomType";
 import { MessageRepository } from "@ygopro/room/domain/messages/MessageRepository";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { Deck } from "@shared/deck/domain/Deck";
+import { ReservedDuelSession } from "@shared/reserved-duel/domain/ReservedDuelSession";
 
 import MercuryBanListMemoryRepository from "../../ban-list/infrastructure/YGOProBanListMemoryRepository";
 import { YGOProClient } from "../../client/domain/YGOProClient";
@@ -103,6 +104,10 @@ export class YGOProRoom extends YgoRoom {
 	 * (matchmaking): the userIds allowed through the JOIN door. Undefined for
 	 * ordinary rooms, which admit by (name, password) alone. */
 	reservedUserIds?: readonly string[];
+
+	/** Present only on rooms built from a reservation: fixed seats, deck lock,
+	 * server-started duel, outcome recorded under the reservation id. */
+	reservedDuel?: ReservedDuelSession;
 
 	// Set to true when the room begins teardown (removeRoom entry point in YGOProDuelingState).
 	// The WindBotJoinStrategy retry-abort callback reads this to stop retrying when the room
@@ -267,7 +272,31 @@ export class YGOProRoom extends YgoRoom {
 	}
 
 	shouldValidateDeck(): boolean {
+		// A reserved duel always checks decks: its rules come from the
+		// reservation, never from a client-chosen "nc" token.
+		if (this.reservedDuel) {
+			return true;
+		}
 		return !this._hostInfo.no_check_deck;
+	}
+
+	/** A single reserved duel ends with its first duel, a draw included. */
+	override isMatchFinished(): boolean {
+		if (this.reservedDuel?.isSingle && this.hasPlayedAnyDuel()) {
+			return true;
+		}
+		return super.isMatchFinished();
+	}
+
+	/**
+	 * Win reason of every game in `duelIds` order: the engine's win type for a
+	 * played duel, "disconnect" for a game awarded because the other side left.
+	 */
+	duelWinReasons(): string[] {
+		return this.duelIds.map((_, index) => {
+			const reason = this._duelRecords[index]?.winReason;
+			return reason === undefined ? "disconnect" : String(reason);
+		});
 	}
 
 	get isTag() {
@@ -505,6 +534,9 @@ export class YGOProRoom extends YgoRoom {
 				if (socket.watchForRoomId === this.id) {
 					return null;
 				}
+				if (this.reservedDuel) {
+					return this.reservedSeatFor(socket);
+				}
 
 				const place = this.calculatePlaceUnsafe();
 				return place ? new Seat(place.position, place.team) : null;
@@ -577,9 +609,10 @@ export class YGOProRoom extends YgoRoom {
 		}
 		// A watch stamp is spectate-only capability, never seat capability:
 		// seat-taking paths (spectator -> player promotion) must consult
-		// reservationPermitsSeat instead of this gate.
+		// reservationPermitsSeat instead of this gate. A reserved duel admits
+		// watchers only when its reservation allows spectators.
 		if (socket.watchForRoomId === this.id) {
-			return true;
+			return !this.reservedDuel || this.reservedDuel.allowsSpectators;
 		}
 
 		if (!socket.resolvedUserId || !this.reservedUserIds.includes(socket.resolvedUserId)) {
@@ -623,6 +656,24 @@ export class YGOProRoom extends YgoRoom {
 	 */
 	private holdsLiveSeat(userId: string): boolean {
 		return this._players.some((player) => player.id === userId && !player.socket.closed);
+	}
+
+	/**
+	 * The one seat a reserved duel holds for this socket: the bot's seat for
+	 * the room's own bot connection, the user's seat for a participant. Null
+	 * when that seat is already taken or the socket holds none.
+	 */
+	private reservedSeatFor(socket: ISocket): Seat | null {
+		const team =
+			socket.internalForRoomId === this.id
+				? (this.reservedDuel?.botSeat() ?? null)
+				: (this.reservedDuel?.seatOfUser(socket.resolvedUserId) ?? null);
+		if (team === null || this._players.some((player) => player.team === team)) {
+			return null;
+		}
+		const position = team === Team.PLAYER ? this.t0Positions[0] : this.t1Positions[0];
+
+		return new Seat(position, team);
 	}
 
 	/**
@@ -793,7 +844,16 @@ export class YGOProRoom extends YgoRoom {
 		this.sendSpectatorCount({ enqueue: false });
 	}
 
+	/** Whether the room shows in room lists and their real-time updates. */
+	get isListed(): boolean {
+		return !this.reservedDuel || this.reservedDuel.isListed;
+	}
+
 	movePlayerToAnotherCellUnsafe(player: YGOProClient): void {
+		// Reserved seats stay on the reservation's seat → team mapping.
+		if (this.reservedDuel) {
+			return;
+		}
 		const nextPlace = this.nextAvailablePosition(player.position);
 		if (!nextPlace) {
 			return;
