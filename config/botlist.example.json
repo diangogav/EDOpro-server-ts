@@ -101,5 +101,20 @@
 		"name": "Lich",
 		"deck": "HalloweenLich",
 		"hidden": true
+	},
+	{
+		"name": "DarkWorld",
+		"deck": "PilotDarkWorld",
+		"hidden": true
+	},
+	{
+		"name": "CursedGarden",
+		"deck": "PilotCursedGarden",
+		"hidden": true
+	},
+	{
+		"name": "Necromancer",
+		"deck": "PilotNecromancer",
+		"hidden": true
 	}
 ]
