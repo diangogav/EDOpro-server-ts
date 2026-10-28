@@ -33,6 +33,7 @@ export class EndMatchByAbandon {
 
 		const winnerTeam = abandoningTeam === Team.PLAYER ? Team.OPPONENT : Team.PLAYER;
 		room.matchForfeit(winnerTeam);
+		room.reservedDuel?.markGameOver();
 
 		logger.info("Match ended by abandon", {
 			roomId: room.id,
@@ -79,6 +80,10 @@ export class EndMatchByAbandon {
 				banListHash: room.edoBanListHash,
 				banListName: room.banListName ?? "N/A",
 				ranked: room.ranked,
+				...(room.reservedDuel && {
+					reservationId: room.reservedDuel.id,
+					duelWinReasons: room.duelWinReasons(),
+				}),
 			}),
 		);
 	}
