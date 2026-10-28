@@ -75,8 +75,11 @@ export class AIJoinTokenStrategy implements JoinStrategy {
 		// WindBotJoinStrategy: the classic vs-AI path sets these at creation, but
 		// matchmaking bot rooms are created generically and only become AI rooms
 		// when the windbot connects here.
-		room.noHost = true;
-		room.noReconnect = true;
+		// A reserved duel already carries its own reconnect and start rules.
+		if (!room.reservedDuel) {
+			room.noHost = true;
+			room.noReconnect = true;
+		}
 
 		// Emit JOIN for the bot client — the waiting state will call createPlayerUnsafe + addPlayerUnsafe
 		// (or createSpectatorUnsafe if slots are full, but for a windbot room there should be a free slot).
