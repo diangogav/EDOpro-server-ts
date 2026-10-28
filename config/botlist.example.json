@@ -61,5 +61,60 @@
 		"deck": "EdisonMachina",
 		"hidden": true,
 		"format": "edison"
+	},
+	{
+		"name": "Horde",
+		"deck": "HalloweenHorde",
+		"hidden": true
+	},
+	{
+		"name": "Vampires",
+		"deck": "HalloweenVampires",
+		"hidden": true
+	},
+	{
+		"name": "Haunted",
+		"deck": "HalloweenHaunted",
+		"hidden": true
+	},
+	{
+		"name": "Skeletons",
+		"deck": "HalloweenSkeletons",
+		"hidden": true
+	},
+	{
+		"name": "Gravekeepers",
+		"deck": "HalloweenGravekeepers",
+		"hidden": true
+	},
+	{
+		"name": "Witches",
+		"deck": "HalloweenWitches",
+		"hidden": true
+	},
+	{
+		"name": "Archfiends",
+		"deck": "HalloweenArchfiends",
+		"hidden": true
+	},
+	{
+		"name": "Lich",
+		"deck": "HalloweenLich",
+		"hidden": true
+	},
+	{
+		"name": "DarkWorld",
+		"deck": "PilotDarkWorld",
+		"hidden": true
+	},
+	{
+		"name": "CursedGarden",
+		"deck": "PilotCursedGarden",
+		"hidden": true
+	},
+	{
+		"name": "Necromancer",
+		"deck": "PilotNecromancer",
+		"hidden": true
 	}
 ]
