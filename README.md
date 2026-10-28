@@ -219,6 +219,7 @@ Both pools are loaded at startup and refreshed every 10 minutes if the underlyin
 | `POSTGRES_PASSWORD` | PostgreSQL password | *(required if ranking enabled)* |
 | `USE_REDIS` | Enable Redis/Valkey for session management | `false` |
 | `REDIS_URI` | Redis/Valkey connection URI | *(required if redis enabled)* |
+| `SERVER_INSTANCE_ID` | Stable, unique id of this deployment slot for reserved duels (boot sweep and claims) | `default` *(required in production when ranking and Redis are on)* |
 
 ---
 

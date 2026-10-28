@@ -41,7 +41,13 @@ describe("bootstrapPlugins against the real src/plugins directory", () => {
 		// so it loads without ever touching the event bus.
 		expect(report.loaded).toEqual(["big-damage-log"]);
 		expect(report.skipped).toEqual(
-			expect.arrayContaining(["basic-stats", "unranked-match", "elo-rating", "achievements"]),
+			expect.arrayContaining([
+				"basic-stats",
+				"unranked-match",
+				"elo-rating",
+				"achievements",
+				"reserved-duels",
+			]),
 		);
 		expect(bus.subscribe).not.toHaveBeenCalled();
 	});
@@ -58,9 +64,10 @@ describe("bootstrapPlugins against the real src/plugins directory", () => {
 				"unranked-match",
 				"elo-rating",
 				"achievements",
+				"reserved-duels",
 			]),
 		);
-		expect(bus.subscribe).toHaveBeenCalledTimes(3);
+		expect(bus.subscribe).toHaveBeenCalledTimes(4);
 	});
 
 	it("issues zero Postgres queries when ranking is disabled and GAME_OVER is published", async () => {

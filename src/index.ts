@@ -10,6 +10,7 @@ import { bootstrapPersistence } from "./bootstrap/bootstrapPersistence";
 import { bootstrapPlugins } from "./bootstrap/bootstrapPlugins";
 import { bootstrapBanListReloader } from "./bootstrap/bootstrapBanListReloader";
 import { bootstrapMatchmaking } from "./bootstrap/bootstrapMatchmaking";
+import { bootstrapReservedDuels } from "./bootstrap/bootstrapReservedDuels";
 import { Server } from "./http-server/Server";
 import { HostServer } from "./socket-server/HostServer";
 import { WSHostServer } from "./socket-server/WSHostServer";
@@ -40,6 +41,14 @@ async function start(): Promise<void> {
 
 	await bootstrapResources(logger);
 	await bootstrapPersistence(logger);
+	await bootstrapReservedDuels(
+		{
+			enabled: config.ranking.enabled && config.redis.use && Boolean(config.redis.uri),
+			instanceId: config.reservedDuels.instanceId,
+			production: config.env === "production",
+		},
+		logger,
+	);
 
 	// Plugin registration lives here (not in HostServer) so it always runs
 	// after persistence is ready and before any socket can publish GAME_OVER.

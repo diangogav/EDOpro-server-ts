@@ -90,3 +90,4 @@ src/plugins/*
 !src/plugins/elo-rating/
 !src/plugins/rating-announcer/
 !src/plugins/achievements/
+!src/plugins/reserved-duels/

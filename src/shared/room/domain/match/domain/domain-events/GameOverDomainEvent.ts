@@ -13,6 +13,10 @@ export type GameOverData = {
 	banListHash: number;
 	banListName: string;
 	ranked: boolean;
+	/** Set only for a room built from a reservation: the outcome is recorded under it. */
+	reservationId?: string;
+	/** Reserved rooms only: each game's win reason, in `duelIds` order. */
+	duelWinReasons?: string[];
 };
 
 export class GameOverDomainEvent {
