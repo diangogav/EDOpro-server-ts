@@ -36,10 +36,11 @@ Strategy chain, first `matches()` wins
 |---|----------|--------------|----------|
 | 1 | `AIJoinTokenStrategy` | windbot enabled AND `rawPass` starts with `AIJOIN#` | The bot itself connecting back: consumes a one-shot token, finds the room **by id**, marks the client internal. |
 | 2 | `WindBotJoinStrategy` | windbot enabled AND `ai` among config tokens | Creates an AI room, resolves the bot (by name after `#`, or format-scoped random via `resolveBotPool`), fires the bot request. Rejects tag mode. |
-| 3 | `InviteJoinStrategy` | first command token is `j` (reserved, strict `j,<16-character inviteId>` validation) | Joins one existing public waiting room incarnation with a player seat. Never creates or spectates; ticket authentication remains intact. |
-| 4 | `WatchJoinStrategy` | command segment is exactly `w,<digits>` (see §9) | Intentional spectating **by room id**: finds the room via `findById`, gates on an exact password match, marks the socket with watch intent and routes the JOIN. Never creates a room. |
-| 5 | `TicketJoinStrategy` | socket authenticated via WS ticket (`resolvedUserId`) | Shared `findOrCreateRoom` helper (`rankedOverride=true`) — see §5 for the pairing-vs-non-pairing lookup it performs. |
-| 6 | `DefaultJoinStrategy` | always | Shared `findOrCreateRoom` helper (`rankedOverride=undefined`) — see §5 for the pairing-vs-non-pairing lookup it performs. Admission is delegated to the room state (§6). |
+| 3 | `ReservedDuelJoinStrategy` | command segment is exactly `rv` (`rv#<16-char reservationId>`); in the base chain, so present with or without windbot | Claims the reservation for the ticket user (`resolvedUserId` required) and opens its room, or sends a later participant to it. See [reserved duels](./reserved-duels.md). |
+| 4 | `InviteJoinStrategy` | first command token is `j` (reserved, strict `j,<16-character inviteId>` validation) | Joins one existing public waiting room incarnation with a player seat. Never creates or spectates; ticket authentication remains intact. |
+| 5 | `WatchJoinStrategy` | command segment is exactly `w,<digits>` (see §9) | Intentional spectating **by room id**: finds the room via `findById`, gates on an exact password match, marks the socket with watch intent and routes the JOIN. Never creates a room. |
+| 6 | `TicketJoinStrategy` | socket authenticated via WS ticket (`resolvedUserId`) | Shared `findOrCreateRoom` helper (`rankedOverride=true`) — see §5 for the pairing-vs-non-pairing lookup it performs. |
+| 7 | `DefaultJoinStrategy` | always | Shared `findOrCreateRoom` helper (`rankedOverride=undefined`) — see §5 for the pairing-vs-non-pairing lookup it performs. Admission is delegated to the room state (§6). |
 
 `InviteJoinStrategy` and `WatchJoinStrategy` must sit BEFORE `TicketJoinStrategy`: the ticket strategy
 matches on socket auth alone, not command shape, so a ticketed socket sending

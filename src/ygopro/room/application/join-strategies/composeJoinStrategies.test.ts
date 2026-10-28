@@ -5,6 +5,7 @@ import { InviteJoinStrategy } from "./InviteJoinStrategy";
 import { WatchJoinStrategy } from "./WatchJoinStrategy";
 import { TicketJoinStrategy } from "./TicketJoinStrategy";
 import { DefaultJoinStrategy } from "./DefaultJoinStrategy";
+import { ReservedDuelJoinStrategy } from "./ReservedDuelJoinStrategy";
 import { JoinStrategyRegistry } from "./JoinStrategyRegistry";
 import { JoinContext } from "./JoinStrategy";
 import { WindbotModule } from "../../../windbot/application/WindbotModule";
@@ -23,26 +24,28 @@ const makeModule = (): WindbotModule =>
 	});
 
 describe("composeJoinStrategies", () => {
-	it("returns the base chain [Invite, Watch, Ticket, Default] when windbot is absent", () => {
+	it("returns the base chain [ReservedDuel, Invite, Watch, Ticket, Default] when windbot is absent", () => {
 		const strategies = composeJoinStrategies();
 
-		expect(strategies).toHaveLength(4);
-		expect(strategies[0]).toBeInstanceOf(InviteJoinStrategy);
-		expect(strategies[1]).toBeInstanceOf(WatchJoinStrategy);
-		expect(strategies[2]).toBeInstanceOf(TicketJoinStrategy);
-		expect(strategies[3]).toBeInstanceOf(DefaultJoinStrategy);
+		expect(strategies).toHaveLength(5);
+		expect(strategies[0]).toBeInstanceOf(ReservedDuelJoinStrategy);
+		expect(strategies[1]).toBeInstanceOf(InviteJoinStrategy);
+		expect(strategies[2]).toBeInstanceOf(WatchJoinStrategy);
+		expect(strategies[3]).toBeInstanceOf(TicketJoinStrategy);
+		expect(strategies[4]).toBeInstanceOf(DefaultJoinStrategy);
 	});
 
 	it("prepends [AIJoinToken, WindBot] before the base chain when windbot is present", () => {
 		const strategies = composeJoinStrategies(makeModule());
 
-		expect(strategies).toHaveLength(6);
+		expect(strategies).toHaveLength(7);
 		expect(strategies[0]).toBeInstanceOf(AIJoinTokenStrategy);
 		expect(strategies[1]).toBeInstanceOf(WindBotJoinStrategy);
-		expect(strategies[2]).toBeInstanceOf(InviteJoinStrategy);
-		expect(strategies[3]).toBeInstanceOf(WatchJoinStrategy);
-		expect(strategies[4]).toBeInstanceOf(TicketJoinStrategy);
-		expect(strategies[5]).toBeInstanceOf(DefaultJoinStrategy);
+		expect(strategies[2]).toBeInstanceOf(ReservedDuelJoinStrategy);
+		expect(strategies[3]).toBeInstanceOf(InviteJoinStrategy);
+		expect(strategies[4]).toBeInstanceOf(WatchJoinStrategy);
+		expect(strategies[5]).toBeInstanceOf(TicketJoinStrategy);
+		expect(strategies[6]).toBeInstanceOf(DefaultJoinStrategy);
 	});
 });
 
@@ -92,5 +95,33 @@ describe("composeJoinStrategies — resolution order", () => {
 		const ctx = makeCtx({ rawPass: "MYROOM#secret", command: "MYROOM", password: "secret" });
 
 		expect(registry.resolve(ctx)).toBeInstanceOf(DefaultJoinStrategy);
+	});
+
+	it("resolves a ticketed rv#<id> join to ReservedDuelJoinStrategy, with or without windbot", () => {
+		const ctx = makeCtx({
+			rawPass: "rv#Ab3dEf6hIj9kLm2n",
+			command: "rv",
+			password: "Ab3dEf6hIj9kLm2n",
+			socket: { id: "sock-1", resolvedUserId: "user-abc" } as never,
+		});
+
+		for (const strategies of [composeJoinStrategies(), composeJoinStrategies(makeModule())]) {
+			expect(JoinStrategyRegistry.createForTests(strategies).resolve(ctx)).toBeInstanceOf(
+				ReservedDuelJoinStrategy,
+			);
+		}
+	});
+
+	it("still resolves windbot ai# joins and AIJOIN# tokens to their strategies (shared chain)", () => {
+		const registry = JoinStrategyRegistry.createForTests(composeJoinStrategies(makeModule()));
+
+		expect(
+			registry.resolve(
+				makeCtx({ rawPass: "ed,ai#Haunted", command: "ed,ai", password: "Haunted" }),
+			),
+		).toBeInstanceOf(WindBotJoinStrategy);
+		expect(
+			registry.resolve(makeCtx({ rawPass: "AIJOIN#token", command: "AIJOIN", password: "token" })),
+		).toBeInstanceOf(AIJoinTokenStrategy);
 	});
 });

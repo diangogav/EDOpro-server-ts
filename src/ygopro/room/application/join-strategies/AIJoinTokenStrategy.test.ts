@@ -271,6 +271,27 @@ describe("AIJoinTokenStrategy", () => {
 				expect(room.noReconnect).toBe(true);
 			});
 
+			it("keeps a reserved duel's own reconnect and start rules", async () => {
+				const { room, emitter } = createRoomInList();
+				const token = tokenStore.register(room.id, "Anna", "Anna.ydk");
+				room.reservedDuel = { allowsReconnect: true } as never;
+				room.noReconnect = false;
+
+				jest.spyOn(room, "emit").mockImplementation(() => undefined);
+
+				const strategy = new AIJoinTokenStrategy(makeModule(tokenStore));
+
+				await strategy.handle(
+					makeCtx(`AIJOIN#${token}`, {
+						eventEmitter: emitter,
+						messageRepository: makeMessageRepository() as never,
+					}),
+				);
+
+				expect(room.noHost).toBe(false);
+				expect(room.noReconnect).toBe(false);
+			});
+
 			it("finds the room by roomId from the token payload", async () => {
 				const { room, emitter } = createRoomInList();
 				const token = tokenStore.register(room.id, "Anna", "Anna.ydk");
