@@ -76,6 +76,7 @@ bus.subscribe(GameOverDomainEvent.DOMAIN_EVENT, {
 	handle: (event: GameOverDomainEvent) => {
 		// event.data: roomId, matchId, duelIds, bestOf, players, date,
 		//             banListHash, banListName, ranked
+		//             (+ reservationId, duelWinReasons for reserved rooms)
 	},
 });
 ```
@@ -199,4 +200,5 @@ Follow [testing conventions](./testing.md); plugin-specific pieces:
 |--------|----------|------|-------------------------|
 | `basic-stats` | `GAME_OVER` | `config.ranking.enabled` | Ranked persistence: points, wins/losses, match + duel resumes keyed by real `matchId`/`duelId` |
 | `unranked-match` | `GAME_OVER` | `config.ranking.enabled` | Unranked persistence; row ids are the real `matchId`/`duelId`, making duplicate events idempotent |
+| `reserved-duels` | `GAME_OVER` | `config.ranking.enabled` | Records a reserved room's decided/draw outcome under its `reservationId`; conditional write, retried with backoff (see [reserved duels](./reserved-duels.md)) |
 | `big-damage-log` | `duel.damage` | always on | Minimal duel-event consumer: stateless, log-only, never touches the bus |

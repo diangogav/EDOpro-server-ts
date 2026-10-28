@@ -78,5 +78,11 @@ export const config = {
 		},
 	},
 	sideTimeoutMinutes: Number(process.env.SIDE_TIMEOUT_MINUTES) || 3,
+	reservedDuels: {
+		// Stable per deployment slot: the boot sweep closes only the rows this
+		// slot left open, and a reservation is played on the instance that claimed it.
+		// Required in production when reserved duels are on (checked at boot).
+		instanceId: process.env.SERVER_INSTANCE_ID || undefined,
+	},
 	windbot: parseWindbotConfig(process.env),
 };
