@@ -90,7 +90,7 @@ export class AbandonBetweenDuels {
 			logger.info("Match cancelled by abandon", { roomId: room.id, abandoningTeam });
 			const cancelled = MatchAbandonClientMessage.matchCancelled();
 			stayers.forEach((client) => client.sendMessageToClient(cancelled));
-			FinalizeYGOProRoom.run(room);
+			FinalizeYGOProRoom.run(room, { seat: abandoningTeam, reason: "disconnect" });
 
 			return;
 		}

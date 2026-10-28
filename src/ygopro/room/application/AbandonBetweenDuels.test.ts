@@ -203,7 +203,10 @@ describe("AbandonBetweenDuels", () => {
 			expect(stayer.sendMessageToClient).toHaveBeenCalledWith(
 				MatchAbandonClientMessage.matchCancelled(),
 			);
-			expect(FinalizeYGOProRoom.run).toHaveBeenCalledWith(room);
+			expect(FinalizeYGOProRoom.run).toHaveBeenCalledWith(room, {
+				seat: Team.PLAYER,
+				reason: "disconnect",
+			});
 			expect(EndMatchByAbandon.run).not.toHaveBeenCalled();
 		});
 

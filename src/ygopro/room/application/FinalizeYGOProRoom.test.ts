@@ -186,6 +186,15 @@ describe("FinalizeYGOProRoom.run()", () => {
 		);
 	});
 
+	it("keeps an unlisted reserved room out of the REMOVE-ROOM broadcast", () => {
+		const room = createRoomInList();
+		Object.defineProperty(room, "isListed", { get: () => false, configurable: true });
+
+		FinalizeYGOProRoom.run(room);
+
+		expect(mockInstance.broadcast).not.toHaveBeenCalled();
+	});
+
 	it("is idempotent when overlapping lifecycle owners finalize the same room", () => {
 		const openClient = makeClient(makeSocket(false));
 		const room = createRoomInList([openClient]);

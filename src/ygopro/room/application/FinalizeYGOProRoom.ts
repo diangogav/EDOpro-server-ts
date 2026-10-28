@@ -10,6 +10,7 @@ import { YGOProRoom } from "../domain/YGOProRoom";
 import MercuryRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
 import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
+import { ReservedDuelAbandon } from "@shared/reserved-duel/domain/ReservedDuelRepository";
 
 /**
  * Canonical teardown for a YGOPro room. Centralizes the sequence previously
@@ -26,13 +27,20 @@ import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/Reco
  *      in-memory TokenIndex (which has no TTL) for the lifetime of the process.
  *   5. delete the room from the list.
  *   6. broadcast REMOVE-ROOM so the real-time room list updates.
+ *
+ * A reserved duel's room records its abandon here when it never dispatched a
+ * game over (the game-over subscriber owns the outcome otherwise) and drops its
+ * reservation. `abandon` says who left and why; without it the room is
+ * recorded as closed by the server.
  */
 export class FinalizeYGOProRoom {
-	static run(room: YGOProRoom): void {
+	static run(room: YGOProRoom, abandon?: ReservedDuelAbandon): void {
 		// Matchmaking's join reaper and socket disconnect handler can observe the
 		// same abort on adjacent turns. Teardown is a single terminal transition.
 		if (room.finalizing) return;
 		room.finalizing = true;
+
+		room.reservedDuel?.close(abandon ?? { seat: null, reason: "room_closed" });
 
 		WindbotModule.cleanupRoomIfEnabled(room.id);
 
@@ -62,9 +70,11 @@ export class FinalizeYGOProRoom {
 
 		MercuryRoomList.deleteRoom(room);
 
-		WebSocketSingleton.getInstance().broadcast({
-			action: "REMOVE-ROOM",
-			data: room.toRealTimePresentation(),
-		});
+		if (room.isListed) {
+			WebSocketSingleton.getInstance().broadcast({
+				action: "REMOVE-ROOM",
+				data: room.toRealTimePresentation(),
+			});
+		}
 	}
 }

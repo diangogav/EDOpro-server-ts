@@ -23,6 +23,10 @@ export class YGOProDisconnectPolicy implements RoomDisconnectPolicy {
 			return;
 		}
 
+		if (room.reservedDuel && this.closeReservedDuel(room, socket)) {
+			return;
+		}
+
 		// On `close` the leaver's socket is already closed, so this also catches
 		// the last WAITING player leaving — finalize instead of leaking a zombie.
 		if (room.hasNoConnectedPlayers) {
@@ -57,6 +61,42 @@ export class YGOProDisconnectPolicy implements RoomDisconnectPolicy {
 			room.playerLeave(player);
 			player.destroy();
 		}
+	}
+
+	/**
+	 * A reserved duel records who ended it. Without reconnect a human leaving
+	 * ends the room at once (as an AI room does); with reconnect only the last
+	 * human leaving does, and everything else takes the normal path (lobby
+	 * leave, abandon grace between duels, the duel timer mid-duel). The bot
+	 * leaving is never a player's fault. Returns whether the leave was handled.
+	 */
+	private closeReservedDuel(room: YGOProRoom, socket: ISocket): boolean {
+		const player = room.players.find((client) => client.socket.id === socket.id);
+		if (!(player instanceof YGOProClient)) {
+			return false;
+		}
+		const leaver = player;
+
+		if (leaver.isInternal) {
+			FinalizeYGOProRoom.run(room, { seat: null, reason: "bot_unavailable" });
+			return true;
+		}
+		if (room.hasNoConnectedPlayers || this.noHumanLeft(room)) {
+			FinalizeYGOProRoom.run(room, { seat: leaver.team, reason: "disconnect" });
+			return true;
+		}
+		if (room.noReconnect) {
+			FinalizeYGOProRoom.run(room, { seat: leaver.team, reason: "disconnect" });
+			return true;
+		}
+
+		return false;
+	}
+
+	private noHumanLeft(room: YGOProRoom): boolean {
+		return (room.players as YGOProClient[]).every(
+			(client) => client.isInternal || client.socket.closed,
+		);
 	}
 
 	private removeSpectator(room: YGOProRoom, socket: ISocket): void {

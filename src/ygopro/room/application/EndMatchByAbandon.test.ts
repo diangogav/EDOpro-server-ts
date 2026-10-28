@@ -103,4 +103,27 @@ describe("EndMatchByAbandon", () => {
 		expect(room.matchForfeit).not.toHaveBeenCalled();
 		expect(publish).not.toHaveBeenCalled();
 	});
+
+	it("publishes an ordinary room's event without reservation fields", async () => {
+		await EndMatchByAbandon.run(makeRoom(), Team.OPPONENT, logger);
+
+		const event = publish.mock.calls[0][1] as GameOverDomainEvent;
+		expect(event.data).not.toHaveProperty("reservationId");
+		expect(event.data).not.toHaveProperty("duelWinReasons");
+	});
+
+	it("carries the reservation and marks its game over for a reserved room", async () => {
+		const reservedDuel = { id: "Ab3dEf6hIj9kLm2n", markGameOver: jest.fn() };
+		const room = makeRoom({
+			reservedDuel,
+			duelWinReasons: jest.fn().mockReturnValue(["1", "disconnect"]),
+		} as never);
+
+		await EndMatchByAbandon.run(room, Team.OPPONENT, logger);
+
+		const event = publish.mock.calls[0][1] as GameOverDomainEvent;
+		expect(event.data.reservationId).toBe("Ab3dEf6hIj9kLm2n");
+		expect(event.data.duelWinReasons).toEqual(["1", "disconnect"]);
+		expect(reservedDuel.markGameOver).toHaveBeenCalled();
+	});
 });
