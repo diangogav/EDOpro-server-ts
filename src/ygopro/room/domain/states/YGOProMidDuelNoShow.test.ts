@@ -55,6 +55,8 @@ function buildScenario(bestOf: number, ranked: boolean) {
 		Record<string, unknown>;
 	const room = mock<YGOProRoom>();
 	Object.assign(room, {
+		// An ordinary room: a deep mock would otherwise answer every property.
+		reservedDuel: undefined,
 		id: 77,
 		matchId: "match-77",
 		ranked,

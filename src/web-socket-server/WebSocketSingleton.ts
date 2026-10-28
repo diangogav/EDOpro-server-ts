@@ -19,7 +19,7 @@ class WebSocketSingleton {
 			ws.send(
 				JSON.stringify({
 					action: "GET-ROOMS",
-					data: [...RoomList.getRooms(), ...MercuryRoomList.getRooms()]
+					data: [...RoomList.getRooms(), ...MercuryRoomList.getListedRooms()]
 						.filter((item) => item.turn !== 0)
 						.map((room) => room.toRealTimePresentation()),
 				}),

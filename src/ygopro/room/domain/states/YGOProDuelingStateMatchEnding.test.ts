@@ -127,4 +127,40 @@ describe("YGOProDuelingState.determineNextPhase() — match-finished branch", ()
 
 		expect(runEnding).not.toHaveBeenCalled();
 	});
+
+	it("marks a reserved room's game over before the ending hooks run", async () => {
+		const reservedDuel = {
+			id: "Ab3dEf6hIj9kLm2n",
+			markGameOver: jest.fn().mockImplementation(() => calls.push("markGameOver")),
+		};
+		const state = buildState(makeRoom({ reservedDuel }), { info: jest.fn() } as unknown as Logger);
+		Object.assign(state, {
+			finalizeWithReplays: jest.fn().mockResolvedValue(undefined),
+			dispatchGameOverDomainEvent: jest.fn(),
+			removeRoom: jest.fn(),
+		});
+
+		await state.determineNextPhase(Team.PLAYER);
+
+		expect(calls).toEqual(["markGameOver", "runEnding"]);
+	});
+
+	it("publishes the reservation id and win reasons with a reserved room's game over", () => {
+		const publish = jest.fn();
+		const room = makeRoom({
+			reservedDuel: { id: "Ab3dEf6hIj9kLm2n" },
+			duelIds: ["d1"],
+			edoBanListHash: 1,
+			duelWinReasons: () => ["1"],
+		});
+		const state = buildState(room, { info: jest.fn() } as unknown as Logger);
+		Object.assign(state, { eventBus: { publish } });
+
+		(state as unknown as { dispatchGameOverDomainEvent(): void }).dispatchGameOverDomainEvent();
+
+		expect(publish.mock.calls[0][1].data).toMatchObject({
+			reservationId: "Ab3dEf6hIj9kLm2n",
+			duelWinReasons: ["1"],
+		});
+	});
 });

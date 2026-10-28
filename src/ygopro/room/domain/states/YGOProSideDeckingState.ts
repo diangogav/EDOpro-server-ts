@@ -17,6 +17,7 @@ import { ISocket } from "../../../../shared/socket/domain/ISocket";
 import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { resolveJoinerIdentityWithTimeout } from "../resolveJoinerIdentityWithTimeout";
 import { YGOProRoom } from "../YGOProRoom";
+import { toCardCodes } from "../reservedDeck";
 import { findMidDuelReconnectingPlayer } from "@shared/room/domain/findMidDuelReconnectingPlayer";
 import { config } from "../../../../config";
 import { AbandonBetweenDuels } from "../../application/AbandonBetweenDuels";
@@ -339,6 +340,15 @@ export class YGOProSideDeckingState extends YGOProRoomState {
 					encodeDeckErrorCode(hasError.type, hasError.code),
 				),
 			);
+			return;
+		}
+
+		if (room.reservedDuel && !room.reservedDuel.acceptsDeck(player.team, toCardCodes(deck))) {
+			this.logger.warn("Reserved duel: side deck does not match the reservation", {
+				roomId: room.id,
+			});
+			room.notReadyUnsafe(player);
+			player.sendMessageToClient(room.messageSender.errorMessage(ErrorMessageType.DECKERROR, 0));
 			return;
 		}
 

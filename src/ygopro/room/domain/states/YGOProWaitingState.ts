@@ -27,6 +27,8 @@ import MercuryBanListMemoryRepository from "@ygopro/ban-list/infrastructure/YGOP
 import { mercuryConfig } from "@ygopro/config";
 import { config } from "../../../../config";
 import { YGOProJoinGameMessage } from "@ygopro/messages/YGOProJoinGameMessage";
+import { Deck } from "@shared/deck/domain/Deck";
+import { toCardCodes } from "../reservedDeck";
 
 export class YGOProWaitingState extends YGOProRoomState {
 	constructor(
@@ -225,6 +227,11 @@ export class YGOProWaitingState extends YGOProRoomState {
 	private handleTryStart(_message: ClientMessage, room: YGOProRoom, player: YGOProClient): void {
 		player.logger.info("handleTryStart");
 
+		// A reserved duel is started by the server once every seat is ready.
+		if (room.reservedDuel) {
+			return;
+		}
+
 		if (!player.host) {
 			return;
 		}
@@ -233,6 +240,23 @@ export class YGOProWaitingState extends YGOProRoomState {
 			return;
 		}
 
+		this.startMatch(room);
+	}
+
+	/**
+	 * Reserved duels have no host to press start: the duel begins as soon as
+	 * both seats are taken and ready. Runs inside the room mutex, right after a
+	 * deck was accepted.
+	 */
+	private startReservedDuelWhenReady(room: YGOProRoom): void {
+		if (!room.reservedDuel || !room.isPlayersFull || !room.allPlayersReady) {
+			return;
+		}
+
+		this.startMatch(room);
+	}
+
+	private startMatch(room: YGOProRoom): void {
 		for (const player of room.clients) {
 			(player as YGOProClient).sendMessageToClient(room.messageSender.duelStartMessage());
 			room.sendDeckCountMessage(player as YGOProClient);
@@ -256,7 +280,9 @@ export class YGOProWaitingState extends YGOProRoomState {
 		player.logger.info(`handleToObserver: ${message.data.toString("hex")}`);
 
 		room.mutex.runExclusive(() => {
-			if (player.isSpectator) {
+			// Reserved seats are fixed to the reservation's seat → team mapping:
+			// leaving one would let the seat (and its deck lock) be taken over.
+			if (player.isSpectator || room.reservedDuel) {
 				return;
 			}
 
@@ -270,6 +296,12 @@ export class YGOProWaitingState extends YGOProRoomState {
 		player.logger.info("handleToDuel");
 
 		room.mutex.runExclusive(() => {
+			// A reserved room seats each participant on its reserved seat at JOIN
+			// and never moves anyone afterwards, so the seat → team mapping and
+			// the exact deck lock cannot be bypassed by switching cells.
+			if (room.reservedDuel) {
+				return;
+			}
 			if (player.isSpectator) {
 				// Taking a seat always passes admission: a spectator may only sit if
 				// the room's league accepts how it authenticated. A wrong-league
@@ -332,6 +364,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 		if (player.isInternal) {
 			room.mutex.runExclusive(() => {
 				room.setDecksToPlayerUnsafe(player.position, deck);
+				this.startReservedDuelWhenReady(room);
 			});
 			return;
 		}
@@ -352,9 +385,41 @@ export class YGOProWaitingState extends YGOProRoomState {
 			return;
 		}
 
+		if (room.reservedDuel && !this.honoursReservedDeck(room, player, deck)) {
+			return;
+		}
+
 		room.mutex.runExclusive(() => {
 			room.setDecksToPlayerUnsafe(player.position, deck);
+			this.startReservedDuelWhenReady(room);
 		});
+	}
+
+	/**
+	 * The reservation's deck lock, checked after the banlist: a seat with a
+	 * required deck must bring it, and under an exact lock a ready seat keeps
+	 * the deck it readied with.
+	 */
+	private honoursReservedDeck(room: YGOProRoom, player: YGOProClient, deck: Deck): boolean {
+		const session = room.reservedDuel;
+		if (!session) {
+			return true;
+		}
+		if (session.locksReadyDeck && player.isReady) {
+			this.logger.info("Reserved duel: deck change after ready ignored", { roomId: room.id });
+			return false;
+		}
+		if (session.acceptsDeck(player.team, toCardCodes(deck))) {
+			return true;
+		}
+
+		this.logger.warn("Reserved duel: deck does not match the reservation", { roomId: room.id });
+		room.notReadyUnsafe(player);
+		player.sendMessageToClient(
+			createSystemChat(ChatColor.RED, "This duel requires the deck assigned to your seat."),
+		);
+		player.sendMessageToClient(room.messageSender.errorMessage(ErrorMessageType.DECKERROR, 0));
+		return false;
 	}
 
 	private async handleNotReady(message: ClientMessage, room: YGOProRoom, player: YGOProClient) {

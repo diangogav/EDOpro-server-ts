@@ -4,7 +4,7 @@ import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 
 export class RoomListController {
 	run(req: Request, res: Response): void {
-		let rooms = YGOProRoomList.getRooms();
+		let rooms = YGOProRoomList.getListedRooms();
 
 		const { status, open, mode } = req.query;
 
