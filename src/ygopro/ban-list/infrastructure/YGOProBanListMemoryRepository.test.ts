@@ -167,16 +167,48 @@ describe("YGOProBanListMemoryRepository", () => {
 		});
 	});
 
-	describe("getFirstTCGIndex", () => {
+	describe("getNewestTCGIndex", () => {
 		it("returns the index of the first banlist whose name includes ' TCG'", () => {
 			YGOProBanListMemoryRepository.add(makeBanList("2026.04 OCG", 1));
 			YGOProBanListMemoryRepository.add(makeBanList("2026.05 TCG", 2));
-			expect(YGOProBanListMemoryRepository.getFirstTCGIndex()).toBe(1);
+			expect(YGOProBanListMemoryRepository.getNewestTCGIndex()).toBe(1);
 		});
 
 		it("falls back to 0 when no TCG banlist is loaded", () => {
 			YGOProBanListMemoryRepository.add(makeBanList("2026.04 OCG", 1));
-			expect(YGOProBanListMemoryRepository.getFirstTCGIndex()).toBe(0);
+			expect(YGOProBanListMemoryRepository.getNewestTCGIndex()).toBe(0);
+		});
+
+		it("picks the most recent dated TCG list wherever it was loaded", () => {
+			YGOProBanListMemoryRepository.add(makeBanList("2026.10 OCG", 1));
+			YGOProBanListMemoryRepository.add(makeBanList("2026.09 TCG", 2));
+			YGOProBanListMemoryRepository.add(makeBanList("2025.12 TCG", 3));
+			YGOProBanListMemoryRepository.add(makeBanList("2026.10 TCG", 4));
+			expect(YGOProBanListMemoryRepository.getNewestTCGIndex()).toBe(3);
+		});
+
+		it("compares the year before the month", () => {
+			YGOProBanListMemoryRepository.add(makeBanList("2025.12 TCG", 1));
+			YGOProBanListMemoryRepository.add(makeBanList("2026.02 TCG", 2));
+			expect(YGOProBanListMemoryRepository.getNewestTCGIndex()).toBe(1);
+		});
+
+		it("keeps the first of two lists that share the newest date", () => {
+			YGOProBanListMemoryRepository.add(makeBanList("2026.10 TCG", 1));
+			YGOProBanListMemoryRepository.add(makeBanList("2026.10 TCG", 1, "tcg"));
+			expect(YGOProBanListMemoryRepository.getNewestTCGIndex()).toBe(0);
+		});
+
+		it("ignores TCG-based formats whose name carries more than the date", () => {
+			YGOProBanListMemoryRepository.add(makeBanList("2026.09 TCG", 1));
+			YGOProBanListMemoryRepository.add(makeBanList("2026.10 TCG Genesys", 2));
+			expect(YGOProBanListMemoryRepository.getNewestTCGIndex()).toBe(0);
+		});
+
+		it("falls back to the first list containing ' TCG' when none is dated", () => {
+			YGOProBanListMemoryRepository.add(makeBanList("2026.04 OCG", 1));
+			YGOProBanListMemoryRepository.add(makeBanList("Custom TCG", 2));
+			expect(YGOProBanListMemoryRepository.getNewestTCGIndex()).toBe(1);
 		});
 	});
 

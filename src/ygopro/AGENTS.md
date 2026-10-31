@@ -22,6 +22,7 @@ srvpro2-compatible server for YGOPro clients (Koishi, YGO Mobile, YGOPro). **srv
 - `ygopro/YGOProResourceLoader.ts` (singleton) builds one card reader and script path list per pool from `resources.manifest.json`; `card/infrastructure/CardYGOProRepository.ts` reads cards for a given `cardPool`. The `rush` pool replaces standard instead of extending it.
 - Extended pools search extensions before standard (`extendedSearchOrder` in `PoolSelection.ts`), so prerelease rows and script fixes win, like srvpro2's `expansions/`.
 - Banlists: `YGOProBanListLoader` → `YGOProBanListMemoryRepository`, looked up by **lflist index**. Rooms also resolve the EDOPro banlist hash by name, so EDOPro banlists must load first.
+- TCG rooms (`toot`, `to`, `tr`, `tomr`, `tmr`, the default room and matchmaking) use `getNewestTCGIndex()`: the most recent dated `YYYY.MM TCG` list. A newer TCG list the YGOPro database has not shipped yet is bridged from evolution-assets as `formats/tcg`, appended last to `runtime.ygopro.standard` so no other list moves; remove it once the database ships the list.
 - Format sources live in `resources/ygopro/alternatives/<format>/` (`cards.cdb`, `lflist.conf`, `script/`), assembled into the gitignored `resources/current/`.
 
 ## SOPs

@@ -138,6 +138,12 @@
 			"file": "lflist/edison.lflist.conf"
 		},
 		{
+			"comment": "TCG bridge lflist from evolution-assets: the current TCG list until the YGOPro database (base) ships it. Remove this entry and formats/tcg from runtime.ygopro.standard once evolution-assets' check-tcg-bridge workflow reports it shipped.",
+			"target": "ygopro/formats/tcg/lflist.conf",
+			"from": "evolution-assets",
+			"file": "lflist/tcg.lflist.conf"
+		},
+		{
 			"comment": "ocgcore fork WASM — placed at ygopro/core/ocgcore-worker; read by the card-load worker when (re)building card storage",
 			"target": "ygopro/core/ocgcore-worker",
 			"from": "edison-core",
@@ -239,7 +245,8 @@
 				"formats/tengu",
 				"formats/edison",
 				"formats/hat",
-				"formats/ocg"
+				"formats/ocg",
+				"formats/tcg"
 			],
 			"extended": ["extensions/prereleases", "extensions/custom-cards"],
 			"pools": {
