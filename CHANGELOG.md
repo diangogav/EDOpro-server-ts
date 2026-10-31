@@ -1,5 +1,53 @@
 # Changelog
 
+## [2.18.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.17.0...v2.18.0) (2026-10-31)
+
+
+### ✨ Features
+
+* **achievements:** add a backfill script that replays ranked history into gameplay achievements ([#407](https://github.com/diangogav/EDOpro-server-ts/issues/407)) ([0a9dfe6](https://github.com/diangogav/EDOpro-server-ts/commit/0a9dfe653199f798ca981c990b0b008712ebdac9))
+* **achievements:** announce unlocks to the room before the duel ends ([#409](https://github.com/diangogav/EDOpro-server-ts/issues/409)) ([584e84e](https://github.com/diangogav/EDOpro-server-ts/commit/584e84e76d93f9f2edf552ea86e024c9e1042b5e))
+* **achievements:** award gameplay achievements when a ranked match ends ([d07ed31](https://github.com/diangogav/EDOpro-server-ts/commit/d07ed3129f3727cf447817cd89bac1d1ab4e6e46))
+* **achievements:** award gameplay achievements when a ranked match ends ([d1b28d5](https://github.com/diangogav/EDOpro-server-ts/commit/d1b28d58852e50b2eabd0a2dcf07f6e5c87b0c9c))
+* **achievements:** publish an achievement unlocked event after each award ([#408](https://github.com/diangogav/EDOpro-server-ts/issues/408)) ([731d466](https://github.com/diangogav/EDOpro-server-ts/commit/731d466877ea30bae101d97cf14fd55b81e30cb4))
+* **achievements:** send an unlock frame to the player before the duel ends ([#410](https://github.com/diangogav/EDOpro-server-ts/issues/410)) ([fd1c87b](https://github.com/diangogav/EDOpro-server-ts/commit/fd1c87b240cec4479744e2e7e46d164c8d647b9e))
+* add negotiated public lobby invitations ([#413](https://github.com/diangogav/EDOpro-server-ts/issues/413)) ([ddba86c](https://github.com/diangogav/EDOpro-server-ts/commit/ddba86cf1083975adec167ab00b0b1dd4114c9c6))
+* **ban-list:** use the newest TCG list and load the TCG bridge from evolution-assets ([#450](https://github.com/diangogav/EDOpro-server-ts/issues/450)) ([8c783a2](https://github.com/diangogav/EDOpro-server-ts/commit/8c783a237e96291656b45b5bdc343927ba97b411))
+* **emotes:** relay any emote id up to 48 bytes without a server catalog ([#418](https://github.com/diangogav/EDOpro-server-ts/issues/418)) ([7a8886b](https://github.com/diangogav/EDOpro-server-ts/commit/7a8886b43ac813a058ae9a3ff7349568b2a9130b))
+* **matchmaking:** add opt-in accept step before seating a human match ([#428](https://github.com/diangogav/EDOpro-server-ts/issues/428)) ([8a497de](https://github.com/diangogav/EDOpro-server-ts/commit/8a497de9e03e36f3721e271b66a627e79042266c))
+* **matchmaking:** expose per-format queue depth ([#427](https://github.com/diangogav/EDOpro-server-ts/issues/427)) ([29ffdba](https://github.com/diangogav/EDOpro-server-ts/commit/29ffdba93efb9bff2f1920c0441840f12a5522a9))
+* **matchmaking:** let the client opt into the bot fallback and choose its delay ([#423](https://github.com/diangogav/EDOpro-server-ts/issues/423)) ([25d8af0](https://github.com/diangogav/EDOpro-server-ts/commit/25d8af0c4ac065c2e028142eb1264d5220519804))
+* **matchmaking:** raise the bot fallback delay maximum to 20 minutes ([#424](https://github.com/diangogav/EDOpro-server-ts/issues/424)) ([beb8485](https://github.com/diangogav/EDOpro-server-ts/commit/beb84858ebbc7f42dda3bddda8b86e4d6d0cd05f))
+* **matchmaking:** wait 60 seconds for a human before offering a bot ([#422](https://github.com/diangogav/EDOpro-server-ts/issues/422)) ([3d77916](https://github.com/diangogav/EDOpro-server-ts/commit/3d779166b535e4c1b78cdf115a12c2e4ce6f5632))
+* **rank:** add group window backfill with chronological Elo replay ([#426](https://github.com/diangogav/EDOpro-server-ts/issues/426)) ([d67887f](https://github.com/diangogav/EDOpro-server-ts/commit/d67887f4d8a4bd6272b523ff31116a03726c77c8))
+* **reserved-duel:** add reservation domain model and store ports ([#443](https://github.com/diangogav/EDOpro-server-ts/issues/443)) ([1aa2f31](https://github.com/diangogav/EDOpro-server-ts/commit/1aa2f311aa8c8047c16b0eecfd3a474ffc77948a))
+* **reserved-duel:** add reserved duel session, Redis store and Postgres repository ([#444](https://github.com/diangogav/EDOpro-server-ts/issues/444)) ([805b248](https://github.com/diangogav/EDOpro-server-ts/commit/805b248da3f9f90093aa873d6e80a6100d1132e7))
+* **reserved-duel:** boot reserved duels and record results on game over ([#445](https://github.com/diangogav/EDOpro-server-ts/issues/445)) ([4d31e8f](https://github.com/diangogav/EDOpro-server-ts/commit/4d31e8f089cf6974c18c79d1f835b8f8e883e7e9))
+* **stats:** record the WS handshake client per match ([#440](https://github.com/diangogav/EDOpro-server-ts/issues/440)) ([c5df4c2](https://github.com/diangogav/EDOpro-server-ts/commit/c5df4c27666a7eb500f1f33aff7efcba60e59ded))
+* **unranked-match:** store registered player ids on unranked matches ([#433](https://github.com/diangogav/EDOpro-server-ts/issues/433)) ([6074e57](https://github.com/diangogav/EDOpro-server-ts/commit/6074e5750bfc3c6a8270ade00221a7c240e0c059))
+* **windbot:** add the Halloween horde bots to the botlist ([#449](https://github.com/diangogav/EDOpro-server-ts/issues/449)) ([8cda987](https://github.com/diangogav/EDOpro-server-ts/commit/8cda987826d8082de6d75312bbead207cfe461d7))
+* **ygopro:** add tcgsegoc room option for TCG SEGOC rulings ([#441](https://github.com/diangogav/EDOpro-server-ts/issues/441)) ([785ba81](https://github.com/diangogav/EDOpro-server-ts/commit/785ba81e55b3f175d8fb0dad72429ccc010866db))
+* **ygopro:** open reserved duel rooms from rv# joins ([#448](https://github.com/diangogav/EDOpro-server-ts/issues/448)) ([f2e4224](https://github.com/diangogav/EDOpro-server-ts/commit/f2e422408cc5e433bcfb6a48453d04781fc3f21b))
+* **ygopro:** record who ended a reserved room ([#447](https://github.com/diangogav/EDOpro-server-ts/issues/447)) ([71bec61](https://github.com/diangogav/EDOpro-server-ts/commit/71bec61895968116f8c67b00e24edc32ec0f85dd))
+* **ygopro:** run reserved rooms with fixed seats, deck lock and server start ([#446](https://github.com/diangogav/EDOpro-server-ts/issues/446)) ([494fb5e](https://github.com/diangogav/EDOpro-server-ts/commit/494fb5e38c6687238c6b5778beca7ef7021d0a29))
+
+
+### 🐛 Bug Fixes
+
+* **achievements:** make awards self-healing and serialize them per player ([14ba8e4](https://github.com/diangogav/EDOpro-server-ts/commit/14ba8e4b12e75ff10c65ffdecbda622291eb596a))
+* **achievements:** never re-award a gameplay achievement the player already holds ([4f00f4f](https://github.com/diangogav/EDOpro-server-ts/commit/4f00f4fe56de3490636724821b2ff3f20f6c6e30))
+* **achievements:** rely on the held-achievements check for idempotency ([d1b399d](https://github.com/diangogav/EDOpro-server-ts/commit/d1b399d54d18d9de40117df8d2d92dbe08ef518c))
+* correct room card-scope rule values ([#437](https://github.com/diangogav/EDOpro-server-ts/issues/437)) ([cd2021d](https://github.com/diangogav/EDOpro-server-ts/commit/cd2021d639181cdd36ae2c7a09f6b971f52f0062))
+* **liveness:** fast dead-peer detection and honest abandon grace ([#421](https://github.com/diangogav/EDOpro-server-ts/issues/421)) ([31de7f5](https://github.com/diangogav/EDOpro-server-ts/commit/31de7f5140ff86ca51f9a6f8059e927730171db5))
+* preserve team clocks across reconnect ([#415](https://github.com/diangogav/EDOpro-server-ts/issues/415)) ([bfa9579](https://github.com/diangogav/EDOpro-server-ts/commit/bfa9579a8398896e10240090606473ccb23a2c32))
+* publish exact YGOPro banlist indices ([#414](https://github.com/diangogav/EDOpro-server-ts/issues/414)) ([fbaa8ab](https://github.com/diangogav/EDOpro-server-ts/commit/fbaa8abb82892e33c2d30539d27481a02633bf7b))
+* **rank:** keep each server's newest list feeding onlyCurrent groups ([#425](https://github.com/diangogav/EDOpro-server-ts/issues/425)) ([020bc4e](https://github.com/diangogav/EDOpro-server-ts/commit/020bc4ea6feb02a5aeec0ffc0764d711d817322d))
+* **reconnect:** fixed per-match token, account-bound reconnects and redacted logs ([#420](https://github.com/diangogav/EDOpro-server-ts/issues/420)) ([b07383d](https://github.com/diangogav/EDOpro-server-ts/commit/b07383df95792f583fe36fca0b774511afeff5bd))
+* **ygopro:** announce swapped Tag chat and emote senders by team seat ([b4ae0d3](https://github.com/diangogav/EDOpro-server-ts/commit/b4ae0d30a98ea9f280548cbfd950cb20ee966eb5))
+* **ygopro:** reload named card pools on the periodic refresh ([#412](https://github.com/diangogav/EDOpro-server-ts/issues/412)) ([ae0b329](https://github.com/diangogav/EDOpro-server-ts/commit/ae0b329d1603da81d534f99c44fba16beea21d4b))
+* **ygopro:** remove unserved formats and play JTP under master rule 1 ([#439](https://github.com/diangogav/EDOpro-server-ts/issues/439)) ([f2b5a87](https://github.com/diangogav/EDOpro-server-ts/commit/f2b5a877dfa6f262be68677b3e3f24033ac1c304))
+* **ygopro:** search prerelease extensions before the standard pool ([#429](https://github.com/diangogav/EDOpro-server-ts/issues/429)) ([bdaeb58](https://github.com/diangogav/EDOpro-server-ts/commit/bdaeb58bcddc8c2385c5089690e305bd718e397c))
+
 ## [2.17.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.16.0...v2.17.0) (2026-10-06)
 
 
