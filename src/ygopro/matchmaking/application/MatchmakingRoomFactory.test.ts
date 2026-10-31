@@ -74,7 +74,7 @@ describe("createMatchmakingRoom", () => {
 
 		expect(room.bestOf).toBe(3);
 		expect(room.isMatch).toBe(true);
-		// "tmr" = same rule set as "tt" (rule 5 + first TCG lflist) + best-of-3 MATCH.
+		// "tmr" = same rule set as "tt" (rule 5 + newest TCG lflist) + best-of-3 MATCH.
 		expect(room.name.startsWith("tmr,")).toBe(true);
 		expect(room.hostInfo.rule).toBe(5);
 	});

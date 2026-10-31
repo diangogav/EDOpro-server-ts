@@ -12,6 +12,10 @@ let hasWarnedMissingOCGList = false;
 // same, already-known ambiguity on every lookup.
 const warnedAmbiguousSubstringAliases = new Set<string>();
 
+// Loaded names are normalized to zero-padded months ("2026.9 TCG" becomes
+// "2026.09 TCG"), so the captured parts compare correctly as strings.
+const TCG_LIST_NAME = /^(\d{4})\.(\d{2})(?:\.(\d{2}))? TCG$/;
+
 function normalizeAliasKey(value: string): string {
 	return value.toLowerCase().replace(/\s+/g, "");
 }
@@ -26,18 +30,37 @@ export default {
 	},
 
 	/**
-	 * Returns the index of the first banlist that contains " TCG" in its name.
-	 * Used for TCG-only modes to find the appropriate banlist.
-	 * Returns 0 as fallback if no TCG banlist is found.
+	 * Returns the index of the most recent dated TCG banlist ("YYYY.MM TCG").
+	 * srvpro2 takes the first " TCG" list because the YGOPro lflist.conf lists
+	 * the newest first; comparing dates keeps that choice when a newer list
+	 * loads later from formats/tcg, before the YGOPro database ships it. On a
+	 * tie the first loaded list wins. Falls back to the first list containing
+	 * " TCG", then to 0.
 	 */
-	getFirstTCGIndex(): number {
-		// Find the first banlist with " TCG" in the name (srvpro2 logic)
+	getNewestTCGIndex(): number {
+		let newestIndex = -1;
+		let newestDate = "";
+		banLists.forEach((list, index) => {
+			const match = list.name?.match(TCG_LIST_NAME);
+			if (!match) {
+				return;
+			}
+			const date = `${match[1]}.${match[2]}.${match[3] ?? "00"}`;
+			if (date > newestDate) {
+				newestDate = date;
+				newestIndex = index;
+			}
+		});
+		if (newestIndex >= 0) {
+			return newestIndex;
+		}
+
 		const tcgIndex = banLists.findIndex((list) => list.name && list.name.includes(" TCG"));
 		return tcgIndex >= 0 ? tcgIndex : 0;
 	},
 
 	/**
-	 * Mirror of getFirstTCGIndex — returns the index of the first banlist that
+	 * Mirror of getNewestTCGIndex — returns the index of the first banlist that
 	 * contains " OCG" in its name (the naming convention EDOpro/YGOProBanListLoader
 	 * produces for OCG lists, e.g. "2026.04 OCG"). Used by rule tokens that mean
 	 * "the OCG list" (otto, oor/ocgonly, or, oomr, omr, ocg, ocgpre, ocgart).

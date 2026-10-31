@@ -23,7 +23,7 @@ const DEFAULT_ROOM_ID_GENERATOR: RoomIdGenerator = new UnusedRoomIdGenerator();
  * "tt" (2) and "jtp" (3) both satisfy this; "jtp" is the 19-char boundary with
  * zero slack. See MatchmakingRoomFactory.test.ts.
  *
- * "tt" is the short alias of "toot" (RuleMappings): rule 5 + first TCG lflist —
+ * "tt" is the short alias of "toot" (RuleMappings): rule 5 + newest TCG lflist —
  * TCG banlist over an OPEN pool. The old "to" (rule 1, scoped pool) bounced
  * cards without a TCG release (recent OCG printings, ot=0x9) at join.
  * "ed" is the short alias of "edison": rule 5 + edison lflist + Master Rule 1.
@@ -105,7 +105,7 @@ export interface MatchmakingRoomHandle {
  * create() path is left untouched.
  *
  * The per-format command token comes from FORMAT_ROOM_TOKEN and governs the
- * rule set + banlist (tcg → "to" → rule 1 + first TCG banlist; jtp → "jtp").
+ * rule set + banlist (tcg → "to" → rule 1 + newest TCG banlist; jtp → "jtp").
  * A unique "mm<base36>" token is appended purely to make the room name/join-
  * string unique; its "mm" prefix guarantees it never matches a rule mapping
  * validator (all rule tokens are exact strings or anchored regexes that never

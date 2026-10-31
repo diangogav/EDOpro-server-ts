@@ -196,7 +196,7 @@ export class YGOProRoom extends YgoRoom {
 		rankedOverride?: boolean,
 	): YGOProRoom {
 		let hostInfo: HostInfo = {
-			lflist: MercuryBanListMemoryRepository.getFirstTCGIndex(),
+			lflist: MercuryBanListMemoryRepository.getNewestTCGIndex(),
 			rule: 1,
 			mode: GameMode.SINGLE,
 			duel_rule: 5,
