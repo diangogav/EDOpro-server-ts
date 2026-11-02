@@ -1,3 +1,4 @@
+import { createYGOProRoomDeps } from "@ygopro/room/application/createYGOProRoomDeps";
 import { generateUnusedRoomId } from "../generateUnusedRoomId";
 
 import { isPairingReconnectRoutingEligible } from "@shared/room/domain/findReconnectingPlayer";
@@ -115,6 +116,7 @@ function createRoom(
 		ctx.playerInfo,
 		ctx.socketId,
 		ctx.messageRepository,
+		createYGOProRoomDeps(),
 		rankedOverride,
 	);
 	YGOProRoomList.addRoom(room);

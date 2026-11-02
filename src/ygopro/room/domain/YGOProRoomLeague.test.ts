@@ -1,3 +1,4 @@
+import { createYGOProRoomDeps } from "@ygopro/room/application/createYGOProRoomDeps";
 import EventEmitter from "events";
 
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
@@ -24,6 +25,7 @@ const create = (
 		playerInfo,
 		"socket-id",
 		new MessageRepositoryMock(),
+		createYGOProRoomDeps(),
 		rankedOverride,
 	);
 

@@ -1,3 +1,4 @@
+import { createYGOProRoomDeps } from "@ygopro/room/application/createYGOProRoomDeps";
 import { EventEmitter } from "stream";
 
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
@@ -241,6 +242,7 @@ describe("YGOProRoomList", () => {
 					{ name: "Host", password: "1234", previousMessage: Buffer.alloc(0) } as never,
 					"sock-host",
 					new MessageRepositoryMock(),
+					createYGOProRoomDeps(),
 				);
 
 			it("skips a ranked (external) room and returns null when it's the only candidate", () => {

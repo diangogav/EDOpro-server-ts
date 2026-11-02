@@ -1,3 +1,4 @@
+import { createYGOProRoomDeps } from "@ygopro/room/application/createYGOProRoomDeps";
 import { randomInt } from "crypto";
 import { EventEmitter } from "stream";
 
@@ -177,6 +178,7 @@ export function createMatchmakingRoom(input: CreateMatchmakingRoomInput): Matchm
 		// No creating socket — the room exists independently of any connection.
 		`matchmaking-${unique}`,
 		new YGOProMessageRepository(),
+		createYGOProRoomDeps(),
 		input.rankedOverride,
 	);
 

@@ -1,9 +1,12 @@
+import { CardRepository } from "@shared/card/domain/CardRepository";
 import { Deck } from "@shared/deck/domain/Deck";
 import { DeckError } from "@shared/deck/domain/errors/DeckError";
 import { Logger } from "@shared/logger/domain/Logger";
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { ReservedDuelAbandon } from "@shared/reserved-duel/domain/ReservedDuelRepository";
 import { Admission } from "@shared/room/admission/domain/Admission";
+import { PlayerCredential } from "@shared/room/admission/domain/PlayerCredential";
+import { DeckRules } from "@shared/room/domain/YgoRoom";
 import { ISocket } from "@shared/socket/domain/ISocket";
 
 import { AdmissionTarget } from "../admission/domain/AdmissionTarget";
@@ -33,4 +36,27 @@ export interface MatchAbandonment {
 /** Closes the room once the match is over (FinalizeYGOProRoom). */
 export interface RoomFinalizer {
 	run(room: YGOProRoom, abandon?: ReservedDuelAbandon): void;
+}
+
+/** Resolves who is behind a joining socket (CredentialResolver). */
+export interface JoinerCredentialResolver {
+	resolve(socket: ISocket, playerInfo: PlayerInfoMessage): Promise<PlayerCredential>;
+}
+
+/**
+ * Everything a YGOProRoom builds its states from. createYGOProRoomDeps wires
+ * the application implementations; each factory runs at the moment the room
+ * needs a fresh collaborator, as YGOProRoom used to construct them inline.
+ */
+export interface YGOProRoomDeps {
+	createCardRepository(cardPool: string): CardRepository;
+	createDeckBuilder(
+		cardRepository: CardRepository,
+		deckRules: DeckRules,
+		logger: Logger,
+	): YGOProDeckBuilder;
+	createPlayerAdmission(logger: Logger): PlayerAdmission;
+	createCredentialResolver(logger: Logger): JoinerCredentialResolver;
+	abandonment: MatchAbandonment;
+	finalizer: RoomFinalizer;
 }
