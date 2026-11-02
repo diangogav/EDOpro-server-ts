@@ -52,9 +52,9 @@ services:
       SEASON: ${SEASON:-1}
       RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
       RATE_LIMIT: ${RATE_LIMIT:-100}
-      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-60000}
+      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-60}
       HOST_PORT: ${HOST_PORT:-7911}
-      MERCURY_PORT: ${MERCURY_PORT:-7711}
+      YGOPRO_PORT: ${YGOPRO_PORT:-7711}
       HTTP_PORT: ${HTTP_PORT:-7922}
       WEBSOCKET_PORT: ${WEBSOCKET_PORT:-4000}
       RESOURCES_DIR: ./resources/current
@@ -67,7 +67,7 @@ services:
       WINDBOT_BOTLIST: ${WINDBOT_BOTLIST:-config/botlist.example.json}
     ports:
       - "${HOST_PORT:-7911}:${HOST_PORT:-7911}"
-      - "${MERCURY_PORT:-7711}:${MERCURY_PORT:-7711}"
+      - "${YGOPRO_PORT:-7711}:${YGOPRO_PORT:-7711}"
       - "${HTTP_PORT:-7922}:${HTTP_PORT:-7922}"
       - "${WEBSOCKET_PORT:-4000}:${WEBSOCKET_PORT:-4000}"
     depends_on:
