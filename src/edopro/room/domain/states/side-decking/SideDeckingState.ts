@@ -1,10 +1,10 @@
+import { DeckBuilder, PlayerReconnector, SpectatorJoiner } from "../../RoomStatePorts";
 import EventEmitter from "events";
 
 import { Logger } from "../../../../../shared/logger/domain/Logger";
 import { DuelStartClientMessage } from "../../../../../shared/messages/server-to-client/DuelStartClientMessage";
 import { ISocket } from "../../../../../shared/socket/domain/ISocket";
 import { Client } from "../../../../client/domain/Client";
-import { DeckCreator } from "../../../../deck/application/DeckCreator";
 import { UpdateDeckMessageParser } from "../../../../deck/domain/UpdateDeckMessageSizeCalculator";
 import { JoinGameMessage } from "../../../../messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
@@ -14,8 +14,6 @@ import { ChooseOrderClientMessage } from "../../../../messages/server-to-client/
 import { ErrorMessages } from "../../../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../../../messages/server-to-client/ErrorClientMessage";
 import { SideDeckClientMessage } from "../../../../messages/server-to-client/game-messages/SideDeckClientMessage";
-import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
-import { Reconnect } from "../../../application/Reconnect";
 import { Room } from "../../Room";
 import { EdoproRoomState } from "../../EdoproRoomState";
 import { ReconnectionTokenIssuer } from "../../../../../shared/room/domain/reconnect/ReconnectionTokenIssuer";
@@ -28,9 +26,9 @@ export class SideDeckingState extends EdoproRoomState {
 	constructor(
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
-		private readonly reconnect: Reconnect,
-		private readonly joinToDuelAsSpectator: JoinToDuelAsSpectator,
-		private readonly deckCreator: DeckCreator,
+		private readonly reconnect: PlayerReconnector,
+		private readonly joinToDuelAsSpectator: SpectatorJoiner,
+		private readonly deckCreator: DeckBuilder,
 	) {
 		super(eventEmitter);
 

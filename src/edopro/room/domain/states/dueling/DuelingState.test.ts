@@ -158,6 +158,7 @@ describe("DuelingState", () => {
 			mockJoinToDuelAsSpectator,
 			mockRoom,
 			mockJsonMessageProcessor,
+			(params) => new FinishDuelHandler(params).run(),
 		);
 	});
 

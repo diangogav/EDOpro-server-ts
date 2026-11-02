@@ -1,3 +1,4 @@
+import { FinishDuel, PlayerReconnector, SpectatorJoiner } from "../../RoomStatePorts";
 import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
 import { spawn } from "child_process";
 import * as crypto from "crypto";
@@ -28,9 +29,6 @@ import { PlayerChangeClientMessage } from "../../../../messages/server-to-client
 import { ReconnectionTokenIssuer } from "../../../../../shared/room/domain/reconnect/ReconnectionTokenIssuer";
 import { findReconnectingPlayer } from "../../../../../shared/room/domain/findReconnectingPlayer";
 import { ReconnectionAckMessage } from "../../../../../shared/messages/server-to-client/ReconnectionAckMessage";
-import { FinishDuelHandler } from "../../../application/FinishDuelHandler";
-import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
-import { Reconnect } from "../../../application/Reconnect";
 import { DuelFinishReason } from "../../DuelFinishReason";
 import { Room } from "../../Room";
 import { EdoproRoomState } from "../../EdoproRoomState";
@@ -107,10 +105,11 @@ export class DuelingState extends EdoproRoomState {
 	constructor(
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
-		private readonly reconnect: Reconnect,
-		private readonly joinToDuelAsSpectator: JoinToDuelAsSpectator,
+		private readonly reconnect: PlayerReconnector,
+		private readonly joinToDuelAsSpectator: SpectatorJoiner,
 		private readonly room: Room,
 		private readonly jsonMessageProcessor: JSONMessageProcessor,
+		private readonly finishDuel: FinishDuel,
 	) {
 		super(eventEmitter);
 
@@ -454,12 +453,7 @@ export class DuelingState extends EdoproRoomState {
 		);
 
 		this.room.finished();
-		const duelFinisher = new FinishDuelHandler({
-			reason,
-			winner,
-			room: this.room,
-		});
-		void duelFinisher.run();
+		void this.finishDuel({ reason, winner, room: this.room });
 	}
 
 	private handleCoreTime(payload: TimeMessage) {
@@ -759,13 +753,11 @@ export class DuelingState extends EdoproRoomState {
 			}),
 		);
 
-		const finishDuelHandler = new FinishDuelHandler({
+		void this.finishDuel({
 			reason: DuelFinishReason.SURRENDERED,
 			winner: Number(!player.team),
 			room: this.room,
 		});
-
-		void finishDuelHandler.run();
 	}
 
 	private handleResponse(message: ClientMessage, player: Client): void {

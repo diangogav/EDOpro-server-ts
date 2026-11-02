@@ -1,3 +1,4 @@
+import { PlayerReconnector, SpectatorJoiner } from "../../RoomStatePorts";
 import EventEmitter from "events";
 
 import { Logger } from "../../../../../shared/logger/domain/Logger";
@@ -9,8 +10,6 @@ import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoM
 import { Commands } from "../../../../../shared/messages/Commands";
 import { ClientMessage } from "../../../../../shared/messages/MessageProcessor";
 import { RPSChooseClientMessage } from "../../../../messages/server-to-client/RPSChooseClientMessage";
-import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
-import { Reconnect } from "../../../application/Reconnect";
 import { Room } from "../../Room";
 import { EdoproRoomState } from "../../EdoproRoomState";
 import { RpsChoiceCommandStrategy } from "./RpsChoiceCommandStrategy";
@@ -24,8 +23,8 @@ export class RockPaperScissorState extends EdoproRoomState {
 	constructor(
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
-		private readonly reconnect: Reconnect,
-		private readonly joinToDuelAsSpectator: JoinToDuelAsSpectator,
+		private readonly reconnect: PlayerReconnector,
+		private readonly joinToDuelAsSpectator: SpectatorJoiner,
 	) {
 		super(eventEmitter);
 

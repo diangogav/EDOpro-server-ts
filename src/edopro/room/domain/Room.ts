@@ -23,6 +23,7 @@ import { JSONMessageProcessor } from "../../messages/JSONMessageProcessor";
 import { MessageProcessor } from "../../../shared/messages/MessageProcessor";
 import { Replay } from "../../replay/Replay";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
+import { AuthenticatePlayer } from "../application/AuthenticatePlayer";
 import { FinishDuelHandler } from "../application/FinishDuelHandler";
 import { JoinToDuelAsSpectator } from "../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../application/Reconnect";
@@ -565,7 +566,7 @@ export class Room extends YgoRoom {
 		this.roomState = new WaitingState(
 			this.emitter,
 			this.logger,
-			new UserAuth(new UserProfilePostgresRepository()),
+			new AuthenticatePlayer(new UserAuth(new UserProfilePostgresRepository())),
 			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules, this.duelFlag),
 		);
 	}
@@ -581,6 +582,7 @@ export class Room extends YgoRoom {
 			new JoinToDuelAsSpectator(),
 			this,
 			new JSONMessageProcessor(),
+			(params) => new FinishDuelHandler(params).run(),
 		);
 	}
 

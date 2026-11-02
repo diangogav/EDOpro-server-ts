@@ -1,7 +1,7 @@
 import { EventEmitter } from "stream";
 import { ChatColor, YGOProStocChat } from "ygopro-msg-encode";
 import { Logger } from "@shared/logger/domain/Logger";
-import { UserAuth } from "@shared/user-auth/application/UserAuth";
+import { PlayerAuthenticator } from "../../RoomStatePorts";
 import { DeckCreator } from "@edopro/deck/application/DeckCreator";
 import { WaitingState } from "./WaitingState";
 import { Room } from "@edopro/room/domain/Room";
@@ -22,7 +22,7 @@ describe("WaitingState", () => {
 	let state: WaitingState;
 	let mockEmitter: EventEmitter;
 	let mockLogger: jest.Mocked<Logger>;
-	let mockUserAuth: jest.Mocked<UserAuth>;
+	let mockAuthenticatePlayer: jest.Mocked<PlayerAuthenticator>;
 	let mockDeckCreator: jest.Mocked<DeckCreator>;
 	let mockRoom: jest.Mocked<Room>;
 	let mockClient: jest.Mocked<Client>;
@@ -35,7 +35,7 @@ describe("WaitingState", () => {
 			info: jest.fn(),
 		} as unknown as jest.Mocked<Logger>;
 
-		mockUserAuth = {} as unknown as jest.Mocked<UserAuth>;
+		mockAuthenticatePlayer = {} as unknown as jest.Mocked<PlayerAuthenticator>;
 		mockDeckCreator = {
 			build: jest.fn(),
 		} as unknown as jest.Mocked<DeckCreator>;
@@ -95,7 +95,7 @@ describe("WaitingState", () => {
 			clearReadyCommand: jest.fn(),
 		});
 
-		state = new WaitingState(mockEmitter, mockLogger, mockUserAuth, mockDeckCreator);
+		state = new WaitingState(mockEmitter, mockLogger, mockAuthenticatePlayer, mockDeckCreator);
 	});
 
 	it("should handle KICK command", () => {
