@@ -185,11 +185,8 @@ export class YGOProWaitingState extends YGOProRoomState {
 	 * global uncaughtException hook (src/shared/error-handler/error-handler.ts),
 	 * which logs a routine client-version mismatch as "Excepción no capturada" — and
 	 * because nothing after the throw ran, the rejected socket stayed open as a
-	 * live-but-rejected connection. Encoding was never the problem here:
-	 * VersionErrorClientMessage.create is byte-identical to the ygopro frame
-	 * (its `decimalToBytesBuffer(0, 3)` already covers STOC_ErrorMsg's alignment
-	 * padding). We go through the ygopro repository anyway, so the ygopro path owns
-	 * its own wire format instead of borrowing EDOPro's.
+	 * live-but-rejected connection. The error frame goes through the ygopro message
+	 * sender, so the ygopro path owns its own wire format instead of borrowing EDOPro's.
 	 */
 	private rejectOnVersionMismatch(data: Buffer, room: YGOProRoom, socket: ISocket): boolean {
 		const joinMessage = new YGOProJoinGameMessage(data);
