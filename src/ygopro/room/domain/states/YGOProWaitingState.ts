@@ -23,7 +23,6 @@ import { YGOProDeckValidator } from "@ygopro/deck/domain/YGOProDeckValidator";
 import { DeckError } from "@shared/deck/domain/errors/DeckError";
 import { encodeDeckErrorCode } from "@shared/deck/domain/errors/encodeDeckErrorCode";
 import { YGOProRoomState } from "../YGOProRoomState";
-import MercuryBanListMemoryRepository from "@ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository";
 import { mercuryConfig } from "@ygopro/config";
 import { config } from "../../../../config";
 import { YGOProJoinGameMessage } from "@ygopro/messages/YGOProJoinGameMessage";
