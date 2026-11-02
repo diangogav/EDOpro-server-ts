@@ -1,3 +1,4 @@
+import { RoomFinalizer } from "../RoomStatePorts";
 import { EventEmitter } from "events";
 
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
@@ -27,7 +28,6 @@ import { config } from "src/config";
 
 import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { DuelRecord } from "../DuelRecord";
-import { FinalizeYGOProRoom } from "../../application/FinalizeYGOProRoom";
 import { resolveJoinerIdentityWithTimeout } from "../resolveJoinerIdentityWithTimeout";
 import { YGOProRoom } from "../YGOProRoom";
 import { findMidDuelReconnectingPlayer } from "@shared/room/domain/findMidDuelReconnectingPlayer";
@@ -65,6 +65,7 @@ export class YGOProDuelingState extends YGOProRoomState {
 		private readonly room: YGOProRoom,
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
+		private readonly finalizer: RoomFinalizer,
 	) {
 		super(eventEmitter);
 		this.logger = logger.child({ file: "MercuryDuelingState" });
@@ -833,6 +834,6 @@ export class YGOProDuelingState extends YGOProRoomState {
 	}
 
 	private removeRoom(): void {
-		FinalizeYGOProRoom.run(this.room);
+		this.finalizer.run(this.room);
 	}
 }

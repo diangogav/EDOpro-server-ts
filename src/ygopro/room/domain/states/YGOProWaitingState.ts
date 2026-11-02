@@ -1,3 +1,4 @@
+import { PlayerAdmission, YGOProDeckBuilder } from "../RoomStatePorts";
 import { EventEmitter } from "stream";
 
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
@@ -15,10 +16,8 @@ import { roomCreationNotice } from "@shared/room/domain/chat/RoomCreationNotice"
 
 import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { YGOProRoom } from "../YGOProRoom";
-import { AdmitToRoom } from "@ygopro/room/admission/application/AdmitToRoom";
 
 import { ChatColor, ErrorMessageType, YGOProCtosUpdateDeck } from "ygopro-msg-encode";
-import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
 import { YGOProDeckValidator } from "@ygopro/deck/domain/YGOProDeckValidator";
 import { DeckError } from "@shared/deck/domain/errors/DeckError";
 import { encodeDeckErrorCode } from "@shared/deck/domain/errors/encodeDeckErrorCode";
@@ -31,10 +30,10 @@ import { toCardCodes } from "../reservedDeck";
 
 export class YGOProWaitingState extends YGOProRoomState {
 	constructor(
-		private readonly admitToRoom: AdmitToRoom,
+		private readonly admitToRoom: PlayerAdmission,
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
-		private readonly deckCreator: YGOProDeckCreator,
+		private readonly deckCreator: YGOProDeckBuilder,
 		private readonly deckValidator: YGOProDeckValidator,
 	) {
 		super(eventEmitter);

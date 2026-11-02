@@ -76,15 +76,11 @@ const KNOWN_DOMAIN_LEAKS: readonly string[] = [
 	"src/ygopro/room/domain/YGOProRoom -> src/ygopro/card/infrastructure/CardYGOProRepository",
 	"src/ygopro/room/domain/YGOProRoom -> src/ygopro/deck/application/YGOProDeckCreator",
 	"src/ygopro/room/domain/YGOProRoom -> src/ygopro/room/admission/application/AdmitToRoom",
+	"src/ygopro/room/domain/YGOProRoom -> src/ygopro/room/application/AbandonBetweenDuels",
+	"src/ygopro/room/domain/YGOProRoom -> src/ygopro/room/application/FinalizeYGOProRoom",
 	"src/ygopro/room/domain/YGOProRoom -> src/ygopro/room/admission/application/CredentialResolver",
-	"src/ygopro/room/domain/YGOProRoomState -> src/ygopro/room/application/AbandonBetweenDuels",
 	"src/ygopro/room/domain/states/YGOProDuelingState -> src/shared/room/application/lifecycle/MatchLifecycleHooks",
 	"src/ygopro/room/domain/states/YGOProDuelingState -> src/web-socket-server/WebSocketSingleton",
-	"src/ygopro/room/domain/states/YGOProDuelingState -> src/ygopro/room/application/FinalizeYGOProRoom",
-	"src/ygopro/room/domain/states/YGOProSideDeckingState -> src/ygopro/deck/application/YGOProDeckCreator",
-	"src/ygopro/room/domain/states/YGOProSideDeckingState -> src/ygopro/room/application/AbandonBetweenDuels",
-	"src/ygopro/room/domain/states/YGOProWaitingState -> src/ygopro/deck/application/YGOProDeckCreator",
-	"src/ygopro/room/domain/states/YGOProWaitingState -> src/ygopro/room/admission/application/AdmitToRoom",
 ];
 
 type Import = { from: string; to: string };

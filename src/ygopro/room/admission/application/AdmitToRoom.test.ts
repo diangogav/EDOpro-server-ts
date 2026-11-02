@@ -5,7 +5,8 @@ import { RoomLeague } from "@shared/room/admission/domain/RoomLeague";
 import { Seat } from "@shared/room/admission/domain/Seat";
 import { ISocket } from "@shared/socket/domain/ISocket";
 
-import { AdmissionTarget, AdmitToRoom } from "./AdmitToRoom";
+import { AdmissionTarget } from "../domain/AdmissionTarget";
+import { AdmitToRoom } from "./AdmitToRoom";
 import { CredentialResolver } from "./CredentialResolver";
 
 const socket = {} as ISocket;
