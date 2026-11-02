@@ -11,6 +11,8 @@ import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 
 import { ChatColor, ErrorMessageType, YGOProStocChat } from "ygopro-msg-encode";
 
+import { createRoomFinder } from "src/bootstrap/roomFinder";
+
 import { JoinHandler } from "./JoinHandler";
 
 const makeLogger = (): jest.Mocked<Logger> =>
@@ -93,7 +95,7 @@ describe("JoinHandler — cross-flavor join into a reserved ygopro matchmaking r
 		const checkIfUseCanJoin = {
 			check: jest.fn().mockResolvedValue(true),
 		} as unknown as CheckIfUseCanJoin;
-		new JoinHandler(emitter, makeLogger(), socket, checkIfUseCanJoin);
+		new JoinHandler(emitter, makeLogger(), socket, checkIfUseCanJoin, createRoomFinder());
 
 		emitter.emit(Commands.JOIN_GAME as unknown as string, makeJoinMessage(room.id, password));
 		await flush();

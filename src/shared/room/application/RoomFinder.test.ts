@@ -8,7 +8,10 @@ function makeRoom(id: number): YgoRoom {
 }
 
 function makeLocator(room: YgoRoom | null): jest.Mocked<RoomLocator> {
-	return { findBySocketId: jest.fn().mockReturnValue(room) };
+	return {
+		findBySocketId: jest.fn().mockReturnValue(room),
+		findById: jest.fn().mockReturnValue(room),
+	};
 }
 
 describe("RoomFinder", () => {
@@ -26,5 +29,22 @@ describe("RoomFinder", () => {
 
 	it("returns null when no locator finds the socket", () => {
 		expect(new RoomFinder([makeLocator(null), makeLocator(null)]).run("sock-1")).toBeNull();
+	});
+
+	it("finds a room by id in the first locator that has it", () => {
+		const first = makeLocator(null);
+		const second = makeLocator(makeRoom(7));
+		const third = makeLocator(makeRoom(7));
+
+		const room = new RoomFinder([first, second, third]).findById(7);
+
+		expect(room?.id).toBe(7);
+		expect(first.findById).toHaveBeenCalledWith(7);
+		expect(second.findById).toHaveBeenCalledWith(7);
+		expect(third.findById).not.toHaveBeenCalled();
+	});
+
+	it("returns null when no locator has a room with that id", () => {
+		expect(new RoomFinder([makeLocator(null), makeLocator(null)]).findById(7)).toBeNull();
 	});
 });

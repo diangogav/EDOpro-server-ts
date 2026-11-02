@@ -1,5 +1,5 @@
 import { TextVO } from "../../../shared/value-objects/TextVO";
-import { Message } from "../Message";
+import { Message } from "../../../shared/messages/Message";
 
 export class JoinGameMessage implements Message {
 	public static readonly MAX_BYTES_LENGTH: number = 50;

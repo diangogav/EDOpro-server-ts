@@ -25,4 +25,4 @@ EDOPro clients (Windows/Linux/Android/iOS). **Multirole** is the reference imple
 
 ## Cross-flow pitfall
 
-`JoinHandler.findRoom` also resolves `YGOProRoom`s from `YGOProRoomList`, so an EDOPro-protocol join can land in a YGOPro room.
+`JoinHandler` looks the room up with the shared `RoomFinder.findById`, which searches EDOPro rooms and then YGOPro rooms (`createRoomFinder`), so an EDOPro-protocol join can land in a YGOPro room.

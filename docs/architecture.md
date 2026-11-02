@@ -465,13 +465,14 @@ Tests and `src/test-support` are exempt.
 Documented so nobody rediscovers them the hard way. These are observations
 about the current shape, not a work plan.
 
-- **The two engines still import each other in a few places.** `YGOProRoom`
-  and `YGOProDeckValidator` use EDOPro's ban list, `YGOProJoinGameMessage`
-  extends EDOPro's `Message`, and EDOPro's `JoinHandler` also looks up
-  `YGOProRoom`s in `YGOProRoomList`. `KNOWN_ENGINE_LEAKS` (§12) lists every such
-  import. Room states no longer cross: the shared `RoomState` (match start hooks,
-  plugin duel events, `:score`) is extended by `EdoproRoomState` (core message
-  decoding, 0xF3 chat) and `YGOProRoomState` (STOC_CHAT and emotes).
+- **YGOPro still reads EDOPro's ban lists.** `YGOProRoom` looks up the EDOPro
+  list with the same name to get its hash (`edoBanListHash`), which identifies
+  the list in match results and stats for both engines. It is the last line of
+  `KNOWN_ENGINE_LEAKS` (§12). EDOPro's `JoinHandler` reaches YGOPro rooms only
+  through the shared `RoomFinder.findById`, and room states no longer cross:
+  the shared `RoomState` (match start hooks, plugin duel events, `:score`) is
+  extended by `EdoproRoomState` (core message decoding, 0xF3 chat) and
+  `YGOProRoomState` (STOC_CHAT and emotes).
 - **Room domain classes build their own infrastructure.** `Room` and
   `YGOProRoom` create `UserProfilePostgresRepository` and read in-memory
   ban-list and card repositories directly, and the room states call application

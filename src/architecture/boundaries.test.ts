@@ -50,10 +50,6 @@ const INFRASTRUCTURE_PACKAGES = new Set([
 ]);
 
 const KNOWN_ENGINE_LEAKS: readonly string[] = [
-	"src/edopro/room/application/JoinHandler -> src/ygopro/room/domain/YGOProRoom",
-	"src/edopro/room/application/JoinHandler -> src/ygopro/room/infrastructure/YGOProRoomList",
-	"src/ygopro/deck/domain/YGOProDeckValidator -> src/edopro/ban-list/domain/BanList",
-	"src/ygopro/messages/YGOProJoinGameMessage -> src/edopro/messages/Message",
 	"src/ygopro/room/domain/YGOProRoom -> src/edopro/ban-list/infrastructure/BanListMemoryRepository",
 ];
 

@@ -15,4 +15,15 @@ export class RoomFinder {
 
 		return null;
 	}
+
+	findById(id: number): YgoRoom | null {
+		for (const locator of this.locators) {
+			const room = locator.findById(id);
+			if (room) {
+				return room;
+			}
+		}
+
+		return null;
+	}
 }

@@ -1,4 +1,4 @@
-import { Message } from "../../edopro/messages/Message";
+import { Message } from "../../shared/messages/Message";
 import { TextVO } from "../../shared/value-objects/TextVO";
 
 export class YGOProJoinGameMessage implements Message {

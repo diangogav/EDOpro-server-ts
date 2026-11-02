@@ -11,4 +11,8 @@ export class EdoproRoomLocator implements RoomLocator {
 			) ?? null
 		);
 	}
+
+	findById(id: number): Room | null {
+		return RoomList.getRooms().find((room) => room.id === id) ?? null;
+	}
 }

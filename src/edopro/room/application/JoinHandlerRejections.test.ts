@@ -10,6 +10,8 @@ import { CheckIfUseCanJoin } from "@edopro/room/application/CheckIfUserCanJoin";
 import RoomList from "@edopro/room/infrastructure/RoomList";
 import { Room } from "@edopro/room/domain/Room";
 
+import { createRoomFinder } from "src/bootstrap/roomFinder";
+
 import { JoinHandler } from "./JoinHandler";
 
 // Join rejections share one RED STOC_CHAT voice (cause + action) instead of
@@ -63,7 +65,13 @@ describe("JoinHandler — join rejections (RED STOC_CHAT)", () => {
 	it("rejects an unknown room with 'Room not found — refresh the room list.'", async () => {
 		const socket = makeSocket();
 		const checkIfUseCanJoin = { check: jest.fn() } as unknown as CheckIfUseCanJoin;
-		const handler = new JoinHandler(new EventEmitter(), makeLogger(), socket, checkIfUseCanJoin);
+		const handler = new JoinHandler(
+			new EventEmitter(),
+			makeLogger(),
+			socket,
+			checkIfUseCanJoin,
+			createRoomFinder(),
+		);
 
 		await handler.handleJoinGame(makeJoinMessage(9999, ""));
 
@@ -79,7 +87,13 @@ describe("JoinHandler — join rejections (RED STOC_CHAT)", () => {
 		RoomList.addRoom(room);
 
 		const checkIfUseCanJoin = { check: jest.fn() } as unknown as CheckIfUseCanJoin;
-		const handler = new JoinHandler(new EventEmitter(), makeLogger(), socket, checkIfUseCanJoin);
+		const handler = new JoinHandler(
+			new EventEmitter(),
+			makeLogger(),
+			socket,
+			checkIfUseCanJoin,
+			createRoomFinder(),
+		);
 
 		await handler.handleJoinGame(makeJoinMessage(42, "wrong"));
 

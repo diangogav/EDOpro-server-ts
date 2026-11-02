@@ -42,7 +42,13 @@ export class SocketConnectionHandler {
 		};
 
 		const joinGameListener = () => {
-			new JoinHandler(eventEmitter, connectionLogger, socket, this.checkIfUserCanJoin);
+			new JoinHandler(
+				eventEmitter,
+				connectionLogger,
+				socket,
+				this.checkIfUserCanJoin,
+				this.roomFinder,
+			);
 		};
 
 		new ExpressReconnectHandler(
