@@ -161,6 +161,16 @@ export abstract class RoomState {
 		}
 	}
 
+	/**
+	 * Runs the match start hooks as soon as the match exists (STOC_DUEL_START),
+	 * before rock-paper-scissors, so clients can show the start announcement
+	 * (ratings) on their opening VS. notifyDuelStart runs them again when the
+	 * engine starts; hooks treat a repeat call for the same matchId as a no-op.
+	 */
+	protected notifyMatchStarting(room: YgoRoom): void {
+		container.get(MatchLifecycleHooks).runStarted(this.buildStartContext(room));
+	}
+
 	private buildStartContext(room: YgoRoom): MatchContext {
 		return {
 			roomId: room.id,

@@ -121,6 +121,26 @@ describe("RatingAnnouncer", () => {
 			expect(ctx.announce).toHaveBeenCalledTimes(1);
 		});
 
+		it("announces once when a second call for the same match lands while the first is still looking up ratings", async () => {
+			repository.findMany.mockResolvedValue(new Map());
+			const ctx = makeContext();
+
+			await Promise.all([announcer.onMatchStarted(ctx), announcer.onMatchStarted(ctx)]);
+
+			expect(repository.findMany).toHaveBeenCalledTimes(1);
+			expect(ctx.announce).toHaveBeenCalledTimes(1);
+		});
+
+		it("lets a later call for the same match try again when the rating lookup failed", async () => {
+			repository.findMany.mockRejectedValueOnce(new Error("db down")).mockResolvedValue(new Map());
+			const ctx = makeContext();
+
+			await announcer.onMatchStarted(ctx);
+			await announcer.onMatchStarted(ctx);
+
+			expect(ctx.announce).toHaveBeenCalledTimes(1);
+		});
+
 		it("does not throw and sends no frame when the repository read fails", async () => {
 			repository.findMany.mockRejectedValue(new Error("db down"));
 			const ctx = makeContext();

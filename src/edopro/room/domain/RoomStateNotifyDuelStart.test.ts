@@ -21,6 +21,10 @@ class TestRoomState extends RoomState {
 	public callNotifyDuelStart(room: YgoRoom): void {
 		this.notifyDuelStart(room);
 	}
+
+	public callNotifyMatchStarting(room: YgoRoom): void {
+		this.notifyMatchStarting(room);
+	}
 }
 
 function makeRoom(overrides: Record<string, unknown> = {}) {
@@ -85,5 +89,30 @@ describe("RoomState.notifyDuelStart() — MatchLifecycleHooks wiring", () => {
 		state.callNotifyDuelStart(room);
 
 		expect(runStarted).toHaveBeenCalledWith(expect.objectContaining({ banListName: "N/A" }));
+	});
+});
+
+describe("RoomState.notifyMatchStarting() — start hooks at STOC_DUEL_START", () => {
+	let runStarted: jest.Mock;
+
+	beforeEach(() => {
+		runStarted = jest.fn();
+		(container.get as jest.Mock).mockReturnValue({ runStarted } as unknown as MatchLifecycleHooks);
+	});
+
+	it("runs the start hooks with the new match's context, before any duel engine exists", () => {
+		const state = new TestRoomState(new EventEmitter());
+
+		state.callNotifyMatchStarting(makeRoom());
+
+		expect(runStarted).toHaveBeenCalledTimes(1);
+		expect(runStarted).toHaveBeenCalledWith(
+			expect.objectContaining({
+				roomId: 4242,
+				matchId: "match-uuid-1",
+				ranked: true,
+				banListName: "TCG",
+			}),
+		);
 	});
 });

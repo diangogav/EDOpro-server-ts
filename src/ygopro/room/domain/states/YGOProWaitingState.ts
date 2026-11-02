@@ -273,6 +273,7 @@ export class YGOProWaitingState extends YGOProRoomState {
 
 		this.toRPS(room);
 		room.createMatch();
+		this.notifyMatchStarting(room);
 		room.rps();
 	}
 
