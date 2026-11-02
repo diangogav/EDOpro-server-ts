@@ -1,3 +1,4 @@
+import { createYGOProRoomDeps } from "@ygopro/room/application/createYGOProRoomDeps";
 import { EventEmitter } from "stream";
 
 import * as uniqueIdModule from "src/utils/generateUniqueId";
@@ -86,6 +87,7 @@ describe("findOrCreateRoom", () => {
 			{ name: "P", password: "", previousMessage: Buffer.alloc(0) } as never,
 			"sock-orig",
 			makeMessageRepository() as never,
+			createYGOProRoomDeps(),
 		);
 		YGOProRoomList.addRoom(room);
 
@@ -105,6 +107,7 @@ describe("findOrCreateRoom", () => {
 			{ name: "P", password: "", previousMessage: Buffer.alloc(0) } as never,
 			"sock-orig",
 			makeMessageRepository() as never,
+			createYGOProRoomDeps(),
 		);
 		YGOProRoomList.addRoom(room);
 		room.rps(); // lightweight non-waiting transition, no OCGCore needed
@@ -125,6 +128,7 @@ describe("findOrCreateRoom", () => {
 			{ name: "P", password: "", previousMessage: Buffer.alloc(0) } as never,
 			"sock-orig",
 			makeMessageRepository() as never,
+			createYGOProRoomDeps(),
 		);
 		YGOProRoomList.addRoom(room);
 
@@ -151,6 +155,7 @@ describe("findOrCreateRoom", () => {
 			{ name: "P", password: "", previousMessage: Buffer.alloc(0) } as never,
 			"sock-orig",
 			makeMessageRepository() as never,
+			createYGOProRoomDeps(),
 		);
 		YGOProRoomList.addRoom(passwordless);
 
@@ -217,6 +222,7 @@ describe("findOrCreateRoom", () => {
 			{ name: "P", password: "", previousMessage: Buffer.alloc(0) } as never,
 			"sock-orig",
 			makeMessageRepository() as never,
+			createYGOProRoomDeps(),
 		);
 		YGOProRoomList.addRoom(room);
 
@@ -245,6 +251,7 @@ describe("findOrCreateRoom", () => {
 			{ name: "P", password: "", previousMessage: Buffer.alloc(0) } as never,
 			"sock-orig",
 			makeMessageRepository() as never,
+			createYGOProRoomDeps(),
 		);
 		YGOProRoomList.addRoom(room);
 
@@ -270,6 +277,7 @@ describe("findOrCreateRoom", () => {
 			{ name: "P", password: "", previousMessage: Buffer.alloc(0) } as never,
 			"sock-orig",
 			makeMessageRepository() as never,
+			createYGOProRoomDeps(),
 		);
 		YGOProRoomList.addRoom(room);
 
@@ -335,6 +343,7 @@ describe("findOrCreateRoom", () => {
 			{ name: "P", password: "", previousMessage: Buffer.alloc(0) } as never,
 			"sock-orig",
 			makeMessageRepository() as never,
+			createYGOProRoomDeps(),
 		);
 		YGOProRoomList.addRoom(existing);
 		const logger = makeLogger();
@@ -508,6 +517,7 @@ describe("findOrCreateRoom", () => {
 					{ name: "P", password: "", previousMessage: Buffer.alloc(0) } as never,
 					"sock-orig",
 					makeMessageRepository() as never,
+					createYGOProRoomDeps(),
 				);
 				YGOProRoomList.addRoom(passworded);
 
@@ -519,6 +529,7 @@ describe("findOrCreateRoom", () => {
 					{ name: "Q", password: "", previousMessage: Buffer.alloc(0) } as never,
 					"sock-orig-2",
 					makeMessageRepository() as never,
+					createYGOProRoomDeps(),
 				);
 				YGOProRoomList.addRoom(passwordless);
 
@@ -536,6 +547,7 @@ describe("findOrCreateRoom", () => {
 					{ name: "P", password: "", previousMessage: Buffer.alloc(0) } as never,
 					"sock-orig",
 					makeMessageRepository() as never,
+					createYGOProRoomDeps(),
 				);
 				YGOProRoomList.addRoom(passworded);
 
@@ -590,6 +602,7 @@ describe("findOrCreateRoom", () => {
 					{ name: "Host", password: "", previousMessage: Buffer.alloc(0) } as never,
 					"sock-orig",
 					new MessageRepositoryMock() as never,
+					createYGOProRoomDeps(),
 				);
 				YGOProRoomList.addRoom(room);
 				return room;
@@ -736,6 +749,7 @@ describe("findOrCreateRoom — room id uniqueness", () => {
 			{ name: "P", password: "", previousMessage: Buffer.alloc(0) } as never,
 			"sock-orig",
 			makeMessageRepository() as never,
+			createYGOProRoomDeps(),
 		);
 		YGOProRoomList.addRoom(occupied);
 

@@ -1,3 +1,4 @@
+import { createYGOProRoomDeps } from "@ygopro/room/application/createYGOProRoomDeps";
 /**
  * DisconnectHandler.handleYGOPro() — a human-vs-human player leaving between
  * duels hands the decision to AbandonBetweenDuels instead of falling through.
@@ -56,6 +57,7 @@ const createRoom = (state: DuelState, clients: YGOProClient[]): YGOProRoom => {
 		{ name: "Leaver", password: "", previousMessage: Buffer.alloc(0) } as never,
 		"sock-leaver",
 		{ errorMessage: jest.fn(), joinGameMessage: jest.fn() } as never,
+		createYGOProRoomDeps(),
 	);
 	(room as unknown as { _state: DuelState })._state = state;
 	Object.defineProperty(room, "players", { get: () => clients, configurable: true });

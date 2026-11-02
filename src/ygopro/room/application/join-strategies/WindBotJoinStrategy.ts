@@ -1,3 +1,4 @@
+import { createYGOProRoomDeps } from "@ygopro/room/application/createYGOProRoomDeps";
 import { generateUnusedRoomId } from "../generateUnusedRoomId";
 
 import { ErrorMessageType } from "ygopro-msg-encode";
@@ -71,6 +72,7 @@ export class WindBotJoinStrategy implements JoinStrategy {
 			ctx.playerInfo,
 			ctx.socketId,
 			ctx.messageRepository,
+			createYGOProRoomDeps(),
 		);
 
 		// Reject tag-mode BEFORE adding to list or issuing token

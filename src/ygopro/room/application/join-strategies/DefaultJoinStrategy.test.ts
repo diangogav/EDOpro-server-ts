@@ -1,3 +1,4 @@
+import { createYGOProRoomDeps } from "@ygopro/room/application/createYGOProRoomDeps";
 import { EventEmitter } from "stream";
 
 import { JoinContext } from "./JoinStrategy";
@@ -93,6 +94,7 @@ describe("DefaultJoinStrategy", () => {
 				{ name: "TestPlayer", password: "", previousMessage: Buffer.alloc(0) } as never,
 				"sock-original",
 				makeMessageRepository() as never,
+				createYGOProRoomDeps(),
 			);
 			YGOProRoomList.addRoom(existingRoom);
 
@@ -138,6 +140,7 @@ describe("DefaultJoinStrategy", () => {
 				{ name: "TestPlayer", password: "", previousMessage: Buffer.alloc(0) } as never,
 				"sock-original",
 				makeMessageRepository() as never,
+				createYGOProRoomDeps(),
 			);
 			YGOProRoomList.addRoom(room);
 			room.rps(); // lightweight non-waiting transition, no OCGCore needed
@@ -169,6 +172,7 @@ describe("DefaultJoinStrategy", () => {
 				{ name: "TestPlayer", password: "", previousMessage: Buffer.alloc(0) } as never,
 				"sock-original",
 				makeMessageRepository() as never,
+				createYGOProRoomDeps(),
 			);
 			YGOProRoomList.addRoom(room);
 
@@ -198,6 +202,7 @@ describe("DefaultJoinStrategy", () => {
 				{ name: "TestPlayer", password: "", previousMessage: Buffer.alloc(0) } as never,
 				"sock-original",
 				makeMessageRepository() as never,
+				createYGOProRoomDeps(),
 				true,
 			);
 			YGOProRoomList.addRoom(room);

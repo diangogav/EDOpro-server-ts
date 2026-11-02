@@ -1,3 +1,4 @@
+import { createYGOProRoomDeps } from "@ygopro/room/application/createYGOProRoomDeps";
 import { ErrorMessageType } from "ygopro-msg-encode";
 
 import {
@@ -150,6 +151,7 @@ export class ReservedDuelJoinStrategy implements JoinStrategy {
 			ctx.playerInfo,
 			ctx.socketId,
 			ctx.messageRepository,
+			createYGOProRoomDeps(),
 			false,
 		);
 		const session = new ReservedDuelSession(reservation, services);

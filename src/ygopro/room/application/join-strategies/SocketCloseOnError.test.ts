@@ -1,3 +1,4 @@
+import { createYGOProRoomDeps } from "@ygopro/room/application/createYGOProRoomDeps";
 /**
  * socket.close() called after error sends.
  *
@@ -315,6 +316,7 @@ describe("socket.close() after error send", () => {
 				{ name: "Human", password: "", previousMessage: Buffer.alloc(0) } as never,
 				"sock-human",
 				msgRepo as never,
+				createYGOProRoomDeps(),
 			);
 			YGOProRoomList.addRoom(room);
 

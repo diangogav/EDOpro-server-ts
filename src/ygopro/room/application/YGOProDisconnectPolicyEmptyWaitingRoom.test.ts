@@ -1,3 +1,4 @@
+import { createYGOProRoomDeps } from "@ygopro/room/application/createYGOProRoomDeps";
 /**
  * DisconnectHandler.handleYGOPro() — empty-room teardown (zombie-room fix).
  *
@@ -91,6 +92,7 @@ const createRoom = (id: number, creatorSocketId: string, clients: YGOProClient[]
 		{ name: "Host", password: "", previousMessage: Buffer.alloc(0) } as never,
 		creatorSocketId,
 		makeMessageRepository() as never,
+		createYGOProRoomDeps(),
 	);
 	(room as unknown as { _state: DuelState })._state = DuelState.WAITING;
 	Object.defineProperty(room, "players", { get: () => clients, configurable: true });

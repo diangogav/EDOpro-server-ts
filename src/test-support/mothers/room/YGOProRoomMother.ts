@@ -1,3 +1,4 @@
+import { createYGOProRoomDeps } from "@ygopro/room/application/createYGOProRoomDeps";
 import { faker } from "@faker-js/faker";
 import EventEmitter from "events";
 import { randomInt } from "crypto";
@@ -23,6 +24,7 @@ export class YGOProRoomMother {
 			PlayerInfoMessageMother.create(),
 			overrides?.createdBySocketId ?? faker.string.uuid(),
 			new MessageRepositoryMock(),
+			createYGOProRoomDeps(),
 		);
 	}
 }

@@ -1,3 +1,4 @@
+import { createYGOProRoomDeps } from "@ygopro/room/application/createYGOProRoomDeps";
 import { EventEmitter } from "stream";
 
 import { MatchAbandonClientMessage } from "@shared/messages/server-to-client/MatchAbandonClientMessage";
@@ -40,6 +41,7 @@ describe("YGOProRoom.reconnect — abandon notice", () => {
 				typeChangeMessageFromType: jest.fn().mockReturnValue(Buffer.alloc(0)),
 				playerEnterMessage: jest.fn().mockReturnValue(Buffer.alloc(0)),
 			} as never,
+			createYGOProRoomDeps(),
 		);
 		(room as unknown as { _state: DuelState })._state = state;
 		(room as unknown as { _players: YGOProClient[] })._players = players;

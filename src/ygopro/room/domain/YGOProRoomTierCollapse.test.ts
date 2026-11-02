@@ -1,3 +1,4 @@
+import { createYGOProRoomDeps } from "@ygopro/room/application/createYGOProRoomDeps";
 import { EventEmitter } from "stream";
 
 import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
@@ -56,6 +57,7 @@ describe("YGOProRoom.create — same-tier double match (isolated RuleMappings mo
 					PlayerInfoMessageMother.create(),
 					"sock-1",
 					new MessageRepositoryMock(),
+					createYGOProRoomDeps(),
 				),
 			).toThrow("Error: param match with two rules.");
 		});
@@ -97,6 +99,7 @@ describe("YGOProRoom.create — same-tier double match (isolated RuleMappings mo
 					PlayerInfoMessageMother.create(),
 					"sock-2",
 					new MessageRepositoryMock(),
+					createYGOProRoomDeps(),
 				),
 			).not.toThrow();
 		});
@@ -125,6 +128,7 @@ describe("YGOProRoom.create — same-tier double match (isolated RuleMappings mo
 				PlayerInfoMessageMother.create(),
 				"sock-3",
 				new MessageRepositoryMock(),
+				createYGOProRoomDeps(),
 			);
 
 			expect(room.hostInfo.rule).toBe(5);
@@ -139,6 +143,7 @@ describe("YGOProRoom.create — same-tier double match (isolated RuleMappings mo
 				PlayerInfoMessageMother.create(),
 				"sock-4",
 				new MessageRepositoryMock(),
+				createYGOProRoomDeps(),
 			);
 
 			expect(room.hostInfo.rule).toBe(5);

@@ -1,3 +1,4 @@
+import { createYGOProRoomDeps } from "@ygopro/room/application/createYGOProRoomDeps";
 import { EventEmitter } from "stream";
 
 import { JoinContext } from "./JoinStrategy";
@@ -151,6 +152,7 @@ describe("TicketJoinStrategy", () => {
 				PlayerInfoMessageMother.create(),
 				"sock-orig",
 				new MessageRepositoryMock(),
+				createYGOProRoomDeps(),
 				true,
 			);
 			YGOProRoomList.addRoom(existingRoom);
@@ -187,6 +189,7 @@ describe("TicketJoinStrategy", () => {
 				PlayerInfoMessageMother.create(),
 				"sock-orig",
 				new MessageRepositoryMock(),
+				createYGOProRoomDeps(),
 				true,
 			);
 			YGOProRoomList.addRoom(existingRoom);
@@ -242,6 +245,7 @@ describe("TicketJoinStrategy", () => {
 				PlayerInfoMessageMother.create(),
 				"sock-orig",
 				new MessageRepositoryMock(),
+				createYGOProRoomDeps(),
 				true,
 			);
 			YGOProRoomList.addRoom(existingRoom);

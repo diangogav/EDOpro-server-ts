@@ -1,3 +1,4 @@
+import { createYGOProRoomDeps } from "@ygopro/room/application/createYGOProRoomDeps";
 /**
  * DisconnectHandler.handleYGOPro() windbot cleanup gap fix.
  *
@@ -94,6 +95,7 @@ const createRoomInList = (socketId = "sock-human"): YGOProRoom => {
 		{ name: "Human", password: "", previousMessage: Buffer.alloc(0) } as never,
 		socketId,
 		makeMessageRepository() as never,
+		createYGOProRoomDeps(),
 	);
 	MercuryRoomList.addRoom(room);
 	return room;

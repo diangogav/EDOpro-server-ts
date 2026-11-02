@@ -1,3 +1,4 @@
+import { createYGOProRoomDeps } from "@ygopro/room/application/createYGOProRoomDeps";
 import { EventEmitter } from "stream";
 
 import { JoinContext } from "./JoinStrategy";
@@ -88,6 +89,7 @@ const createRoomInList = (id = 1234): { room: YGOProRoom; emitter: EventEmitter 
 		{ name: "Human", password: "", previousMessage: Buffer.alloc(0) } as never,
 		"sock-human",
 		messageRepo as never,
+		createYGOProRoomDeps(),
 	);
 	YGOProRoomList.addRoom(room);
 	return { room, emitter };

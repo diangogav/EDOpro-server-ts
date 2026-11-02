@@ -1,3 +1,4 @@
+import { createYGOProRoomDeps } from "@ygopro/room/application/createYGOProRoomDeps";
 /**
  * DisconnectHandler.handleYGOPro() — AI room teardown on human disconnect.
  *
@@ -82,6 +83,7 @@ const createAIRoom = (
 		{ name: "Human", password: "", previousMessage: Buffer.alloc(0) } as never,
 		humanSocketId,
 		makeMessageRepository() as never,
+		createYGOProRoomDeps(),
 	);
 	room.noHost = noHost;
 	(room as unknown as { _state: DuelState })._state = state;

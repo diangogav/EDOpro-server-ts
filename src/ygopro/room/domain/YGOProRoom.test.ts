@@ -1,3 +1,4 @@
+import { createYGOProRoomDeps } from "@ygopro/room/application/createYGOProRoomDeps";
 import "reflect-metadata";
 
 import { EventEmitter } from "stream";
@@ -536,6 +537,7 @@ describe("YGOProRoom", () => {
 				PlayerInfoMessageMother.create(), // no password → ranked=false without override
 				"sock-1",
 				new MessageRepositoryMock(),
+				createYGOProRoomDeps(),
 				true, // rankedOverride
 			);
 			expect(room.ranked).toBe(true);
@@ -550,6 +552,7 @@ describe("YGOProRoom", () => {
 				PlayerInfoMessageMother.create(), // no password → ranked=false
 				"sock-2",
 				new MessageRepositoryMock(),
+				createYGOProRoomDeps(),
 				// no rankedOverride
 			);
 			expect(room.ranked).toBe(false);
@@ -564,6 +567,7 @@ describe("YGOProRoom", () => {
 				PlayerInfoMessageMother.create(),
 				"sock-3",
 				new MessageRepositoryMock(),
+				createYGOProRoomDeps(),
 				true, // ticket user explicitly hosting a casual room
 			);
 			expect(room.ranked).toBe(false);
@@ -578,6 +582,7 @@ describe("YGOProRoom", () => {
 				PlayerInfoMessageMother.create(),
 				"sock-4",
 				new MessageRepositoryMock(),
+				createYGOProRoomDeps(),
 				true,
 			);
 			const casual = YGOProRoom.create(
@@ -588,6 +593,7 @@ describe("YGOProRoom", () => {
 				PlayerInfoMessageMother.create(),
 				"sock-5",
 				new MessageRepositoryMock(),
+				createYGOProRoomDeps(),
 				true,
 			);
 			expect(ranked.toRoomListDTO().ranked).toBe(true);

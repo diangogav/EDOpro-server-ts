@@ -1,3 +1,4 @@
+import { createYGOProRoomDeps } from "@ygopro/room/application/createYGOProRoomDeps";
 import { EventEmitter } from "stream";
 
 import { ChatColor, YGOProStocChat } from "ygopro-msg-encode";
@@ -60,6 +61,7 @@ const makeRoom = (id: number, rawPass: string): YGOProRoom => {
 		{ name: "Host", password: "", previousMessage: Buffer.alloc(0) } as never,
 		"sock-host",
 		makeMessageRepository() as never,
+		createYGOProRoomDeps(),
 	);
 	YGOProRoomList.addRoom(room);
 	return room;
