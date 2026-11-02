@@ -13,10 +13,10 @@ import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectato
 import { Reconnect } from "../../../application/Reconnect";
 import { Room } from "../../Room";
 import { EdoproRoomState } from "../../EdoproRoomState";
-import { ReconnectionTokenIssuer } from "../../../../../shared/room/application/reconnect/ReconnectionTokenIssuer";
+import { ReconnectionTokenIssuer } from "../../../../../shared/room/domain/reconnect/ReconnectionTokenIssuer";
 import { findReconnectingPlayer } from "../../../../../shared/room/domain/findReconnectingPlayer";
 import { ReconnectionAckMessage } from "../../../../../shared/messages/server-to-client/ReconnectionAckMessage";
-import { logReconnectAttempt } from "@shared/room/application/reconnect/logReconnectAttempt";
+import { logReconnectAttempt } from "@shared/room/domain/reconnect/logReconnectAttempt";
 import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 export class ChossingOrderState extends EdoproRoomState {

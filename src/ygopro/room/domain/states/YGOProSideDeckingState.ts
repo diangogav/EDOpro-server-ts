@@ -20,7 +20,7 @@ import { toCardCodes } from "../reservedDeck";
 import { findMidDuelReconnectingPlayer } from "@shared/room/domain/findMidDuelReconnectingPlayer";
 import { config } from "../../../../config";
 import { AbandonBetweenDuels } from "../../application/AbandonBetweenDuels";
-import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
+import { ReconnectionTokenIssuer } from "@shared/room/domain/reconnect/ReconnectionTokenIssuer";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
 import {
 	ChatColor,
@@ -30,7 +30,7 @@ import {
 	YGOProStocDuelStart,
 	YGOProStocWaitingSide,
 } from "ygopro-msg-encode";
-import { logReconnectAttempt } from "@shared/room/application/reconnect/logReconnectAttempt";
+import { logReconnectAttempt } from "@shared/room/domain/reconnect/logReconnectAttempt";
 import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 const SIDE_TIMEOUT_MINUTES = config.sideTimeoutMinutes;

@@ -25,7 +25,7 @@ import { StartDuelClientMessage } from "../../../../messages/server-to-client/ga
 import { TimeLimitClientMessage } from "../../../../messages/server-to-client/game-messages/TimeLimitClientMessage";
 import { CatchUpClientMessage } from "../../../../messages/server-to-client/CatchUpClientMessage";
 import { PlayerChangeClientMessage } from "../../../../messages/server-to-client/PlayerChangeClientMessage";
-import { ReconnectionTokenIssuer } from "../../../../../shared/room/application/reconnect/ReconnectionTokenIssuer";
+import { ReconnectionTokenIssuer } from "../../../../../shared/room/domain/reconnect/ReconnectionTokenIssuer";
 import { findReconnectingPlayer } from "../../../../../shared/room/domain/findReconnectingPlayer";
 import { ReconnectionAckMessage } from "../../../../../shared/messages/server-to-client/ReconnectionAckMessage";
 import { FinishDuelHandler } from "../../../application/FinishDuelHandler";
@@ -34,7 +34,7 @@ import { Reconnect } from "../../../application/Reconnect";
 import { DuelFinishReason } from "../../DuelFinishReason";
 import { Room } from "../../Room";
 import { EdoproRoomState } from "../../EdoproRoomState";
-import { logReconnectAttempt } from "@shared/room/application/reconnect/logReconnectAttempt";
+import { logReconnectAttempt } from "@shared/room/domain/reconnect/logReconnectAttempt";
 import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 interface Message {

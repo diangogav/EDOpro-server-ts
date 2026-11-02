@@ -17,7 +17,7 @@ import {
 } from "@shared/room/domain/duel-events/DuelEventDecoders";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { Team } from "@shared/room/Team";
-import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
+import { ReconnectionTokenIssuer } from "@shared/room/domain/reconnect/ReconnectionTokenIssuer";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
 import { MatchLifecycleHooks } from "@shared/room/application/lifecycle/MatchLifecycleHooks";
 import { MatchContext } from "@shared/room/domain/lifecycle/MatchLifecycleHook";
@@ -53,7 +53,7 @@ import {
 import { EvrpSerializer } from "../replay/EvrpSerializer";
 import { GameOverDomainEvent } from "@shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
-import { logReconnectAttempt } from "@shared/room/application/reconnect/logReconnectAttempt";
+import { logReconnectAttempt } from "@shared/room/domain/reconnect/logReconnectAttempt";
 import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 export class YGOProDuelingState extends YGOProRoomState {

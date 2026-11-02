@@ -12,9 +12,9 @@ import { findMidDuelReconnectingPlayer } from "@shared/room/domain/findMidDuelRe
 import { YGOProCtosHandResult } from "ygopro-msg-encode";
 import { Team } from "@shared/room/Team";
 import { YGOProRoomState } from "../YGOProRoomState";
-import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
+import { ReconnectionTokenIssuer } from "@shared/room/domain/reconnect/ReconnectionTokenIssuer";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
-import { logReconnectAttempt } from "@shared/room/application/reconnect/logReconnectAttempt";
+import { logReconnectAttempt } from "@shared/room/domain/reconnect/logReconnectAttempt";
 import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 export class YGOProRockPaperScissorState extends YGOProRoomState {

@@ -7,7 +7,7 @@ import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
 import { TokenIndex } from "@shared/room/domain/TokenIndex";
 import { YgoRoom } from "@shared/room/domain/YgoRoom";
-import { logReconnectAttempt, ReconnectOutcome } from "./logReconnectAttempt";
+import { logReconnectAttempt, ReconnectOutcome } from "../../domain/reconnect/logReconnectAttempt";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { redactSecret } from "@shared/logger/domain/redactSecret";
 

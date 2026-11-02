@@ -7,7 +7,7 @@ import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { YgoClient } from "@shared/client/domain/YgoClient";
 import { Logger } from "@shared/logger/domain/Logger";
 import { ISocket } from "@shared/socket/domain/ISocket";
-import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
+import { ReconnectionTokenIssuer } from "@shared/room/domain/reconnect/ReconnectionTokenIssuer";
 import { Admission } from "@shared/room/admission/domain/Admission";
 import { isNameTaken } from "@shared/room/domain/isNameTaken";
 import { createSystemChat } from "@shared/room/domain/chat/SystemChat";

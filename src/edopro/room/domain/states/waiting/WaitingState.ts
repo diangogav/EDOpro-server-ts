@@ -19,7 +19,7 @@ import { ErrorClientMessage } from "../../../../messages/server-to-client/ErrorC
 import { JoinGameClientMessage } from "../../../../messages/server-to-client/JoinGameClientMessage";
 import { RPSChooseClientMessage } from "../../../../messages/server-to-client/RPSChooseClientMessage";
 import { createSystemChat } from "../../../../../shared/room/domain/chat/SystemChat";
-import { ReconnectionTokenIssuer } from "../../../../../shared/room/application/reconnect/ReconnectionTokenIssuer";
+import { ReconnectionTokenIssuer } from "../../../../../shared/room/domain/reconnect/ReconnectionTokenIssuer";
 import { isNameTaken } from "../../../../../shared/room/domain/isNameTaken";
 import { Room } from "../../Room";
 import { EdoproRoomState } from "../../EdoproRoomState";
