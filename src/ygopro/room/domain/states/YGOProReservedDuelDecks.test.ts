@@ -13,6 +13,7 @@ import { ReservedDuelSession } from "@shared/reserved-duel/domain/ReservedDuelSe
 import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
 import { YGOProDeckValidator } from "@ygopro/deck/domain/YGOProDeckValidator";
 import { ErrorMessageType } from "ygopro-msg-encode";
+import { MatchLifecycleHooks } from "@shared/room/application/lifecycle/MatchLifecycleHooks";
 
 import { YGOProClient } from "../../../client/domain/YGOProClient";
 import { AdmitToRoom } from "../../admission/application/AdmitToRoom";
@@ -147,6 +148,31 @@ describe("YGOProWaitingState with a reserved duel", () => {
 		expect(room.setDecksToPlayerUnsafe).toHaveBeenCalled();
 		expect(room.createMatch).toHaveBeenCalledTimes(1);
 		expect(room.rps).toHaveBeenCalledTimes(1);
+	});
+
+	it("runs the match start hooks at STOC_DUEL_START, after the match exists and before the RPS", async () => {
+		const runStarted = jest
+			.spyOn(MatchLifecycleHooks.prototype, "runStarted")
+			.mockReturnValue(undefined);
+		const human = makePlayer(0);
+		const room = makeRoom("exact", [human, makePlayer(1, { isInternal: true })]);
+		(room as unknown as { matchId: string }).matchId = "match-1";
+		const emitter = setUpWaiting(makeDeck([2, 1, 1], [10], [20]));
+
+		emitter.emit(Commands.UPDATE_DECK as unknown as string, message, room, human);
+		await flush();
+
+		expect(runStarted).toHaveBeenCalledTimes(1);
+		expect(runStarted).toHaveBeenCalledWith(
+			expect.objectContaining({ roomId: 7, matchId: "match-1" }),
+		);
+		expect(room.createMatch.mock.invocationCallOrder[0]).toBeLessThan(
+			runStarted.mock.invocationCallOrder[0]!,
+		);
+		expect(runStarted.mock.invocationCallOrder[0]).toBeLessThan(
+			room.rps.mock.invocationCallOrder[0]!,
+		);
+		runStarted.mockRestore();
 	});
 
 	it("does not start while a seat is still empty", async () => {

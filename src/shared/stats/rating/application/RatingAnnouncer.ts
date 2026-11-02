@@ -72,6 +72,11 @@ export class RatingAnnouncer implements MatchLifecycleHook {
 			return;
 		}
 
+		// Claimed before the rating lookup: start hooks run at STOC_DUEL_START
+		// and again when the duel engine starts, and a second call landing
+		// while the first is still awaiting the database must not announce twice.
+		this.matchIdByRoom.set(ctx.roomId, ctx.matchId);
+
 		// Eligibility stays keyed on the raw banlist name; the announced rank
 		// is resolved exactly once per match — from its alias-resolved
 		// canonical name — here at start, and carried in the snapshot so end
@@ -101,12 +106,21 @@ export class RatingAnnouncer implements MatchLifecycleHook {
 				`RatingAnnouncer: rating lookup failed for room ${ctx.roomId}: ${String(error)}`,
 				{ roomId: ctx.roomId },
 			);
+			// Release the claim so the engine-start call can try again.
+			if (this.matchIdByRoom.get(ctx.roomId) === ctx.matchId) {
+				this.matchIdByRoom.delete(ctx.roomId);
+			}
 
 			return;
 		}
 
+		// The room closed (or moved on to another match) while the lookup ran:
+		// nothing would ever release this snapshot, and no one is there to read it.
+		if (this.matchIdByRoom.get(ctx.roomId) !== ctx.matchId) {
+			return;
+		}
+
 		this.snapshots.set(ctx.matchId, MatchRatingSnapshot.create(ratings, rankId, ctx.season));
-		this.matchIdByRoom.set(ctx.roomId, ctx.matchId);
 
 		const teams = this.groupByTeam(
 			eligibility.players,

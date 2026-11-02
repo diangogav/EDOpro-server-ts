@@ -121,6 +121,26 @@ describe("RatingAnnouncer", () => {
 			expect(ctx.announce).toHaveBeenCalledTimes(1);
 		});
 
+		it("announces once when a second call for the same match lands while the first is still looking up ratings", async () => {
+			repository.findMany.mockResolvedValue(new Map());
+			const ctx = makeContext();
+
+			await Promise.all([announcer.onMatchStarted(ctx), announcer.onMatchStarted(ctx)]);
+
+			expect(repository.findMany).toHaveBeenCalledTimes(1);
+			expect(ctx.announce).toHaveBeenCalledTimes(1);
+		});
+
+		it("lets a later call for the same match try again when the rating lookup failed", async () => {
+			repository.findMany.mockRejectedValueOnce(new Error("db down")).mockResolvedValue(new Map());
+			const ctx = makeContext();
+
+			await announcer.onMatchStarted(ctx);
+			await announcer.onMatchStarted(ctx);
+
+			expect(ctx.announce).toHaveBeenCalledTimes(1);
+		});
+
 		it("does not throw and sends no frame when the repository read fails", async () => {
 			repository.findMany.mockRejectedValue(new Error("db down"));
 			const ctx = makeContext();
@@ -271,6 +291,25 @@ describe("RatingAnnouncer", () => {
 
 			await announcer.onRoomClosed({ roomId: ctx.roomId, matchId: ctx.matchId });
 
+			await announcer.onMatchEnding(ctx);
+			expect(ctx.announce).not.toHaveBeenCalled();
+		});
+
+		it("drops a start lookup that resolves after the room closed: no announce, no snapshot left behind", async () => {
+			let resolveLookup!: (ratings: Map<string, unknown>) => void;
+			repository.findMany.mockReturnValue(
+				new Promise((resolve) => {
+					resolveLookup = resolve as (ratings: Map<string, unknown>) => void;
+				}),
+			);
+			const ctx = makeContext();
+
+			const starting = announcer.onMatchStarted(ctx);
+			await announcer.onRoomClosed({ roomId: ctx.roomId, matchId: ctx.matchId });
+			resolveLookup(new Map());
+			await starting;
+
+			expect(ctx.announce).not.toHaveBeenCalled();
 			await announcer.onMatchEnding(ctx);
 			expect(ctx.announce).not.toHaveBeenCalled();
 		});
