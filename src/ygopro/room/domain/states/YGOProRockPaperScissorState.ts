@@ -1,3 +1,4 @@
+import { MatchAbandonment } from "../RoomStatePorts";
 import EventEmitter from "events";
 
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
@@ -23,10 +24,11 @@ export class YGOProRockPaperScissorState extends YGOProRoomState {
 	constructor(
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
+		abandonment: MatchAbandonment,
 	) {
 		super(eventEmitter);
 		this.logger = logger.child({ file: "YGOProRockPaperScissorState" });
-		this.settleSurrenderBetweenDuels(this.logger);
+		this.settleSurrenderBetweenDuels(this.logger, abandonment);
 		this.eventEmitter.on(
 			Commands.RPS_CHOICE as unknown as string,
 			(message: ClientMessage, room: YGOProRoom, client: YGOProClient) =>

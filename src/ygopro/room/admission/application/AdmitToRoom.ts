@@ -1,27 +1,11 @@
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { Logger } from "@shared/logger/domain/Logger";
-import { Admission, AdmissionRejection } from "@shared/room/admission/domain/Admission";
-import { PlayerCredential } from "@shared/room/admission/domain/PlayerCredential";
+import { Admission } from "@shared/room/admission/domain/Admission";
 import { RoomAdmission } from "@shared/room/admission/domain/RoomAdmission";
-import { RoomLeague } from "@shared/room/admission/domain/RoomLeague";
-import { Seat } from "@shared/room/admission/domain/Seat";
 import { ISocket } from "@shared/socket/domain/ISocket";
 
+import { AdmissionTarget } from "../domain/AdmissionTarget";
 import { CredentialResolver } from "./CredentialResolver";
-
-/**
- * What AdmitToRoom needs from the room to EXECUTE a decision. The room (or an
- * adapter around it) implements this; the use case never touches sockets,
- * wire messages or persistence — that keeps it transport-agnostic and testable
- * (Dependency Inversion).
- */
-export interface AdmissionTarget {
-	readonly league: RoomLeague;
-	freeSeat(): Seat | null;
-	seatPlayer(credential: PlayerCredential, seat: Seat): Promise<void>;
-	admitSpectator(credential: PlayerCredential): Promise<void>;
-	rejectAdmission(reason: AdmissionRejection): void;
-}
 
 /**
  * The single guard that decides AND applies how a connecting client is admitted

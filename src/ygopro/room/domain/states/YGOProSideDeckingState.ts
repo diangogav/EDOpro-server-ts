@@ -1,9 +1,9 @@
+import { MatchAbandonment, YGOProDeckBuilder } from "../RoomStatePorts";
 import { EventEmitter } from "stream";
 
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { YGOProRoomState } from "../YGOProRoomState";
 
-import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";
 import { YGOProDeckValidator } from "@ygopro/deck/domain/YGOProDeckValidator";
 import { DeckError } from "@shared/deck/domain/errors/DeckError";
 import { encodeDeckErrorCode } from "@shared/deck/domain/errors/encodeDeckErrorCode";
@@ -19,7 +19,6 @@ import { YGOProRoom } from "../YGOProRoom";
 import { toCardCodes } from "../reservedDeck";
 import { findMidDuelReconnectingPlayer } from "@shared/room/domain/findMidDuelReconnectingPlayer";
 import { config } from "../../../../config";
-import { AbandonBetweenDuels } from "../../application/AbandonBetweenDuels";
 import { ReconnectionTokenIssuer } from "@shared/room/domain/reconnect/ReconnectionTokenIssuer";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
 import {
@@ -43,13 +42,14 @@ export class YGOProSideDeckingState extends YGOProRoomState {
 	constructor(
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
-		private readonly deckCreator: YGOProDeckCreator,
+		private readonly deckCreator: YGOProDeckBuilder,
 		private readonly deckValidator: YGOProDeckValidator,
 		private readonly room: YGOProRoom,
+		private readonly abandonment: MatchAbandonment,
 	) {
 		super(eventEmitter);
 		this.logger = logger.child({ file: "MercurySideDeckingState" });
-		this.settleSurrenderBetweenDuels(this.logger);
+		this.settleSurrenderBetweenDuels(this.logger, abandonment);
 		this.eventEmitter.on(
 			"JOIN",
 			(message: ClientMessage, room: YGOProRoom, socket: ISocket) =>
@@ -150,7 +150,7 @@ export class YGOProSideDeckingState extends YGOProRoomState {
 			// (and, since destroy() strips the close listener, unreachable from the
 			// disconnect path too). The shared abandon path also tells the
 			// opponent they won before the room closes.
-			void AbandonBetweenDuels.resolve(this.room, player.team, this.logger);
+			void this.abandonment.resolve(this.room, player.team, this.logger);
 			return;
 		}
 

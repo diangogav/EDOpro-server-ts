@@ -10,7 +10,10 @@ import { Team } from "@shared/room/Team";
 import { RoomLeague } from "@shared/room/admission/domain/RoomLeague";
 import { Seat } from "@shared/room/admission/domain/Seat";
 import { PlayerCredential } from "@shared/room/admission/domain/PlayerCredential";
-import { AdmissionTarget, AdmitToRoom } from "@ygopro/room/admission/application/AdmitToRoom";
+import { AdmitToRoom } from "@ygopro/room/admission/application/AdmitToRoom";
+import { AdmissionTarget } from "@ygopro/room/admission/domain/AdmissionTarget";
+import { AbandonBetweenDuels } from "../application/AbandonBetweenDuels";
+import { FinalizeYGOProRoom } from "../application/FinalizeYGOProRoom";
 import { UserAuth } from "@shared/user-auth/application/UserAuth";
 import { UserProfilePostgresRepository } from "@shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { CredentialResolver } from "@ygopro/room/admission/application/CredentialResolver";
@@ -451,13 +454,17 @@ export class YGOProRoom extends YgoRoom {
 	rps(): void {
 		this._state = DuelState.RPS;
 		this._roomState?.removeAllListener();
-		this._roomState = new YGOProRockPaperScissorState(this.emitter, this._logger);
+		this._roomState = new YGOProRockPaperScissorState(
+			this.emitter,
+			this._logger,
+			AbandonBetweenDuels,
+		);
 	}
 
 	choosingOrder(): void {
 		this._state = DuelState.CHOOSING_ORDER;
 		this._roomState?.removeAllListener();
-		this._roomState = new YGOProChoosingOrderState(this.emitter, this._logger);
+		this._roomState = new YGOProChoosingOrderState(this.emitter, this._logger, AbandonBetweenDuels);
 	}
 
 	dueling(): void {
@@ -468,7 +475,7 @@ export class YGOProRoom extends YgoRoom {
 		this._state = DuelState.DUELING;
 		this.isStart = "start";
 		this._roomState?.removeAllListener();
-		this._roomState = new YGOProDuelingState(this, this.emitter, this._logger);
+		this._roomState = new YGOProDuelingState(this, this.emitter, this._logger, FinalizeYGOProRoom);
 	}
 
 	sideDecking(): void {
@@ -480,6 +487,7 @@ export class YGOProRoom extends YgoRoom {
 			new YGOProDeckCreator(this._cardRepository, this._deckRules, this._logger),
 			this.createDeckValidator(),
 			this,
+			AbandonBetweenDuels,
 		);
 	}
 

@@ -40,8 +40,14 @@ describe("Surrender between duels", () => {
 		eventEmitter.emit(Commands.SURRENDER as unknown as string, {} as ClientMessage, room, client);
 
 	const states: [string, (eventEmitter: EventEmitter, room: YGOProRoom) => unknown][] = [
-		["RPS", (eventEmitter) => new YGOProRockPaperScissorState(eventEmitter, logger)],
-		["choosing order", (eventEmitter) => new YGOProChoosingOrderState(eventEmitter, logger)],
+		[
+			"RPS",
+			(eventEmitter) => new YGOProRockPaperScissorState(eventEmitter, logger, AbandonBetweenDuels),
+		],
+		[
+			"choosing order",
+			(eventEmitter) => new YGOProChoosingOrderState(eventEmitter, logger, AbandonBetweenDuels),
+		],
 		[
 			"side decking",
 			(eventEmitter, room) =>
@@ -51,6 +57,7 @@ describe("Surrender between duels", () => {
 					{} as YGOProDeckCreator,
 					{} as YGOProDeckValidator,
 					room,
+					AbandonBetweenDuels,
 				),
 		],
 	];

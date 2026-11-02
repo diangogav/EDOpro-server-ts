@@ -91,7 +91,14 @@ describe("YGOProSideDeckingState — side-deck timeout chat", () => {
 		const player = makePlayer(0);
 		const room = { players: [player], clients: [player] } as unknown as jest.Mocked<YGOProRoom>;
 
-		new YGOProSideDeckingState(eventEmitter, mockLogger, mockDeckCreator, mockDeckValidator, room);
+		new YGOProSideDeckingState(
+			eventEmitter,
+			mockLogger,
+			mockDeckCreator,
+			mockDeckValidator,
+			room,
+			AbandonBetweenDuels,
+		);
 
 		expect(chatCallCount(player)).toBe(1); // initial notice only
 
@@ -108,7 +115,14 @@ describe("YGOProSideDeckingState — side-deck timeout chat", () => {
 		const player = makePlayer(0);
 		const room = { players: [player], clients: [player] } as unknown as jest.Mocked<YGOProRoom>;
 
-		new YGOProSideDeckingState(eventEmitter, mockLogger, mockDeckCreator, mockDeckValidator, room);
+		new YGOProSideDeckingState(
+			eventEmitter,
+			mockLogger,
+			mockDeckCreator,
+			mockDeckValidator,
+			room,
+			AbandonBetweenDuels,
+		);
 
 		jest.advanceTimersByTime(3 * 60_000);
 
@@ -125,7 +139,14 @@ describe("YGOProSideDeckingState — side-deck timeout chat", () => {
 		const player = makePlayer(0);
 		const room = { players: [player], clients: [player] } as unknown as jest.Mocked<YGOProRoom>;
 
-		new YGOProSideDeckingState(eventEmitter, mockLogger, mockDeckCreator, mockDeckValidator, room);
+		new YGOProSideDeckingState(
+			eventEmitter,
+			mockLogger,
+			mockDeckCreator,
+			mockDeckValidator,
+			room,
+			AbandonBetweenDuels,
+		);
 
 		jest.advanceTimersByTime(3 * 60_000);
 
@@ -137,7 +158,14 @@ describe("YGOProSideDeckingState — side-deck timeout chat", () => {
 		const player = makePlayer(0);
 		const room = { players: [player], clients: [player] } as unknown as jest.Mocked<YGOProRoom>;
 
-		new YGOProSideDeckingState(eventEmitter, mockLogger, mockDeckCreator, mockDeckValidator, room);
+		new YGOProSideDeckingState(
+			eventEmitter,
+			mockLogger,
+			mockDeckCreator,
+			mockDeckValidator,
+			room,
+			AbandonBetweenDuels,
+		);
 
 		jest.advanceTimersByTime(3 * 60_000);
 
@@ -198,6 +226,7 @@ describe("YGOProSideDeckingState.handleUpdateDeck — deck error code is encoded
 			mockDeckCreator,
 			mockDeckValidator,
 			mockRoom,
+			AbandonBetweenDuels,
 		);
 	});
 
@@ -325,7 +354,14 @@ describe("YGOProSideDeckingState — post-side turn choice", () => {
 		const p1 = makePlayer(1, 1);
 		// A stale chooser from game 1 is present on purpose — the flag must win.
 		const room = makeRoom([p0, p1], { chooser: p0, turnChoiceRequiresRps: true });
-		new YGOProSideDeckingState(eventEmitter, mockLogger, mockDeckCreator, mockDeckValidator, room);
+		new YGOProSideDeckingState(
+			eventEmitter,
+			mockLogger,
+			mockDeckCreator,
+			mockDeckValidator,
+			room,
+			AbandonBetweenDuels,
+		);
 
 		await emitUpdateDeckFrom(room, p0);
 
@@ -344,7 +380,14 @@ describe("YGOProSideDeckingState — post-side turn choice", () => {
 		const p0 = makePlayer(0, 0);
 		const p1 = makePlayer(1, 1);
 		const room = makeRoom([p0, p1], { chooser: p1, turnChoiceRequiresRps: false });
-		new YGOProSideDeckingState(eventEmitter, mockLogger, mockDeckCreator, mockDeckValidator, room);
+		new YGOProSideDeckingState(
+			eventEmitter,
+			mockLogger,
+			mockDeckCreator,
+			mockDeckValidator,
+			room,
+			AbandonBetweenDuels,
+		);
 
 		await emitUpdateDeckFrom(room, p0);
 
@@ -357,7 +400,14 @@ describe("YGOProSideDeckingState — post-side turn choice", () => {
 		const p0 = makePlayer(0, 0);
 		const p1 = makePlayer(1, 1);
 		const room = makeRoom([p0, p1], { chooser: undefined, turnChoiceRequiresRps: false });
-		new YGOProSideDeckingState(eventEmitter, mockLogger, mockDeckCreator, mockDeckValidator, room);
+		new YGOProSideDeckingState(
+			eventEmitter,
+			mockLogger,
+			mockDeckCreator,
+			mockDeckValidator,
+			room,
+			AbandonBetweenDuels,
+		);
 
 		await emitUpdateDeckFrom(room, p0);
 

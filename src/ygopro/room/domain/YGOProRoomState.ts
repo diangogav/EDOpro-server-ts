@@ -10,7 +10,7 @@ import { NetPlayerType, YGOProStocChat } from "ygopro-msg-encode";
 
 import { BufferToUTF16 } from "../../../utils/BufferToUTF16";
 
-import { AbandonBetweenDuels } from "../application/AbandonBetweenDuels";
+import { MatchAbandonment } from "./RoomStatePorts";
 import { YGOProRoom } from "./YGOProRoom";
 
 export class YGOProRoomState extends RoomState {
@@ -86,7 +86,7 @@ export class YGOProRoomState extends RoomState {
 	 * Between duels there is no duel to concede, so a surrender leaves the whole
 	 * match at once. Tag matches keep their team-agreement rules and are left out.
 	 */
-	protected settleSurrenderBetweenDuels(logger: Logger): void {
+	protected settleSurrenderBetweenDuels(logger: Logger, abandonment: MatchAbandonment): void {
 		this.eventEmitter.on(
 			Commands.SURRENDER as unknown as string,
 			(_message: ClientMessage, room: YGOProRoom, client: YGOProClient) => {
@@ -94,7 +94,7 @@ export class YGOProRoomState extends RoomState {
 					return;
 				}
 				logger.info("Surrender between duels", { team: client.team });
-				void AbandonBetweenDuels.resolve(room, client.team, logger);
+				void abandonment.resolve(room, client.team, logger);
 			},
 		);
 	}
