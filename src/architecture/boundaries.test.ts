@@ -54,15 +54,11 @@ const KNOWN_ENGINE_LEAKS: readonly string[] = [];
 const KNOWN_DOMAIN_LEAKS: readonly string[] = [
 	"src/edopro/room/domain/Room -> src/edopro/ban-list/infrastructure/BanListMemoryRepository",
 	"src/edopro/room/domain/states/dueling/DuelingState -> src/edopro/ban-list/infrastructure/BanListMemoryRepository",
-	"src/shared/room/domain/RoomState -> src/shared/room/application/lifecycle/MatchLifecycleHooks",
-	"src/shared/room/domain/RoomState -> src/web-socket-server/WebSocketSingleton",
 	"src/shared/socket/domain/TCPClientSocket -> net",
 	"src/shared/socket/domain/WebSocketClientSocket -> ws",
 	"src/ygopro/room/domain/RuleMappings -> src/shared/logger/infrastructure/LoggerFactory",
 	"src/ygopro/room/domain/RuleMappings -> src/ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository",
 	"src/ygopro/room/domain/YGOProRoom -> src/ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository",
-	"src/ygopro/room/domain/states/YGOProDuelingState -> src/shared/room/application/lifecycle/MatchLifecycleHooks",
-	"src/ygopro/room/domain/states/YGOProDuelingState -> src/web-socket-server/WebSocketSingleton",
 ];
 
 type Import = { from: string; to: string };

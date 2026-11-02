@@ -6,6 +6,7 @@ import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 
 import { config } from "./config";
 import { bootstrapResources } from "./bootstrap/bootstrapResources";
+import { registerRoomStatePorts } from "./bootstrap/roomStatePorts";
 import { bootstrapPersistence } from "./bootstrap/bootstrapPersistence";
 import { bootstrapPlugins } from "./bootstrap/bootstrapPlugins";
 import { bootstrapBanListReloader } from "./bootstrap/bootstrapBanListReloader";
@@ -32,6 +33,8 @@ async function start(): Promise<void> {
 
 	logger.info("🚀 Evolution server starting…");
 	checkTcpKeepAliveTuning(logger);
+	// Before any listener or room exists: every room state reads these.
+	registerRoomStatePorts();
 
 	const ticketRepository = new RedisTicketRepository();
 	const server = new Server(logger, ticketRepository);

@@ -20,7 +20,6 @@ import { ISocket } from "@shared/socket/domain/ISocket";
 import { Team } from "@shared/room/Team";
 import { ReconnectionTokenIssuer } from "@shared/room/domain/reconnect/ReconnectionTokenIssuer";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
-import { MatchLifecycleHooks } from "@shared/room/application/lifecycle/MatchLifecycleHooks";
 import { MatchContext } from "@shared/room/domain/lifecycle/MatchLifecycleHook";
 import { createRoomAnnounce } from "@shared/room/domain/lifecycle/RoomAnnounce";
 import { createRoomNotify } from "@shared/room/domain/lifecycle/RoomNotify";
@@ -52,7 +51,6 @@ import {
 } from "ygopro-msg-encode";
 import { EvrpSerializer } from "../replay/EvrpSerializer";
 import { GameOverDomainEvent } from "@shared/room/domain/match/domain/domain-events/GameOverDomainEvent";
-import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 import { logReconnectAttempt } from "@shared/room/domain/reconnect/logReconnectAttempt";
 import { redactSecret } from "@shared/logger/domain/redactSecret";
 
@@ -594,7 +592,7 @@ export class YGOProDuelingState extends YGOProRoomState {
 			// From here the outcome belongs to the game-over subscriber: a
 			// teardown racing the replays must not record the room as abandoned.
 			this.room.reservedDuel?.markGameOver();
-			await container.get(MatchLifecycleHooks).runEnding(this.buildEndContext());
+			await this.matchLifecycle.runEnding(this.buildEndContext());
 			await this.finalizeWithReplays();
 			this.dispatchGameOverDomainEvent();
 			this.removeRoom();
@@ -827,7 +825,7 @@ export class YGOProDuelingState extends YGOProRoomState {
 		if (!this.room.isListed) {
 			return;
 		}
-		WebSocketSingleton.getInstance().broadcast({
+		this.roomListBroadcaster.broadcast({
 			action: "UPDATE-ROOM",
 			data: this.room.toRealTimePresentation(),
 		});
