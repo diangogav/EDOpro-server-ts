@@ -11,6 +11,7 @@ How we write tests in EDOpro-server-ts: where they live, how we build test data,
 3. **Mock infra with the shared doubles.** `LoggerMock`, `SocketMock`, `MessageRepositoryMock` for ubiquitous interfaces; `jest.mock()` for module singletons; `mock<T>()` (jest-mock-extended) for one-off interface mocks.
 4. **Reset singletons** in `afterEach` (e.g. `WindbotModule.resetForTests()`, `JoinStrategyRegistry.reset()`).
 5. **Format:** tab indentation — Biome applies it (`pnpm format`), and your editor via `.editorconfig`.
+6. **No real infrastructure.** Tests never read the local `.env`: `src/test-support/jest.setup.ts` stubs `dotenv`, because the `.env` may point at production databases. A suite that needs Redis or Postgres mocks it.
 
 ## Where tests live
 
