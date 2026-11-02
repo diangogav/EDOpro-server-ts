@@ -52,17 +52,7 @@ const INFRASTRUCTURE_PACKAGES = new Set([
 const KNOWN_ENGINE_LEAKS: readonly string[] = [];
 
 const KNOWN_DOMAIN_LEAKS: readonly string[] = [
-	"src/edopro/room/domain/Room -> src/edopro/room/application/AuthenticatePlayer",
 	"src/edopro/room/domain/Room -> src/edopro/ban-list/infrastructure/BanListMemoryRepository",
-	"src/edopro/room/domain/Room -> src/edopro/card/infrastructure/sqlite/CardSQLiteTYpeORMRepository",
-	"src/edopro/room/domain/Room -> src/edopro/deck/application/DeckCreator",
-	"src/edopro/room/domain/Room -> src/edopro/room/application/CheckIfUserCanJoin",
-	"src/edopro/room/domain/Room -> src/edopro/room/application/FinishDuelHandler",
-	"src/edopro/room/domain/Room -> src/edopro/room/application/JoinToDuelAsSpectator",
-	"src/edopro/room/domain/Room -> src/edopro/room/application/Reconnect",
-	"src/edopro/room/domain/Room -> src/edopro/room/infrastructure/RoomList",
-	"src/edopro/room/domain/Room -> src/shared/user-auth/application/UserAuth",
-	"src/edopro/room/domain/Room -> src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository",
 	"src/edopro/room/domain/states/dueling/DuelingState -> src/edopro/ban-list/infrastructure/BanListMemoryRepository",
 	"src/shared/room/domain/RoomState -> src/shared/room/application/lifecycle/MatchLifecycleHooks",
 	"src/shared/room/domain/RoomState -> src/web-socket-server/WebSocketSingleton",
