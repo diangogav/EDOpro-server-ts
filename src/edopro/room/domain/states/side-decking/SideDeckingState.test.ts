@@ -8,7 +8,7 @@ import { SideDeckingState } from "./SideDeckingState";
 import { Room } from "@edopro/room/domain/Room";
 import { Client } from "@edopro/client/domain/Client";
 import { ClientMessage } from "@shared/messages/MessageProcessor";
-import { UpdateDeckMessageParser } from "@edopro/deck/application/UpdateDeckMessageSizeCalculator";
+import { UpdateDeckMessageParser } from "@edopro/deck/domain/UpdateDeckMessageSizeCalculator";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { Commands } from "@shared/messages/Commands";
 import { TokenIndex } from "@shared/room/domain/TokenIndex";
@@ -21,7 +21,7 @@ jest.mock("@edopro/room/application/JoinToDuelAsSpectator");
 jest.mock("@edopro/deck/application/DeckCreator");
 jest.mock("@edopro/room/domain/Room");
 jest.mock("@edopro/client/domain/Client");
-jest.mock("@edopro/deck/application/UpdateDeckMessageSizeCalculator");
+jest.mock("@edopro/deck/domain/UpdateDeckMessageSizeCalculator");
 jest.mock("@shared/room/domain/findReconnectingPlayer");
 
 describe("SideDeckingState", () => {

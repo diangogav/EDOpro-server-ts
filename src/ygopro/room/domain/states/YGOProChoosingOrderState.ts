@@ -11,9 +11,9 @@ import { resolveJoinerIdentityWithTimeout } from "../resolveJoinerIdentityWithTi
 import { YGOProRoom } from "../YGOProRoom";
 import { findMidDuelReconnectingPlayer } from "@shared/room/domain/findMidDuelReconnectingPlayer";
 import { TurnPlayerResult, YGOProCtosTpResult, YGOProStocDuelStart } from "ygopro-msg-encode";
-import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
+import { ReconnectionTokenIssuer } from "@shared/room/domain/reconnect/ReconnectionTokenIssuer";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
-import { logReconnectAttempt } from "@shared/room/application/reconnect/logReconnectAttempt";
+import { logReconnectAttempt } from "@shared/room/domain/reconnect/logReconnectAttempt";
 import { redactSecret } from "@shared/logger/domain/redactSecret";
 
 export class YGOProChoosingOrderState extends YGOProRoomState {

@@ -9,7 +9,7 @@ import { YGOProClient } from "@ygopro/client/domain/YGOProClient";
 import { YGOProRoom } from "../domain/YGOProRoom";
 import MercuryRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
-import { ReconnectionTokenIssuer } from "@shared/room/application/reconnect/ReconnectionTokenIssuer";
+import { ReconnectionTokenIssuer } from "@shared/room/domain/reconnect/ReconnectionTokenIssuer";
 import { ReservedDuelAbandon } from "@shared/reserved-duel/domain/ReservedDuelRepository";
 
 /**
