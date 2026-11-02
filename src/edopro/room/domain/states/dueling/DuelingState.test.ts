@@ -11,7 +11,7 @@ import { DuelingState } from "./DuelingState";
 import { Client } from "@edopro/client/domain/Client";
 import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { FinishDuelHandler } from "@edopro/room/application/FinishDuelHandler";
-import { UpdateDeckMessageParser } from "@edopro/deck/application/UpdateDeckMessageSizeCalculator";
+import { UpdateDeckMessageParser } from "@edopro/deck/domain/UpdateDeckMessageSizeCalculator";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { spawn } from "child_process";
 import WebSocketSingleton from "../../../../../web-socket-server/WebSocketSingleton";
@@ -26,7 +26,7 @@ jest.mock("@edopro/room/domain/Room");
 jest.mock("@edopro/messages/JSONMessageProcessor");
 jest.mock("@edopro/client/domain/Client");
 jest.mock("@edopro/room/application/FinishDuelHandler");
-jest.mock("@edopro/deck/application/UpdateDeckMessageSizeCalculator");
+jest.mock("@edopro/deck/domain/UpdateDeckMessageSizeCalculator");
 jest.mock("child_process");
 jest.mock("../../../../../web-socket-server/WebSocketSingleton");
 

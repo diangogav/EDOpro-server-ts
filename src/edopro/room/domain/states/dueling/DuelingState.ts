@@ -12,7 +12,7 @@ import { createSystemChat } from "../../../../../shared/room/domain/chat/SystemC
 import { ISocket } from "../../../../../shared/socket/domain/ISocket";
 import { decimalToBytesBuffer } from "../../../../../utils";
 import { Client } from "../../../../client/domain/Client";
-import { UpdateDeckMessageParser } from "../../../../deck/application/UpdateDeckMessageSizeCalculator";
+import { UpdateDeckMessageParser } from "../../../../deck/domain/UpdateDeckMessageSizeCalculator";
 import { JoinGameMessage } from "../../../../messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { Commands } from "../../../../../shared/messages/Commands";

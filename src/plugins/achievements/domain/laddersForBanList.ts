@@ -1,8 +1,10 @@
-import { RankGroupResolver } from "@shared/rank/application/RankGroupResolver";
-
 const NO_BAN_LIST = "N/A";
 
-export type LadderResolver = Pick<RankGroupResolver, "resolveAlias" | "groupsFor">;
+/** The part of RankGroupResolver that maps a ban list to its rank ladders. */
+export interface LadderResolver {
+	resolveAlias(name: string): string;
+	groupsFor(banListName: string): string[];
+}
 
 /**
  * A played list feeds its own canonical rank and every group ladder it
