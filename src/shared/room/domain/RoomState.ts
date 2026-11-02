@@ -1,14 +1,11 @@
-import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 import { EventEmitter } from "stream";
 import { ChatColor } from "ygopro-msg-encode";
 
 import { config } from "../../../config";
 import { BufferToUTF16 } from "../../../utils/BufferToUTF16";
 import { YgoClient } from "../../client/domain/YgoClient";
-import { container } from "../../dependency-injection";
 import { Commands } from "../../messages/Commands";
 import { ClientMessage } from "../../messages/MessageProcessor";
-import { MatchLifecycleHooks } from "../application/lifecycle/MatchLifecycleHooks";
 import { Team } from "../Team";
 import { createSystemChat } from "./chat/SystemChat";
 import { DuelEventDispatcher } from "./duel-events/DuelEventDispatcher";
@@ -16,6 +13,7 @@ import { DuelEventPluginHub } from "./duel-events/DuelEventPluginHub";
 import { MatchContext } from "./lifecycle/MatchLifecycleHook";
 import { createRoomAnnounce } from "./lifecycle/RoomAnnounce";
 import { createRoomNotify } from "./lifecycle/RoomNotify";
+import { MatchLifecycle, RoomListBroadcaster, RoomStatePorts } from "./RoomStatePorts";
 import { YgoRoom } from "./YgoRoom";
 
 /**
@@ -25,6 +23,8 @@ import { YgoRoom } from "./YgoRoom";
  * own wire format (EdoproRoomState, YGOProRoomState).
  */
 export abstract class RoomState {
+	private static ports: RoomStatePorts | null = null;
+
 	protected readonly eventEmitter: EventEmitter;
 	protected readonly duelEvents = new DuelEventDispatcher();
 
@@ -49,8 +49,29 @@ export abstract class RoomState {
 		);
 	}
 
+	/** Registers the shared collaborators; boot calls it before any room exists. */
+	static usePorts(ports: RoomStatePorts): void {
+		RoomState.ports = ports;
+	}
+
 	removeAllListener(): void {
 		this.eventEmitter.removeAllListeners();
+	}
+
+	protected get matchLifecycle(): MatchLifecycle {
+		return RoomState.registeredPorts().lifecycle;
+	}
+
+	protected get roomListBroadcaster(): RoomListBroadcaster {
+		return RoomState.registeredPorts().roomList;
+	}
+
+	private static registeredPorts(): RoomStatePorts {
+		if (!RoomState.ports) {
+			throw new Error("RoomState ports are not registered: call registerRoomStatePorts() at boot");
+		}
+
+		return RoomState.ports;
 	}
 
 	/** Sends a chat line to the room in this engine's wire format. */
@@ -66,7 +87,7 @@ export abstract class RoomState {
 	}
 
 	protected broadcastDuelRoomUpdate(room: YgoRoom): void {
-		WebSocketSingleton.getInstance().broadcast({
+		this.roomListBroadcaster.broadcast({
 			action: "UPDATE-ROOM",
 			data: room.toRealTimePresentation(),
 		});
@@ -74,11 +95,11 @@ export abstract class RoomState {
 
 	protected notifyDuelStart(room: YgoRoom): void {
 		if (room.isFirstDuel()) {
-			WebSocketSingleton.getInstance().broadcast({
+			this.roomListBroadcaster.broadcast({
 				action: "ADD-ROOM",
 				data: room.toRealTimePresentation(),
 			});
-			container.get(MatchLifecycleHooks).runStarted(this.buildStartContext(room));
+			this.matchLifecycle.runStarted(this.buildStartContext(room));
 		} else {
 			this.broadcastDuelRoomUpdate(room);
 		}
@@ -91,7 +112,7 @@ export abstract class RoomState {
 	 * engine starts; hooks treat a repeat call for the same matchId as a no-op.
 	 */
 	protected notifyMatchStarting(room: YgoRoom): void {
-		container.get(MatchLifecycleHooks).runStarted(this.buildStartContext(room));
+		this.matchLifecycle.runStarted(this.buildStartContext(room));
 	}
 
 	private buildStartContext(room: YgoRoom): MatchContext {
