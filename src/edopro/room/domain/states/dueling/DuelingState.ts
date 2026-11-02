@@ -1,5 +1,5 @@
 import { FinishDuel, PlayerReconnector, SpectatorJoiner } from "../../RoomStatePorts";
-import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
+import { edoproBanListCatalog } from "@edopro/ban-list/domain/EdoproBanListCatalog";
 import { spawn } from "child_process";
 import * as crypto from "crypto";
 import EventEmitter from "events";
@@ -278,7 +278,7 @@ export class DuelingState extends EdoproRoomState {
 			}
 		});
 
-		const banList = BanListMemoryRepository.findByHash(this.room.banListHash);
+		const banList = edoproBanListCatalog().findByHash(this.room.banListHash);
 		this.room.createDuel(banList?.name ?? null);
 		this.notifyDuelStart(this.room);
 	}

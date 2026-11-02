@@ -21,7 +21,7 @@ import { CardRepository } from "@shared/card/domain/CardRepository";
 import { Deck } from "@shared/deck/domain/Deck";
 import { ReservedDuelSession } from "@shared/reserved-duel/domain/ReservedDuelSession";
 
-import MercuryBanListMemoryRepository from "../../ban-list/infrastructure/YGOProBanListMemoryRepository";
+import { ygoproBanListCatalog } from "../../ban-list/domain/YGOProBanListCatalog";
 import { YGOProClient } from "../../client/domain/YGOProClient";
 import { YGOProRoomDeps } from "./RoomStatePorts";
 import {
@@ -181,7 +181,7 @@ export class YGOProRoom extends YgoRoom {
 			rule: toEdoproRule(this._hostInfo.rule),
 			maxDeckPoints: this._hostInfo.max_deck_points,
 		});
-		const banList = MercuryBanListMemoryRepository.findByHash(banListHash);
+		const banList = ygoproBanListCatalog().findByHash(banListHash);
 		this._edoBanListHash = YGOProRoom.banListHashLookup.hashByName(banList?.name ?? "") ?? 0;
 	}
 
@@ -205,7 +205,7 @@ export class YGOProRoom extends YgoRoom {
 		rankedOverride?: boolean,
 	): YGOProRoom {
 		let hostInfo: HostInfo = {
-			lflist: MercuryBanListMemoryRepository.getNewestTCGIndex(),
+			lflist: ygoproBanListCatalog().getNewestTCGIndex(),
 			rule: 1,
 			mode: GameMode.SINGLE,
 			duel_rule: 5,
@@ -255,7 +255,7 @@ export class YGOProRoom extends YgoRoom {
 			hasPin: Boolean(playerInfo.password),
 		});
 		const cardPool = resolveCardPool(options);
-		const banList = MercuryBanListMemoryRepository.findLFListByIndex(hostInfo.lflist);
+		const banList = ygoproBanListCatalog().findLFListByIndex(hostInfo.lflist);
 		const banListHash = banList?.hash ?? 0;
 
 		const room = new YGOProRoom({
@@ -391,7 +391,7 @@ export class YGOProRoom extends YgoRoom {
 	}
 
 	get banListName(): string | null {
-		return MercuryBanListMemoryRepository.findByHash(this.banListHash)?.name ?? null;
+		return ygoproBanListCatalog().findByHash(this.banListHash)?.name ?? null;
 	}
 
 	waiting(): void {
@@ -462,7 +462,7 @@ export class YGOProRoom extends YgoRoom {
 
 	dueling(): void {
 		// Create the Duel object to track turn count for Tag rotation
-		const banList = MercuryBanListMemoryRepository.findByHash(this.banListHash);
+		const banList = ygoproBanListCatalog().findByHash(this.banListHash);
 		this.createDuel(banList?.name ?? null);
 
 		this._state = DuelState.DUELING;
@@ -1015,7 +1015,7 @@ export class YGOProRoom extends YgoRoom {
 	}
 
 	private createDeckValidator(): YGOProDeckValidator {
-		const banList = MercuryBanListMemoryRepository.findByHash(this.banListHash);
+		const banList = ygoproBanListCatalog().findByHash(this.banListHash);
 
 		return new YGOProDeckValidator(
 			this._deckRules,
@@ -1064,7 +1064,7 @@ export class YGOProRoom extends YgoRoom {
 	toRoomListDTO(): { [key: string]: unknown } {
 		const started = this.duelState !== DuelState.WAITING;
 		const maxPlayers = this.team0 + this.team1;
-		const banList = MercuryBanListMemoryRepository.findByHash(this.banListHash);
+		const banList = ygoproBanListCatalog().findByHash(this.banListHash);
 
 		return {
 			id: this.id,
