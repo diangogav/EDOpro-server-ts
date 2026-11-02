@@ -295,6 +295,25 @@ describe("RatingAnnouncer", () => {
 			expect(ctx.announce).not.toHaveBeenCalled();
 		});
 
+		it("drops a start lookup that resolves after the room closed: no announce, no snapshot left behind", async () => {
+			let resolveLookup!: (ratings: Map<string, unknown>) => void;
+			repository.findMany.mockReturnValue(
+				new Promise((resolve) => {
+					resolveLookup = resolve as (ratings: Map<string, unknown>) => void;
+				}),
+			);
+			const ctx = makeContext();
+
+			const starting = announcer.onMatchStarted(ctx);
+			await announcer.onRoomClosed({ roomId: ctx.roomId, matchId: ctx.matchId });
+			resolveLookup(new Map());
+			await starting;
+
+			expect(ctx.announce).not.toHaveBeenCalled();
+			await announcer.onMatchEnding(ctx);
+			expect(ctx.announce).not.toHaveBeenCalled();
+		});
+
 		it("is a no-op when no snapshot exists for that roomId/matchId pair", async () => {
 			await expect(
 				announcer.onRoomClosed({ roomId: 9999, matchId: "never-started" }),

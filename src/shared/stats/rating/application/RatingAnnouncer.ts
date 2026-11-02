@@ -114,6 +114,12 @@ export class RatingAnnouncer implements MatchLifecycleHook {
 			return;
 		}
 
+		// The room closed (or moved on to another match) while the lookup ran:
+		// nothing would ever release this snapshot, and no one is there to read it.
+		if (this.matchIdByRoom.get(ctx.roomId) !== ctx.matchId) {
+			return;
+		}
+
 		this.snapshots.set(ctx.matchId, MatchRatingSnapshot.create(ratings, rankId, ctx.season));
 
 		const teams = this.groupByTeam(
