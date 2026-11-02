@@ -186,4 +186,6 @@ The server runs two independent match flows over the same shared kernel. Read th
 
 **Shared kernel boundary**: `src/shared/` never imports `src/edopro/` or `src/ygopro/` (Biome `noRestrictedImports` fails the lint). When shared code needs protocol behavior, define a port in `src/shared/` and implement it in each flow; wire the implementations in `src/bootstrap/` (`createRoomFinder`, `createDisconnectHandler`, `createLoadedBanListNamesProvider`). A new room type registers its locator and disconnect policy there.
 
+**Engine and domain boundaries**: `src/edopro/` and `src/ygopro/` never import each other, and a `domain/` file never imports `application/`, `infrastructure/`, the outer layers or infrastructure packages. `src/architecture/boundaries.test.ts` enforces both as a ratchet: its known-leak lists only shrink, so never add a line to them to make a new import pass. See [architecture §12](./docs/architecture.md#12-boundary-rules).
+
 **`GameOverDomainEvent`** is published in three places that must stay in sync: `FinishDuelHandler` (EDOPro), `YGOProDuelingState` and `EndMatchByAbandon` (YGOPro).

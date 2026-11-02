@@ -438,19 +438,42 @@ Break one of these and the failure is usually silent and far from the change.
 
 ---
 
-## 12. Known seams
+## 12. Boundary rules
+
+Three dependency rules are enforced, so a new violation fails CI instead of
+waiting for a review to catch it.
+
+| Rule | Enforced by |
+|------|-------------|
+| `src/shared` never imports `src/edopro` or `src/ygopro` | Biome `noRestrictedImports` (`biome.json`) |
+| `src/edopro` and `src/ygopro` never import each other | `src/architecture/boundaries.test.ts` |
+| A `domain/` file never imports `application/`, `infrastructure/`, the outer layers (`http-server`, `socket-server`, `web-socket-server`, `bootstrap`), `evolution-types` or an infrastructure package (`typeorm`, `ws`, `net`, `express`, `ioredis`, `pg`, SQLite) | `src/architecture/boundaries.test.ts` |
+
+The test is a ratchet. `KNOWN_ENGINE_LEAKS` and `KNOWN_DOMAIN_LEAKS` list the
+violations that existed when the rules were added, one `importer -> imported`
+line each. An unlisted violation fails the test, and so does a listed line that
+no longer exists, so the lists can only shrink: fix the import, then delete its
+line. Never add a line to make a new import pass; put the shared piece in
+`src/shared` behind a port, or inject the dependency instead.
+
+Tests and `src/test-support` are exempt.
+
+---
+
+## 13. Known seams
 
 Documented so nobody rediscovers them the hard way. These are observations
 about the current shape, not a work plan.
 
-- **The YGOPro engine depends on the EDOPro engine.** `YGOProRoom` imports
-  EDOPro's ban-list repository, `PlayerInfoMessage` and `RoomState`;
-  `YGOProRoomState` extends EDOPro's `RoomState`; the YGOPro connection handler
-  imports EDOPro's `MessageEmitter`. In practice `src/edopro` is a second,
-  undeclared shared layer.
-- **Shared code that knows about engines.** `YgoRoom` imports both engines'
-  client classes, and several `src/shared` files are in fact EDOPro-only or
-  YGOPro-only.
+- **The two engines import each other.** `YGOProRoomState` extends EDOPro's
+  `RoomState`, and `YGOProRoom` uses EDOPro's ban-list repository; in the other
+  direction, EDOPro's `RoomState` and `JoinHandler` reach into `YGOProRoom` and
+  `YGOProRoomList`. In practice `src/edopro` is a second, undeclared shared
+  layer. `KNOWN_ENGINE_LEAKS` (§12) lists every such import.
+- **Room domain classes build their own infrastructure.** `Room` and
+  `YGOProRoom` create `UserProfilePostgresRepository` and read in-memory
+  ban-list and card repositories directly, and the room states call application
+  handlers. `KNOWN_DOMAIN_LEAKS` (§12) lists every such import.
 - **Two live message pumps on one socket.** Once a YGOPro client exists, its own
   pump is added alongside the connection-level one, and each inbound frame is
   parsed by two independent processors.
