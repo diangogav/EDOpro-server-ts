@@ -49,9 +49,7 @@ const INFRASTRUCTURE_PACKAGES = new Set([
 	"ws",
 ]);
 
-const KNOWN_ENGINE_LEAKS: readonly string[] = [
-	"src/ygopro/room/domain/YGOProRoom -> src/edopro/ban-list/infrastructure/BanListMemoryRepository",
-];
+const KNOWN_ENGINE_LEAKS: readonly string[] = [];
 
 const KNOWN_DOMAIN_LEAKS: readonly string[] = [
 	"src/edopro/room/domain/Room -> src/edopro/ban-list/infrastructure/BanListMemoryRepository",
@@ -97,7 +95,6 @@ const KNOWN_DOMAIN_LEAKS: readonly string[] = [
 	"src/shared/socket/domain/WebSocketClientSocket -> ws",
 	"src/ygopro/room/domain/RuleMappings -> src/shared/logger/infrastructure/LoggerFactory",
 	"src/ygopro/room/domain/RuleMappings -> src/ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository",
-	"src/ygopro/room/domain/YGOProRoom -> src/edopro/ban-list/infrastructure/BanListMemoryRepository",
 	"src/ygopro/room/domain/YGOProRoom -> src/shared/user-auth/application/UserAuth",
 	"src/ygopro/room/domain/YGOProRoom -> src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository",
 	"src/ygopro/room/domain/YGOProRoom -> src/ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository",

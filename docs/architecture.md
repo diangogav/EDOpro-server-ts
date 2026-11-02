@@ -465,11 +465,15 @@ Tests and `src/test-support` are exempt.
 Documented so nobody rediscovers them the hard way. These are observations
 about the current shape, not a work plan.
 
-- **YGOPro still reads EDOPro's ban lists.** `YGOProRoom` looks up the EDOPro
-  list with the same name to get its hash (`edoBanListHash`), which identifies
-  the list in match results and stats for both engines. It is the last line of
-  `KNOWN_ENGINE_LEAKS` (§12). EDOPro's `JoinHandler` reaches YGOPro rooms only
-  through the shared `RoomFinder.findById`, and room states no longer cross:
+- **The EDOPro catalog is the shared identity of a ban list.** A YGOPro room
+  gets its `edoBanListHash`, which identifies the list in match results and
+  stats for both engines, from the EDOPro list with the same name. It reads it
+  through the shared `BanListHashLookup` port, which `bootstrapResources`
+  registers (`EdoproBanListHashLookup`) between the EDOPro and YGOPro loads;
+  until then every room gets 0. The engines no longer import each other
+  (`KNOWN_ENGINE_LEAKS` in §12 is empty). EDOPro's `JoinHandler` reaches YGOPro
+  rooms only through the shared `RoomFinder.findById`, and room states share
+  only the base class:
   the shared `RoomState` (match start hooks, plugin duel events, `:score`) is
   extended by `EdoproRoomState` (core message decoding, 0xF3 chat) and
   `YGOProRoomState` (STOC_CHAT and emotes).
