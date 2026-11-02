@@ -5,6 +5,7 @@ import { CreateRoomRequest } from "../../../http-server/controllers/CreateRoomCo
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { UTF8ToUTF16 } from "../../../utils/UTF8ToUTF16";
 import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemoryRepository";
+import { createEdoproRoomDeps } from "./createEdoproRoomDeps";
 import { Room } from "../domain/Room";
 import RoomList from "../infrastructure/RoomList";
 
@@ -57,7 +58,7 @@ export class RoomCreator {
 			ranked: payload.isRanked || false,
 		};
 
-		const room = Room.create(data, emitter, this.logger);
+		const room = Room.create(data, emitter, this.logger, createEdoproRoomDeps());
 		room.waiting();
 		RoomList.addRoom(room);
 

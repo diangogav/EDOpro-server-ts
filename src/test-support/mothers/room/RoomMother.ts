@@ -1,6 +1,7 @@
 import { faker } from "@faker-js/faker";
 import EventEmitter from "events";
 
+import { createEdoproRoomDeps } from "@edopro/room/application/createEdoproRoomDeps";
 import { Room, RoomAttr } from "@edopro/room/domain/Room";
 import { LoggerMock } from "../../mocks/logger/LoggerMock";
 
@@ -44,6 +45,7 @@ export class RoomMother {
 			},
 			new EventEmitter(),
 			logger,
+			createEdoproRoomDeps(),
 		);
 
 		return room;

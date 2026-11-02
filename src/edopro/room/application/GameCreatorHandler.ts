@@ -15,6 +15,7 @@ import { CreateGameClientMessage } from "../../messages/server-to-client/CreateG
 import { ErrorMessages } from "../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientMessage";
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
+import { createEdoproRoomDeps } from "./createEdoproRoomDeps";
 import { Room } from "../domain/Room";
 import RoomList from "../infrastructure/RoomList";
 
@@ -75,6 +76,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 			this.roomId,
 			this.eventEmitter,
 			this.logger,
+			createEdoproRoomDeps(),
 		);
 
 		room.waiting();

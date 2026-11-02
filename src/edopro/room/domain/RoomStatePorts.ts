@@ -1,5 +1,6 @@
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { Deck } from "@shared/deck/domain/Deck";
+import { DeckRules } from "@shared/room/domain/YgoRoom";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { UserProfile } from "@shared/user-profile/domain/UserProfile";
 
@@ -51,3 +52,18 @@ export type FinishDuel = (params: {
 	winner: number;
 	room: Room;
 }) => Promise<void>;
+
+/**
+ * Everything a Room builds its states and timers from. createEdoproRoomDeps
+ * wires the application implementations; each factory runs at the moment the
+ * room needs a fresh collaborator, as Room used to construct them inline.
+ */
+export interface EdoproRoomDeps {
+	finishDuel: FinishDuel;
+	/** Takes an expired room out of the room list. */
+	removeRoom(room: Room): void;
+	createReconnector(): PlayerReconnector;
+	createSpectatorJoiner(): SpectatorJoiner;
+	createPlayerAuthenticator(): PlayerAuthenticator;
+	createDeckBuilder(deckRules: DeckRules, duelFlag: bigint): DeckBuilder;
+}

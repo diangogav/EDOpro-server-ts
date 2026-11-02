@@ -3,9 +3,6 @@ import { PlayerChangeClientMessage } from "@edopro/messages/server-to-client/Pla
 import { ChildProcessWithoutNullStreams } from "child_process";
 import shuffle from "shuffle-array";
 import { PlayerEnterClientMessage } from "src/shared/messages/server-to-client/PlayerEnterClientMessage";
-import { CheckIfUseCanJoin } from "@edopro/room/application/CheckIfUserCanJoin";
-import { UserAuth } from "src/shared/user-auth/application/UserAuth";
-import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { EventEmitter } from "stream";
 
 import { config } from "../../../config";
@@ -13,9 +10,7 @@ import { Logger } from "../../../shared/logger/domain/Logger";
 import { DeckRules, DuelState, YgoRoom } from "../../../shared/room/domain/YgoRoom";
 import { Team } from "../../../shared/room/Team";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
-import { CardSQLiteTYpeORMRepository } from "../../card/infrastructure/sqlite/CardSQLiteTYpeORMRepository";
 import { Client } from "../../client/domain/Client";
-import { DeckCreator } from "../../deck/application/DeckCreator";
 import { Deck } from "../../../shared/deck/domain/Deck";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
@@ -23,14 +18,10 @@ import { JSONMessageProcessor } from "../../messages/JSONMessageProcessor";
 import { MessageProcessor } from "../../../shared/messages/MessageProcessor";
 import { Replay } from "../../replay/Replay";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
-import { AuthenticatePlayer } from "../application/AuthenticatePlayer";
-import { FinishDuelHandler } from "../application/FinishDuelHandler";
-import { JoinToDuelAsSpectator } from "../application/JoinToDuelAsSpectator";
-import { Reconnect } from "../application/Reconnect";
-import RoomList from "../infrastructure/RoomList";
 import { DuelFinishReason } from "./DuelFinishReason";
 import { PlayerRoomState } from "./PlayerRoomState";
 import { RoomClientNotifier } from "./RoomClientNotifier";
+import { EdoproRoomDeps } from "./RoomStatePorts";
 import { RoomState } from "../../../shared/room/domain/RoomState";
 import { ChossingOrderState } from "./states/chossing-order/ChossingOrderState";
 import { DuelingState } from "./states/dueling/DuelingState";
@@ -122,7 +113,7 @@ export class Room extends YgoRoom {
 	private readonly roomTimer: Timer;
 	private roomState: RoomState | null = null;
 	private logger: Logger;
-	private readonly checkIfUserCanReconnect: CheckIfUseCanJoin;
+	private readonly deps: EdoproRoomDeps;
 	private readonly notifier: RoomClientNotifier;
 	private readonly pendingCppMessages: string[] = [];
 	private isWaitingCppDrain = false;
@@ -143,7 +134,7 @@ export class Room extends YgoRoom {
 		deferredProcessTicks: 0,
 	};
 
-	private constructor(attr: RoomAttr) {
+	private constructor(attr: RoomAttr, deps: EdoproRoomDeps) {
 		super({
 			id: attr.id,
 			team0: attr.team0,
@@ -184,43 +175,34 @@ export class Room extends YgoRoom {
 		this._state = DuelState.WAITING;
 		this.duelFlagsLow = attr.duelFlagsLow;
 		this.duelFlagsHight = attr.duelFlagsHight;
+		this.deps = deps;
 		this.timers = [
 			new Timer(this.timeLimit * 1000, () => {
-				const finishDuelHandler = new FinishDuelHandler({
-					reason: DuelFinishReason.TIMEOUT,
-					winner: 1,
-					room: this,
-				});
-
-				void finishDuelHandler.run();
+				void this.deps.finishDuel({ reason: DuelFinishReason.TIMEOUT, winner: 1, room: this });
 			}),
 			new Timer(this.timeLimit * 1000, () => {
-				const finishDuelHandler = new FinishDuelHandler({
-					reason: DuelFinishReason.TIMEOUT,
-					winner: 0,
-					room: this,
-				});
-
-				void finishDuelHandler.run();
+				void this.deps.finishDuel({ reason: DuelFinishReason.TIMEOUT, winner: 0, room: this });
 			}),
 		];
 
 		this.roomTimer = new Timer(this.timeLimit * 2 * 1000, () => {
-			RoomList.deleteRoom(this);
+			this.deps.removeRoom(this);
 		});
 		this.resetReplay();
-		this.checkIfUserCanReconnect = new CheckIfUseCanJoin(
-			new UserAuth(new UserProfilePostgresRepository()),
-		);
 		this.notifier = new RoomClientNotifier(
 			() => this._players as Client[],
 			() => this._spectators as Client[],
 		);
 	}
 
-	static create(payload: RoomAttr, emitter: EventEmitter, logger: Logger): Room {
+	static create(
+		payload: RoomAttr,
+		emitter: EventEmitter,
+		logger: Logger,
+		deps: EdoproRoomDeps,
+	): Room {
 		payload.notes = payload.ranked ? `(Ranked) ${payload.notes}` : payload.notes;
-		const room = new Room(payload);
+		const room = new Room(payload, deps);
 		room.emitter = emitter;
 		room.logger = logger.child({ roomId: payload.id });
 
@@ -233,44 +215,48 @@ export class Room extends YgoRoom {
 		id: number,
 		emitter: EventEmitter,
 		logger: Logger,
+		deps: EdoproRoomDeps,
 	): Room {
 		const ranked = Room.isRanked(playerInfo.password);
 
-		const room = new Room({
-			id,
-			name: message.name,
-			banListHash: message.banList,
-			notes: ranked
-				? `(Ranked) ${message.notes} - SD Max: ${message.sideDeckMax}`
-				: `${message.notes} - SD Max: ${message.sideDeckMax}`,
-			mode: message.mode,
-			needPass: Buffer.from(message.password).some((element) => element !== 0x00),
-			team0: message.t0Count,
-			team1: message.t1Count,
-			bestOf: message.bestOf,
-			duelFlag: BigInt(message.duelFlagsLow) | (BigInt(message.duelFlagsHight) << BigInt(32)),
-			forbiddenTypes: message.forbidden,
-			extraRules: message.extraRules,
-			startLp: message.lp,
-			startHand: message.startingHandCount,
-			drawCount: message.drawCount,
-			timeLimit: message.timeLimit,
-			rule: message.allowed,
-			noCheck: Boolean(message.dontCheckDeckContent),
-			noShuffle: Boolean(message.dontShuffleDeck),
-			mainMin: message.mainDeckMin,
-			mainMax: message.mainDeckMax,
-			extraMin: message.extraDeckMin,
-			extraMax: message.extraDeckMax,
-			sideMin: message.sideDeckMin,
-			sideMax: message.sideDeckMax,
-			duelRule: message.duelRule,
-			handshake: message.handshake,
-			password: message.password,
-			duelFlagsHight: message.duelFlagsHight,
-			duelFlagsLow: message.duelFlagsLow,
-			ranked,
-		});
+		const room = new Room(
+			{
+				id,
+				name: message.name,
+				banListHash: message.banList,
+				notes: ranked
+					? `(Ranked) ${message.notes} - SD Max: ${message.sideDeckMax}`
+					: `${message.notes} - SD Max: ${message.sideDeckMax}`,
+				mode: message.mode,
+				needPass: Buffer.from(message.password).some((element) => element !== 0x00),
+				team0: message.t0Count,
+				team1: message.t1Count,
+				bestOf: message.bestOf,
+				duelFlag: BigInt(message.duelFlagsLow) | (BigInt(message.duelFlagsHight) << BigInt(32)),
+				forbiddenTypes: message.forbidden,
+				extraRules: message.extraRules,
+				startLp: message.lp,
+				startHand: message.startingHandCount,
+				drawCount: message.drawCount,
+				timeLimit: message.timeLimit,
+				rule: message.allowed,
+				noCheck: Boolean(message.dontCheckDeckContent),
+				noShuffle: Boolean(message.dontShuffleDeck),
+				mainMin: message.mainDeckMin,
+				mainMax: message.mainDeckMax,
+				extraMin: message.extraDeckMin,
+				extraMax: message.extraDeckMax,
+				sideMin: message.sideDeckMin,
+				sideMax: message.sideDeckMax,
+				duelRule: message.duelRule,
+				handshake: message.handshake,
+				password: message.password,
+				duelFlagsHight: message.duelFlagsHight,
+				duelFlagsLow: message.duelFlagsLow,
+				ranked,
+			},
+			deps,
+		);
 
 		room.emitter = emitter;
 		room.logger = logger.child({ roomId: id });
@@ -566,8 +552,8 @@ export class Room extends YgoRoom {
 		this.roomState = new WaitingState(
 			this.emitter,
 			this.logger,
-			new AuthenticatePlayer(new UserAuth(new UserProfilePostgresRepository())),
-			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules, this.duelFlag),
+			this.deps.createPlayerAuthenticator(),
+			this.deps.createDeckBuilder(this.deckRules, this.duelFlag),
 		);
 	}
 
@@ -578,11 +564,11 @@ export class Room extends YgoRoom {
 		this.roomState = new DuelingState(
 			this.emitter,
 			this.logger,
-			new Reconnect(this.checkIfUserCanReconnect),
-			new JoinToDuelAsSpectator(),
+			this.deps.createReconnector(),
+			this.deps.createSpectatorJoiner(),
 			this,
 			new JSONMessageProcessor(),
-			(params) => new FinishDuelHandler(params).run(),
+			this.deps.finishDuel,
 		);
 	}
 
@@ -592,9 +578,9 @@ export class Room extends YgoRoom {
 		this.roomState = new SideDeckingState(
 			this.emitter,
 			this.logger,
-			new Reconnect(this.checkIfUserCanReconnect),
-			new JoinToDuelAsSpectator(),
-			new DeckCreator(new CardSQLiteTYpeORMRepository(), this.deckRules, this.duelFlag),
+			this.deps.createReconnector(),
+			this.deps.createSpectatorJoiner(),
+			this.deps.createDeckBuilder(this.deckRules, this.duelFlag),
 		);
 	}
 
@@ -610,8 +596,8 @@ export class Room extends YgoRoom {
 		this.roomState = new RockPaperScissorState(
 			this.emitter,
 			this.logger,
-			new Reconnect(this.checkIfUserCanReconnect),
-			new JoinToDuelAsSpectator(),
+			this.deps.createReconnector(),
+			this.deps.createSpectatorJoiner(),
 		);
 	}
 
@@ -621,8 +607,8 @@ export class Room extends YgoRoom {
 		this.roomState = new ChossingOrderState(
 			this.emitter,
 			this.logger,
-			new Reconnect(this.checkIfUserCanReconnect),
-			new JoinToDuelAsSpectator(),
+			this.deps.createReconnector(),
+			this.deps.createSpectatorJoiner(),
 		);
 	}
 
