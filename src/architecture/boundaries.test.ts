@@ -52,14 +52,9 @@ const INFRASTRUCTURE_PACKAGES = new Set([
 const KNOWN_ENGINE_LEAKS: readonly string[] = [
 	"src/edopro/room/application/JoinHandler -> src/ygopro/room/domain/YGOProRoom",
 	"src/edopro/room/application/JoinHandler -> src/ygopro/room/infrastructure/YGOProRoomList",
-	"src/edopro/room/domain/RoomState -> src/ygopro/emote/emote-protocol",
-	"src/edopro/room/domain/RoomState -> src/ygopro/room/domain/YGOProRoom",
 	"src/ygopro/deck/domain/YGOProDeckValidator -> src/edopro/ban-list/domain/BanList",
 	"src/ygopro/messages/YGOProJoinGameMessage -> src/edopro/messages/Message",
 	"src/ygopro/room/domain/YGOProRoom -> src/edopro/ban-list/infrastructure/BanListMemoryRepository",
-	"src/ygopro/room/domain/YGOProRoom -> src/edopro/room/domain/RoomState",
-	"src/ygopro/room/domain/YGOProRoomState -> src/edopro/room/domain/RoomState",
-	"src/ygopro/room/domain/states/YGOProSideDeckingState -> src/edopro/room/domain/RoomState",
 ];
 
 const KNOWN_DOMAIN_LEAKS: readonly string[] = [
@@ -73,8 +68,6 @@ const KNOWN_DOMAIN_LEAKS: readonly string[] = [
 	"src/edopro/room/domain/Room -> src/edopro/room/infrastructure/RoomList",
 	"src/edopro/room/domain/Room -> src/shared/user-auth/application/UserAuth",
 	"src/edopro/room/domain/Room -> src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository",
-	"src/edopro/room/domain/RoomState -> src/shared/room/application/lifecycle/MatchLifecycleHooks",
-	"src/edopro/room/domain/RoomState -> src/web-socket-server/WebSocketSingleton",
 	"src/edopro/room/domain/states/chossing-order/ChossingOrderState -> src/edopro/room/application/JoinToDuelAsSpectator",
 	"src/edopro/room/domain/states/chossing-order/ChossingOrderState -> src/edopro/room/application/Reconnect",
 	"src/edopro/room/domain/states/chossing-order/ChossingOrderState -> src/shared/room/application/reconnect/ReconnectionTokenIssuer",
@@ -102,6 +95,8 @@ const KNOWN_DOMAIN_LEAKS: readonly string[] = [
 	"src/edopro/room/domain/states/waiting/WaitingState -> src/shared/room/application/reconnect/ReconnectionTokenIssuer",
 	"src/edopro/room/domain/states/waiting/WaitingState -> src/shared/user-auth/application/UserAuth",
 	"src/plugins/achievements/domain/laddersForBanList -> src/shared/rank/application/RankGroupResolver",
+	"src/shared/room/domain/RoomState -> src/shared/room/application/lifecycle/MatchLifecycleHooks",
+	"src/shared/room/domain/RoomState -> src/web-socket-server/WebSocketSingleton",
 	"src/shared/socket/domain/TCPClientSocket -> net",
 	"src/shared/socket/domain/WebSocketClientSocket -> ws",
 	"src/ygopro/room/domain/RuleMappings -> src/shared/logger/infrastructure/LoggerFactory",

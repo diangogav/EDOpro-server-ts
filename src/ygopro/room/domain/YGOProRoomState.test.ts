@@ -1,16 +1,8 @@
 import { EventEmitter } from "stream";
 
-import { ChatColor, YGOProStocChat } from "ygopro-msg-encode";
-
-import { RoomState } from "./RoomState";
-import { Commands } from "../../../shared/messages/Commands";
+import { YGOProRoomState } from "./YGOProRoomState";
+import { Commands } from "@shared/messages/Commands";
 import { RoomType } from "src/shared/room/domain/RoomType";
-
-// RoomState is abstract but declares no abstract members — a bare concrete
-// subclass is enough to exercise the inherited CHAT and EMOTE handlers
-// (registered in the constructor). The handlers are private, so we drive them
-// through the "CHAT" / "EMOTE" events, exactly as the runtime does.
-class TestRoomState extends RoomState {}
 
 const makeSocket = () => ({
 	send: jest.fn(),
@@ -36,12 +28,12 @@ const makeMercuryRoom = (socket: { send: jest.Mock }) =>
 		clients: [{ socket }],
 	}) as unknown as never;
 
-describe("RoomState — Mercury spectator chat (Option A: server prefixes name)", () => {
+describe("YGOProRoomState — Mercury spectator chat (Option A: server prefixes name)", () => {
 	let eventEmitter: EventEmitter;
 
 	beforeEach(() => {
 		eventEmitter = new EventEmitter();
-		new TestRoomState(eventEmitter);
+		new YGOProRoomState(eventEmitter);
 	});
 
 	it("prefixes the spectator's name to the chat msg in a Mercury room", () => {
@@ -81,67 +73,12 @@ describe("RoomState — Mercury spectator chat (Option A: server prefixes name)"
 	});
 });
 
-describe("RoomState — existing-player (nickname taken) rejection", () => {
+describe("YGOProRoomState — Mercury emote gate (only seated duelists send)", () => {
 	let eventEmitter: EventEmitter;
 
 	beforeEach(() => {
 		eventEmitter = new EventEmitter();
-	});
-
-	it("sends 'Nickname '<name>' is already in use — choose another.' via RED STOC_CHAT, then JOINERROR, then destroys the socket", () => {
-		const state = new TestRoomState(eventEmitter) as unknown as {
-			sendExistingPlayerErrorMessage: (
-				playerInfoMessage: { name: string },
-				socket: unknown,
-			) => void;
-		};
-		const socket = makeSocket();
-
-		state.sendExistingPlayerErrorMessage({ name: "Diango" }, socket);
-
-		const expectedFrame = Buffer.from(
-			new YGOProStocChat()
-				.fromPartial({
-					player_type: ChatColor.RED,
-					msg: "Nickname 'Diango' is already in use — choose another.",
-				})
-				.toFullPayload(),
-		);
-		expect(socket.send).toHaveBeenCalledWith(expectedFrame);
-		expect(socket.destroy).toHaveBeenCalled();
-	});
-});
-
-describe("RoomState — :score command", () => {
-	let eventEmitter: EventEmitter;
-
-	beforeEach(() => {
-		eventEmitter = new EventEmitter();
-		new TestRoomState(eventEmitter);
-	});
-
-	it("answers with a WHITE STOC_CHAT frame carrying room.score, not the legacy 0xF3 frame", () => {
-		const socket = makeSocket();
-		const room = { score: "Score · Diango 1 – 0 Rival" } as unknown as never;
-		const client = { socket } as unknown as never;
-
-		eventEmitter.emit(Commands.CHAT as unknown as string, makeChatMessage(":score"), room, client);
-
-		const expectedFrame = Buffer.from(
-			new YGOProStocChat()
-				.fromPartial({ player_type: ChatColor.WHITE, msg: "Score · Diango 1 – 0 Rival" })
-				.toFullPayload(),
-		);
-		expect(socket.send).toHaveBeenCalledWith(expectedFrame);
-	});
-});
-
-describe("RoomState — Mercury emote gate (only seated duelists send)", () => {
-	let eventEmitter: EventEmitter;
-
-	beforeEach(() => {
-		eventEmitter = new EventEmitter();
-		new TestRoomState(eventEmitter);
+		new YGOProRoomState(eventEmitter);
 	});
 
 	it("broadcasts a duelist's valid emote to the room", () => {
@@ -182,12 +119,12 @@ describe("RoomState — Mercury emote gate (only seated duelists send)", () => {
 	});
 });
 
-describe("RoomState — Mercury emote ids are relayed without a catalog check", () => {
+describe("YGOProRoomState — Mercury emote ids are relayed without a catalog check", () => {
 	let eventEmitter: EventEmitter;
 
 	beforeEach(() => {
 		eventEmitter = new EventEmitter();
-		new TestRoomState(eventEmitter);
+		new YGOProRoomState(eventEmitter);
 	});
 
 	const makeDuelist = () =>
@@ -235,12 +172,12 @@ describe("RoomState — Mercury emote ids are relayed without a catalog check", 
 // srvpro2 announces a duelist as `pos ^ (1 << teamOffsetBit)` once the turn
 // choice swaps positions: teamOffsetBit is 1 in Tag (teams sit at 0-1 and
 // 2-3), so the swap flips teams, not teammates.
-describe("RoomState — Mercury sender seat after a position swap", () => {
+describe("YGOProRoomState — Mercury sender seat after a position swap", () => {
 	let eventEmitter: EventEmitter;
 
 	beforeEach(() => {
 		eventEmitter = new EventEmitter();
-		new TestRoomState(eventEmitter);
+		new YGOProRoomState(eventEmitter);
 	});
 
 	const makeRoom = (

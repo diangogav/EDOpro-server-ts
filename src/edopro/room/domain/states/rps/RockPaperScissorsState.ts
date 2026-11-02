@@ -12,7 +12,7 @@ import { RPSChooseClientMessage } from "../../../../messages/server-to-client/RP
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";
 import { Room } from "../../Room";
-import { RoomState } from "../../RoomState";
+import { EdoproRoomState } from "../../EdoproRoomState";
 import { RpsChoiceCommandStrategy } from "./RpsChoiceCommandStrategy";
 import { ReconnectionTokenIssuer } from "../../../../../shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { findReconnectingPlayer } from "../../../../../shared/room/domain/findReconnectingPlayer";
@@ -20,7 +20,7 @@ import { ReconnectionAckMessage } from "../../../../../shared/messages/server-to
 import { logReconnectAttempt } from "@shared/room/application/reconnect/logReconnectAttempt";
 import { redactSecret } from "@shared/logger/domain/redactSecret";
 
-export class RockPaperScissorState extends RoomState {
+export class RockPaperScissorState extends EdoproRoomState {
 	constructor(
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
