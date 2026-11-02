@@ -52,13 +52,8 @@ const INFRASTRUCTURE_PACKAGES = new Set([
 const KNOWN_ENGINE_LEAKS: readonly string[] = [];
 
 const KNOWN_DOMAIN_LEAKS: readonly string[] = [
-	"src/edopro/room/domain/Room -> src/edopro/ban-list/infrastructure/BanListMemoryRepository",
-	"src/edopro/room/domain/states/dueling/DuelingState -> src/edopro/ban-list/infrastructure/BanListMemoryRepository",
 	"src/shared/socket/domain/TCPClientSocket -> net",
 	"src/shared/socket/domain/WebSocketClientSocket -> ws",
-	"src/ygopro/room/domain/RuleMappings -> src/shared/logger/infrastructure/LoggerFactory",
-	"src/ygopro/room/domain/RuleMappings -> src/ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository",
-	"src/ygopro/room/domain/YGOProRoom -> src/ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository",
 ];
 
 type Import = { from: string; to: string };

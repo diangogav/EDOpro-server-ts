@@ -21,7 +21,7 @@ Order approved by the user. Leaks = lines removed from `KNOWN_DOMAIN_LEAKS` (46 
 - T4 [S2,S3,S4] EDOPro room collaborators through `create*`, timer callbacks — 9 leaks — characterization tests for timeout win and room expiry first — done (branch refactor/room-split-edopro-room-deps; removed 10 lines, including the AuthenticatePlayer line moved in T2)
 - T5 [S2,S3,S4] YGOPro room collaborators through `create` (4 callers) — 6 leaks — done (branch refactor/room-split-ygopro-room-deps; removed 8 lines, including the 2 moved in T3)
 - T6 [S2,S3,S4] `RoomState` ports for match lifecycle hooks and room-list broadcast (replace `container.get` and `WebSocketSingleton`) — 4 leaks — done (branch refactor/room-split-roomstate-ports; no test mock rewritten, see L9)
-- T7 [S2,S3,S4] ban list catalog ports and the RuleMappings logger — 5 leaks — high risk: persisted data and `/api/getrooms` — pending
+- T7 [S2,S3,S4] ban list catalog ports and the RuleMappings logger — 5 leaks — high risk: persisted data and `/api/getrooms` — done (branch refactor/room-split-banlist-catalog)
 - T8 [S2] extract the EDOPro core-process channel and turn-order bookkeeping from `Room` — 0 leaks — queue/backpressure tests first — pending
 - T9 [S3] move the socket adapters to `shared/socket/infrastructure` — 2 leaks — pending
 
@@ -41,3 +41,10 @@ Order approved by the user. Leaks = lines removed from `KNOWN_DOMAIN_LEAKS` (46 
   - Tests: `src/test-support/jest.setupAfterEnv.ts` registers the same adapter in a global beforeEach, imported after each suite's jest.mock calls, so the 20 suites that mock WebSocketSingleton or the container keep working unchanged. Without it, 39 tests fail with the "not registered" error.
   - `roomStatePorts.test.ts` pins the delegation.
   - KNOWN_DOMAIN_LEAKS 11 → 7. tsc, pnpm check, build and pnpm test (2717) pass.
+- L10 T6 merged as #462. T7:
+  - `EdoproBanListCatalog` (edopro/ban-list/domain) and `YGOProBanListCatalog` (ygopro/ban-list/domain) are module-level registrations; `ruleMappingsLogger.ts` holds the RuleMappings warning logger.
+  - `registerBanListCatalogs()` (src/bootstrap/banListCatalogs.ts) registers the in-memory repositories themselves and `LoggerFactory.getLogger()`, so every lookup still reads the lists loaded at that moment. `src/index.ts` calls it next to `registerRoomStatePorts()`, and the jest after-env setup registers it too. Unregistered lookups throw.
+  - The logger holder is its own module because importing RuleMappings from the global test setup let a suite's `doMock` of RuleMappings leak into the next test (YGOProRoomTierCollapse).
+  - YGOProRoomTierCollapse registers the YGOPro catalog inside its isolated module graph.
+  - New characterization tests pin the ban list name of both rooms and the `/api/getrooms` `banlist` field. They fail when the catalog is wired to an empty lookup.
+  - KNOWN_DOMAIN_LEAKS 7 → 2 (only T9 left). tsc, pnpm check, build and pnpm test (2721) pass.

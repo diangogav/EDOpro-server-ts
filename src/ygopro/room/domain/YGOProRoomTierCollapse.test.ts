@@ -41,6 +41,14 @@ describe("YGOProRoom.create — same-tier double match (isolated RuleMappings mo
 
 			// biome-ignore lint/style/noCommonJs: require inside jest.isolateModules re-evaluates the module graph after doMock
 			const { YGOProRoom } = require("./YGOProRoom");
+			// The isolated module graph has its own, unregistered ban list catalog.
+			// biome-ignore lint/style/noCommonJs: require inside jest.isolateModules re-evaluates the module graph after doMock
+			const { useYGOProBanListCatalog } = require("../../ban-list/domain/YGOProBanListCatalog");
+			// The path lives in a variable so the require below fits on one line and its biome-ignore applies.
+			const repository = "../../ban-list/infrastructure/YGOProBanListMemoryRepository";
+			// biome-ignore lint/style/noCommonJs: require inside jest.isolateModules re-evaluates the module graph after doMock
+			const catalog = require(repository).default;
+			useYGOProBanListCatalog(catalog);
 			// biome-ignore lint/style/noCommonJs: require inside jest.isolateModules re-evaluates the module graph after doMock
 			const { LoggerMock } = require("@test-support/mocks/logger/LoggerMock");
 			// biome-ignore lint/style/noCommonJs: require inside jest.isolateModules re-evaluates the module graph after doMock
@@ -83,6 +91,14 @@ describe("YGOProRoom.create — same-tier double match (isolated RuleMappings mo
 
 			// biome-ignore lint/style/noCommonJs: require inside jest.isolateModules re-evaluates the module graph after doMock
 			const { YGOProRoom } = require("./YGOProRoom");
+			// The isolated module graph has its own, unregistered ban list catalog.
+			// biome-ignore lint/style/noCommonJs: require inside jest.isolateModules re-evaluates the module graph after doMock
+			const { useYGOProBanListCatalog } = require("../../ban-list/domain/YGOProBanListCatalog");
+			// The path lives in a variable so the require below fits on one line and its biome-ignore applies.
+			const repository = "../../ban-list/infrastructure/YGOProBanListMemoryRepository";
+			// biome-ignore lint/style/noCommonJs: require inside jest.isolateModules re-evaluates the module graph after doMock
+			const catalog = require(repository).default;
+			useYGOProBanListCatalog(catalog);
 			// biome-ignore lint/style/noCommonJs: require inside jest.isolateModules re-evaluates the module graph after doMock
 			const { LoggerMock } = require("@test-support/mocks/logger/LoggerMock");
 			// biome-ignore lint/style/noCommonJs: require inside jest.isolateModules re-evaluates the module graph after doMock
