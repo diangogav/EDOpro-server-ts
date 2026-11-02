@@ -1,5 +1,5 @@
 /**
- * RoomState.processDuelMessage behavior contract: team = firstToPlay ^ data[1],
+ * EdoproRoomState.processDuelMessage behavior contract: team = firstToPlay ^ data[1],
  * amount = data.readUint32LE(2), one UPDATE-ROOM broadcast per handled message,
  * and unhandled message types touch nothing.
  */
@@ -19,7 +19,7 @@ jest.mock("../../../web-socket-server/WebSocketSingleton", () => {
 });
 
 import { DuelEventPluginHub } from "../../../shared/room/domain/duel-events/DuelEventPluginHub";
-import { RoomState } from "./RoomState";
+import { EdoproRoomState } from "./EdoproRoomState";
 import { YgoRoom } from "../../../shared/room/domain/YgoRoom";
 import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
 
@@ -28,7 +28,7 @@ import WebSocketSingleton from "../../../web-socket-server/WebSocketSingleton";
 const mockBroadcast = WebSocketSingleton.getInstance().broadcast as jest.Mock;
 
 // processDuelMessage is protected; expose it for the test.
-class TestRoomState extends RoomState {
+class TestRoomState extends EdoproRoomState {
 	run(messageType: CoreMessages, data: Buffer, room: YgoRoom): void {
 		this.processDuelMessage(messageType, data, room);
 	}
@@ -57,7 +57,7 @@ const makeRoom = (firstToPlay: number) =>
 		toRealTimePresentation: jest.fn().mockReturnValue({ id: 7 }),
 	}) as unknown as YgoRoom;
 
-describe("RoomState.processDuelMessage", () => {
+describe("EdoproRoomState.processDuelMessage", () => {
 	let state: TestRoomState;
 
 	beforeEach(() => {

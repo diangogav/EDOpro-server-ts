@@ -33,7 +33,7 @@ import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectato
 import { Reconnect } from "../../../application/Reconnect";
 import { DuelFinishReason } from "../../DuelFinishReason";
 import { Room } from "../../Room";
-import { RoomState } from "../../RoomState";
+import { EdoproRoomState } from "../../EdoproRoomState";
 import { logReconnectAttempt } from "@shared/room/application/reconnect/logReconnectAttempt";
 import { redactSecret } from "@shared/logger/domain/redactSecret";
 
@@ -101,7 +101,7 @@ type SwapMessage = {
 // Shared by both deck-mismatch checks in handleUpdateDeck below.
 const RECONNECT_SAME_DECK_MESSAGE = "Reconnect with the same deck you were using in this match.";
 
-export class DuelingState extends RoomState {
+export class DuelingState extends EdoproRoomState {
 	private static readonly MAX_MESSAGES_PER_TICK = 1000;
 
 	constructor(

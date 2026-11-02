@@ -4,7 +4,7 @@ import { lobbyMetadata } from "./LobbyMetadata";
 
 import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
-import { RoomState } from "@edopro/room/domain/RoomState";
+import { RoomState } from "@shared/room/domain/RoomState";
 
 import { Team } from "@shared/room/Team";
 import { RoomLeague } from "@shared/room/admission/domain/RoomLeague";

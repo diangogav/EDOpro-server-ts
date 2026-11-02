@@ -1,9 +1,12 @@
 /**
- * Exercises RoomState.notifyDuelStart()'s MatchLifecycleHooks.runStarted
- * wiring — shared by both server pipelines (legacy edopro's DuelingState and
- * Mercury's YGOProDuelingState both call this.notifyDuelStart(this.room)).
+ * Exercises what RoomState owns for both engines: the match start hooks
+ * (EDOPro's DuelingState and Mercury's YGOProDuelingState both call
+ * this.notifyDuelStart(this.room)) and the `:score` chat command.
  */
 import { EventEmitter } from "stream";
+import { ChatColor, YGOProStocChat } from "ygopro-msg-encode";
+
+import { Commands } from "@shared/messages/Commands";
 
 import { YgoRoom } from "@shared/room/domain/YgoRoom";
 import { Team } from "@shared/room/Team";
@@ -18,6 +21,12 @@ import { container } from "@shared/dependency-injection";
 import WebSocketSingleton from "src/web-socket-server/WebSocketSingleton";
 
 class TestRoomState extends RoomState {
+	public readonly relayedChat = jest.fn();
+
+	protected relayChat(...args: unknown[]): void {
+		this.relayedChat(...args);
+	}
+
 	public callNotifyDuelStart(room: YgoRoom): void {
 		this.notifyDuelStart(room);
 	}
@@ -114,5 +123,50 @@ describe("RoomState.notifyMatchStarting() — start hooks at STOC_DUEL_START", (
 				banListName: "TCG",
 			}),
 		);
+	});
+});
+
+describe("RoomState — :score command", () => {
+	let eventEmitter: EventEmitter;
+
+	let state: TestRoomState;
+
+	beforeEach(() => {
+		eventEmitter = new EventEmitter();
+		state = new TestRoomState(eventEmitter);
+	});
+
+	it("answers with a WHITE STOC_CHAT frame carrying room.score, not the legacy 0xF3 frame", () => {
+		const socket = { send: jest.fn() };
+		const room = { score: "Score · Diango 1 – 0 Rival" } as unknown as never;
+		const client = { socket } as unknown as never;
+
+		eventEmitter.emit(
+			Commands.CHAT as unknown as string,
+			{ data: Buffer.from(":score", "utf16le"), previousMessage: Buffer.alloc(0) },
+			room,
+			client,
+		);
+
+		const expectedFrame = Buffer.from(
+			new YGOProStocChat()
+				.fromPartial({ player_type: ChatColor.WHITE, msg: "Score · Diango 1 – 0 Rival" })
+				.toFullPayload(),
+		);
+		expect(socket.send).toHaveBeenCalledWith(expectedFrame);
+		expect(state.relayedChat).not.toHaveBeenCalled();
+	});
+
+	it("hands any other line to the engine's chat relay", () => {
+		const room = { score: "" } as unknown as never;
+		const client = { socket: { send: jest.fn() } } as unknown as never;
+		const message = {
+			data: Buffer.from("hola", "utf16le"),
+			previousMessage: Buffer.alloc(0),
+		};
+
+		eventEmitter.emit(Commands.CHAT as unknown as string, message, room, client);
+
+		expect(state.relayedChat).toHaveBeenCalledWith(message, room, client);
 	});
 });

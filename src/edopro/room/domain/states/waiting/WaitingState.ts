@@ -22,9 +22,9 @@ import { createSystemChat } from "../../../../../shared/room/domain/chat/SystemC
 import { ReconnectionTokenIssuer } from "../../../../../shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { isNameTaken } from "../../../../../shared/room/domain/isNameTaken";
 import { Room } from "../../Room";
-import { RoomState } from "../../RoomState";
+import { EdoproRoomState } from "../../EdoproRoomState";
 
-export class WaitingState extends RoomState {
+export class WaitingState extends EdoproRoomState {
 	constructor(
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,

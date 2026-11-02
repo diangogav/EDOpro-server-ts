@@ -30,7 +30,7 @@ import RoomList from "../infrastructure/RoomList";
 import { DuelFinishReason } from "./DuelFinishReason";
 import { PlayerRoomState } from "./PlayerRoomState";
 import { RoomClientNotifier } from "./RoomClientNotifier";
-import { RoomState } from "./RoomState";
+import { RoomState } from "../../../shared/room/domain/RoomState";
 import { ChossingOrderState } from "./states/chossing-order/ChossingOrderState";
 import { DuelingState } from "./states/dueling/DuelingState";
 import { RockPaperScissorState } from "./states/rps/RockPaperScissorsState";

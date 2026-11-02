@@ -1,7 +1,6 @@
 import { EventEmitter } from "stream";
 
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
-import { RoomState } from "@edopro/room/domain/RoomState";
 import { YGOProRoomState } from "../YGOProRoomState";
 
 import { YGOProDeckCreator } from "@ygopro/deck/application/YGOProDeckCreator";

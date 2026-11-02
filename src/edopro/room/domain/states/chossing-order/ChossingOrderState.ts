@@ -12,14 +12,14 @@ import { ChooseOrderClientMessage } from "../../../../messages/server-to-client/
 import { JoinToDuelAsSpectator } from "../../../application/JoinToDuelAsSpectator";
 import { Reconnect } from "../../../application/Reconnect";
 import { Room } from "../../Room";
-import { RoomState } from "../../RoomState";
+import { EdoproRoomState } from "../../EdoproRoomState";
 import { ReconnectionTokenIssuer } from "../../../../../shared/room/application/reconnect/ReconnectionTokenIssuer";
 import { findReconnectingPlayer } from "../../../../../shared/room/domain/findReconnectingPlayer";
 import { ReconnectionAckMessage } from "../../../../../shared/messages/server-to-client/ReconnectionAckMessage";
 import { logReconnectAttempt } from "@shared/room/application/reconnect/logReconnectAttempt";
 import { redactSecret } from "@shared/logger/domain/redactSecret";
 
-export class ChossingOrderState extends RoomState {
+export class ChossingOrderState extends EdoproRoomState {
 	constructor(
 		eventEmitter: EventEmitter,
 		private readonly logger: Logger,
