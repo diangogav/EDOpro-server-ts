@@ -4,10 +4,9 @@ import { EventEmitter } from "stream";
 import { ChatColor } from "ygopro-msg-encode";
 
 import { config } from "../../../config";
-import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
-import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import { Redis } from "../../../shared/db/redis/infrastructure/Redis";
 import { Logger } from "../../../shared/logger/domain/Logger";
+import { RoomFinder } from "../../../shared/room/application/RoomFinder";
 import { JoinMessageHandler } from "../../../shared/room/domain/JoinMessageHandler";
 import { createSystemChat } from "../../../shared/room/domain/chat/SystemChat";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
@@ -18,25 +17,26 @@ import { ClientMessage } from "../../../shared/messages/MessageProcessor";
 import { ErrorMessages } from "../../messages/server-to-client/error-messages/ErrorMessages";
 import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientMessage";
 import { ServerErrorClientMessage } from "../../messages/server-to-client/ServerErrorMessageClientMessage";
-import { Room } from "../domain/Room";
-import RoomList from "../infrastructure/RoomList";
 
 export class JoinHandler implements JoinMessageHandler {
 	private readonly eventEmitter: EventEmitter;
 	private readonly logger: Logger;
 	private readonly socket: ISocket;
 	private readonly checkIfUseCanJoin: CheckIfUseCanJoin;
+	private readonly roomFinder: RoomFinder;
 
 	constructor(
 		eventEmitter: EventEmitter,
 		logger: Logger,
 		socket: ISocket,
 		checkIfUseCanJoin: CheckIfUseCanJoin,
+		roomFinder: RoomFinder,
 	) {
 		this.eventEmitter = eventEmitter;
 		this.logger = logger.child({ file: "JoinHandler" });
 		this.socket = socket;
 		this.checkIfUseCanJoin = checkIfUseCanJoin;
+		this.roomFinder = roomFinder;
 		this.eventEmitter.on(
 			Commands.JOIN_GAME as unknown as string,
 			(message: ClientMessage) => void this.handleJoinGame(message),
@@ -50,7 +50,9 @@ export class JoinHandler implements JoinMessageHandler {
 		this.logger.info(
 			`player: ${playerInfoMessage.name} trying to join to room: ${joinMessage.id} with room pass: ${joinMessage.password}`,
 		);
-		const room = this.findRoom(joinMessage);
+		// Both engines' rooms, EDOPro first: an EDOPro-protocol join can land in a
+		// YGOPro room (see createRoomFinder).
+		const room = this.roomFinder.findById(joinMessage.id);
 
 		if (!room) {
 			this.socket.send(createSystemChat(ChatColor.RED, "Room not found — refresh the room list."));
@@ -119,14 +121,5 @@ export class JoinHandler implements JoinMessageHandler {
 			`player: ${playerInfoMessage.name} joined to room: ${room.id} with password: ${joinMessage.password}`,
 		);
 		room.emit("JOIN", message, this.socket);
-	}
-
-	private findRoom(joinMessage: JoinGameMessage): YGOProRoom | Room | null {
-		const room = RoomList.getRooms().find((room) => room.id === joinMessage.id);
-		if (room) {
-			return room;
-		}
-
-		return YGOProRoomList.findById(joinMessage.id);
 	}
 }

@@ -66,6 +66,7 @@ export abstract class YgoRoom {
 	public readonly team0: number;
 	public readonly team1: number;
 	public readonly ranked: boolean;
+	public abstract readonly password: string;
 	public readonly bestOf: number;
 	public readonly startLp: number;
 	public readonly STARTING_TURN = 0;

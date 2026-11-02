@@ -31,8 +31,4 @@ export class EdoproBanList extends BanList {
 			((((cardId >>> 0) << 18) >> 0) | (cardId >> 14)) ^
 			((((cardId >>> 0) << (27 + quantity)) >>> 0) | (cardId >>> (5 - quantity)));
 	}
-
-	isGenesys(): boolean {
-		return this.name === "Genesys";
-	}
 }

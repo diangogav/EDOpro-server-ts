@@ -8,6 +8,7 @@ import { PlayerInfoMessageMother } from "@test-support/mothers/PlayerInfoMessage
 import YGOProBanListMemoryRepository from "@ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository";
 import { YGOProBanList } from "@ygopro/ban-list/domain/YGOProBanList";
 import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
+import { EdoproBanListHashLookup } from "@edopro/ban-list/infrastructure/EdoproBanListHashLookup";
 import { EdoproBanList } from "@edopro/ban-list/domain/BanList";
 import { Card } from "@shared/card/domain/Card";
 import { CardTypes } from "@shared/card/domain/CardTypes";
@@ -715,9 +716,14 @@ describe("YGOProRoom", () => {
 			return list;
 		}
 
+		beforeEach(() => {
+			YGOProRoom.useBanListHashLookup(new EdoproBanListHashLookup());
+		});
+
 		afterEach(() => {
 			YGOProBanListMemoryRepository.replaceAll([]);
 			BanListMemoryRepository.replaceAll([]);
+			YGOProRoom.useBanListHashLookup({ hashByName: () => undefined });
 		});
 
 		it("keeps a constructed room's edoBanListHash after the repositories are reloaded", () => {

@@ -9,7 +9,7 @@ import { NoLimitedCardValidationHandler } from "@shared/deck/domain/validators/N
 import { AvailableCardValidationHandler } from "@shared/deck/domain/validators/AvailableCardValidationHandler";
 import { GenesysRulesValidationHandler } from "@shared/deck/domain/validators/GenesysRulesValidationHandler";
 import { MaxCopiesValidationHandler } from "@shared/deck/domain/validators/MaxCopiesValidationHandler";
-import { EdoproBanList } from "@edopro/ban-list/domain/BanList";
+import { BanList } from "@shared/ban-list/BanList";
 import { CreditLimitValidationHandler } from "@shared/deck/domain/validators/CreditLimitValidationHandler";
 import { YGOProRule } from "@ygopro/room/domain/host-info/YGOProRule";
 import { CardAvailabilityValidationHandler } from "./validators/CardAvailabilityValidationHandler";
@@ -25,7 +25,7 @@ import { CardAvailabilityValidationHandler } from "./validators/CardAvailability
 export class YGOProDeckValidator {
 	constructor(
 		private readonly deckRules: DeckRules,
-		private readonly banList: EdoproBanList,
+		private readonly banList: BanList,
 		private readonly rule: YGOProRule,
 	) {}
 

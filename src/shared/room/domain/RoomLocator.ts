@@ -1,6 +1,9 @@
 import { YgoRoom } from "./YgoRoom";
 
-/** Finds the room a socket belongs to among one protocol's rooms. */
+/** Finds rooms among one protocol's rooms. */
 export interface RoomLocator {
+	/** The room a socket belongs to. */
 	findBySocketId(socketId: string): YgoRoom | null;
+	/** The room with this id. */
+	findById(id: number): YgoRoom | null;
 }

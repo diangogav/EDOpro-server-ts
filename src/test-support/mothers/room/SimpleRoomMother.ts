@@ -7,6 +7,7 @@ import { RoomType } from "@shared/room/domain/RoomType";
 
 class SimpleRoom extends YgoRoom {
 	public actionQueue = new RoomActionQueue();
+	public readonly password = "";
 
 	constructor(params: {
 		team0: number;

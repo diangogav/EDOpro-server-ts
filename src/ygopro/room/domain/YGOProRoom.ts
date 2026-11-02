@@ -2,7 +2,7 @@ import { EventEmitter } from "stream";
 import { randomBytes } from "crypto";
 import { lobbyMetadata } from "./LobbyMetadata";
 
-import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemoryRepository";
+import { BanListHashLookup } from "@shared/ban-list/BanListHashLookup";
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { RoomState } from "@shared/room/domain/RoomState";
 
@@ -83,6 +83,7 @@ export class YGOProRoom extends YgoRoom {
 	readonly cardPool: string;
 	//TODO: compatibility with edopro list and rank;
 	private _edoBanListHash: number;
+	private static banListHashLookup: BanListHashLookup = { hashByName: () => undefined };
 	private _logger: Logger;
 	private _roomState: RoomState | null = null;
 	private _isPositionSwapped: boolean = false;
@@ -181,8 +182,15 @@ export class YGOProRoom extends YgoRoom {
 			maxDeckPoints: this._hostInfo.max_deck_points,
 		});
 		const banList = MercuryBanListMemoryRepository.findByHash(banListHash);
-		const edoBanList = BanListMemoryRepository.findByName(banList?.name ?? "");
-		this._edoBanListHash = edoBanList?.hash ?? 0;
+		this._edoBanListHash = YGOProRoom.banListHashLookup.hashByName(banList?.name ?? "") ?? 0;
+	}
+
+	/**
+	 * Sets where rooms resolve the shared hash of their ban list. Boot registers
+	 * the EDOPro catalog (bootstrapResources); until then every room gets 0.
+	 */
+	static useBanListHashLookup(lookup: BanListHashLookup): void {
+		YGOProRoom.banListHashLookup = lookup;
 	}
 
 	static create(

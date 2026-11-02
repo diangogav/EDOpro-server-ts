@@ -16,4 +16,8 @@ export class YGOProRoomLocator implements RoomLocator {
 
 		return joined ?? rooms.find((room) => room.createdBySocketId === socketId) ?? null;
 	}
+
+	findById(id: number): YGOProRoom | null {
+		return YGOProRoomList.findById(id);
+	}
 }
