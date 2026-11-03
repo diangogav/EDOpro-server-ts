@@ -17,6 +17,8 @@ import { spawn } from "child_process";
 import WebSocketSingleton from "../../../../../web-socket-server/WebSocketSingleton";
 import { Commands } from "@shared/messages/Commands";
 import { TokenIndex } from "@shared/room/domain/TokenIndex";
+import { DuelResourceMonitorHolder } from "@shared/metrics/domain/DuelResourceMonitorHolder";
+import { DuelResourceMonitor } from "@shared/metrics/domain/DuelResourceMonitor";
 
 // Mocks
 jest.mock("@shared/logger/domain/Logger");
@@ -42,9 +44,18 @@ describe("DuelingState", () => {
 	let mockSocket: jest.Mocked<ISocket>;
 	let mockCore: any;
 	let mockWebSocketSingleton: jest.Mocked<WebSocketSingleton>;
+	let resourceWatchEnd: jest.Mock;
+	let resourceMonitor: jest.Mocked<DuelResourceMonitor>;
 
 	beforeEach(() => {
 		mockEmitter = new EventEmitter();
+
+		resourceWatchEnd = jest.fn();
+		resourceMonitor = {
+			watchProcess: jest.fn().mockReturnValue({ end: resourceWatchEnd }),
+			watchThread: jest.fn(),
+		};
+		DuelResourceMonitorHolder.set(resourceMonitor);
 
 		mockWebSocketSingleton = {
 			broadcast: jest.fn(),
@@ -109,6 +120,8 @@ describe("DuelingState", () => {
 			firstToPlay: 0,
 			banListHash: 123,
 			id: 1,
+			matchId: "match-1",
+			ranked: true,
 			score: "0-0",
 			replay: {
 				setSeed: jest.fn(),
@@ -144,6 +157,7 @@ describe("DuelingState", () => {
 		} as unknown as jest.Mocked<Room>;
 
 		mockCore = {
+			pid: 4321,
 			stderr: { on: jest.fn() },
 			stdout: { on: jest.fn() },
 			on: jest.fn(),
@@ -166,6 +180,34 @@ describe("DuelingState", () => {
 		expect(mockRoom.setDuel).toHaveBeenCalledWith(mockCore);
 		expect(mockRoom.createDuel).toHaveBeenCalled();
 		expect(mockLogger.info).toHaveBeenCalledWith("Starting Duel");
+	});
+
+	it("measures the spawned core process until it exits", () => {
+		DuelResourceMonitorHolder.reset();
+		expect(resourceMonitor.watchProcess).toHaveBeenCalledWith(mockCore.pid, {
+			flow: "edopro",
+			roomId: mockRoom.id,
+			matchId: mockRoom.matchId,
+			ranked: mockRoom.ranked,
+		});
+		expect(resourceWatchEnd).not.toHaveBeenCalled();
+
+		const [, exitCallback] = (mockCore.on as jest.Mock).mock.calls.find(
+			([event]) => event === "exit",
+		);
+		exitCallback(0, null);
+
+		expect(resourceWatchEnd).toHaveBeenCalledTimes(1);
+	});
+
+	it("ends the core measurement when the core fails to spawn", () => {
+		DuelResourceMonitorHolder.reset();
+		const [, errorCallback] = (mockCore.on as jest.Mock).mock.calls.find(
+			([event]) => event === "error",
+		);
+		errorCallback(new Error("spawn ENOENT"));
+
+		expect(resourceWatchEnd).toHaveBeenCalledTimes(1);
 	});
 
 	it("does NOT relay 'Preparing duel' / 'Starting duel' chat notices to players", () => {

@@ -28,6 +28,11 @@ import { MayBeArray } from "nfkit";
 
 import { YGOProClient } from "../client/domain/YGOProClient";
 import { YGOProRoom } from "../room/domain/YGOProRoom";
+import {
+	DuelResourceWatch,
+	ThreadResourceStats,
+} from "../../shared/metrics/domain/DuelResourceMonitor";
+import { DuelResourceMonitorHolder } from "../../shared/metrics/domain/DuelResourceMonitorHolder";
 import { OcgcoreWorker, OcgcoreProcessTimeoutError } from "./ocgcore-worker";
 import { Logger } from "src/shared/logger/domain/Logger";
 import { GameMessageMiddleware } from "../middleware/GameMessageMiddleware";
@@ -47,6 +52,7 @@ type Client = YGOProClient;
 
 export class OCGCore {
 	private ocgcore: WorkerInstance<OcgcoreWorker> | null;
+	private resourceWatch: DuelResourceWatch | null = null;
 	private messageSubscription: Subscription | null = null;
 	// responseSide: the side (0 or 1) currently being prompted by the core
 	private responseSide: number | null = null;
@@ -181,6 +187,13 @@ export class OCGCore {
 				decks,
 			});
 
+			this.resourceWatch = DuelResourceMonitorHolder.get().watchThread({
+				flow: "ygopro",
+				roomId: this.room.id,
+				matchId: this.room.matchId,
+				ranked: this.room.ranked,
+			});
+
 			this.messageSubscription = this.ocgcore.message$.subscribe((msg) => {
 				this.logger.info("Received message from OCGCoreWorker");
 				this.logger.info({ message: msg.message, type: msg.type });
@@ -308,6 +321,22 @@ export class OCGCore {
 	}
 
 	private static readonly DISPOSE_TIMEOUT_MS = 60_000;
+	private static readonly RESOURCE_STATS_TIMEOUT_MS = 1_000;
+
+	private static async readResourceStats(
+		ocgcore: WorkerInstance<OcgcoreWorker>,
+	): Promise<ThreadResourceStats | null> {
+		let timer: NodeJS.Timeout | undefined;
+		const timeout = new Promise<null>((resolve) => {
+			timer = setTimeout(() => resolve(null), OCGCore.RESOURCE_STATS_TIMEOUT_MS);
+		});
+
+		try {
+			return await Promise.race([ocgcore.resourceStats().catch(() => null), timeout]);
+		} finally {
+			clearTimeout(timer);
+		}
+	}
 
 	async dispose(): Promise<void> {
 		this.disposeWithTimeout(false);
@@ -319,11 +348,15 @@ export class OCGCore {
 			return;
 		}
 		this.ocgcore = null;
+		const resourceWatch = this.resourceWatch;
+		this.resourceWatch = null;
 		this.messageSubscription?.unsubscribe();
 		this.messageSubscription = null;
 		this.timerState.clear();
 
 		if (kill) {
+			// A worker being killed is not answering; do not wait for its stats.
+			resourceWatch?.end(null);
 			ocgcore.finalize().catch((error) => {
 				this.logger.error("Error force finalizing ocgcore", { error });
 			});
@@ -341,8 +374,9 @@ export class OCGCore {
 			});
 		}, OCGCore.DISPOSE_TIMEOUT_MS);
 
-		ocgcore
-			.dispose()
+		OCGCore.readResourceStats(ocgcore)
+			.then((stats) => resourceWatch?.end(stats))
+			.then(() => ocgcore.dispose())
 			.catch((error) => {
 				this.logger.error("Error disposing ocgcore", { error });
 			})

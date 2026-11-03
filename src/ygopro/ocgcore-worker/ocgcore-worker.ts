@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import { getHeapStatistics } from "v8";
 import {
 	OcgcoreDuel,
 	OcgcoreMessageType,
@@ -451,6 +452,21 @@ export class OcgcoreWorker {
 	@WorkerMethod()
 	async loadRegistry(@TransportType() input: Uint8Array | Record<string, string>) {
 		this.duel.loadRegistry(input);
+	}
+
+	/**
+	 * CPU time of this worker thread and the memory its engine holds: the WASM
+	 * heap (it only grows, so its size is the peak) plus this thread's V8 heap.
+	 */
+	@WorkerMethod()
+	async resourceStats(): Promise<{ cpuSeconds: number; memoryBytes: number }> {
+		const cpu = process.threadCpuUsage();
+		const wasmBytes = this.ocgcore?.ocgcoreModule?.HEAPU8?.buffer.byteLength ?? 0;
+
+		return {
+			cpuSeconds: (cpu.user + cpu.system) / 1_000_000,
+			memoryBytes: wasmBytes + getHeapStatistics().used_heap_size,
+		};
 	}
 
 	@WorkerMethod()

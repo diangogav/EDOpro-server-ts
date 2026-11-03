@@ -13,6 +13,7 @@ import { bootstrapPlugins } from "./bootstrap/bootstrapPlugins";
 import { bootstrapBanListReloader } from "./bootstrap/bootstrapBanListReloader";
 import { bootstrapMatchmaking } from "./bootstrap/bootstrapMatchmaking";
 import { bootstrapReservedDuels } from "./bootstrap/bootstrapReservedDuels";
+import { bootstrapMetrics } from "./bootstrap/bootstrapMetrics";
 import { Server } from "./http-server/Server";
 import { HostServer } from "./socket-server/HostServer";
 import { WSHostServer } from "./socket-server/WSHostServer";
@@ -37,6 +38,8 @@ async function start(): Promise<void> {
 	// Before any listener or room exists: rooms and their states read these.
 	registerRoomStatePorts();
 	registerBanListCatalogs();
+	// Before any room exists, so every duel engine is measured.
+	await bootstrapMetrics(config.metrics, logger);
 
 	const ticketRepository = new RedisTicketRepository();
 	const server = new Server(logger, ticketRepository);
