@@ -13,7 +13,7 @@ EDOPro clients (Windows/Linux/Android/iOS). **Multirole** is the reference imple
    - Engine → server: framed JSON on stdout, decoded by `JSONMessageProcessor` and routed by `type` (`MESSAGE`, `MESSAGE_ALL`, `MESSAGE_ALL_EXCEPT`, `FIELD`, `REPLAY`, `FINISH`, ...).
    - **Per-player filtering is done by the C++ core**; TypeScript only routes by `position`/`except`/`receiver`. Changing what a player sees means changing `core/src`.
    - Server → client packets are hand-written buffer classes in `messages/server-to-client/`.
-   - Client → engine: `Commands.RESPONSE` → `room.sendMessageToCpp(...)` → `duel.stdin` (with drain backpressure).
+   - Client → engine: `Commands.RESPONSE` → `room.sendMessageToCpp(...)` → `CoreChannel` (`room/domain/CoreChannel.ts`) → `duel.stdin`, queued with drain backpressure. `CoreChannel` also counts the IPC metrics logged with `IPC_METRICS_ENABLED=true`.
 7. **Game over**: `room/application/FinishDuelHandler.ts` → `MatchLifecycleHooks.runEnding` → `RoomList.deleteRoom` → `GameOverDomainEvent` on the `EventBus` (consumed by plugins). If the match is not finished, it moves to `sideDecking()`.
 8. **Reconnect/disconnect**: reconnection token issued in `WaitingState`; mid-duel reconnect uses the core's `RECONNECT` message; disconnects reach `room/application/EdoproDisconnectPolicy.ts` through the shared `DisconnectHandler`.
 

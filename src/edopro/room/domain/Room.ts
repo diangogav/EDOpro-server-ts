@@ -28,24 +28,10 @@ import { DuelingState } from "./states/dueling/DuelingState";
 import { RockPaperScissorState } from "./states/rps/RockPaperScissorsState";
 import { SideDeckingState } from "./states/side-decking/SideDeckingState";
 import { WaitingState } from "./states/waiting/WaitingState";
+import { CoreChannel } from "./CoreChannel";
 import { Timer } from "./Timer";
+import { nextTurn, prepareTurnOrder } from "./TurnOrder";
 import { RoomType } from "src/shared/room/domain/RoomType";
-
-type IpcMetricsSnapshot = {
-	uptimeMs: number;
-	queueDepth: number;
-	maxQueueDepth: number;
-	commandsEnqueued: number;
-	commandsWritten: number;
-	stdinWriteErrors: number;
-	drainCount: number;
-	totalDrainWaitMs: number;
-	stdoutChunks: number;
-	stdoutBytes: number;
-	framesProcessed: number;
-	parseErrors: number;
-	deferredProcessTicks: number;
-};
 
 export interface RoomAttr {
 	id: number;
@@ -103,7 +89,6 @@ export class Room extends YgoRoom {
 	public readonly password: string;
 	private _replay: Replay;
 	private readonly _kick: Client[] = [];
-	private _duel?: ChildProcessWithoutNullStreams;
 	private _lastPhase: Buffer | null = null;
 	private _playerMainDeckSize: number;
 	private _playerExtraDeckSize: number;
@@ -115,24 +100,7 @@ export class Room extends YgoRoom {
 	private logger: Logger;
 	private readonly deps: EdoproRoomDeps;
 	private readonly notifier: RoomClientNotifier;
-	private readonly pendingCppMessages: string[] = [];
-	private isWaitingCppDrain = false;
-	private ipcMetricsStartedAt = Date.now();
-	private ipcMetricsLogInterval: NodeJS.Timeout | null = null;
-	private lastDrainStartAt: bigint | null = null;
-	private ipcMetrics = {
-		maxQueueDepth: 0,
-		commandsEnqueued: 0,
-		commandsWritten: 0,
-		stdinWriteErrors: 0,
-		drainCount: 0,
-		totalDrainWaitNs: 0n,
-		stdoutChunks: 0,
-		stdoutBytes: 0,
-		framesProcessed: 0,
-		parseErrors: 0,
-		deferredProcessTicks: 0,
-	};
+	private readonly core: CoreChannel;
 
 	private constructor(attr: RoomAttr, deps: EdoproRoomDeps) {
 		super({
@@ -171,7 +139,7 @@ export class Room extends YgoRoom {
 		this.duelRule = attr.duelRule;
 		this.handshake = attr.handshake;
 		this.password = attr.password;
-		this._duel = attr.duel;
+		this.core = new CoreChannel(() => this.logger, attr.duel);
 		this._state = DuelState.WAITING;
 		this.duelFlagsLow = attr.duelFlagsLow;
 		this.duelFlagsHight = attr.duelFlagsHight;
@@ -524,24 +492,7 @@ export class Room extends YgoRoom {
 	}
 
 	setDuel(duel: ChildProcessWithoutNullStreams): void {
-		this._duel = duel;
-		this.isWaitingCppDrain = false;
-		this.pendingCppMessages.length = 0;
-		this._duel.stdin.on("error", (error) => {
-			this.ipcMetrics.stdinWriteErrors += 1;
-			this.logger.error("Error writing to the child process");
-			this.logger.error(error);
-		});
-
-		this.startIpcMetricsReporting();
-	}
-
-	private get duel(): ChildProcessWithoutNullStreams | null {
-		if (!this._duel) {
-			return null;
-		}
-
-		return this._duel;
+		this.core.attach(duel);
 	}
 
 	//********************************************************************************************* */
@@ -678,47 +629,18 @@ export class Room extends YgoRoom {
 	}
 
 	prepareTurnOrder(): void {
-		const team0Players = this.players
-			.filter((p) => p.team === 0)
-			.sort((a, b) => a.position - b.position) as Client[];
-
-		const team1Players = this.players
-			.filter((p) => p.team === 1)
-			.sort((a, b) => a.position - b.position) as Client[];
-
-		// 0 = team0 empieza, 1 = team1 empieza
-		const offset0 = this.isRelay ? 0 : this.firstToPlay === 1 ? 1 : 0;
-		const offset1 = this.isRelay ? 0 : this.firstToPlay === 0 ? 1 : 0;
-
-		team0Players.forEach((p, idx) => {
-			p.clearTurn();
-			p.setDuelPosition((idx + offset0) % this.team0);
+		prepareTurnOrder(this.players as Client[], {
+			team0: this.team0,
+			team1: this.team1,
+			isRelay: this.isRelay,
+			firstToPlay: this.firstToPlay,
 		});
-
-		team1Players.forEach((p, idx) => {
-			p.clearTurn();
-			p.setDuelPosition((idx + offset1) % this.team1);
-		});
-
-		team0Players.find((p) => p.duelPosition === 0)?.turn();
-		team1Players.find((p) => p.duelPosition === 0)?.turn();
 	}
 
 	nextTurn(team: number): void {
-		const teamPlayers = (this.players as Client[])
-			.filter((p) => p.team === team)
-			.sort((a: Client, b: Client) => a.duelPosition - b.duelPosition);
-
-		if (teamPlayers.length === 0) return;
-
-		const currentIdx = teamPlayers.findIndex((p) => p.inTurn);
-		if (currentIdx === -1) return;
-
-		const nextIdx = (currentIdx + 1) % teamPlayers.length;
-
-		teamPlayers[currentIdx].clearTurn();
-		teamPlayers[nextIdx].turn();
+		nextTurn(this.players as Client[], team);
 	}
+
 	calculateTimeReceiver(team: number): number {
 		if (this.firstToPlay === 0) {
 			return team;
@@ -764,29 +686,23 @@ export class Room extends YgoRoom {
 	//********************************************************************************************* */
 
 	public sendMessageToCpp(message: string): void {
-		this.pendingCppMessages.push(`${message}\n`);
-		this.ipcMetrics.commandsEnqueued += 1;
-		if (this.pendingCppMessages.length > this.ipcMetrics.maxQueueDepth) {
-			this.ipcMetrics.maxQueueDepth = this.pendingCppMessages.length;
-		}
-		this.flushCppMessageQueue();
+		this.core.send(message);
 	}
 
 	public recordCppStdoutChunk(byteLength: number): void {
-		this.ipcMetrics.stdoutChunks += 1;
-		this.ipcMetrics.stdoutBytes += byteLength;
+		this.core.recordStdoutChunk(byteLength);
 	}
 
 	public recordCppFrameProcessed(): void {
-		this.ipcMetrics.framesProcessed += 1;
+		this.core.recordFrameProcessed();
 	}
 
 	public recordCppParseError(): void {
-		this.ipcMetrics.parseErrors += 1;
+		this.core.recordParseError();
 	}
 
 	public recordCppDeferredProcessTick(): void {
-		this.ipcMetrics.deferredProcessTicks += 1;
+		this.core.recordDeferredProcessTick();
 	}
 
 	setLastPhaseMessage(message: Buffer): void {
@@ -840,7 +756,7 @@ export class Room extends YgoRoom {
 				timer.stop();
 			});
 			this.roomTimer.stop();
-			if (this._duel) {
+			if (this.core.isAttached) {
 				this.sendMessageToCpp(
 					JSON.stringify({
 						command: "DESTROY_DUEL",
@@ -861,7 +777,7 @@ export class Room extends YgoRoom {
 				this._replay.destroy();
 			}
 			this.roomTimer.stop();
-			this.stopIpcMetricsReporting();
+			this.core.stopMetricsReporting();
 		});
 	}
 
@@ -905,87 +821,6 @@ export class Room extends YgoRoom {
 		return this.mutex.runExclusive(() => {
 			return this.nextSpectatorPositionUnsafe();
 		});
-	}
-
-	private flushCppMessageQueue(): void {
-		if (this.isWaitingCppDrain) {
-			return;
-		}
-
-		const duel = this.duel;
-
-		if (!duel) {
-			this.pendingCppMessages.length = 0;
-
-			return;
-		}
-
-		while (this.pendingCppMessages.length > 0) {
-			const message = this.pendingCppMessages[0];
-			const writeSuccess = duel.stdin.write(message);
-
-			if (!writeSuccess) {
-				this.isWaitingCppDrain = true;
-				this.ipcMetrics.drainCount += 1;
-				this.lastDrainStartAt = process.hrtime.bigint();
-				duel.stdin.once("drain", () => {
-					if (this.lastDrainStartAt !== null) {
-						this.ipcMetrics.totalDrainWaitNs += process.hrtime.bigint() - this.lastDrainStartAt;
-						this.lastDrainStartAt = null;
-					}
-					this.isWaitingCppDrain = false;
-					this.flushCppMessageQueue();
-				});
-
-				return;
-			}
-
-			this.ipcMetrics.commandsWritten += 1;
-			this.pendingCppMessages.shift();
-		}
-	}
-
-	private startIpcMetricsReporting(): void {
-		if (process.env.IPC_METRICS_ENABLED !== "true") {
-			return;
-		}
-
-		if (this.ipcMetricsLogInterval) {
-			return;
-		}
-
-		this.ipcMetricsStartedAt = Date.now();
-		this.ipcMetricsLogInterval = setInterval(() => {
-			const snapshot = this.getIpcMetricsSnapshot();
-			this.logger.info("IPC_METRICS", snapshot);
-		}, 60_000);
-	}
-
-	private stopIpcMetricsReporting(): void {
-		if (!this.ipcMetricsLogInterval) {
-			return;
-		}
-
-		clearInterval(this.ipcMetricsLogInterval);
-		this.ipcMetricsLogInterval = null;
-	}
-
-	private getIpcMetricsSnapshot(): IpcMetricsSnapshot {
-		return {
-			uptimeMs: Date.now() - this.ipcMetricsStartedAt,
-			queueDepth: this.pendingCppMessages.length,
-			maxQueueDepth: this.ipcMetrics.maxQueueDepth,
-			commandsEnqueued: this.ipcMetrics.commandsEnqueued,
-			commandsWritten: this.ipcMetrics.commandsWritten,
-			stdinWriteErrors: this.ipcMetrics.stdinWriteErrors,
-			drainCount: this.ipcMetrics.drainCount,
-			totalDrainWaitMs: Number(this.ipcMetrics.totalDrainWaitNs) / 1e6,
-			stdoutChunks: this.ipcMetrics.stdoutChunks,
-			stdoutBytes: this.ipcMetrics.stdoutBytes,
-			framesProcessed: this.ipcMetrics.framesProcessed,
-			parseErrors: this.ipcMetrics.parseErrors,
-			deferredProcessTicks: this.ipcMetrics.deferredProcessTicks,
-		};
 	}
 
 	private extractDeckPoints(notes?: string): number | undefined {
