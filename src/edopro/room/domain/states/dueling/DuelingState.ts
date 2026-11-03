@@ -28,6 +28,7 @@ import { CatchUpClientMessage } from "../../../../messages/server-to-client/Catc
 import { PlayerChangeClientMessage } from "../../../../messages/server-to-client/PlayerChangeClientMessage";
 import { ReconnectionTokenIssuer } from "../../../../../shared/room/domain/reconnect/ReconnectionTokenIssuer";
 import { findReconnectingPlayer } from "../../../../../shared/room/domain/findReconnectingPlayer";
+import { DuelResourceMonitorHolder } from "../../../../../shared/metrics/domain/DuelResourceMonitorHolder";
 import { ReconnectionAckMessage } from "../../../../../shared/messages/server-to-client/ReconnectionAckMessage";
 import { DuelFinishReason } from "../../DuelFinishReason";
 import { Room } from "../../Room";
@@ -240,11 +241,19 @@ export class DuelingState extends EdoproRoomState {
 
 		this.room.setDuel(core);
 
+		const resourceWatch = DuelResourceMonitorHolder.get().watchProcess(core.pid, {
+			flow: "edopro",
+			roomId: this.room.id,
+			matchId: this.room.matchId,
+			ranked: this.room.ranked,
+		});
+
 		core.stderr.on("data", (data: string) => {
 			this.logger.error(data.toString(), { roomId: this.room.id });
 		});
 
 		core.on("exit", (code, signal) => {
+			resourceWatch.end();
 			this.logger.info(`Core exited`, { code, signal });
 		});
 
@@ -253,6 +262,8 @@ export class DuelingState extends EdoproRoomState {
 		});
 
 		core.on("error", (error) => {
+			// A spawn failure emits "error" without "exit".
+			resourceWatch.end();
 			this.logger.info(`Core error`);
 			this.logger.error(error.toString());
 		});

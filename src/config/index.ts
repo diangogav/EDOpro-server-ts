@@ -85,4 +85,12 @@ export const config = {
 		instanceId: process.env.SERVER_INSTANCE_ID || undefined,
 	},
 	windbot: parseWindbotConfig(process.env),
+	metrics: {
+		enabled: process.env.METRICS_ENABLED === "true",
+		// The server runs with host networking: bind to an interface only the
+		// metrics collector reaches (e.g. the monitoring bridge gateway), never 0.0.0.0.
+		host: process.env.METRICS_HOST || "127.0.0.1",
+		port: numberFromEnv(process.env.METRICS_PORT, 9464),
+		sampleIntervalMs: numberFromEnv(process.env.METRICS_SAMPLE_INTERVAL_MS, 2000),
+	},
 };

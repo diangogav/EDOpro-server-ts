@@ -1,0 +1,1022 @@
+{
+	"title": "Evolution server resources",
+	"uid": "evolution-server-resources",
+	"schemaVersion": 39,
+	"version": 1,
+	"editable": true,
+	"time": {
+		"from": "now-6h",
+		"to": "now"
+	},
+	"refresh": "30s",
+	"tags": ["evolution"],
+	"templating": {
+		"list": [
+			{
+				"name": "mimir",
+				"label": "Metrics",
+				"type": "datasource",
+				"query": "prometheus"
+			},
+			{
+				"name": "loki",
+				"label": "Logs",
+				"type": "datasource",
+				"query": "loki"
+			},
+			{
+				"name": "instance",
+				"label": "Host",
+				"type": "query",
+				"datasource": {
+					"type": "prometheus",
+					"uid": "${mimir}"
+				},
+				"query": {
+					"query": "label_values(node_uname_info{job=\"node_exporter\"}, instance)",
+					"refId": "instance"
+				},
+				"refresh": 1
+			}
+		]
+	},
+	"panels": [
+		{
+			"id": 1,
+			"type": "row",
+			"title": "Duels",
+			"collapsed": false,
+			"gridPos": {
+				"h": 1,
+				"w": 24,
+				"x": 0,
+				"y": 0
+			},
+			"panels": []
+		},
+		{
+			"id": 2,
+			"type": "stat",
+			"title": "Active duels",
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${mimir}"
+			},
+			"gridPos": {
+				"h": 4,
+				"w": 6,
+				"x": 0,
+				"y": 1
+			},
+			"fieldConfig": {
+				"defaults": {
+					"unit": "none"
+				},
+				"overrides": []
+			},
+			"options": {
+				"reduceOptions": {
+					"calcs": ["lastNotNull"]
+				},
+				"colorMode": "none"
+			},
+			"targets": [
+				{
+					"refId": "A",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "sum(evolution_duels_active{job=\"evolution_server\"})"
+				}
+			]
+		},
+		{
+			"id": 3,
+			"type": "stat",
+			"title": "Duels finished (1h)",
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${mimir}"
+			},
+			"gridPos": {
+				"h": 4,
+				"w": 6,
+				"x": 6,
+				"y": 1
+			},
+			"fieldConfig": {
+				"defaults": {
+					"unit": "none"
+				},
+				"overrides": []
+			},
+			"options": {
+				"reduceOptions": {
+					"calcs": ["lastNotNull"]
+				},
+				"colorMode": "none"
+			},
+			"targets": [
+				{
+					"refId": "A",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "sum(increase(evolution_duel_duration_seconds_count{job=\"evolution_server\"}[1h]))"
+				}
+			]
+		},
+		{
+			"id": 4,
+			"type": "stat",
+			"title": "Avg CPU per duel (1h)",
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${mimir}"
+			},
+			"gridPos": {
+				"h": 4,
+				"w": 6,
+				"x": 12,
+				"y": 1
+			},
+			"fieldConfig": {
+				"defaults": {
+					"unit": "s"
+				},
+				"overrides": []
+			},
+			"options": {
+				"reduceOptions": {
+					"calcs": ["lastNotNull"]
+				},
+				"colorMode": "none"
+			},
+			"targets": [
+				{
+					"refId": "A",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "sum(increase(evolution_duel_cpu_seconds_sum{job=\"evolution_server\"}[1h])) / sum(increase(evolution_duel_cpu_seconds_count{job=\"evolution_server\"}[1h]))"
+				}
+			]
+		},
+		{
+			"id": 5,
+			"type": "stat",
+			"title": "p95 peak memory per duel (1h)",
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${mimir}"
+			},
+			"gridPos": {
+				"h": 4,
+				"w": 6,
+				"x": 18,
+				"y": 1
+			},
+			"fieldConfig": {
+				"defaults": {
+					"unit": "bytes"
+				},
+				"overrides": []
+			},
+			"options": {
+				"reduceOptions": {
+					"calcs": ["lastNotNull"]
+				},
+				"colorMode": "none"
+			},
+			"targets": [
+				{
+					"refId": "A",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "histogram_quantile(0.95, sum by (le) (increase(evolution_duel_peak_memory_bytes_bucket{job=\"evolution_server\"}[1h])))"
+				}
+			]
+		},
+		{
+			"id": 6,
+			"type": "timeseries",
+			"title": "Active duels by engine",
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${mimir}"
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 0,
+				"y": 5
+			},
+			"fieldConfig": {
+				"defaults": {
+					"unit": "none"
+				},
+				"overrides": []
+			},
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "bottom"
+				},
+				"tooltip": {
+					"mode": "multi"
+				}
+			},
+			"targets": [
+				{
+					"refId": "A",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "sum by (flow) (evolution_duels_active{job=\"evolution_server\"})",
+					"legendFormat": "{{flow}}"
+				}
+			]
+		},
+		{
+			"id": 7,
+			"type": "timeseries",
+			"title": "CPU per duel (avg and p95)",
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${mimir}"
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 8,
+				"y": 5
+			},
+			"fieldConfig": {
+				"defaults": {
+					"unit": "s"
+				},
+				"overrides": []
+			},
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "bottom"
+				},
+				"tooltip": {
+					"mode": "multi"
+				}
+			},
+			"targets": [
+				{
+					"refId": "A",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "sum by (flow) (rate(evolution_duel_cpu_seconds_sum{job=\"evolution_server\"}[15m])) / sum by (flow) (rate(evolution_duel_cpu_seconds_count{job=\"evolution_server\"}[15m]))",
+					"legendFormat": "avg {{flow}}"
+				},
+				{
+					"refId": "B",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "histogram_quantile(0.95, sum by (le, flow) (rate(evolution_duel_cpu_seconds_bucket{job=\"evolution_server\"}[15m])))",
+					"legendFormat": "p95 {{flow}}"
+				}
+			]
+		},
+		{
+			"id": 8,
+			"type": "timeseries",
+			"title": "Peak memory per duel (avg and p95)",
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${mimir}"
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 16,
+				"y": 5
+			},
+			"fieldConfig": {
+				"defaults": {
+					"unit": "bytes"
+				},
+				"overrides": []
+			},
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "bottom"
+				},
+				"tooltip": {
+					"mode": "multi"
+				}
+			},
+			"targets": [
+				{
+					"refId": "A",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "sum by (flow) (rate(evolution_duel_peak_memory_bytes_sum{job=\"evolution_server\"}[15m])) / sum by (flow) (rate(evolution_duel_peak_memory_bytes_count{job=\"evolution_server\"}[15m]))",
+					"legendFormat": "avg {{flow}}"
+				},
+				{
+					"refId": "B",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "histogram_quantile(0.95, sum by (le, flow) (rate(evolution_duel_peak_memory_bytes_bucket{job=\"evolution_server\"}[15m])))",
+					"legendFormat": "p95 {{flow}}"
+				}
+			]
+		},
+		{
+			"id": 9,
+			"type": "timeseries",
+			"title": "Duel duration (avg and p95)",
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${mimir}"
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 0,
+				"y": 13
+			},
+			"fieldConfig": {
+				"defaults": {
+					"unit": "s"
+				},
+				"overrides": []
+			},
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "bottom"
+				},
+				"tooltip": {
+					"mode": "multi"
+				}
+			},
+			"targets": [
+				{
+					"refId": "A",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "sum by (flow) (rate(evolution_duel_duration_seconds_sum{job=\"evolution_server\"}[15m])) / sum by (flow) (rate(evolution_duel_duration_seconds_count{job=\"evolution_server\"}[15m]))",
+					"legendFormat": "avg {{flow}}"
+				},
+				{
+					"refId": "B",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "histogram_quantile(0.95, sum by (le, flow) (rate(evolution_duel_duration_seconds_bucket{job=\"evolution_server\"}[15m])))",
+					"legendFormat": "p95 {{flow}}"
+				}
+			]
+		},
+		{
+			"id": 10,
+			"type": "timeseries",
+			"title": "Engine CPU spent (all duels, cores)",
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${mimir}"
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 8,
+				"y": 13
+			},
+			"fieldConfig": {
+				"defaults": {
+					"unit": "none"
+				},
+				"overrides": []
+			},
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "bottom"
+				},
+				"tooltip": {
+					"mode": "multi"
+				}
+			},
+			"targets": [
+				{
+					"refId": "A",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "sum by (flow) (rate(evolution_duel_cpu_seconds_sum{job=\"evolution_server\"}[15m]))",
+					"legendFormat": "{{flow}}"
+				}
+			],
+			"description": "CPU seconds per second used by finished duel engines, i.e. cores busy with duels."
+		},
+		{
+			"id": 11,
+			"type": "timeseries",
+			"title": "Duels finished per minute",
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${mimir}"
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 16,
+				"y": 13
+			},
+			"fieldConfig": {
+				"defaults": {
+					"unit": "none"
+				},
+				"overrides": []
+			},
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "bottom"
+				},
+				"tooltip": {
+					"mode": "multi"
+				}
+			},
+			"targets": [
+				{
+					"refId": "A",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "sum by (flow, ranked) (rate(evolution_duel_duration_seconds_count{job=\"evolution_server\"}[5m])) * 60",
+					"legendFormat": "{{flow}} ranked={{ranked}}"
+				}
+			]
+		},
+		{
+			"id": 12,
+			"type": "row",
+			"title": "Server process (Node)",
+			"collapsed": false,
+			"gridPos": {
+				"h": 1,
+				"w": 24,
+				"x": 0,
+				"y": 21
+			},
+			"panels": []
+		},
+		{
+			"id": 13,
+			"type": "timeseries",
+			"title": "Node process CPU",
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${mimir}"
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 0,
+				"y": 22
+			},
+			"fieldConfig": {
+				"defaults": {
+					"unit": "none"
+				},
+				"overrides": []
+			},
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "bottom"
+				},
+				"tooltip": {
+					"mode": "multi"
+				}
+			},
+			"targets": [
+				{
+					"refId": "A",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "rate(process_cpu_seconds_total{job=\"evolution_server\"}[5m])",
+					"legendFormat": "cores"
+				}
+			],
+			"description": "Node process only (includes YGOPro worker threads). EDOPro C++ cores are separate processes: see host CPU."
+		},
+		{
+			"id": 14,
+			"type": "timeseries",
+			"title": "Node process memory",
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${mimir}"
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 8,
+				"y": 22
+			},
+			"fieldConfig": {
+				"defaults": {
+					"unit": "bytes"
+				},
+				"overrides": []
+			},
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "bottom"
+				},
+				"tooltip": {
+					"mode": "multi"
+				}
+			},
+			"targets": [
+				{
+					"refId": "A",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "process_resident_memory_bytes{job=\"evolution_server\"}",
+					"legendFormat": "RSS"
+				},
+				{
+					"refId": "B",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "sum(nodejs_heap_size_used_bytes{job=\"evolution_server\"})",
+					"legendFormat": "heap used"
+				}
+			]
+		},
+		{
+			"id": 15,
+			"type": "timeseries",
+			"title": "Event loop lag",
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${mimir}"
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 16,
+				"y": 22
+			},
+			"fieldConfig": {
+				"defaults": {
+					"unit": "s"
+				},
+				"overrides": []
+			},
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "bottom"
+				},
+				"tooltip": {
+					"mode": "multi"
+				}
+			},
+			"targets": [
+				{
+					"refId": "A",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "nodejs_eventloop_lag_p99_seconds{job=\"evolution_server\"}",
+					"legendFormat": "p99"
+				},
+				{
+					"refId": "B",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "nodejs_eventloop_lag_mean_seconds{job=\"evolution_server\"}",
+					"legendFormat": "mean"
+				}
+			]
+		},
+		{
+			"id": 16,
+			"type": "row",
+			"title": "Host (node_exporter)",
+			"collapsed": false,
+			"gridPos": {
+				"h": 1,
+				"w": 24,
+				"x": 0,
+				"y": 30
+			},
+			"panels": []
+		},
+		{
+			"id": 17,
+			"type": "timeseries",
+			"title": "Host CPU usage",
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${mimir}"
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 0,
+				"y": 31
+			},
+			"fieldConfig": {
+				"defaults": {
+					"unit": "percentunit"
+				},
+				"overrides": []
+			},
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "bottom"
+				},
+				"tooltip": {
+					"mode": "multi"
+				}
+			},
+			"targets": [
+				{
+					"refId": "A",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "1 - avg(rate(node_cpu_seconds_total{job=\"node_exporter\",instance=\"$instance\",mode=\"idle\"}[5m]))",
+					"legendFormat": "used"
+				}
+			]
+		},
+		{
+			"id": 18,
+			"type": "timeseries",
+			"title": "Host memory",
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${mimir}"
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 8,
+				"y": 31
+			},
+			"fieldConfig": {
+				"defaults": {
+					"unit": "bytes"
+				},
+				"overrides": []
+			},
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "bottom"
+				},
+				"tooltip": {
+					"mode": "multi"
+				}
+			},
+			"targets": [
+				{
+					"refId": "A",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "node_memory_MemTotal_bytes{job=\"node_exporter\",instance=\"$instance\"} - node_memory_MemAvailable_bytes{job=\"node_exporter\",instance=\"$instance\"}",
+					"legendFormat": "used"
+				},
+				{
+					"refId": "B",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "node_memory_MemTotal_bytes{job=\"node_exporter\",instance=\"$instance\"}",
+					"legendFormat": "total"
+				}
+			]
+		},
+		{
+			"id": 19,
+			"type": "timeseries",
+			"title": "Load average",
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${mimir}"
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 16,
+				"y": 31
+			},
+			"fieldConfig": {
+				"defaults": {
+					"unit": "none"
+				},
+				"overrides": []
+			},
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "bottom"
+				},
+				"tooltip": {
+					"mode": "multi"
+				}
+			},
+			"targets": [
+				{
+					"refId": "A",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "node_load1{job=\"node_exporter\",instance=\"$instance\"}",
+					"legendFormat": "1m"
+				},
+				{
+					"refId": "B",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "node_load5{job=\"node_exporter\",instance=\"$instance\"}",
+					"legendFormat": "5m"
+				},
+				{
+					"refId": "C",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "count(node_cpu_seconds_total{job=\"node_exporter\",instance=\"$instance\",mode=\"idle\"})",
+					"legendFormat": "cores"
+				}
+			]
+		},
+		{
+			"id": 20,
+			"type": "timeseries",
+			"title": "Disk used",
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${mimir}"
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 0,
+				"y": 39
+			},
+			"fieldConfig": {
+				"defaults": {
+					"unit": "percentunit"
+				},
+				"overrides": []
+			},
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "bottom"
+				},
+				"tooltip": {
+					"mode": "multi"
+				}
+			},
+			"targets": [
+				{
+					"refId": "A",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "1 - node_filesystem_avail_bytes{job=\"node_exporter\",instance=\"$instance\",fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{job=\"node_exporter\",instance=\"$instance\",fstype!~\"tmpfs|overlay\"}",
+					"legendFormat": "{{mountpoint}}"
+				}
+			]
+		},
+		{
+			"id": 21,
+			"type": "timeseries",
+			"title": "Network",
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${mimir}"
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 8,
+				"y": 39
+			},
+			"fieldConfig": {
+				"defaults": {
+					"unit": "Bps"
+				},
+				"overrides": []
+			},
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "bottom"
+				},
+				"tooltip": {
+					"mode": "multi"
+				}
+			},
+			"targets": [
+				{
+					"refId": "A",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "sum(rate(node_network_receive_bytes_total{job=\"node_exporter\",instance=\"$instance\",device!~\"lo|veth.*|docker.*|br-.*\"}[5m]))",
+					"legendFormat": "in"
+				},
+				{
+					"refId": "B",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "sum(rate(node_network_transmit_bytes_total{job=\"node_exporter\",instance=\"$instance\",device!~\"lo|veth.*|docker.*|br-.*\"}[5m]))",
+					"legendFormat": "out"
+				}
+			]
+		},
+		{
+			"id": 22,
+			"type": "row",
+			"title": "Per-duel detail (Loki)",
+			"collapsed": false,
+			"gridPos": {
+				"h": 1,
+				"w": 24,
+				"x": 0,
+				"y": 47
+			},
+			"panels": []
+		},
+		{
+			"id": 23,
+			"type": "table",
+			"title": "Recent duels (heaviest CPU first)",
+			"datasource": {
+				"type": "loki",
+				"uid": "${loki}"
+			},
+			"gridPos": {
+				"h": 12,
+				"w": 24,
+				"x": 0,
+				"y": 48
+			},
+			"targets": [
+				{
+					"refId": "A",
+					"datasource": {
+						"type": "loki",
+						"uid": "${loki}"
+					},
+					"queryType": "range",
+					"expr": "{container_name=\"evolutionygo-server\"} | json | msg=\"duel.resources\""
+				}
+			],
+			"transformations": [
+				{
+					"id": "extractFields",
+					"options": {
+						"source": "labels"
+					}
+				},
+				{
+					"id": "organize",
+					"options": {
+						"includeByName": {
+							"Time": true,
+							"flow": true,
+							"ranked": true,
+							"roomId": true,
+							"matchId": true,
+							"durationMs": true,
+							"cpuSeconds": true,
+							"peakMemoryBytes": true
+						}
+					}
+				},
+				{
+					"id": "convertFieldType",
+					"options": {
+						"conversions": [
+							{
+								"targetField": "cpuSeconds",
+								"destinationType": "number"
+							},
+							{
+								"targetField": "peakMemoryBytes",
+								"destinationType": "number"
+							},
+							{
+								"targetField": "durationMs",
+								"destinationType": "number"
+							}
+						]
+					}
+				},
+				{
+					"id": "sortBy",
+					"options": {
+						"sort": [
+							{
+								"field": "cpuSeconds",
+								"desc": true
+							}
+						]
+					}
+				}
+			],
+			"fieldConfig": {
+				"defaults": {},
+				"overrides": [
+					{
+						"matcher": {
+							"id": "byName",
+							"options": "peakMemoryBytes"
+						},
+						"properties": [
+							{
+								"id": "unit",
+								"value": "bytes"
+							}
+						]
+					},
+					{
+						"matcher": {
+							"id": "byName",
+							"options": "cpuSeconds"
+						},
+						"properties": [
+							{
+								"id": "unit",
+								"value": "s"
+							}
+						]
+					},
+					{
+						"matcher": {
+							"id": "byName",
+							"options": "durationMs"
+						},
+						"properties": [
+							{
+								"id": "unit",
+								"value": "ms"
+							}
+						]
+					}
+				]
+			}
+		}
+	]
+}

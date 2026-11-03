@@ -1,5 +1,5 @@
 import { Logger } from "../domain/Logger";
-import { Pino } from "./Pino";
+import { parseLogFormat, Pino } from "./Pino";
 
 /**
  * Simple factory/singleton that returns a shared logger instance.
@@ -10,8 +10,7 @@ class LoggerFactory {
 
 	public static getLogger(context?: Record<string, unknown>): Logger {
 		if (!LoggerFactory.instance) {
-			// default to Pino; could be made configurable later
-			LoggerFactory.instance = new Pino();
+			LoggerFactory.instance = Pino.create(parseLogFormat(process.env.LOG_FORMAT));
 		}
 
 		if (context) {

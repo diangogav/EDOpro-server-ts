@@ -1,0 +1,17 @@
+// Scrape the Evolution game server /metrics into Mimir.
+// The server runs with host networking and listens on the gateway of the
+// `obs` bridge (METRICS_HOST=172.21.0.1), so Alloy reaches it there.
+prometheus.scrape "evolution_server" {
+  targets = [
+    {
+      "__address__" = "172.21.0.1:9464",
+      "job"         = "evolution_server",
+      "instance"    = constants.hostname,
+    },
+  ]
+
+  scrape_interval = "15s"
+  scrape_timeout  = "10s"
+
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}

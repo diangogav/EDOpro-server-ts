@@ -58,6 +58,7 @@
 		"typescript": "^6.0.3"
 	},
 	"dependencies": {
+		"@prometheus-io/client": "0.16.1",
 		"async-mutex": "^0.5.0",
 		"bcrypt": "^6.0.0",
 		"better-lock": "^3.2.0",
