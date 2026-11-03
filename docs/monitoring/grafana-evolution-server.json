@@ -632,6 +632,76 @@
 			]
 		},
 		{
+			"id": 24,
+			"type": "timeseries",
+			"title": "Engines alive vs active duels",
+			"description": "Threads and child processes come from procfs on each scrape. Idle Node has ~11 threads; each YGOPro worker adds one and each EDOPro core is one child process. A gap that stays open while duels are 0 is an engine that outlived its duel.",
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${mimir}"
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 24,
+				"x": 0,
+				"y": 30
+			},
+			"fieldConfig": {
+				"defaults": {
+					"unit": "short",
+					"decimals": 0
+				},
+				"overrides": []
+			},
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "bottom"
+				},
+				"tooltip": {
+					"mode": "multi"
+				}
+			},
+			"targets": [
+				{
+					"refId": "A",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "evolution_process_threads{job=\"evolution_server\"}",
+					"legendFormat": "threads"
+				},
+				{
+					"refId": "B",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "sum(evolution_duels_active{job=\"evolution_server\",flow=\"ygopro\"})",
+					"legendFormat": "ygopro duels"
+				},
+				{
+					"refId": "C",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "evolution_child_processes{job=\"evolution_server\"}",
+					"legendFormat": "child processes"
+				},
+				{
+					"refId": "D",
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${mimir}"
+					},
+					"expr": "sum(evolution_duels_active{job=\"evolution_server\",flow=\"edopro\"})",
+					"legendFormat": "edopro duels"
+				}
+			]
+		},
+		{
 			"id": 16,
 			"type": "row",
 			"title": "Host (node_exporter)",
@@ -640,7 +710,7 @@
 				"h": 1,
 				"w": 24,
 				"x": 0,
-				"y": 30
+				"y": 38
 			},
 			"panels": []
 		},
@@ -656,7 +726,7 @@
 				"h": 8,
 				"w": 8,
 				"x": 0,
-				"y": 31
+				"y": 39
 			},
 			"fieldConfig": {
 				"defaults": {
@@ -697,7 +767,7 @@
 				"h": 8,
 				"w": 8,
 				"x": 8,
-				"y": 31
+				"y": 39
 			},
 			"fieldConfig": {
 				"defaults": {
@@ -747,7 +817,7 @@
 				"h": 8,
 				"w": 8,
 				"x": 16,
-				"y": 31
+				"y": 39
 			},
 			"fieldConfig": {
 				"defaults": {
@@ -806,7 +876,7 @@
 				"h": 8,
 				"w": 8,
 				"x": 0,
-				"y": 39
+				"y": 47
 			},
 			"fieldConfig": {
 				"defaults": {
@@ -847,7 +917,7 @@
 				"h": 8,
 				"w": 8,
 				"x": 8,
-				"y": 39
+				"y": 47
 			},
 			"fieldConfig": {
 				"defaults": {
@@ -894,7 +964,7 @@
 				"h": 1,
 				"w": 24,
 				"x": 0,
-				"y": 47
+				"y": 55
 			},
 			"panels": []
 		},
@@ -910,7 +980,7 @@
 				"h": 12,
 				"w": 24,
 				"x": 0,
-				"y": 48
+				"y": 56
 			},
 			"targets": [
 				{
