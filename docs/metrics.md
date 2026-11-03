@@ -49,9 +49,13 @@ When an engine ends, the server writes one log line:
 | `evolution_duel_cpu_seconds` | histogram | `flow`, `ranked` |
 | `evolution_duel_peak_memory_bytes` | histogram | `flow`, `ranked` |
 | `evolution_duel_duration_seconds` | histogram | `flow`, `ranked` |
+| `evolution_process_threads` | gauge | — |
+| `evolution_child_processes` | gauge | — |
 | `process_*`, `nodejs_*` | default Node.js metrics | — |
 
 Per-duel identifiers (room, match) go only to the log line; metric labels stay low-cardinality.
+
+`evolution_process_threads` and `evolution_child_processes` come from procfs on each scrape, so they count what is really alive: every YGOPro ocgcore worker is one thread and every EDOPro core is one child process. If they stay above their idle baseline while `evolution_duels_active` is 0, an engine outlived its duel.
 
 `process_cpu_seconds_total` covers the Node process and its YGOPro worker threads. EDOPro cores are separate processes, so host CPU (node_exporter) is the total.
 

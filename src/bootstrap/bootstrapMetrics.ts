@@ -4,6 +4,8 @@ import { Logger } from "@shared/logger/domain/Logger";
 import { DuelResourceMonitorHolder } from "@shared/metrics/domain/DuelResourceMonitorHolder";
 import { DuelMetrics } from "@shared/metrics/infrastructure/DuelMetrics";
 import { MetricsServer } from "@shared/metrics/infrastructure/MetricsServer";
+import { ProcLivenessReader } from "@shared/metrics/infrastructure/ProcLivenessReader";
+import { ProcessLivenessMetrics } from "@shared/metrics/infrastructure/ProcessLivenessMetrics";
 import { ProcResourceReader } from "@shared/metrics/infrastructure/ProcResourceReader";
 import { SampledDuelResourceMonitor } from "@shared/metrics/infrastructure/SampledDuelResourceMonitor";
 
@@ -28,6 +30,7 @@ export async function bootstrapMetrics(
 
 	const registry = new Registry();
 	collectDefaultMetrics({ register: registry });
+	new ProcessLivenessMetrics(registry, new ProcLivenessReader());
 
 	const metricsLogger = logger.child({ file: "metrics" });
 	DuelResourceMonitorHolder.set(
