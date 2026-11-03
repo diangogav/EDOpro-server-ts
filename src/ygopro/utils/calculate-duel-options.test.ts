@@ -2,7 +2,11 @@ import { OcgcoreDuelOptionFlag } from "koishipro-core.js";
 import { GameMode } from "ygopro-msg-encode";
 
 import { HostInfo } from "@ygopro/room/domain/host-info/HostInfo";
-import { calculateDuelOptions, DUEL_TCG_SEGOC_NONPUBLIC } from "./calculate-duel-options";
+import {
+	calculateDuelOptions,
+	DUEL_GOAT_2005,
+	DUEL_TCG_SEGOC_NONPUBLIC,
+} from "./calculate-duel-options";
 
 function makeHostInfo(overrides?: Partial<HostInfo>): HostInfo {
 	return {
@@ -19,6 +23,7 @@ function makeHostInfo(overrides?: Partial<HostInfo>): HostInfo {
 		max_deck_points: 100,
 		best_of: 1,
 		tcg_segoc_nonpublic: 0,
+		goat_2005: 0,
 		...overrides,
 	};
 }
@@ -37,6 +42,18 @@ describe("calculateDuelOptions", () => {
 
 		expect(opt & DUEL_TCG_SEGOC_NONPUBLIC).toBe(DUEL_TCG_SEGOC_NONPUBLIC);
 		expect(opt >> 16).toBe(5);
+	});
+
+	it("leaves the Goat 2005 option off by default", () => {
+		expect(calculateDuelOptions(makeHostInfo()) & DUEL_GOAT_2005).toBe(0);
+	});
+
+	it("sets the Goat 2005 option when the room enables it", () => {
+		const opt = calculateDuelOptions(makeHostInfo({ duel_rule: 1, goat_2005: 1 }));
+
+		expect(opt & DUEL_GOAT_2005).toBe(DUEL_GOAT_2005);
+		expect(opt & DUEL_TCG_SEGOC_NONPUBLIC).toBe(0);
+		expect(opt >> 16).toBe(1);
 	});
 
 	it("keeps the shuffle and tag options alongside the TCG SEGOC option", () => {

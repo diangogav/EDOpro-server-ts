@@ -218,6 +218,7 @@ export class YGOProRoom extends YgoRoom {
 			max_deck_points: 100,
 			best_of: BEST_OF[GameMode.SINGLE],
 			tcg_segoc_nonpublic: 0,
+			goat_2005: 0,
 		};
 
 		const [configuration, password = ""] = command.split("#");

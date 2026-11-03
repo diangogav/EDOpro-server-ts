@@ -183,6 +183,17 @@ describe("YGOProRoom", () => {
 		expect(room.hostInfo.tcg_segoc_nonpublic).toBe(0);
 	});
 
+	it("creates a room with Goat 2005 rulings when the goat2005 param is sent", () => {
+		const room = YGOProRoomMother.create({ command: "mr1,GOAT2005#123" });
+		expect(room.hostInfo.goat_2005).toBe(1);
+		expect(room.hostInfo.duel_rule).toBe(1);
+	});
+
+	it("creates a room without Goat 2005 rulings when the goat2005 param is not sent", () => {
+		const room = YGOProRoomMother.create({ command: "mr1#123" });
+		expect(room.hostInfo.goat_2005).toBe(0);
+	});
+
 	it("Should create a room without deck checking if nc param is send", () => {
 		const room = YGOProRoomMother.create({ command: "m,nc#123" });
 		expect(room.hostInfo.no_check_deck).toBe(1);

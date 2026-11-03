@@ -220,6 +220,17 @@ export const priorityRuleMappings: RuleMappings = {
 		},
 	},
 
+	goat2005: {
+		get: () => {
+			return {
+				goat_2005: 1,
+			};
+		},
+		validate: (value) => {
+			return value === "goat2005";
+		},
+	},
+
 	nc: {
 		get: () => {
 			return {

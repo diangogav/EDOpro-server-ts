@@ -26,6 +26,11 @@ describe("isRecognizedToken", () => {
 		expect(isRecognizedToken("TCGSEGOC")).toBe(true);
 	});
 
+	it("recognizes the goat2005 modifier", () => {
+		expect(isRecognizedToken("goat2005")).toBe(true);
+		expect(isRecognizedToken("GOAT2005")).toBe(true);
+	});
+
 	it("recognizes tokens from the format tier", () => {
 		expect(isRecognizedToken("edison")).toBe(true);
 		expect(isRecognizedToken("tengu")).toBe(true);
