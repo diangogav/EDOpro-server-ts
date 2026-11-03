@@ -1,7 +1,7 @@
 import { Socket } from "net";
 
-import { ISocket } from "./ISocket";
-import { SUPERSEDED_CLOSE_TIMEOUT_MS } from "./sessionSuperseded";
+import { ISocket } from "../domain/ISocket";
+import { SUPERSEDED_CLOSE_TIMEOUT_MS } from "../domain/sessionSuperseded";
 import { TCP_KEEPALIVE_INITIAL_DELAY_MS } from "./tcpKeepAlive";
 
 export class TCPClientSocket implements ISocket {

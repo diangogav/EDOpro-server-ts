@@ -3,7 +3,7 @@ import { config } from "src/config";
 
 import { Logger } from "../shared/logger/domain/Logger";
 import { createRoomFinder } from "src/bootstrap/roomFinder";
-import { TCPClientSocket } from "../shared/socket/domain/TCPClientSocket";
+import { TCPClientSocket } from "../shared/socket/infrastructure/TCPClientSocket";
 import { MatchmakingConnectionFactory } from "@ygopro/matchmaking/application/MatchmakingConnectionFactory";
 import { YGOProConnectionHandler } from "./YGOProConnectionHandler";
 

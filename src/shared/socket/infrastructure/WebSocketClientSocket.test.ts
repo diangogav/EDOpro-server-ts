@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
 import WebSocket from "ws";
 
-import { SUPERSEDED_CLOSE_TIMEOUT_MS } from "./sessionSuperseded";
+import { SUPERSEDED_CLOSE_TIMEOUT_MS } from "../domain/sessionSuperseded";
 import { WebSocketClientSocket } from "./WebSocketClientSocket";
 
 jest.mock("ws");

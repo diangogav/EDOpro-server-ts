@@ -6,7 +6,7 @@ import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastru
 import { CheckIfUseCanJoin } from "@edopro/room/application/CheckIfUserCanJoin";
 import { Logger } from "../shared/logger/domain/Logger";
 import { createRoomFinder } from "src/bootstrap/roomFinder";
-import { WebSocketClientSocket } from "../shared/socket/domain/WebSocketClientSocket";
+import { WebSocketClientSocket } from "../shared/socket/infrastructure/WebSocketClientSocket";
 import { SocketConnectionHandler } from "./SocketConnectionHandler";
 
 export class WSHostServer {

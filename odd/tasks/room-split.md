@@ -23,7 +23,7 @@ Order approved by the user. Leaks = lines removed from `KNOWN_DOMAIN_LEAKS` (46 
 - T6 [S2,S3,S4] `RoomState` ports for match lifecycle hooks and room-list broadcast (replace `container.get` and `WebSocketSingleton`) — 4 leaks — done (branch refactor/room-split-roomstate-ports; no test mock rewritten, see L9)
 - T7 [S2,S3,S4] ban list catalog ports and the RuleMappings logger — 5 leaks — high risk: persisted data and `/api/getrooms` — done (branch refactor/room-split-banlist-catalog)
 - T8 [S2] extract the EDOPro core-process channel and turn-order bookkeeping from `Room` — 0 leaks — queue/backpressure tests first — done (branch refactor/room-split-core-channel)
-- T9 [S3] move the socket adapters to `shared/socket/infrastructure` — 2 leaks — pending
+- T9 [S3] move the socket adapters to `shared/socket/infrastructure` — 2 leaks — done (branch refactor/room-split-socket-adapters)
 
 ## Log
 
@@ -49,3 +49,4 @@ Order approved by the user. Leaks = lines removed from `KNOWN_DOMAIN_LEAKS` (46 
   - New characterization tests pin the ban list name of both rooms and the `/api/getrooms` `banlist` field. They fail when the catalog is wired to an empty lookup.
   - KNOWN_DOMAIN_LEAKS 7 → 2 (only T9 left). tsc, pnpm check, build and pnpm test (2721) pass.
 - L11 T8: characterization tests `RoomCoreChannel.test.ts` (queue order, drain, drop before attach, reset on attach, stdin errors, DESTROY_DUEL, IPC metrics) and `RoomTurnOrder.test.ts` (tag, relay, single seat, stale turns, rotation) pass on a9812076 before the move. `Room` now delegates to `CoreChannel` and `TurnOrder`; the channel reads the room logger on each use because `Room.create*` replaces it after construction. Five mutations killed. Found, kept as is (S2): after a `write()` that returns false, the same command is written again on drain, so the core receives it twice; to raise with the user as a separate fix.
+- L12 T8 merged as #464; the double write and the stale drain it surfaced were fixed in #465 (user: "mergeado, arreglalo"). T9: `TCPClientSocket`, `WebSocketClientSocket` and `tcpKeepAlive` (reads /proc), with their tests, moved to `src/shared/socket/infrastructure/`; `ISocket` and `sessionSuperseded` stay in domain. KNOWN_DOMAIN_LEAKS 2 → 0. docs/architecture.md §3.1 and §13 updated.

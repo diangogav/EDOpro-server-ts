@@ -4,7 +4,7 @@ import { config } from "src/config";
 
 import { Logger } from "../shared/logger/domain/Logger";
 import { createRoomFinder } from "src/bootstrap/roomFinder";
-import { WebSocketClientSocket } from "../shared/socket/domain/WebSocketClientSocket";
+import { WebSocketClientSocket } from "../shared/socket/infrastructure/WebSocketClientSocket";
 import { MatchmakingConnectionFactory } from "@ygopro/matchmaking/application/MatchmakingConnectionFactory";
 import { HandshakeTicketAuthenticator } from "./HandshakeTicketAuthenticator";
 import { YGOProConnectionHandler } from "./YGOProConnectionHandler";

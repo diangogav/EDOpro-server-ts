@@ -51,10 +51,7 @@ const INFRASTRUCTURE_PACKAGES = new Set([
 
 const KNOWN_ENGINE_LEAKS: readonly string[] = [];
 
-const KNOWN_DOMAIN_LEAKS: readonly string[] = [
-	"src/shared/socket/domain/TCPClientSocket -> net",
-	"src/shared/socket/domain/WebSocketClientSocket -> ws",
-];
+const KNOWN_DOMAIN_LEAKS: readonly string[] = [];
 
 type Import = { from: string; to: string };
 

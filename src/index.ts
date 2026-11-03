@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import "src/shared/error-handler/error-handler";
 
-import { checkTcpKeepAliveTuning } from "src/shared/socket/domain/tcpKeepAlive";
+import { checkTcpKeepAliveTuning } from "src/shared/socket/infrastructure/tcpKeepAlive";
 import LoggerFactory from "src/shared/logger/infrastructure/LoggerFactory";
 
 import { config } from "./config";
