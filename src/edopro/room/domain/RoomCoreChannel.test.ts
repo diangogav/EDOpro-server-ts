@@ -90,6 +90,23 @@ describe("Room core-process channel", () => {
 		expect(next.stdin.write.mock.calls).toEqual([["fresh\n"]]);
 	});
 
+	it("ignores a late drain from the previous core while the new one is still full", () => {
+		const room = RoomMother.create();
+		const previous = makeCore([false]);
+		room.setDuel(previous.core);
+		room.sendMessageToCpp("old");
+		const next = makeCore([false]);
+		room.setDuel(next.core);
+		room.sendMessageToCpp("first");
+		room.sendMessageToCpp("second");
+
+		previous.stdin.emit("drain");
+		expect(next.stdin.write.mock.calls).toEqual([["first\n"]]);
+
+		next.stdin.emit("drain");
+		expect(next.stdin.write.mock.calls).toEqual([["first\n"], ["second\n"]]);
+	});
+
 	it("logs stdin write errors", () => {
 		const error = jest.spyOn(LoggerMock.prototype, "error");
 		const room = RoomMother.create();

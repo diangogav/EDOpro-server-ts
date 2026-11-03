@@ -137,6 +137,10 @@ export class CoreChannel {
 				this.metrics.drainCount += 1;
 				this.lastDrainStartAt = process.hrtime.bigint();
 				core.stdin.once("drain", () => {
+					// A drain from a core that was replaced must not end the new core's wait.
+					if (this.core !== core) {
+						return;
+					}
 					if (this.lastDrainStartAt !== null) {
 						this.metrics.totalDrainWaitNs += process.hrtime.bigint() - this.lastDrainStartAt;
 						this.lastDrainStartAt = null;
