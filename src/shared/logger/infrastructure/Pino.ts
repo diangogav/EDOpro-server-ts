@@ -1,4 +1,4 @@
-import pino, { Logger as PinoLogger } from "pino";
+import pino, { type DestinationStream, Logger as PinoLogger } from "pino";
 import pretty, { type PrettyOptions } from "pino-pretty";
 import type { Transform } from "stream";
 
@@ -24,6 +24,22 @@ function createPrettyStream(opts?: PrettyOptions): Transform {
 	});
 }
 
+export type LogFormat = "pretty" | "json";
+
+export function parseLogFormat(value: string | undefined): LogFormat {
+	return value?.trim().toLowerCase() === "json" ? "json" : "pretty";
+}
+
+function createFileLogger(): PinoLogger {
+	return pino({
+		level: "debug",
+		transport: {
+			target: "pino/file",
+			options: { destination: "app.log" },
+		},
+	});
+}
+
 export class Pino implements Logger {
 	private readonly logger: PinoLogger;
 	private readonly fileLogger: PinoLogger;
@@ -34,15 +50,22 @@ export class Pino implements Logger {
 			this.fileLogger = fileLogger;
 		} else {
 			this.logger = pino({ level: "debug" }, createPrettyStream({ colorize: true }));
-
-			this.fileLogger = pino({
-				level: "debug",
-				transport: {
-					target: "pino/file",
-					options: { destination: "app.log" },
-				},
-			});
+			this.fileLogger = createFileLogger();
 		}
+	}
+
+	/**
+	 * Builds the root logger. "json" writes one JSON object per line so a log
+	 * collector (Loki) can filter by field; "pretty" keeps the colored output.
+	 */
+	public static create(format: LogFormat, destination?: DestinationStream): Pino {
+		if (format === "pretty") {
+			return new Pino();
+		}
+
+		const logger = pino({ level: "debug" }, destination ?? pino.destination(1));
+
+		return new Pino(logger, createFileLogger());
 	}
 
 	debug(message: unknown, context?: Record<string, unknown>): void {
