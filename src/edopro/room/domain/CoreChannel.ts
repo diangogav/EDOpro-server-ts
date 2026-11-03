@@ -24,9 +24,10 @@ type IpcMetricsSnapshot = {
 const IPC_METRICS_INTERVAL_MS = 60_000;
 
 /**
- * Sends JSON-line commands to the EDOPro core process of one room. Commands
- * queue while stdin is full and are flushed on "drain". It also counts IPC
- * metrics and, with IPC_METRICS_ENABLED=true, logs them every minute.
+ * Sends JSON-line commands to the EDOPro core process of one room. Each
+ * command is written once; after a write() that returns false, the rest wait
+ * in the queue until "drain". It also counts IPC metrics and, with
+ * IPC_METRICS_ENABLED=true, logs them every minute.
  *
  * The logger is read on each use because the room replaces its logger after
  * construction.
@@ -125,8 +126,11 @@ export class CoreChannel {
 		}
 
 		while (this.pending.length > 0) {
-			const message = this.pending[0];
+			const message = this.pending.shift() as string;
+			// stdin accepts the line even when write() returns false; false only
+			// asks to wait for "drain" before writing the next one.
 			const writeSuccess = core.stdin.write(message);
+			this.metrics.commandsWritten += 1;
 
 			if (!writeSuccess) {
 				this.isWaitingDrain = true;
@@ -143,9 +147,6 @@ export class CoreChannel {
 
 				return;
 			}
-
-			this.metrics.commandsWritten += 1;
-			this.pending.shift();
 		}
 	}
 
