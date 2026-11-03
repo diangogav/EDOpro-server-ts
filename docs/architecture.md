@@ -89,7 +89,8 @@ in dev, `--env-file` in start), never by application code.
 `send` / `onMessage` / `onClose` / `close` / `destroy`, plus the mutable tags
 the rest of the system stamps on a connection (`id`, `roomId`,
 `resolvedUserId`, `internalForRoomId`, `watchForRoomId`). Two adapters
-implement it — `TCPClientSocket` and `WebSocketClientSocket`.
+implement it — `TCPClientSocket` and `WebSocketClientSocket`, in
+`src/shared/socket/infrastructure/`.
 
 Four listeners collapse into **two connection handlers**:
 
@@ -477,10 +478,16 @@ about the current shape, not a work plan.
   the shared `RoomState` (match start hooks, plugin duel events, `:score`) is
   extended by `EdoproRoomState` (core message decoding, 0xF3 chat) and
   `YGOProRoomState` (STOC_CHAT and emotes).
-- **Room domain classes build their own infrastructure.** `Room` and
-  `YGOProRoom` create `UserProfilePostgresRepository` and read in-memory
-  ban-list and card repositories directly, and the room states call application
-  handlers. `KNOWN_DOMAIN_LEAKS` (§12) lists every such import.
+- **Room collaborators are wired in two ways.** `Room` and `YGOProRoom` get
+  theirs through the `deps` argument of `create*` (`createEdoproRoomDeps`,
+  `createYGOProRoomDeps`). `RoomState`, the ban list catalogs and the
+  `RuleMappings` logger use module-level registrations that `src/index.ts`
+  calls first (`registerRoomStatePorts`, `registerBanListCatalogs`); an
+  unregistered one throws. A new entry point must call both, and
+  `src/test-support/jest.setupAfterEnv.ts` registers them for tests.
+  `KNOWN_DOMAIN_LEAKS` (§12) is empty. The application layer (`DeckCreator`,
+  `RoomCreator`, `YGOProDeckCreator`) still reads the in-memory repositories
+  directly, which the rules allow.
 - **Two live message pumps on one socket.** Once a YGOPro client exists, its own
   pump is added alongside the connection-level one, and each inbound frame is
   parsed by two independent processors.

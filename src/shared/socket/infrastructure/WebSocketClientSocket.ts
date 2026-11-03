@@ -1,11 +1,11 @@
 import WebSocket from "ws";
 
-import { ISocket } from "./ISocket";
+import { ISocket } from "../domain/ISocket";
 import {
 	SESSION_SUPERSEDED_CLOSE_CODE,
 	SESSION_SUPERSEDED_CLOSE_REASON,
 	SUPERSEDED_CLOSE_TIMEOUT_MS,
-} from "./sessionSuperseded";
+} from "../domain/sessionSuperseded";
 
 export class WebSocketClientSocket implements ISocket {
 	readonly transport = "ws" as const;

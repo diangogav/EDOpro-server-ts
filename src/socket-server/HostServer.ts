@@ -6,7 +6,7 @@ import { UserProfilePostgresRepository } from "src/shared/user-profile/infrastru
 
 import { Logger } from "../shared/logger/domain/Logger";
 import { createRoomFinder } from "src/bootstrap/roomFinder";
-import { TCPClientSocket } from "../shared/socket/domain/TCPClientSocket";
+import { TCPClientSocket } from "../shared/socket/infrastructure/TCPClientSocket";
 
 import { SocketConnectionHandler } from "./SocketConnectionHandler";
 

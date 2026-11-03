@@ -3,7 +3,7 @@ import { mock, MockProxy } from "jest-mock-extended";
 import { WebSocket, WebSocketServer } from "ws";
 
 import { Logger } from "@shared/logger/domain/Logger";
-import { WebSocketClientSocket } from "../shared/socket/domain/WebSocketClientSocket";
+import { WebSocketClientSocket } from "../shared/socket/infrastructure/WebSocketClientSocket";
 import { Commands } from "../shared/messages/Commands";
 import { MessageEmitter } from "@shared/messages/MessageEmitter";
 import { HandshakeTicketAuthenticator } from "./HandshakeTicketAuthenticator";
@@ -22,7 +22,7 @@ jest.mock("src/shared/user-profile/infrastructure/postgres/UserProfilePostgresRe
 jest.mock("@shared/messages/MessageEmitter");
 jest.mock("../shared/room/application/DisconnectHandler");
 jest.mock("../shared/room/application/RoomFinder");
-jest.mock("../shared/socket/domain/WebSocketClientSocket");
+jest.mock("../shared/socket/infrastructure/WebSocketClientSocket");
 jest.mock("@ygopro/room/application/YGOProGameCreatorHandler");
 jest.mock("@ygopro/room/application/YGOProJoinHandler");
 jest.mock("@ygopro/room/infrastructure/YGOProMessageRepository");

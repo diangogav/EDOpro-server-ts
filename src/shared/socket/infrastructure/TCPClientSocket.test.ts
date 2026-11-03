@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
 import { Socket } from "net";
 
-import { SUPERSEDED_CLOSE_TIMEOUT_MS } from "./sessionSuperseded";
+import { SUPERSEDED_CLOSE_TIMEOUT_MS } from "../domain/sessionSuperseded";
 import { TCPClientSocket } from "./TCPClientSocket";
 import { TCP_KEEPALIVE_INITIAL_DELAY_MS } from "./tcpKeepAlive";
 
