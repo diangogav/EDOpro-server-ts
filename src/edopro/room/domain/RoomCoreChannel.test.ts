@@ -47,8 +47,22 @@ describe("Room core-process channel", () => {
 
 		stdin.emit("drain");
 
-		// The command whose write returned false is written again after drain.
-		expect(stdin.write.mock.calls).toEqual([["first\n"], ["first\n"], ["second\n"]]);
+		// stdin already buffered "first", so it is not written again.
+		expect(stdin.write.mock.calls).toEqual([["first\n"], ["second\n"]]);
+	});
+
+	it("writes every command exactly once across several stalls", () => {
+		const room = RoomMother.create();
+		const { core, stdin } = makeCore([false, false]);
+		room.setDuel(core);
+
+		room.sendMessageToCpp("a");
+		room.sendMessageToCpp("b");
+		room.sendMessageToCpp("c");
+		stdin.emit("drain");
+		stdin.emit("drain");
+
+		expect(stdin.write.mock.calls).toEqual([["a\n"], ["b\n"], ["c\n"]]);
 	});
 
 	it("drops commands sent before the core is attached", () => {
@@ -74,6 +88,23 @@ describe("Room core-process channel", () => {
 		room.sendMessageToCpp("fresh");
 
 		expect(next.stdin.write.mock.calls).toEqual([["fresh\n"]]);
+	});
+
+	it("ignores a late drain from the previous core while the new one is still full", () => {
+		const room = RoomMother.create();
+		const previous = makeCore([false]);
+		room.setDuel(previous.core);
+		room.sendMessageToCpp("old");
+		const next = makeCore([false]);
+		room.setDuel(next.core);
+		room.sendMessageToCpp("first");
+		room.sendMessageToCpp("second");
+
+		previous.stdin.emit("drain");
+		expect(next.stdin.write.mock.calls).toEqual([["first\n"]]);
+
+		next.stdin.emit("drain");
+		expect(next.stdin.write.mock.calls).toEqual([["first\n"], ["second\n"]]);
 	});
 
 	it("logs stdin write errors", () => {
@@ -135,10 +166,10 @@ describe("Room core-process channel", () => {
 		expect(info).toHaveBeenCalledTimes(1);
 		expect(info).toHaveBeenCalledWith("IPC_METRICS", {
 			uptimeMs: 60_000,
-			queueDepth: 2,
-			maxQueueDepth: 2,
+			queueDepth: 1,
+			maxQueueDepth: 1,
 			commandsEnqueued: 3,
-			commandsWritten: 1,
+			commandsWritten: 2,
 			stdinWriteErrors: 1,
 			drainCount: 1,
 			totalDrainWaitMs: 0,
