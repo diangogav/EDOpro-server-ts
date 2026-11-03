@@ -73,6 +73,43 @@ describe("OCGCore resource measurement", () => {
 		expect(worker.dispose).toHaveBeenCalled();
 	});
 
+	it("disposes the worker without asking for stats when nothing is measured", async () => {
+		const worker = makeWorker();
+		const { core } = makeCore(worker);
+		core.resourceWatch = null;
+
+		core.disposeWithTimeout(false);
+		await flushPromises();
+
+		expect(worker.resourceStats).not.toHaveBeenCalled();
+		expect(worker.dispose).toHaveBeenCalled();
+	});
+
+	it("still disposes the worker when recording the stats throws", async () => {
+		const worker = makeWorker();
+		const { core, end } = makeCore(worker);
+		end.mockImplementation(() => {
+			throw new Error("Value is not a valid number");
+		});
+
+		core.disposeWithTimeout(false);
+		await flushPromises();
+
+		expect(worker.dispose).toHaveBeenCalled();
+	});
+
+	it("still finalizes a killed worker when recording the stats throws", () => {
+		const worker = makeWorker();
+		const { core, end } = makeCore(worker);
+		end.mockImplementation(() => {
+			throw new Error("Value is not a valid number");
+		});
+
+		core.disposeWithTimeout(true);
+
+		expect(worker.finalize).toHaveBeenCalled();
+	});
+
 	it("ends the measurement without asking a killed worker for stats", () => {
 		const worker = makeWorker();
 		const { core, end } = makeCore(worker);

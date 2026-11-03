@@ -920,7 +920,7 @@
 						"uid": "${loki}"
 					},
 					"queryType": "range",
-					"expr": "{container_name=\"evolutionygo-server\"} | json | msg=\"duel.resources\" | line_format \"{{.msg}}\""
+					"expr": "{container_name=\"evolutionygo-server\"} | json | msg=\"duel.resources\""
 				}
 			],
 			"transformations": [

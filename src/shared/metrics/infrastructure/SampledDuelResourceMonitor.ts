@@ -100,17 +100,15 @@ export class SampledDuelResourceMonitor implements DuelResourceMonitor {
 		return this.now();
 	}
 
-	private finish(context: DuelResourceContext, durationMs: number, usage: MeasuredUsage): void {
-		const { metrics } = this.options;
-		const labels = DuelMetrics.labels(context.flow, context.ranked);
+	private finish(context: DuelResourceContext, elapsedMs: number, usage: MeasuredUsage): void {
+		// A wall-clock jump can make the elapsed time negative.
+		const durationMs = Math.max(0, elapsedMs);
 
-		metrics.activeDuels.dec({ flow: context.flow });
-		metrics.durationSeconds.observe(labels, durationMs / 1000);
-		if (usage.cpuSeconds !== null) {
-			metrics.cpuSeconds.observe(labels, usage.cpuSeconds);
-		}
-		if (usage.peakMemoryBytes !== null) {
-			metrics.peakMemoryBytes.observe(labels, usage.peakMemoryBytes);
+		try {
+			this.observe(context, durationMs, usage);
+		} catch (error) {
+			// Metrics must never break the duel teardown that calls end().
+			this.options.logger.error(error as Error, { roomId: context.roomId });
 		}
 
 		this.options.logger.info("duel.resources", {
@@ -122,5 +120,19 @@ export class SampledDuelResourceMonitor implements DuelResourceMonitor {
 			cpuSeconds: usage.cpuSeconds,
 			peakMemoryBytes: usage.peakMemoryBytes,
 		});
+	}
+
+	private observe(context: DuelResourceContext, durationMs: number, usage: MeasuredUsage): void {
+		const { metrics } = this.options;
+		const labels = DuelMetrics.labels(context.flow, context.ranked);
+
+		metrics.activeDuels.dec({ flow: context.flow });
+		metrics.durationSeconds.observe(labels, durationMs / 1000);
+		if (usage.cpuSeconds !== null) {
+			metrics.cpuSeconds.observe(labels, usage.cpuSeconds);
+		}
+		if (usage.peakMemoryBytes !== null) {
+			metrics.peakMemoryBytes.observe(labels, usage.peakMemoryBytes);
+		}
 	}
 }

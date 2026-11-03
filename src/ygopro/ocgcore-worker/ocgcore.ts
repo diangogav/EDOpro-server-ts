@@ -33,6 +33,7 @@ import {
 	ThreadResourceStats,
 } from "../../shared/metrics/domain/DuelResourceMonitor";
 import { DuelResourceMonitorHolder } from "../../shared/metrics/domain/DuelResourceMonitorHolder";
+import { noopDuelResourceMonitor } from "../../shared/metrics/domain/DuelResourceMonitor";
 import { OcgcoreWorker, OcgcoreProcessTimeoutError } from "./ocgcore-worker";
 import { Logger } from "src/shared/logger/domain/Logger";
 import { GameMessageMiddleware } from "../middleware/GameMessageMiddleware";
@@ -187,12 +188,17 @@ export class OCGCore {
 				decks,
 			});
 
-			this.resourceWatch = DuelResourceMonitorHolder.get().watchThread({
-				flow: "ygopro",
-				roomId: this.room.id,
-				matchId: this.room.matchId,
-				ranked: this.room.ranked,
-			});
+			// With metrics off there is no watch, so dispose never asks the worker for stats.
+			const resourceMonitor = DuelResourceMonitorHolder.get();
+			this.resourceWatch =
+				resourceMonitor === noopDuelResourceMonitor
+					? null
+					: resourceMonitor.watchThread({
+							flow: "ygopro",
+							roomId: this.room.id,
+							matchId: this.room.matchId,
+							ranked: this.room.ranked,
+						});
 
 			this.messageSubscription = this.ocgcore.message$.subscribe((msg) => {
 				this.logger.info("Received message from OCGCoreWorker");
@@ -356,7 +362,11 @@ export class OCGCore {
 
 		if (kill) {
 			// A worker being killed is not answering; do not wait for its stats.
-			resourceWatch?.end(null);
+			try {
+				resourceWatch?.end(null);
+			} catch (error) {
+				this.logger.error("Error recording ocgcore resource stats", { error });
+			}
 			ocgcore.finalize().catch((error) => {
 				this.logger.error("Error force finalizing ocgcore", { error });
 			});
@@ -374,8 +384,14 @@ export class OCGCore {
 			});
 		}, OCGCore.DISPOSE_TIMEOUT_MS);
 
-		OCGCore.readResourceStats(ocgcore)
-			.then((stats) => resourceWatch?.end(stats))
+		const statsRead = resourceWatch
+			? OCGCore.readResourceStats(ocgcore).then((stats) => resourceWatch.end(stats))
+			: Promise.resolve();
+
+		statsRead
+			.catch((error) => {
+				this.logger.error("Error recording ocgcore resource stats", { error });
+			})
 			.then(() => ocgcore.dispose())
 			.catch((error) => {
 				this.logger.error("Error disposing ocgcore", { error });

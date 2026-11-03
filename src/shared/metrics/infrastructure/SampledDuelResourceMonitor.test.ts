@@ -148,6 +148,33 @@ describe("SampledDuelResourceMonitor", () => {
 		).toBeUndefined();
 	});
 
+	it("records a zero duration when the clock moves backwards", async () => {
+		const monitor = makeMonitor(makeReader([null]));
+
+		const watch = monitor.watchThread(makeContext({ flow: "ygopro" }));
+		now = 500;
+		watch.end({ cpuSeconds: 1, memoryBytes: 1 });
+
+		expect(logger.info).toHaveBeenCalledWith(
+			"duel.resources",
+			expect.objectContaining({ durationMs: 0 }),
+		);
+	});
+
+	it("logs instead of throwing when a figure cannot be observed", () => {
+		jest.spyOn(logger, "error");
+		const monitor = makeMonitor(makeReader([null]));
+
+		const watch = monitor.watchThread(makeContext({ flow: "ygopro" }));
+
+		expect(() => watch.end({ cpuSeconds: Number.NaN, memoryBytes: 1 })).not.toThrow();
+		expect(logger.error).toHaveBeenCalled();
+		expect(logger.info).toHaveBeenCalledWith(
+			"duel.resources",
+			expect.objectContaining({ flow: "ygopro" }),
+		);
+	});
+
 	it("records the stats a thread duel reports when it ends", async () => {
 		const monitor = makeMonitor(makeReader([null]));
 
