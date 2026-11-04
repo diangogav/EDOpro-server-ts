@@ -91,8 +91,8 @@ Notes worth knowing:
   goat_2005: 1, time_limit: 450 }`: Goat Format (TCG, April 2005 list, card pool
   legal on 2005-08-17). The whitelist comes from evolution-assets
   (`lflist/goat.lflist.conf`); its pre-errata copies live in the shared
-  pre-errata overlay and their scripts in the private scripts source, assembled
-  under `formats/goat/script` by the private manifest override.
+  pre-errata overlay, and their card scripts are provided by the deployment's
+  private manifest override under `formats/goat/script`.
 - **`goat2005`** (priority tier) → `{ goat_2005: 1 }`: the duel uses the Goat
   Format (TCG, 2005) rulings from goatformat.com/basics.html that the fork core
   gates behind `DUEL_GOAT_2005` (`0x400`): ATK/DEF modifiers activatable
