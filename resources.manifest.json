@@ -176,9 +176,10 @@
 			"comment": "Rush ban list from the mirrored pack — the ProjectIgnis Rush list targets EDOPro's native Rush with real card IDs, which do not exist in this pool"
 		},
 		{
+			"comment": "Goat Format whitelist from evolution-assets: ported pre-errata copies keep EDOPro's 504700xxx/511 codes (rows in the shared pre-errata overlay loaded under formats/edison), the rest play under their official code",
 			"target": "ygopro/formats/goat/lflist.conf",
-			"from": "edopro-lflists",
-			"file": "GOAT.lflist.conf"
+			"from": "evolution-assets",
+			"file": "lflist/goat.lflist.conf"
 		},
 		{
 			"target": "ygopro/formats/ocg/lflist.conf",
@@ -233,7 +234,7 @@
 		}
 	],
 	"runtime": {
-		"comment": "TS loader pool membership. standard = base + served formats (load order; base first for FIRST-occurrence dedup). extended = extra members appended after standard. pools = named pools that declare their script search path and card pool separately. Formats assembled but omitted here (goat, speed, gx, mdc) are assembled-but-not-served by design.",
+		"comment": "TS loader pool membership. standard = base + served formats (load order; base first for FIRST-occurrence dedup). extended = extra members appended after standard. pools = named pools that declare their script search path and card pool separately. Formats assembled but omitted here (speed, gx, mdc) are assembled-but-not-served by design.",
 		"ygopro": {
 			"standard": [
 				"base",
@@ -244,6 +245,7 @@
 				"formats/world",
 				"formats/tengu",
 				"formats/edison",
+				"formats/goat",
 				"formats/hat",
 				"formats/ocg",
 				"formats/tcg"

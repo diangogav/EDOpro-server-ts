@@ -183,6 +183,19 @@ describe("YGOProRoom", () => {
 		expect(room.hostInfo.tcg_segoc_nonpublic).toBe(0);
 	});
 
+	it("creates a Goat Format room from the goat token: master rule 1 with the Goat 2005 rulings", () => {
+		const room = YGOProRoomMother.create({ command: "goat#123" });
+		expect(room.hostInfo.duel_rule).toBe(1);
+		expect(room.hostInfo.goat_2005).toBe(1);
+		expect(room.hostInfo.time_limit).toBe(450);
+	});
+
+	it("creates a Goat Format room from the gt alias too", () => {
+		const room = YGOProRoomMother.create({ command: "gt#123" });
+		expect(room.hostInfo.goat_2005).toBe(1);
+		expect(room.hostInfo.duel_rule).toBe(1);
+	});
+
 	it("creates a room with Goat 2005 rulings when the goat2005 param is sent", () => {
 		const room = YGOProRoomMother.create({ command: "mr1,GOAT2005#123" });
 		expect(room.hostInfo.goat_2005).toBe(1);
@@ -616,7 +629,7 @@ describe("YGOProRoom", () => {
 		it("opens a default room for a removed format token", () => {
 			const defaults = YGOProRoomMother.create({ command: "#123" }).hostInfo;
 
-			for (const token of ["goat", "hat", "gx", "mdc", "speed"]) {
+			for (const token of ["hat", "gx", "mdc", "speed"]) {
 				expect(YGOProRoomMother.create({ command: `${token}#123` }).hostInfo).toEqual(defaults);
 			}
 		});

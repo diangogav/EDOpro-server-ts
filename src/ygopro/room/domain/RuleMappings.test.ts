@@ -33,11 +33,13 @@ describe("isRecognizedToken", () => {
 
 	it("recognizes tokens from the format tier", () => {
 		expect(isRecognizedToken("edison")).toBe(true);
+		expect(isRecognizedToken("goat")).toBe(true);
+		expect(isRecognizedToken("gt")).toBe(true);
 		expect(isRecognizedToken("tengu")).toBe(true);
 	});
 
 	it("does not recognize formats that are not served", () => {
-		for (const token of ["goat", "hat", "gx", "mdc", "speed"]) {
+		for (const token of ["hat", "gx", "mdc", "speed"]) {
 			expect(isRecognizedToken(token)).toBe(false);
 		}
 	});
