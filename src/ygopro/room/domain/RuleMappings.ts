@@ -460,7 +460,31 @@ const edisonRuleSet = () => ({
 	time_limit: 450,
 });
 
+// Goat Format (TCG, April 2005 list, pool to 2005-08-17): master rule 1 plus the
+// fork core's Goat 2005 rulings (DUEL_GOAT_2005), see docs/join-commands.md.
+const goatRuleSet = () => ({
+	rule: 5,
+	lflist: resolveAliasIndex("goat"),
+	duel_rule: 1,
+	goat_2005: 1,
+	time_limit: 450,
+});
+
 export const formatRuleMappings: RuleMappings = {
+	goat: {
+		get: goatRuleSet,
+		validate: (value) => {
+			return value === "goat";
+		},
+	},
+	// "gt" is the short alias of "goat" for AI join passwords (same 20-char
+	// ceiling as "ed" below).
+	gt: {
+		get: goatRuleSet,
+		validate: (value) => {
+			return value === "gt";
+		},
+	},
 	edison: {
 		get: edisonRuleSet,
 		validate: (value) => {
