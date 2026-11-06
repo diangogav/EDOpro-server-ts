@@ -59,6 +59,12 @@ Per-duel identifiers (room, match) go only to the log line; metric labels stay l
 
 `process_cpu_seconds_total` covers the Node process and its YGOPro worker threads. EDOPro cores are separate processes, so host CPU (node_exporter) is the total.
 
+## Memory and malloc arenas
+
+The image sets `MALLOC_ARENA_MAX=2`. Each YGOPro duel runs in a worker thread that lives only as long as the duel, and glibc gives threads their own malloc arenas (up to 8 per core by default). Memory freed when a worker ends stayed inside its arena, so the process RSS grew with every busy hour and barely dropped when duels ended, while the V8 heap stayed flat. With two shared arenas, the RSS follows the number of live duels and falls again when they end.
+
+To read it on the dashboard, compare **Node process memory** with **Engines alive vs active duels**: `evolution_process_threads` returning to its idle baseline means the workers are gone, and the RSS should drop after it. A `docker run -e MALLOC_ARENA_MAX=...` flag overrides the image value.
+
 ## Wiring it into Grafana
 
 1. Set `LOG_FORMAT=json`, `METRICS_ENABLED=true` and `METRICS_HOST=<collector-reachable IP>` on the server and redeploy.

@@ -77,6 +77,12 @@ RUN apt-get update && \
 
 WORKDIR /app
 
+# Every YGOPro duel runs in a short-lived worker thread. With glibc's default of
+# up to 8 malloc arenas per core, memory freed by finished workers stays trapped
+# in their arenas and the RSS only grows. Two shared arenas let later duels reuse
+# that memory and return it to the OS. See docs/metrics.md.
+ENV MALLOC_ARENA_MAX=2
+
 # Server
 COPY --from=server-builder /server/dist ./
 COPY --from=server-builder /server/package.json ./package.json
