@@ -104,9 +104,11 @@ describe("BasicStatsCalculator", () => {
 			],
 		});
 
-		userProfileRepository.findByUsername
-			.mockResolvedValueOnce(playerUserProfile)
-			.mockResolvedValueOnce(opponentUserProfile);
+		userProfileRepository.findById.mockImplementation(async (id) => {
+			if (id === player.id) return playerUserProfile;
+			if (id === opponent.id) return opponentUserProfile;
+			return null;
+		});
 
 		txMock.findByUserIdAndRankId
 			.mockResolvedValueOnce(playerStats)
@@ -201,11 +203,13 @@ describe("BasicStatsCalculator", () => {
 
 	it("stores each player's handshake client on their match row", async () => {
 		const tagged = PlayerMother.create({
+			id: player.id,
 			team: Team.PLAYER,
 			winner: true,
 			games: [GameMother.create({ result: "winner", client: "evoduel" })],
 		});
 		const untagged = PlayerMother.create({
+			id: opponent.id,
 			team: Team.OPPONENT,
 			winner: false,
 			games: [GameMother.create({ result: "loser", client: null })],
@@ -574,6 +578,63 @@ describe("BasicStatsCalculator", () => {
 			await expect(basicStatsCalculator.handle(event)).rejects.toThrow("persistence failure");
 
 			expect(matchResumeCreator.run).not.toHaveBeenCalled();
+		});
+	});
+
+	describe("account resolution", () => {
+		it("credits the authenticated account even when the nickname is another user's username", async () => {
+			const victimProfile = UserProfileMother.create();
+			const impostor = PlayerMother.create({
+				...player.toPresentation(),
+				name: victimProfile.username,
+			});
+			userProfileRepository.findByUsername.mockResolvedValue(victimProfile);
+			const event = GameOverDomainEventMother.create({
+				players: [impostor.toPresentation(), opponent.toPresentation()],
+				ranked: true,
+				banListName: "TCG",
+			});
+
+			await basicStatsCalculator.handle(event);
+
+			const creditedUserIds = playerStatsRepository.transaction.mock.calls.map(
+				([userId]) => userId,
+			);
+			expect(creditedUserIds).toEqual([playerUserProfile.id, opponentUserProfile.id]);
+			expect(creditedUserIds).not.toContain(victimProfile.id);
+		});
+
+		it("skips a player without an account id", async () => {
+			const guest = PlayerMother.create({ ...player.toPresentation(), id: null });
+			const event = GameOverDomainEventMother.create({
+				players: [guest.toPresentation(), opponent.toPresentation()],
+				ranked: true,
+				banListName: "TCG",
+			});
+
+			await basicStatsCalculator.handle(event);
+
+			const creditedUserIds = playerStatsRepository.transaction.mock.calls.map(
+				([userId]) => userId,
+			);
+			expect(creditedUserIds).toEqual([opponentUserProfile.id]);
+			expect(userProfileRepository.findByUsername).not.toHaveBeenCalled();
+		});
+
+		it("skips a player whose account no longer exists", async () => {
+			const removed = PlayerMother.create({ ...player.toPresentation(), id: "deleted-user" });
+			const event = GameOverDomainEventMother.create({
+				players: [removed.toPresentation(), opponent.toPresentation()],
+				ranked: true,
+				banListName: "TCG",
+			});
+
+			await basicStatsCalculator.handle(event);
+
+			const creditedUserIds = playerStatsRepository.transaction.mock.calls.map(
+				([userId]) => userId,
+			);
+			expect(creditedUserIds).toEqual([opponentUserProfile.id]);
 		});
 	});
 });
