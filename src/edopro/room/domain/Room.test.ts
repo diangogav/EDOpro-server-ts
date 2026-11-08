@@ -39,4 +39,25 @@ describe("Room", () => {
 			expect(set.size).toBe(arr.length);
 		});
 	});
+
+	describe("spectator account binding", () => {
+		it("keeps the account of a spectator when it takes a seat", () => {
+			const room = RoomMother.create({ team0: 1, team1: 1, ranked: true });
+			const spectator = room.createSpectatorUnsafe(ClientMother.create().socket, "Spec", "user-1");
+			room.addSpectatorUnsafe(spectator);
+
+			room.spectatorToPlayerUnsafe(spectator);
+
+			expect(room.players).toContain(spectator);
+			expect(spectator.id).toBe("user-1");
+		});
+
+		it("creates spectators without an account by default", () => {
+			const room = RoomMother.create();
+
+			const spectator = room.createSpectatorUnsafe(ClientMother.create().socket, "Spec");
+
+			expect(spectator.id).toBeNull();
+		});
+	});
 });

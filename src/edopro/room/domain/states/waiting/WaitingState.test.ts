@@ -119,6 +119,8 @@ describe("WaitingState", () => {
 		Object.defineProperty(mockRoom, "players", { value: [kickedClient] });
 		Object.defineProperty(mockRoom, "spectators", { value: [spectator] });
 
+		Object.assign(mockClient, { host: true });
+
 		mockEmitter.emit(Commands.KICK as unknown as string, message, mockRoom, mockClient);
 
 		expect(mockRoom.playerToSpectatorUnsafe).toHaveBeenCalledWith(kickedClient);
@@ -304,5 +306,114 @@ describe("WaitingState", () => {
 
 		expect(mockRoom.createSpectatorUnsafe).toHaveBeenCalled();
 		expect(mockRoom.addSpectatorUnsafe).toHaveBeenCalledWith(mockClient);
+	});
+
+	describe("room authority", () => {
+		const kickMessage = (position: number): ClientMessage =>
+			({ data: Buffer.from([position]) }) as ClientMessage;
+
+		const seatedGuest = (): jest.Mocked<Client> => {
+			const guest = new Client({} as any) as jest.Mocked<Client>;
+			Object.assign(guest, {
+				...mockClient,
+				sendMessage: jest.fn(),
+				position: 1,
+				isSpectator: false,
+				host: false,
+				name: "Guest",
+			});
+			return guest;
+		};
+
+		it("ignores KICK from a seated player who is not the host", () => {
+			const guest = seatedGuest();
+			Object.defineProperty(mockRoom, "players", { value: [guest] });
+			Object.assign(mockClient, { host: false, isSpectator: false });
+
+			mockEmitter.emit(Commands.KICK as unknown as string, kickMessage(1), mockRoom, mockClient);
+
+			expect(mockRoom.playerToSpectatorUnsafe).not.toHaveBeenCalled();
+			expect(mockRoom.addKick).not.toHaveBeenCalled();
+			expect(guest.sendMessage).not.toHaveBeenCalled();
+		});
+
+		it("ignores KICK from a spectator", () => {
+			const guest = seatedGuest();
+			Object.defineProperty(mockRoom, "players", { value: [guest] });
+			Object.assign(mockClient, { host: false, isSpectator: true });
+
+			mockEmitter.emit(Commands.KICK as unknown as string, kickMessage(1), mockRoom, mockClient);
+
+			expect(mockRoom.playerToSpectatorUnsafe).not.toHaveBeenCalled();
+			expect(mockRoom.addKick).not.toHaveBeenCalled();
+		});
+
+		it("does not seat a spectator without an account in a ranked room", () => {
+			Object.assign(mockRoom, { ranked: true });
+			Object.assign(mockClient, { isSpectator: true, id: null });
+
+			mockEmitter.emit(
+				Commands.TO_DUEL as unknown as string,
+				{} as ClientMessage,
+				mockRoom,
+				mockClient,
+			);
+
+			expect(mockRoom.spectatorToPlayerUnsafe).not.toHaveBeenCalled();
+		});
+
+		it("seats a spectator bound to an account in a ranked room", () => {
+			Object.assign(mockRoom, { ranked: true });
+			Object.assign(mockClient, { isSpectator: true, id: "user-1" });
+
+			mockEmitter.emit(
+				Commands.TO_DUEL as unknown as string,
+				{} as ClientMessage,
+				mockRoom,
+				mockClient,
+			);
+
+			expect(mockRoom.spectatorToPlayerUnsafe).toHaveBeenCalledWith(mockClient);
+		});
+
+		it("creates the spectator of a full ranked room with the authenticated account", async () => {
+			Object.assign(mockRoom, { ranked: true });
+			mockAuthenticatePlayer.run = jest.fn().mockResolvedValue({ id: "user-1" });
+			mockRoom.calculatePlaceUnsafe = jest.fn().mockReturnValue(null);
+			mockRoom.createSpectatorUnsafe = jest.fn().mockReturnValue(mockClient);
+			const message = {
+				data: Buffer.alloc(50),
+				previousMessage: Buffer.alloc(40),
+			} as ClientMessage;
+
+			mockEmitter.emit("JOIN", message, mockRoom, mockSocket);
+			await new Promise(process.nextTick);
+
+			expect(mockAuthenticatePlayer.run).toHaveBeenCalled();
+			expect(mockRoom.createSpectatorUnsafe).toHaveBeenCalledWith(
+				mockSocket,
+				expect.any(String),
+				"user-1",
+			);
+			expect(mockRoom.addSpectatorUnsafe).toHaveBeenCalledWith(mockClient);
+		});
+
+		it("rejects a full ranked room join that fails authentication", async () => {
+			Object.assign(mockRoom, { ranked: true });
+			mockAuthenticatePlayer.run = jest.fn().mockResolvedValue(null);
+			mockRoom.calculatePlaceUnsafe = jest.fn().mockReturnValue(null);
+			mockRoom.createSpectatorUnsafe = jest.fn().mockReturnValue(mockClient);
+			const message = {
+				data: Buffer.alloc(50),
+				previousMessage: Buffer.alloc(40),
+			} as ClientMessage;
+
+			mockEmitter.emit("JOIN", message, mockRoom, mockSocket);
+			await new Promise(process.nextTick);
+
+			expect(mockRoom.createSpectatorUnsafe).not.toHaveBeenCalled();
+			expect(mockRoom.addSpectatorUnsafe).not.toHaveBeenCalled();
+			expect(mockSocket.send).toHaveBeenCalled();
+		});
 	});
 });
