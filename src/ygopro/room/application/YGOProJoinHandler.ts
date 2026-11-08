@@ -15,6 +15,7 @@ import { isRateLimited } from "@shared/rate-limit/application/isRateLimited";
 import { config } from "../../../config";
 import { JoinStrategyRegistry } from "./join-strategies/JoinStrategyRegistry";
 import { JoinContext } from "./join-strategies/JoinStrategy";
+import { YGOProRoomLocator } from "../infrastructure/YGOProRoomLocator";
 
 export class YGOProJoinHandler implements JoinMessageHandler {
 	private readonly logger: Logger;
@@ -22,6 +23,7 @@ export class YGOProJoinHandler implements JoinMessageHandler {
 	private readonly eventEmitter: EventEmitter;
 	private readonly messageRepository: MessageRepository;
 	private readonly registry: JoinStrategyRegistry;
+	private isJoining = false;
 
 	constructor(
 		eventEmitter: EventEmitter,
@@ -44,6 +46,27 @@ export class YGOProJoinHandler implements JoinMessageHandler {
 	async handleJoinGame(message: ClientMessage): Promise<void> {
 		this.logger.info("JOIN_GAME");
 
+		// A connection joins at most one room: further JOINs while one is being
+		// handled, or once the socket is in or owns a room, are ignored.
+		if (this.isJoining || this.isInRoom()) {
+			this.logger.info("JOIN_GAME ignored, the connection already has a room");
+
+			return;
+		}
+
+		this.isJoining = true;
+		try {
+			await this.join(message);
+		} finally {
+			this.isJoining = false;
+		}
+	}
+
+	private isInRoom(): boolean {
+		return new YGOProRoomLocator().findBySocketId(this.socket.id as string) !== null;
+	}
+
+	private async join(message: ClientMessage): Promise<void> {
 		// Per-IP gate on the JOIN attempt itself, before any strategy resolves.
 		// The attempt is the guarded resource: a novel JOIN can allocate a room
 		// id from the finite 1000-9999 space, a watch JOIN probes which ids
