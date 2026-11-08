@@ -15,7 +15,6 @@ import { Deck } from "../../../shared/deck/domain/Deck";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
 import { JSONMessageProcessor } from "../../messages/JSONMessageProcessor";
-import { MessageProcessor } from "../../../shared/messages/MessageProcessor";
 import { Replay } from "../../replay/Replay";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
 import { DuelFinishReason } from "./DuelFinishReason";
@@ -308,13 +307,9 @@ export class Room extends YgoRoom {
 			this.notifyToAllLobbyClients(client);
 		}
 
-		const messageProcessor = new MessageProcessor();
 		const roomMessageEmitter = new RoomMessageEmitter(client, this);
 
-		client.socket.onMessage((data) => {
-			roomMessageEmitter.handleMessage(data);
-			messageProcessor.read(data);
-		});
+		client.socket.onMessage((data) => roomMessageEmitter.handleMessage(data));
 	}
 
 	async createSpectator(socket: ISocket, name: string): Promise<Client> {
@@ -350,13 +345,9 @@ export class Room extends YgoRoom {
 		client.socket.roomId = this.id;
 		this._spectators.push(client);
 
-		const messageProcessor = new MessageProcessor();
 		const roomMessageEmitter = new RoomMessageEmitter(client, this);
 
-		client.socket.onMessage((data) => {
-			roomMessageEmitter.handleMessage(data);
-			messageProcessor.read(data);
-		});
+		client.socket.onMessage((data) => roomMessageEmitter.handleMessage(data));
 
 		this.notifier.sendTypeChange(client, 0x07);
 	}
