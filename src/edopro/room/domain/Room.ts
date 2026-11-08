@@ -323,11 +323,11 @@ export class Room extends YgoRoom {
 		});
 	}
 
-	createSpectatorUnsafe(socket: ISocket, name: string): Client {
+	createSpectatorUnsafe(socket: ISocket, name: string, userId: string | null = null): Client {
 		const position = this.nextSpectatorPositionUnsafe();
 
 		const client = new Client({
-			id: null,
+			id: userId,
 			socket,
 			host: false,
 			name,

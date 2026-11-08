@@ -84,6 +84,10 @@ export class WaitingState extends EdoproRoomState {
 		room.mutex.runExclusive(() => {
 			player.logger.info("WaitingState: KICK");
 
+			if (!player.host || player.isSpectator) {
+				return;
+			}
+
 			const positionKick = message.data.readInt8();
 			const playerSelect = room.players.find((_client) => _client.position === positionKick);
 
@@ -117,6 +121,10 @@ export class WaitingState extends EdoproRoomState {
 			player.logger.info("WaitingState: TO_DUEL");
 			const ips = player.socket.remoteAddress;
 			if (player.isSpectator && !room.kick.find((kick) => kick.socket.remoteAddress === ips)) {
+				if (room.ranked && player.id === null) {
+					return;
+				}
+
 				room.spectatorToPlayerUnsafe(player);
 
 				return;
@@ -255,18 +263,6 @@ export class WaitingState extends EdoproRoomState {
 		const joinGameMessage = new JoinGameMessage(message.data);
 
 		await room.mutex.runExclusive(async () => {
-			const place = room.calculatePlaceUnsafe();
-
-			if (!place) {
-				const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name);
-				socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
-				room.addSpectatorUnsafe(spectator);
-				room.notifyToAllLobbyClients(spectator);
-				room.sendSpectatorCount({ enqueue: false });
-
-				return;
-			}
-
 			let userId: string | null = null;
 
 			if (room.ranked) {
@@ -280,9 +276,22 @@ export class WaitingState extends EdoproRoomState {
 
 				userId = user.id;
 			}
+
+			const place = room.calculatePlaceUnsafe();
+
+			if (!place) {
+				const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name, userId);
+				socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
+				room.addSpectatorUnsafe(spectator);
+				room.notifyToAllLobbyClients(spectator);
+				room.sendSpectatorCount({ enqueue: false });
+
+				return;
+			}
+
 			const player = room.createPlayerUnsafe(socket, playerInfoMessage.name, userId);
 			if (!player) {
-				const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name);
+				const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name, userId);
 				socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
 				room.addSpectatorUnsafe(spectator);
 				room.notifyToAllLobbyClients(spectator);
