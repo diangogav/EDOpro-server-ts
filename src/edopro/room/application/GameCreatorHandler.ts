@@ -16,6 +16,7 @@ import { ErrorMessages } from "../../messages/server-to-client/error-messages/Er
 import { ErrorClientMessage } from "../../messages/server-to-client/ErrorClientMessage";
 import { JoinGameClientMessage } from "../../messages/server-to-client/JoinGameClientMessage";
 import { createEdoproRoomDeps } from "./createEdoproRoomDeps";
+import { generateUnusedRoomId } from "./generateUnusedRoomId";
 import { Room } from "../domain/Room";
 import RoomList from "../infrastructure/RoomList";
 
@@ -24,20 +25,13 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 	private readonly logger: Logger;
 	private readonly socket: ISocket;
 	private readonly userAuth: UserAuth;
-	private readonly roomId: number;
+	private isCreating = false;
 
-	constructor(
-		eventEmitter: EventEmitter,
-		logger: Logger,
-		socket: ISocket,
-		userAuth: UserAuth,
-		roomId: number,
-	) {
+	constructor(eventEmitter: EventEmitter, logger: Logger, socket: ISocket, userAuth: UserAuth) {
 		this.eventEmitter = eventEmitter;
-		this.logger = logger.child({ file: "GameCreatorHandler", roomId });
+		this.logger = logger.child({ file: "GameCreatorHandler" });
 		this.socket = socket;
 		this.userAuth = userAuth;
-		this.roomId = roomId;
 		this.eventEmitter.on(Commands.CREATE_GAME as unknown as string, (message: ClientMessage) => {
 			void this.handleCreateGame(message);
 		});
@@ -46,6 +40,25 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 	async handleCreateGame(message: ClientMessage): Promise<void> {
 		this.logger.info("Handle");
 
+		// A connection hosts at most one room; the flag covers frames that arrive while the
+		// first room is still being created and socket.roomId is not set yet.
+		if (this.socket.roomId !== undefined || this.isCreating) {
+			this.logger.info("CREATE_GAME ignored, the connection already has a room", {
+				roomId: this.socket.roomId,
+			});
+
+			return;
+		}
+
+		this.isCreating = true;
+		try {
+			await this.createFromMessage(message);
+		} finally {
+			this.isCreating = false;
+		}
+	}
+
+	private async createFromMessage(message: ClientMessage): Promise<void> {
 		const playerInfoMessage = new PlayerInfoMessage(message.previousMessage, message.data.length);
 		const createGameMessage = new CreateGameMessage(message.data);
 
@@ -73,7 +86,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 		const room = Room.createFromCreateGameMessage(
 			message,
 			playerInfoMessage,
-			this.roomId,
+			generateUnusedRoomId(),
 			this.eventEmitter,
 			this.logger,
 			createEdoproRoomDeps(),

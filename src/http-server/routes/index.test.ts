@@ -86,3 +86,13 @@ describe("loadRoutes — matchmaking rate limiting", () => {
 		expect(route).not.toContain(RateLimitMiddleware);
 	});
 });
+
+describe("loadRoutes — room creation", () => {
+	it("does not expose an HTTP route that creates rooms", () => {
+		const { app, calls } = makeApp();
+
+		loadRoutes(app, makeLogger(), makeTickets());
+
+		expect(findRoute(calls.post, "/api/room")).toBeUndefined();
+	});
+});

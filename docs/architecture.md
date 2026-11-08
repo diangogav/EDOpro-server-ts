@@ -399,8 +399,8 @@ follow-up WebSocket handshake needs a fresh one.
 The Express API (`src/http-server/*`) serves the room list (**merging both
 engines**), matchmaking enqueue/status/cancel, ban lists and card lookups, a
 resource-version endpoint, and one admin message route behind an auth
-middleware. `POST /api/room` creates an **EDOPro room only** — the surface is
-asymmetric across engines.
+middleware. Rooms are only created through the socket protocols: there is no
+HTTP route that creates a room.
 
 There is **no health or readiness endpoint** and no metrics endpoint. There is
 also no inbound bot endpoint: bots are requested outbound (§5).
@@ -486,7 +486,7 @@ about the current shape, not a work plan.
   unregistered one throws. A new entry point must call both, and
   `src/test-support/jest.setupAfterEnv.ts` registers them for tests.
   `KNOWN_DOMAIN_LEAKS` (§12) is empty. The application layer (`DeckCreator`,
-  `RoomCreator`, `YGOProDeckCreator`) still reads the in-memory repositories
+  `YGOProDeckCreator`) still reads the in-memory repositories
   directly, which the rules allow.
 - **Two live message pumps on one socket.** Once a YGOPro client exists, its own
   pump is added alongside the connection-level one, and each inbound frame is
