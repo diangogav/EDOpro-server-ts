@@ -13,6 +13,9 @@ import { YGOProConnectionHandler } from "./YGOProConnectionHandler";
 jest.mock("src/config", () => ({ config: { servers: { mercury: { port: 7700 } } } }));
 jest.mock("@ygopro/room/application/YGOProGameCreatorHandler");
 jest.mock("@ygopro/room/application/YGOProJoinHandler");
+
+import { YGOProJoinHandler } from "@ygopro/room/application/YGOProJoinHandler";
+import { YGOProGameCreatorHandler } from "@ygopro/room/application/YGOProGameCreatorHandler";
 jest.mock("@ygopro/room/infrastructure/YGOProMessageRepository");
 jest.mock("@shared/room/application/DisconnectHandler");
 
@@ -165,6 +168,28 @@ describe("YGOProConnectionHandler", () => {
 			await pumped;
 
 			expect(socket.send).toHaveBeenCalledTimes(1);
+		});
+	});
+	describe("join handlers", () => {
+		it("builds one join handler and one game creator per connection, whatever the number of frames", async () => {
+			(YGOProJoinHandler as unknown as jest.Mock).mockClear();
+			(YGOProGameCreatorHandler as unknown as jest.Mock).mockClear();
+			const socket = makeSocket();
+			const pump = registerPump(socket);
+			new YGOProConnectionHandler(logger, roomFinder).handle(socket);
+
+			await pump(
+				Buffer.concat([
+					buildFrame(Commands.JOIN_GAME),
+					buildFrame(Commands.JOIN_GAME),
+					buildFrame(Commands.CREATE_GAME),
+					buildFrame(Commands.JOIN_GAME),
+					buildFrame(Commands.CREATE_GAME),
+				]),
+			);
+
+			expect(YGOProJoinHandler).toHaveBeenCalledTimes(1);
+			expect(YGOProGameCreatorHandler).toHaveBeenCalledTimes(1);
 		});
 	});
 });
