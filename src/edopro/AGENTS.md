@@ -1,6 +1,6 @@
 # EDOPro Match Flow
 
-EDOPro clients (Windows/Linux/Android/iOS). **Multirole** is the reference implementation for this flow; do not copy srvpro2 patterns from `src/ygopro/`. See the comparison table in the root `AGENTS.md`.
+EDOPro clients (Windows/Linux/Android/iOS). **Multirole** is the reference implementation for this flow; do not copy srvpro2 patterns from `src/ygopro/`. See the comparison table in [`docs/multi-client.md`](../../docs/multi-client.md).
 
 ## Flow
 

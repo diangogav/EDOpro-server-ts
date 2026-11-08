@@ -511,6 +511,8 @@ about the current shape, not a work plan.
 | Topic | Document |
 |-------|----------|
 | Install, environment, resources | [README](../README.md) |
+| EDOPro vs YGOPro, what both flows share | [multi-client.md](./multi-client.md) |
+| Feature, migration and module procedures | [development-workflows.md](./development-workflows.md) |
 | Join command wire format and rule tokens | [join-commands.md](./join-commands.md) |
 | Reconnection, spectating, watching | [room-reentry.md](./room-reentry.md) |
 | Writing a plugin | [plugins.md](./plugins.md) |

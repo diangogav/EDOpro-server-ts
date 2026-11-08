@@ -1,191 +1,77 @@
-# AGENTS.md - Evolution Server Development Guide
+# Evolution Server
 
-## How to Use This Guide
+TypeScript server for EDOPro and YGOPro clients, built with Hexagonal/DDD architecture.
 
-- **Start here**: This file defines the rules, patterns, and workflows for the `EDOpro-server-ts` project.
-- **Strict Adherence**: You must follow the "Prime Directives" and "Auto-invoke SOPs" without exception.
-- **Context**: This is a high-performance Hexagonal/DDD architecture.
+This file holds only what applies to every change. When your task matches a row in [Read before you work](#read-before-you-work), read that document first. Code that breaks these rules is rejected.
 
-## Project Overview
+## Rules for every change
 
-| Component       | Location                                | Tech Stack       | Description                                      |
-| --------------- | --------------------------------------- | ---------------- | ------------------------------------------------ |
-| **Core Domain** | `src/edopro/`, `src/shared/`            | TypeScript, DDD  | Business logic, Entities, Value Objects          |
-| **API**         | `src/http-server/`                      | Express, Diod    | REST endpoints for management                    |
-| **Realtime**    | `src/socket-server/`                    | WS, Net          | WebSocket & TCP socket handling                  |
-| **Persistence** | `src/evolution-types/src`, `src/shared/db` | TypeORM, Redis   | PostgreSQL (Users), SQLite (Game), Redis (Cache) |
-| **Clients**     | `src/edopro/`, `src/ygopro/`            | Custom Protocols | Implementations for EDOPro and YGOPro clients    |
+### Architecture
 
----
+- Business logic lives in `domain/`. Dependencies point inward: a `domain/` file never imports `application/` or `infrastructure/`.
+- `src/shared/` never imports `src/edopro/` or `src/ygopro/`, and those two never import each other.
+- The known-leak lists in `src/architecture/boundaries.test.ts` only shrink. Never add a line to make a new import pass.
+- New event subscribers ship as plugins under `src/plugins/`, never as hardwired composition-root code.
+- Use Chain of Responsibility for complex validations (for example, deck rules).
+- Manage dependencies with `diod` or constructor injection.
 
-## Prime Directives (Rules)
+### Code
 
-As an AI agent, you must strictly adhere to these rules. **Violation of these rules will result in rejected code.**
+- `public`, `private` and `protected` are always explicit.
+- No console logs: use the `Logger` domain service.
+- `PascalCase` for classes, `camelCase` for variables, `UPPER_SNAKE_CASE` for constants.
+- Use `@edopro/*` for imports from `src/edopro/` when possible.
+- Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/).
+- Tests are co-located next to their source. `describe` the unit and write `it` as the behavior, in English, present tense, no "should".
 
-### 1. Architecture & Patterns
+### Safety
 
-- **DDD is Mandatory**: Business logic lives in `domain/`. Never import `infrastructure/` or `application/`. Dependencies point inward.
-- **Hexagonal Architecture**: Dependencies point inward. The core doesn't know about the database or sockets.
-- **Test data**: Use `*Mother` classes for shared domain entities; local `make*` factories for suite-specific stubs. Tests are **co-located** in `src/` next to their source. See [testing conventions](./docs/testing.md).
-- **Plugins**: New event subscribers ship as plugins under `src/plugins/`, never as hardwired composition-root code. Contract, discovery, duel events and isolation rules: [server plugins](./docs/plugins.md).
-- **Chain of Responsibility**: Use this pattern for complex validations (e.g., Deck Rules).
-- **Dependency Injection**: Use `diod` or constructor injection to manage dependencies.
+- Use absolute paths for file operations.
+- Never edit `migrations/` manually after they are applied.
+- Run `pnpm lint` and `pnpm test` before finishing.
 
-### 2. Coding Standards
+## Read before you work
 
-- **Explicit Visibility**: `public`, `private`, `protected` must be explicit.
-- **No Console Logs**: Use `Logger` domain service.
-- **Naming**: `PascalCase` for classes, `camelCase` for vars, `UPPER_SNAKE_CASE` for constants.
-- **Conventional Commits**: Commit messages must follow the [Conventional Commits](https://www.conventionalcommits.org/) specification (e.g., `feat: add user login`, `fix: resolve room crash`).
-- **Path Aliases**: Always use `@edopro/*` for imports from `src/edopro/` when possible.
+| When your task...                                        | Read first                                                                 |
+| -------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Implements a feature or use case                         | [Feature implementation](./docs/development-workflows.md#feature-implementation) |
+| Creates a module or architecture component               | [Module creation](./docs/development-workflows.md#module-creation)         |
+| Adds a field, updates the schema or adds an entity       | [Database migration](./docs/development-workflows.md#database-migration)   |
+| Writes tests or fixes a bug                              | [Testing conventions](./docs/testing.md)                                   |
+| Touches the EDOPro flow                                  | [`src/edopro/AGENTS.md`](./src/edopro/AGENTS.md)                           |
+| Touches the YGOPro flow                                  | [`src/ygopro/AGENTS.md`](./src/ygopro/AGENTS.md)                           |
+| Touches shared code, or compares the two flows           | [Multi-client architecture](./docs/multi-client.md)                        |
+| Publishes or changes `GameOverDomainEvent`               | [Game over event](./docs/multi-client.md#game-over-event)                  |
+| Adds an event subscriber                                 | [Server plugins](./docs/plugins.md)                                        |
+| Needs boot order, dispatch, persistence or invariants    | [Architecture](./docs/architecture.md)                                     |
+| Changes the join command format or rule tokens           | [Join commands](./docs/join-commands.md)                                   |
+| Changes client room options or banlist indices           | [Room options](./docs/room-options.md)                                     |
+| Changes reconnection, spectating or watching             | [Room re-entry](./docs/room-reentry.md)                                    |
+| Changes reserved duels                                   | [Reserved duels](./docs/reserved-duels.md)                                 |
+| Changes metrics or sizes the server                      | [Metrics](./docs/metrics.md), [Memory capacity](./docs/memory-capacity.md) |
 
-### 3. Operational Safety
+## Project map
 
-- **Absolute Paths**: Always use absolute paths for file operations.
-- **Database**: Never alter `migrations/` manually after they are applied. Use `pnpm migration:generate` for schema changes.
-- **Verify**: Run `pnpm lint` and `pnpm test` before finishing.
+| Component   | Location                                   | Stack                                            |
+| ----------- | ------------------------------------------ | ------------------------------------------------ |
+| Core domain | `src/edopro/`, `src/shared/`               | TypeScript, DDD                                  |
+| API         | `src/http-server/`                         | Express, Diod                                    |
+| Realtime    | `src/socket-server/`                       | WS, Net                                          |
+| Persistence | `src/evolution-types/src`, `src/shared/db` | TypeORM; PostgreSQL (users), SQLite (game), Redis (cache) |
+| Clients     | `src/edopro/`, `src/ygopro/`               | Custom protocols                                 |
 
----
+## Commands
 
-## Auto-invoke SOPs
-
-When performing these actions, **ALWAYS** follow the corresponding Standard Operating Procedure (SOP) below:
-
-| Action                                            | SOP                                        |
-| ------------------------------------------------- | ------------------------------------------ |
-| "Implement feature...", "Create use case..."      | **[SOP-001] Feature Implementation (DDD)** |
-| "Write tests...", "Fix bug...", "Add unit test"   | **[SOP-002] Testing Strategy**             |
-| "Add field to DB", "Update schema", "New entity"  | **[SOP-003] Database Migration**           |
-| "Create new module", "New architecture component" | **[SOP-004] Module Creation**              |
-
----
-
-## Standard Operating Procedures
-
-### [SOP-001] Feature Implementation (DDD)
-
-**Goal**: Implement a new feature following strict DDD/Hexagonal patterns.
-
-1.  **Domain Layer** (`src/[module]/domain/`):
-    - Define the Entity/Aggregate Root.
-    - Define Value Objects if needed.
-    - Define the `Repository` interface (port).
-    - _Output_: `.ts` files with pure business logic.
-2.  **Application Layer** (`src/[module]/application/`):
-    - Create the Use Case (Service/Handler).
-    - Inject the Repository interface via constructor.
-    - _Output_: Service class implementing specific business action.
-3.  **Infrastructure Layer** (`src/[module]/infrastructure/`):
-    - Implement the Repository using TypeORM.
-    - _Output_: Repository implementation file.
-4.  **Interface Layer**:
-    - Expose via Controller (HTTP) or Event Handler (Socket).
-
-### [SOP-002] Testing Strategy
-
-**Goal**: Consistent, co-located tests. Full conventions in [docs/testing.md](./docs/testing.md).
-
-1.  **Co-locate the test**: create `[Thing].test.ts` next to `src/[module]/[Thing].ts`. Do **not** create a separate `tests/` tree.
-2.  **Build test data**:
-    - Shared domain entities → use/create a `*Mother` (static `create(overrides?)`, faker defaults):
-      ```typescript
-      export class UserMother {
-        static create(overrides?: Partial<UserPrimitives>): User {
-          return User.fromPrimitives({
-            id: UuidMother.create(),
-            name: faker.person.firstName(),
-            ...overrides,
-          });
-        }
-      }
-      ```
-    - Suite-local stubs (fake repo/provider/socket) → inline `make*` factory with an `overrides` param.
-3.  **Naming**: `describe` the unit, `it` the behavior in **English**, present tense, no "should":
-      ```typescript
-      describe("CreateRoom", () => {
-        it("creates a public room", async () => {
-          const user = UserMother.create();
-          // ...
-        });
-      });
-      ```
-4.  **Mocks**: shared Mock classes for infra (Logger/Socket/MessageRepository), `jest.mock()` for module singletons, `mock<T>()` (jest-mock-extended) for one-off interfaces. Reset singletons in `afterEach`.
-
-### [SOP-003] Database Migration
-
-**Goal**: Safely modify the database schema.
-
-1.  **Update Entity**: Modify the TypeORM entity class in `src/evolution-types/src/`.
-2.  **Generate Migration**:
-    ```bash
-    MIGRATION_NAME=NameOfChange pnpm migration:generate
-    ```
-3.  **Verify**: Inspect the generated file in `src/evolution-types/src/migrations/`.
-4.  **Apply**:
-    ```bash
-    pnpm migration:run
-    ```
-
-### [SOP-004] Module Creation
-
-**Goal**: Create a new domain module from scratch.
-
-1.  **Structure**:
-    ```bash
-    mkdir -p src/new-module/{domain,application,infrastructure}
-    ```
-    Tests are co-located next to their source inside these folders — no separate `tests/` tree.
-2.  **Registration**:
-    - Register new entities in TypeORM config.
-    - Register new controllers/handlers in the dependency injection container (`diod`).
-
----
-
-## Technical Reference
-
-### Key Commands
-
-| Command                    | Description                          |
-| -------------------------- | ------------------------------------ |
-| `pnpm dev`                 | Start development server (Port 9229) |
-| `pnpm build`               | Build for production                 |
-| `pnpm test`                | Run all tests                        |
-| `pnpm test path/to/file`   | Run specific test file               |
-| `pnpm lint`                | Check code style                     |
-| `pnpm lint:fix`            | Fix code style                       |
+| Command                         | Description                                                            |
+| ------------------------------- | ---------------------------------------------------------------------- |
+| `pnpm dev`                      | Start development server (port 9229)                                   |
+| `pnpm build`                    | Build for production                                                   |
+| `pnpm test`                     | Run all tests                                                          |
+| `pnpm test path/to/file`        | Run one test file                                                      |
+| `pnpm lint`                     | Check code style                                                       |
+| `pnpm lint:fix`                 | Fix code style                                                         |
 | `scripts/generate-claude-md.sh` | Link a `CLAUDE.md` to every tracked `AGENTS.md` (run after adding one) |
 
-### Path Aliases
+## Path aliases
 
-- `@edopro/*` → `src/edopro/*`
-- `@shared/*` → `src/shared/*`
-- `@ygopro/*` → `src/ygopro/*`
-- `@plugins/*` → `src/plugins/*`
-- `@test-support/*` → `src/test-support/*`
-
-### Multi-Client Architecture
-
-The server runs two independent match flows over the same shared kernel. Read the module guide before touching a flow: [`src/edopro/AGENTS.md`](./src/edopro/AGENTS.md), [`src/ygopro/AGENTS.md`](./src/ygopro/AGENTS.md).
-
-| Aspect               | EDOPro (`src/edopro/`)                          | YGOPro (`src/ygopro/`)                                     |
-| -------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| Reference            | Multirole                                       | srvpro2                                                    |
-| Servers              | `HostServer` / `WSHostServer`                   | `YGOProServer` ("Mercury" TCP) / `WSYGOProServer` (ticket) |
-| Room creation        | Explicit `CREATE_GAME` with binary options      | Inside JOIN, from the `command#password` string            |
-| Join routing         | Room id + password                              | Join strategy chain (AI, windbot, invite, watch, ticket)   |
-| Matchmaking, windbot | No                                              | Yes                                                        |
-| Engine               | C++ `CoreIntegrator` child process (JSON stdio) | WASM ocgcore in a worker thread                            |
-| Per-player filtering | In the C++ core                                 | In TS (`OCGCore.deliverToTargets`)                         |
-| Message encoding     | Hand-written buffers                            | `ygopro-msg-encode`                                        |
-| Deck validator       | `Deck.validate()` (shared chain)                | `YGOProDeckValidator` (shared chain + availability)        |
-| Cards                | SQLite `CardEntity`                             | `YGOProResourceLoader`, one reader per `cardPool`          |
-| Banlist key          | Hash                                            | lflist index                                               |
-| Room list            | `RoomList`                                      | `YGOProRoomList`                                           |
-
-**Shared by both flows** (changes here affect both): `YgoRoom` (mutex, state), `RoomState` in `src/shared/room/domain/` (match start hooks, plugin duel events, `:score`; each flow's states extend `EdoproRoomState` or `YGOProRoomState`, which relay chat and emotes in their own wire format), `Commands` and `MessageProcessor`, `MessageEmitter` (also dispatches the `MATCHMAKING_*` opcodes YGOPro uses) and `PlayerInfoMessage` in `src/shared/messages/`, `UserAuth` (returns a `ServerErrorMessage`; each flow encodes it), `RoomFinder` and `DisconnectHandler` (they only orchestrate; each flow plugs in a `RoomLocator` and a `RoomDisconnectPolicy`), deck validators, `EventBus`, `MatchLifecycleHooks`, and plugins.
-
-**Shared kernel boundary**: `src/shared/` never imports `src/edopro/` or `src/ygopro/` (Biome `noRestrictedImports` fails the lint). When shared code needs protocol behavior, define a port in `src/shared/` and implement it in each flow; wire the implementations in `src/bootstrap/` (`createRoomFinder`, `createDisconnectHandler`, `createLoadedBanListNamesProvider`). A new room type registers its locator and disconnect policy there.
-
-**Engine and domain boundaries**: `src/edopro/` and `src/ygopro/` never import each other, and a `domain/` file never imports `application/`, `infrastructure/`, the outer layers or infrastructure packages. `src/architecture/boundaries.test.ts` enforces both as a ratchet: its known-leak lists only shrink, so never add a line to them to make a new import pass. See [architecture §12](./docs/architecture.md#12-boundary-rules).
-
-**`GameOverDomainEvent`** is published in three places that must stay in sync: `FinishDuelHandler` (EDOPro), `YGOProDuelingState` and `EndMatchByAbandon` (YGOPro).
+`@edopro/*` → `src/edopro/*`, `@shared/*` → `src/shared/*`, `@ygopro/*` → `src/ygopro/*`, `@plugins/*` → `src/plugins/*`, `@test-support/*` → `src/test-support/*`.
