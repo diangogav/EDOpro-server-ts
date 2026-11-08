@@ -100,8 +100,40 @@ type SwapMessage = {
 // Shared by both deck-mismatch checks in handleUpdateDeck below.
 const RECONNECT_SAME_DECK_MESSAGE = "Reconnect with the same deck you were using in this match.";
 
+const GAME_MESSAGE_HEADER = 0x01;
+
+// Core messages that wait for a RESPONSE; mirrors Duel::does_message_required_answer in core/src/app/duel.cpp.
+const ANSWER_REQUIRED_MESSAGES: ReadonlySet<number> = new Set([
+	CoreMessages.MSG_SELECT_CARD,
+	CoreMessages.MSG_SELECT_TRIBUTE,
+	CoreMessages.MSG_SELECT_UNSELECT_CARD,
+	CoreMessages.MSG_SELECT_BATTLECMD,
+	CoreMessages.MSG_SELECT_IDLECMD,
+	CoreMessages.MSG_SELECT_EFFECTYN,
+	CoreMessages.MSG_SELECT_YESNO,
+	CoreMessages.MSG_SELECT_OPTION,
+	CoreMessages.MSG_SELECT_CHAIN,
+	CoreMessages.MSG_SELECT_PLACE,
+	CoreMessages.MSG_SELECT_DISFIELD,
+	CoreMessages.MSG_SELECT_POSITION,
+	CoreMessages.MSG_SORT_CARD,
+	CoreMessages.MSG_SORT_CHAIN,
+	CoreMessages.MSG_SELECT_COUNTER,
+	CoreMessages.MSG_SELECT_SUM,
+	CoreMessages.MSG_ROCK_PAPER_SCISSORS,
+	CoreMessages.MSG_ANNOUNCE_RACE,
+	CoreMessages.MSG_ANNOUNCE_ATTRIB,
+	CoreMessages.MSG_ANNOUNCE_CARD,
+	CoreMessages.MSG_ANNOUNCE_NUMBER,
+	CoreMessages.MSG_ANNOUNCE_CARD_FILTER,
+]);
+
 export class DuelingState extends EdoproRoomState {
 	private static readonly MAX_MESSAGES_PER_TICK = 1000;
+
+	// Team of the duelist the core is waiting on. It stays set after a response because
+	// the core re-sends the same prompt to the same team on MSG_RETRY.
+	private awaitedResponderTeam: number | null = null;
 
 	constructor(
 		eventEmitter: EventEmitter,
@@ -513,6 +545,8 @@ export class DuelingState extends EdoproRoomState {
 		const data = Buffer.from(message.data, "hex");
 		const payload = Buffer.concat([decimalToBytesBuffer(data.length, 2), data]);
 
+		this.trackAwaitedResponder(message, data);
+
 		if (message.cacheable) {
 			this.room.cacheTeamMessage(message.receiver, payload, message.all, message.position ?? null);
 		}
@@ -771,8 +805,35 @@ export class DuelingState extends EdoproRoomState {
 		});
 	}
 
+	private trackAwaitedResponder(message: CoreMessage, data: Buffer): void {
+		if (data.length < 2 || data[0] !== GAME_MESSAGE_HEADER) {
+			return;
+		}
+
+		if (ANSWER_REQUIRED_MESSAGES.has(data[1])) {
+			this.awaitedResponderTeam = message.receiver;
+		}
+	}
+
+	private isAwaitedResponder(player: Client): boolean {
+		return (
+			this.awaitedResponderTeam !== null &&
+			!player.isSpectator &&
+			player.inTurn &&
+			player.team === this.awaitedResponderTeam
+		);
+	}
+
 	private handleResponse(message: ClientMessage, player: Client): void {
 		player.logger.info("DUELING_STATE: RESPONSE");
+
+		if (!this.isAwaitedResponder(player)) {
+			player.logger.info("DUELING_STATE: RESPONSE ignored, sender is not the awaited duelist", {
+				team: player.team,
+				awaitedTeam: this.awaitedResponderTeam,
+			});
+			return;
+		}
 
 		const data = message.data
 			.toString("hex")
