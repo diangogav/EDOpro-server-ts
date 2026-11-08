@@ -1,6 +1,6 @@
 # YGOPro Match Flow
 
-srvpro2-compatible server for YGOPro clients (Koishi, YGO Mobile, YGOPro). **srvpro2** is the source of truth for protocol behavior; do not copy Multirole patterns from `src/edopro/`. See the comparison table in the root `AGENTS.md`.
+srvpro2-compatible server for YGOPro clients (Koishi, YGO Mobile, YGOPro). **srvpro2** is the source of truth for protocol behavior; do not copy Multirole patterns from `src/edopro/`. See the comparison table in [`docs/multi-client.md`](../../docs/multi-client.md).
 
 ## Flow
 
