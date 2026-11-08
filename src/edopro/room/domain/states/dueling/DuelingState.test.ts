@@ -277,18 +277,6 @@ describe("DuelingState", () => {
 		expect(FinishDuelHandler).toHaveBeenCalled();
 	});
 
-	it("should handle RESPONSE command", () => {
-		const message = {
-			data: Buffer.from([0x01, 0x02]),
-		} as ClientMessage;
-
-		mockEmitter.emit(Commands.RESPONSE as unknown as string, message, mockRoom, mockClient);
-
-		expect(mockRoom.replay.addResponse).toHaveBeenCalled();
-		expect(mockRoom.stopTimer).toHaveBeenCalled();
-		expect(mockRoom.sendMessageToCpp).toHaveBeenCalledWith(expect.stringContaining("RESPONSE"));
-	});
-
 	it("should handle READY command (reconnecting)", () => {
 		const message = {} as ClientMessage;
 		Object.defineProperty(mockClient, "isReconnecting", { value: true });
@@ -479,6 +467,171 @@ describe("DuelingState", () => {
 				([buf]) => Buffer.isBuffer(buf) && buf.includes(needle),
 			);
 			expect(found).toBe(false);
+		});
+	});
+
+	describe("RESPONSE responder binding", () => {
+		const SELECT_IDLECMD_PROMPT = "010b00";
+		const WAITING_NOTICE = "0103";
+
+		const makeDuelist = (team: number, inTurn: boolean, isSpectator = false): jest.Mocked<Client> =>
+			({
+				logger: mockLogger,
+				sendMessage: jest.fn(),
+				socket: mockSocket,
+				position: team,
+				team,
+				inTurn,
+				isSpectator,
+			}) as unknown as jest.Mocked<Client>;
+
+		const deliverCoreMessages = (...messages: Record<string, unknown>[]): void => {
+			let index = 0;
+			mockJsonMessageProcessor.isMessageReady.mockImplementation(() => index < messages.length);
+			mockJsonMessageProcessor.process.mockImplementation(() => {
+				(mockJsonMessageProcessor as { payload: unknown }).payload = {
+					data: JSON.stringify(messages[index]),
+					size: 0,
+				};
+				index += 1;
+			});
+			(state as unknown as { processMessage: () => void }).processMessage();
+		};
+
+		const promptTeam = (team: number): void => {
+			deliverCoreMessages(
+				{
+					type: "MESSAGE",
+					receiver: team,
+					data: SELECT_IDLECMD_PROMPT,
+					all: false,
+					cacheable: false,
+				},
+				{
+					type: "MESSAGE",
+					receiver: 0,
+					except: team,
+					data: WAITING_NOTICE,
+					all: false,
+					cacheable: false,
+				},
+			);
+		};
+
+		const respond = (player: Client): void => {
+			const message = { data: Buffer.from([0x07, 0x00, 0x00, 0x00]) } as ClientMessage;
+			mockEmitter.emit(Commands.RESPONSE as unknown as string, message, mockRoom, player);
+		};
+
+		const forwardedResponses = (): string[] =>
+			(mockRoom.sendMessageToCpp as jest.Mock).mock.calls
+				.map(([payload]) => payload as string)
+				.filter((payload) => payload.includes('"RESPONSE"'));
+
+		let team0Active: jest.Mocked<Client>;
+		let team0Partner: jest.Mocked<Client>;
+		let team1Active: jest.Mocked<Client>;
+		let spectator: jest.Mocked<Client>;
+
+		beforeEach(() => {
+			team0Active = makeDuelist(0, true);
+			team0Partner = makeDuelist(0, false);
+			team1Active = makeDuelist(1, true);
+			spectator = makeDuelist(3, false, true);
+			Object.assign(mockRoom, {
+				players: [team0Active, team0Partner, team1Active],
+				spectators: [spectator],
+			});
+			(mockRoom.sendMessageToCpp as jest.Mock).mockClear();
+		});
+
+		it("forwards the response of the awaited duelist", () => {
+			promptTeam(0);
+
+			respond(team0Active);
+
+			expect(forwardedResponses()).toEqual([
+				JSON.stringify({ command: "RESPONSE", data: { replier: 0, message: "07|00|00|00" } }),
+			]);
+			expect(mockRoom.replay.addResponse).toHaveBeenCalledWith("07|00|00|00");
+			expect(mockRoom.stopTimer).toHaveBeenCalledWith(0);
+		});
+
+		it("ignores a response from the opponent while another team is awaited", () => {
+			promptTeam(0);
+
+			respond(team1Active);
+
+			expect(forwardedResponses()).toEqual([]);
+			expect(mockRoom.replay.addResponse).not.toHaveBeenCalled();
+			expect(mockRoom.stopTimer).not.toHaveBeenCalled();
+		});
+
+		it("ignores a response from the tag partner who is not in turn", () => {
+			promptTeam(0);
+
+			respond(team0Partner);
+
+			expect(forwardedResponses()).toEqual([]);
+			expect(mockRoom.replay.addResponse).not.toHaveBeenCalled();
+			expect(mockRoom.stopTimer).not.toHaveBeenCalled();
+		});
+
+		it("ignores a response from a spectator", () => {
+			promptTeam(0);
+
+			respond(spectator);
+
+			expect(forwardedResponses()).toEqual([]);
+			expect(mockRoom.replay.addResponse).not.toHaveBeenCalled();
+		});
+
+		it("ignores a response when no prompt is open", () => {
+			respond(team0Active);
+
+			expect(forwardedResponses()).toEqual([]);
+			expect(mockRoom.replay.addResponse).not.toHaveBeenCalled();
+		});
+
+		it("binds to team 1 when the core awaits team 1, as when team 0 plays second", () => {
+			promptTeam(1);
+
+			respond(team0Active);
+			respond(team1Active);
+
+			expect(forwardedResponses()).toEqual([
+				JSON.stringify({ command: "RESPONSE", data: { replier: 1, message: "07|00|00|00" } }),
+			]);
+		});
+
+		it("follows the awaited team across consecutive prompts", () => {
+			promptTeam(0);
+			respond(team0Active);
+			promptTeam(1);
+
+			respond(team0Active);
+			respond(team1Active);
+
+			expect(forwardedResponses()).toEqual([
+				JSON.stringify({ command: "RESPONSE", data: { replier: 0, message: "07|00|00|00" } }),
+				JSON.stringify({ command: "RESPONSE", data: { replier: 1, message: "07|00|00|00" } }),
+			]);
+		});
+
+		it("keeps accepting the awaited duelist when the core re-sends the prompt after a retry", () => {
+			promptTeam(0);
+			respond(team0Active);
+			deliverCoreMessages({
+				type: "MESSAGE",
+				receiver: 0,
+				data: SELECT_IDLECMD_PROMPT,
+				all: false,
+				cacheable: false,
+			});
+
+			respond(team0Active);
+
+			expect(forwardedResponses()).toHaveLength(2);
 		});
 	});
 });
