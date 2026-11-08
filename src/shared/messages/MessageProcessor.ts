@@ -44,10 +44,11 @@ export class MessageProcessor {
 	}
 
 	isMessageReady(): boolean {
-		if (this.buffer.length < 2) {
+		// A frame is a 2-byte size followed by at least the command byte.
+		if (this.buffer.length < 3) {
 			return false;
 		}
-		const messageSize = this.buffer.readInt16LE(0);
+		const messageSize = this.buffer.readUInt16LE(0);
 		const length = this.buffer.length - 2;
 
 		return length >= messageSize;

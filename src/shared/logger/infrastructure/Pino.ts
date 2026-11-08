@@ -30,9 +30,19 @@ export function parseLogFormat(value: string | undefined): LogFormat {
 	return value?.trim().toLowerCase() === "json" ? "json" : "pretty";
 }
 
-function createFileLogger(): PinoLogger {
+export type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
+
+const LOG_LEVELS: readonly LogLevel[] = ["trace", "debug", "info", "warn", "error", "fatal"];
+
+export function parseLogLevel(value: string | undefined): LogLevel {
+	const level = value?.trim().toLowerCase();
+
+	return LOG_LEVELS.find((candidate) => candidate === level) ?? "info";
+}
+
+function createFileLogger(level: LogLevel): PinoLogger {
 	return pino({
-		level: "debug",
+		level,
 		transport: {
 			target: "pino/file",
 			options: { destination: "app.log" },
@@ -44,13 +54,13 @@ export class Pino implements Logger {
 	private readonly logger: PinoLogger;
 	private readonly fileLogger: PinoLogger;
 
-	constructor(logger?: PinoLogger, fileLogger?: PinoLogger) {
+	constructor(logger?: PinoLogger, fileLogger?: PinoLogger, level: LogLevel = "info") {
 		if (logger && fileLogger) {
 			this.logger = logger;
 			this.fileLogger = fileLogger;
 		} else {
-			this.logger = pino({ level: "debug" }, createPrettyStream({ colorize: true }));
-			this.fileLogger = createFileLogger();
+			this.logger = pino({ level }, createPrettyStream({ colorize: true }));
+			this.fileLogger = createFileLogger(level);
 		}
 	}
 
@@ -58,14 +68,18 @@ export class Pino implements Logger {
 	 * Builds the root logger. "json" writes one JSON object per line so a log
 	 * collector (Loki) can filter by field; "pretty" keeps the colored output.
 	 */
-	public static create(format: LogFormat, destination?: DestinationStream): Pino {
+	public static create(
+		format: LogFormat,
+		destination?: DestinationStream,
+		level: LogLevel = "info",
+	): Pino {
 		if (format === "pretty") {
-			return new Pino();
+			return new Pino(undefined, undefined, level);
 		}
 
-		const logger = pino({ level: "debug" }, destination ?? pino.destination(1));
+		const logger = pino({ level }, destination ?? pino.destination(1));
 
-		return new Pino(logger, createFileLogger());
+		return new Pino(logger, createFileLogger(level));
 	}
 
 	debug(message: unknown, context?: Record<string, unknown>): void {

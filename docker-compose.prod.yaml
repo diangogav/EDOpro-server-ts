@@ -68,6 +68,7 @@ services:
       # Observability (opt-in), see docs/metrics.md. METRICS_HOST must be an
       # interface only the metrics collector reaches, never 0.0.0.0.
       LOG_FORMAT: ${LOG_FORMAT:-pretty}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
       METRICS_ENABLED: ${METRICS_ENABLED:-false}
       METRICS_HOST: ${METRICS_HOST:-127.0.0.1}
       METRICS_PORT: ${METRICS_PORT:-9464}

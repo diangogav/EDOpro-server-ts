@@ -13,6 +13,7 @@ Both are off by default.
 | `METRICS_PORT` | `9464` | Port `/metrics` listens on (never the public `HTTP_PORT`) |
 | `METRICS_SAMPLE_INTERVAL_MS` | `2000` | How often an EDOPro core process is sampled |
 | `LOG_FORMAT` | `pretty` | `json` writes one JSON object per line to stdout, so Loki can filter by field |
+| `LOG_LEVEL` | `info` | Minimum level written (`trace`, `debug`, `info`, `warn`, `error`, `fatal`). `debug` also logs every inbound frame |
 
 The server runs with host networking, so any port it opens is reachable on the public IP unless a firewall blocks it. Set `METRICS_HOST` to an interface only the collector reaches, such as the gateway of the monitoring Docker bridge (`docker network inspect <network> --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}'`). If the address cannot be bound, the server logs the error and keeps starting without `/metrics`.
 

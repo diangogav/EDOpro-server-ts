@@ -30,18 +30,17 @@ export class MessageEmitter {
 	}
 
 	processMessage(): void {
-		if (!this.messageProcessor.isMessageReady()) {
-			return;
+		while (this.messageProcessor.isMessageReady()) {
+			this.processNextFrame();
 		}
+	}
 
+	private processNextFrame(): void {
 		this.messageProcessor.process();
 
 		const payload = this.messageProcessor.payload;
 
-		this.logger.debug(`Incomming command: ${payload.command}`);
-		this.logger.debug(`Size: ${payload.size}`);
-		this.logger.debug(`Current Buffer: ${this.messageProcessor.currentBuffer.toString("hex")}`);
-		this.logger.debug(`Current Data: ${payload.data.toString("hex")}`);
+		this.logger.debug(`Incoming command: ${payload.command}`, { size: payload.size });
 
 		if (this.messageProcessor.command === Commands.PLAYER_INFO) {
 			this.eventEmitter.emit(
@@ -80,7 +79,5 @@ export class MessageEmitter {
 				this.messageProcessor.payload,
 			);
 		}
-
-		this.processMessage();
 	}
 }
