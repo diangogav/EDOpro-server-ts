@@ -5,7 +5,6 @@ import { Logger } from "../../shared/logger/domain/Logger";
 import { UserProfilePostgresRepository } from "../../shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { UserProfileDisplayNameResolver } from "../../ygopro/matchmaking/infrastructure/UserProfileDisplayNameResolver";
 import { CancelMatchmakingController } from "../controllers/CancelMatchmakingController";
-import { CreateRoomController } from "../controllers/CreateRoomController";
 import { EnqueueMatchmakingController } from "../controllers/EnqueueMatchmakingController";
 import { MatchmakingDepthController } from "../controllers/MatchmakingDepthController";
 import { MatchmakingStatusController } from "../controllers/MatchmakingStatusController";
@@ -52,8 +51,6 @@ export function loadRoutes(app: Express, logger: Logger, tickets: TicketReposito
 	);
 
 	app.get("/api/rooms", (req, res) => new RoomListController().run(req, res));
-
-	app.post("/api/room", (req, res) => new CreateRoomController(logger).run(req, res));
 
 	app.get("/api/banlists", RateLimitMiddleware, (req, res) =>
 		new GetBanListsController().run(req, res),

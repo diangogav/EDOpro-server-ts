@@ -384,9 +384,10 @@ unique. Every ygopro room creation site (`findOrCreateRoom`,
 `generateUnusedRoomId`
 (`src/ygopro/room/application/generateUnusedRoomId.ts`), which retries
 `generateUniqueId` until the id is unused by any live room in
-`YGOProRoomList` and throws after a bounded number of attempts. The edopro
-`RoomCreator` keeps its own separate generator — it feeds a different room
-list.
+`YGOProRoomList` and throws after a bounded number of attempts. EDOPro
+`CREATE_GAME` uses its own `generateUnusedRoomId`
+(`src/edopro/room/application/generateUnusedRoomId.ts`), which checks the
+EDOPro `RoomList` the same way.
 
 `w` is a join command, not a rule token: it is deliberately absent from
 `RuleMappings`/`isRecognizedToken`, so a bare `w` can never become a pairing

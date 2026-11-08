@@ -37,12 +37,15 @@ export class SocketConnectionHandler {
 
 		connectionLogger.info("Client connected");
 
-		const createGameListener = (roomId: number) => {
-			new GameCreatorHandler(eventEmitter, connectionLogger, socket, this.userAuth, roomId);
+		// Each handler subscribes to every later frame of its command, so one per connection.
+		let gameCreator: GameCreatorHandler | null = null;
+		const createGameListener = () => {
+			gameCreator ??= new GameCreatorHandler(eventEmitter, connectionLogger, socket, this.userAuth);
 		};
 
+		let joinHandler: JoinHandler | null = null;
 		const joinGameListener = () => {
-			new JoinHandler(
+			joinHandler ??= new JoinHandler(
 				eventEmitter,
 				connectionLogger,
 				socket,

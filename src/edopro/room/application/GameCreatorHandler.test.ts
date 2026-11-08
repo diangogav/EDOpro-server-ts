@@ -35,7 +35,6 @@ const makeHandler = (socket: jest.Mocked<ISocket>) =>
 		makeLogger(),
 		socket,
 		{} as unknown as UserAuth,
-		1,
 	) as unknown as { sendRoomCreationNotice: (room: Room) => void };
 
 const expectedFrame = (color: ChatColor, text: string): Buffer =>
