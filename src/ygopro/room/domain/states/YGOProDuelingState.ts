@@ -415,6 +415,17 @@ export class YGOProDuelingState extends YGOProRoomState {
 			return;
 		}
 
+		// One response per prompt: accepting a response clears the request state
+		// below, so a second frame for the same prompt finds no open request
+		// (neither a routed request nor a MSG_RETRY) and is dropped. Otherwise it
+		// would start a second advance loop and the core would apply the stale
+		// response to the opponent's next prompt.
+		if (this.ocgCore.currentLastResponseRequestMsg === null && !this.ocgCore.isRetryingState) {
+			player.logger.info("handleResponse ignored, no prompt is open");
+
+			return;
+		}
+
 		const responseSide = this.ocgCore.currentResponseSide;
 		const responseTeam = this.ocgCore.getSideTeam(responseSide);
 		const responseRequestMsg = this.ocgCore.currentLastResponseRequestMsg;
