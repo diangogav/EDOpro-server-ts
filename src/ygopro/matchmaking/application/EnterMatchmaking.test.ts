@@ -277,4 +277,81 @@ describe("EnterMatchmaking", () => {
 			]);
 		});
 	});
+
+	describe("session queue state", () => {
+		const enter = (connection: ReturnType<typeof makeConnection>) =>
+			useCase.execute({
+				socket: connection.socket,
+				session: connection.session,
+				channel: connection.channel,
+				format: "tcg",
+				mode: "ranked",
+				clientVersion: mercuryConfig.version,
+			});
+
+		const pooledChannel = (connection: ReturnType<typeof makeConnection>): ParticipantChannel => {
+			const participant = store.get(connection.socket.id as string);
+			if (!participant) throw new Error("participant not in pool");
+			return participant.channel;
+		};
+
+		it("marks the session matched when its match is found and still forwards the notice", () => {
+			const connection = makeConnection();
+			enter(connection);
+			const notice = {
+				matchId: "m-1",
+				roomId: 1,
+				roomPassword: "pw",
+				opponentType: "human" as const,
+				rated: true,
+				opponentName: null,
+			};
+
+			pooledChannel(connection).found(notice);
+
+			expect(connection.session.queueState).toBe("matched");
+			expect(connection.channel.found).toHaveBeenCalledWith(notice);
+		});
+
+		it("marks the session matched when a match is proposed", () => {
+			const connection = makeConnection();
+			enter(connection);
+
+			pooledChannel(connection).proposed({ matchId: "m-1", acceptWithinMs: 10_000 });
+
+			expect(connection.session.queueState).toBe("matched");
+			expect(connection.channel.proposed).toHaveBeenCalled();
+		});
+
+		it("returns the session to queued when the pool puts it back to searching", () => {
+			const connection = makeConnection();
+			enter(connection);
+			const channel = pooledChannel(connection);
+			channel.proposed({ matchId: "m-1", acceptWithinMs: 10_000 });
+
+			channel.status({ state: "searching", waitedMs: 500 });
+
+			expect(connection.session.queueState).toBe("queued");
+			expect(connection.channel.status).toHaveBeenLastCalledWith({
+				state: "searching",
+				waitedMs: 500,
+			});
+		});
+
+		it("rejects ENTER while the session is matched, without touching the pool", () => {
+			const connection = makeConnection();
+			enter(connection);
+			pooledChannel(connection).proposed({ matchId: "m-1", acceptWithinMs: 10_000 });
+			store.remove(connection.socket.id as string);
+
+			enter(connection);
+
+			expect(store.get(connection.socket.id as string)).toBeUndefined();
+			expect(connection.channel.status).toHaveBeenLastCalledWith({
+				state: "rejected",
+				waitedMs: 0,
+				reason: "already_queued",
+			});
+		});
+	});
 });
