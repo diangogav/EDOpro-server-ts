@@ -174,4 +174,27 @@ describe("MessageProcessor", () => {
 		expect(processor.size).toBe(1);
 		expect(processor.bufferLength).toBe(0);
 	});
+
+	it("waits for the whole frame when the declared size is 32768 or more", () => {
+		const size = 0x8000;
+		const header = Buffer.alloc(2);
+		header.writeUInt16LE(size);
+		processor.read(Buffer.concat([header, Buffer.alloc(100)]));
+
+		expect(processor.isMessageReady()).toBe(false);
+
+		processor.read(Buffer.alloc(size - 100));
+
+		expect(processor.isMessageReady()).toBe(true);
+		processor.process();
+		expect(processor.payload.data.length).toBe(size - 1);
+		expect(processor.bufferLength).toBe(0);
+	});
+
+	it("does not treat a lone size header without a command byte as a ready frame", () => {
+		processor.read(Buffer.from([0x00, 0x00]));
+
+		expect(processor.isMessageReady()).toBe(false);
+		expect(() => processor.process()).not.toThrow();
+	});
 });

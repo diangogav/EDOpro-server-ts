@@ -1,6 +1,6 @@
 import { PassThrough } from "stream";
 
-import { parseLogFormat, Pino } from "./Pino";
+import { parseLogFormat, parseLogLevel, Pino } from "./Pino";
 
 function captureLines(stream: PassThrough): string[] {
 	const lines: string[] = [];
@@ -39,5 +39,26 @@ describe("parseLogFormat", () => {
 	it("keeps the pretty format when unset or unknown", () => {
 		expect(parseLogFormat(undefined)).toBe("pretty");
 		expect(parseLogFormat("text")).toBe("pretty");
+	});
+
+	describe("log level", () => {
+		it("drops debug lines when the level is info", async () => {
+			const stream = new PassThrough();
+			const lines = captureLines(stream);
+			const logger = Pino.create("json", stream, "info");
+
+			logger.debug("noise");
+			logger.info("kept");
+			await new Promise((resolve) => setImmediate(resolve));
+
+			expect(lines.map((line) => JSON.parse(line).msg)).toEqual(["kept"]);
+		});
+
+		it("parses a known level and falls back to info", () => {
+			expect(parseLogLevel("debug")).toBe("debug");
+			expect(parseLogLevel(" WARN ")).toBe("warn");
+			expect(parseLogLevel(undefined)).toBe("info");
+			expect(parseLogLevel("verbose")).toBe("info");
+		});
 	});
 });

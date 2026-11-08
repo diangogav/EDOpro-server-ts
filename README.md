@@ -221,6 +221,7 @@ Both pools are loaded at startup and refreshed every 10 minutes if the underlyin
 | `REDIS_URI` | Redis/Valkey connection URI | *(required if redis enabled)* |
 | `SERVER_INSTANCE_ID` | Stable, unique id of this deployment slot for reserved duels (boot sweep and claims) | `default` *(required in production when ranking and Redis are on)* |
 | `LOG_FORMAT` | `json` writes one JSON object per log line (for Loki); anything else keeps the pretty output | `pretty` |
+| `LOG_LEVEL` | Minimum log level: `trace`, `debug`, `info`, `warn`, `error` or `fatal`; unknown values fall back to `info` | `info` |
 | `METRICS_ENABLED` | Measure every duel engine and serve `/metrics` — see [docs/metrics.md](./docs/metrics.md) | `false` |
 | `METRICS_HOST` | Interface `/metrics` listens on (keep it private: the server uses host networking) | `127.0.0.1` |
 | `METRICS_PORT` | Port of `/metrics` | `9464` |

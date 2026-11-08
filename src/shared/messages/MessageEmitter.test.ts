@@ -91,4 +91,37 @@ describe("MessageEmitter", () => {
 
 		expect(listener).toHaveBeenCalledTimes(1);
 	});
+
+	describe("work per chunk", () => {
+		it("dispatches every frame of a chunk with many frames without overflowing the stack", () => {
+			const listener = jest.fn();
+			eventEmitter.on(Commands.PLAYER_INFO as unknown as string, listener);
+			const frames = 20_000;
+
+			messageEmitter.handleMessage(
+				Buffer.concat(Array.from({ length: frames }, () => buildFrame(Commands.PLAYER_INFO))),
+			);
+
+			expect(listener).toHaveBeenCalledTimes(frames);
+		});
+
+		it("does not dump the remaining buffer to the log for each frame", () => {
+			const logger = new LoggerMock();
+			const debug = jest.spyOn(logger, "debug");
+			const emitter = new MessageEmitter(
+				logger,
+				eventEmitter,
+				createGameListener,
+				joinGameListener,
+			);
+			const chunk = Buffer.concat(
+				Array.from({ length: 50 }, () => buildFrame(0x7f, Buffer.from([0xab]))),
+			);
+
+			emitter.handleMessage(chunk);
+
+			const logged = debug.mock.calls.map(([message]) => String(message)).join("\n");
+			expect(logged).not.toContain(chunk.subarray(4, 20).toString("hex"));
+		});
+	});
 });
