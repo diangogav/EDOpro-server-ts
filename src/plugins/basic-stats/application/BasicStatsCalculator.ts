@@ -65,7 +65,11 @@ export class BasicStatsCalculator implements DomainEventSubscriber<GameOverDomai
 		}
 
 		for (const player of players) {
-			const userProfile = await this.userProfileRepository.findByUsername(player.name);
+			// The seat id is the authenticated account; the name is self-asserted by the client.
+			if (!player.id) {
+				continue;
+			}
+			const userProfile = await this.userProfileRepository.findById(player.id);
 			if (!userProfile) {
 				continue;
 			}
