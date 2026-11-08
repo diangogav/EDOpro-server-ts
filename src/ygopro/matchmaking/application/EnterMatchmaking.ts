@@ -59,7 +59,7 @@ export class EnterMatchmaking {
 			return;
 		}
 
-		if (session.queueState === "queued") {
+		if (session.queueState !== "idle") {
 			channel.status({ state: "rejected", waitedMs: 0, reason: "already_queued" });
 
 			return;
@@ -75,7 +75,7 @@ export class EnterMatchmaking {
 			botFallbackAfterMs: input.botFallbackAfterMs,
 			supportsAcceptStep: input.supportsAcceptStep,
 			presence: "socket",
-			channel,
+			channel: trackQueueState(channel, session),
 			admission: { socket, playerInfo },
 		};
 
@@ -93,4 +93,32 @@ export class EnterMatchmaking {
 		});
 		this.pool.tick();
 	}
+}
+
+/**
+ * Keeps the session's queue state in step with what the pool tells the
+ * participant: a found or proposed match makes it `matched` (so CANCEL is too
+ * late and ENTER is refused), and a requeue back to searching makes it
+ * `queued` again. The room closes the socket when the match ends, so a
+ * matched session never needs to return to `idle`.
+ */
+function trackQueueState(channel: ParticipantChannel, session: Session): ParticipantChannel {
+	return {
+		status: (update) => {
+			if (update.state === "searching") {
+				session.queueState = "queued";
+			}
+			channel.status(update);
+		},
+		found: (notice) => {
+			session.queueState = "matched";
+			channel.found(notice);
+		},
+		proposed: (notice) => {
+			session.queueState = "matched";
+			channel.proposed(notice);
+		},
+		close: (reason) => channel.close(reason),
+		isAlive: (now) => channel.isAlive(now),
+	};
 }

@@ -3,6 +3,7 @@ import { Express } from "express";
 import { TicketRepository } from "../../shared/ticket/domain/TicketRepository";
 import { Logger } from "../../shared/logger/domain/Logger";
 import { UserProfilePostgresRepository } from "../../shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
+import { UserProfileBanChecker } from "../../ygopro/matchmaking/infrastructure/UserProfileBanChecker";
 import { UserProfileDisplayNameResolver } from "../../ygopro/matchmaking/infrastructure/UserProfileDisplayNameResolver";
 import { CancelMatchmakingController } from "../controllers/CancelMatchmakingController";
 import { EnqueueMatchmakingController } from "../controllers/EnqueueMatchmakingController";
@@ -30,12 +31,15 @@ export function loadRoutes(app: Express, logger: Logger, tickets: TicketReposito
 
 	app.get("/api/getrooms", (req, res) => new GetRoomListController().run(req, res));
 
-	const matchmakingDisplayNames = new UserProfileDisplayNameResolver(
-		new UserProfilePostgresRepository(),
-	);
+	const profiles = new UserProfilePostgresRepository();
+	const matchmakingDisplayNames = new UserProfileDisplayNameResolver(profiles);
+	const matchmakingBans = new UserProfileBanChecker(profiles);
 
 	app.post("/api/matchmaking/queue", EnqueueRateLimitMiddleware, (req, res) =>
-		new EnqueueMatchmakingController(logger, tickets, matchmakingDisplayNames).run(req, res),
+		new EnqueueMatchmakingController(logger, tickets, matchmakingDisplayNames, matchmakingBans).run(
+			req,
+			res,
+		),
 	);
 
 	app.get("/api/matchmaking/depth", QueueDepthRateLimitMiddleware, (req, res) =>

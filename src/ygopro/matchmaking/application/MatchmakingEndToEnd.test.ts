@@ -129,4 +129,37 @@ describe("Matchmaking end-to-end pairing", () => {
 		expect(room.emit).toHaveBeenCalledWith("MATCH_ADMIT", expect.anything(), a.socket);
 		expect(room.emit).toHaveBeenCalledWith("MATCH_ADMIT", expect.anything(), b.socket);
 	});
+	it("keeps a matched socket out of the pool when it sends CANCEL and ENTER again", async () => {
+		const pool = initQueue();
+		const tickets = fakeTickets({
+			"ticket-a": "user-a",
+			"ticket-b": "user-b",
+			"ticket-c": "user-c",
+		});
+		const [a, b, c] = [
+			connectSocket(pool, tickets),
+			connectSocket(pool, tickets),
+			connectSocket(pool, tickets),
+		];
+		for (const [connection, ticket] of [
+			[a, "ticket-a"],
+			[b, "ticket-b"],
+			[c, "ticket-c"],
+		] as const) {
+			emit(connection.eventEmitter, Commands.PLAYER_INFO, Buffer.from("Player", "utf16le"));
+			emit(connection.eventEmitter, Commands.MATCHMAKING_AUTH, authBody(ticket));
+		}
+		await flush();
+		const cSend = jest.spyOn(c.socket, "send");
+		emit(a.eventEmitter, Commands.MATCHMAKING_ENTER, enterBody());
+		emit(b.eventEmitter, Commands.MATCHMAKING_ENTER, enterBody());
+		expect(createMatchmakingRoomMock).toHaveBeenCalledTimes(1);
+
+		emit(a.eventEmitter, Commands.MATCHMAKING_CANCEL, Buffer.alloc(0));
+		emit(a.eventEmitter, Commands.MATCHMAKING_ENTER, enterBody());
+		emit(c.eventEmitter, Commands.MATCHMAKING_ENTER, enterBody());
+
+		expect(createMatchmakingRoomMock).toHaveBeenCalledTimes(1);
+		expect(receivedFound(cSend)).toBe(false);
+	});
 });

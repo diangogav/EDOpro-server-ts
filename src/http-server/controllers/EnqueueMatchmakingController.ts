@@ -6,6 +6,7 @@ import { z } from "zod";
 import { Logger } from "@shared/logger/domain/Logger";
 import { TicketRepository } from "@shared/ticket/domain/TicketRepository";
 
+import { BanChecker } from "@ygopro/matchmaking/domain/BanChecker";
 import { DisplayNameResolver } from "@ygopro/matchmaking/domain/DisplayNameResolver";
 import {
 	DuplicateQueueEntryError,
@@ -33,6 +34,7 @@ export class EnqueueMatchmakingController {
 		private readonly logger: Logger,
 		private readonly tickets: TicketRepository,
 		private readonly displayNames: DisplayNameResolver,
+		private readonly bans: BanChecker,
 	) {}
 
 	async run(req: Request, res: Response): Promise<void> {
@@ -45,6 +47,22 @@ export class EnqueueMatchmakingController {
 		const userId = await this.tickets.consume(validation.data.ticket);
 		if (userId === null) {
 			res.status(401).json({ success: false, error: "Invalid or expired ticket" });
+			return;
+		}
+
+		// Same gate as the socket MATCHMAKING_AUTH path: both presences feed one pool.
+		let banned: boolean;
+		try {
+			banned = await this.bans.isBanned(userId);
+		} catch (error) {
+			this.logger.error(
+				`Matchmaking ban check failed: ${error instanceof Error ? error.message : String(error)}`,
+			);
+			res.status(500).json({ success: false, error: "Failed to enqueue" });
+			return;
+		}
+		if (banned) {
+			res.status(403).json({ success: false, error: "Banned" });
 			return;
 		}
 

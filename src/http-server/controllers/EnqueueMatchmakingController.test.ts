@@ -4,6 +4,7 @@ import { TicketRepository } from "@shared/ticket/domain/TicketRepository";
 
 import { MatchmakingQueue } from "@ygopro/matchmaking/application/MatchmakingQueue";
 
+import { BanChecker } from "@ygopro/matchmaking/domain/BanChecker";
 import { DisplayNameResolver } from "@ygopro/matchmaking/domain/DisplayNameResolver";
 
 import { EnqueueMatchmakingController } from "./EnqueueMatchmakingController";
@@ -61,9 +62,10 @@ describe("EnqueueMatchmakingController", () => {
 		body: unknown,
 		tickets: TicketRepository,
 		displayNames: DisplayNameResolver = makeResolver(null),
+		bans: BanChecker = { isBanned: jest.fn().mockResolvedValue(false) },
 	) => {
 		const out = fakeResponse();
-		await new EnqueueMatchmakingController(makeLogger(), tickets, displayNames).run(
+		await new EnqueueMatchmakingController(makeLogger(), tickets, displayNames, bans).run(
 			{ body } as Request,
 			out.res,
 		);
@@ -227,5 +229,28 @@ describe("EnqueueMatchmakingController", () => {
 		expect(second.status()).toBe(409);
 		expect(second.body()).toEqual({ success: false, error: "Already in queue" });
 		expect(resolver.resolve).not.toHaveBeenCalled();
+	});
+	describe("bans", () => {
+		const body = { format: "tcg", queue: "ranked", ticket: "the-ticket" };
+
+		it("rejects a banned user with 403 and does not queue them", async () => {
+			const bans = { isBanned: jest.fn().mockResolvedValue(true) };
+
+			const out = await run(body, makeTickets("banned-user"), makeResolver(null), bans);
+
+			expect(out.status()).toBe(403);
+			expect(out.body()).toEqual({ success: false, error: "Banned" });
+			expect(bans.isBanned).toHaveBeenCalledWith("banned-user");
+			expect(MatchmakingQueue.getInstance().isUserQueued("banned-user")).toBe(false);
+		});
+
+		it("does not queue the user when the ban lookup fails", async () => {
+			const bans = { isBanned: jest.fn().mockRejectedValue(new Error("db down")) };
+
+			const out = await run(body, makeTickets("user-1"), makeResolver(null), bans);
+
+			expect(out.status()).toBe(500);
+			expect(MatchmakingQueue.getInstance().isUserQueued("user-1")).toBe(false);
+		});
 	});
 });
