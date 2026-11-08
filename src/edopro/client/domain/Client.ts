@@ -2,7 +2,7 @@ import { YgoClient } from "../../../shared/client/domain/YgoClient";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { Deck } from "../../../shared/deck/domain/Deck";
-import { ClientMessage, MessageProcessor } from "../../../shared/messages/MessageProcessor";
+import { ClientMessage } from "../../../shared/messages/MessageProcessor";
 import { Choose } from "../../rock-paper-scissor/RockPaperScissor";
 import { Room } from "../../room/domain/Room";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
@@ -53,12 +53,8 @@ export class Client extends YgoClient {
 			this._socket.destroy();
 		}
 		this._socket = socket;
-		const messageProcessor = new MessageProcessor();
 		const roomMessageEmitter = new RoomMessageEmitter(this, room);
-		this._socket.onMessage((data) => {
-			roomMessageEmitter.handleMessage(data);
-			messageProcessor.read(data);
-		});
+		this._socket.onMessage((data) => roomMessageEmitter.handleMessage(data));
 		this._ipAddress = socket.remoteAddress ?? null;
 	}
 

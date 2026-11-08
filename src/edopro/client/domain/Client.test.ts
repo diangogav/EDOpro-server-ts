@@ -67,14 +67,9 @@ describe("Client", () => {
 	it("should set socket and attach listeners", () => {
 		const newSocket = { ...mockSocket, id: "new-socket-id" };
 		const mockHandleMessage = jest.fn();
-		const mockRead = jest.fn();
 
 		(RoomMessageEmitter as jest.Mock).mockImplementation(() => ({
 			handleMessage: mockHandleMessage,
-		}));
-
-		(MessageProcessor as jest.Mock).mockImplementation(() => ({
-			read: mockRead,
 		}));
 
 		client.setSocket(newSocket, [], mockRoom);
@@ -88,7 +83,7 @@ describe("Client", () => {
 		messageHandler(data);
 
 		expect(mockHandleMessage).toHaveBeenCalledWith(data);
-		expect(mockRead).toHaveBeenCalledWith(data);
+		expect(MessageProcessor).not.toHaveBeenCalled();
 	});
 
 	it("should handle socket without remote address", () => {
