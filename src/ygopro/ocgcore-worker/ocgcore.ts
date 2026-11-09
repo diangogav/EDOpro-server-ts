@@ -107,7 +107,6 @@ export class OCGCore {
 				const recoverMs = Math.max(0, this.room.hostInfo.time_limit) * 1000;
 				for (const player of [0, 1] as const) {
 					this.timerState.leftMs[player] = recoverMs;
-					this.timerState.compensatorMs[player] = recoverMs;
 					this.timerState.backedMs[player] = recoverMs;
 				}
 			}
@@ -283,8 +282,20 @@ export class OCGCore {
 		return this.getActivePlayer(this.responseSide);
 	}
 
-	clearResponseTimerState(settlePrevious: boolean): void {
+	public clearResponseTimerState(settlePrevious: boolean): boolean {
+		const runningPos = this.timerState.runningPos;
+		if (settlePrevious && runningPos != null) {
+			this.timerState.settleReadiness();
+			if (this.timerState.leftMs[runningPos] <= this.timerState.elapsedMs()) {
+				// Check before recording, replenishing or submitting a queued response.
+				void this.handleResponseTimeout(runningPos).catch((error) => {
+					this.logger.error("Failed to handle response timeout", { error });
+				});
+				return false;
+			}
+		}
 		this.clearResponseTimer(settlePrevious);
+		return true;
 	}
 
 	clearResponseRequestState(): void {
@@ -297,8 +308,8 @@ export class OCGCore {
 		return this.timerState;
 	}
 
-	// Start the response bank after the client confirms presentation readiness.
-	async rescheduleTimerAfterConfirm(side: number): Promise<void> {
+	// Settle bounded readiness grace before starting the remaining response bank.
+	public async rescheduleTimerAfterConfirm(side: number): Promise<void> {
 		if (!this.hasTimeLimit || ![0, 1].includes(side)) {
 			return;
 		}
@@ -312,9 +323,7 @@ export class OCGCore {
 		) {
 			return;
 		}
-		// A valid confirmation ends presentation readiness; only subsequent
-		// response time spends the player's bank.
-		this.timerState.awaitingConfirm = false;
+		this.timerState.settleReadiness();
 		// Reschedule timer
 		await this.setResponseTimer(runningPos, {
 			settlePrevious: false,
@@ -421,7 +430,6 @@ export class OCGCore {
 			maxTimeMs,
 			this.timerState.leftMs[originalDuelPos] + 1000,
 		);
-		this.timerState.compensatorMs[originalDuelPos] += 1000;
 		this.timerState.backedMs[originalDuelPos] -= 1000;
 	}
 
@@ -1029,9 +1037,7 @@ export class OCGCore {
 		// A reconnect snapshot must include the time already spent on the
 		// running bank, without settling or replacing its authoritative timer.
 		const elapsedMs =
-			this.timerState.runningPos === originalDuelPos && !this.timerState.awaitingConfirm
-				? this.timerState.elapsedMs()
-				: 0;
+			this.timerState.runningPos === originalDuelPos ? this.timerState.chargeableElapsedMs() : 0;
 		const leftTime = Math.max(0, (this.timerState.leftMs[originalDuelPos] || 0) - elapsedMs);
 		const ingameDuelPos = this.toIngamePosition(originalDuelPos);
 		const timeLimitMessage = new YGOProStocTimeLimit().fromPartial({

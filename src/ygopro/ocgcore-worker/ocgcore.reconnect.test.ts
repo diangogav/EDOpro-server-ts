@@ -88,6 +88,7 @@ describe("OCGCore reconnect timer ownership", () => {
 			expect(core.responsePlayer).toBe(operator);
 		}
 		const state = core.timerStateAccessor;
+		state.reset(180_000);
 		state.leftMs = [91_000, 73_000];
 		await setup.setResponseTimer(activeTeam, { awaitingConfirm });
 		players.forEach((p) => p.sendMessageToClient.mockClear());

@@ -1,4 +1,5 @@
 import { mock } from "jest-mock-extended";
+import { YGOProMsgNewTurn, YGOProMsgSelectYesNo } from "ygopro-msg-encode";
 import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
 import { YGOProClient } from "@ygopro/client/domain/YGOProClient";
 import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
@@ -33,12 +34,16 @@ describe("OCGCore readiness and authoritative timeout", () => {
 			isPositionSwapped: false,
 			turn: 1,
 			hostInfo: { time_limit: 180 },
+			currentDuelRecord: { messages: [] },
 		});
 		room.getTeamPlayers.mockImplementation((team) => players.filter((p) => p.team === team));
 		room.isFinished.mockReturnValue(false);
 		const core = new OCGCore(room, new LoggerMock());
 		core.resetResponseRequestState();
-		(core as unknown as TimerSetup).responseSide = 0;
+		Object.assign(core, {
+			responseSide: 0,
+			lastResponseRequestMsg: new YGOProMsgSelectYesNo().fromPartial({ player: 0, desc: 1 }),
+		});
 		core.timerStateAccessor.leftMs[0] = bankMs;
 		return { core, room, players, setup: core as unknown as TimerSetup };
 	};
@@ -85,10 +90,83 @@ describe("OCGCore readiness and authoritative timeout", () => {
 		expect(room.emitRoomEvent).toHaveBeenCalledTimes(1);
 	});
 
-	it("forfeits a client that never acknowledges readiness", async () => {
+	it("forfeits a client that never acknowledges or responds at the bank plus grace deadline", async () => {
 		const { room, setup } = makeScenario(180_000);
 		await setup.setResponseTimer(0);
-		await jest.advanceTimersByTimeAsync(TimerState.CONFIRM_TIMEOUT_MS);
+		await jest.advanceTimersByTimeAsync(180_000 + TimerState.MAX_PROMPT_GRACE_MS);
+		expect(room.emitRoomEvent).toHaveBeenCalledTimes(1);
+	});
+
+	it.each([
+		false,
+		true,
+	])("spends the bank across repeated late prompts with explicit confirmation=%s", async (confirm) => {
+		const { core, room, setup } = makeScenario(180_000);
+		for (let prompt = 0; prompt < 10; prompt++) {
+			await setup.setResponseTimer(0);
+			await jest.advanceTimersByTimeAsync(55_000);
+			if (room.emitRoomEvent.mock.calls.length) break;
+			if (confirm) await core.rescheduleTimerAfterConfirm(0);
+			core.clearResponseTimerState(true);
+		}
+		expect(room.emitRoomEvent).toHaveBeenCalledWith(
+			"FINISH_DUEL_BY_TIMEOUT",
+			expect.objectContaining({ player: 1 }),
+		);
+		expect(core.timerLeftMs[0]).toBe(0);
+		expect(core.timerStateAccessor.graceMs[0]).toBe(0);
+	});
+
+	it("rejects a response at an expired deadline before its timeout callback runs", async () => {
+		const { core, room, setup } = makeScenario(1000);
+		await setup.setResponseTimer(0);
+		// Moving the clock without running callbacks models already queued socket input.
+		jest.setSystemTime(32_000);
+		expect(core.clearResponseTimerState(true)).toBe(false);
+		expect(core.currentResponseSide).toBeNull();
+		expect(room.emitRoomEvent).toHaveBeenCalledTimes(1);
+		expect(jest.getTimerCount()).toBe(0);
+	});
+
+	it("settles and rejects an exhausted bank on a response without confirmation", async () => {
+		const { core, room, setup } = makeScenario(0);
+		await setup.setResponseTimer(0);
+		await jest.advanceTimersByTimeAsync(12_000);
+		expect(core.clearResponseTimerState(true)).toBe(false);
+		expect(core.timerStateAccessor.graceMs[0]).toBe(168_000);
+		expect(room.emitRoomEvent).toHaveBeenCalledTimes(1);
+	});
+
+	it("keeps grace spent after turn recovery and action-time bonuses", async () => {
+		const { core, setup } = makeScenario(180_000);
+		await setup.setResponseTimer(0);
+		await jest.advanceTimersByTimeAsync(55_000);
+		core.clearResponseTimerState(true);
+		expect(core.timerStateAccessor.graceMs[0]).toBe(150_000);
+		core.increaseResponseTime(0, 13);
+		expect(core.timerLeftMs[0]).toBe(156_000);
+		expect(core.timerStateAccessor.graceMs[0]).toBe(150_000);
+		await core.messageMiddleware.process(new YGOProMsgNewTurn().fromPartial({ player: 1 }));
+		expect(core.timerLeftMs[0]).toBe(180_000);
+		expect(core.timerStateAccessor.graceMs[0]).toBe(150_000);
+	});
+
+	it("preserves the readiness deadline and charged excess through reconnect snapshots", async () => {
+		const { core, room, players, setup } = makeScenario(10_000);
+		await setup.setResponseTimer(0);
+		const startedAt = core.timerStateAccessor.startedAtMs;
+		await jest.advanceTimersByTimeAsync(35_000);
+		players[0].sendMessageToClient.mockClear();
+		await core.sendReconnectTimeLimitAndResponseState(players[0]);
+		const snapshots = players[0].sendMessageToClient.mock.calls
+			.map(([frame]) => frame)
+			.filter((frame) => frame[2] === 0x18);
+		expect(snapshots.at(-1)?.readUInt16LE(5)).toBe(5);
+		expect(core.timerStateAccessor.startedAtMs).toBe(startedAt);
+		expect(core.timerStateAccessor.graceMs[0]).toBe(180_000);
+		await jest.advanceTimersByTimeAsync(4999);
+		expect(room.emitRoomEvent).not.toHaveBeenCalled();
+		await jest.advanceTimersByTimeAsync(1);
 		expect(room.emitRoomEvent).toHaveBeenCalledTimes(1);
 	});
 });
