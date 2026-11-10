@@ -41,6 +41,7 @@ A reserved duel is a room the server builds from a reservation written ahead of 
 | `options.spectators` | Watch joins (`w,<roomId>`) admitted or refused. |
 | `options.listed` | `false`: the room stays out of `/api/rooms`, `/api/getrooms` and the real-time room list (`GET-ROOMS`, `UPDATE-ROOM`, `REMOVE-ROOM`). |
 | `options.lobbyTimeoutSeconds` | The first duel must start within it, or the room ends as `no_show`. |
+| `options.turnTimeSeconds` | Optional. Seconds each player has per turn (integer, 60–998), emitted as the `tm` token. Unset: the room's default (450 s). The limit is per turn, not per duel: a reservation cannot cap a duel's total length. |
 
 ### Claim (atomic, `CLAIM_RESERVATION_SCRIPT`)
 

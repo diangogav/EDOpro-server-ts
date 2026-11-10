@@ -102,8 +102,20 @@ describe("parseReservation", () => {
 		});
 	});
 
+	it("reads the seconds each player has per turn", () => {
+		expect(parse({ options: { turnTimeSeconds: 90 } })?.options.turnTimeSeconds).toBe(90);
+	});
+
+	it("leaves the turn time unset when the issuer gives none", () => {
+		expect(parse()?.options.turnTimeSeconds).toBeUndefined();
+	});
+
 	it.each([
 		["an unknown version", { v: 2 }],
+		["a turn time under a minute", { options: { turnTimeSeconds: 45 } }],
+		["a turn time over 998 seconds", { options: { turnTimeSeconds: 999 } }],
+		["a fractional turn time", { options: { turnTimeSeconds: 90.5 } }],
+		["a turn time that is not a number", { options: { turnTimeSeconds: "90" } }],
 		["a malformed id", { reservationId: "short" }],
 		["an unknown mode", { mode: "tag" }],
 		["an unknown deck lock", { options: { deckLock: "loose" } }],
