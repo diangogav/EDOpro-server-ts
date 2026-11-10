@@ -36,6 +36,8 @@ export type ReservationOptions = {
 	readonly reconnect: boolean;
 	readonly deckLock: DeckLockKind;
 	readonly lobbyTimeoutSeconds: number;
+	/** Seconds each player has per turn; the room's default applies when unset. */
+	readonly turnTimeSeconds?: number;
 };
 
 export type Reservation = {
@@ -51,6 +53,9 @@ export const RESERVATION_COMMAND = "rv";
 export const RESERVATION_ID_PATTERN = /^[0-9A-Za-z]{16}$/;
 export const RESERVATION_VERSION = 1;
 export const DEFAULT_LOBBY_TIMEOUT_SECONDS = 120;
+/** The turn times the room's rule parser can express exactly: whole seconds, one minute up. */
+export const MIN_TURN_TIME_SECONDS = 60;
+export const MAX_TURN_TIME_SECONDS = 998;
 
 /** Redis key shared with whoever issues and revokes reservations. */
 export function reservationKey(id: string): string {
@@ -131,6 +136,10 @@ function parseOptions(value: unknown): ReservationOptions | null {
 	if (typeof timeout !== "number" || !Number.isFinite(timeout) || timeout <= 0) {
 		return null;
 	}
+	const turnTime = options.turnTimeSeconds;
+	if (turnTime !== undefined && turnTime !== null && !isTurnTime(turnTime)) {
+		return null;
+	}
 
 	return {
 		spectators: options.spectators === true,
@@ -138,7 +147,16 @@ function parseOptions(value: unknown): ReservationOptions | null {
 		reconnect: options.reconnect === true,
 		deckLock,
 		lobbyTimeoutSeconds: timeout,
+		...(typeof turnTime === "number" ? { turnTimeSeconds: turnTime } : {}),
 	};
+}
+
+function isTurnTime(value: unknown): value is number {
+	return (
+		Number.isInteger(value) &&
+		(value as number) >= MIN_TURN_TIME_SECONDS &&
+		(value as number) <= MAX_TURN_TIME_SECONDS
+	);
 }
 
 /**
