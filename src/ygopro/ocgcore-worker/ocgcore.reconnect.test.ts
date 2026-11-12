@@ -88,6 +88,7 @@ describe("OCGCore reconnect timer ownership", () => {
 			expect(core.responsePlayer).toBe(operator);
 		}
 		const state = core.timerStateAccessor;
+		state.reset(180_000);
 		state.leftMs = [91_000, 73_000];
 		await setup.setResponseTimer(activeTeam, { awaitingConfirm });
 		players.forEach((p) => p.sendMessageToClient.mockClear());
@@ -95,7 +96,7 @@ describe("OCGCore reconnect timer ownership", () => {
 		const startedAt = state.startedAtMs;
 		const expectedTimes = [1 - activeTeam, activeTeam].map((team) => ({
 			player: swapped ? 1 - team : team,
-			seconds: (team === 0 ? 91 : 73) - (team === activeTeam ? 2 : 0),
+			seconds: (team === 0 ? 91 : 73) - (team === activeTeam && !awaitingConfirm ? 2 : 0),
 		}));
 		for (let repetition = 0; repetition < 2; repetition++) {
 			players.forEach((p) => p.sendMessageToClient.mockClear());
@@ -110,11 +111,9 @@ describe("OCGCore reconnect timer ownership", () => {
 			expect(times).toEqual(expectedTimes);
 			expect(state.runningPos).toBe(activeTeam);
 			expect(jest.getTimerCount()).toBe(1);
-			expect(state.leftMs[activeTeam]).toBe(
-				(activeTeam === 0 ? 91_000 : 73_000) - (role === "active" ? 2000 : 0),
-			);
-			expect(state.awaitingConfirm).toBe(role === "active" || awaitingConfirm);
-			if (role !== "active") expect(state.startedAtMs).toBe(startedAt);
+			expect(state.leftMs[activeTeam]).toBe(activeTeam === 0 ? 91_000 : 73_000);
+			expect(state.awaitingConfirm).toBe(awaitingConfirm);
+			expect(state.startedAtMs).toBe(startedAt);
 			const coreMessages = frames.filter((frame) => frame[2] === 0x01);
 			expect(coreMessages.map((frame) => frame[3])).toEqual([role === "active" ? 13 : 3]);
 		}

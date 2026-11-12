@@ -31,7 +31,7 @@ type TestableState = {
 };
 
 type TestableCore = {
-	setResponseTimer(team: number): Promise<void>;
+	setResponseTimer(team: number, options: { awaitingConfirm: boolean }): Promise<void>;
 };
 
 function buildScenario(bestOf: number, ranked: boolean) {
@@ -125,7 +125,7 @@ describe("mid-duel no-show settlement (YGOPro)", () => {
 	it("keeps the clock of an absent player running and records the match when it expires", async () => {
 		const { state, core, runEnding } = buildScenario(1, true);
 
-		await core.setResponseTimer(Team.PLAYER);
+		await core.setResponseTimer(Team.PLAYER, { awaitingConfirm: false });
 		await jest.advanceTimersByTimeAsync(TIME_LIMIT_S * 1000 - 1);
 		await flush();
 		expect(runEnding).not.toHaveBeenCalled();
@@ -153,7 +153,7 @@ describe("mid-duel no-show settlement (YGOPro)", () => {
 	it("moves a best-of-three on to side decking with the absentee's loss counted", async () => {
 		const { room, state, core, runEnding } = buildScenario(3, true);
 
-		await core.setResponseTimer(Team.PLAYER);
+		await core.setResponseTimer(Team.PLAYER, { awaitingConfirm: false });
 		await jest.advanceTimersByTimeAsync(TIME_LIMIT_S * 1000);
 		await flush();
 

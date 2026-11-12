@@ -107,7 +107,6 @@ export class OCGCore {
 				const recoverMs = Math.max(0, this.room.hostInfo.time_limit) * 1000;
 				for (const player of [0, 1] as const) {
 					this.timerState.leftMs[player] = recoverMs;
-					this.timerState.compensatorMs[player] = recoverMs;
 					this.timerState.backedMs[player] = recoverMs;
 				}
 			}
@@ -283,8 +282,20 @@ export class OCGCore {
 		return this.getActivePlayer(this.responseSide);
 	}
 
-	clearResponseTimerState(settlePrevious: boolean): void {
+	public clearResponseTimerState(settlePrevious: boolean): boolean {
+		const runningPos = this.timerState.runningPos;
+		if (settlePrevious && runningPos != null) {
+			this.timerState.settleReadiness();
+			if (this.timerState.leftMs[runningPos] <= this.timerState.elapsedMs()) {
+				// Check before recording, replenishing or submitting a queued response.
+				void this.handleResponseTimeout(runningPos).catch((error) => {
+					this.logger.error("Failed to handle response timeout", { error });
+				});
+				return false;
+			}
+		}
 		this.clearResponseTimer(settlePrevious);
+		return true;
 	}
 
 	clearResponseRequestState(): void {
@@ -297,31 +308,26 @@ export class OCGCore {
 		return this.timerState;
 	}
 
-	// Re-schedule timer after TIME_CONFIRM - sends TIME_LIMIT to client
-	async rescheduleTimerAfterConfirm(side: number): Promise<void> {
+	// Settle bounded readiness grace before starting the remaining response bank.
+	public async rescheduleTimerAfterConfirm(side: number): Promise<void> {
 		if (!this.hasTimeLimit || ![0, 1].includes(side)) {
 			return;
 		}
 		const originalPos = this.getSideTeam(side);
-		const elapsedMs = this.timerState.elapsedMs();
 		const runningPos = this.timerState.runningPos;
 
-		if (runningPos === undefined || runningPos !== originalPos) {
+		if (
+			runningPos === undefined ||
+			runningPos !== originalPos ||
+			!this.timerState.awaitingConfirm
+		) {
 			return;
 		}
-		// Apply time compensation logic from srvpro2
-		if (elapsedMs < 10_000 && elapsedMs <= this.timerState.compensatorMs[runningPos]) {
-			this.timerState.compensatorMs[runningPos] -= elapsedMs;
-		} else {
-			this.timerState.leftMs[runningPos] = Math.max(
-				0,
-				this.timerState.leftMs[runningPos] - elapsedMs,
-			);
-		}
-		this.timerState.awaitingConfirm = false;
+		this.timerState.settleReadiness();
 		// Reschedule timer
 		await this.setResponseTimer(runningPos, {
 			settlePrevious: false,
+			sendTimeLimit: false,
 			awaitingConfirm: false,
 		});
 	}
@@ -424,7 +430,6 @@ export class OCGCore {
 			maxTimeMs,
 			this.timerState.leftMs[originalDuelPos] + 1000,
 		);
-		this.timerState.compensatorMs[originalDuelPos] += 1000;
 		this.timerState.backedMs[originalDuelPos] -= 1000;
 	}
 
@@ -648,7 +653,9 @@ export class OCGCore {
 		const msg = new YGOProStocGameMsg().fromPartial({ msg: playerView });
 		client.sendMessageToClient(Buffer.from(msg.toFullPayload()));
 
-		await this.setResponseTimer(client.team);
+		// Reconnect replays state without granting another readiness window or
+		// restarting a confirmed response clock.
+		await this.sendTimeLimitMessage(client.team, client);
 	}
 
 	private async sendWaitingAndTimeLimitToClient(
@@ -1012,10 +1019,6 @@ export class OCGCore {
 		if (sendTimeLimit) {
 			await this.sendTimeLimitMessage(originalDuelPos);
 		}
-		if (leftTime <= 0) {
-			await this.handleResponseTimeout(originalDuelPos);
-			return;
-		}
 		this.timerState.schedule(originalDuelPos, leftTime, awaitingConfirm, () => {
 			void this.handleResponseTimeout(originalDuelPos).catch((error) => {
 				this.logger.error("Failed to handle response timeout", { error });
@@ -1034,7 +1037,7 @@ export class OCGCore {
 		// A reconnect snapshot must include the time already spent on the
 		// running bank, without settling or replacing its authoritative timer.
 		const elapsedMs =
-			this.timerState.runningPos === originalDuelPos ? this.timerState.elapsedMs() : 0;
+			this.timerState.runningPos === originalDuelPos ? this.timerState.chargeableElapsedMs() : 0;
 		const leftTime = Math.max(0, (this.timerState.leftMs[originalDuelPos] || 0) - elapsedMs);
 		const ingameDuelPos = this.toIngamePosition(originalDuelPos);
 		const timeLimitMessage = new YGOProStocTimeLimit().fromPartial({

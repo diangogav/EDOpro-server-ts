@@ -431,11 +431,10 @@ export class YGOProDuelingState extends YGOProRoomState {
 		const responseRequestMsg = this.ocgCore.currentLastResponseRequestMsg;
 		const responseBuffer = Buffer.from(message.data);
 
-		room.currentDuelRecord?.responses.push(responseBuffer);
-
-		// Handle time limit compensation
+		// A response implicitly confirms readiness. An expired bank must win
+		// before replay recording, response bonuses or submission to the worker.
 		if (this.ocgCore.timeLimitEnabled) {
-			this.ocgCore.clearResponseTimerState(true);
+			if (!this.ocgCore.clearResponseTimerState(true)) return;
 			const msgType = this.ocgCore.isRetryingState
 				? 0x02 // MSG_RETRY
 				: responseRequestMsg
@@ -443,6 +442,8 @@ export class YGOProDuelingState extends YGOProRoomState {
 					: 0;
 			this.ocgCore.increaseResponseTime(responseTeam, msgType, responseBuffer);
 		}
+
+		room.currentDuelRecord?.responses.push(responseBuffer);
 
 		// Clear response request state (NOT responsePosition)
 		this.ocgCore.clearResponseRequestState();
@@ -496,7 +497,7 @@ export class YGOProDuelingState extends YGOProRoomState {
 			return;
 		}
 
-		// Handle TIME_CONFIRM - reschedule timer and send TIME_LIMIT to client
+		// Settle readiness without soliciting another acknowledgement
 		await this.ocgCore.rescheduleTimerAfterConfirm(responseSide);
 
 		// Continue the duel after confirming time

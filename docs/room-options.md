@@ -31,3 +31,31 @@ Existing clients can ignore the additive `index` field; updated clients must
 leave the exact LF picker unavailable when older servers omit that field.
 No evolution-api migration, resource bundle update or invitation protocol
 change is required for this metadata.
+
+## YGOPro response timing
+
+YGOPro readiness is client-reported through `TIME_CONFIRM`; a response without
+that message is also an implicit confirmation. Neither can grant unlimited free
+time. Each side receives a presentation-grace budget equal to `time_limit` at
+the start of each duel, with at most 30 seconds available per response prompt.
+Turn recovery and the existing action-time bonuses refill only the decision
+bank, never this grace budget.
+
+The initial deadline is the remaining bank plus the smaller of 30 seconds and
+the remaining grace budget. On confirmation or response, readiness time up to
+that allowance consumes the grace budget; any excess consumes the decision
+bank. Confirmed thinking time then consumes only the bank. An expired bank is
+rejected before recording, rewarding or submitting a response to the worker.
+
+This lets a one-second remaining bank survive a twelve-second animation when
+at least twelve seconds of grace remain. Once the grace budget is spent, all
+subsequent waiting is charged. Withholding confirmation and repeatedly answering
+late can therefore gain only the finite per-duel allowance. Untimed rooms keep
+their existing behavior.
+
+Reconnect clock snapshots include any charged time but never restart the
+response deadline or refill grace. Duplicate and wrong-player confirmations are
+ignored, and a confirmation does not send another `TIME_LIMIT`. No protocol
+fields change. Clients must defer their existing confirmation until input is
+usable to benefit from presentation grace. The independent EDOPro flow is
+unchanged.
