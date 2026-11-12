@@ -12,6 +12,10 @@ describe("resolveBotPool", () => {
 		["tmr", "tcg"],
 		["tomr", "tcg"],
 		["pre", "tcg"],
+		["genesys", "genesys"],
+		["g", "genesys"],
+		["genesys150", "genesys"],
+		["g150", "genesys"],
 	])('maps token "%s" to pool "%s"', (token, pool) => {
 		expect(resolveBotPool([token])).toBe(pool);
 	});
@@ -23,6 +27,15 @@ describe("resolveBotPool", () => {
 
 	it("returns null for unknown tokens (generic pool)", () => {
 		expect(resolveBotPool(["nc", "ns"])).toBeNull();
+	});
+
+	it("does not take tokens that only start like a Genesys one", () => {
+		expect(resolveBotPool(["goat"])).toBeNull();
+		expect(resolveBotPool(["g150x"])).toBeNull();
+	});
+
+	it('"g,tt,ai" resolves to the priority-tier pool ("tcg")', () => {
+		expect(resolveBotPool(["g", "tt", "ai"])).toBe("tcg");
 	});
 
 	it("returns null for an empty token list", () => {
