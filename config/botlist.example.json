@@ -63,6 +63,24 @@
 		"format": "edison"
 	},
 	{
+		"name": "Blitzclique",
+		"deck": "Blitzclique",
+		"hidden": true,
+		"format": "genesys"
+	},
+	{
+		"name": "Time Wizard",
+		"deck": "DarkTimeWizard",
+		"hidden": true,
+		"format": "genesys"
+	},
+	{
+		"name": "Labrynth Gen",
+		"deck": "LabrynthGenesys",
+		"hidden": true,
+		"format": "genesys"
+	},
+	{
 		"name": "Horde",
 		"deck": "HalloweenHorde",
 		"hidden": true
