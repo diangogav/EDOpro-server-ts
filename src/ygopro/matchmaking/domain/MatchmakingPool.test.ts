@@ -455,13 +455,13 @@ describe("MatchmakingPool", () => {
 			pool.add(ParticipantMother.create({ id: "a", userId: "u-a", format: "edison" }));
 			pool.add(ParticipantMother.create({ id: "b", userId: "u-b", format: "tcg" }));
 
-			expect(pool.depthByFormat()).toEqual({ tcg: 1, jtp: 0, edison: 1 });
+			expect(pool.depthByFormat()).toEqual({ tcg: 1, jtp: 0, edison: 1, genesys: 0 });
 		});
 
 		it("reports zero for every format when nobody is queued", () => {
 			const pool = buildPool(new InMemoryPoolStore(), () => 0, new RecordingMatchHandler());
 
-			expect(pool.depthByFormat()).toEqual({ tcg: 0, jtp: 0, edison: 0 });
+			expect(pool.depthByFormat()).toEqual({ tcg: 0, jtp: 0, edison: 0, genesys: 0 });
 		});
 	});
 

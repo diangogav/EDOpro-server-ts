@@ -145,12 +145,14 @@ describe("EnqueueMatchmakingController", () => {
 		expect(MatchmakingQueue.getInstance().get(body.ticketId)?.format).toBe("jtp");
 	});
 
-	it("rejects genesys format (400) — Genesys format rejected", async () => {
+	it("accepts genesys format (200) — valid Genesys enqueue", async () => {
 		const out = await run(
 			{ format: "genesys", queue: "ranked", ticket: "the-ticket" },
-			makeTickets("user-1"),
+			makeTickets("user-genesys"),
 		);
-		expect(out.status()).toBe(400);
+		expect(out.status()).toBe(200);
+		const body = out.body() as { ticketId: string };
+		expect(MatchmakingQueue.getInstance().get(body.ticketId)?.format).toBe("genesys");
 	});
 
 	it("rejects unknown format string (400) — Unknown format rejected", async () => {

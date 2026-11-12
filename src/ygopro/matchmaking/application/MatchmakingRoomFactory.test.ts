@@ -7,6 +7,7 @@ import { RoomLeague } from "@shared/room/admission/domain/RoomLeague";
 import { ErrorMessageType } from "ygopro-msg-encode";
 
 import { MATCHMAKING_FORMATS } from "../domain/QueueEntry";
+import YGOProBanListMemoryRepository from "../../ban-list/infrastructure/YGOProBanListMemoryRepository";
 import YGOProRoomList from "../../room/infrastructure/YGOProRoomList";
 import {
 	createMatchmakingRoom,
@@ -31,8 +32,24 @@ const clearRooms = () => {
 };
 
 describe("createMatchmakingRoom", () => {
-	beforeEach(clearRooms);
-	afterEach(clearRooms);
+	// No ban list is loaded under jest, and the Genesys rule set refuses to build
+	// a room without its list, so the alias lookup answers for Genesys only.
+	const realFindIndexByAlias = YGOProBanListMemoryRepository.findIndexByAlias.bind(
+		YGOProBanListMemoryRepository,
+	);
+
+	beforeEach(() => {
+		clearRooms();
+		jest
+			.spyOn(YGOProBanListMemoryRepository, "findIndexByAlias")
+			.mockImplementation((alias: string) =>
+				alias === "genesys" ? 0 : realFindIndexByAlias(alias),
+			);
+	});
+	afterEach(() => {
+		clearRooms();
+		jest.restoreAllMocks();
+	});
 
 	it("creates a ranked (Verified) TCG room and registers it in the room list", () => {
 		const { room, roomPassword } = createMatchmakingRoom({
@@ -125,6 +142,36 @@ describe("createMatchmakingRoom", () => {
 		expect(room.isMatch).toBe(true);
 		expect(room.name.startsWith("edm,")).toBe(true);
 		expect(room.hostInfo.duel_rule).toBe(1);
+	});
+
+	it('uses the "g" token for genesys single rooms (point list at the 100-point cap)', () => {
+		const { room } = createMatchmakingRoom({
+			reservedUserIds: ["u-a", "u-b"],
+			format: "genesys",
+			rankedOverride: false,
+			logger: makeLogger(),
+			emitter: new EventEmitter(),
+		});
+
+		expect(room.name.startsWith("g,")).toBe(true);
+		expect(room.hostInfo.max_deck_points).toBe(100);
+		expect(room.bestOf).toBe(1);
+	});
+
+	it('uses the "gm" token for genesys MATCH rooms (genesys rules + best-of-3)', () => {
+		const { room } = createMatchmakingRoom({
+			reservedUserIds: ["u-a", "u-b"],
+			format: "genesys",
+			rankedOverride: true,
+			matchMode: true,
+			logger: makeLogger(),
+			emitter: new EventEmitter(),
+		});
+
+		expect(room.bestOf).toBe(3);
+		expect(room.isMatch).toBe(true);
+		expect(room.name.startsWith("gm,")).toBe(true);
+		expect(room.hostInfo.max_deck_points).toBe(100);
 	});
 
 	it("keeps rooms best-of-1 when matchMode is omitted (bot fallback — windbot cannot side-deck)", () => {

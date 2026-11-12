@@ -28,23 +28,27 @@ const DEFAULT_ROOM_ID_GENERATOR: RoomIdGenerator = new UnusedRoomIdGenerator();
  * TCG banlist over an OPEN pool. The old "to" (rule 1, scoped pool) bounced
  * cards without a TCG release (recent OCG printings, ot=0x9) at join.
  * "ed" is the short alias of "edison": rule 5 + edison lflist + Master Rule 1.
+ * "g" is the short alias of "genesys": the Genesys point list at the default
+ * 100-point cap.
  */
 export const FORMAT_ROOM_TOKEN: Record<MatchmakingFormat, string> = {
 	tcg: "tt",
 	jtp: "jtp",
 	edison: "ed",
+	genesys: "g",
 };
 
 /**
  * Per-format MATCH (best-of-3) token, used for human pairs. Same banlist/rule
  * set as FORMAT_ROOM_TOKEN plus mode=MATCH + best_of=3 (RuleMappings: "tmr",
- * "jm", "edm"). "tmr" and "edm" (3) sit at the 19-char wire ceiling like "jtp";
- * "jm" (2) has one char of slack.
+ * "jm", "edm", "gm"). "tmr" and "edm" (3) sit at the 19-char wire ceiling like "jtp";
+ * "jm" and "gm" (2) have one char of slack.
  */
 export const FORMAT_ROOM_TOKEN_MATCH: Record<MatchmakingFormat, string> = {
 	tcg: "tmr",
 	jtp: "jm",
 	edison: "edm",
+	genesys: "gm",
 };
 
 export interface CreateMatchmakingRoomInput {

@@ -31,6 +31,11 @@ export interface BotIdentity {
  * the random pool) but stay reachable by explicit name, which is how the roster
  * requests them.
  *
+ * Genesys roster: the meta bots whose lists fit the default 100-point cap —
+ * "Blitzclique" ↔ Blitzclique, "Time Wizard" ↔ DarkTimeWizard, "Labrynth Gen" ↔
+ * LabrynthGenesys. Hidden in the botlist with `format: "genesys"`, so they also
+ * serve as the random pool of a Genesys AI room.
+ *
  * IMPORTANT: All deck strings must be legal for the active banlist of that format.
  * Adjust if a deck-check rejects any entry.
  */
@@ -52,6 +57,11 @@ export const MATCHMAKING_BOT_ROSTER: Record<MatchmakingFormat, readonly BotIdent
 		{ name: "Blackwing", deck: "EdisonBlackwing" },
 		{ name: "Lightsworn", deck: "EdisonLightsworn" },
 		{ name: "Machina", deck: "EdisonMachina" },
+	],
+	genesys: [
+		{ name: "Blitzclique", deck: "Blitzclique" },
+		{ name: "Time Wizard", deck: "DarkTimeWizard" },
+		{ name: "Labrynth Gen", deck: "LabrynthGenesys" },
 	],
 };
 

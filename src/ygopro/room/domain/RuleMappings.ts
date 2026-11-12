@@ -470,6 +470,25 @@ const goatRuleSet = () => ({
 	time_limit: 450,
 });
 
+const GENESYS_DEFAULT_MAX_DECK_POINTS = 100;
+
+// Shared by "genesys"/"g" (optionally with a point cap) and "gm" so the single
+// and the best-of-3 rooms can never drift apart.
+const genesysRuleSet = (maxDeckPoints: number = GENESYS_DEFAULT_MAX_DECK_POINTS) => {
+	const genesysIndex = ygoproBanListCatalog().findIndexByAlias("genesys");
+	if (genesysIndex === -1) {
+		throw new Error("Genesys ban list is not loaded");
+	}
+
+	return {
+		rule: 1,
+		lflist: genesysIndex,
+		duel_rule: 5,
+		max_deck_points: maxDeckPoints,
+		time_limit: 450,
+	};
+};
+
 export const formatRuleMappings: RuleMappings = {
 	goat: {
 		get: goatRuleSet,
@@ -587,31 +606,26 @@ export const formatRuleMappings: RuleMappings = {
 		},
 	},
 	genesys: {
-		get: (value: string) => {
-			let max_deck_points = extractNumberFromCommand(value);
-
-			if (max_deck_points === null) {
-				max_deck_points = 100;
-			}
-
-			const genesysIndex = ygoproBanListCatalog().findIndexByAlias("genesys");
-			if (genesysIndex === -1) {
-				throw new Error("Genesys ban list is not loaded");
-			}
-
-			return {
-				rule: 1,
-				lflist: genesysIndex,
-				duel_rule: 5,
-				max_deck_points,
-				time_limit: 450,
-			};
-		},
+		get: (value: string) => genesysRuleSet(extractNumberFromCommand(value) ?? undefined),
 		validate: (value) => {
 			const regex = /^genesys\d+$/;
 			const shorcutRegex = /^g\d+$/;
 
 			return value === "genesys" || value === "g" || shorcutRegex.test(value) || regex.test(value);
+		},
+	},
+	// "gm" is "genesys" + best-of-3 match at the default point cap. Kept to 2
+	// chars because it is the matchmaking MATCH token for the genesys queue (token
+	// <= 3 chars — see MatchmakingRoomFactory). It cannot collide with the
+	// "g<points>" shortcut, which only accepts digits after the "g".
+	gm: {
+		get: () => ({
+			...genesysRuleSet(),
+			mode: GameMode.MATCH,
+			best_of: 3,
+		}),
+		validate: (value) => {
+			return value === "gm";
 		},
 	},
 	rush: {
