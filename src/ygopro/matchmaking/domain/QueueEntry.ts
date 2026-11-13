@@ -34,7 +34,7 @@ export function clampBotFallbackDelay(requestedMs: number): number {
 
 /** All accepted matchmaking formats. Used as the single source of truth for the
  * Zod enum, type derivation, and per-format record maps. */
-export const MATCHMAKING_FORMATS = ["tcg", "jtp", "edison"] as const;
+export const MATCHMAKING_FORMATS = ["tcg", "jtp", "edison", "genesys"] as const;
 export const SUPPORTED_QUEUE = "ranked" as const;
 
 /** All accepted matchmaking modes. This domain module is the single source of

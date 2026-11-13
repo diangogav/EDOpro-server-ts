@@ -53,6 +53,7 @@ const FORMAT_TO_CODE: Readonly<Record<MatchmakingFormat, number>> = Object.freez
 	tcg: 0,
 	jtp: 1,
 	edison: 2,
+	genesys: 3,
 });
 
 const STATE_BY_CODE = invert(STATE_TO_CODE);

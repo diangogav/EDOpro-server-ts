@@ -34,6 +34,10 @@ describe("resolveBotPool", () => {
 		expect(resolveBotPool(["g150x"])).toBeNull();
 	});
 
+	it('maps the Genesys best-of-3 token "gm" to the genesys pool', () => {
+		expect(resolveBotPool(["gm"])).toBe("genesys");
+	});
+
 	it('"g,tt,ai" resolves to the priority-tier pool ("tcg")', () => {
 		expect(resolveBotPool(["g", "tt", "ai"])).toBe("tcg");
 	});

@@ -75,6 +75,7 @@ const FORMAT_BY_CODE: Readonly<Partial<Record<number, MatchmakingFormat>>> = Obj
 	0: "tcg",
 	1: "jtp",
 	2: "edison",
+	3: "genesys",
 });
 const MODE_BY_CODE: Readonly<Partial<Record<number, MatchmakingMode>>> = Object.freeze({
 	0: "ranked",

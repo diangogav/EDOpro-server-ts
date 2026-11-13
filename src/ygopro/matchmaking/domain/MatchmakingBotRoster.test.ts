@@ -49,6 +49,16 @@ describe("MATCHMAKING_BOT_ROSTER", () => {
 			{ name: "Machina", deck: "EdisonMachina" },
 		]);
 	});
+
+	it("genesys roster pairs each bot name with its Genesys deck", () => {
+		// Names and decks match the `format: "genesys"` entries of
+		// config/botlist.example.json; the roster requests them by name.
+		expect(MATCHMAKING_BOT_ROSTER.genesys).toEqual([
+			{ name: "Blitzclique", deck: "Blitzclique" },
+			{ name: "Time Wizard", deck: "DarkTimeWizard" },
+			{ name: "Labrynth Gen", deck: "LabrynthGenesys" },
+		]);
+	});
 });
 
 describe("pickBotFromRoster", () => {

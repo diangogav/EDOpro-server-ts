@@ -58,7 +58,7 @@ describe("MatchmakingDepthController", () => {
 		const out = run();
 
 		expect(out.status()).toBe(200);
-		expect(out.body()).toEqual({ formats: { tcg: 0, jtp: 0, edison: 1 } });
+		expect(out.body()).toEqual({ formats: { tcg: 0, jtp: 0, edison: 1, genesys: 0 } });
 	});
 
 	it("lets clients and proxies cache the counts for a few seconds", () => {

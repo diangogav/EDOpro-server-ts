@@ -314,6 +314,54 @@ describe("edm mapping (edison best-of-3, used by matchmaking)", () => {
 	});
 });
 
+describe("genesys mapping", () => {
+	it("defaults to a 100-point cap and reads a cap from the token", () => {
+		const findIndex = jest
+			.spyOn(MercuryBanListMemoryRepository, "findIndexByAlias")
+			.mockReturnValue(4);
+
+		const base = { rule: 1, lflist: 4, duel_rule: 5, time_limit: 450 };
+		expect(formatRuleMappings.genesys.get("genesys")).toEqual({ ...base, max_deck_points: 100 });
+		expect(formatRuleMappings.genesys.get("g")).toEqual({ ...base, max_deck_points: 100 });
+		expect(formatRuleMappings.genesys.get("g150")).toEqual({ ...base, max_deck_points: 150 });
+		expect(findIndex).toHaveBeenCalledWith("genesys");
+
+		findIndex.mockRestore();
+	});
+
+	it("fails when the Genesys list is not loaded", () => {
+		const findIndex = jest
+			.spyOn(MercuryBanListMemoryRepository, "findIndexByAlias")
+			.mockReturnValue(-1);
+
+		expect(() => formatRuleMappings.genesys.get("g")).toThrow("Genesys ban list is not loaded");
+
+		findIndex.mockRestore();
+	});
+});
+
+describe("gm mapping (genesys best-of-3, used by matchmaking)", () => {
+	it("maps the default genesys rule set to a best-of-3 match", () => {
+		const findIndex = jest
+			.spyOn(MercuryBanListMemoryRepository, "findIndexByAlias")
+			.mockReturnValue(4);
+
+		expect(formatRuleMappings.gm.get("gm")).toEqual({
+			...formatRuleMappings.genesys.get("g"),
+			mode: GameMode.MATCH,
+			best_of: 3,
+		});
+
+		findIndex.mockRestore();
+	});
+
+	it("validates only the exact token and stays out of the genesys shortcut", () => {
+		expect(formatRuleMappings.gm.validate("gm")).toBe(true);
+		expect(formatRuleMappings.gm.validate("g")).toBe(false);
+		expect(formatRuleMappings.genesys.validate("gm")).toBe(false);
+	});
+});
+
 describe("jtp-2007-03 mapping (JTP Advanced March 2007)", () => {
 	it("maps the historical JTP variant to master rule 1 over the open JTP pool", () => {
 		const findIndex = jest

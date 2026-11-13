@@ -18,8 +18,9 @@
  * historical behavior of rolling TCG bots for the free-format card.
  *
  * Genesys accepts a points cap inside the token ("genesys150", "g150"), so
- * its tokens are matched by pattern instead of listed in the format map; they
- * sit in the format tier like the Genesys rule mapping itself.
+ * those tokens are matched by pattern instead of listed in the format map; they
+ * sit in the format tier like the Genesys rule mapping itself. Its best-of-3
+ * token "gm" takes no cap and is listed in the map.
  *
  * Both maps are intentionally partial. Remaining TCG-ish tokens
  * (tcgpre/ocgpre/tcgart/ocgart/ot/tcg) are left unmapped for now — they
@@ -44,6 +45,7 @@ const FORMAT_TOKEN_TO_POOL = new Map<string, string>([
 	["jm", "jtp"],
 	["edison", "edison"],
 	["ed", "edison"],
+	["gm", "genesys"],
 	["pre", "tcg"],
 ]);
 

@@ -8,7 +8,7 @@ const CACHE_CONTROL = "public, max-age=5";
 
 /**
  * GET /api/matchmaking/depth — how many players are searching in each
- * matchmaking format right now, e.g. `{ formats: { tcg: 3, jtp: 0, edison: 1 } }`.
+ * matchmaking format right now, e.g. `{ formats: { tcg: 3, jtp: 0, edison: 1, genesys: 0 } }`.
  * Public and anonymous: it exposes counts only, never who is queued.
  */
 export class MatchmakingDepthController {

@@ -133,6 +133,10 @@ describe("parseCtosEnter", () => {
 			ok: true,
 			value: { format: "edison", mode: "ranked", clientVersion: 0 },
 		});
+		expect(parseCtosEnter(enterBody(3, 0))).toEqual({
+			ok: true,
+			value: { format: "genesys", mode: "ranked", clientVersion: 0 },
+		});
 	});
 });
 
