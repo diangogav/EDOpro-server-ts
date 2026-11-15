@@ -25,6 +25,11 @@ export interface ISocket {
 	 * stamp for room A must never affect any other room — readers must always
 	 * compare it against their own room id. */
 	watchForRoomId?: number;
+	/**
+	 * Set by the server when the socket entered an EDOPro room from the YGOPro
+	 * server: its client builds decks against the YGOPro card pool.
+	 */
+	bridgedFromYgopro?: boolean;
 	/** Wire transport of this connection, for diagnostics. */
 	readonly transport: "ws" | "tcp";
 	/** Epoch ms of the last sign of life from the peer: any inbound frame or, on
