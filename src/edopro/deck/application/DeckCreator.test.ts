@@ -5,6 +5,7 @@ import { CardRepository } from "@shared/card/domain/CardRepository";
 import { CardTypes } from "@shared/card/domain/CardTypes";
 import { Rule } from "@shared/deck/domain/Rule";
 import { DeckCreator } from "./DeckCreator";
+import { useForeignPrintings } from "../domain/ForeignPrintings";
 import { DeckRules } from "@shared/room/domain/YgoRoom";
 
 // Mock dependencies
@@ -172,5 +173,134 @@ describe("DeckCreator", () => {
 
 		expect(deck).toBeDefined();
 		expect(BanListMemoryRepository.findByHash).toHaveBeenCalledWith(banListHash);
+	});
+
+	it("leaves an unknown code out without failing the deck by default", async () => {
+		mockCardRepository.findByCode.mockResolvedValueOnce(null);
+		(BanListMemoryRepository.findByHash as jest.Mock).mockReturnValue(new EdoproBanList());
+
+		const deck = await deckCreator.build({ main: [910003001], side: [], banListHash: 111 });
+
+		expect(deck.main).toHaveLength(0);
+		expect(deck.validate()?.code).not.toBe(910003001);
+	});
+
+	it("fails the deck naming the unknown code when asked to reject unknown codes", async () => {
+		mockCardRepository.findByCode.mockResolvedValueOnce(null);
+		(BanListMemoryRepository.findByHash as jest.Mock).mockReturnValue(new EdoproBanList());
+
+		const deck = await deckCreator.build({
+			main: [910003001],
+			side: [],
+			banListHash: 111,
+			fromForeignCardPool: true,
+		});
+
+		expect(deck.validate()).toMatchObject({ code: 910003001 });
+	});
+
+	describe("deck from another card pool on a whitelist", () => {
+		const NECROVALLEY = 47355498;
+		const NECROVALLEY_PRE_ERRATA = 511002998;
+
+		const whitelistNaming = (...codes: number[]): EdoproBanList => {
+			const banList = new EdoproBanList();
+			codes.forEach((code) => banList.add(code, 3));
+			banList.whileListed();
+
+			return banList;
+		};
+
+		const buildWith = async (banList: EdoproBanList, printings: Card[]): Promise<string[]> => {
+			const original = new Card({
+				code: String(NECROVALLEY),
+				type: CardTypes.TYPE_SPELL,
+				alias: "0",
+				category: 0,
+				variant: 0,
+			});
+			mockCardRepository.findByCode.mockResolvedValueOnce(original);
+			(BanListMemoryRepository.findByHash as jest.Mock).mockReturnValue(banList);
+			const creator = new DeckCreator(mockCardRepository, deckRules, duelFlags, {
+				findByAlias: jest.fn().mockResolvedValue(printings),
+			});
+
+			const deck = await creator.build({
+				main: [NECROVALLEY],
+				side: [],
+				banListHash: 111,
+				fromForeignCardPool: true,
+			});
+
+			return deck.main.map((card) => card.code);
+		};
+
+		const preErrata = new Card({
+			code: String(NECROVALLEY_PRE_ERRATA),
+			type: CardTypes.TYPE_SPELL,
+			alias: String(NECROVALLEY),
+			category: 0,
+			variant: 0,
+		});
+
+		it("plays the printing the list names when it does not name the one sent", async () => {
+			expect(await buildWith(whitelistNaming(NECROVALLEY_PRE_ERRATA), [preErrata])).toEqual([
+				String(NECROVALLEY_PRE_ERRATA),
+			]);
+		});
+
+		it("keeps the card sent when the list names it", async () => {
+			expect(await buildWith(whitelistNaming(NECROVALLEY), [preErrata])).toEqual([
+				String(NECROVALLEY),
+			]);
+		});
+
+		it("keeps the card sent when no printing is on the list", async () => {
+			expect(await buildWith(whitelistNaming(123), [preErrata])).toEqual([String(NECROVALLEY)]);
+		});
+	});
+
+	describe("code this card pool lacks, from another pool", () => {
+		const HONEST = 37742478;
+		const HONEST_OWN_COPY = 910003001;
+
+		afterEach(() => {
+			useForeignPrintings({ originalOf: () => Promise.resolve(null) });
+		});
+
+		it("plays the original the other pool says it copies", async () => {
+			useForeignPrintings({
+				originalOf: (code) => Promise.resolve(code === HONEST_OWN_COPY ? HONEST : null),
+			});
+			mockCardRepository.findByCode.mockImplementation((code) =>
+				Promise.resolve(
+					code === String(HONEST)
+						? new Card({ code, type: CardTypes.TYPE_MONSTER, alias: "0", category: 0, variant: 0 })
+						: null,
+				),
+			);
+			(BanListMemoryRepository.findByHash as jest.Mock).mockReturnValue(new EdoproBanList());
+
+			const deck = await deckCreator.build({
+				main: [HONEST_OWN_COPY],
+				side: [],
+				banListHash: 111,
+				fromForeignCardPool: true,
+			});
+
+			expect(deck.main.map((card) => card.code)).toEqual([String(HONEST)]);
+		});
+
+		it("does not ask the other pool for a deck of this pool's own client", async () => {
+			const originalOf = jest.fn().mockResolvedValue(HONEST);
+			useForeignPrintings({ originalOf });
+			mockCardRepository.findByCode.mockResolvedValue(null);
+			(BanListMemoryRepository.findByHash as jest.Mock).mockReturnValue(new EdoproBanList());
+
+			const deck = await deckCreator.build({ main: [HONEST_OWN_COPY], side: [], banListHash: 111 });
+
+			expect(originalOf).not.toHaveBeenCalled();
+			expect(deck.main).toHaveLength(0);
+		});
 	});
 });

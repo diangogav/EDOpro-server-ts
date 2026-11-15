@@ -17,6 +17,7 @@ import { bootstrapMetrics } from "./bootstrap/bootstrapMetrics";
 import { Server } from "./http-server/Server";
 import { HostServer } from "./socket-server/HostServer";
 import { WSHostServer } from "./socket-server/WSHostServer";
+import { registerForeignPrintings } from "./bootstrap/foreignPrintings";
 import { EdoproRoomEntry } from "./edopro/room/application/EdoproRoomEntry";
 import { YGOProServer } from "./socket-server/YGOProServer";
 import { WSYGOProServer } from "./socket-server/WSYGOProServer";
@@ -39,6 +40,7 @@ async function start(): Promise<void> {
 	// Before any listener or room exists: rooms and their states read these.
 	registerRoomStatePorts();
 	registerBanListCatalogs();
+	registerForeignPrintings();
 	// Before any room exists, so every duel engine is measured.
 	await bootstrapMetrics(config.metrics, logger);
 

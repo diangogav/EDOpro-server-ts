@@ -1,6 +1,7 @@
 import { DeckRules } from "@shared/room/domain/YgoRoom";
 import { BanList } from "@shared/ban-list/BanList";
 import { DeckError } from "./errors/DeckError";
+import { UnknownCardError } from "./errors/UnknownCardError";
 import { AvailableCardValidationHandler } from "./validators/AvailableCardValidationHandler";
 import { DeckLimitsValidationHandler } from "./validators/DeckLimitsValidationHandler";
 import { DeckRuleValidationHandler } from "./validators/DeckRuleValidationHandler";
@@ -20,6 +21,8 @@ export class Deck {
 	readonly extra: Card[];
 	private readonly banList: BanList;
 	private readonly deckRules: DeckRules;
+	/** Submitted codes the card pool has no card for; any of them fails validation. */
+	private readonly unknownCodes: readonly number[];
 
 	constructor({
 		main = [],
@@ -27,13 +30,16 @@ export class Deck {
 		extra = [],
 		banList,
 		deckRules,
+		unknownCodes = [],
 	}: {
 		main?: Card[];
 		side?: Card[];
 		extra?: Card[];
 		banList: BanList;
 		deckRules: DeckRules;
+		unknownCodes?: readonly number[];
 	}) {
+		this.unknownCodes = unknownCodes;
 		this.main = main;
 		this.side = side;
 		this.extra = extra;
@@ -72,6 +78,10 @@ export class Deck {
 	}
 
 	public validate(): DeckError | null {
+		if (this.unknownCodes.length > 0) {
+			return new UnknownCardError(this.unknownCodes[0]);
+		}
+
 		const handleValidations = new DeckLimitsValidationHandler(this.deckRules);
 
 		if (!this.banList.isGenesys()) {

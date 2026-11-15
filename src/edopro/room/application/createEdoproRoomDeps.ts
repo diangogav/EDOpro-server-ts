@@ -24,7 +24,10 @@ export function createEdoproRoomDeps(): EdoproRoomDeps {
 		createSpectatorJoiner: () => new JoinToDuelAsSpectator(),
 		createPlayerAuthenticator: () =>
 			new AuthenticatePlayer(new UserAuth(new UserProfilePostgresRepository())),
-		createDeckBuilder: (deckRules, duelFlag) =>
-			new DeckCreator(new CardSQLiteTYpeORMRepository(), deckRules, duelFlag),
+		createDeckBuilder: (deckRules, duelFlag) => {
+			const cards = new CardSQLiteTYpeORMRepository();
+
+			return new DeckCreator(cards, deckRules, duelFlag, cards);
+		},
 	};
 }
