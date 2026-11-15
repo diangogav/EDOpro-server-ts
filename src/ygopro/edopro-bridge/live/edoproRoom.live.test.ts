@@ -39,6 +39,8 @@ const EDOPRO_WS_URL = process.env.EDOPRO_WS_URL ?? "";
 const YGOPRO_WS_URL = process.env.YGOPRO_WS_URL ?? "";
 /** The YGOPro WebSocket as a client that declared itself ready for EDOPro rooms. */
 const READY_CLIENT_URL = `${YGOPRO_WS_URL}?client=evoduel`;
+/** DUEL_MODE_SPEED of the Project Ignis core: a three-column field. */
+const SPEED_DUEL_FLAGS = 0x628000;
 const ROOMS_URL = process.env.ROOMS_URL ?? "";
 const FRIEND = process.env.EDOPRO_FRIEND === "1";
 const EDISON = "2010.03 Edison";
@@ -277,6 +279,38 @@ live("EDOPro room joined from the YGOPro server (live server)", () => {
 		} finally {
 			host.socket.close();
 			stranger.socket.close();
+		}
+	}, 20_000);
+
+	it("turns a ready client away from a room it cannot present, and keeps that room off its list", async () => {
+		const { host, roomId } = await hostRoom({ duelFlagsLow: SPEED_DUEL_FLAGS }, BATTLE_OX_DECK);
+		let refused: (code: number) => void = () => undefined;
+		const joinError = new Promise<number>((resolve) => {
+			refused = resolve;
+		});
+		const guest = await openSeat({
+			url: READY_CLIENT_URL,
+			name: "LiveGuest",
+			wire: "ygopro",
+			rpsHand: 2,
+			onEvent: (seat, event) => {
+				if (event === "error") refused(seat.errors[0].msg);
+			},
+		});
+		guest.socket.send(playerInfoFrame(guest.name));
+		guest.socket.send(ygoproJoinFrame(roomId));
+
+		try {
+			expect(await within(joinError, 10_000, "answer to the join")).toBe(JOIN_ERROR);
+			if (ROOMS_URL) {
+				const listed = (await (
+					await fetch(`${ROOMS_URL}/api/rooms?engines=ygopro,edopro`)
+				).json()) as { rooms: Array<{ id: number }> };
+				expect(listed.rooms.some((room) => room.id === roomId)).toBe(false);
+			}
+		} finally {
+			host.socket.close();
+			guest.socket.close();
 		}
 	}, 20_000);
 
