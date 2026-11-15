@@ -8,6 +8,7 @@ import { EventEmitter } from "stream";
 import { config } from "../../../config";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { DeckRules, DuelState, YgoRoom } from "../../../shared/room/domain/YgoRoom";
+import { Rule } from "../../../shared/deck/domain/Rule";
 import { Team } from "../../../shared/room/Team";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { Client } from "../../client/domain/Client";
@@ -66,6 +67,14 @@ export interface RoomAttr {
 	duel?: ChildProcessWithoutNullStreams;
 	ranked: boolean;
 }
+
+const EDOPRO_RULE_LABELS: Record<number, string> = {
+	[Rule.ONLY_OCG]: "OCG",
+	[Rule.ONLY_TCG]: "TCG",
+	[Rule.OCG_TCG]: "OCG/TCG",
+	[Rule.PRE_RELEASE]: "Prerelease",
+	[Rule.ALL]: "Anything Goes",
+};
 
 export class Room extends YgoRoom {
 	public readonly name: string;
@@ -736,6 +745,45 @@ export class Room extends YgoRoom {
 				name: player.name.replace(/\0/g, "").trim(),
 				pos: player.position,
 			})),
+		};
+	}
+
+	/**
+	 * Row for `/api/rooms`, in the shape YGOPro rooms use there, for clients on
+	 * the YGOPro socket. `command` is the join string that socket understands
+	 * for an EDOPro room; `engine` tells the client which wire format the room
+	 * will speak once joined. A ranked EDOPro room is hosted with a PIN login,
+	 * which is the External league: a ticket-verified player may step into it.
+	 */
+	public toRoomListDTO(): { [key: string]: unknown } {
+		const started = this.duelState !== DuelState.WAITING;
+		const maxPlayers = this.team0 + this.team1;
+
+		return {
+			id: this.id,
+			engine: "edopro",
+			command: `edo,${this.id}`,
+			status: this.duelState,
+			started,
+			private: this.needPass,
+			canPlay: !started && this._players.length < maxPlayers,
+			canWatch: false,
+			banlist: this.banListName ?? "No banlist",
+			rule: EDOPRO_RULE_LABELS[this.deckRules.rule] ?? EDOPRO_RULE_LABELS[Rule.ALL],
+			mode: this.mode,
+			bestOf: this.bestOf,
+			duelRule: this.duelRule,
+			startLp: this.startLp,
+			timeLimit: this.timeLimit,
+			players: this._players.map((player) => ({
+				name: player.name.replace(/\0/g, "").trim(),
+				position: player.position,
+				team: player.team,
+			})),
+			maxPlayers,
+			spectators: this._spectators.length,
+			ranked: this.ranked,
+			league: this.ranked ? "external" : "casual",
 		};
 	}
 
