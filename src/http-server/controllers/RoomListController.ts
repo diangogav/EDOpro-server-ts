@@ -12,14 +12,14 @@ export class RoomListController {
 		const { status, open, mode, engines } = req.query;
 		const wanted = RoomListController.engines(engines);
 
-		// EDOPro rooms a client on the YGOPro socket can sit in: 1v1 with a free
-		// seat. That client cannot watch an EDOPro duel, so a full or started
-		// room would only be a row nobody can act on.
+		// EDOPro rooms a client on the YGOPro socket can sit in: ones it can
+		// present (1v1, a Master Rule, no extra rule) with a free seat. That
+		// client cannot watch an EDOPro duel, so a full or started room would
+		// only be a row nobody can act on.
 		let edoproRooms = wanted.has("edopro")
 			? RoomList.getRooms().filter(
 					(room) =>
-						room.team0 === 1 &&
-						room.team1 === 1 &&
+						room.seatsYgoproClients &&
 						room.duelState === DuelState.WAITING &&
 						room.players.length < 2,
 				)

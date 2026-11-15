@@ -13,7 +13,8 @@ const REJECTIONS: Record<Exclude<ForeignRoomEntryResult, "joined">, string> = {
 	"not-found": "Room not found — refresh the room list.",
 	"wrong-password": "Wrong password.",
 	"login-required": "This is a ranked room. Log in to join it.",
-	unsupported: "This room cannot be joined from this client.",
+	unsupported:
+		"This room cannot be joined from this client: only 1v1 rooms under a Master Rule, with no extra rule.",
 };
 
 const CLIENT_NOT_READY = "This client cannot join rooms hosted from EDOPro.";

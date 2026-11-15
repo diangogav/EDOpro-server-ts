@@ -17,8 +17,8 @@ const PASSWORD_MAX_UNITS = 19;
  * server. The room then owns the socket and talks to it in the EDOPro wire
  * format; the caller hands in a socket that translates it for its client.
  *
- * Only 1v1 rooms: team rooms seat more players than that client lays out. A
- * ranked room needs the account the server verified for the socket, because
+ * Only rooms that client can present (`Room.seatsYgoproClients`): 1v1, under
+ * a Master Rule, with no extra rule. A ranked room needs the account the server verified for the socket, because
  * such a client has no EDOPro password to log in with.
  */
 export class EdoproRoomEntry implements ForeignRoomEntry {
@@ -32,7 +32,7 @@ export class EdoproRoomEntry implements ForeignRoomEntry {
 		if (!room) {
 			return "not-found";
 		}
-		if (room.team0 !== 1 || room.team1 !== 1) {
+		if (!room.seatsYgoproClients) {
 			return "unsupported";
 		}
 		if (room.ranked && typeof socket.resolvedUserId !== "string") {

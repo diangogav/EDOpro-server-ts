@@ -8,6 +8,9 @@ import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import { GetRoomListController } from "./GetRoomListController";
 import { RoomListController } from "./RoomListController";
 
+const MASTER_RULE_5 = 0x2e800;
+const SPEED_DUEL = 0x628000;
+
 jest.mock("@ygopro/SimpleRoomMessageEmitter");
 
 const makeResponse = () => {
@@ -44,7 +47,14 @@ describe("room list controllers", () => {
 	});
 
 	it("lists a 1v1 EDOPro room in /api/rooms, for a caller that asks for them, with its join command", () => {
-		const duel = RoomMother.create({ id: 4321, team0: 1, team1: 1, needPass: true, ranked: true });
+		const duel = RoomMother.create({
+			id: 4321,
+			team0: 1,
+			team1: 1,
+			duelFlagsLow: MASTER_RULE_5,
+			needPass: true,
+			ranked: true,
+		});
 		RoomList.addRoom(duel);
 		RoomList.addRoom(RoomMother.create({ team0: 2, team1: 2 }));
 		const response = makeResponse();
@@ -72,8 +82,23 @@ describe("room list controllers", () => {
 		});
 	});
 
+	it("leaves out an EDOPro room a YGOPro client cannot present, such as a Speed Duel", () => {
+		RoomList.addRoom(RoomMother.create({ team0: 1, team1: 1, duelFlagsLow: SPEED_DUEL }));
+		const response = makeResponse();
+
+		new RoomListController().run(
+			{ query: { engines: "ygopro,edopro" } } as unknown as Request,
+			response as unknown as Response,
+		);
+
+		const edoproRows = response.json.mock.calls[0][0].rooms.filter(
+			(room: { engine?: string }) => room.engine === "edopro",
+		);
+		expect(edoproRows).toHaveLength(0);
+	});
+
 	it("leaves EDOPro rooms out of /api/rooms for a caller that does not ask for them", () => {
-		RoomList.addRoom(RoomMother.create({ team0: 1, team1: 1 }));
+		RoomList.addRoom(RoomMother.create({ team0: 1, team1: 1, duelFlagsLow: MASTER_RULE_5 }));
 		const response = makeResponse();
 
 		new RoomListController().run({ query: {} } as Request, response as unknown as Response);
@@ -84,7 +109,7 @@ describe("room list controllers", () => {
 	});
 
 	it("lists only EDOPro rooms for a caller that asks for that engine alone", () => {
-		RoomList.addRoom(RoomMother.create({ team0: 1, team1: 1 }));
+		RoomList.addRoom(RoomMother.create({ team0: 1, team1: 1, duelFlagsLow: MASTER_RULE_5 }));
 		const response = makeResponse();
 
 		new RoomListController().run(
@@ -97,7 +122,9 @@ describe("room list controllers", () => {
 	});
 
 	it("applies the open filter of /api/rooms to EDOPro rooms too", () => {
-		RoomList.addRoom(RoomMother.create({ team0: 1, team1: 1, needPass: true }));
+		RoomList.addRoom(
+			RoomMother.create({ team0: 1, team1: 1, duelFlagsLow: MASTER_RULE_5, needPass: true }),
+		);
 		const response = makeResponse();
 
 		new RoomListController().run(

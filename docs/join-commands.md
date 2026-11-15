@@ -414,7 +414,7 @@ the first `#` is the room password.
 | `joined` | The room's `STOC_JOIN_GAME`, re-encoded for a YGOPro client. The room now owns the socket. |
 | `not-found`, `wrong-password` | Red chat with the reason, `JOINERROR`, close. |
 | `login-required` | The room is ranked and the socket carries no verified account (`resolvedUserId`). |
-| `unsupported` | The room is not 1v1. |
+| `unsupported` | The room is not one a YGOPro client can present: it is not 1v1, its duel flags are not one of the five Master Rules (Speed, Rush or a custom mix), or it has an extra rule. See `Room.seatsYgoproClients`. |
 
 **Ranked rooms.** A ranked EDOPro room is hosted with a PIN login. A socket
 that arrived with a handshake ticket is accepted as that account without a
@@ -441,7 +441,7 @@ built to tell its player so. Any other client gets a red chat line and
 `JOINERROR`, before the room is even looked up.
 
 **Listing.** `/api/rooms` lists the EDOPro rooms such a client can sit in
-(1v1, waiting, with a free seat) with `engine: "edopro"` and
+(the same rooms the join accepts, while waiting and with a free seat) with `engine: "edopro"` and
 `command: "edo,<id>"`, but only to a caller that asks for them with
 `?engines=ygopro,edopro`. Without the parameter the list holds YGOPro rooms
 alone, as it always did, so other clients of that endpoint see no change.
