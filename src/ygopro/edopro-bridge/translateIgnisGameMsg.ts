@@ -1,5 +1,6 @@
 import type { YGOProMsgBase } from "ygopro-msg-encode";
 
+import { BATTLE_DECODERS } from "./ignis-battle-decoders";
 import { CORE_DECODERS } from "./ignis-core-decoders";
 import type { Decoder, IgnisTranslationContext } from "./ignis-fields";
 import { IgnisReader } from "./IgnisReader";
@@ -20,6 +21,7 @@ const IGNORED_MESSAGES: ReadonlySet<number> = new Set([80, 121, 122, 123]);
 
 const DECODERS: Readonly<Record<number, Decoder>> = {
 	...CORE_DECODERS,
+	...BATTLE_DECODERS,
 };
 
 /**
