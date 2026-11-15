@@ -30,7 +30,9 @@ const REJECTION_REASON: Record<ReconnectOutcome, string> = {
 // Each subtree injects:
 //   - resolveRoom: maps a roomId to its room (RoomList vs YGOProRoomList),
 //   - clientGuard: narrows the token's client to the subtree's client type
-//                  (instanceof Client vs instanceof YGOProClient).
+//                  (instanceof Client vs instanceof YGOProClient),
+//   - socketFor:   optional; the socket handed to the room, for a connection
+//                  that reaches a room of the other subtree through a bridge.
 //
 // The token → room → emit orchestration is common; the re-sync is not.
 export class ExpressReconnectHandler {
@@ -38,8 +40,11 @@ export class ExpressReconnectHandler {
 		private readonly eventEmitter: EventEmitter,
 		private readonly logger: Logger,
 		private readonly socket: ISocket,
-		private readonly resolveRoom: (roomId: number) => YgoRoom | undefined,
+		private readonly resolveRoom: (roomId: number, client: YgoClient) => YgoRoom | undefined,
 		private readonly clientGuard: (client: YgoClient) => boolean,
+		/** The socket to hand the room: this one, or one adapted to the room's wire format. */
+		private readonly socketFor: (room: YgoRoom, socket: ISocket) => ISocket = (_room, socket) =>
+			socket,
 	) {
 		this.eventEmitter.on(Commands.RECONNECT as unknown as string, (message: ClientMessage) =>
 			this.handle(message),
@@ -61,7 +66,7 @@ export class ExpressReconnectHandler {
 
 				return;
 			}
-			const room = this.resolveRoom(entry.roomId);
+			const room = this.resolveRoom(entry.roomId, client);
 			if (room) {
 				this.logger.info(`Express reconnect: match for ${client.name} in room ${entry.roomId}`);
 				logReconnectAttempt(this.logger, {
@@ -72,7 +77,7 @@ export class ExpressReconnectHandler {
 					identityChecked,
 					token,
 				});
-				room.emit("EXPRESS_RECONNECT", message, this.socket);
+				room.emit("EXPRESS_RECONNECT", message, this.socketFor(room, this.socket));
 
 				return;
 			}
