@@ -2,6 +2,7 @@ import type { YGOProMsgBase } from "ygopro-msg-encode";
 
 import { BATTLE_DECODERS } from "./ignis-battle-decoders";
 import { CORE_DECODERS } from "./ignis-core-decoders";
+import { EVENT_DECODERS } from "./ignis-event-decoders";
 import type { Decoder, IgnisTranslationContext } from "./ignis-fields";
 import { PROMPT_DECODERS } from "./ignis-prompt-decoders";
 import { IgnisReader } from "./IgnisReader";
@@ -24,6 +25,7 @@ const DECODERS: Readonly<Record<number, Decoder>> = {
 	...CORE_DECODERS,
 	...BATTLE_DECODERS,
 	...PROMPT_DECODERS,
+	...EVENT_DECODERS,
 };
 
 /**
