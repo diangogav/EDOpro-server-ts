@@ -8,20 +8,13 @@ import { createDisconnectHandler } from "src/bootstrap/disconnectHandler";
 import { RoomFinder } from "@shared/room/application/RoomFinder";
 import { ExpressReconnectHandler } from "@shared/room/application/reconnect/ExpressReconnectHandler";
 import { ISocket } from "@shared/socket/domain/ISocket";
-import { YGOProClient } from "@ygopro/client/domain/YGOProClient";
 import { YGOProGameCreatorHandler } from "@ygopro/room/application/YGOProGameCreatorHandler";
 import { YGOProJoinHandler } from "@ygopro/room/application/YGOProJoinHandler";
 import { YGOProMessageRepository } from "@ygopro/room/infrastructure/YGOProMessageRepository";
-import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 import { MatchmakingConnectionFactory } from "@ygopro/matchmaking/application/MatchmakingConnectionFactory";
 
 import { MessageEmitter } from "@shared/messages/MessageEmitter";
-import { Client as EdoproClient } from "../edopro/client/domain/Client";
-import { Room as EdoproRoom } from "../edopro/room/domain/Room";
-import RoomList from "../edopro/room/infrastructure/RoomList";
-import { YgoClient } from "../shared/client/domain/YgoClient";
-import { bridgeToEdoproRoom } from "../ygopro/edopro-bridge/BridgedSocket";
-import { duelRuleFromFlags } from "../ygopro/edopro-bridge/edopro-lobby";
+import { ygoproReconnectRoute } from "./YGOProReconnectRoute";
 
 /** No-op default: a socket server that never received a real factory (e.g. a
  * unit test constructing this handler directly) simply never wires matchmaking. */
@@ -37,11 +30,6 @@ export interface YGOProConnectionOptions {
 	authenticate?: () => Promise<boolean>;
 	/** Runs on every inbound frame, before the pump waits on `authenticate`. */
 	onInboundFrame?: () => void;
-}
-
-/** A player of an EDOPro room who entered it from the YGOPro server. */
-function isBridgedEdoproClient(client: YgoClient): boolean {
-	return client instanceof EdoproClient && client.socket.bridgedFromYgopro === true;
 }
 
 export class YGOProConnectionHandler {
@@ -84,26 +72,13 @@ export class YGOProConnectionHandler {
 			);
 		};
 
-		// A token also belongs here when its player sits in an EDOPro room it
-		// joined from this server ("edo,<roomId>"): it comes back through the
-		// same door, on a socket that translates the room's wire format again.
 		new ExpressReconnectHandler(
 			eventEmitter,
 			connectionLogger,
 			socket,
-			(roomId, client) =>
-				client instanceof YGOProClient
-					? (YGOProRoomList.findById(roomId) ?? undefined)
-					: RoomList.getRooms().find((room) => room.id === roomId),
-			(client) => client instanceof YGOProClient || isBridgedEdoproClient(client),
-			(room, reopened) => {
-				if (!(room instanceof EdoproRoom)) {
-					return reopened;
-				}
-				reopened.bridgedFromYgopro = true;
-
-				return bridgeToEdoproRoom(reopened, duelRuleFromFlags(room.duelFlagsLow));
-			},
+			ygoproReconnectRoute.roomOf,
+			ygoproReconnectRoute.owns,
+			ygoproReconnectRoute.socketFor,
 		);
 
 		const messageEmitter = new MessageEmitter(
