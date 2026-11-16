@@ -127,6 +127,51 @@ describe("SideDeckingState", () => {
 		expect(mockDeckCreator.build).not.toHaveBeenCalled();
 	});
 
+	describe("a client seated from the YGOPro server", () => {
+		const submit = async (resolvedCodes: number[]): Promise<void> => {
+			(UpdateDeckMessageParser as jest.Mock).mockReturnValue({
+				getDeck: jest.fn().mockReturnValue([[100], [200]]),
+			});
+			mockDeckCreator.build.mockResolvedValue({
+				validate: jest.fn().mockReturnValue(null),
+				allCards: resolvedCodes.map((code) => ({ code: code.toString() })),
+			} as any);
+			mockSocket.bridgedFromYgopro = true;
+
+			mockEmitter.emit(
+				Commands.UPDATE_DECK as unknown as string,
+				{ data: Buffer.alloc(10) } as ClientMessage,
+				mockRoom,
+				mockClient,
+			);
+			await new Promise(process.nextTick);
+		};
+
+		it("compares the side deck after resolving its codes to this card pool", async () => {
+			const isSideDeckValid = mockClient.deck.isSideDeckValid as jest.Mock;
+			isSideDeckValid.mockImplementation((main: number[]) => main.join() === "1,2");
+
+			await submit([1, 2]);
+
+			expect(mockDeckCreator.build).toHaveBeenCalledWith(
+				expect.objectContaining({ main: [100], side: [200], fromForeignCardPool: true }),
+			);
+			expect(isSideDeckValid).toHaveBeenCalledWith([1, 2], []);
+			expect(mockRoom.setDecksToPlayer).toHaveBeenCalled();
+			expect(mockClient.ready).toHaveBeenCalled();
+		});
+
+		it("refuses a side deck whose resolved cards differ from the deck it joined with", async () => {
+			(mockClient.deck.isSideDeckValid as jest.Mock).mockReturnValue(false);
+
+			await submit([1, 3]);
+
+			expect(mockRoom.setDecksToPlayer).not.toHaveBeenCalled();
+			expect(mockClient.ready).not.toHaveBeenCalled();
+			expect(mockClient.sendMessage).toHaveBeenCalledTimes(1);
+		});
+	});
+
 	it("should handle UPDATE_DECK command (reconnecting)", async () => {
 		const message = { data: Buffer.alloc(10) } as ClientMessage;
 		const mockParser = {

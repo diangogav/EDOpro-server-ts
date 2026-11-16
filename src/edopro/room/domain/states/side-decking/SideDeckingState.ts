@@ -5,6 +5,7 @@ import { Logger } from "../../../../../shared/logger/domain/Logger";
 import { DuelStartClientMessage } from "../../../../../shared/messages/server-to-client/DuelStartClientMessage";
 import { ISocket } from "../../../../../shared/socket/domain/ISocket";
 import { Client } from "../../../../client/domain/Client";
+import { Deck } from "../../../../../shared/deck/domain/Deck";
 import { UpdateDeckMessageParser } from "../../../../deck/domain/UpdateDeckMessageSizeCalculator";
 import { JoinGameMessage } from "../../../../messages/client-to-server/JoinGameMessage";
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
@@ -21,6 +22,10 @@ import { findReconnectingPlayer } from "../../../../../shared/room/domain/findRe
 import { ReconnectionAckMessage } from "../../../../../shared/messages/server-to-client/ReconnectionAckMessage";
 import { logReconnectAttempt } from "@shared/room/domain/reconnect/logReconnectAttempt";
 import { redactSecret } from "@shared/logger/domain/redactSecret";
+
+function codesOf(deck: Deck): number[] {
+	return deck.allCards.map((card) => Number(card.code));
+}
 
 export class SideDeckingState extends EdoproRoomState {
 	constructor(
@@ -132,9 +137,12 @@ export class SideDeckingState extends EdoproRoomState {
 		player.logger.info("SIDE_DECKING: UPDATE_DECK");
 		const parser = new UpdateDeckMessageParser(message.data);
 		const [mainDeck, sideDeck] = parser.getDeck();
-		if (!player.deck.isSideDeckValid(mainDeck, sideDeck)) {
-			const message = ErrorClientMessage.create(ErrorMessages.SIDE_ERROR);
-			player.sendMessage(message);
+		// A client from another card pool sends its own codes, while the deck it
+		// joined with holds the cards those codes were resolved to. Its side deck
+		// is compared after the same resolution.
+		const fromForeignCardPool = player.socket.bridgedFromYgopro === true;
+		if (!fromForeignCardPool && !player.deck.isSideDeckValid(mainDeck, sideDeck)) {
+			player.sendMessage(ErrorClientMessage.create(ErrorMessages.SIDE_ERROR));
 
 			return;
 		}
@@ -143,7 +151,14 @@ export class SideDeckingState extends EdoproRoomState {
 			main: mainDeck,
 			side: sideDeck,
 			banListHash: room.banListHash,
+			fromForeignCardPool,
 		});
+
+		if (fromForeignCardPool && !player.deck.isSideDeckValid(codesOf(deck), [])) {
+			player.sendMessage(ErrorClientMessage.create(ErrorMessages.SIDE_ERROR));
+
+			return;
+		}
 
 		const hasError = deck.validate();
 
