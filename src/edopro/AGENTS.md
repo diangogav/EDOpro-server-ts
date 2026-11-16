@@ -26,3 +26,5 @@ EDOPro clients (Windows/Linux/Android/iOS). **Multirole** is the reference imple
 ## Cross-flow pitfall
 
 `JoinHandler` looks the room up with the shared `RoomFinder.findById`, which searches EDOPro rooms and then YGOPro rooms (`createRoomFinder`), so an EDOPro-protocol join can land in a YGOPro room.
+
+The reverse crossing is deliberate: `room/application/EdoproRoomEntry.ts` seats a socket from the YGOPro server in an EDOPro room (join command `edo,<roomId>`, see [join commands §10](../../docs/join-commands.md)). Such a socket is marked `bridgedFromYgopro`; its decks are built with `fromForeignCardPool`, which resolves codes of the YGOPro pool through `deck/domain/ForeignPrintings.ts`.

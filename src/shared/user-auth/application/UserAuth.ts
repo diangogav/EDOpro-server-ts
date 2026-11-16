@@ -25,4 +25,22 @@ export class UserAuth {
 
 		return userProfile;
 	}
+
+	/**
+	 * For a connection whose account the server already verified (a handshake
+	 * ticket): only existence and the ban are left to check, no password.
+	 */
+	public async runForVerifiedUser(userId: string): Promise<UserProfile | ServerErrorMessage> {
+		const userProfile = await this.userProfileRepository.findById(userId);
+
+		if (!userProfile) {
+			return ServerErrorMessage.USER_NOT_FOUND;
+		}
+
+		if (await this.userProfileRepository.isBanned(userProfile.id)) {
+			return ServerErrorMessage.USER_BANNED;
+		}
+
+		return userProfile;
+	}
 }

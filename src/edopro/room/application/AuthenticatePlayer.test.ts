@@ -28,6 +28,39 @@ function makeUserAuth(result: UserProfile | ServerErrorMessage) {
 }
 
 describe("AuthenticatePlayer", () => {
+	it("accepts the account the server verified for the socket, without a password", async () => {
+		const profile = UserProfile.from({
+			id: "user-1",
+			username: "Jaden",
+			password: "hash",
+			email: "jaden@example.com",
+			avatar: null,
+		});
+		const userAuth = mock<UserAuth>();
+		userAuth.runForVerifiedUser.mockResolvedValue(profile);
+		const socket = mock<ISocket>({ resolvedUserId: "user-1" });
+
+		const user = await new AuthenticatePlayer(userAuth).run(
+			{ name: "Jaden", password: null } as PlayerInfoMessage,
+			socket,
+		);
+
+		expect(user).toBe(profile);
+		expect(userAuth.runForVerifiedUser).toHaveBeenCalledWith("user-1");
+		expect(userAuth.run).not.toHaveBeenCalled();
+	});
+
+	it("rejects a verified account that is banned", async () => {
+		const userAuth = mock<UserAuth>();
+		userAuth.runForVerifiedUser.mockResolvedValue(ServerErrorMessage.USER_BANNED);
+		const socket = mock<ISocket>({ resolvedUserId: "user-1" });
+
+		const user = await new AuthenticatePlayer(userAuth).run(playerInfo, socket);
+
+		expect(user).toBeNull();
+		expect(socket.send).toHaveBeenCalledTimes(1);
+	});
+
 	it("returns the profile and sends nothing when the user is valid", async () => {
 		const profile = UserProfile.from({
 			id: "user-1",

@@ -53,6 +53,15 @@ export const config = {
 			window: Number(process.env.RATE_LIMIT_JOIN_WINDOW) || 60,
 		},
 	},
+	edoproBridge: {
+		// Clients of the YGOPro server allowed to sit in an EDOPro room, by the
+		// name they declare on the WebSocket handshake (?client=). A client has
+		// to know that room plays EDOPro's cards and rulings before it is let in.
+		clients: (process.env.EDOPRO_BRIDGE_CLIENTS ?? "evoduel")
+			.split(",")
+			.map((name) => name.trim().toLowerCase())
+			.filter((name) => name !== ""),
+	},
 	servers: {
 		host: {
 			port: Number(process.env.HOST_PORT),

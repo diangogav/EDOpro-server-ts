@@ -39,10 +39,11 @@ Strategy chain, first `matches()` wins
 | 3 | `ReservedDuelJoinStrategy` | command segment is exactly `rv` (`rv#<16-char reservationId>`); in the base chain, so present with or without windbot | Claims the reservation for the ticket user (`resolvedUserId` required) and opens its room, or sends a later participant to it. See [reserved duels](./reserved-duels.md). |
 | 4 | `InviteJoinStrategy` | first command token is `j` (reserved, strict `j,<16-character inviteId>` validation) | Joins one existing public waiting room incarnation with a player seat. Never creates or spectates; ticket authentication remains intact. |
 | 5 | `WatchJoinStrategy` | command segment is exactly `w,<digits>` (see §9) | Intentional spectating **by room id**: finds the room via `findById`, gates on an exact password match, marks the socket with watch intent and routes the JOIN. Never creates a room. |
-| 6 | `TicketJoinStrategy` | socket authenticated via WS ticket (`resolvedUserId`) | Shared `findOrCreateRoom` helper (`rankedOverride=true`) — see §5 for the pairing-vs-non-pairing lookup it performs. |
-| 7 | `DefaultJoinStrategy` | always | Shared `findOrCreateRoom` helper (`rankedOverride=undefined`) — see §5 for the pairing-vs-non-pairing lookup it performs. Admission is delegated to the room state (§6). |
+| 6 | `EdoproRoomJoinStrategy` | command segment is exactly `edo,<digits>` (see §10); present when the EDOPro flow is wired | Seats the socket in an existing **EDOPro** room by id, through the shared `ForeignRoomEntry` port. Never creates a room. The room is handed a socket that translates its wire format, so the client keeps speaking YGOPro. |
+| 7 | `TicketJoinStrategy` | socket authenticated via WS ticket (`resolvedUserId`) | Shared `findOrCreateRoom` helper (`rankedOverride=true`) — see §5 for the pairing-vs-non-pairing lookup it performs. |
+| 8 | `DefaultJoinStrategy` | always | Shared `findOrCreateRoom` helper (`rankedOverride=undefined`) — see §5 for the pairing-vs-non-pairing lookup it performs. Admission is delegated to the room state (§6). |
 
-`InviteJoinStrategy` and `WatchJoinStrategy` must sit BEFORE `TicketJoinStrategy`: the ticket strategy
+`InviteJoinStrategy`, `WatchJoinStrategy` and `EdoproRoomJoinStrategy` must sit BEFORE `TicketJoinStrategy`: the ticket strategy
 matches on socket auth alone, not command shape, so a ticketed socket sending
 `w,1234` would otherwise fall into `findOrCreateRoom` and mint a junk room
 literally named `w,1234` instead of watching room 1234.
@@ -392,6 +393,66 @@ EDOPro `RoomList` the same way.
 `w` is a join command, not a rule token: it is deliberately absent from
 `RuleMappings`/`isRecognizedToken`, so a bare `w` can never become a pairing
 pool (§5).
+
+## 10. EDOPro room joins (`edo,<roomId>[#password]`)
+
+Lets a client on the YGOPro server play in a room an EDOPro client hosts.
+Handled by `EdoproRoomJoinStrategy`
+(`src/ygopro/room/application/join-strategies/EdoproRoomJoinStrategy.ts`),
+which only parses the command and answers rejections; the entry itself is
+`EdoproRoomEntry` (`src/edopro/room/application/`), reached through the shared
+`ForeignRoomEntry` port so the two flows still do not import each other.
+
+**Shape.** Same rules as a watch join: exactly two comma-separated tokens,
+`edo` (trimmed, case-insensitive) and an all-digit room id. The segment after
+the first `#` is the room password.
+
+**Outcomes.**
+
+| Entry result | What the joiner gets |
+|---|---|
+| `joined` | The room's `STOC_JOIN_GAME`, re-encoded for a YGOPro client. The room now owns the socket. |
+| `not-found`, `wrong-password` | Red chat with the reason, `JOINERROR`, close. |
+| `login-required` | The room is ranked and the socket carries no verified account (`resolvedUserId`). |
+| `unsupported` | The room is not one a YGOPro client can present: it is not 1v1, its duel flags are not one of the five Master Rules (Speed, Rush or a custom mix), or it has an extra rule. See `Room.seatsYgoproClients`. |
+
+**Ranked rooms.** A ranked EDOPro room is hosted with a PIN login. A socket
+that arrived with a handshake ticket is accepted as that account without a
+password (`AuthenticatePlayer` → `UserAuth.runForVerifiedUser`).
+
+**Decks.** The entry marks the socket `bridgedFromYgopro`, and the waiting
+state builds its deck with `fromForeignCardPool`, because that client builds
+against the YGOPro card pool:
+
+- a code the EDOPro pool lacks is played as the original the YGOPro pool says
+  it copies (`ForeignPrintings`, implemented by `YGOProForeignPrintings` and
+  wired in `src/bootstrap/foreignPrintings.ts`). That covers alternate
+  artworks and this project's own pre-errata copies;
+- with no original either, it is an `UnknownCardError` naming the code,
+  instead of a card silently left out;
+- on a whitelist, a card the list does not name is swapped for the printing
+  the list does name (a pre-errata copy listed in place of the original).
+
+**Which clients.** Only a client named in `EDOPRO_BRIDGE_CLIENTS` (comma
+separated, default `evoduel`) is let in, by the name it declares on the
+WebSocket handshake (`?client=`). The server translates the wire for any
+client, but the room plays EDOPro's cards and rulings, and a client has to be
+built to tell its player so. Any other client gets a red chat line and
+`JOINERROR`, before the room is even looked up.
+
+**Listing.** `/api/rooms` lists the EDOPro rooms such a client can sit in
+(the same rooms the join accepts, while waiting and with a free seat) with `engine: "edopro"` and
+`command: "edo,<id>"`, but only to a caller that asks for them with
+`?engines=ygopro,edopro`. Without the parameter the list holds YGOPro rooms
+alone, as it always did, so other clients of that endpoint see no change.
+
+**Reconnection.** A player who drops comes back with its reconnection token
+through the YGOPro server, like any of its clients. `YGOProConnectionHandler`
+recognizes the token of a bridged player, finds its EDOPro room and hands the
+room a bridged socket again; the room does not resend its settings, so the
+bridge is given the Master Rule (`ExpressReconnectHandler`'s `socketFor`).
+
+**Not covered.** Watching an EDOPro duel from the YGOPro server.
 
 ## Public lobby invitations
 

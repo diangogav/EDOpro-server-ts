@@ -55,6 +55,25 @@ describe("ExpressReconnectHandler (generic)", () => {
 		expect(socket.destroy).not.toHaveBeenCalled();
 	});
 
+	it("hands the room the socket the caller adapted for it", () => {
+		const adapted = { id: "adapted" } as unknown as ISocket;
+		const adaptingEmitter = new EventEmitter();
+		new ExpressReconnectHandler(
+			adaptingEmitter,
+			logger,
+			socket,
+			resolveRoom,
+			clientGuard,
+			() => adapted,
+		);
+		TokenIndex.getInstance().register("tok", client, 1);
+		const message = reconnectMessage("tok");
+
+		adaptingEmitter.emit(Commands.RECONNECT as unknown as string, message);
+
+		expect(room.emit).toHaveBeenCalledWith("EXPRESS_RECONNECT", message, adapted);
+	});
+
 	it("rejects an unknown token with a failure ack + destroy", () => {
 		emitReconnect(reconnectMessage("ghost"));
 
@@ -251,7 +270,7 @@ describe("ExpressReconnectHandler (generic)", () => {
 
 		emitReconnect(reconnectMessage("tok"));
 
-		expect(resolveRoom).toHaveBeenCalledWith(999);
+		expect(resolveRoom).toHaveBeenCalledWith(999, client);
 		expect(socket.send).toHaveBeenCalledWith(FAILURE_ACK);
 		expect(socket.destroy).toHaveBeenCalled();
 		expect(room.emit).not.toHaveBeenCalled();

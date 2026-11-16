@@ -30,6 +30,17 @@ Changes here affect both flows:
 - `RoomFinder` and `DisconnectHandler` (they only orchestrate; each flow plugs in a `RoomLocator` and a `RoomDisconnectPolicy`).
 - Deck validators, `EventBus`, `MatchLifecycleHooks` and plugins.
 
+## Crossing between flows
+
+A client on the YGOPro server can sit in an EDOPro room with the join command
+`edo,<roomId>` ([join commands §10](./join-commands.md#10-edopro-room-joins-edoroomidpassword)).
+It is the one deliberate crossing: `src/ygopro/` calls the shared
+`ForeignRoomEntry` port, `src/edopro/` implements it (`EdoproRoomEntry`), and
+`src/index.ts` wires them. After the entry the EDOPro room owns the socket and
+keeps speaking its own wire format; the socket it was handed
+(`src/ygopro/edopro-bridge/`) translates both ways, so the client never sees
+it.
+
 ## Boundaries
 
 **Shared kernel**: `src/shared/` never imports `src/edopro/` or `src/ygopro/` (Biome `noRestrictedImports` fails the lint). When shared code needs protocol behavior, define a port in `src/shared/` and implement it in each flow. Wire the implementations in `src/bootstrap/` (`createRoomFinder`, `createDisconnectHandler`, `createLoadedBanListNamesProvider`). A new room type registers its locator and disconnect policy there.

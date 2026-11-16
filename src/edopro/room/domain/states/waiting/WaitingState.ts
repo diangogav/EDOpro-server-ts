@@ -219,6 +219,7 @@ export class WaitingState extends EdoproRoomState {
 			main: mainDeck,
 			side: sideDeck,
 			banListHash: room.banListHash,
+			fromForeignCardPool: player.socket.bridgedFromYgopro === true,
 		});
 
 		const hasError = deck.validate();

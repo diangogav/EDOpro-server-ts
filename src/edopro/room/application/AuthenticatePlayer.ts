@@ -8,12 +8,19 @@ import { UserProfile } from "@shared/user-profile/domain/UserProfile";
  * EDOPro side of UserAuth: on failure it sends the auth error to the socket as
  * the EDOPro 0xF3 server error frame and returns null. The JOINERROR that
  * usually follows stays with each caller.
+ *
+ * A socket that arrived with a verified account (`resolvedUserId`, set by the
+ * server from a handshake ticket, never by the client) is that account: it has
+ * no EDOPro password to offer.
  */
 export class AuthenticatePlayer {
 	constructor(private readonly userAuth: UserAuth) {}
 
 	async run(playerInfo: PlayerInfoMessage, socket: ISocket): Promise<UserProfile | null> {
-		const user = await this.userAuth.run(playerInfo);
+		const user =
+			typeof socket.resolvedUserId === "string"
+				? await this.userAuth.runForVerifiedUser(socket.resolvedUserId)
+				: await this.userAuth.run(playerInfo);
 		if (!(user instanceof UserProfile)) {
 			socket.send(ServerErrorClientMessage.create(user));
 

@@ -38,7 +38,19 @@ export interface SpectatorJoiner {
 
 /** Builds and validates a player's deck (DeckCreator). */
 export interface DeckBuilder {
-	build(params: { main: number[]; side: number[]; banListHash: number }): Promise<Deck>;
+	/**
+	 * `fromForeignCardPool` is for a client that builds decks against another
+	 * card pool. A code this pool lacks is played as the original that pool
+	 * says it copies, or is a deck error naming it when there is none, instead
+	 * of a card left out. On a whitelist a card is swapped for the printing the
+	 * list names.
+	 */
+	build(params: {
+		main: number[];
+		side: number[];
+		banListHash: number;
+		fromForeignCardPool?: boolean;
+	}): Promise<Deck>;
 }
 
 /** Resolves the account behind a ranked join, or null when it is rejected (AuthenticatePlayer). */

@@ -39,3 +39,8 @@ srvpro2-compatible server for YGOPro clients (Koishi, YGO Mobile, YGOPro). **srv
 1. Find the command code in `src/shared/messages/Commands.ts` (shared with EDOPro — never change existing values).
 2. Handle it in the relevant `YGOPro*State`.
 3. Compare behavior with the srvpro2 source.
+
+### EDOPro rooms from this flow
+
+`room/application/join-strategies/EdoproRoomJoinStrategy.ts` seats a client of this flow in an EDOPro room (`edo,<roomId>`, [join commands §10](../../docs/join-commands.md)). `edopro-bridge/` translates the wire for it: `BridgedSocket.ts` wraps the socket, `EdoproWireTranslator.ts` holds the per-socket state, and the `ignis-*-decoders.ts` modules (core, battle, prompts, events), registered in `translateIgnisGameMsg.ts`, turn Project Ignis core messages into `ygopro-msg-encode` objects. `edopro-bridge/live/` is a harness against a running server (see the header of `edoproRoom.live.test.ts`).
+
