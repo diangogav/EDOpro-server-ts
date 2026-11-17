@@ -4,6 +4,7 @@ import BanListMemoryRepository from "../../ban-list/infrastructure/BanListMemory
 import { Card } from "../../../shared/card/domain/Card";
 import { CardRepository } from "../../../shared/card/domain/CardRepository";
 import { Deck } from "../../../shared/deck/domain/Deck";
+import { foreignCounterparts } from "../domain/ForeignCounterparts";
 import { foreignPrintings } from "../domain/ForeignPrintings";
 
 /** The other printings of a card: the entries whose alias is its code. */
@@ -90,16 +91,19 @@ export class DeckCreator {
 
 	/**
 	 * A code from another card pool: the card itself when this pool has it,
-	 * otherwise the original that pool says it copies.
+	 * otherwise the original that pool says it copies, otherwise the card this
+	 * pool numbers differently.
 	 */
 	private async findForeign(code: number): Promise<Card | null> {
 		const card = await this.cardRepository.findByCode(code.toString());
 		if (card) {
 			return card;
 		}
-		const original = await foreignPrintings().originalOf(code);
+		const known =
+			(await foreignPrintings().originalOf(code)) ??
+			(await foreignCounterparts().counterpartOf(code));
 
-		return original === null ? null : this.cardRepository.findByCode(original.toString());
+		return known === null ? null : this.cardRepository.findByCode(known.toString());
 	}
 
 	private static listedCodes(banList: EdoproBanList): Set<number> {
