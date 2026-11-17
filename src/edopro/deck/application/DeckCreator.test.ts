@@ -3,8 +3,10 @@ import BanListMemoryRepository from "@edopro/ban-list/infrastructure/BanListMemo
 import { Card } from "@shared/card/domain/Card";
 import { CardRepository } from "@shared/card/domain/CardRepository";
 import { CardTypes } from "@shared/card/domain/CardTypes";
+import { UnknownCardError } from "@shared/deck/domain/errors/UnknownCardError";
 import { Rule } from "@shared/deck/domain/Rule";
 import { DeckCreator } from "./DeckCreator";
+import { useForeignCounterparts } from "../domain/ForeignCounterparts";
 import { useForeignPrintings } from "../domain/ForeignPrintings";
 import { DeckRules } from "@shared/room/domain/YgoRoom";
 
@@ -289,6 +291,50 @@ describe("DeckCreator", () => {
 			});
 
 			expect(deck.main.map((card) => card.code)).toEqual([String(HONEST)]);
+		});
+
+		describe("that this pool numbers differently", () => {
+			const STRATEGY_SCORE = 101306092;
+			const STRATEGY_SCORE_HERE = 101402092;
+
+			const buildMain = async (): Promise<{ main: string[]; rejects: boolean }> => {
+				mockCardRepository.findByCode.mockImplementation((code) =>
+					Promise.resolve(
+						code === String(STRATEGY_SCORE_HERE)
+							? new Card({ code, type: CardTypes.TYPE_SPELL, alias: "0", category: 0, variant: 0 })
+							: null,
+					),
+				);
+				(BanListMemoryRepository.findByHash as jest.Mock).mockReturnValue(new EdoproBanList());
+				const deck = await deckCreator.build({
+					main: [STRATEGY_SCORE],
+					side: [],
+					banListHash: 111,
+					fromForeignCardPool: true,
+				});
+
+				return {
+					main: deck.main.map((card) => card.code),
+					rejects: deck.validate() instanceof UnknownCardError,
+				};
+			};
+
+			afterEach(() => {
+				useForeignCounterparts({ counterpartOf: () => Promise.resolve(null) });
+			});
+
+			it("plays the card under the code this pool gives it", async () => {
+				useForeignCounterparts({
+					counterpartOf: (code) =>
+						Promise.resolve(code === STRATEGY_SCORE ? STRATEGY_SCORE_HERE : null),
+				});
+
+				expect(await buildMain()).toEqual({ main: [String(STRATEGY_SCORE_HERE)], rejects: false });
+			});
+
+			it("names the card as unknown when no counterpart is known", async () => {
+				expect(await buildMain()).toEqual({ main: [], rejects: true });
+			});
 		});
 
 		it("does not ask the other pool for a deck of this pool's own client", async () => {

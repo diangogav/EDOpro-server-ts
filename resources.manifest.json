@@ -103,6 +103,12 @@
 			"from": "edopro-cdbs"
 		},
 		{
+			"comment": "EDOPro code of each unreleased card of the YGOPro pool, for decks seated from the YGOPro server",
+			"target": "edopro/prerelease-ids.json",
+			"from": "evolution-assets",
+			"file": "edopro/prerelease-ids.json"
+		},
+		{
 			"comment": "EDOPro card scripts",
 			"target": "edopro/scripts",
 			"from": "edopro-scripts"
