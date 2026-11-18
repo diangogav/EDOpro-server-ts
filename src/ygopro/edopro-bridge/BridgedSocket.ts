@@ -4,6 +4,7 @@ import { createSystemChat } from "@shared/room/domain/chat/SystemChat";
 import { ISocket } from "@shared/socket/domain/ISocket";
 
 import { EdoproWireTranslator } from "./EdoproWireTranslator";
+import { ownBanListHash } from "./ownBanListHash";
 
 const LENGTH_PREFIX_BYTES = 2;
 
@@ -37,18 +38,22 @@ export function splitFrames(buffer: Buffer): Buffer[] {
  */
 export function bridgeToEdoproRoom(socket: ISocket, duelRule?: number): ISocket {
 	const reported = new Set<number>();
-	const translator = new EdoproWireTranslator((messageType) => {
-		if (reported.has(messageType)) {
-			return;
-		}
-		reported.add(messageType);
-		socket.send(
-			createSystemChat(
-				ChatColor.RED,
-				`This room sent a move this client cannot show yet (message ${messageType}). The duel may stop here.`,
-			),
-		);
-	}, duelRule);
+	const translator = new EdoproWireTranslator(
+		(messageType) => {
+			if (reported.has(messageType)) {
+				return;
+			}
+			reported.add(messageType);
+			socket.send(
+				createSystemChat(
+					ChatColor.RED,
+					`This room sent a move this client cannot show yet (message ${messageType}). The duel may stop here.`,
+				),
+			);
+		},
+		duelRule,
+		ownBanListHash,
+	);
 
 	const send = (buffer: Buffer): void => {
 		for (const frame of splitFrames(buffer)) {

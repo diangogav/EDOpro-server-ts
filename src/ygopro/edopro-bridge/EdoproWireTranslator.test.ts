@@ -164,6 +164,33 @@ describe("EdoproWireTranslator", () => {
 		expect(started.msg).toMatchObject({ duelRule: 1 });
 	});
 
+	it("announces the room's ban list by the hash the client knows it by", () => {
+		const hostInfo = Buffer.alloc(68);
+		hostInfo.writeUInt32LE(0x11111111, 0);
+		const asked: number[] = [];
+		const translator = new EdoproWireTranslator(undefined, undefined, (edoproHash) => {
+			asked.push(edoproHash);
+
+			return 0x22222222;
+		});
+
+		const joined = decode(translator.toClient(frame(0x12, hostInfo))) as YGOProStocJoinGame;
+
+		expect(asked).toEqual([0x11111111]);
+		expect(joined.info.lflist).toBe(0x22222222);
+	});
+
+	it("leaves the room's own ban list hash when the client has no list for it", () => {
+		const hostInfo = Buffer.alloc(68);
+		hostInfo.writeUInt32LE(0x11111111, 0);
+
+		const joined = decode(
+			new EdoproWireTranslator(undefined, undefined, () => null).toClient(frame(0x12, hostInfo)),
+		) as YGOProStocJoinGame;
+
+		expect(joined.info.lflist).toBe(0x11111111);
+	});
+
 	it("re-encodes an EDOPro deck error as the padded YGOPro error frame", () => {
 		const body = Buffer.alloc(24);
 		body[0] = 2;

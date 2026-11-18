@@ -182,7 +182,7 @@ export class YGOProRoom extends YgoRoom {
 			maxDeckPoints: this._hostInfo.max_deck_points,
 		});
 		const banList = ygoproBanListCatalog().findByHash(banListHash);
-		this._edoBanListHash = YGOProRoom.banListHashLookup.hashByName(banList?.name ?? "") ?? 0;
+		this._edoBanListHash = YGOProRoom.edoproBanListHash(banList?.name ?? "");
 	}
 
 	/**
@@ -191,6 +191,11 @@ export class YGOProRoom extends YgoRoom {
 	 */
 	static useBanListHashLookup(lookup: BanListHashLookup): void {
 		YGOProRoom.banListHashLookup = lookup;
+	}
+
+	/** The hash EDOPro gives the ban list of this name; 0 when it has none. */
+	static edoproBanListHash(name: string): number {
+		return YGOProRoom.banListHashLookup.hashByName(name) ?? 0;
 	}
 
 	static create(
