@@ -19,10 +19,13 @@ export interface EdoproHostInfo {
 export function decodeEdoproHostInfo(body: Uint8Array): EdoproHostInfo {
 	const view = new DataView(body.buffer, body.byteOffset, body.byteLength);
 	const duelFlagsLow = view.getUint32(44, true);
+	const team1 = view.getInt32(32, true);
+	const team2 = view.getInt32(36, true);
+	const bestOf = view.getInt32(40, true);
 	const hostInfo = new HostInfo();
 	hostInfo.lflist = view.getUint32(0, true);
 	hostInfo.rule = view.getUint8(4);
-	hostInfo.mode = view.getUint8(5);
+	hostInfo.mode = ygoproMode(team1, team2, bestOf);
 	hostInfo.duel_rule = duelRuleFromFlags(duelFlagsLow);
 	hostInfo.no_check_deck = view.getUint8(7);
 	hostInfo.no_shuffle_deck = view.getUint8(8);
@@ -34,10 +37,25 @@ export function decodeEdoproHostInfo(body: Uint8Array): EdoproHostInfo {
 		hostInfo,
 		duelFlagsLow,
 		duelFlagsHigh: view.getUint32(20, true),
-		team1: view.getInt32(32, true),
-		team2: view.getInt32(36, true),
-		bestOf: view.getInt32(40, true),
+		team1,
+		team2,
+		bestOf,
 	};
+}
+
+const MODE_SINGLE = 0;
+const MODE_MATCH = 1;
+const MODE_TAG = 2;
+
+/**
+ * A YGOPro lobby reads one `mode`: single duel, match or tag. EDOPro leaves
+ * that byte at 0 and says the same with the team sizes and a "best of" count,
+ * so a best-of-three room copied byte for byte reads as a single duel.
+ */
+function ygoproMode(team1: number, team2: number, bestOf: number): number {
+	if (team1 > 1 || team2 > 1) return MODE_TAG;
+
+	return bestOf > 1 ? MODE_MATCH : MODE_SINGLE;
 }
 
 /**

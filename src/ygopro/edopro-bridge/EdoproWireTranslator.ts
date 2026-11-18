@@ -54,10 +54,13 @@ export class EdoproWireTranslator {
 	/**
 	 * `duelRule` is the room's Master Rule when it is already known, as on a
 	 * reconnection, where the room sends no host info to learn it from.
+	 * `ownBanListHash` gives the hash the client knows the room's ban list by,
+	 * or null to leave the room's own hash in place.
 	 */
 	constructor(
 		private readonly onUntranslated: UntranslatedListener = () => undefined,
 		private duelRule = DEFAULT_DUEL_RULE,
+		private readonly ownBanListHash: (edoproHash: number) => number | null = () => null,
 	) {}
 
 	/** The YGOPro frame for one EDOPro frame from the room, or null when the client gets nothing. */
@@ -79,10 +82,15 @@ export class EdoproWireTranslator {
 
 		const result = translateEdoproStoc(frame, { duelRule: this.duelRule });
 		switch (result.kind) {
-			case "joined":
+			case "joined": {
 				this.duelRule = result.room.hostInfo.duel_rule;
+				const own = this.ownBanListHash(result.room.hostInfo.lflist);
+				if (own !== null) {
+					result.room.hostInfo.lflist = own;
+				}
 
 				return EdoproWireTranslator.encode(result.message);
+			}
 			case "stoc":
 				return this.encodeStoc(result.message, frame);
 			case "unsupported":
