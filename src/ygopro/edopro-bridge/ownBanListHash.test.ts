@@ -37,6 +37,16 @@ describe("ownBanListHash", () => {
 		expect(ownBanListHash(EDOPRO_EDISON)).toBe(YGOPRO_EDISON);
 	});
 
+	it("matches a list whose hash has the high bit set, which this server keeps signed", () => {
+		const onTheWire = 0xbadb011d;
+		YGOProRoom.useBanListHashLookup({
+			hashByName: (name) => (name === "2010.03 Edison" ? onTheWire | 0 : undefined),
+		});
+		register([list("2010.03 Edison", YGOPRO_EDISON)]);
+
+		expect(ownBanListHash(onTheWire)).toBe(YGOPRO_EDISON);
+	});
+
 	it("gives nothing when no YGOPro list carries that name", () => {
 		register([list("2026.10 TCG", 0x1)]);
 
