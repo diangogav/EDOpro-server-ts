@@ -16,7 +16,9 @@ export function ownBanListHash(edoproHash: number): number | null {
 	for (let index = 0; ; index++) {
 		const list = catalog.findLFListByIndex(index);
 		if (list === null) return null;
-		if (list.name !== null && YGOProRoom.edoproBanListHash(list.name) === edoproHash) {
+		// The wire carries the hash unsigned; a loaded list keeps the signed
+		// result of the XOR that builds it. Compare both as unsigned.
+		if (list.name !== null && YGOProRoom.edoproBanListHash(list.name) >>> 0 === edoproHash >>> 0) {
 			return list.hash;
 		}
 	}
