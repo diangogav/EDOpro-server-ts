@@ -13,6 +13,8 @@ import { NoLimitedCardValidationHandler } from "./validators/NoLimitedCardValida
 import { OfficialCardValidationHandler } from "./validators/OfficialCardsValidationHandler";
 import { PrereleaseValidationHandler } from "./validators/PrereleaseValidationHandler";
 import { SemiLimitedCardValidationHandler } from "./validators/SemiLimitedCardValidationHandler";
+import { SkillLimitValidationHandler } from "./validators/SkillLimitValidationHandler";
+import { MAX_SKILLS, skillCount } from "./SkillCards";
 import { Card } from "@shared/card/domain/Card";
 
 export class Deck {
@@ -77,12 +79,37 @@ export class Deck {
 		return [...this.main, ...this.side, ...this.extra];
 	}
 
-	public validate(): DeckError | null {
+	/**
+	 * Whether `sideDecked`, this deck rearranged between duels, keeps its
+	 * shape: the same Main Deck size leaving Skills out, the same Extra Deck
+	 * size and no more Skills in the Main Deck than a deck may play. A deck
+	 * that already held more keeps that many, so it can still be submitted.
+	 * `isSideDeckValid` answers whether the cards themselves are the same.
+	 */
+	public keepsSideDeckingShape(sideDecked: Deck): boolean {
+		const skills = skillCount(this.main);
+		const newSkills = skillCount(sideDecked.main);
+
+		return (
+			newSkills <= Math.max(skills, MAX_SKILLS) &&
+			sideDecked.main.length - newSkills === this.main.length - skills &&
+			sideDecked.extra.length === this.extra.length
+		);
+	}
+
+	/**
+	 * `contentChecked` is false for a room that only checks deck sizes. The
+	 * Skill limit is the one rule that follows it.
+	 */
+	public validate({ contentChecked = true }: { contentChecked?: boolean } = {}): DeckError | null {
 		if (this.unknownCodes.length > 0) {
 			return new UnknownCardError(this.unknownCodes[0]);
 		}
 
-		const handleValidations = new DeckLimitsValidationHandler(this.deckRules);
+		const limits = new DeckLimitsValidationHandler(this.deckRules);
+		const handleValidations = contentChecked
+			? limits.setNextHandler(new SkillLimitValidationHandler())
+			: limits;
 
 		if (!this.banList.isGenesys()) {
 			handleValidations
@@ -106,6 +133,6 @@ export class Deck {
 				);
 		}
 
-		return handleValidations.validate(this);
+		return limits.validate(this);
 	}
 }

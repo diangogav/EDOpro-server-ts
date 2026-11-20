@@ -30,6 +30,16 @@ Changes here affect both flows:
 - `RoomFinder` and `DisconnectHandler` (they only orchestrate; each flow plugs in a `RoomLocator` and a `RoomDisconnectPolicy`).
 - Deck validators, `EventBus`, `MatchLifecycleHooks` and plugins.
 
+### Skill Cards
+
+A Skill (card type `0x8000000`) is sent in the Main Deck list, as EDOPro does, and the shared deck rules follow Multirole:
+
+- `DeckLimitsValidationHandler` leaves the Skills of the Main Deck list out of the Main Deck size. The Side Deck size counts its Skills.
+- `Deck.validate()` answers `DECK_TOO_MANY_SKILLS` (`0xD`) for more than one Skill in the Main Deck list. EDOPro rooms pass `contentChecked: false` when the host chose not to check decks, which skips this rule and no other.
+- Between duels, EDOPro rooms accept a side deck only when `Deck.keepsSideDeckingShape()` holds: the same Main Deck size without Skills, the same Extra Deck size and at most one Skill in the Main Deck list (or as many as the deck already had). So a Skill can be swapped, added from the Side Deck or moved to it.
+
+Only the EDOPro card pool has Skills, so YGOPro rooms see no difference. `YGOProDeckValidator` does not chain the Skill limit. A client seated from the YGOPro server receives `DECK_TOO_MANY_SKILLS` as deck error kind 13, which the YGOPro protocol does not define.
+
 ## Crossing between flows
 
 A client on the YGOPro server can sit in an EDOPro room with the join command

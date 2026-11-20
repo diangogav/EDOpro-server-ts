@@ -13,6 +13,8 @@ import { ISocket } from "@shared/socket/domain/ISocket";
 import { Commands } from "@shared/messages/Commands";
 import { TokenIndex } from "@shared/room/domain/TokenIndex";
 import { findReconnectingPlayer } from "@shared/room/domain/findReconnectingPlayer";
+import { ErrorMessages } from "@edopro/messages/server-to-client/error-messages/ErrorMessages";
+import { ErrorClientMessage } from "@edopro/messages/server-to-client/ErrorClientMessage";
 
 // Mocks
 jest.mock("@shared/logger/domain/Logger");
@@ -65,6 +67,7 @@ describe("SideDeckingState", () => {
 			sendMessage: jest.fn(),
 			deck: {
 				isSideDeckValid: jest.fn().mockReturnValue(true),
+				keepsSideDeckingShape: jest.fn().mockReturnValue(true),
 			},
 			position: 0,
 			isReady: false,
@@ -79,6 +82,7 @@ describe("SideDeckingState", () => {
 			players: [mockClient],
 			spectators: [],
 			banListHash: 123,
+			shouldValidateDeck: jest.fn().mockReturnValue(true),
 			setDecksToPlayer: jest.fn(),
 			choosingOrder: jest.fn(),
 			clientWhoChoosesTurn: { socket: mockSocket },
@@ -125,6 +129,91 @@ describe("SideDeckingState", () => {
 
 		expect(mockClient.sendMessage).toHaveBeenCalled(); // ErrorMessage
 		expect(mockDeckCreator.build).not.toHaveBeenCalled();
+	});
+
+	describe("a side deck that changes the shape of the deck", () => {
+		const submit = async (): Promise<jest.Mock> => {
+			(UpdateDeckMessageParser as jest.Mock).mockReturnValue({
+				getDeck: jest.fn().mockReturnValue([[1], [2]]),
+			});
+			const validate = jest.fn().mockReturnValue(null);
+			mockDeckCreator.build.mockResolvedValue({ validate, allCards: [] } as any);
+			(mockClient.deck.keepsSideDeckingShape as jest.Mock).mockReturnValue(false);
+
+			mockEmitter.emit(
+				Commands.UPDATE_DECK as unknown as string,
+				{ data: Buffer.alloc(10) } as ClientMessage,
+				mockRoom,
+				mockClient,
+			);
+			await new Promise(process.nextTick);
+
+			return validate;
+		};
+
+		it("is refused with a side error and leaves the player's deck as it was", async () => {
+			const validate = await submit();
+
+			expect(mockClient.sendMessage).toHaveBeenCalledTimes(1);
+			expect(mockClient.sendMessage).toHaveBeenCalledWith(
+				ErrorClientMessage.create(ErrorMessages.SIDE_ERROR),
+			);
+			expect(validate).not.toHaveBeenCalled();
+			expect(mockRoom.setDecksToPlayer).not.toHaveBeenCalled();
+			expect(mockClient.ready).not.toHaveBeenCalled();
+		});
+
+		it("is refused for a client seated from the YGOPro server too", async () => {
+			mockSocket.bridgedFromYgopro = true;
+
+			await submit();
+
+			expect(mockClient.sendMessage).toHaveBeenCalledWith(
+				ErrorClientMessage.create(ErrorMessages.SIDE_ERROR),
+			);
+			expect(mockRoom.setDecksToPlayer).not.toHaveBeenCalled();
+		});
+	});
+
+	it("compares the shape of the side deck with the deck the player joined with", async () => {
+		(UpdateDeckMessageParser as jest.Mock).mockReturnValue({
+			getDeck: jest.fn().mockReturnValue([[1], [2]]),
+		});
+		const sideDecked = { validate: jest.fn().mockReturnValue(null) };
+		mockDeckCreator.build.mockResolvedValue(sideDecked as any);
+
+		mockEmitter.emit(
+			Commands.UPDATE_DECK as unknown as string,
+			{ data: Buffer.alloc(10) } as ClientMessage,
+			mockRoom,
+			mockClient,
+		);
+		await new Promise(process.nextTick);
+
+		expect(mockClient.deck.keepsSideDeckingShape).toHaveBeenCalledWith(sideDecked);
+		expect(mockRoom.setDecksToPlayer).toHaveBeenCalled();
+	});
+
+	it.each([
+		true,
+		false,
+	])("validates the side deck with content checked = %s as the room does", async (contentChecked) => {
+		(UpdateDeckMessageParser as jest.Mock).mockReturnValue({
+			getDeck: jest.fn().mockReturnValue([[1], [2]]),
+		});
+		const validate = jest.fn().mockReturnValue(null);
+		mockDeckCreator.build.mockResolvedValue({ validate } as any);
+		mockRoom.shouldValidateDeck.mockReturnValue(contentChecked);
+
+		mockEmitter.emit(
+			Commands.UPDATE_DECK as unknown as string,
+			{ data: Buffer.alloc(10) } as ClientMessage,
+			mockRoom,
+			mockClient,
+		);
+		await new Promise(process.nextTick);
+
+		expect(validate).toHaveBeenCalledWith({ contentChecked });
 	});
 
 	describe("a client seated from the YGOPro server", () => {

@@ -54,6 +54,11 @@ export class Card {
 		return false;
 	}
 
+	/** A Skill Card travels in the Main Deck list without being part of the Main Deck. */
+	public isSkill(): boolean {
+		return (this.type & CardTypes.TYPE_SKILL) !== 0;
+	}
+
 	isRitualMonster(): boolean {
 		return (this.type & CardTypes.TYPE_RITUAL) !== 0 && (this.type & CardTypes.TYPE_MONSTER) !== 0;
 	}

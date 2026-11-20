@@ -58,6 +58,7 @@ describe("WaitingState", () => {
 			allPlayersReady: false,
 			readyUnsafe: jest.fn(),
 			notReadyUnsafe: jest.fn(),
+			shouldValidateDeck: jest.fn().mockReturnValue(true),
 			createMatchUnsafe: jest.fn(),
 			rpsUnsafe: jest.fn(),
 			setDecksToPlayerUnsafe: jest.fn(),
@@ -247,6 +248,25 @@ describe("WaitingState", () => {
 		expect(mockDeck.validate).toHaveBeenCalled();
 		expect(mockRoom.setDecksToPlayerUnsafe).toHaveBeenCalled();
 		expect(mockClient.deckUpdated).toHaveBeenCalled();
+	});
+
+	it.each([
+		true,
+		false,
+	])("validates the deck with content checked = %s as the room does", async (contentChecked) => {
+		const validate = jest.fn().mockReturnValue(null);
+		mockDeckCreator.build.mockResolvedValue({ validate } as any);
+		mockRoom.shouldValidateDeck.mockReturnValue(contentChecked);
+
+		mockEmitter.emit(
+			Commands.UPDATE_DECK as unknown as string,
+			{ data: Buffer.alloc(10) } as ClientMessage,
+			mockRoom,
+			mockClient,
+		);
+		await new Promise(process.nextTick);
+
+		expect(validate).toHaveBeenCalledWith({ contentChecked });
 	});
 
 	it("should handle UPDATE_DECK command with validation error", async () => {
