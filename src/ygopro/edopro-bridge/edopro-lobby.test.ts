@@ -1,4 +1,4 @@
-import { decodeEdoproHostInfo, duelRuleFromFlags } from "./edopro-lobby";
+import { closedZonesFromFlags, decodeEdoproHostInfo, duelRuleFromFlags } from "./edopro-lobby";
 
 const HOST_INFO_BYTES = 68;
 const MASTER_RULE_1 = 0xd0700;
@@ -51,5 +51,15 @@ describe("decodeEdoproHostInfo", () => {
 			time_limit: 120,
 			duel_rule: duelRuleFromFlags(MASTER_RULE_1),
 		});
+	});
+});
+
+describe("closedZonesFromFlags", () => {
+	it("closes the outer columns and the Extra Monster Zones of both players on a three-column field", () => {
+		expect(closedZonesFromFlags(0x628000)).toBe(0x1171_1171);
+	});
+
+	it("closes nothing on a five-column field", () => {
+		expect(closedZonesFromFlags(0x2e800)).toBe(0);
 	});
 });

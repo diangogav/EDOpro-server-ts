@@ -7,6 +7,7 @@ import {
 	YGOProStocJoinGame,
 } from "ygopro-msg-encode";
 
+import { closedZonesFromFlags } from "./edopro-lobby";
 import { translateEdoproStoc } from "./translateEdoproStoc";
 import { translateResponseToIgnis } from "./translateResponseToIgnis";
 
@@ -16,6 +17,8 @@ const BODY_OFFSET = 3;
 
 const CTOS_RESPONSE = 0x01;
 const STOC_GAME_MSG = 0x01;
+const MSG_START = 4;
+const MSG_FIELD_DISABLED = 56;
 const STOC_CHAT = 0x19;
 const STOC_CHAT_2 = 0xf3;
 /** Shared-kernel frames both wire formats carry: reconnection token, emote, pong. */
@@ -50,6 +53,8 @@ export type UntranslatedListener = (messageType: number) => void;
  */
 export class EdoproWireTranslator {
 	private prompt: YGOProMsgResponseBase | null = null;
+	/** Zones the room's field never opens, as a MSG_FIELD_DISABLED mask. */
+	private closedZones = 0;
 
 	/**
 	 * `duelRule` is the room's Master Rule when it is already known, as on a
@@ -62,6 +67,24 @@ export class EdoproWireTranslator {
 		private duelRule = DEFAULT_DUEL_RULE,
 		private readonly ownBanListHash: (edoproHash: number) => number | null = () => null,
 	) {}
+
+	/**
+	 * The YGOPro frames for one EDOPro frame from the room. Most frames give
+	 * one or none; the start of a duel on a field with closed columns gives a
+	 * second one that closes them, because the core tells the client nothing
+	 * about them.
+	 */
+	public toClientFrames(frame: Buffer): Buffer[] {
+		const translated = this.toClient(frame);
+		if (!translated) {
+			return [];
+		}
+		const startsDuel = frame[COMMAND_OFFSET] === STOC_GAME_MSG && frame[BODY_OFFSET] === MSG_START;
+
+		return startsDuel && this.closedZones !== 0
+			? [translated, EdoproWireTranslator.fieldDisabled(this.closedZones)]
+			: [translated];
+	}
 
 	/** The YGOPro frame for one EDOPro frame from the room, or null when the client gets nothing. */
 	public toClient(frame: Buffer): Buffer | null {
@@ -84,6 +107,7 @@ export class EdoproWireTranslator {
 		switch (result.kind) {
 			case "joined": {
 				this.duelRule = result.room.hostInfo.duel_rule;
+				this.closedZones = closedZonesFromFlags(result.room.duelFlagsLow);
 				const own = this.ownBanListHash(result.room.hostInfo.lflist);
 				if (own !== null) {
 					result.room.hostInfo.lflist = own;
@@ -131,6 +155,16 @@ export class EdoproWireTranslator {
 
 		// Decoded only to confirm the layout is shared: the bytes already are YGOPro's.
 		return original;
+	}
+
+	private static fieldDisabled(zones: number): Buffer {
+		const frame = Buffer.alloc(BODY_OFFSET + 5);
+		frame.writeUInt16LE(frame.length - 2, 0);
+		frame[COMMAND_OFFSET] = STOC_GAME_MSG;
+		frame[BODY_OFFSET] = MSG_FIELD_DISABLED;
+		frame.writeUInt32LE(zones, BODY_OFFSET + 1);
+
+		return frame;
 	}
 
 	private static encode(message: { toFullPayload(): Uint8Array }): Buffer {

@@ -57,8 +57,7 @@ export function bridgeToEdoproRoom(socket: ISocket, duelRule?: number): ISocket 
 
 	const send = (buffer: Buffer): void => {
 		for (const frame of splitFrames(buffer)) {
-			const translated = translator.toClient(frame);
-			if (translated) {
+			for (const translated of translator.toClientFrames(frame)) {
 				socket.send(translated);
 			}
 		}

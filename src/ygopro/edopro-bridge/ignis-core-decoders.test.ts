@@ -97,6 +97,40 @@ describe("core game messages", () => {
 		expect(translate(code, YGOProMsgHint)).toMatchObject({ type: 8, player: 1, desc: BLUE_EYES });
 	});
 
+	describe("the hints of a Speed Duel Skill", () => {
+		const BEATDOWN = 300202002;
+		const COVER = 301000004;
+		const skillHint = (type: number, low: number, high: number): Uint8Array =>
+			new IgnisWriter().u8(2).u8(type).u8(1).u32(low).u32(high).build();
+
+		it("keeps the cover and the Skill by the code in the low half, the only one a YGOPro hint carries", () => {
+			expect(translate(skillHint(201, COVER, COVER), YGOProMsgHint)).toMatchObject({
+				type: 201,
+				player: 1,
+				desc: COVER,
+			});
+			expect(translate(skillHint(200, BEATDOWN, 0), YGOProMsgHint)).toMatchObject({
+				type: 200,
+				desc: BEATDOWN,
+			});
+		});
+
+		it("sends a flip to the Skill's face as the flip hint", () => {
+			expect(translate(skillHint(202, BEATDOWN, 1), YGOProMsgHint)).toMatchObject({
+				type: 202,
+				desc: BEATDOWN,
+			});
+		});
+
+		it("sends a flip back to the cover as a hint of its own, since the direction is in the half that is lost", () => {
+			expect(translate(skillHint(202, BEATDOWN, 2), YGOProMsgHint)).toMatchObject({
+				type: 204,
+				player: 1,
+				desc: BEATDOWN,
+			});
+		});
+	});
+
 	it("translates MSG_SELECT_IDLECMD into a message the YGOPro wire round-trips", () => {
 		const payload = new IgnisWriter()
 			.u8(11)
