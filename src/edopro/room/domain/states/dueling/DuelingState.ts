@@ -33,6 +33,10 @@ import { ReconnectionAckMessage } from "../../../../../shared/messages/server-to
 import { DuelFinishReason } from "../../DuelFinishReason";
 import { Room } from "../../Room";
 import { EdoproRoomState } from "../../EdoproRoomState";
+import { SkillHintMemory } from "../../SkillHintMemory";
+import { JoinGameClientMessage } from "../../../../messages/server-to-client/JoinGameClientMessage";
+import { PlayerEnterClientMessage } from "../../../../../shared/messages/server-to-client/PlayerEnterClientMessage";
+import { TypeChangeClientMessage } from "../../../../../shared/messages/server-to-client/TypeChangeClientMessage";
 import { logReconnectAttempt } from "@shared/room/domain/reconnect/logReconnectAttempt";
 import { redactSecret } from "@shared/logger/domain/redactSecret";
 
@@ -101,6 +105,9 @@ type SwapMessage = {
 const RECONNECT_SAME_DECK_MESSAGE = "Reconnect with the same deck you were using in this match.";
 
 const GAME_MESSAGE_HEADER = 0x01;
+const GAME_MESSAGE = Buffer.from([GAME_MESSAGE_HEADER]);
+/** MSG_NEW_TURN for player 0: the turn a duel opens with. */
+const FIRST_TURN_MESSAGE = Buffer.from([0x28, 0x00]);
 
 // Core messages that wait for a RESPONSE; mirrors Duel::does_message_required_answer in core/src/app/duel.cpp.
 const ANSWER_REQUIRED_MESSAGES: ReadonlySet<number> = new Set([
@@ -134,6 +141,11 @@ export class DuelingState extends EdoproRoomState {
 	// Team of the duelist the core is waiting on. It stays set after a response because
 	// the core re-sends the same prompt to the same team on MSG_RETRY.
 	private awaitedResponderTeam: number | null = null;
+
+	/** The core's latest new-turn message of this duel, or null before the first turn. */
+	private lastTurnMessage: Buffer | null = null;
+
+	private readonly skillHints = new SkillHintMemory<Client>();
 
 	constructor(
 		eventEmitter: EventEmitter,
@@ -374,6 +386,10 @@ export class DuelingState extends EdoproRoomState {
 					this.room.setLastPhaseMessage(Buffer.from(_coreMessage.data, "hex"));
 				}
 
+				if (_coreMessage.message === CoreMessages.MSG_NEW_TURN) {
+					this.lastTurnMessage = Buffer.from(_coreMessage.data, "hex");
+				}
+
 				this.processDuelMessage(
 					_coreMessage.message,
 					Buffer.from(_coreMessage.data, "hex"),
@@ -446,6 +462,11 @@ export class DuelingState extends EdoproRoomState {
 		player.sendMessage(Buffer.from("010030", "hex"));
 
 		player.sendMessage(CatchUpClientMessage.create({ catchingUp: false }));
+
+		// A Skill is in no zone, so the field snapshot does not bring it back.
+		this.skillHints.framesFor(player).forEach((frame) => {
+			player.sendMessage(frame);
+		});
 
 		// Re-send the same token so the client refreshes its stored session.
 		player.clearReconnecting();
@@ -522,8 +543,17 @@ export class DuelingState extends EdoproRoomState {
 		const payload = Buffer.concat([decimalToBytesBuffer(data.length, 2), data]);
 		this.room.cacheTeamMessage(3, payload, true, null);
 		[...this.room.players, ...this.room.spectators].forEach((client: Client) => {
-			client.sendMessage(payload);
+			this.deliver(client, payload);
 		});
+	}
+
+	/** Sends a core message to one client and keeps what a returning player must be sent again. */
+	private deliver(client: Client | undefined, payload: Buffer): void {
+		if (!client) {
+			return;
+		}
+		client.sendMessage(payload);
+		this.skillHints.note(client, payload);
 	}
 
 	private handleCoreMessageAllExcept(message: CoreMessage) {
@@ -533,7 +563,7 @@ export class DuelingState extends EdoproRoomState {
 		if (message.except !== undefined) {
 			this.room.players.forEach((client: Client) => {
 				if (!(client.team === message.except && client.inTurn)) {
-					client.sendMessage(payload);
+					this.deliver(client, payload);
 				}
 			});
 
@@ -556,7 +586,7 @@ export class DuelingState extends EdoproRoomState {
 				(player: Client) => player.position === message.position,
 			);
 
-			(<Client | undefined>player)?.sendMessage(payload);
+			this.deliver(<Client | undefined>player, payload);
 
 			return;
 		}
@@ -564,7 +594,7 @@ export class DuelingState extends EdoproRoomState {
 		if (message.except !== undefined) {
 			this.room.players.forEach((client: Client) => {
 				if (!(client.team === message.except && client.inTurn)) {
-					client.sendMessage(payload);
+					this.deliver(client, payload);
 				}
 			});
 
@@ -577,7 +607,7 @@ export class DuelingState extends EdoproRoomState {
 
 			[...this.room.players, ...this.room.spectators].forEach((client: Client) => {
 				if (client.team === message.receiver) {
-					client.sendMessage(payload);
+					this.deliver(client, payload);
 				}
 			});
 
@@ -588,7 +618,7 @@ export class DuelingState extends EdoproRoomState {
 			(player: Client) => player.inTurn && player.team === message.receiver,
 		);
 
-		(<Client | undefined>player)?.sendMessage(payload);
+		this.deliver(<Client | undefined>player, payload);
 	}
 
 	private handleCoreStart(message: StartDuelMessage): void {
@@ -682,6 +712,16 @@ export class DuelingState extends EdoproRoomState {
 		player.reconnecting();
 		player.setCanReconnect(true);
 
+		// The token replaced the join, so the room introduces itself here: its
+		// settings, the player's seat and who sits in the others.
+		player.sendMessage(JoinGameClientMessage.forRoom(room));
+		player.sendMessage(
+			TypeChangeClientMessage.create({ type: (Number(player.host) << 4) | player.position }),
+		);
+		room.players.forEach((seated) => {
+			player.sendMessage(PlayerEnterClientMessage.create(seated.name, seated.position));
+		});
+
 		player.sendMessage(CatchUpClientMessage.create({ catchingUp: true }));
 
 		player.sendMessage(DuelStartClientMessage.create());
@@ -695,22 +735,29 @@ export class DuelingState extends EdoproRoomState {
 				opponentExtraDeckSize: room.opponentExtraDeckSize,
 			}),
 		);
-		player.sendMessage(Buffer.from("0300012800", "hex")); // MSG_NEW_TURN (0)
+		player.sendMessage(this.turnFrame());
 		if (room.lastPhaseMessage) {
 			player.sendMessage(Buffer.from(`040001${room.lastPhaseMessage.toString("hex")}`, "hex"));
 		}
 
+		// The core answers with the field snapshot; the refresh follows it (handleCoreField).
 		this.room.sendMessageToCpp(
 			JSON.stringify({
-				command: "REFRESH_FIELD",
+				command: "GET_FIELD",
 				data: {
 					position: player.position,
-					team: player.team,
 				},
 			}),
 		);
 
 		this.logger.info("DUELING_STATE: EXPRESS_RECONNECT - COMPLETED");
+	}
+
+	/** Whose turn it is, as the core last said it; the first turn before it said any. */
+	private turnFrame(): Buffer {
+		const turn = this.lastTurnMessage ?? FIRST_TURN_MESSAGE;
+
+		return Buffer.concat([decimalToBytesBuffer(turn.length + 1, 2), GAME_MESSAGE, turn]);
 	}
 
 	private handleReady(message: ClientMessage, room: Room, player: Client): void {
@@ -730,7 +777,7 @@ export class DuelingState extends EdoproRoomState {
 				opponentExtraDeckSize: room.opponentExtraDeckSize,
 			}),
 		);
-		player.sendMessage(Buffer.from("0300012800", "hex"));
+		player.sendMessage(this.turnFrame());
 		if (room.lastPhaseMessage) {
 			player.sendMessage(Buffer.from(`040001${room.lastPhaseMessage.toString("hex")}`, "hex"));
 		}

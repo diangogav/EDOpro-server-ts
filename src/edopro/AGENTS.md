@@ -15,7 +15,7 @@ EDOPro clients (Windows/Linux/Android/iOS). **Multirole** is the reference imple
    - Server → client packets are hand-written buffer classes in `messages/server-to-client/`.
    - Client → engine: `Commands.RESPONSE` → `room.sendMessageToCpp(...)` → `CoreChannel` (`room/domain/CoreChannel.ts`) → `duel.stdin`, queued with drain backpressure. `CoreChannel` also counts the IPC metrics logged with `IPC_METRICS_ENABLED=true`.
 7. **Game over**: `room/application/FinishDuelHandler.ts` → `MatchLifecycleHooks.runEnding` → `RoomList.deleteRoom` → `GameOverDomainEvent` on the `EventBus` (consumed by plugins). If the match is not finished, it moves to `sideDecking()`.
-8. **Reconnect/disconnect**: reconnection token issued in `WaitingState`; mid-duel reconnect uses the core's `RECONNECT` message; disconnects reach `room/application/EdoproDisconnectPolicy.ts` through the shared `DisconnectHandler`. A waiting room ends with its host, except one the server created, which stays while another player is seated and makes that player its host (`Room.passHostOn`).
+8. **Reconnect/disconnect**: reconnection token issued in `WaitingState`; mid-duel reconnect uses the core's `GET_FIELD` snapshot and `RECONNECT` message, and a player back by token is sent the room settings and seats first ([room re-entry §3](../../docs/room-reentry.md)); disconnects reach `room/application/EdoproDisconnectPolicy.ts` through the shared `DisconnectHandler`. A waiting room ends with its host, except one the server created, which stays while another player is seated and makes that player its host (`Room.passHostOn`).
 
 ## Resources
 
