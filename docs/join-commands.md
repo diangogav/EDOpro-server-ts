@@ -446,6 +446,17 @@ built to tell its player so. Any other client gets a red chat line and
 `?engines=ygopro,edopro`. Without the parameter the list holds YGOPro rooms
 alone, as it always did, so other clients of that endpoint see no change.
 
+**Speed Duels.** The EDOPro core keeps the outer columns of a three-column
+field out of play without announcing them, because an EDOPro client reads that
+from the duel flags. The bridge sends the client a `MSG_FIELD_DISABLED`
+(`0x11711171`: the outer Monster and Spell & Trap Zones and both Extra Monster
+Zones of each player) right after `MSG_START`. A Skill is announced through
+`MSG_HINT` types 200 (Skill code), 201 (cover), 202 (flip) and 203 (removal).
+EDOPro tells a flip to the Skill's face from a flip back to its cover in the
+high half of the hint, which the 32-bit YGOPro hint cannot carry: the bridge
+keeps type 202 for the first and sends the second as type 204, a hint only
+this bridge emits.
+
 **Reconnection.** A player who drops comes back with its reconnection token
 through the YGOPro server, like any of its clients. `YGOProConnectionHandler`
 recognizes the token of a bridged player, finds its EDOPro room and hands the

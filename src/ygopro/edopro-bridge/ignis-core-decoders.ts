@@ -37,12 +37,34 @@ const KNOWN_CARD_FLAG = 0x8000_0000;
 /** Hint types whose payload is a string id rather than a code, number or mask. */
 const DESCRIPTION_HINTS: ReadonlySet<number> = new Set([1, 2, 3, 4]);
 
+/** Speed Duel Skill hints: the Skill's code, its cover, a flip and its removal. */
+const SKILL_HINTS: ReadonlySet<number> = new Set([200, 201, 202, 203]);
+const HINT_SKILL_FLIP = 202;
+/** High half of a flip hint that turns the Skill back to its cover. */
+const SKILL_FLIP_TO_COVER = 2;
+/**
+ * Not an EDOPro hint: the flip of a Skill back to its cover, for a client of
+ * the YGOPro wire. EDOPro tells the two flips apart in the high half of the
+ * hint, which the 32-bit YGOPro hint does not carry.
+ */
+const HINT_SKILL_FLIP_TO_COVER = 204;
+
 function decodeHint(reader: IgnisReader): YGOProMsgHint {
 	const message = new YGOProMsgHint();
 	message.type = reader.u8();
 	message.player = reader.u8();
-	const data = reader.u64();
+	const { low, high } = reader.u64Parts();
+	if (SKILL_HINTS.has(message.type)) {
+		if (message.type === HINT_SKILL_FLIP && high === SKILL_FLIP_TO_COVER) {
+			message.type = HINT_SKILL_FLIP_TO_COVER;
+		}
+		message.desc = low;
+
+		return message;
+	}
+	const data = high * 0x1_0000_0000 + low;
 	message.desc = DESCRIPTION_HINTS.has(message.type) ? (ignisDescriptionToYgopro(data) ?? 0) : data;
+
 	return message;
 }
 
