@@ -80,6 +80,8 @@ const EDOPRO_RULE_LABELS: Record<number, string> = {
 const MASTER_RULE_DUEL_FLAGS: ReadonlySet<number> = new Set([
 	0xd0700, 0xd0600, 0xd1800, 0xd2800, 0x2e800,
 ]);
+/** DUEL_MODE_SPEED of the Project Ignis core: three columns and no Main Phase 2. */
+const SPEED_DUEL_FLAGS = 0x628000;
 /** DUEL_RELAY | DUEL_PSEUDO_SHUFFLE. */
 const BOARD_NEUTRAL_FLAGS_LOW = 0x80 | 0x10;
 /** DUEL_TCG_SEGOC_NONPUBLIC, bit 32 of the 64-bit flags. */
@@ -623,11 +625,13 @@ export class Room extends YgoRoom {
 
 	/**
 	 * Whether a client of the YGOPro server can sit in this room: a 1v1 duel
-	 * under one of the five Master Rules, with no extra rule.
+	 * under one of the five Master Rules or a Speed Duel, with no extra rule.
 	 *
 	 * That client lays out a YGOPro board and knows a duel by its Master Rule
-	 * number. Speed and Rush duels, a custom mix of duel flags and the extra
-	 * rules (Sealed Duel, Destiny Draw, …) have no number to give it. Whether
+	 * number. Rush duels, a custom mix of duel flags and the extra rules
+	 * (Sealed Duel, Destiny Draw, …) have no number to give it. A Speed Duel
+	 * has none either, but the core announces its closed columns to the
+	 * client, which narrows the board from that. Whether
 	 * the flags are a Master Rule is decided the way EDOPro decides it for its
 	 * own room list: relay, deck shuffling and the TCG trigger order say
 	 * nothing about the board and are left out of the comparison.
@@ -641,7 +645,7 @@ export class Room extends YgoRoom {
 			this.team1 === 1 &&
 			this.extraRules === 0 &&
 			boardFlagsHigh === 0 &&
-			MASTER_RULE_DUEL_FLAGS.has(boardFlagsLow)
+			(MASTER_RULE_DUEL_FLAGS.has(boardFlagsLow) || boardFlagsLow === SPEED_DUEL_FLAGS)
 		);
 	}
 

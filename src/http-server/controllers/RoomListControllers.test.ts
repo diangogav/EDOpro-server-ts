@@ -9,7 +9,7 @@ import { GetRoomListController } from "./GetRoomListController";
 import { RoomListController } from "./RoomListController";
 
 const MASTER_RULE_5 = 0x2e800;
-const SPEED_DUEL = 0x628000;
+const RUSH_DUEL = 0x7f28200;
 
 jest.mock("@ygopro/SimpleRoomMessageEmitter");
 
@@ -82,8 +82,8 @@ describe("room list controllers", () => {
 		});
 	});
 
-	it("leaves out an EDOPro room a YGOPro client cannot present, such as a Speed Duel", () => {
-		RoomList.addRoom(RoomMother.create({ team0: 1, team1: 1, duelFlagsLow: SPEED_DUEL }));
+	it("leaves out an EDOPro room a YGOPro client cannot present, such as a Rush Duel", () => {
+		RoomList.addRoom(RoomMother.create({ team0: 1, team1: 1, duelFlagsLow: RUSH_DUEL }));
 		const response = makeResponse();
 
 		new RoomListController().run(

@@ -34,8 +34,11 @@ describe("Room.seatsYgoproClients", () => {
 		expect(flagged.seatsYgoproClients).toBe(true);
 	});
 
+	it("seats one in a 1v1 Speed Duel room", () => {
+		expect(room({ duelFlagsLow: SPEED_DUEL }).seatsYgoproClients).toBe(true);
+	});
+
 	it.each([
-		["a Speed Duel", { duelFlagsLow: SPEED_DUEL }],
 		["a Rush Duel", { duelFlagsLow: RUSH_DUEL, duelFlagsHight: EXTRA_DECK_RITUAL_HIGH }],
 		["a Master Rule with one flag changed", { duelFlagsLow: MASTER_RULE_5 | DUEL_NO_MAIN_PHASE_2 }],
 		["a Master Rule with a custom high flag", { duelFlagsHight: EXTRA_DECK_RITUAL_HIGH }],

@@ -18,7 +18,7 @@ const PASSWORD_MAX_UNITS = 19;
  * format; the caller hands in a socket that translates it for its client.
  *
  * Only rooms that client can present (`Room.seatsYgoproClients`): 1v1, under
- * a Master Rule, with no extra rule. A ranked room needs the account the server verified for the socket, because
+ * a Master Rule or a Speed Duel, with no extra rule. A ranked room needs the account the server verified for the socket, because
  * such a client has no EDOPro password to log in with.
  */
 export class EdoproRoomEntry implements ForeignRoomEntry {

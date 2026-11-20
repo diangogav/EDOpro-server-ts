@@ -414,7 +414,7 @@ the first `#` is the room password.
 | `joined` | The room's `STOC_JOIN_GAME`, re-encoded for a YGOPro client. The room now owns the socket. |
 | `not-found`, `wrong-password` | Red chat with the reason, `JOINERROR`, close. |
 | `login-required` | The room is ranked and the socket carries no verified account (`resolvedUserId`). |
-| `unsupported` | The room is not one a YGOPro client can present: it is not 1v1, its duel flags are not one of the five Master Rules (Speed, Rush or a custom mix), or it has an extra rule. See `Room.seatsYgoproClients`. |
+| `unsupported` | The room is not one a YGOPro client can present: it is not 1v1, its duel flags are neither one of the five Master Rules nor a Speed Duel (Rush or a custom mix), or it has an extra rule. See `Room.seatsYgoproClients`. |
 
 **Ranked rooms.** A ranked EDOPro room is hosted with a PIN login. A socket
 that arrived with a handshake ticket is accepted as that account without a
