@@ -143,6 +143,7 @@ describe("DuelingState", () => {
 			calculateTimeReceiver: jest.fn().mockReturnValue(0),
 			getTime: jest.fn().mockReturnValue(300),
 			nextTurn: jest.fn(),
+			increaseTurn: jest.fn(),
 			isFinished: jest.fn().mockReturnValue(false),
 			finished: jest.fn(),
 			stopTimer: jest.fn(),
@@ -392,19 +393,142 @@ describe("DuelingState", () => {
 			TokenIndex.getInstance().clear();
 		});
 
-		it("valid token: success ack + setSocket + REFRESH_FIELD to core", () => {
+		const sentTo = (player: Client): Buffer[] =>
+			(player.sendMessage as jest.Mock).mock.calls.map(([frame]) => frame as Buffer);
+		const indexOfCommand = (frames: Buffer[], command: number): number =>
+			frames.findIndex((frame) => frame[2] === command);
+		const skillHint = (type: number, owner: number): Buffer => {
+			const frame = Buffer.alloc(14);
+			frame.writeUInt16LE(12, 0);
+			frame[2] = 0x01;
+			frame[3] = 0x02;
+			frame[4] = type;
+			frame[5] = owner;
+
+			return frame;
+		};
+		const rejoinWithToken = (player: Client): void => {
+			(mockRoom as any).players = [player];
+			TokenIndex.getInstance().register("tok", player, mockRoom.id);
+			const message = { data: Buffer.from("tok", "utf8") } as ClientMessage;
+			mockEmitter.emit("EXPRESS_RECONNECT", message, mockRoom, mockSocket);
+		};
+
+		beforeEach(() => {
+			Object.assign(mockRoom, {
+				deckRules: {
+					rule: 4,
+					mainMin: 20,
+					mainMax: 30,
+					extraMin: 0,
+					extraMax: 6,
+					sideMin: 0,
+					sideMax: 6,
+				},
+				mode: 0,
+				duelRule: 5,
+				noCheck: false,
+				noShuffle: false,
+				duelFlagsHight: 0,
+				duelFlagsLow: 0x628000,
+				handshake: 0,
+				team0: 1,
+				team1: 1,
+				bestOf: 1,
+				forbiddenTypes: 0,
+				extraRules: 0,
+			});
+		});
+
+		it("valid token: success ack + setSocket + the field snapshot asked of the core", () => {
 			const player = makeRealClient();
+			rejoinWithToken(player);
+
+			expect(mockSocket.send).toHaveBeenCalledWith(SUCCESS_ACK);
+			expect(player.setSocket).toHaveBeenCalledWith(mockSocket, mockRoom.players, mockRoom);
+			expect(player.reconnecting).toHaveBeenCalled();
+			expect(mockRoom.sendMessageToCpp).toHaveBeenCalledWith(expect.stringContaining("GET_FIELD"));
+		});
+
+		it("valid token: sends the room settings, the seat and the player names before the duel", () => {
+			const player = makeRealClient({ name: "P1", position: 0, host: true });
+			const rival = makeRealClient({ name: "P2", position: 1, team: 1, host: false });
+			(mockRoom as any).players = [player, rival];
 			TokenIndex.getInstance().register("tok", player, mockRoom.id);
 			const message = { data: Buffer.from("tok", "utf8") } as ClientMessage;
 
 			mockEmitter.emit("EXPRESS_RECONNECT", message, mockRoom, mockSocket);
 
-			expect(mockSocket.send).toHaveBeenCalledWith(SUCCESS_ACK);
-			expect(player.setSocket).toHaveBeenCalledWith(mockSocket, mockRoom.players, mockRoom);
-			expect(player.reconnecting).toHaveBeenCalled();
-			expect(mockRoom.sendMessageToCpp).toHaveBeenCalledWith(
-				expect.stringContaining("REFRESH_FIELD"),
-			);
+			const frames = sentTo(player);
+			const joinGame = indexOfCommand(frames, 0x12);
+			const typeChange = indexOfCommand(frames, 0x13);
+			const playerEnters = frames.filter((frame) => frame[2] === 0x20);
+			const duelStart = indexOfCommand(frames, 0x15);
+			expect(joinGame).toBeGreaterThanOrEqual(0);
+			expect(frames[typeChange][3]).toBe(0x10);
+			expect(playerEnters).toHaveLength(2);
+			expect(joinGame).toBeLessThan(typeChange);
+			expect(typeChange).toBeLessThan(duelStart);
+			expect(frames.indexOf(playerEnters[1])).toBeLessThan(duelStart);
+		});
+
+		it("valid token: tells whose turn it is from the core's last turn message", () => {
+			Object.defineProperty(mockJsonMessageProcessor, "payload", {
+				value: { data: JSON.stringify({ type: "CORE", message: 40, data: "2801" }), size: 0 },
+			});
+			mockJsonMessageProcessor.isMessageReady.mockReturnValueOnce(true).mockReturnValue(false);
+			(state as any).processMessage();
+			const player = makeRealClient();
+			rejoinWithToken(player);
+
+			expect(player.sendMessage).toHaveBeenCalledWith(Buffer.from("0300012801", "hex"));
+			expect(player.sendMessage).not.toHaveBeenCalledWith(Buffer.from("0300012800", "hex"));
+		});
+
+		it("valid token: tells the first turn when the core has announced none yet", () => {
+			const player = makeRealClient();
+			rejoinWithToken(player);
+
+			expect(player.sendMessage).toHaveBeenCalledWith(Buffer.from("0300012800", "hex"));
+		});
+
+		it("READY of a returning player: tells whose turn it is from the core's last turn message", () => {
+			(state as any).lastTurnMessage = Buffer.from("2801", "hex");
+			const player = makeRealClient({
+				isReconnecting: true,
+				canReconnect: true,
+				logger: mockLogger,
+			});
+
+			mockEmitter.emit(Commands.READY as unknown as string, {} as ClientMessage, mockRoom, player);
+
+			expect(player.sendMessage).toHaveBeenCalledWith(Buffer.from("0300012801", "hex"));
+		});
+
+		it("core RECONNECT: sends back the Skill hints the player had been sent, once caught up", () => {
+			const player = makeRealClient({ reconnectionToken: "old", position: 0 });
+			const rival = makeRealClient({ name: "P2", position: 1, team: 1 });
+			(mockRoom as any).players = [player, rival];
+			TokenIndex.getInstance().register("old", player, mockRoom.id);
+			const cover = skillHint(201, 0);
+			const code = skillHint(200, 1);
+			(state as any).handleCoreMessageAll({ data: cover.subarray(2).toString("hex") });
+			(state as any).handleCoreMessage({
+				data: code.subarray(2).toString("hex"),
+				position: 1,
+				receiver: 1,
+				all: false,
+				cacheable: false,
+			});
+			(player.sendMessage as jest.Mock).mockClear();
+
+			(state as any).handleCoreReconnect({ position: 0, team: 0, cacheable: false });
+
+			const frames = sentTo(player);
+			const caughtUp = frames.findIndex((frame) => frame[2] === 0xf0 && frame[3] === 0);
+			expect(caughtUp).toBeGreaterThanOrEqual(0);
+			expect(frames.findIndex((frame) => frame.equals(cover))).toBeGreaterThan(caughtUp);
+			expect(frames.some((frame) => frame.equals(code))).toBe(false);
 		});
 
 		it("unknown token: failure ack + socket destroyed", () => {

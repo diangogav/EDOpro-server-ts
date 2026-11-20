@@ -70,6 +70,14 @@ export class JoinGameClientMessage {
 	}
 
 	static createFromRoom(joinGameMessage: JoinGameMessage, room: Room): Buffer {
+		return JoinGameClientMessage.forRoom(room, joinGameMessage.clientVersion);
+	}
+
+	/**
+	 * The room's settings for a player who sent no join message to answer, as
+	 * one who comes back with a reconnection token.
+	 */
+	static forRoom(room: Room, clientVersion = 0): Buffer {
 		const header = Buffer.from([0x45, 0x00, 0x12]);
 		const banList = decimalToBytesBufferSigned(room.banListHash, 4);
 		const allowed = decimalToBytesBuffer(room.deckRules.rule, 1);
@@ -84,7 +92,7 @@ export class JoinGameClientMessage {
 		const timeLimit = decimalToBytesBuffer(room.timeLimit, 2);
 		const duelFlagsHight = decimalToBytesBuffer(room.duelFlagsHight, 4);
 		const handshake = decimalToBytesBuffer(room.handshake, 4);
-		const version = decimalToBytesBuffer(joinGameMessage.clientVersion, 4);
+		const version = decimalToBytesBuffer(clientVersion, 4);
 		const t0Count = decimalToBytesBuffer(room.team0, 4);
 		const t1Count = decimalToBytesBuffer(room.team1, 4);
 		const bestOf = decimalToBytesBuffer(room.bestOf, 4);

@@ -78,6 +78,27 @@ that are not verified (custom rooms, WindBot, EDOPro, guests) stay token-only.
 subject to the join rate limit (§7): a flapping mobile client resuming its own
 duel is never throttled.
 
+### What an EDOPro room sends back
+
+A client of the YGOPro server seated in an EDOPro room (`edo,<roomId>` or a
+`speed` command) returns with its token too. The token replaces the join, so
+the dueling state (`DuelingState.handleExpressReconnect`) sends what a join
+would have: the room settings, the player's seat and the names in every seat.
+Then the duel start, whose turn it is as the core last announced it, the last
+phase, and a `GET_FIELD` to the core, which answers with the field snapshot
+(`MSG_RELOAD_FIELD`) and a refresh of every location.
+
+Two things reach the player only because of that order:
+
+- **The closed columns of a Speed Duel.** The bridge learns them from the room
+  settings and closes them after the duel start; the core announces nothing.
+- **Skill Cards.** A Skill is in no zone, so no snapshot carries it. The state
+  keeps the Skill hints each player was sent (`SkillHintMemory`) and sends them
+  again once the player has caught up. A Skill's code is only kept for the
+  player it was sent to.
+
+Not restored: the turn number.
+
 ## 4. By-name / identity reconnection (the weak path)
 
 When a normal `CTOS_JOIN_GAME` is routed to a room whose duel is already in
