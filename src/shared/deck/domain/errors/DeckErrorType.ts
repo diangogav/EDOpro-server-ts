@@ -11,5 +11,5 @@ export enum DeckErrorType {
 	CARD_UNOFFICIAL = 0xa,
 	DECK_INVALID_SIZE = 0xb,
 	DECK_TOO_MANY_LEGENDS = 0xc, //TODO: Peding to implements
-	DECK_TOO_MANY_SKILLS = 0xd, //TODO: Peding to implements
+	DECK_TOO_MANY_SKILLS = 0xd,
 }

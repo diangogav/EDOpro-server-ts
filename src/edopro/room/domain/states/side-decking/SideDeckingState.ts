@@ -160,7 +160,16 @@ export class SideDeckingState extends EdoproRoomState {
 			return;
 		}
 
-		const hasError = deck.validate();
+		// A Skill may be swapped, added from the Side Deck or moved to it, which
+		// only the built decks can tell: the list a client sends does not say
+		// which of its cards are Skills.
+		if (!player.deck.keepsSideDeckingShape(deck)) {
+			player.sendMessage(ErrorClientMessage.create(ErrorMessages.SIDE_ERROR));
+
+			return;
+		}
+
+		const hasError = deck.validate({ contentChecked: room.shouldValidateDeck() });
 
 		if (hasError) {
 			player.sendMessage(hasError.buffer());
