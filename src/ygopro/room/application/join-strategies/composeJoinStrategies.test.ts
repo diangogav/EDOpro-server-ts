@@ -6,6 +6,8 @@ import { WatchJoinStrategy } from "./WatchJoinStrategy";
 import { TicketJoinStrategy } from "./TicketJoinStrategy";
 import { DefaultJoinStrategy } from "./DefaultJoinStrategy";
 import { ReservedDuelJoinStrategy } from "./ReservedDuelJoinStrategy";
+import { EdoproRoomJoinStrategy } from "./EdoproRoomJoinStrategy";
+import { SpeedDuelJoinStrategy } from "./SpeedDuelJoinStrategy";
 import { JoinStrategyRegistry } from "./JoinStrategyRegistry";
 import { JoinContext } from "./JoinStrategy";
 import { WindbotModule } from "../../../windbot/application/WindbotModule";
@@ -24,28 +26,41 @@ const makeModule = (): WindbotModule =>
 	});
 
 describe("composeJoinStrategies", () => {
-	it("returns the base chain [ReservedDuel, Invite, Watch, Ticket, Default] when windbot is absent", () => {
+	it("returns the base chain [SpeedDuel, ReservedDuel, Invite, Watch, Ticket, Default] when windbot is absent", () => {
 		const strategies = composeJoinStrategies();
 
-		expect(strategies).toHaveLength(5);
-		expect(strategies[0]).toBeInstanceOf(ReservedDuelJoinStrategy);
-		expect(strategies[1]).toBeInstanceOf(InviteJoinStrategy);
-		expect(strategies[2]).toBeInstanceOf(WatchJoinStrategy);
-		expect(strategies[3]).toBeInstanceOf(TicketJoinStrategy);
-		expect(strategies[4]).toBeInstanceOf(DefaultJoinStrategy);
+		expect(strategies).toHaveLength(6);
+		expect(strategies[0]).toBeInstanceOf(SpeedDuelJoinStrategy);
+		expect(strategies[1]).toBeInstanceOf(ReservedDuelJoinStrategy);
+		expect(strategies[2]).toBeInstanceOf(InviteJoinStrategy);
+		expect(strategies[3]).toBeInstanceOf(WatchJoinStrategy);
+		expect(strategies[4]).toBeInstanceOf(TicketJoinStrategy);
+		expect(strategies[5]).toBeInstanceOf(DefaultJoinStrategy);
 	});
 
-	it("prepends [AIJoinToken, WindBot] before the base chain when windbot is present", () => {
+	it("puts [SpeedDuel, AIJoinToken, WindBot] before the rest of the chain when windbot is present", () => {
 		const strategies = composeJoinStrategies(makeModule());
 
+		expect(strategies).toHaveLength(8);
+		expect(strategies[0]).toBeInstanceOf(SpeedDuelJoinStrategy);
+		expect(strategies[1]).toBeInstanceOf(AIJoinTokenStrategy);
+		expect(strategies[2]).toBeInstanceOf(WindBotJoinStrategy);
+		expect(strategies[3]).toBeInstanceOf(ReservedDuelJoinStrategy);
+		expect(strategies[4]).toBeInstanceOf(InviteJoinStrategy);
+		expect(strategies[5]).toBeInstanceOf(WatchJoinStrategy);
+		expect(strategies[6]).toBeInstanceOf(TicketJoinStrategy);
+		expect(strategies[7]).toBeInstanceOf(DefaultJoinStrategy);
+	});
+
+	it("adds the EDOPro room join before Ticket when the EDOPro flow is wired", () => {
+		const strategies = composeJoinStrategies(undefined, {
+			rooms: { enter: jest.fn() },
+			speedDuelRooms: { enter: jest.fn() },
+		});
+
 		expect(strategies).toHaveLength(7);
-		expect(strategies[0]).toBeInstanceOf(AIJoinTokenStrategy);
-		expect(strategies[1]).toBeInstanceOf(WindBotJoinStrategy);
-		expect(strategies[2]).toBeInstanceOf(ReservedDuelJoinStrategy);
-		expect(strategies[3]).toBeInstanceOf(InviteJoinStrategy);
-		expect(strategies[4]).toBeInstanceOf(WatchJoinStrategy);
+		expect(strategies[4]).toBeInstanceOf(EdoproRoomJoinStrategy);
 		expect(strategies[5]).toBeInstanceOf(TicketJoinStrategy);
-		expect(strategies[6]).toBeInstanceOf(DefaultJoinStrategy);
 	});
 });
 
@@ -72,6 +87,29 @@ describe("composeJoinStrategies — resolution order", () => {
 		});
 
 		expect(registry.resolve(ctx)).toBeInstanceOf(WatchJoinStrategy);
+	});
+
+	it.each([
+		"speed",
+		"m,speed,casual",
+		"speed,ai",
+	])("resolves a ticketed socket sending %p to SpeedDuelJoinStrategy, with or without the EDOPro flow and windbot", (command) => {
+		const ctx = makeCtx({
+			rawPass: command,
+			command,
+			socket: { id: "sock-1", resolvedUserId: "user-abc" } as never,
+		});
+		const edopro = { rooms: { enter: jest.fn() }, speedDuelRooms: { enter: jest.fn() } };
+
+		for (const strategies of [
+			composeJoinStrategies(),
+			composeJoinStrategies(makeModule()),
+			composeJoinStrategies(makeModule(), edopro),
+		]) {
+			expect(JoinStrategyRegistry.createForTests(strategies).resolve(ctx)).toBeInstanceOf(
+				SpeedDuelJoinStrategy,
+			);
+		}
 	});
 
 	it("still resolves a ticketed non-watch join to TicketJoinStrategy (normal joins unaffected)", () => {

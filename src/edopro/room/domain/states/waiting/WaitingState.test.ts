@@ -10,6 +10,9 @@ import { ISocket } from "@shared/socket/domain/ISocket";
 import { ClientMessage } from "@shared/messages/MessageProcessor";
 import { DuelStartClientMessage } from "@shared/messages/server-to-client/DuelStartClientMessage";
 import { Commands } from "@shared/messages/Commands";
+import { ErrorMessages } from "@edopro/messages/server-to-client/error-messages/ErrorMessages";
+import { ErrorClientMessage } from "@edopro/messages/server-to-client/ErrorClientMessage";
+import { config } from "../../../../../config";
 
 jest.mock("@shared/logger/domain/Logger");
 jest.mock("@shared/user-auth/application/UserAuth");
@@ -434,6 +437,83 @@ describe("WaitingState", () => {
 			expect(mockRoom.createSpectatorUnsafe).not.toHaveBeenCalled();
 			expect(mockRoom.addSpectatorUnsafe).not.toHaveBeenCalled();
 			expect(mockSocket.send).toHaveBeenCalled();
+		});
+	});
+	describe("rooms created by the server", () => {
+		const joinMessage = (): ClientMessage =>
+			({ data: Buffer.alloc(50), previousMessage: Buffer.alloc(40) }) as ClientMessage;
+		const joinError = ErrorClientMessage.create(ErrorMessages.JOIN_ERROR);
+
+		const joinFullRoom = async (room: { createdByServer: boolean }, bridged: boolean) => {
+			Object.assign(mockRoom, room);
+			Object.assign(mockSocket, { bridgedFromYgopro: bridged, close: jest.fn() });
+			mockRoom.calculatePlaceUnsafe = jest.fn().mockReturnValue(null);
+			mockRoom.createSpectatorUnsafe = jest.fn().mockReturnValue(mockClient);
+
+			mockEmitter.emit("JOIN", joinMessage(), mockRoom, mockSocket);
+			await new Promise(process.nextTick);
+		};
+
+		it("turns away a joiner from the YGOPro server when no seat is left, instead of making it a spectator", async () => {
+			await joinFullRoom({ createdByServer: true }, true);
+
+			expect(mockRoom.createSpectatorUnsafe).not.toHaveBeenCalled();
+			expect(mockRoom.addSpectatorUnsafe).not.toHaveBeenCalled();
+			expect(mockSocket.send).toHaveBeenLastCalledWith(joinError);
+			expect(mockSocket.close).toHaveBeenCalledTimes(1);
+		});
+
+		it("still takes an EDOPro client as a spectator when no seat is left", async () => {
+			await joinFullRoom({ createdByServer: true }, false);
+
+			expect(mockRoom.addSpectatorUnsafe).toHaveBeenCalledWith(mockClient);
+			expect(mockSocket.close).not.toHaveBeenCalled();
+		});
+
+		it("still takes a joiner from the YGOPro server as a spectator of a full room hosted by a client", async () => {
+			await joinFullRoom({ createdByServer: false }, true);
+
+			expect(mockRoom.addSpectatorUnsafe).toHaveBeenCalledWith(mockClient);
+			expect(mockSocket.close).not.toHaveBeenCalled();
+		});
+
+		it.each([
+			[true, 1],
+			[false, 0],
+		])("tells its first player the room is casual (created by the server: %p)", async (createdByServer, notices) => {
+			const originalRankingEnabled = config.ranking.enabled;
+			config.ranking.enabled = true;
+			Object.assign(mockRoom, { createdByServer });
+			Object.assign(mockClient, { host: true });
+			mockRoom.calculatePlaceUnsafe = jest.fn().mockReturnValue({ position: 0, team: 0 });
+			mockRoom.createPlayerUnsafe = jest.fn().mockReturnValue(mockClient);
+
+			mockEmitter.emit("JOIN", joinMessage(), mockRoom, mockSocket);
+			await new Promise(process.nextTick);
+			config.ranking.enabled = originalRankingEnabled;
+
+			const notice = Buffer.from(
+				new YGOProStocChat()
+					.fromPartial({
+						player_type: ChatColor.WHITE,
+						msg: "Casual room — results won't affect your rating.",
+					})
+					.toFullPayload(),
+			);
+			const sent = mockSocket.send.mock.calls.filter(([frame]) => frame.equals(notice));
+			expect(sent).toHaveLength(notices);
+		});
+
+		it("does not repeat the notice to the second player", async () => {
+			Object.assign(mockRoom, { createdByServer: true });
+			Object.assign(mockClient, { host: false });
+			mockRoom.calculatePlaceUnsafe = jest.fn().mockReturnValue({ position: 1, team: 1 });
+			mockRoom.createPlayerUnsafe = jest.fn().mockReturnValue(mockClient);
+
+			mockEmitter.emit("JOIN", joinMessage(), mockRoom, mockSocket);
+			await new Promise(process.nextTick);
+
+			expect(mockSocket.send).toHaveBeenCalledTimes(1);
 		});
 	});
 });

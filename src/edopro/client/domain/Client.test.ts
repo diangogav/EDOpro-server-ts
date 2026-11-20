@@ -55,6 +55,23 @@ describe("Client", () => {
 		});
 	});
 
+	it("becomes the host of its room", () => {
+		const guest = new Client({
+			socket: mockSocket,
+			host: false,
+			name: "Guest",
+			position: 1,
+			roomId: 100,
+			team: 1,
+			logger: mockLogger,
+			id: null,
+		});
+
+		guest.becomeHost();
+
+		expect(guest.host).toBe(true);
+	});
+
 	it("should initialize correctly", () => {
 		expect(client.name).toBe("TestPlayer");
 		expect(client.position).toBe(1);

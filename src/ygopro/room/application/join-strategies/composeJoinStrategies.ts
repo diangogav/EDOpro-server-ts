@@ -9,7 +9,17 @@ import { TicketJoinStrategy } from "./TicketJoinStrategy";
 import { DefaultJoinStrategy } from "./DefaultJoinStrategy";
 import { ReservedDuelJoinStrategy } from "./ReservedDuelJoinStrategy";
 import { EdoproRoomJoinStrategy } from "./EdoproRoomJoinStrategy";
+import { SpeedDuelJoinStrategy } from "./SpeedDuelJoinStrategy";
 import { ForeignRoomEntry } from "@shared/room/application/ForeignRoomEntry";
+import { ForeignSpeedDuelRooms } from "@shared/room/application/ForeignSpeedDuelRooms";
+
+/** What the EDOPro flow offers the clients of this one, when it is wired. */
+export interface EdoproFlowRooms {
+	/** Entry into a room an EDOPro client hosts ("edo,<id>"). */
+	rooms: ForeignRoomEntry;
+	/** Speed Duel rooms the EDOPro flow opens on request ("speed"). */
+	speedDuelRooms: ForeignSpeedDuelRooms;
+}
 
 // Join-routing policy: this context owns the strategy priority order; the
 // composition root only decides whether windbot is available.
@@ -24,24 +34,34 @@ import { ForeignRoomEntry } from "@shared/room/application/ForeignRoomEntry";
 //
 // EdoproRoomJoinStrategy ("edo,<id>") precedes TicketJoinStrategy for the same
 // reason as the watch join, and is absent when the EDOPro flow is not wired.
+//
+// SpeedDuelJoinStrategy (any command with the "speed" token) heads the whole
+// chain, ahead of the windbot strategies too, and is always present: a Speed
+// Duel is played in an EDOPro room, so no later strategy may open a YGOPro
+// room from that command. Without the EDOPro flow it refuses the join.
 export function composeJoinStrategies(
 	windbot?: WindbotModule,
-	edoproRooms?: ForeignRoomEntry,
+	edopro?: EdoproFlowRooms,
 ): JoinStrategy[] {
+	const bridgeClients = new Set(config.edoproBridge.clients);
+	const speedDuel = new SpeedDuelJoinStrategy(edopro?.speedDuelRooms, bridgeClients);
 	const baseChain = [
 		new ReservedDuelJoinStrategy(windbot),
 		new InviteJoinStrategy(),
 		new WatchJoinStrategy(),
-		...(edoproRooms
-			? [new EdoproRoomJoinStrategy(edoproRooms, new Set(config.edoproBridge.clients))]
-			: []),
+		...(edopro ? [new EdoproRoomJoinStrategy(edopro.rooms, bridgeClients)] : []),
 		new TicketJoinStrategy(),
 		new DefaultJoinStrategy(),
 	];
 
 	if (!windbot) {
-		return baseChain;
+		return [speedDuel, ...baseChain];
 	}
 
-	return [new AIJoinTokenStrategy(windbot), new WindBotJoinStrategy(windbot), ...baseChain];
+	return [
+		speedDuel,
+		new AIJoinTokenStrategy(windbot),
+		new WindBotJoinStrategy(windbot),
+		...baseChain,
+	];
 }

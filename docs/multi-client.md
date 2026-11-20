@@ -8,7 +8,7 @@ The server runs two independent match flows over the same shared kernel. Read th
 | -------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
 | Reference            | Multirole                                       | srvpro2                                                    |
 | Servers              | `HostServer` / `WSHostServer`                   | `YGOProServer` ("Mercury" TCP) / `WSYGOProServer` (ticket) |
-| Room creation        | Explicit `CREATE_GAME` with binary options      | Inside JOIN, from the `command#password` string            |
+| Room creation        | Explicit `CREATE_GAME` with binary options; Speed Duel rooms opened by the server for YGOPro-server clients | Inside JOIN, from the `command#password` string            |
 | Join routing         | Room id + password                              | Join strategy chain (AI, windbot, invite, watch, ticket)   |
 | Matchmaking, windbot | No                                              | Yes                                                        |
 | Engine               | C++ `CoreIntegrator` child process (JSON stdio) | WASM ocgcore in a worker thread                            |
@@ -44,9 +44,15 @@ Only the EDOPro card pool has Skills, so YGOPro rooms see no difference. `YGOPro
 
 A client on the YGOPro server can sit in an EDOPro room with the join command
 `edo,<roomId>` ([join commands §10](./join-commands.md#10-edopro-room-joins-edoroomidpassword)).
-It is the one deliberate crossing: `src/ygopro/` calls the shared
-`ForeignRoomEntry` port, `src/edopro/` implements it (`EdoproRoomEntry`), and
-`src/index.ts` wires them. After the entry the EDOPro room owns the socket and
+The same client asks for a Speed Duel room with the `speed` token
+([join commands §11](./join-commands.md#11-speed-duel-rooms-speed)): the EDOPro
+flow opens the room itself and seats the client the same way.
+These are the deliberate crossings: `src/ygopro/` calls the shared
+`ForeignRoomEntry` and `ForeignSpeedDuelRooms` ports, `src/edopro/` implements
+them (`EdoproRoomEntry`, `EdoproSpeedDuelRooms`), and `src/index.ts` wires
+them. In the other direction the bridge reads the rows of an EDOPro ban list
+through the shared `BanListsByHash` port, to announce the hash its client
+computes for a whitelist only the EDOPro flow loads. After the entry the EDOPro room owns the socket and
 keeps speaking its own wire format; the socket it was handed
 (`src/ygopro/edopro-bridge/`) translates both ways, so the client never sees
 it.

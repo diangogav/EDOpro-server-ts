@@ -51,6 +51,7 @@ function makeRoom(options: {
 	players: FakeClient[];
 	spectators?: FakeClient[];
 	duelState?: DuelState;
+	createdByServer?: boolean;
 	hasNoConnectedPlayers?: () => boolean;
 }): jest.Mocked<Room> {
 	const spectators = options.spectators ?? [];
@@ -58,7 +59,9 @@ function makeRoom(options: {
 		duelState: options.duelState ?? DuelState.WAITING,
 		players: options.players,
 		spectators,
+		createdByServer: options.createdByServer ?? false,
 		removePlayer: jest.fn(),
+		passHostOn: jest.fn(),
 		removeSpectator: jest.fn((spectator: FakeClient) => {
 			spectators.splice(spectators.indexOf(spectator), 1);
 		}),
@@ -110,7 +113,73 @@ describe("EdoproDisconnectPolicy", () => {
 		expect(RoomList.deleteRoom).toHaveBeenCalledWith(room);
 		expect(mockBroadcast).toHaveBeenCalledWith({ action: "REMOVE-ROOM", data: { id: 42 } });
 		expect(room.removePlayer).not.toHaveBeenCalled();
+		expect(room.passHostOn).not.toHaveBeenCalled();
 		expect(guest.sendMessage).not.toHaveBeenCalled();
+	});
+
+	it("keeps a room the server created when its host leaves while waiting and frees the slot", () => {
+		const host = makeClient("sock-host", { host: true });
+		const guest = makeClient("sock-guest", { position: 1 });
+		const room = makeRoom({ players: [host, guest], createdByServer: true });
+
+		policy.onDisconnect(room, socketOf(host));
+
+		expect(RoomList.deleteRoom).not.toHaveBeenCalled();
+		expect(mockBroadcast).not.toHaveBeenCalled();
+		expect(room.removePlayer).toHaveBeenCalledWith(host);
+		expect(host.socket.removeAllListeners).toHaveBeenCalled();
+		expect(guest.sendMessage).toHaveBeenCalledWith(
+			PlayerChangeClientMessage.create({ status: (0 << 4) | 0xb }),
+		);
+	});
+
+	it("passes the host of a room the server created on, once the host who left is removed", () => {
+		const host = makeClient("sock-host", { host: true });
+		const guest = makeClient("sock-guest", { position: 1 });
+		const room = makeRoom({ players: [host, guest], createdByServer: true });
+
+		policy.onDisconnect(room, socketOf(host));
+
+		expect(room.passHostOn).toHaveBeenCalledTimes(1);
+		expect(room.removePlayer.mock.invocationCallOrder[0]).toBeLessThan(
+			room.passHostOn.mock.invocationCallOrder[0],
+		);
+	});
+
+	it("passes no host on when a guest leaves a room the server created", () => {
+		const host = makeClient("sock-host", { host: true });
+		const guest = makeClient("sock-guest", { position: 1 });
+		const room = makeRoom({ players: [host, guest], createdByServer: true });
+
+		policy.onDisconnect(room, socketOf(guest));
+
+		expect(room.removePlayer).toHaveBeenCalledWith(guest);
+		expect(room.passHostOn).not.toHaveBeenCalled();
+	});
+
+	it("deletes a room the server created when its last player leaves", () => {
+		const host = makeClient("sock-host", { host: true });
+		const room = makeRoom({
+			players: [host],
+			createdByServer: true,
+			hasNoConnectedPlayers: () => true,
+		});
+
+		policy.onDisconnect(room, socketOf(host));
+
+		expect(RoomList.deleteRoom).toHaveBeenCalledWith(room);
+		expect(mockBroadcast).toHaveBeenCalledWith({ action: "REMOVE-ROOM", data: { id: 42 } });
+	});
+
+	it("deletes a room the server created when its host leaves only spectators behind", () => {
+		const host = makeClient("sock-host", { host: true });
+		const spectator = makeClient("sock-spectator");
+		const room = makeRoom({ players: [host], spectators: [spectator], createdByServer: true });
+
+		policy.onDisconnect(room, socketOf(host));
+
+		expect(RoomList.deleteRoom).toHaveBeenCalledWith(room);
+		expect(mockBroadcast).toHaveBeenCalledWith({ action: "REMOVE-ROOM", data: { id: 42 } });
 	});
 
 	it("removes a guest who leaves while waiting and tells everyone their slot is free", () => {

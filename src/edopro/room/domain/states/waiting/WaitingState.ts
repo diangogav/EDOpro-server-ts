@@ -3,6 +3,7 @@ import { EventEmitter } from "stream";
 
 import { ChatColor } from "ygopro-msg-encode";
 
+import { config } from "../../../../../config";
 import { Logger } from "../../../../../shared/logger/domain/Logger";
 import { DuelStartClientMessage } from "../../../../../shared/messages/server-to-client/DuelStartClientMessage";
 import { ISocket } from "../../../../../shared/socket/domain/ISocket";
@@ -16,6 +17,7 @@ import { ErrorMessages } from "../../../../messages/server-to-client/error-messa
 import { ErrorClientMessage } from "../../../../messages/server-to-client/ErrorClientMessage";
 import { JoinGameClientMessage } from "../../../../messages/server-to-client/JoinGameClientMessage";
 import { RPSChooseClientMessage } from "../../../../messages/server-to-client/RPSChooseClientMessage";
+import { roomCreationNotice } from "../../../../../shared/room/domain/chat/RoomCreationNotice";
 import { createSystemChat } from "../../../../../shared/room/domain/chat/SystemChat";
 import { ReconnectionTokenIssuer } from "../../../../../shared/room/domain/reconnect/ReconnectionTokenIssuer";
 import { isNameTaken } from "../../../../../shared/room/domain/isNameTaken";
@@ -278,20 +280,17 @@ export class WaitingState extends EdoproRoomState {
 				userId = user.id;
 			}
 
-			const place = room.calculatePlaceUnsafe();
+			const player = room.calculatePlaceUnsafe()
+				? room.createPlayerUnsafe(socket, playerInfoMessage.name, userId)
+				: null;
 
-			if (!place) {
-				const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name, userId);
-				socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
-				room.addSpectatorUnsafe(spectator);
-				room.notifyToAllLobbyClients(spectator);
-				room.sendSpectatorCount({ enqueue: false });
-
-				return;
-			}
-
-			const player = room.createPlayerUnsafe(socket, playerInfoMessage.name, userId);
 			if (!player) {
+				if (room.createdByServer && socket.bridgedFromYgopro === true) {
+					this.turnAwaySeatless(socket);
+
+					return;
+				}
+
 				const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name, userId);
 				socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
 				room.addSpectatorUnsafe(spectator);
@@ -303,6 +302,24 @@ export class WaitingState extends EdoproRoomState {
 
 			socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
 			room.addPlayerUnsafe(player);
+
+			// A room the server opened has no CREATE_GAME to answer with the notice.
+			if (room.createdByServer && player.host) {
+				socket.send(
+					roomCreationNotice({ ranked: room.ranked, rankingEnabled: config.ranking.enabled }),
+				);
+			}
 		});
+	}
+
+	/**
+	 * A room the server opened is found by name, so a joiner can lose its last
+	 * seat to another one. A client of the YGOPro server cannot watch an EDOPro
+	 * duel: it is told the room is full and let go, not left in the stands.
+	 */
+	private turnAwaySeatless(socket: ISocket): void {
+		socket.send(createSystemChat(ChatColor.RED, "This room just filled up. Try again."));
+		socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
+		socket.close();
 	}
 }

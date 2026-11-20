@@ -34,19 +34,24 @@ Strategy chain, first `matches()` wins
 
 | # | Strategy | Matches when | Behavior |
 |---|----------|--------------|----------|
-| 1 | `AIJoinTokenStrategy` | windbot enabled AND `rawPass` starts with `AIJOIN#` | The bot itself connecting back: consumes a one-shot token, finds the room **by id**, marks the client internal. |
-| 2 | `WindBotJoinStrategy` | windbot enabled AND `ai` among config tokens | Creates an AI room, resolves the bot (by name after `#`, or format-scoped random via `resolveBotPool`), fires the bot request. Rejects tag mode. |
-| 3 | `ReservedDuelJoinStrategy` | command segment is exactly `rv` (`rv#<16-char reservationId>`); in the base chain, so present with or without windbot | Claims the reservation for the ticket user (`resolvedUserId` required) and opens its room, or sends a later participant to it. See [reserved duels](./reserved-duels.md). |
-| 4 | `InviteJoinStrategy` | first command token is `j` (reserved, strict `j,<16-character inviteId>` validation) | Joins one existing public waiting room incarnation with a player seat. Never creates or spectates; ticket authentication remains intact. |
-| 5 | `WatchJoinStrategy` | command segment is exactly `w,<digits>` (see §9) | Intentional spectating **by room id**: finds the room via `findById`, gates on an exact password match, marks the socket with watch intent and routes the JOIN. Never creates a room. |
-| 6 | `EdoproRoomJoinStrategy` | command segment is exactly `edo,<digits>` (see §10); present when the EDOPro flow is wired | Seats the socket in an existing **EDOPro** room by id, through the shared `ForeignRoomEntry` port. Never creates a room. The room is handed a socket that translates its wire format, so the client keeps speaking YGOPro. |
-| 7 | `TicketJoinStrategy` | socket authenticated via WS ticket (`resolvedUserId`) | Shared `findOrCreateRoom` helper (`rankedOverride=true`) — see §5 for the pairing-vs-non-pairing lookup it performs. |
-| 8 | `DefaultJoinStrategy` | always | Shared `findOrCreateRoom` helper (`rankedOverride=undefined`) — see §5 for the pairing-vs-non-pairing lookup it performs. Admission is delegated to the room state (§6). |
+| 1 | `SpeedDuelJoinStrategy` | `speed` among config tokens (see §11); always present | Seats the socket in a Speed Duel room of the **EDOPro** flow, found by name and password or opened on the spot, through the shared `ForeignSpeedDuelRooms` port. Never opens a YGOPro room; refuses the join when the EDOPro flow is not wired. |
+| 2 | `AIJoinTokenStrategy` | windbot enabled AND `rawPass` starts with `AIJOIN#` | The bot itself connecting back: consumes a one-shot token, finds the room **by id**, marks the client internal. |
+| 3 | `WindBotJoinStrategy` | windbot enabled AND `ai` among config tokens | Creates an AI room, resolves the bot (by name after `#`, or format-scoped random via `resolveBotPool`), fires the bot request. Rejects tag mode. |
+| 4 | `ReservedDuelJoinStrategy` | command segment is exactly `rv` (`rv#<16-char reservationId>`); in the base chain, so present with or without windbot | Claims the reservation for the ticket user (`resolvedUserId` required) and opens its room, or sends a later participant to it. See [reserved duels](./reserved-duels.md). |
+| 5 | `InviteJoinStrategy` | first command token is `j` (reserved, strict `j,<16-character inviteId>` validation) | Joins one existing public waiting room incarnation with a player seat. Never creates or spectates; ticket authentication remains intact. |
+| 6 | `WatchJoinStrategy` | command segment is exactly `w,<digits>` (see §9) | Intentional spectating **by room id**: finds the room via `findById`, gates on an exact password match, marks the socket with watch intent and routes the JOIN. Never creates a room. |
+| 7 | `EdoproRoomJoinStrategy` | command segment is exactly `edo,<digits>` (see §10); present when the EDOPro flow is wired | Seats the socket in an existing **EDOPro** room by id, through the shared `ForeignRoomEntry` port. Never creates a room. The room is handed a socket that translates its wire format, so the client keeps speaking YGOPro. |
+| 8 | `TicketJoinStrategy` | socket authenticated via WS ticket (`resolvedUserId`) | Shared `findOrCreateRoom` helper (`rankedOverride=true`) — see §5 for the pairing-vs-non-pairing lookup it performs. |
+| 9 | `DefaultJoinStrategy` | always | Shared `findOrCreateRoom` helper (`rankedOverride=undefined`) — see §5 for the pairing-vs-non-pairing lookup it performs. Admission is delegated to the room state (§6). |
 
 `InviteJoinStrategy`, `WatchJoinStrategy` and `EdoproRoomJoinStrategy` must sit BEFORE `TicketJoinStrategy`: the ticket strategy
 matches on socket auth alone, not command shape, so a ticketed socket sending
 `w,1234` would otherwise fall into `findOrCreateRoom` and mint a junk room
 literally named `w,1234` instead of watching room 1234.
+
+`SpeedDuelJoinStrategy` heads the whole chain, ahead of the windbot strategies:
+a command with the `speed` token is a Speed Duel room whatever else it carries
+(`speed,ai` included), and no later strategy may open a YGOPro room from it.
 
 On strategy error: `JOINERROR` frame + `socket.close()`.
 
@@ -118,6 +123,10 @@ Notes worth knowing:
   (`MercuryBanListMemoryRepository.findIndexByAlias`), not exact match.
 - Unrecognized tokens are silently ignored (host defaults apply:
   `rule: 1`, `mode: SINGLE`, `duel_rule: 5`, first TCG banlist).
+- **`speed`** is not a rule token and stays out of `RuleMappings`: it is a
+  join command (§11). `SpeedDuelJoinStrategy` takes every command that carries
+  it before any strategy that builds a YGOPro room, so no YGOPro room is ever
+  opened from it.
 - AI-pool resolution for random windbots mirrors the tier precedence
   (`src/ygopro/windbot/domain/resolveBotPool.ts`): priority TCG tokens win
   over format tokens regardless of position.
@@ -378,7 +387,16 @@ can still become an ordinary room name.
   `reservationPermitsSeat`, which ignores the watch stamp and demands a
   reserved identity.
 
-**Room id uniqueness.** `findById` is first-match, so id-addressed paths
+**Room id uniqueness.** Ids are unique per flow, not across the two: an EDOPro
+room and a YGOPro room may share one. No path of this server tells them apart
+by id alone. `w,<id>` and the windbot return trip read `YGOProRoomList` only;
+`edo,<id>` reads the EDOPro `RoomList` only; a disconnect finds its room by
+socket id and a reconnection by its token and the kind of client that holds
+it (`ygoproReconnectRoute`); a Speed Duel room is found by name (§11). The one
+lookup over both lists is the EDOPro-protocol `JoinHandler`, which prefers the
+EDOPro room.
+
+`findById` is first-match, so id-addressed paths
 (watch joins, the windbot `AIJOIN` return trip) require live ids to be
 unique. Every ygopro room creation site (`findOrCreateRoom`,
 `WindBotJoinStrategy`, `createMatchmakingRoom`) therefore draws its id from
@@ -441,7 +459,8 @@ built to tell its player so. Any other client gets a red chat line and
 `JOINERROR`, before the room is even looked up.
 
 **Listing.** `/api/rooms` lists the EDOPro rooms such a client can sit in
-(the same rooms the join accepts, while waiting and with a free seat) with `engine: "edopro"` and
+(the same rooms the join accepts, while waiting and with a free seat, a Speed
+Duel room the server opened among them, §11) with `engine: "edopro"` and
 `command: "edo,<id>"`, but only to a caller that asks for them with
 `?engines=ygopro,edopro`. Without the parameter the list holds YGOPro rooms
 alone, as it always did, so other clients of that endpoint see no change.
@@ -464,6 +483,86 @@ room a bridged socket again; the room does not resend its settings, so the
 bridge is given the Master Rule (`ExpressReconnectHandler`'s `socketFor`).
 
 **Not covered.** Watching an EDOPro duel from the YGOPro server.
+
+## 11. Speed Duel rooms (`speed`)
+
+A client on the YGOPro server asks for a Speed Duel room with the `speed`
+token: `speed`, `speed,casual`, `m,speed,casual#secret`. The room is an
+EDOPro room, because that core is the one that plays Skill Cards and the
+three-column field, but no EDOPro client hosts it: the server opens it.
+Handled by `SpeedDuelJoinStrategy`
+(`src/ygopro/room/application/join-strategies/SpeedDuelJoinStrategy.ts`),
+which parses the command and answers rejections; the room is found or opened
+by `EdoproSpeedDuelRooms` (`src/edopro/room/application/`), reached through
+the shared `ForeignSpeedDuelRooms` port, and entered through `EdoproRoomEntry`
+on a bridged socket, exactly as an `edo,<id>` join (§10).
+
+**Shape.** Any command whose comma-separated tokens, trimmed and lowercased,
+include `speed`. `m` or `match` asks for a best of 3; otherwise the room is a
+single duel. Every other token is ignored (`lp`, `st`, `dr`, `tm`, `mr`, `t`,
+`bo<N>`, `nc`, `ns`, `ai`, `casual`, …): a Speed Duel room is always a Speed
+Duel, 1v1, never ranked and with no AI opponent.
+
+**Identity.** As for any room of this flow (§4), the room's name is the
+command segment exactly as sent and its password the segment after `#`. Two
+players sending the same command and password meet. `speed` and `Speed`, or
+`m,speed` and `speed,m`, are different rooms with the same settings.
+
+**Find or open.** The joiner is seated in a room the server opened under that
+name and password that is still waiting and has a free seat. A room that is
+full or already duelling is not a candidate, and neither is a room an EDOPro
+client hosts, whatever its name: a new room is opened instead. So a third
+player sending the command of a full room gets a room of its own, and a
+fourth meets the third there, as in a pairing join (§5).
+
+**Settings** (`SpeedDuelRoomPreset.ts`, what EDOPro's host form sets for
+"Speed Duel"):
+
+| Setting | Value |
+|---|---|
+| Duel flags | `DUEL_MODE_SPEED` (`0x628000`), high word 0; forbidden types 0; extra rules 0 |
+| Teams | 1v1; best of 1, or 3 with `m` |
+| LP, starting hand, draw | 4000, 4, 1 |
+| Time limit | 450 seconds |
+| Deck sizes | Main 20-30, Extra 0-6, Side 0-6 |
+| Allowed cards | scope "Anything Goes" (4): Skill Cards carry a scope the OCG and TCG checks refuse, so the whitelist is the only filter |
+| Ban list | the loaded EDOPro list whose name says "Speed Duel" (`2025.07 Speed Duel`), the most recent one |
+| Deck check, shuffle | checked, shuffled |
+| Ranked | never |
+
+**Outcomes.**
+
+| Case | What the joiner gets |
+|---|---|
+| Seated | The room's `STOC_JOIN_GAME`, re-encoded for a YGOPro client, then the lobby frames. The first player in is the host and also receives the room creation notice. |
+| Client not in `EDOPRO_BRIDGE_CLIENTS` | Red chat, `JOINERROR`, close, before any room is looked up or opened (same gate as §10). |
+| EDOPro flow not wired, or no Speed Duel ban list loaded | Red chat "Speed Duel rooms are not available on this server.", `JOINERROR`, close. No room of either flow is opened. |
+| Lost the last seat to another joiner | The free seat is a lock-free hint, so two joiners can be sent after the same one. The room's waiting state turns the loser away (red chat "This room just filled up. Try again.", `JOINERROR`, close): a client of this server cannot watch an EDOPro duel, so it is never left in the stands. |
+
+**The ban list hash.** The room announces the EDOPro hash of its list. The
+YGOPro runtime pool does not load the Speed Duel list, so no YGOPro list
+carries that name; the bridge then announces the hash a YGOPro-style client
+computes for the same file: every `code limit` row folded in, XOR
+`0x0f0f0f0f` (`ownBanListHash`, which reuses
+`YGOProBanList.recomputeWhitelistHash` over the rows of the EDOPro list). For
+a whitelist that is the EDOPro hash XOR `0x0f0f0f0f`.
+
+**When the host leaves.** A room an EDOPro client hosts ends with its host.
+A room the server opened (`Room.createdByServer`) stays while another player
+is seated: the host is removed like any other player and its slot is
+announced free (`EdoproDisconnectPolicy`). The player who stays then becomes
+the host (`Room.passHostOn`, the lowest position if there were several) and
+is sent a `STOC_TYPE_CHANGE` with the host bit, which is what shows its
+client the Start button. A player who enters later is not a host. The room
+is deleted when its last player leaves.
+
+**Listing and ids.** The room is in the EDOPro `RoomList`, so `/api/rooms`
+lists it like any other EDOPro room a bridged client can sit in
+(`command: "edo,<id>"`, joinable that way too), and `/api/getrooms` shows it
+to EDOPro clients, who can join it with their own protocol.
+
+**Not covered.** Spectating, replays, AI opponents, ranked play and
+matchmaking.
 
 ## Public lobby invitations
 
