@@ -4,6 +4,12 @@ const DUEL_OBSOLETE_IGNITION = 0x100;
 const DUEL_PZONE = 0x800;
 const DUEL_EMZONE = 0x2000;
 const DUEL_FSX_MMZONE = 0x4000;
+const DUEL_3_COLUMNS_FIELD = 0x400000;
+/**
+ * MSG_FIELD_DISABLED mask of a three-column field, per player and for both:
+ * Monster Zones 0 and 4, both Extra Monster Zones and Spell & Trap Zones 0 and 4.
+ */
+const THREE_COLUMN_CLOSED_ZONES = 0x1171_1171;
 
 export interface EdoproHostInfo {
 	/** The fields a YGOPro lobby understands, ready for `YGOProStocJoinGame.info`. */
@@ -66,4 +72,14 @@ export function duelRuleFromFlags(duelFlagsLow: number): number {
 	if ((duelFlagsLow & DUEL_EMZONE) !== 0) return (duelFlagsLow & DUEL_FSX_MMZONE) !== 0 ? 5 : 4;
 	if ((duelFlagsLow & DUEL_PZONE) !== 0) return 3;
 	return (duelFlagsLow & DUEL_OBSOLETE_IGNITION) !== 0 ? 1 : 2;
+}
+
+/**
+ * The zones a duel never opens, as a MSG_FIELD_DISABLED mask, or 0 when the
+ * field has all five columns. The core keeps the outer columns of a
+ * three-column field (Speed Duel) out of play without announcing them, since
+ * an EDOPro client reads that from the flags.
+ */
+export function closedZonesFromFlags(duelFlagsLow: number): number {
+	return (duelFlagsLow & DUEL_3_COLUMNS_FIELD) !== 0 ? THREE_COLUMN_CLOSED_ZONES : 0;
 }

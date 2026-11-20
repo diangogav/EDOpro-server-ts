@@ -164,6 +164,39 @@ describe("EdoproWireTranslator", () => {
 		expect(started.msg).toMatchObject({ duelRule: 1 });
 	});
 
+	describe("the start of a duel", () => {
+		const SPEED_DUEL = 0x628000;
+		const MASTER_RULE_5 = 0x2e800;
+		const start = (): Buffer =>
+			gameFrame(new IgnisWriter().u8(4).u8(0).u32(4000).u32(4000).u16(20).u16(0).u16(20).u16(0));
+		const joinedTo = (duelFlagsLow: number): EdoproWireTranslator => {
+			const hostInfo = Buffer.alloc(68);
+			hostInfo.writeUInt32LE(duelFlagsLow, 44);
+			const translator = new EdoproWireTranslator();
+			translator.toClientFrames(frame(0x12, hostInfo));
+
+			return translator;
+		};
+
+		it("closes the outer columns and the Extra Monster Zones for the client in a Speed Duel, which the core never announces", () => {
+			const [started, closed, ...rest] = joinedTo(SPEED_DUEL).toClientFrames(start());
+
+			expect((decode(started) as YGOProStocGameMsg).msg).toMatchObject({ startLp0: 4000 });
+			expect(closed).toEqual(gameFrame(new IgnisWriter().u8(56).u32(0x1171_1171)));
+			expect(rest).toHaveLength(0);
+		});
+
+		it("adds nothing under a Master Rule", () => {
+			expect(joinedTo(MASTER_RULE_5).toClientFrames(start())).toHaveLength(1);
+		});
+
+		it("gives no frame for one the client gets nothing for", () => {
+			expect(new EdoproWireTranslator().toClientFrames(frame(0x01, new Uint8Array([161])))).toEqual(
+				[],
+			);
+		});
+	});
+
 	it("announces the room's ban list by the hash the client knows it by", () => {
 		const hostInfo = Buffer.alloc(68);
 		hostInfo.writeUInt32LE(0x11111111, 0);
