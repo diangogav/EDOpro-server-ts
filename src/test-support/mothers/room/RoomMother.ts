@@ -42,6 +42,7 @@ export class RoomMother {
 				handshake: params?.handshake ?? 0,
 				password: params?.password ?? "",
 				ranked: params?.ranked ?? false,
+				createdByServer: params?.createdByServer ?? false,
 			},
 			new EventEmitter(),
 			logger,

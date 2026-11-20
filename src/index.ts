@@ -18,7 +18,9 @@ import { Server } from "./http-server/Server";
 import { HostServer } from "./socket-server/HostServer";
 import { WSHostServer } from "./socket-server/WSHostServer";
 import { registerForeignPrintings } from "./bootstrap/foreignPrintings";
+import { EdoproBanListsByHash } from "./edopro/ban-list/infrastructure/EdoproBanListsByHash";
 import { EdoproRoomEntry } from "./edopro/room/application/EdoproRoomEntry";
+import { EdoproSpeedDuelRooms } from "./edopro/room/application/EdoproSpeedDuelRooms";
 import { YGOProServer } from "./socket-server/YGOProServer";
 import { WSYGOProServer } from "./socket-server/WSYGOProServer";
 import { HandshakeTicketAuthenticator } from "./socket-server/HandshakeTicketAuthenticator";
@@ -29,6 +31,7 @@ import WebSocketSingleton from "./web-socket-server/WebSocketSingleton";
 import { bootstrapWindbot } from "./ygopro/windbot/infrastructure/bootstrapWindbot";
 import { JoinStrategyRegistry } from "./ygopro/room/application/join-strategies/JoinStrategyRegistry";
 import { composeJoinStrategies } from "./ygopro/room/application/join-strategies/composeJoinStrategies";
+import { useEdoproBanLists } from "./ygopro/edopro-bridge/ownBanListHash";
 
 void start();
 
@@ -82,7 +85,14 @@ async function start(): Promise<void> {
 	const windbotModule = config.windbot.enabled
 		? bootstrapWindbot(config.windbot, config.servers.mercury.port)
 		: undefined;
-	JoinStrategyRegistry.setStrategies(composeJoinStrategies(windbotModule, new EdoproRoomEntry()));
+	// The YGOPro flow reaches EDOPro rooms through these ports only.
+	useEdoproBanLists(new EdoproBanListsByHash());
+	JoinStrategyRegistry.setStrategies(
+		composeJoinStrategies(windbotModule, {
+			rooms: new EdoproRoomEntry(),
+			speedDuelRooms: new EdoproSpeedDuelRooms(logger),
+		}),
+	);
 	if (windbotModule) {
 		logger.info("🤖 Windbot enabled");
 	}

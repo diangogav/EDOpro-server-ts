@@ -33,7 +33,7 @@ export class EdoproDisconnectPolicy implements RoomDisconnectPolicy {
 			return;
 		}
 
-		if (player.host && room.duelState === DuelState.WAITING) {
+		if (player.host && room.duelState === DuelState.WAITING && !this.outlivesHost(room, player)) {
 			RoomList.deleteRoom(room);
 			WebSocketSingleton.getInstance().broadcast({
 				action: "REMOVE-ROOM",
@@ -57,8 +57,22 @@ export class EdoproDisconnectPolicy implements RoomDisconnectPolicy {
 				spectator.sendMessage(message);
 			});
 
+			// Only the host of a room that outlives it reaches this point.
+			if (player.host) {
+				room.passHostOn();
+			}
+
 			return;
 		}
+	}
+
+	/**
+	 * A room a client hosts ends with its host. One the server opened belongs
+	 * to no connection: it stays for the players still seated in it, the host
+	 * leaves it like any other player, and one of them becomes the host.
+	 */
+	private outlivesHost(room: Room, host: Client): boolean {
+		return room.createdByServer && room.players.some((client) => client !== host);
 	}
 
 	private removeSpectator(room: Room, socket: ISocket): void {

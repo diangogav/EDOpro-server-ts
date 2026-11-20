@@ -66,6 +66,8 @@ export interface RoomAttr {
 	password: string;
 	duel?: ChildProcessWithoutNullStreams;
 	ranked: boolean;
+	/** The server opened the room for its own clients; no client hosts it. */
+	createdByServer?: boolean;
 }
 
 const EDOPRO_RULE_LABELS: Record<number, string> = {
@@ -106,6 +108,12 @@ export class Room extends YgoRoom {
 	public readonly duelRule: number;
 	public readonly handshake: number;
 	public readonly password: string;
+	/**
+	 * Whether the server opened this room itself instead of a client hosting
+	 * it. Such a room belongs to no connection: it outlives the player who
+	 * entered it first, and is removed when its last player leaves.
+	 */
+	public readonly createdByServer: boolean;
 	private _replay: Replay;
 	private readonly _kick: Client[] = [];
 	private _lastPhase: Buffer | null = null;
@@ -158,6 +166,7 @@ export class Room extends YgoRoom {
 		this.duelRule = attr.duelRule;
 		this.handshake = attr.handshake;
 		this.password = attr.password;
+		this.createdByServer = attr.createdByServer ?? false;
 		this.core = new CoreChannel(() => this.logger, attr.duel);
 		this._state = DuelState.WAITING;
 		this.duelFlagsLow = attr.duelFlagsLow;
@@ -325,6 +334,10 @@ export class Room extends YgoRoom {
 		if (!client.host) {
 			this.sendSpectatorCount({ enqueue: false });
 			this.notifyToAllLobbyClients(client);
+		} else if (this._players.length > 1) {
+			// A host is alone in the room it hosts. Should one ever enter a room
+			// with players seated, it still learns who they are.
+			this.notifyToAllLobbyClients(client);
 		}
 
 		const roomMessageEmitter = new RoomMessageEmitter(client, this);
@@ -408,6 +421,35 @@ export class Room extends YgoRoom {
 		player.playerPosition(place.position, place.team);
 		player.notReady();
 		this.notifier.sendTypeChange(player);
+	}
+
+	/**
+	 * Gives a room left without a host a new one. Queued behind the removal of
+	 * the host who left, so it reads the players who really stay.
+	 */
+	public passHostOn(): void {
+		this.mutex.runExclusive(() => {
+			this.passHostOnUnsafe();
+		});
+	}
+
+	/**
+	 * The seated player with the lowest position becomes the host and is told
+	 * its new type, which is what shows a client its Start button. A room that
+	 * still has a host, or no player at all, is left as it is: there is never
+	 * a second host.
+	 */
+	public passHostOnUnsafe(): void {
+		const players = this._players as Client[];
+		if (players.length === 0 || players.some((client) => client.host)) {
+			return;
+		}
+
+		const next = players.reduce((lowest, client) =>
+			client.position < lowest.position ? client : lowest,
+		);
+		next.becomeHost();
+		this.notifier.sendTypeChange(next);
 	}
 
 	movePlayerToAnotherCell(player: Client): void {

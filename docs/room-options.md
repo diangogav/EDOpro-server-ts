@@ -24,6 +24,13 @@ truncate a room name, remove a requested option, or silently change the rules.
 HTTP ranked matchmaking remains the dedicated two-player tcg/jtp/edison queue;
 Tag and custom casual options use the socket room pairing/named-room path.
 
+The `speed` token is the exception to all of the above: it asks for a Speed
+Duel room on the EDOPro core, whose LP, starting hand, draw, deck sizes and
+ban list are fixed by the format. Only `m`/`match` and the password change
+such a room; every other option token is ignored
+([join commands §11](./join-commands.md#11-speed-duel-rooms-speed)), so a
+client must not offer them for that format.
+
 ### Banlist metadata deployment compatibility
 
 Deploy the updated EDOpro-server-ts service to expose exact LF metadata.

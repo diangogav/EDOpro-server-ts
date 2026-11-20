@@ -58,6 +58,14 @@ export class Client extends YgoClient {
 		this._ipAddress = socket.remoteAddress ?? null;
 	}
 
+	/**
+	 * Makes this player the host of its room. Only a room no connection owns
+	 * hands its host on, when the player who held it leaves.
+	 */
+	public becomeHost(): void {
+		this._host = true;
+	}
+
 	setRpsChosen(choise: Choose): void {
 		this._rpsChosen = choise;
 	}
