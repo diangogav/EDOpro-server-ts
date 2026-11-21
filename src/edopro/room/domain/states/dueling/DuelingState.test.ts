@@ -531,6 +531,31 @@ describe("DuelingState", () => {
 			expect(frames.some((frame) => frame.equals(code))).toBe(false);
 		});
 
+		it("valid token: tells the turn number once the core has resynced the player", () => {
+			Object.assign(mockRoom, { turn: 7 });
+			const player = makeRealClient({ reconnectionToken: "tok" });
+			rejoinWithToken(player);
+			expect(player.sendMessage).not.toHaveBeenCalledWith(Buffer.from("0300ee0700", "hex"));
+
+			(state as any).handleCoreReconnect({ position: 0, team: 0, cacheable: false });
+
+			const frames = sentTo(player);
+			const caughtUp = frames.findIndex((frame) => frame[2] === 0xf0 && frame[3] === 0);
+			const turn = frames.findIndex((frame) => frame.toString("hex") === "0300ee0700");
+			expect(turn).toBeGreaterThan(caughtUp);
+		});
+
+		it("core RECONNECT: tells no turn number to a player who came back by name", () => {
+			Object.assign(mockRoom, { turn: 7 });
+			const player = makeRealClient({ reconnectionToken: "old", position: 0 });
+			(mockRoom as any).players = [player];
+			TokenIndex.getInstance().register("old", player, mockRoom.id);
+
+			(state as any).handleCoreReconnect({ position: 0, team: 0, cacheable: false });
+
+			expect(sentTo(player).some((frame) => frame[2] === 0xee)).toBe(false);
+		});
+
 		it("unknown token: failure ack + socket destroyed", () => {
 			const message = { data: Buffer.from("ghost", "utf8") } as ClientMessage;
 

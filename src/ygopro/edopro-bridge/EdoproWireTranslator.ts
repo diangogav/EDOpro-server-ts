@@ -21,8 +21,8 @@ const MSG_START = 4;
 const MSG_FIELD_DISABLED = 56;
 const STOC_CHAT = 0x19;
 const STOC_CHAT_2 = 0xf3;
-/** Shared-kernel frames both wire formats carry: reconnection token, emote, pong. */
-const SHARED_KERNEL_COMMANDS: ReadonlySet<number> = new Set([STOC_CHAT, 0xfc, 0xfd, 0xfe]);
+/** Shared-kernel frames both wire formats carry: reconnection token, emote, pong, duel turn. */
+const SHARED_KERNEL_COMMANDS: ReadonlySet<number> = new Set([STOC_CHAT, 0xfc, 0xfd, 0xfe, 0xee]);
 
 const CHAT_2_SERVER_ERROR = 0x04;
 const CHAT_2_NAME_BYTES = 40;

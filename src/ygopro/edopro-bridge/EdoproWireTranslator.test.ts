@@ -256,6 +256,12 @@ describe("EdoproWireTranslator", () => {
 		expect(new EdoproWireTranslator().toClient(token)).toBe(token);
 	});
 
+	it("passes the turn number a returning player is told", () => {
+		const turn = frame(0xee, new Uint8Array([7, 0]));
+
+		expect(new EdoproWireTranslator().toClient(turn)).toBe(turn);
+	});
+
 	it("drops a core message it cannot translate and names it", () => {
 		const untranslated = jest.fn();
 
