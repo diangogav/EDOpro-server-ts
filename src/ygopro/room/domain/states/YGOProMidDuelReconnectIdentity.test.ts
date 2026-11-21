@@ -143,6 +143,21 @@ const states: Array<{
 	},
 ];
 
+const statesBetweenDuels = states.filter(({ label }) => label !== "YGOProDuelingState");
+
+describe.each(statesBetweenDuels)("$label.handleJoin — rejoin by name", ({ build }) => {
+	it("leaves the returning player no longer marked as reconnecting", async () => {
+		const seat = makeExternalSeat("acc-1");
+		const room = makeRoom({ players: [seat] });
+		(room.resolveJoinerIdentity as jest.Mock).mockResolvedValue("acc-1");
+
+		await build(room).handleJoin(makeJoinMessage(), room, makeSocket());
+
+		expect(room.reconnect).toHaveBeenCalledWith(seat, expect.anything());
+		expect(seat.clearReconnecting).toHaveBeenCalled();
+	});
+});
+
 describe.each(states)("$label.handleJoin — ranked identity binding", ({ build }) => {
 	it("grants the seat back to the account that owns it — even while the old socket looks alive", async () => {
 		const seat = makeExternalSeat("acc-1");

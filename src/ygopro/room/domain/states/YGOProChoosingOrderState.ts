@@ -161,6 +161,7 @@ export class YGOProChoosingOrderState extends YGOProRoomState {
 			if (room.clientWhoChoosesTurn === playerAlreadyInRoom) {
 				playerAlreadyInRoom.sendMessageToClient(room.messageSender.selectTpMessage());
 			}
+			playerAlreadyInRoom.clearReconnecting();
 		});
 	}
 
