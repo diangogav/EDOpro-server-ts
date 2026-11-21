@@ -141,8 +141,9 @@ legitimate players out of their own duel. The account-identity binding makes
 liveness unnecessary: a returning PIN player re-sends the same PIN, resolves to
 the same `userId`, and reclaims the seat regardless of whether the stale socket
 still looks alive. The stale socket is detached from the seat when the new one
-is attached (`YGOProRoom.reconnect` → `YGOProClient.setSocket`); it is not
-actively destroyed (a known residual left to the socket's own lifecycle).
+is attached (`YGOProRoom.reconnect` → `YGOProClient.setSocket`), and when it
+still looks open it is closed as superseded (`closeSuperseded`), so a second
+tab or a half-open peer is told its session moved on.
 
 ### Robustness
 

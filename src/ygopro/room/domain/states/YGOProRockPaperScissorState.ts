@@ -156,6 +156,7 @@ export class YGOProRockPaperScissorState extends YGOProRoomState {
 			if (playerAlreadyInRoom.isCaptain && !hasSelected) {
 				playerAlreadyInRoom.sendMessageToClient(room.messageSender.selectHandMessage());
 			}
+			playerAlreadyInRoom.clearReconnecting();
 		});
 	}
 

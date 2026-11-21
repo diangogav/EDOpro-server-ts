@@ -5,7 +5,7 @@ import { YgoClient } from "@shared/client/domain/YgoClient";
  * ranked identity binding. Both the seating finder and the routing predicate
  * agree on these, so the two paths can never diverge:
  *   - the target is NOT strong-auth: ticket players reconnect through their
- *     single-use token, so they are unreachable here (closes the hijack of a
+ *     reconnection token, so they are unreachable here (closes the hijack of a
  *     verified player by name, with a stolen PIN or another ticket).
  *   - the name matches.
  *   - in casual rooms, additionally bound to the original location and only
