@@ -216,6 +216,24 @@ describe("YGOProDuelingState.handleExpressReconnect", () => {
 		expect(player.clearReconnecting).toHaveBeenCalled();
 	});
 
+	it("tells the returning player the turn number, after the board", async () => {
+		const player = makeClient({ token: "tok" });
+		TokenIndex.getInstance().register("tok", player, 1);
+		const ocgCore = makeOcgCore();
+		const sent: string[] = [];
+		ocgCore.sendReconnectTimeLimitAndResponseState.mockImplementation(async () => {
+			sent.push("board");
+		});
+		(player.sendMessageToClient as jest.Mock).mockImplementation((frame: Buffer) => {
+			sent.push(frame.toString("hex"));
+		});
+		Object.assign(room, { turn: 7 });
+
+		await buildState(ocgCore).handleExpressReconnect(reconnectMessage("tok"), room, socket);
+
+		expect(sent.indexOf("0300ee0700")).toBeGreaterThan(sent.indexOf("board"));
+	});
+
 	it("rejects an unknown token with a failure ack and destroys the socket", async () => {
 		await buildState(makeOcgCore()).handleExpressReconnect(reconnectMessage("ghost"), room, socket);
 

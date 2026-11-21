@@ -97,7 +97,14 @@ Two things reach the player only because of that order:
   again once the player has caught up. A Skill's code is only kept for the
   player it was sent to.
 
-Not restored: the turn number.
+### The turn number
+
+No game message carries the turn number: a client counts the new-turn messages
+it sees, and one that comes back has missed them. So both flows end a token
+rejoin of a duel with a frame of their own, `DuelTurnClientMessage`:
+`[2b size LE][0xee][turn u16 LE]`. It goes out after the board, so the client
+applies it over whatever its count reached while resyncing. Only a token rejoin
+gets it; a client that rejoins by name never asked for our extensions.
 
 ## 4. By-name / identity reconnection (the weak path)
 

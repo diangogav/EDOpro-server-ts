@@ -34,6 +34,7 @@ import { DuelFinishReason } from "../../DuelFinishReason";
 import { Room } from "../../Room";
 import { EdoproRoomState } from "../../EdoproRoomState";
 import { SkillHintMemory } from "../../SkillHintMemory";
+import { DuelTurnClientMessage } from "../../../../../shared/messages/server-to-client/DuelTurnClientMessage";
 import { JoinGameClientMessage } from "../../../../messages/server-to-client/JoinGameClientMessage";
 import { PlayerEnterClientMessage } from "../../../../../shared/messages/server-to-client/PlayerEnterClientMessage";
 import { TypeChangeClientMessage } from "../../../../../shared/messages/server-to-client/TypeChangeClientMessage";
@@ -146,6 +147,9 @@ export class DuelingState extends EdoproRoomState {
 	private lastTurnMessage: Buffer | null = null;
 
 	private readonly skillHints = new SkillHintMemory<Client>();
+
+	/** Players back by token whom the core has not resynced yet: they are owed the turn number. */
+	private readonly awaitingTurnNumber = new Set<Client>();
 
 	constructor(
 		eventEmitter: EventEmitter,
@@ -468,6 +472,11 @@ export class DuelingState extends EdoproRoomState {
 			player.sendMessage(frame);
 		});
 
+		// Only a client that rejoins by token knows this frame.
+		if (this.awaitingTurnNumber.delete(player)) {
+			player.sendMessage(DuelTurnClientMessage.create(this.room.turn));
+		}
+
 		// Re-send the same token so the client refreshes its stored session.
 		player.clearReconnecting();
 		player.sendMessage(ReconnectionTokenIssuer.resend(player, this.room.id));
@@ -711,6 +720,7 @@ export class DuelingState extends EdoproRoomState {
 		player.setSocket(socket, room.players as Client[], room);
 		player.reconnecting();
 		player.setCanReconnect(true);
+		this.awaitingTurnNumber.add(player);
 
 		// The token replaced the join, so the room introduces itself here: its
 		// settings, the player's seat and who sits in the others.

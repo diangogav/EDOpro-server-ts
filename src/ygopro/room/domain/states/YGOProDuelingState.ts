@@ -20,6 +20,7 @@ import { ISocket } from "@shared/socket/domain/ISocket";
 import { Team } from "@shared/room/Team";
 import { ReconnectionTokenIssuer } from "@shared/room/domain/reconnect/ReconnectionTokenIssuer";
 import { ReconnectionAckMessage } from "@shared/messages/server-to-client/ReconnectionAckMessage";
+import { DuelTurnClientMessage } from "@shared/messages/server-to-client/DuelTurnClientMessage";
 import { MatchContext } from "@shared/room/domain/lifecycle/MatchLifecycleHook";
 import { createRoomAnnounce } from "@shared/room/domain/lifecycle/RoomAnnounce";
 import { createRoomNotify } from "@shared/room/domain/lifecycle/RoomNotify";
@@ -395,7 +396,9 @@ export class YGOProDuelingState extends YGOProRoomState {
 		room.reconnect(player, socket);
 		// 3. Replay the live board state.
 		await this.resyncBoard(player);
-		// 4. Re-send the same token and finish.
+		// 4. Tell the turn number, which no game message carries.
+		player.sendMessageToClient(DuelTurnClientMessage.create(room.turn));
+		// 5. Re-send the same token and finish.
 		player.sendMessageToClient(ReconnectionTokenIssuer.resend(player, room.id));
 		player.clearReconnecting();
 	}

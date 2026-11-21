@@ -24,6 +24,8 @@ export enum Commands {
 	MATCHMAKING_CANCEL = 0xf9,
 	MATCHMAKING_STATUS = 0xf8,
 	MATCHMAKING_FOUND = 0xf7,
+	/** STOC: the turn number of the duel, for a player who rejoined it by token. */
+	DUEL_TURN = 0xee,
 	/** STOC: an opted-in participant must ACCEPT or DECLINE the proposed match. */
 	MATCHMAKING_PROPOSED = 0xef,
 	/** CTOS: accepts a proposed match by id. */
