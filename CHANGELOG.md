@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.19.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.18.0...v2.19.0) (2026-11-21)
+
+
+### ✨ Features
+
+* **deck:** apply the official Skill Card rules to decks and side decking ([#501](https://github.com/diangogav/EDOpro-server-ts/issues/501)) ([425f3a4](https://github.com/diangogav/EDOpro-server-ts/commit/425f3a4b714951d6ca153d9325a1603ed0f2d7ad))
+* **reconnect:** tell the turn number to a player who rejoins by token ([#504](https://github.com/diangogav/EDOpro-server-ts/issues/504)) ([8a5348d](https://github.com/diangogav/EDOpro-server-ts/commit/8a5348ddc93f0cb4b48f2cde30cddfdfcaa56c89))
+* **ygopro:** create Speed Duel rooms on the EDOPro core from a join command ([#502](https://github.com/diangogav/EDOpro-server-ts/issues/502)) ([e317b72](https://github.com/diangogav/EDOpro-server-ts/commit/e317b725182290a7de089785e36b0232e3faf6de))
+* **ygopro:** let a bridged client play Speed Duels with Skills ([#499](https://github.com/diangogav/EDOpro-server-ts/issues/499)) ([2e7574c](https://github.com/diangogav/EDOpro-server-ts/commit/2e7574c686f79d6abff665a103d564b6bdd50509))
+
+
+### 🐛 Bug Fixes
+
+* **edopro:** restore the room, the field and the Skills on a token rejoin ([#503](https://github.com/diangogav/EDOpro-server-ts/issues/503)) ([12ce322](https://github.com/diangogav/EDOpro-server-ts/commit/12ce32259cb00baf3ca7d050278e9fc202b8fb31))
+* **ygopro:** clear the reconnecting mark after a by-name rejoin between duels ([#505](https://github.com/diangogav/EDOpro-server-ts/issues/505)) ([839c8f8](https://github.com/diangogav/EDOpro-server-ts/commit/839c8f890e395ab4adba45a413dcf32caa90bfd2))
+
 ## [2.18.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.17.0...v2.18.0) (2026-11-19)
 
 
