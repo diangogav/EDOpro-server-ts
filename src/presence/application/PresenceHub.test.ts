@@ -255,6 +255,21 @@ describe("PresenceHub", () => {
 		expect(transport.of("a")).toEqual([]);
 	});
 
+	it("refuses a change with formats that are not a list or an unknown status", async () => {
+		const { hub, transport } = makeHub();
+		hub.connect("a");
+		await hub.message("a", hello({ name: "Joey", formats: [] }));
+		transport.reset();
+
+		await hub.message("a", JSON.stringify({ action: "PRESENCE-SET", data: { formats: "goat" } }));
+		await hub.message("a", JSON.stringify({ action: "PRESENCE-SET", data: { status: "away" } }));
+
+		expect(transport.of("a")).toEqual([
+			{ action: "PRESENCE-ERROR", data: { code: "invalid-update" } },
+			{ action: "PRESENCE-ERROR", data: { code: "invalid-update" } },
+		]);
+	});
+
 	it("answers a change before hello with an error", async () => {
 		const { hub, transport } = makeHub();
 		hub.connect("a");

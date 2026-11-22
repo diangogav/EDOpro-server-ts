@@ -57,7 +57,10 @@ class WebSocketSingleton implements PresenceTransport {
 					logger.error(error instanceof Error ? error : String(error), { context: "presence" });
 				});
 			});
-			ws.on("error", () => ws.terminate());
+			ws.on("error", (error) => {
+				logger.debug("Room-list socket error", { socketId, error: error.message });
+				ws.terminate();
+			});
 			ws.on("close", () => {
 				this.sockets.delete(socketId);
 				this.alive.delete(socketId);

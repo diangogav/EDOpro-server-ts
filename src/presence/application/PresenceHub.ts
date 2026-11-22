@@ -13,6 +13,7 @@ import { isPresenceStatus, PresenceStatus } from "../domain/PresenceStatus";
 
 export type PresenceErrorCode =
 	| "invalid-hello"
+	| "invalid-update"
 	| "invalid-name"
 	| "invalid-ticket"
 	| "auth-unavailable"
@@ -220,7 +221,7 @@ export class PresenceHub {
 		const formats = data.formats === undefined ? undefined : parsePresenceFormats(data.formats);
 		const status = player.account || data.status === undefined ? undefined : data.status;
 		if (formats === null || (status !== undefined && !isPresenceStatus(status))) {
-			this.error(socketId, "invalid-hello");
+			this.error(socketId, "invalid-update");
 
 			return;
 		}

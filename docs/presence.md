@@ -32,7 +32,7 @@ Server → client, only to sockets that said hello:
 | `PRESENCE-JOIN` | a player, to everyone else. |
 | `PRESENCE-CHANGE` | a player whose name, formats or status changed, to everyone. |
 | `PRESENCE-LEAVE` | `{ id }`, to everyone. |
-| `PRESENCE-ERROR` | `{ code }`: `invalid-hello`, `invalid-name`, `invalid-ticket`, `auth-unavailable`, `banned`, `already-joined`, `not-joined`. |
+| `PRESENCE-ERROR` | `{ code }`: `invalid-hello`, `invalid-update` (a bad `PRESENCE-SET`), `invalid-name`, `invalid-ticket`, `auth-unavailable`, `banned`, `already-joined`, `not-joined`. |
 
 A player is `{ id, name, account, userId, formats, status }`. `id` is `u:<userId>` for an account and `g:<random>` for a guest.
 
