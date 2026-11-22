@@ -17,7 +17,7 @@ export interface ChallengeRooms {
  *
  * The code stands for a room the server stored when the challenge was
  * accepted: its full command and an internal password, which would not fit
- * the 20-character join field. The join is rewritten to that command and
+ * the 19-character join field. The join is rewritten to that command and
  * password and handed to the first strategy of the rest of the chain that
  * matches it, so the room is found or opened exactly as if the player had
  * typed it (`speed` goes to the Speed Duel strategy, a ticketed socket to the

@@ -42,6 +42,7 @@ export function createAccountStatusProbe(sources: {
 
 interface SeatedRoom {
 	readonly isMatchmaking: boolean;
+	readonly reservedUserIds?: readonly string[];
 	readonly players: readonly {
 		readonly id: string | null;
 		readonly socket: { readonly closed: boolean };
@@ -50,8 +51,9 @@ interface SeatedRoom {
 
 /**
  * Matchmaking as a challenge sees it: an account is matched when the queue
- * formed or proposed a match for it, or when it already sits in a matchmaking
- * room that has not started yet.
+ * formed or proposed a match for it, or when a matchmaking room is reserved
+ * for it or seats it. The reservation counts before the seat: a matched socket
+ * participant is seated only after an async credential lookup.
  */
 export function createChallengeMatchmaking(sources: {
 	queue: () => Pick<MatchmakingQueue, "isUserMatched" | "removeUser"> | null;
@@ -68,7 +70,8 @@ export function createChallengeMatchmaking(sources: {
 				.some(
 					(room) =>
 						room.isMatchmaking &&
-						room.players.some((player) => player.id === userId && !player.socket.closed),
+						(room.reservedUserIds?.includes(userId) ||
+							room.players.some((player) => player.id === userId && !player.socket.closed)),
 				);
 		},
 		removeUser(userId: string) {

@@ -73,6 +73,16 @@ describe("createChallengeMatchmaking", () => {
 		})),
 	});
 
+	it("counts an account reserved in a matchmaking room nobody has sat in yet as matched", () => {
+		const matchmaking = createChallengeMatchmaking({
+			queue: () => null,
+			rooms: () => [{ isMatchmaking: true, reservedUserIds: ["user-1"], players: [] }],
+		});
+
+		expect(matchmaking.isMatched("user-1")).toBe(true);
+		expect(matchmaking.isMatched("user-2")).toBe(false);
+	});
+
 	it("counts an account as matched when the queue matched it or it sits in a matchmaking room", () => {
 		const matchmaking = createChallengeMatchmaking({
 			queue: () => queue(["user-1"]),

@@ -1,7 +1,7 @@
 /**
  * The room two players agreed on through a direct challenge. The server keeps
  * the whole room (command, password, who may sit) and hands both players only
- * a short code: a join command must fit the 20-character password field of
+ * a short code: a join command must fit the 19-character password field of
  * the YGOPro join message, and a full command with its password does not.
  */
 export interface ChallengeRoom {
