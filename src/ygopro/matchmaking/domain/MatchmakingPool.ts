@@ -119,6 +119,14 @@ export class MatchmakingPool {
 		);
 	}
 
+	/** Whether a user is searching in the store or waiting on a pending match, whatever their participant id. */
+	isUserSearching(userId: string): boolean {
+		return (
+			this.deps.store.findByUserId(userId) !== undefined ||
+			this.pending.findByUserId(userId) !== undefined
+		);
+	}
+
 	/**
 	 * Records an ACCEPT. Once every participant accepted, the match leaves the
 	 * pending book and is dispatched to the `MatchHandler` like any other match.

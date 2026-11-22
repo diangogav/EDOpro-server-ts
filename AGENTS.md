@@ -48,6 +48,7 @@ This file holds only what applies to every change. When your task matches a row 
 | Changes client room options or banlist indices           | [Room options](./docs/room-options.md)                                     |
 | Changes reconnection, spectating or watching             | [Room re-entry](./docs/room-reentry.md)                                    |
 | Changes reserved duels                                   | [Reserved duels](./docs/reserved-duels.md)                                 |
+| Changes the online list or the room-list WebSocket       | [Online presence](./docs/presence.md)                                      |
 | Changes metrics or sizes the server                      | [Metrics](./docs/metrics.md), [Memory capacity](./docs/memory-capacity.md) |
 
 ## Project map

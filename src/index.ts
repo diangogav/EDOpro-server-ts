@@ -28,6 +28,7 @@ import { container } from "./shared/dependency-injection";
 import { EventBus } from "./shared/event-bus/EventBus";
 import { RedisTicketRepository } from "./shared/ticket/infrastructure/redis/RedisTicketRepository";
 import WebSocketSingleton from "./web-socket-server/WebSocketSingleton";
+import { bootstrapPresence } from "./bootstrap/bootstrapPresence";
 import { bootstrapWindbot } from "./ygopro/windbot/infrastructure/bootstrapWindbot";
 import { JoinStrategyRegistry } from "./ygopro/room/application/join-strategies/JoinStrategyRegistry";
 import { composeJoinStrategies } from "./ygopro/room/application/join-strategies/composeJoinStrategies";
@@ -110,6 +111,7 @@ async function start(): Promise<void> {
 
 	await server.initialize();
 	WebSocketSingleton.getInstance();
+	bootstrapPresence(logger, ticketRepository);
 	hostServer.initialize();
 	wsHostServer.initialize();
 

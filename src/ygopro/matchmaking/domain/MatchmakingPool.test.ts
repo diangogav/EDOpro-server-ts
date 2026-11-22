@@ -550,6 +550,19 @@ describe("MatchmakingPool", () => {
 			expect(logged("matchmaking.proposed")).toEqual([]);
 		});
 
+		it("counts a user as searching while queued or waiting on a pending match, by user id", () => {
+			const { pool } = setup(5_000);
+			pool.add(optedIn("a", 0));
+			expect(pool.isUserSearching("u-a")).toBe(true);
+
+			pool.add(optedIn("b", 1_000));
+			pool.tick();
+
+			expect(pool.isUserSearching("u-a")).toBe(true);
+			expect(pool.isUserSearching("u-b")).toBe(true);
+			expect(pool.isUserSearching("u-c")).toBe(false);
+		});
+
 		it("holds a human match with an opted-in participant instead of provisioning it", () => {
 			const { pool, store, matchHandler, logged } = setup(5_000);
 			const aChannel = new RecordingChannel();
