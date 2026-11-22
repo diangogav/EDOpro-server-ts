@@ -10,6 +10,7 @@ import {
 	PresenceRegistry,
 } from "../domain/PresenceRegistry";
 import { isPresenceStatus, PresenceStatus } from "../domain/PresenceStatus";
+import { ChallengeDesk } from "./ChallengeDesk";
 
 export type PresenceErrorCode =
 	| "invalid-hello"
@@ -19,14 +20,57 @@ export type PresenceErrorCode =
 	| "auth-unavailable"
 	| "banned"
 	| "already-joined"
-	| "not-joined";
+	| "not-joined"
+	| "invalid-challenge"
+	| "unknown-target"
+	| "self-challenge"
+	| "format-not-shared"
+	| "sender-in-duel"
+	| "target-in-duel"
+	| "target-muted"
+	| "challenge-pending"
+	| "challenge-cooldown"
+	| "unknown-challenge";
+
+export type ChallengeCloseReason = "declined" | "expired" | "cancelled" | "failed";
+
+/** Why a challenge failed: a player left, is in a duel, was matched by matchmaking, or no room could be made. */
+export type ChallengeCloseCause = "left" | "in-duel" | "matchmaking" | "unavailable";
 
 export type PresenceMessage =
 	| { action: "PRESENCE-WELCOME"; data: { self: string; players: PresencePlayer[] } }
 	| { action: "PRESENCE-JOIN"; data: PresencePlayer }
 	| { action: "PRESENCE-CHANGE"; data: PresencePlayer }
 	| { action: "PRESENCE-LEAVE"; data: { id: string } }
-	| { action: "PRESENCE-ERROR"; data: { code: PresenceErrorCode } };
+	| { action: "PRESENCE-ERROR"; data: { code: PresenceErrorCode } }
+	| {
+			action: "CHALLENGE-SENT";
+			data: {
+				challengeId: string;
+				to: string;
+				format: PresenceFormat;
+				ranked: boolean;
+				expiresInMs: number;
+			};
+	  }
+	| {
+			action: "CHALLENGE-RECEIVED";
+			data: {
+				challengeId: string;
+				from: string;
+				format: PresenceFormat;
+				ranked: boolean;
+				expiresInMs: number;
+			};
+	  }
+	| {
+			action: "CHALLENGE-CLOSED";
+			data: { challengeId: string; reason: ChallengeCloseReason; cause?: ChallengeCloseCause };
+	  }
+	| {
+			action: "CHALLENGE-START";
+			data: { challengeId: string; command: string; format: PresenceFormat; ranked: boolean };
+	  };
 
 /** Delivers presence messages to one socket of the room-list WebSocket. */
 export interface PresenceTransport {
@@ -44,6 +88,19 @@ export interface AccountStatusProbe {
 	statusOf(userId: string): PresenceStatus;
 }
 
+/** What a challenge needs from matchmaking about the accounts it involves. */
+export interface ChallengeMatchmaking {
+	/** Whether matchmaking already formed or proposed a match for the account. */
+	isMatched(userId: string): boolean;
+	/** Takes the account out of the matchmaking queue when it is searching. */
+	removeUser(userId: string): void;
+}
+
+/** Stores the room of an accepted challenge and returns the code that opens it. */
+export interface ChallengeRoomIssuer {
+	issue(input: { format: string; ranked: boolean; userIds: readonly string[] }): { code: string };
+}
+
 export interface PresenceHubDeps {
 	transport: PresenceTransport;
 	tickets: HandshakeTicketStore;
@@ -52,6 +109,11 @@ export interface PresenceHubDeps {
 	logger: Logger;
 	newGuestId: () => string;
 	now: () => number;
+	matchmaking: ChallengeMatchmaking;
+	challengeRooms: ChallengeRoomIssuer;
+	/** Runs `callback` after `delayMs`; the returned function cancels it. */
+	schedule: (callback: () => void, delayMs: number) => () => void;
+	newChallengeId: () => string;
 }
 
 export const PRESENCE_RATE_LIMIT = { messages: 20, windowMs: 10_000 } as const;
@@ -78,8 +140,22 @@ export class PresenceHub {
 	private readonly connected = new Set<string>();
 	private readonly helloInFlight = new Set<string>();
 	private readonly rates = new Map<string, RateWindow>();
+	private readonly challenges: ChallengeDesk;
 
-	public constructor(private readonly deps: PresenceHubDeps) {}
+	public constructor(private readonly deps: PresenceHubDeps) {
+		this.challenges = new ChallengeDesk({
+			registry: this.registry,
+			statusProbe: deps.statusProbe,
+			matchmaking: deps.matchmaking,
+			challengeRooms: deps.challengeRooms,
+			schedule: deps.schedule,
+			newChallengeId: deps.newChallengeId,
+			now: deps.now,
+			logger: deps.logger,
+			send: (socketId, message) => deps.transport.send(socketId, message),
+			error: (socketId, code) => this.error(socketId, code),
+		});
+	}
 
 	public connect(socketId: string): void {
 		this.connected.add(socketId);
@@ -91,6 +167,7 @@ export class PresenceHub {
 		this.rates.delete(socketId);
 		const left = this.registry.leave(socketId);
 		if (left) {
+			this.challenges.playerLeft(left.id);
 			this.broadcast({ action: "PRESENCE-LEAVE", data: { id: left.id } });
 		}
 	}
@@ -109,6 +186,14 @@ export class PresenceHub {
 			await this.hello(socketId, parsed.data);
 		} else if (parsed.action === "PRESENCE-SET") {
 			this.set(socketId, parsed.data);
+		} else if (parsed.action === "PRESENCE-MUTE") {
+			this.mute(socketId, parsed.data);
+		} else if (parsed.action === "PRESENCE-CHALLENGE") {
+			this.challenges.challenge(socketId, parsed.data);
+		} else if (parsed.action === "PRESENCE-CHALLENGE-CANCEL") {
+			this.challenges.cancel(socketId);
+		} else if (parsed.action === "PRESENCE-CHALLENGE-ANSWER") {
+			this.challenges.answer(socketId, parsed.data);
 		}
 	}
 
@@ -226,6 +311,25 @@ export class PresenceHub {
 			return;
 		}
 		const changed = this.registry.update(player.id, { formats, status });
+		if (changed) {
+			this.broadcast({ action: "PRESENCE-CHANGE", data: changed });
+		}
+	}
+
+	/** Turns challenges to the player off or on; they stay in the list either way. */
+	private mute(socketId: string, data: Record<string, unknown>): void {
+		const player = this.registry.playerOf(socketId);
+		if (!player) {
+			this.error(socketId, "not-joined");
+
+			return;
+		}
+		if (typeof data.muted !== "boolean") {
+			this.error(socketId, "invalid-update");
+
+			return;
+		}
+		const changed = this.registry.update(player.id, { muted: data.muted });
 		if (changed) {
 			this.broadcast({ action: "PRESENCE-CHANGE", data: changed });
 		}

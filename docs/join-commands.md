@@ -34,6 +34,7 @@ Strategy chain, first `matches()` wins
 
 | # | Strategy | Matches when | Behavior |
 |---|----------|--------------|----------|
+| 0 | `ChallengeJoinStrategy` | command segment is exactly `ch` (`ch#<16-char code>`); always present | Resolves the code to the room of an accepted challenge, rewrites the join to that room's command and password and hands it to the first matching strategy below. See §12. |
 | 1 | `SpeedDuelJoinStrategy` | `speed` among config tokens (see §11); always present | Seats the socket in a Speed Duel room of the **EDOPro** flow, found by name and password or opened on the spot, through the shared `ForeignSpeedDuelRooms` port. Never opens a YGOPro room; refuses the join when the EDOPro flow is not wired. |
 | 2 | `AIJoinTokenStrategy` | windbot enabled AND `rawPass` starts with `AIJOIN#` | The bot itself connecting back: consumes a one-shot token, finds the room **by id**, marks the client internal. |
 | 3 | `WindBotJoinStrategy` | windbot enabled AND `ai` among config tokens | Creates an AI room, resolves the bot (by name after `#`, or format-scoped random via `resolveBotPool`), fires the bot request. Rejects tag mode. |
@@ -563,6 +564,18 @@ to EDOPro clients, who can join it with their own protocol.
 
 **Not covered.** Spectating, replays, AI opponents, ranked play and
 matchmaking.
+
+## 12. Challenge rooms (`ch#<code>`)
+
+An accepted direct challenge from the online list ([presence](./presence.md#challenges)) sends both players `ch#<code>`, where `<code>` is 16 base36 characters. The room itself is too long for the 20-character join field (`jtp-2007-03,casual#<password>`), so the server stores it in the challenge room book (`src/shared/challenge/application/ChallengeRoomBook.ts`) and the code stands for it.
+
+`ChallengeJoinStrategy` (`src/ygopro/room/application/join-strategies/ChallengeJoinStrategy.ts`) heads the chain:
+
+- An unknown or expired code (2 minutes after the accept) is refused: `JOINERROR` + close. So is every code when no book is wired.
+- A ranked room admits only its two accounts: the socket's `resolvedUserId` (WS ticket) must be one of them.
+- Otherwise the context's `command`, `password` and `rawPass` become the stored room's (`goat`, `toot,casual`, `speed,casual`, …, and its internal password) and the join goes to the first strategy of the rest of the chain that matches the rewritten context: `SpeedDuelJoinStrategy` for `speed`, `TicketJoinStrategy` for a ticketed socket (a ranked room is a Verified one; the `casual` token keeps a casual room casual), `DefaultJoinStrategy` otherwise. The first player opens the room through `findOrCreateRoom`'s non-pairing path and the second finds it by name and password.
+
+Rooms are best of one. The code is not consumed on use, so a player can rejoin while it lives.
 
 ## Public lobby invitations
 

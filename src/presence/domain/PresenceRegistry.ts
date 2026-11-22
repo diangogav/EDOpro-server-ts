@@ -13,6 +13,8 @@ export interface PresencePlayer {
 	readonly userId: string | null;
 	readonly formats: readonly PresenceFormat[];
 	readonly status: PresenceStatus;
+	/** Whether the player turned challenges off; they stay in the list. */
+	readonly muted: boolean;
 }
 
 export type JoinResult =
@@ -62,6 +64,7 @@ export class PresenceRegistry {
 			userId: identity.kind === "account" ? identity.userId : null,
 			formats: [...formats],
 			status,
+			muted: false,
 		};
 		this.entries.set(id, { player, sockets: new Set([socketId]) });
 
@@ -98,10 +101,23 @@ export class PresenceRegistry {
 		return id === undefined ? null : (this.entries.get(id)?.player ?? null);
 	}
 
-	/** Changes a player's formats and/or status; returns the player when anything changed. */
+	public find(id: string): PresencePlayer | null {
+		return this.entries.get(id)?.player ?? null;
+	}
+
+	/** Every open socket of a player; empty when the player is not online. */
+	public socketIdsOf(id: string): string[] {
+		return [...(this.entries.get(id)?.sockets ?? [])];
+	}
+
+	/** Changes a player's formats, status and/or mute; returns the player when anything changed. */
 	public update(
 		id: string,
-		change: { readonly formats?: readonly PresenceFormat[]; readonly status?: PresenceStatus },
+		change: {
+			readonly formats?: readonly PresenceFormat[];
+			readonly status?: PresenceStatus;
+			readonly muted?: boolean;
+		},
 	): PresencePlayer | null {
 		const entry = this.entries.get(id);
 		if (!entry) {
@@ -111,6 +127,7 @@ export class PresenceRegistry {
 			...entry.player,
 			formats: change.formats ? [...change.formats] : entry.player.formats,
 			status: change.status ?? entry.player.status,
+			muted: change.muted ?? entry.player.muted,
 		};
 		if (PresenceRegistry.sameView(entry.player, player)) {
 			return null;
@@ -136,6 +153,7 @@ export class PresenceRegistry {
 		return (
 			a.name === b.name &&
 			a.status === b.status &&
+			a.muted === b.muted &&
 			a.formats.length === b.formats.length &&
 			a.formats.every((format, index) => b.formats[index] === format)
 		);

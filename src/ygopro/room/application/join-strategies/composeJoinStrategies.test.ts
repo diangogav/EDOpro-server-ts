@@ -8,6 +8,8 @@ import { DefaultJoinStrategy } from "./DefaultJoinStrategy";
 import { ReservedDuelJoinStrategy } from "./ReservedDuelJoinStrategy";
 import { EdoproRoomJoinStrategy } from "./EdoproRoomJoinStrategy";
 import { SpeedDuelJoinStrategy } from "./SpeedDuelJoinStrategy";
+import { ChallengeJoinStrategy } from "./ChallengeJoinStrategy";
+import { ChallengeRoomBook } from "@shared/challenge/application/ChallengeRoomBook";
 import { JoinStrategyRegistry } from "./JoinStrategyRegistry";
 import { JoinContext } from "./JoinStrategy";
 import { WindbotModule } from "../../../windbot/application/WindbotModule";
@@ -26,30 +28,32 @@ const makeModule = (): WindbotModule =>
 	});
 
 describe("composeJoinStrategies", () => {
-	it("returns the base chain [SpeedDuel, ReservedDuel, Invite, Watch, Ticket, Default] when windbot is absent", () => {
+	it("returns the base chain [Challenge, SpeedDuel, ReservedDuel, Invite, Watch, Ticket, Default] when windbot is absent", () => {
 		const strategies = composeJoinStrategies();
 
-		expect(strategies).toHaveLength(6);
-		expect(strategies[0]).toBeInstanceOf(SpeedDuelJoinStrategy);
-		expect(strategies[1]).toBeInstanceOf(ReservedDuelJoinStrategy);
-		expect(strategies[2]).toBeInstanceOf(InviteJoinStrategy);
-		expect(strategies[3]).toBeInstanceOf(WatchJoinStrategy);
-		expect(strategies[4]).toBeInstanceOf(TicketJoinStrategy);
-		expect(strategies[5]).toBeInstanceOf(DefaultJoinStrategy);
+		expect(strategies).toHaveLength(7);
+		expect(strategies[0]).toBeInstanceOf(ChallengeJoinStrategy);
+		expect(strategies[1]).toBeInstanceOf(SpeedDuelJoinStrategy);
+		expect(strategies[2]).toBeInstanceOf(ReservedDuelJoinStrategy);
+		expect(strategies[3]).toBeInstanceOf(InviteJoinStrategy);
+		expect(strategies[4]).toBeInstanceOf(WatchJoinStrategy);
+		expect(strategies[5]).toBeInstanceOf(TicketJoinStrategy);
+		expect(strategies[6]).toBeInstanceOf(DefaultJoinStrategy);
 	});
 
-	it("puts [SpeedDuel, AIJoinToken, WindBot] before the rest of the chain when windbot is present", () => {
+	it("puts [Challenge, SpeedDuel, AIJoinToken, WindBot] before the rest of the chain when windbot is present", () => {
 		const strategies = composeJoinStrategies(makeModule());
 
-		expect(strategies).toHaveLength(8);
-		expect(strategies[0]).toBeInstanceOf(SpeedDuelJoinStrategy);
-		expect(strategies[1]).toBeInstanceOf(AIJoinTokenStrategy);
-		expect(strategies[2]).toBeInstanceOf(WindBotJoinStrategy);
-		expect(strategies[3]).toBeInstanceOf(ReservedDuelJoinStrategy);
-		expect(strategies[4]).toBeInstanceOf(InviteJoinStrategy);
-		expect(strategies[5]).toBeInstanceOf(WatchJoinStrategy);
-		expect(strategies[6]).toBeInstanceOf(TicketJoinStrategy);
-		expect(strategies[7]).toBeInstanceOf(DefaultJoinStrategy);
+		expect(strategies).toHaveLength(9);
+		expect(strategies[0]).toBeInstanceOf(ChallengeJoinStrategy);
+		expect(strategies[1]).toBeInstanceOf(SpeedDuelJoinStrategy);
+		expect(strategies[2]).toBeInstanceOf(AIJoinTokenStrategy);
+		expect(strategies[3]).toBeInstanceOf(WindBotJoinStrategy);
+		expect(strategies[4]).toBeInstanceOf(ReservedDuelJoinStrategy);
+		expect(strategies[5]).toBeInstanceOf(InviteJoinStrategy);
+		expect(strategies[6]).toBeInstanceOf(WatchJoinStrategy);
+		expect(strategies[7]).toBeInstanceOf(TicketJoinStrategy);
+		expect(strategies[8]).toBeInstanceOf(DefaultJoinStrategy);
 	});
 
 	it("adds the EDOPro room join before Ticket when the EDOPro flow is wired", () => {
@@ -58,9 +62,9 @@ describe("composeJoinStrategies", () => {
 			speedDuelRooms: { enter: jest.fn() },
 		});
 
-		expect(strategies).toHaveLength(7);
-		expect(strategies[4]).toBeInstanceOf(EdoproRoomJoinStrategy);
-		expect(strategies[5]).toBeInstanceOf(TicketJoinStrategy);
+		expect(strategies).toHaveLength(8);
+		expect(strategies[5]).toBeInstanceOf(EdoproRoomJoinStrategy);
+		expect(strategies[6]).toBeInstanceOf(TicketJoinStrategy);
 	});
 });
 
@@ -148,6 +152,42 @@ describe("composeJoinStrategies — resolution order", () => {
 				ReservedDuelJoinStrategy,
 			);
 		}
+	});
+
+	it("resolves a ch#<code> join to ChallengeJoinStrategy, even from a ticketed socket", () => {
+		const ctx = makeCtx({
+			rawPass: "ch#abcdefgh01234567",
+			command: "ch",
+			password: "abcdefgh01234567",
+			socket: { id: "sock-1", resolvedUserId: "user-abc" } as never,
+		});
+
+		for (const strategies of [composeJoinStrategies(), composeJoinStrategies(makeModule())]) {
+			expect(JoinStrategyRegistry.createForTests(strategies).resolve(ctx)).toBeInstanceOf(
+				ChallengeJoinStrategy,
+			);
+		}
+	});
+
+	it("hands a resolved challenge join to the strategy the stored room command selects", async () => {
+		const challenges = new ChallengeRoomBook();
+		const room = challenges.issue({ format: "speed", ranked: false, userIds: [] });
+		const strategies = composeJoinStrategies(undefined, undefined, challenges);
+		const speedDuel = strategies.find(
+			(strategy) => strategy instanceof SpeedDuelJoinStrategy,
+		) as SpeedDuelJoinStrategy;
+		const handle = jest.spyOn(speedDuel, "handle").mockResolvedValue(undefined);
+		const ctx = makeCtx({ rawPass: `ch#${room.code}`, command: "ch", password: room.code });
+
+		await JoinStrategyRegistry.createForTests(strategies).resolve(ctx).handle(ctx);
+
+		expect(handle).toHaveBeenCalledWith(
+			expect.objectContaining({
+				command: "speed,casual",
+				password: room.password,
+				rawPass: `speed,casual#${room.password}`,
+			}),
+		);
 	});
 
 	it("still resolves windbot ai# joins and AIJOIN# tokens to their strategies (shared chain)", () => {
