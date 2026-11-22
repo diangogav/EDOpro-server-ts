@@ -38,6 +38,18 @@ Test runner: server `pnpm test <path>`, `pnpm lint`; client `npx vitest run <fil
   - Assumptions (proposed, not confirmed by the user): a guest without a nickname sets it inline on the online screen; manual server URL fields leave the normal view.
   - The redesign ships unflagged; only the online list and challenges sit behind the presence flag.
 
+- **S20 — Online screen layout.** User: "hagamos un redise;o de la pantalla online  que resalte las partidas y los jugadores online, los filtros no son muy relevantes ahora mismo pueden ir mas ocultos con un boton"; approved with "si, ármalo así" the proposal:
+  - Compact header with the player's identity and the ranked queue entry.
+  - Two columns: rooms (left, most of the width) and online players (right). On phones, two tabs: Partidas / Conectados.
+  - The fixed filters column is removed: a "Filtros" button with the active-filter count opens the existing filters drawer.
+  - Rooms come in two groups, in this order: "Esperando rival" (large cards, prominent "Unirse") and "En vivo" (both players, turn, spectators, "Ver"). The rooms toolbar keeps "Crear sala" and the view toggle.
+  - Online players: larger cards with a status dot, account mark, formats and "Retar"; counts per status at the top; "Silenciar retos" in the column.
+- **S21 — Rotating top card.** User: "hay manera de meter el top de los rankings? asi sea una tarjeta que vaya pasando en algunos segundos?"; approved with "si, ármalo así" the proposal:
+  - A "Top" card at the top of the online players column (top of the Conectados tab on phones).
+  - It rotates through the existing ranking groups every 6 s with a soft transition; pauses on hover; no motion under prefers-reduced-motion; dots show and select the current format.
+  - Each format shows its top 3 with tier and rating; a top player who is online shows the online dot and can be challenged from the card; "Ver ranking" opens the leaderboard page.
+  - Data from the existing public leaderboard API (`features/leaderboard`), fetched once on entry and refreshed every few minutes; no server or API change.
+
 ## Tasks
 
 - [x] T0 — S10 S11 S18 — `evolution-types` + `evolution-api`: account format preference (storage, `GET`/`PUT` endpoints, validation against the format catalogue), types submodule bumped in both consumers. Route: delegated (parallel unit beside T3). Commits: `fc496b7` (evolution-types, `feat/account-formats`), `cac514a` (evolution-api, `feat/account-formats`, worktree `.wt-api-formats`). Risk: item 1. Pending: push types, bump in EDOpro-server-ts, apply migration before deploy.
@@ -53,6 +65,8 @@ Test runner: server `pnpm test <path>`, `pnpm lint`; client `npx vitest run <fil
     - S13: `in-duel` must cover a seated player from rock-paper-scissors onward, not only `turn > 0` (verifier note in L17).
 
 - [x] T3 (T3a non-UI + T3b screens) — S1 S6 S7 S9 S10 S13 S15 S17 S18 S19 — (route: delegated: T3a parallel to T0, T3b after the context backstop; commits in L26 and L27; bundle total pending, see L27) `evolution-card-game`: presence connection from app start, online list with every connected player, their formats, format filters and a challenge button limited to shared formats; format preference in Settings (account for signed-in, browser for guests, explicit choice only) replacing the rival alert's followed formats; incoming challenge notice with accept/decline, join on accept; `en` + `es-419` strings. Route: inline (may run as a parallel delegated unit beside T2 once T1's protocol is fixed). Commit: —
+
+- [ ] T4 — S20 S21 — `evolution-card-game` (`.wt-card-game-presence`, `feat/online-presence`): online screen layout and rotating top card. Route: delegated (context backstop). Commit: —
 
 ## Log
 
@@ -83,3 +97,5 @@ Test runner: server `pnpm test <path>`, `pnpm lint`; client `npx vitest run <fil
 - L25 (2026-11-22) — Independent verifier on T0: S10, S11, S18 (storage/API) pass, no blockers; migration additive and reversible, sorts after the latest migration. Deploy order confirmed: code with the new entity before the migration breaks every `users` load (API login, Discord sign-in; this server's `UserProfilePostgresRepository`); migration before code is safe. Non-blocking: no DB CHECK on `users.formats` (filter ids if this server ever reads it), empty-array binding untested on a real database, `down` drops every choice. Note: this server's `src/evolution-types` already carries an uncommitted bump (`6837dc3`→`7128f61`) unrelated to this feature.
 - L26 (2026-11-22) — T3a by a bounded writer in `.wt-card-game-presence` (`feat/online-presence`): commits `85c03c27` protocol, `cf342052` formats preference (API for accounts, browser key for guests, null vs []), `f011bd5c` matchmaking reason 16 `declined` = left the queue, `e35fbcbb` presence store + challenges (only the tab that sent/answered joins; `openWithJoin('ch#…')`), `c5354892` formats sheet, `dea626fc` lazy presence chunk. Flags `VITE_ONLINE_PRESENCE` (off unless `true`) and `VITE_PRESENCE_WS_URL`. Checks: touched vitest files, lint, boundaries, typecheck, check:svelte, build pass; `check:bundle` fails: shell 120.94/120 KB (HomePage imports followedFormatsStore → formats store/API) and total 795.51/790 KB (main already at 789.91). Not seen in a browser. Remaining as T3b: S19 screen redesign, the online list, the incoming-challenge notice.
 - L27 (2026-11-22) — S19 was missing from `## Specs` (a failed insert in L24's edit); added now. T3b by a bounded writer: `dbfbd32c` online screen without the connect step (Back closes the overlay; nickname gate inline), `b2caf3b4` ranked entry moved to the online screen (`RankedEntry.svelte`; rival-alert join lands there), `44fdb46d` online list + incoming challenge notice on any screen. Total budget raised by the user to 800 KB (`5bd7cef6`, "si, así está bien"). Checks: 174 vitest files / 1735 tests over touched areas, lint, boundaries, typecheck, check:svelte, build pass; `check:bundle`: shell 114/120 ok, total 804/800 over. Deviations: manual server URL fields removed with no Settings override; no presence barrel (lazy `index-*` chunks count as shell); a failed queue entry reopens the online screen with the error. Not seen in a browser; presence not run against a live server.
+- L28 (2026-11-22) — Local test setup with the user: API `.env` pointed at port 5431 (fixed to 5432 by the user); `evolution-redis` had no published port because `seniat-redis` held 6379 at start — recreated with `docker compose up -d --force-recreate redis`.
+- L29 (2026-11-22) — "hagamos un redise;o de la pantalla online..." and "hay manera de meter el top de los rankings?...", both approved with "si, ármalo así". Added S20, S21 and T4.
