@@ -1078,6 +1078,7 @@ export class YGOProRoom extends YgoRoom {
 			command: this.name,
 			status: this.duelState,
 			started,
+			turn: this.turn,
 			private: this.password.length > 0,
 			canPlay: !started && this._players.length < maxPlayers,
 			canWatch: true,

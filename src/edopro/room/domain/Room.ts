@@ -844,6 +844,7 @@ export class Room extends YgoRoom {
 			command: `edo,${this.id}`,
 			status: this.duelState,
 			started,
+			turn: this.turn,
 			private: this.needPass,
 			canPlay: !started && this._players.length < maxPlayers,
 			canWatch: false,

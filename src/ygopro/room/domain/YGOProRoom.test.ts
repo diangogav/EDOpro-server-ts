@@ -623,6 +623,19 @@ describe("YGOProRoom", () => {
 			expect(ranked.toRoomListDTO().ranked).toBe(true);
 			expect(casual.toRoomListDTO().ranked).toBe(false);
 		});
+
+		it("exposes the current duel turn in the room list DTO, 0 before any duel", async () => {
+			const room = YGOProRoomMother.create();
+			expect(room.toRoomListDTO().turn).toBe(0);
+
+			room.createDuel(null);
+			await new Promise((resolve) => setImmediate(resolve));
+			room.increaseTurn();
+			room.increaseTurn();
+
+			expect(room.toRoomListDTO().turn).toBe(room.turn);
+			expect(room.toRoomListDTO().turn).toBeGreaterThan(0);
+		});
 	});
 
 	describe("unserved formats", () => {
