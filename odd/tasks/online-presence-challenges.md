@@ -40,12 +40,12 @@ Test runner: server `pnpm test <path>`, `pnpm lint`; client `npx vitest run <fil
 
 - **S20 — Online screen layout.** User: "hagamos un redise;o de la pantalla online  que resalte las partidas y los jugadores online, los filtros no son muy relevantes ahora mismo pueden ir mas ocultos con un boton"; approved with "si, ármalo así" the proposal:
   - Compact header with the player's identity and the ranked queue entry.
-  - Two columns: rooms (left, most of the width) and online players (right). On phones, two tabs: Partidas / Conectados.
+  - Three columns: the Top card (left, narrow, where the fixed filters column was), rooms (center, widest) and online players (right). On phones, two tabs: Partidas (with the Top card at its top) / Conectados. With the presence flag off: Top card and rooms only.
   - The fixed filters column is removed: a "Filtros" button with the active-filter count opens the existing filters drawer.
   - Rooms come in two groups, in this order: "Esperando rival" (large cards, prominent "Unirse") and "En vivo" (both players, turn, spectators, "Ver"). The rooms toolbar keeps "Crear sala" and the view toggle.
   - Online players: larger cards with a status dot, account mark, formats and "Retar"; counts per status at the top; "Silenciar retos" in the column.
 - **S21 — Rotating top card.** User: "hay manera de meter el top de los rankings? asi sea una tarjeta que vaya pasando en algunos segundos?"; approved with "si, ármalo así" the proposal:
-  - A "Top" card at the top of the online players column (top of the Conectados tab on phones).
+  - A "Top" card in the left column (top of the Partidas tab on phones).
   - It rotates through the existing ranking groups every 6 s with a soft transition; pauses on hover; no motion under prefers-reduced-motion; dots show and select the current format.
   - Each format shows its top 3 with tier and rating; a top player who is online shows the online dot and can be challenged from the card; "Ver ranking" opens the leaderboard page.
   - Data from the existing public leaderboard API (`features/leaderboard`), fetched once on entry and refreshed every few minutes; no server or API change.
@@ -99,3 +99,4 @@ Test runner: server `pnpm test <path>`, `pnpm lint`; client `npx vitest run <fil
 - L27 (2026-11-22) — S19 was missing from `## Specs` (a failed insert in L24's edit); added now. T3b by a bounded writer: `dbfbd32c` online screen without the connect step (Back closes the overlay; nickname gate inline), `b2caf3b4` ranked entry moved to the online screen (`RankedEntry.svelte`; rival-alert join lands there), `44fdb46d` online list + incoming challenge notice on any screen. Total budget raised by the user to 800 KB (`5bd7cef6`, "si, así está bien"). Checks: 174 vitest files / 1735 tests over touched areas, lint, boundaries, typecheck, check:svelte, build pass; `check:bundle`: shell 114/120 ok, total 804/800 over. Deviations: manual server URL fields removed with no Settings override; no presence barrel (lazy `index-*` chunks count as shell); a failed queue entry reopens the online screen with the error. Not seen in a browser; presence not run against a live server.
 - L28 (2026-11-22) — Local test setup with the user: API `.env` pointed at port 5431 (fixed to 5432 by the user); `evolution-redis` had no published port because `seniat-redis` held 6379 at start — recreated with `docker compose up -d --force-recreate redis`.
 - L29 (2026-11-22) — "hagamos un redise;o de la pantalla online..." and "hay manera de meter el top de los rankings?...", both approved with "si, ármalo así". Added S20, S21 and T4.
+- L30 (2026-11-22) — User: "el top podria ir del lado izquierdo donde estaban los filtros no?". S20/S21 updated: Top card in the left column, three columns on desktop; on phones at the top of Partidas. Sent to the T4 writer.
