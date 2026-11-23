@@ -365,6 +365,33 @@ export class MatchmakingQueue {
 		return this.usersInQueue.has(userId);
 	}
 
+	/**
+	 * Whether a match was already formed or proposed for the user: a matched
+	 * poll ticket, or a participant held in a pending proposal.
+	 */
+	isUserMatched(userId: string): boolean {
+		const ticketId = this.usersInQueue.get(userId);
+		const record = ticketId === undefined ? undefined : this.records.get(ticketId);
+
+		return record?.state === "matched" || this.pool.isUserProposed(userId);
+	}
+
+	/**
+	 * Takes a user who is still searching out of the queue, poll ticket and
+	 * socket participant alike. A matched ticket or a pending proposal is kept.
+	 * Returns `true` when anything was removed.
+	 */
+	removeUser(userId: string): boolean {
+		const ticketId = this.usersInQueue.get(userId);
+		const record = ticketId === undefined ? undefined : this.records.get(ticketId);
+		const cancelled =
+			record?.state === "searching" && !this.pool.isUserProposed(userId)
+				? this.cancel(record.ticketId)
+				: false;
+
+		return this.pool.removeUser(userId) || cancelled;
+	}
+
 	get(ticketId: string): QueueEntry | undefined {
 		return this.records.get(ticketId);
 	}

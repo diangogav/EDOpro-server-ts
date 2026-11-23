@@ -119,6 +119,35 @@ export class MatchmakingPool {
 		);
 	}
 
+	/** Whether a user is searching in the store or waiting on a pending match, whatever their participant id. */
+	isUserSearching(userId: string): boolean {
+		return (
+			this.deps.store.findByUserId(userId) !== undefined ||
+			this.pending.findByUserId(userId) !== undefined
+		);
+	}
+
+	/** Whether a user is held in a match proposal awaiting ACCEPT/DECLINE. */
+	isUserProposed(userId: string): boolean {
+		return this.pending.findByUserId(userId) !== undefined;
+	}
+
+	/**
+	 * Takes a user who is still searching out of the pool, whatever their
+	 * participant id, and closes their channel: the user left the queue for
+	 * something else (a direct challenge). A user held in a pending match is
+	 * left alone. Returns `true` when a participant was removed.
+	 */
+	removeUser(userId: string): boolean {
+		const participant = this.deps.store.findByUserId(userId);
+		if (!participant || !this.removeAndLog(participant, "cancelled")) {
+			return false;
+		}
+		participant.channel.close("declined");
+
+		return true;
+	}
+
 	/**
 	 * Records an ACCEPT. Once every participant accepted, the match leaves the
 	 * pending book and is dispatched to the `MatchHandler` like any other match.

@@ -278,6 +278,86 @@ describe("MatchmakingQueue", () => {
 		});
 	});
 
+	describe("removeUser", () => {
+		it("takes a searching poll ticket out of the queue by user id and frees the user", () => {
+			const queue = MatchmakingQueue.createForTests(makeDeps());
+			enqueue(queue, "t1", "user-1");
+
+			expect(queue.removeUser("user-1")).toBe(true);
+
+			expect(queue.get("t1")).toBeUndefined();
+			expect(queue.poll("t1")).toBeNull();
+			expect(queue.isUserQueued("user-1")).toBe(false);
+			expect(queue.getPool().isUserSearching("user-1")).toBe(false);
+			expect(() => enqueue(queue, "t2", "user-1")).not.toThrow();
+		});
+
+		it("takes a searching socket participant out of the pool and closes its channel", () => {
+			const queue = MatchmakingQueue.createForTests(makeDeps());
+			const close = jest.fn();
+			queue.getPool().add(
+				ParticipantMother.create({
+					id: "sock-1",
+					userId: "user-sock",
+					channel: {
+						status: jest.fn(),
+						found: jest.fn(),
+						proposed: jest.fn(),
+						close,
+						isAlive: () => true,
+					},
+				}),
+			);
+
+			expect(queue.removeUser("user-sock")).toBe(true);
+
+			expect(queue.getPool().isQueued("sock-1")).toBe(false);
+			expect(close).toHaveBeenCalledWith("declined");
+		});
+
+		it("keeps a matched poll ticket and reports nothing removed for a user who is not queued", () => {
+			const queue = MatchmakingQueue.createForTests(makeDeps());
+			enqueue(queue, "t1", "user-1");
+			enqueue(queue, "t2", "user-2");
+
+			expect(queue.removeUser("user-1")).toBe(false);
+			expect(queue.removeUser("user-3")).toBe(false);
+
+			expect(queue.poll("t1")).toMatchObject({ state: "matched" });
+		});
+	});
+
+	describe("isUserMatched", () => {
+		it("is true once a poll ticket is matched, false while it searches or when absent", () => {
+			const queue = MatchmakingQueue.createForTests(makeDeps());
+			enqueue(queue, "t1", "user-1");
+			expect(queue.isUserMatched("user-1")).toBe(false);
+
+			enqueue(queue, "t2", "user-2");
+
+			expect(queue.isUserMatched("user-1")).toBe(true);
+			expect(queue.isUserMatched("user-2")).toBe(true);
+			expect(queue.isUserMatched("user-3")).toBe(false);
+		});
+
+		it("is true for a user held in a pending match proposal", () => {
+			const clock = { t: 0 };
+			const queue = MatchmakingQueue.createForTests(makeDeps({ now: () => clock.t }));
+			queue.getPool().add(
+				ParticipantMother.create({
+					id: "sock-1",
+					userId: "user-sock",
+					enqueuedAt: 0,
+					supportsAcceptStep: true,
+				}),
+			);
+			enqueue(queue, "t1", "user-1");
+
+			expect(queue.isUserMatched("user-sock")).toBe(true);
+			expect(queue.isUserMatched("user-1")).toBe(true);
+		});
+	});
+
 	describe("abortRoom", () => {
 		it("releases both users from an aborted matched room so they can queue again", () => {
 			const queue = MatchmakingQueue.createForTests(

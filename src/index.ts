@@ -28,6 +28,8 @@ import { container } from "./shared/dependency-injection";
 import { EventBus } from "./shared/event-bus/EventBus";
 import { RedisTicketRepository } from "./shared/ticket/infrastructure/redis/RedisTicketRepository";
 import WebSocketSingleton from "./web-socket-server/WebSocketSingleton";
+import { bootstrapPresence } from "./bootstrap/bootstrapPresence";
+import { ChallengeRoomBook } from "./shared/challenge/application/ChallengeRoomBook";
 import { bootstrapWindbot } from "./ygopro/windbot/infrastructure/bootstrapWindbot";
 import { JoinStrategyRegistry } from "./ygopro/room/application/join-strategies/JoinStrategyRegistry";
 import { composeJoinStrategies } from "./ygopro/room/application/join-strategies/composeJoinStrategies";
@@ -87,11 +89,17 @@ async function start(): Promise<void> {
 		: undefined;
 	// The YGOPro flow reaches EDOPro rooms through these ports only.
 	useEdoproBanLists(new EdoproBanListsByHash());
+	// Rooms of accepted challenges: presence issues them, the "ch#<code>" join resolves them.
+	const challengeRooms = new ChallengeRoomBook();
 	JoinStrategyRegistry.setStrategies(
-		composeJoinStrategies(windbotModule, {
-			rooms: new EdoproRoomEntry(),
-			speedDuelRooms: new EdoproSpeedDuelRooms(logger),
-		}),
+		composeJoinStrategies(
+			windbotModule,
+			{
+				rooms: new EdoproRoomEntry(),
+				speedDuelRooms: new EdoproSpeedDuelRooms(logger),
+			},
+			challengeRooms,
+		),
 	);
 	if (windbotModule) {
 		logger.info("🤖 Windbot enabled");
@@ -110,6 +118,7 @@ async function start(): Promise<void> {
 
 	await server.initialize();
 	WebSocketSingleton.getInstance();
+	bootstrapPresence(logger, ticketRepository, challengeRooms);
 	hostServer.initialize();
 	wsHostServer.initialize();
 

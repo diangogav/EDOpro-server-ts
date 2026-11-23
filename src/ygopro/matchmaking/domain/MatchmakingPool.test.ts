@@ -550,6 +550,62 @@ describe("MatchmakingPool", () => {
 			expect(logged("matchmaking.proposed")).toEqual([]);
 		});
 
+		it("counts a user as searching while queued or waiting on a pending match, by user id", () => {
+			const { pool } = setup(5_000);
+			pool.add(optedIn("a", 0));
+			expect(pool.isUserSearching("u-a")).toBe(true);
+
+			pool.add(optedIn("b", 1_000));
+			pool.tick();
+
+			expect(pool.isUserSearching("u-a")).toBe(true);
+			expect(pool.isUserSearching("u-b")).toBe(true);
+			expect(pool.isUserSearching("u-c")).toBe(false);
+		});
+
+		it("tells a user held in a pending match apart from one still searching", () => {
+			const { pool } = setup(5_000);
+			pool.add(optedIn("a", 0));
+			expect(pool.isUserProposed("u-a")).toBe(false);
+
+			pool.add(optedIn("b", 1_000));
+			pool.tick();
+
+			expect(pool.isUserProposed("u-a")).toBe(true);
+			expect(pool.isUserProposed("u-b")).toBe(true);
+			expect(pool.isUserProposed("u-c")).toBe(false);
+		});
+
+		it("takes a searching user out of the pool by user id, logging the exit and closing their channel", () => {
+			const { pool, store, logged } = setup(5_000);
+			const aChannel = new RecordingChannel();
+			pool.add(optedIn("a", 1_000, aChannel));
+
+			expect(pool.removeUser("u-a")).toBe(true);
+
+			expect(store.get("a")).toBeUndefined();
+			expect(pool.isUserSearching("u-a")).toBe(false);
+			expect(aChannel.closeCalls).toEqual(["declined"]);
+			expect(logged("matchmaking.exit")).toEqual([
+				expect.objectContaining({ participantId: "a", outcome: "cancelled", waitedMs: 4_000 }),
+			]);
+		});
+
+		it("leaves a pending match and unknown users untouched when removing by user id", () => {
+			const { pool, logged } = setup(5_000);
+			const aChannel = new RecordingChannel();
+			pool.add(optedIn("a", 0, aChannel));
+			pool.add(optedIn("b", 1_000));
+			pool.tick();
+
+			expect(pool.removeUser("u-a")).toBe(false);
+			expect(pool.removeUser("u-c")).toBe(false);
+
+			expect(pool.isUserProposed("u-a")).toBe(true);
+			expect(aChannel.closeCalls).toEqual([]);
+			expect(logged("matchmaking.exit")).toEqual([]);
+		});
+
 		it("holds a human match with an opted-in participant instead of provisioning it", () => {
 			const { pool, store, matchHandler, logged } = setup(5_000);
 			const aChannel = new RecordingChannel();

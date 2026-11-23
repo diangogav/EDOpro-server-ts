@@ -140,4 +140,18 @@ describe("Room", () => {
 			expect(processorsThatOnlyBuffer()).toBe(0);
 		});
 	});
+
+	describe("toRoomListDTO", () => {
+		it("exposes the current duel turn, 0 before any duel", async () => {
+			const room = RoomMother.create();
+			expect(room.toRoomListDTO().turn).toBe(0);
+
+			room.createDuel(null);
+			await new Promise((resolve) => setImmediate(resolve));
+			room.increaseTurn();
+
+			expect(room.toRoomListDTO().turn).toBe(room.turn);
+			expect(room.toRoomListDTO().turn).toBeGreaterThan(0);
+		});
+	});
 });
