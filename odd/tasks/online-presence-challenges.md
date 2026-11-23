@@ -72,7 +72,7 @@ Test runner: server `pnpm test <path>`, `pnpm lint`; client `npx vitest run <fil
 
 - [x] T4 — S20 S21 — `evolution-card-game` (`.wt-card-game-presence`, `feat/online-presence`): online screen layout and rotating top card. Route: delegated (context backstop). Commits: `1fba64a7`, `d05fd970`, `75ef7231`.
 
-- [ ] T5 — S22 — `evolution-card-game` (`.wt-card-game-presence`, `feat/online-presence`): colour pass on the online screen, one-line Top names. Route: delegated (context backstop). Commit: —
+- [x] T5 — S22 — `evolution-card-game` (`.wt-card-game-presence`, `feat/online-presence`): colour pass on the online screen, one-line Top names. Route: delegated (context backstop). Commits: `6f870f31`, `5e869b2e`.
 
 ## Log
 
@@ -108,3 +108,4 @@ Test runner: server `pnpm test <path>`, `pnpm lint`; client `npx vitest run <fil
 - L30 (2026-11-22) — User: "el top podria ir del lado izquierdo donde estaban los filtros no?". S20/S21 updated: Top card in the left column, three columns on desktop; on phones at the top of Partidas. Sent to the T4 writer.
 - L31 (2026-11-22) — T4 by a bounded writer: three columns (Top | rooms | players), phone tabs, "Filtros" button + drawer, rooms grouped waiting → live, larger player cards, rotating Top card (lazy; 5 min refresh; one request per ranking group). Deviations: no turn on live rooms (`/api/rooms` has no turn field); league sections replaced by league order inside each group; default view grid; compact header absorbs the stats drawer. Checks: 496/497 tests over touched areas (the failing `RankedEntry` bell test fails only in this worktree, passes in a fresh one on base and with the changes), lint, boundaries, typecheck, check:svelte, build pass; `check:bundle` total 807/800 KB (shell 114/120). Not seen in a browser.
 - L32 (2026-11-22) — User asked "la lista de salas es una lista o tarjetas?" (answer: cards by default, toggle to list/compact) and "podemos darle mas color a la pantalla sin plerder la paleta ni el aire arcano? y los nombres del top que sean 1 linea". Added S22 and T5.
+- L33 (2026-11-22) — T5 by a bounded writer: `formatAccent()` (format/ban-list name → palette token, tested) plus CSS-only colour on rooms, players (status), Top (tier, one-line names with `title`), challenge controls; only tokens from `src/shared/styles/tokens.css`; accents ≥4.4:1 contrast; pulse off under reduced motion. 500 tests over touched areas, lint, boundaries, typecheck, check:svelte, build pass; bundle total 808/800 KB (+0.8 KB). Not seen in a browser.
