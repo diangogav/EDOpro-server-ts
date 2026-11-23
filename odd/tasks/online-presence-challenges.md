@@ -50,6 +50,10 @@ Test runner: server `pnpm test <path>`, `pnpm lint`; client `npx vitest run <fil
   - Each format shows its top 3 with tier and rating; a top player who is online shows the online dot and can be challenged from the card; "Ver ranking" opens the leaderboard page.
   - Data from the existing public leaderboard API (`features/leaderboard`), fetched once on entry and refreshed every few minutes; no server or API change.
 
+- **S22 — More colour on the online screen.** User: "podemos darle mas color a la pantalla sin plerder la paleta ni el aire arcano? y los nombres del top que sean 1 linea".
+  - More colour using only the existing palette tokens and the arcane look (no new hues): e.g. format accents on room cards and chips, status colours on player cards, tier colours in the Top card, subtle glows/gradients on the column headers and the "Esperando rival" cards. Contrast stays readable in the app's themes.
+  - Names in the Top card stay on one line (ellipsis when long, full name in a tooltip/title).
+
 ## Tasks
 
 - [x] T0 — S10 S11 S18 — `evolution-types` + `evolution-api`: account format preference (storage, `GET`/`PUT` endpoints, validation against the format catalogue), types submodule bumped in both consumers. Route: delegated (parallel unit beside T3). Commits: `fc496b7` (evolution-types, `feat/account-formats`), `cac514a` (evolution-api, `feat/account-formats`, worktree `.wt-api-formats`). Risk: item 1. Pending: push types, bump in EDOpro-server-ts, apply migration before deploy.
@@ -67,6 +71,8 @@ Test runner: server `pnpm test <path>`, `pnpm lint`; client `npx vitest run <fil
 - [x] T3 (T3a non-UI + T3b screens) — S1 S6 S7 S9 S10 S13 S15 S17 S18 S19 — (route: delegated: T3a parallel to T0, T3b after the context backstop; commits in L26 and L27; bundle total pending, see L27) `evolution-card-game`: presence connection from app start, online list with every connected player, their formats, format filters and a challenge button limited to shared formats; format preference in Settings (account for signed-in, browser for guests, explicit choice only) replacing the rival alert's followed formats; incoming challenge notice with accept/decline, join on accept; `en` + `es-419` strings. Route: inline (may run as a parallel delegated unit beside T2 once T1's protocol is fixed). Commit: —
 
 - [x] T4 — S20 S21 — `evolution-card-game` (`.wt-card-game-presence`, `feat/online-presence`): online screen layout and rotating top card. Route: delegated (context backstop). Commits: `1fba64a7`, `d05fd970`, `75ef7231`.
+
+- [ ] T5 — S22 — `evolution-card-game` (`.wt-card-game-presence`, `feat/online-presence`): colour pass on the online screen, one-line Top names. Route: delegated (context backstop). Commit: —
 
 ## Log
 
@@ -101,3 +107,4 @@ Test runner: server `pnpm test <path>`, `pnpm lint`; client `npx vitest run <fil
 - L29 (2026-11-22) — "hagamos un redise;o de la pantalla online..." and "hay manera de meter el top de los rankings?...", both approved with "si, ármalo así". Added S20, S21 and T4.
 - L30 (2026-11-22) — User: "el top podria ir del lado izquierdo donde estaban los filtros no?". S20/S21 updated: Top card in the left column, three columns on desktop; on phones at the top of Partidas. Sent to the T4 writer.
 - L31 (2026-11-22) — T4 by a bounded writer: three columns (Top | rooms | players), phone tabs, "Filtros" button + drawer, rooms grouped waiting → live, larger player cards, rotating Top card (lazy; 5 min refresh; one request per ranking group). Deviations: no turn on live rooms (`/api/rooms` has no turn field); league sections replaced by league order inside each group; default view grid; compact header absorbs the stats drawer. Checks: 496/497 tests over touched areas (the failing `RankedEntry` bell test fails only in this worktree, passes in a fresh one on base and with the changes), lint, boundaries, typecheck, check:svelte, build pass; `check:bundle` total 807/800 KB (shell 114/120). Not seen in a browser.
+- L32 (2026-11-22) — User asked "la lista de salas es una lista o tarjetas?" (answer: cards by default, toggle to list/compact) and "podemos darle mas color a la pantalla sin plerder la paleta ni el aire arcano? y los nombres del top que sean 1 linea". Added S22 and T5.
