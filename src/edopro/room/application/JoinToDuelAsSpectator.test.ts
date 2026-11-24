@@ -22,9 +22,13 @@ describe("JoinToDuelAsSpectator", () => {
 	let mockSpectator: jest.Mocked<Client>;
 	let mockClient1: jest.Mocked<Client>;
 	let mockClient2: jest.Mocked<Client>;
+	let accountVerifier: { verify: jest.Mock };
+	let verification: Promise<boolean>;
 
 	beforeEach(() => {
-		handler = new JoinToDuelAsSpectator();
+		verification = Promise.resolve(true);
+		accountVerifier = { verify: jest.fn().mockReturnValue(verification) };
+		handler = new JoinToDuelAsSpectator(accountVerifier);
 
 		mockSocket = {
 			send: jest.fn(),
@@ -33,6 +37,7 @@ describe("JoinToDuelAsSpectator", () => {
 		mockSpectator = {
 			name: "Spectator\0",
 			sendMessage: jest.fn(),
+			setAccountVerification: jest.fn(),
 		} as unknown as jest.Mocked<Client>;
 
 		mockClient1 = {
@@ -56,6 +61,30 @@ describe("JoinToDuelAsSpectator", () => {
 			spectators: [mockSpectator],
 			score: "Score · Player1 1 – 0 Player2",
 		} as unknown as jest.Mocked<Room>;
+	});
+
+	it("gives the spectator the verification of its PIN or its socket's account", async () => {
+		Object.assign(mockSocket, { resolvedUserId: "acc-5" });
+		const playerInfoMessage = { name: "Spectator", password: "1234" } as PlayerInfoMessage;
+
+		await handler.run({} as JoinGameMessage, playerInfoMessage, mockSocket, mockRoom);
+
+		expect(accountVerifier.verify).toHaveBeenCalledWith({
+			userId: "acc-5",
+			playerInfo: playerInfoMessage,
+		});
+		expect(mockSpectator.setAccountVerification).toHaveBeenCalledWith(verification);
+	});
+
+	it("starts the verification without an account for a socket that carries none", async () => {
+		const playerInfoMessage = { name: "Spectator", password: null } as PlayerInfoMessage;
+
+		await handler.run({} as JoinGameMessage, playerInfoMessage, mockSocket, mockRoom);
+
+		expect(accountVerifier.verify).toHaveBeenCalledWith({
+			userId: null,
+			playerInfo: playerInfoMessage,
+		});
 	});
 
 	it("should handle spectator join correctly", async () => {

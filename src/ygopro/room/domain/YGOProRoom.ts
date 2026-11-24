@@ -17,6 +17,7 @@ import { MatchAbandonClientMessage } from "@shared/messages/server-to-client/Mat
 import { RoomType } from "@shared/room/domain/RoomType";
 import { MessageRepository } from "@ygopro/room/domain/messages/MessageRepository";
 import { ISocket } from "@shared/socket/domain/ISocket";
+import { YgoClient } from "@shared/client/domain/YgoClient";
 import { CardRepository } from "@shared/card/domain/CardRepository";
 import { Deck } from "@shared/deck/domain/Deck";
 import { ReservedDuelSession } from "@shared/reserved-duel/domain/ReservedDuelSession";
@@ -507,6 +508,22 @@ export class YGOProRoom extends YgoRoom {
 		return client;
 	}
 
+	/**
+	 * Starts looking up whether the client's account is verified and leaves the
+	 * pending answer on the client, without waiting for it: admission must not
+	 * hold the room on the database. A guest credential passes neither a userId
+	 * nor a PIN, since resolving it already tried the PIN and failed.
+	 */
+	public startAccountVerification(
+		client: YgoClient,
+		userId: string | null,
+		playerInfo: PlayerInfoMessage | null,
+	): void {
+		client.setAccountVerification(
+			this.deps.accountVerifier.verify({ userId, playerInfo }).catch(() => false),
+		);
+	}
+
 	public canAcceptInvitation(): boolean {
 		return (
 			this.password === "" &&
@@ -568,6 +585,7 @@ export class YGOProRoom extends YgoRoom {
 				const userId = credential.kind === "guest" ? null : credential.userId;
 				const player = this.buildPlayer(socket, playerInfo.name, userId, seat.position, seat.team);
 				player.setCredential(credential);
+				this.startAccountVerification(player, userId, null);
 				this.addPlayerUnsafe(player);
 			},
 			admitSpectator: async (credential: PlayerCredential) => {
@@ -578,6 +596,11 @@ export class YGOProRoom extends YgoRoom {
 				}
 				const spectator = this.createSpectatorUnsafe(socket, playerInfo.name);
 				spectator.setCredential(credential);
+				this.startAccountVerification(
+					spectator,
+					credential.kind === "guest" ? null : credential.userId,
+					null,
+				);
 				this.addSpectatorUnsafe(spectator);
 			},
 			rejectAdmission: () => {

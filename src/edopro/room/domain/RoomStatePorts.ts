@@ -2,6 +2,7 @@ import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoM
 import { Deck } from "@shared/deck/domain/Deck";
 import { DeckRules } from "@shared/room/domain/YgoRoom";
 import { ISocket } from "@shared/socket/domain/ISocket";
+import { AccountVerifier } from "@shared/user-profile/domain/AccountVerifier";
 import { UserProfile } from "@shared/user-profile/domain/UserProfile";
 
 import { Client } from "../../client/domain/Client";
@@ -78,4 +79,6 @@ export interface EdoproRoomDeps {
 	createSpectatorJoiner(): SpectatorJoiner;
 	createPlayerAuthenticator(): PlayerAuthenticator;
 	createDeckBuilder(deckRules: DeckRules, duelFlag: bigint): DeckBuilder;
+	/** Tells whether an admitted client's account is verified (VerifyAccount). */
+	accountVerifier: AccountVerifier;
 }

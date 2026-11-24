@@ -558,6 +558,7 @@ export class Room extends YgoRoom {
 			this.logger,
 			this.deps.createPlayerAuthenticator(),
 			this.deps.createDeckBuilder(this.deckRules, this.duelFlag),
+			this.deps.accountVerifier,
 		);
 	}
 

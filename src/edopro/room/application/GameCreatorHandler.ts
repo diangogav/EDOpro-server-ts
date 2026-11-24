@@ -1,5 +1,6 @@
 import { AuthenticatePlayer } from "@edopro/room/application/AuthenticatePlayer";
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
+import { VerifyAccount } from "@shared/user-profile/application/VerifyAccount";
 import { EventEmitter } from "stream";
 
 import { config } from "../../../config";
@@ -25,6 +26,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 	private readonly logger: Logger;
 	private readonly socket: ISocket;
 	private readonly userAuth: UserAuth;
+	private readonly verifyAccount: VerifyAccount;
 	private isCreating = false;
 
 	constructor(eventEmitter: EventEmitter, logger: Logger, socket: ISocket, userAuth: UserAuth) {
@@ -32,6 +34,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 		this.logger = logger.child({ file: "GameCreatorHandler" });
 		this.socket = socket;
 		this.userAuth = userAuth;
+		this.verifyAccount = new VerifyAccount(userAuth, config.verifiedAccount.cutoff, this.logger);
 		this.eventEmitter.on(Commands.CREATE_GAME as unknown as string, (message: ClientMessage) => {
 			void this.handleCreateGame(message);
 		});
@@ -96,6 +99,13 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 
 		const host = await room.createPlayer(this.socket, playerInfoMessage.name, userId);
 		if (host?.host) {
+			// Not awaited: the room opens at once and the answer arrives later.
+			host.setAccountVerification(
+				this.verifyAccount.verify({
+					userId: userId ?? this.socket.resolvedUserId ?? null,
+					playerInfo: playerInfoMessage,
+				}),
+			);
 			host.sendMessage(CreateGameClientMessage.create(room));
 			host.sendMessage(JoinGameClientMessage.createFromCreateGameMessage(message));
 			room.addPlayer(host);

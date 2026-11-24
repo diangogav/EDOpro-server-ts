@@ -22,6 +22,7 @@ jest.mock("@ygopro/room/application/createYGOProRoomDeps", () => {
 			createCredentialResolver: () => resolver,
 			abandonment: { resolve: async () => undefined },
 			finalizer: FinalizeYGOProRoom,
+			accountVerifier: { verify: async () => false },
 		}),
 	};
 });

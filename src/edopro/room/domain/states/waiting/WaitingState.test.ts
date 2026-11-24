@@ -30,6 +30,8 @@ describe("WaitingState", () => {
 	let mockRoom: jest.Mocked<Room>;
 	let mockClient: jest.Mocked<Client>;
 	let mockSocket: jest.Mocked<ISocket>;
+	let accountVerifier: { verify: jest.Mock };
+	let verification: Promise<boolean>;
 
 	beforeEach(() => {
 		mockEmitter = new EventEmitter();
@@ -99,7 +101,15 @@ describe("WaitingState", () => {
 			clearReadyCommand: jest.fn(),
 		});
 
-		state = new WaitingState(mockEmitter, mockLogger, mockAuthenticatePlayer, mockDeckCreator);
+		verification = Promise.resolve(true);
+		accountVerifier = { verify: jest.fn().mockReturnValue(verification) };
+		state = new WaitingState(
+			mockEmitter,
+			mockLogger,
+			mockAuthenticatePlayer,
+			mockDeckCreator,
+			accountVerifier,
+		);
 	});
 
 	it("should handle KICK command", () => {
@@ -329,6 +339,73 @@ describe("WaitingState", () => {
 
 		expect(mockRoom.createSpectatorUnsafe).toHaveBeenCalled();
 		expect(mockRoom.addSpectatorUnsafe).toHaveBeenCalledWith(mockClient);
+	});
+
+	describe("account verification", () => {
+		const joinMessage = (): ClientMessage =>
+			({
+				data: Buffer.alloc(50),
+				previousMessage: Buffer.from(
+					"4a006100640065006e003a0031003200330034000000000000000000000000000000000000000000",
+					"hex",
+				),
+			}) as ClientMessage;
+
+		it("starts the seated player's verification with the join's PIN", async () => {
+			mockRoom.calculatePlaceUnsafe = jest.fn().mockReturnValue({ position: 0, team: 0 });
+			mockRoom.createPlayerUnsafe = jest.fn().mockReturnValue(mockClient);
+
+			mockEmitter.emit("JOIN", joinMessage(), mockRoom, mockSocket);
+			await new Promise(process.nextTick);
+
+			expect(accountVerifier.verify).toHaveBeenCalledWith({
+				userId: null,
+				playerInfo: expect.objectContaining({ name: "Jaden", password: "1234" }),
+			});
+			expect(mockClient.setAccountVerification).toHaveBeenCalledWith(verification);
+		});
+
+		it("keeps a casual player's id null whatever the verification finds", async () => {
+			mockRoom.calculatePlaceUnsafe = jest.fn().mockReturnValue({ position: 0, team: 0 });
+			mockRoom.createPlayerUnsafe = jest.fn().mockReturnValue(mockClient);
+
+			mockEmitter.emit("JOIN", joinMessage(), mockRoom, mockSocket);
+			await new Promise(process.nextTick);
+
+			expect(mockRoom.createPlayerUnsafe).toHaveBeenCalledWith(mockSocket, "Jaden", null);
+			expect(mockSocket.send).not.toHaveBeenCalledWith(
+				ErrorClientMessage.create(ErrorMessages.JOIN_ERROR),
+			);
+		});
+
+		it("starts the spectator's verification with the account of a bridged socket", async () => {
+			Object.assign(mockSocket, { resolvedUserId: "acc-7" });
+			mockRoom.calculatePlaceUnsafe = jest.fn().mockReturnValue(null);
+			mockRoom.createSpectatorUnsafe = jest.fn().mockReturnValue(mockClient);
+
+			mockEmitter.emit("JOIN", joinMessage(), mockRoom, mockSocket);
+			await new Promise(process.nextTick);
+
+			expect(accountVerifier.verify).toHaveBeenCalledWith({
+				userId: "acc-7",
+				playerInfo: expect.objectContaining({ name: "Jaden" }),
+			});
+			expect(mockClient.setAccountVerification).toHaveBeenCalledWith(verification);
+		});
+
+		it("uses the account a ranked join authenticated", async () => {
+			Object.assign(mockRoom, { ranked: true });
+			mockAuthenticatePlayer.run = jest.fn().mockResolvedValue({ id: "user-1" });
+			mockRoom.calculatePlaceUnsafe = jest.fn().mockReturnValue({ position: 0, team: 0 });
+			mockRoom.createPlayerUnsafe = jest.fn().mockReturnValue(mockClient);
+
+			mockEmitter.emit("JOIN", joinMessage(), mockRoom, mockSocket);
+			await new Promise(process.nextTick);
+
+			expect(accountVerifier.verify).toHaveBeenCalledWith(
+				expect.objectContaining({ userId: "user-1" }),
+			);
+		});
 	});
 
 	describe("room authority", () => {

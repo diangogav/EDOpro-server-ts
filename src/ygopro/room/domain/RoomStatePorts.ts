@@ -8,6 +8,7 @@ import { Admission } from "@shared/room/admission/domain/Admission";
 import { PlayerCredential } from "@shared/room/admission/domain/PlayerCredential";
 import { DeckRules } from "@shared/room/domain/YgoRoom";
 import { ISocket } from "@shared/socket/domain/ISocket";
+import { AccountVerifier } from "@shared/user-profile/domain/AccountVerifier";
 
 import { AdmissionTarget } from "../admission/domain/AdmissionTarget";
 import { YGOProRoom } from "./YGOProRoom";
@@ -59,4 +60,6 @@ export interface YGOProRoomDeps {
 	createCredentialResolver(logger: Logger): JoinerCredentialResolver;
 	abandonment: MatchAbandonment;
 	finalizer: RoomFinalizer;
+	/** Tells whether an admitted client's account is verified (VerifyAccount). */
+	accountVerifier: AccountVerifier;
 }

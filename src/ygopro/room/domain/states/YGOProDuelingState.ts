@@ -289,7 +289,7 @@ export class YGOProDuelingState extends YGOProRoomState {
 					// this exclusive section still surfaces to the global handler
 					// (the process survives it and the mutex releases).
 					this.logger.error(`resolveJoinerIdentity failed: ${String(error)}`);
-					this.admitAsSpectator(room, socket, playerInfoMessage.name);
+					this.admitAsSpectator(room, socket, playerInfoMessage);
 					return;
 				}
 			}
@@ -305,7 +305,7 @@ export class YGOProDuelingState extends YGOProRoomState {
 			});
 
 			if (!(playerAlreadyInRoom instanceof YGOProClient)) {
-				this.admitAsSpectator(room, socket, playerInfoMessage.name);
+				this.admitAsSpectator(room, socket, playerInfoMessage);
 				return;
 			}
 
@@ -322,8 +322,13 @@ export class YGOProDuelingState extends YGOProRoomState {
 		});
 	}
 
-	private admitAsSpectator(room: YGOProRoom, socket: ISocket, name: string): void {
-		const spectator = room.createSpectatorUnsafe(socket, name);
+	private admitAsSpectator(
+		room: YGOProRoom,
+		socket: ISocket,
+		playerInfoMessage: PlayerInfoMessage,
+	): void {
+		const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name);
+		room.startAccountVerification(spectator, socket.resolvedUserId ?? null, playerInfoMessage);
 		room.addSpectatorUnsafe(spectator);
 		spectator.sendMessageToClient(Buffer.from(new YGOProStocDuelStart().toFullPayload()));
 		room.sendPreviousDuelsHistoricalMessages(spectator);
