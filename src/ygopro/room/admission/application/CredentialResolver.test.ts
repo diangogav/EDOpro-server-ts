@@ -5,6 +5,8 @@ import { UserProfile } from "@shared/user-profile/domain/UserProfile";
 import { UserProfileRepository } from "@shared/user-profile/domain/UserProfileRepository";
 import { ServerErrorMessage } from "@shared/user-auth/domain/ServerErrorMessage";
 
+import { UserProfileMother } from "@test-support/mothers/user-profile/UserProfileMother";
+
 import { CredentialResolver } from "./CredentialResolver";
 
 const profile = (id: string): UserProfile =>
@@ -29,7 +31,7 @@ describe("CredentialResolver", () => {
 			isBanned: jest.fn(),
 		};
 		userAuth = { run: jest.fn() } as unknown as jest.Mocked<UserAuth>;
-		resolver = new CredentialResolver(repo, userAuth);
+		resolver = new CredentialResolver(repo, userAuth, undefined, null);
 	});
 
 	describe("ticket (handshake) → verified", () => {
@@ -84,6 +86,70 @@ describe("CredentialResolver", () => {
 
 			expect(credential).toEqual({ kind: "guest", name: "Player" });
 			expect(userAuth.run).not.toHaveBeenCalled();
+		});
+	});
+
+	describe("resolveForAdmission carries whether the account is verified", () => {
+		const cutoff = new Date("2026-12-01T00:00:00Z");
+		const confirmed = (id: string): UserProfile =>
+			UserProfileMother.create({ id, emailVerifiedAt: new Date("2026-12-05T00:00:00Z") });
+		const unconfirmed = (id: string): UserProfile =>
+			UserProfileMother.create({
+				id,
+				emailVerifiedAt: null,
+				discordId: null,
+				createdAt: new Date("2026-12-05T00:00:00Z"),
+			});
+
+		beforeEach(() => {
+			resolver = new CredentialResolver(repo, userAuth, undefined, cutoff);
+		});
+
+		it("reports a ticket account with a confirmed email as verified", async () => {
+			repo.findById.mockResolvedValue(confirmed("u-1"));
+			repo.isBanned.mockResolvedValue(false);
+
+			const resolved = await resolver.resolveForAdmission(socketWith("u-1"), playerInfo("P", null));
+
+			expect(resolved).toEqual({
+				credential: { kind: "verified", userId: "u-1" },
+				accountVerified: true,
+			});
+		});
+
+		it("reports a ticket account without email or Discord as unverified", async () => {
+			repo.findById.mockResolvedValue(unconfirmed("u-1"));
+			repo.isBanned.mockResolvedValue(false);
+
+			const resolved = await resolver.resolveForAdmission(socketWith("u-1"), playerInfo("P", null));
+
+			expect(resolved).toEqual({
+				credential: { kind: "verified", userId: "u-1" },
+				accountVerified: false,
+			});
+		});
+
+		it("reports a PIN account by its own verification", async () => {
+			userAuth.run.mockResolvedValue(confirmed("u-2"));
+
+			const resolved = await resolver.resolveForAdmission(
+				socketWith(null),
+				playerInfo("P", "1234"),
+			);
+
+			expect(resolved).toEqual({
+				credential: { kind: "external", userId: "u-2" },
+				accountVerified: true,
+			});
+		});
+
+		it("reports a guest as unverified", async () => {
+			const resolved = await resolver.resolveForAdmission(socketWith(null), playerInfo("P", null));
+
+			expect(resolved).toEqual({
+				credential: { kind: "guest", name: "P" },
+				accountVerified: false,
+			});
 		});
 	});
 });

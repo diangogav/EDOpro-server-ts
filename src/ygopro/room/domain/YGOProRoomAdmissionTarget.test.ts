@@ -130,6 +130,39 @@ describe("YGOProRoom.admissionTarget", () => {
 	});
 });
 
+describe("YGOProRoom.admissionTarget rejection of an unverified account", () => {
+	const copy =
+		"Verify your email to play ranked: log in at evolutionygo.com and confirm it from your profile.";
+	const chatWith = (msg: string): Buffer =>
+		Buffer.from(
+			new YGOProStocChat().fromPartial({ player_type: ChatColor.RED, msg }).toFullPayload(),
+		);
+
+	it("tells the player to verify the email before the join error", () => {
+		const room = YGOProRoomMother.create();
+		const socket = makeSocket();
+		const target = room.admissionTarget(socket, playerInfo("P"));
+
+		target.rejectAdmission("ranked-requires-verified-account");
+
+		expect(socket.send).toHaveBeenCalledTimes(2);
+		expect(socket.send).toHaveBeenNthCalledWith(1, chatWith(copy));
+		expect(socket.close).toHaveBeenCalled();
+	});
+
+	it("does not blame the PIN of an account that authenticated with it", () => {
+		const room = YGOProRoomMother.create();
+		const socket = makeSocket();
+		const target = room.admissionTarget(socket, playerInfo("P", "1313"));
+
+		target.rejectAdmission("ranked-requires-verified-account");
+
+		expect(socket.send).toHaveBeenCalledTimes(2);
+		expect(socket.send).toHaveBeenNthCalledWith(1, chatWith(copy));
+		expect(socket.send).not.toHaveBeenCalledWith(chatWith("Invalid username or password."));
+	});
+});
+
 describe("YGOProRoom.admissionTarget account verification", () => {
 	const verifierResolving = (value: boolean) => ({ verify: jest.fn().mockResolvedValue(value) });
 

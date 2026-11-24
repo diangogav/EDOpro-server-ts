@@ -7,6 +7,16 @@ import { UserProfile } from "@shared/user-profile/domain/UserProfile";
 import { UserProfileRepository } from "@shared/user-profile/domain/UserProfileRepository";
 
 /**
+ * A credential plus whether its account counts as verified. Resolved together
+ * because the profile is already loaded here, so admission can decide
+ * synchronously without a second lookup.
+ */
+export interface ResolvedCredential {
+	readonly credential: PlayerCredential;
+	readonly accountVerified: boolean;
+}
+
+/**
  * Turns "how the client connected" into a single PlayerCredential, in ONE pass.
  *
  * This is what kills the historical double-auth: identity is resolved here once
@@ -25,22 +35,30 @@ export class CredentialResolver {
 	constructor(
 		private readonly userProfileRepository: UserProfileRepository,
 		private readonly userAuth: UserAuth,
-		private readonly logger?: Logger,
+		private readonly logger: Logger | undefined,
+		private readonly cutoff: Date | null,
 	) {}
 
 	async resolve(socket: ISocket, playerInfo: PlayerInfoMessage): Promise<PlayerCredential> {
+		return (await this.resolveForAdmission(socket, playerInfo)).credential;
+	}
+
+	async resolveForAdmission(
+		socket: ISocket,
+		playerInfo: PlayerInfoMessage,
+	): Promise<ResolvedCredential> {
 		if (socket.resolvedUserId) {
 			const profile = await this.userProfileRepository.findById(socket.resolvedUserId);
 			if (profile && !(await this.userProfileRepository.isBanned(profile.id))) {
 				this.logger?.debug(
 					`admission/credential: resolved=verified name="${playerInfo.name}" userId=${profile.id}`,
 				);
-				return { kind: "verified", userId: profile.id };
+				return this.account({ kind: "verified", userId: profile.id }, profile);
 			}
 			this.logger?.debug(
 				`admission/credential: ticket present but invalid/banned, degrading to guest name="${playerInfo.name}"`,
 			);
-			return { kind: "guest", name: playerInfo.name };
+			return this.guest(playerInfo);
 		}
 
 		if (playerInfo.password) {
@@ -49,7 +67,7 @@ export class CredentialResolver {
 				this.logger?.debug(
 					`admission/credential: resolved=external name="${playerInfo.name}" userId=${user.id}`,
 				);
-				return { kind: "external", userId: user.id };
+				return this.account({ kind: "external", userId: user.id }, user);
 			}
 			// PIN was present but UserAuth did NOT return a profile (user-not-found,
 			// banned, or invalid PIN). Identity degrades to guest — which a ranked
@@ -57,12 +75,20 @@ export class CredentialResolver {
 			this.logger?.debug(
 				`admission/credential: PIN present but auth FAILED → degrading to guest name="${playerInfo.name}"`,
 			);
-			return { kind: "guest", name: playerInfo.name };
+			return this.guest(playerInfo);
 		}
 
 		this.logger?.debug(
 			`admission/credential: resolved=guest (no ticket, no PIN) name="${playerInfo.name}"`,
 		);
-		return { kind: "guest", name: playerInfo.name };
+		return this.guest(playerInfo);
+	}
+
+	private account(credential: PlayerCredential, profile: UserProfile): ResolvedCredential {
+		return { credential, accountVerified: profile.isVerified(this.cutoff) };
+	}
+
+	private guest(playerInfo: PlayerInfoMessage): ResolvedCredential {
+		return { credential: { kind: "guest", name: playerInfo.name }, accountVerified: false };
 	}
 }

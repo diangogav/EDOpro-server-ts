@@ -2,6 +2,7 @@ import { Redis } from "@shared/db/redis/infrastructure/Redis";
 import { Logger } from "@shared/logger/domain/Logger";
 import { isRateLimited } from "@shared/rate-limit/application/isRateLimited";
 import { TicketRepository } from "@shared/ticket/domain/TicketRepository";
+import { AccountVerifier } from "@shared/user-profile/domain/AccountVerifier";
 
 import { config } from "../../../config";
 import { BanChecker } from "../domain/BanChecker";
@@ -31,6 +32,8 @@ export class AuthenticateMatchmakingSession {
 		private readonly bans: BanChecker,
 		private readonly displayNames: DisplayNameResolver,
 		private readonly logger: Logger,
+		private readonly accountVerifier: AccountVerifier,
+		private readonly verifiedAccountRequired: boolean,
 	) {}
 
 	public async execute(input: AuthenticateMatchmakingSessionInput): Promise<void> {
@@ -69,9 +72,12 @@ export class AuthenticateMatchmakingSession {
 			return;
 		}
 
-		const displayName = await this.resolveDisplayName(userId);
+		const [displayName, accountVerified] = await Promise.all([
+			this.resolveDisplayName(userId),
+			this.isAccountVerified(userId),
+		]);
 
-		session.authenticate(userId, displayName);
+		session.authenticate(userId, displayName, accountVerified);
 		channel.status({ state: "authenticated", waitedMs: 0 });
 	}
 
@@ -98,6 +104,19 @@ export class AuthenticateMatchmakingSession {
 		} catch {
 			return false;
 		}
+	}
+
+	/**
+	 * Looked up only while ranked play requires a verified account, so the
+	 * queue does no extra database read with the switch off. The verifier
+	 * resolves false on any failure, which ENTER then refuses.
+	 */
+	private async isAccountVerified(userId: string): Promise<boolean> {
+		if (!this.verifiedAccountRequired) {
+			return false;
+		}
+
+		return this.accountVerifier.verify({ userId, playerInfo: null });
 	}
 
 	/** Preserves the invariant that a failing lookup never blocks AUTH (D23). */

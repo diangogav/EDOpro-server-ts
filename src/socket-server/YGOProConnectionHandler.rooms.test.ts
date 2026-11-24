@@ -11,6 +11,10 @@ jest.mock("@ygopro/room/application/createYGOProRoomDeps", () => {
 			kind: "guest",
 			name: playerInfo.name,
 		}),
+		resolveForAdmission: async (_socket: unknown, playerInfo: { name: string }) => ({
+			credential: { kind: "guest", name: playerInfo.name },
+			accountVerified: false,
+		}),
 	};
 
 	return {
@@ -18,7 +22,7 @@ jest.mock("@ygopro/room/application/createYGOProRoomDeps", () => {
 			createCardRepository: () => ({}),
 			createDeckBuilder: () => ({ build: async () => ({}) }),
 			createPlayerAdmission: (logger: unknown) =>
-				new AdmitToRoom(resolver, new RoomAdmission(), logger),
+				new AdmitToRoom(resolver, new RoomAdmission(), logger, false),
 			createCredentialResolver: () => resolver,
 			abandonment: { resolve: async () => undefined },
 			finalizer: FinalizeYGOProRoom,

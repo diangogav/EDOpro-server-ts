@@ -174,3 +174,96 @@ describe("GameCreatorHandler — host account verification", () => {
 		expect(room.addPlayer).toHaveBeenCalledWith(host);
 	});
 });
+
+describe("GameCreatorHandler — ranked rooms with the verified-account switch", () => {
+	const originalRankingEnabled = config.ranking.enabled;
+	const originalRequired = config.verifiedAccount.rankedRequired;
+	const copy =
+		"Verify your email to play ranked: log in at evolutionygo.com and confirm it from your profile.";
+	// "Jaden:1234" in UTF-16LE, padded to the 40-byte player info frame.
+	const playerInfoWithPin = Buffer.from(
+		"4a006100640065006e003a0031003200330034000000000000000000000000000000000000000000",
+		"hex",
+	);
+	const unverified = UserProfileMother.create({
+		id: "user-1",
+		emailVerifiedAt: null,
+		discordId: null,
+		createdAt: new Date("2026-12-05T00:00:00Z"),
+	});
+	const verifiedProfile = UserProfileMother.create({
+		id: "user-2",
+		emailVerifiedAt: new Date("2026-12-05T00:00:00Z"),
+	});
+
+	beforeEach(() => {
+		config.ranking.enabled = true;
+		config.verifiedAccount.rankedRequired = true;
+	});
+
+	afterEach(() => {
+		config.ranking.enabled = originalRankingEnabled;
+		config.verifiedAccount.rankedRequired = originalRequired;
+		jest.restoreAllMocks();
+	});
+
+	const createRankedRoom = async (profile: unknown) => {
+		const host = { host: true, sendMessage: jest.fn(), setAccountVerification: jest.fn() };
+		const room = {
+			ranked: true,
+			waiting: jest.fn(),
+			createPlayer: jest.fn().mockResolvedValue(host),
+			addPlayer: jest.fn(),
+		};
+		const createRoom = jest
+			.spyOn(Room, "createFromCreateGameMessage")
+			.mockReturnValue(room as unknown as Room);
+		const addRoom = jest.spyOn(RoomList, "addRoom").mockImplementation(() => undefined);
+		const userAuth = {
+			run: jest.fn().mockResolvedValue(profile),
+			runForVerifiedUser: jest.fn(),
+		} as unknown as UserAuth;
+		const socket = makeSocket();
+		const handler = new GameCreatorHandler(new EventEmitter(), makeLogger(), socket, userAuth);
+
+		await handler.handleCreateGame({
+			data: Buffer.alloc(80),
+			previousMessage: playerInfoWithPin,
+		} as unknown as ClientMessage);
+
+		return { createRoom, addRoom, room, socket };
+	};
+
+	it("refuses an unverified host the ranked room with the copy", async () => {
+		const { createRoom, socket } = await createRankedRoom(unverified);
+
+		expect(socket.send).toHaveBeenNthCalledWith(1, expectedFrame(ChatColor.RED, copy));
+		expect(socket.send).toHaveBeenCalledTimes(2);
+		expect(createRoom).not.toHaveBeenCalled();
+	});
+
+	it("opens the ranked room for a verified host", async () => {
+		const { addRoom, room, socket } = await createRankedRoom(verifiedProfile);
+
+		expect(room.createPlayer).toHaveBeenCalledWith(socket, "Jaden", "user-2");
+		expect(addRoom).toHaveBeenCalled();
+		expect(socket.send).not.toHaveBeenCalledWith(expectedFrame(ChatColor.RED, copy));
+	});
+
+	it("opens the ranked room for an unverified host when the switch is off", async () => {
+		config.verifiedAccount.rankedRequired = false;
+
+		const { addRoom } = await createRankedRoom(unverified);
+
+		expect(addRoom).toHaveBeenCalled();
+	});
+
+	it("opens a casual room for an unverified player", async () => {
+		config.ranking.enabled = false;
+
+		const { addRoom, socket } = await createRankedRoom(unverified);
+
+		expect(addRoom).toHaveBeenCalled();
+		expect(socket.send).not.toHaveBeenCalledWith(expectedFrame(ChatColor.RED, copy));
+	});
+});

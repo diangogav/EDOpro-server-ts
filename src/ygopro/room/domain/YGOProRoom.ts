@@ -7,10 +7,12 @@ import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoM
 import { RoomState } from "@shared/room/domain/RoomState";
 
 import { Team } from "@shared/room/Team";
+import { AdmissionRejection } from "@shared/room/admission/domain/Admission";
 import { RoomLeague } from "@shared/room/admission/domain/RoomLeague";
 import { Seat } from "@shared/room/admission/domain/Seat";
 import { PlayerCredential } from "@shared/room/admission/domain/PlayerCredential";
 import { AdmissionTarget } from "@ygopro/room/admission/domain/AdmissionTarget";
+import { RANKED_REQUIRES_VERIFIED_ACCOUNT_MESSAGE } from "@shared/user-profile/domain/VerifiedAccount";
 import { Logger } from "@shared/logger/domain/Logger";
 import { DeckRules, DuelState, YgoRoom } from "@shared/room/domain/YgoRoom";
 import { MatchAbandonClientMessage } from "@shared/messages/server-to-client/MatchAbandonClientMessage";
@@ -603,16 +605,21 @@ export class YGOProRoom extends YgoRoom {
 				);
 				this.addSpectatorUnsafe(spectator);
 			},
-			rejectAdmission: () => {
-				// A client that supplied a PIN but was still turned away authenticated
-				// as a guest — its PIN did not resolve to a valid account (wrong PIN,
-				// unknown user, or banned). Tell the player WHY before the generic join
-				// error, so a mistyped password isn't an opaque failure. Text is sent as
-				// a STOC_CHAT (the ygopro path's mechanism, matching the duel/side states).
-				if (playerInfo.password) {
+			rejectAdmission: (reason: AdmissionRejection) => {
+				// Tell the player WHY before the generic join error, as a STOC_CHAT (the
+				// ygopro path's mechanism, matching the duel/side states). A client that
+				// supplied a PIN but was still turned away as a guest has a PIN that did
+				// not resolve to a valid account (wrong PIN, unknown user, or banned).
+				const explanation =
+					reason === "ranked-requires-verified-account"
+						? RANKED_REQUIRES_VERIFIED_ACCOUNT_MESSAGE
+						: playerInfo.password
+							? "Invalid username or password."
+							: null;
+				if (explanation) {
 					const chat = new YGOProStocChat().fromPartial({
 						player_type: ChatColor.RED,
-						msg: "Invalid username or password.",
+						msg: explanation,
 					});
 					socket.send(Buffer.from(chat.toFullPayload()));
 				}

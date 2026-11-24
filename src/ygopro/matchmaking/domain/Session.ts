@@ -19,17 +19,23 @@ export class Session {
 
 	private authenticated = false;
 	private resolvedDisplayName: string | null = null;
+	private accountVerified = false;
 	private capturedPlayerInfoBody: Buffer | null = null;
 
 	constructor(private readonly socket: ISocket) {}
 
-	public authenticate(userId: string, displayName: string | null = null): void {
+	public authenticate(
+		userId: string,
+		displayName: string | null = null,
+		accountVerified = false,
+	): void {
 		if (this.authenticated) {
 			throw new AlreadyAuthenticatedError();
 		}
 
 		this.socket.resolvedUserId = userId;
 		this.resolvedDisplayName = displayName;
+		this.accountVerified = accountVerified;
 		this.authenticated = true;
 	}
 
@@ -47,6 +53,11 @@ export class Session {
 
 	public get isAuthenticated(): boolean {
 		return this.authenticated;
+	}
+
+	/** Whether authentication found the account verified; false when it was not looked up. */
+	public get isAccountVerified(): boolean {
+		return this.accountVerified;
 	}
 
 	public get displayName(): string | null {

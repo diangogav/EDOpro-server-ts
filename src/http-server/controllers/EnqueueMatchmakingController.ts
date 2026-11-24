@@ -5,6 +5,8 @@ import { z } from "zod";
 
 import { Logger } from "@shared/logger/domain/Logger";
 import { TicketRepository } from "@shared/ticket/domain/TicketRepository";
+import { AccountVerifier } from "@shared/user-profile/domain/AccountVerifier";
+import { RANKED_REQUIRES_VERIFIED_ACCOUNT_MESSAGE } from "@shared/user-profile/domain/VerifiedAccount";
 
 import { BanChecker } from "@ygopro/matchmaking/domain/BanChecker";
 import { DisplayNameResolver } from "@ygopro/matchmaking/domain/DisplayNameResolver";
@@ -35,6 +37,8 @@ export class EnqueueMatchmakingController {
 		private readonly tickets: TicketRepository,
 		private readonly displayNames: DisplayNameResolver,
 		private readonly bans: BanChecker,
+		private readonly accountVerifier: AccountVerifier,
+		private readonly verifiedAccountRequired: boolean,
 	) {}
 
 	async run(req: Request, res: Response): Promise<void> {
@@ -63,6 +67,16 @@ export class EnqueueMatchmakingController {
 		}
 		if (banned) {
 			res.status(403).json({ success: false, error: "Banned" });
+			return;
+		}
+
+		// Same gate as the socket ENTER path. The verifier resolves false on any
+		// failure, so a lookup outage refuses rather than lets an account through.
+		if (
+			this.verifiedAccountRequired &&
+			!(await this.accountVerifier.verify({ userId, playerInfo: null }))
+		) {
+			res.status(403).json({ success: false, error: RANKED_REQUIRES_VERIFIED_ACCOUNT_MESSAGE });
 			return;
 		}
 

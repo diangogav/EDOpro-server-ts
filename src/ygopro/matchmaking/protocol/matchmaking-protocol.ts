@@ -108,6 +108,7 @@ export const REASON_TO_CODE: Readonly<Record<WireReason, number>> = Object.freez
 	unknown_match: 15,
 	declined: 16,
 	accept_timeout: 17,
+	unverified_account: 18,
 });
 
 export const OPPONENT_TYPE_TO_CODE: Readonly<Record<OpponentType, number>> = Object.freeze({

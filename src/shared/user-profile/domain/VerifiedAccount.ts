@@ -21,3 +21,23 @@ export function isVerifiedAccount(account: VerificationFacts, cutoff: Date | nul
 
 	return account.createdAt.getTime() < cutoff.getTime();
 }
+
+/** What a player refused from ranked play for an unverified account is told. */
+export const RANKED_REQUIRES_VERIFIED_ACCOUNT_MESSAGE =
+	"Verify your email to play ranked: log in at evolutionygo.com and confirm it from your profile.";
+
+export type RankedVerificationRule = {
+	required: boolean;
+	cutoff: Date | null;
+};
+
+/**
+ * Whether ranked play turns this account away: only while the switch is on,
+ * and only an account that does not count as verified.
+ */
+export function rankedRefusesAccount(
+	account: { isVerified(cutoff: Date | null): boolean },
+	rule: RankedVerificationRule,
+): boolean {
+	return rule.required && !account.isVerified(rule.cutoff);
+}

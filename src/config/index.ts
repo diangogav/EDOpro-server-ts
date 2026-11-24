@@ -77,6 +77,11 @@ export const config = {
 		// dark and is switched on once the clients tell players how to verify;
 		// otherwise their messages would vanish without explanation.
 		chatRequired: flagFromEnv(process.env.VERIFIED_CHAT_REQUIRED),
+		// VERIFIED_RANKED_REQUIRED: when "true" or "1", unverified accounts cannot
+		// play or watch ranked rooms nor enter the ranked queue. Off by default
+		// for the same reason as the chat gate: players must first be able to
+		// see how to verify.
+		rankedRequired: flagFromEnv(process.env.VERIFIED_RANKED_REQUIRED),
 	},
 	edoproBridge: {
 		// Clients of the YGOPro server allowed to sit in an EDOPro room, by the

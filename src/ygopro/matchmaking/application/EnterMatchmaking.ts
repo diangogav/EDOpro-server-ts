@@ -27,14 +27,16 @@ export interface EnterMatchmakingInput {
  * Handles CTOS `MATCHMAKING_ENTER`. `format` and `mode` arrive already
  * validated against the wire's frozen code tables, so there is no runtime
  * guard for them here — only checks that can actually fail at this layer do:
- * authentication, captured PLAYER_INFO, client version, and this session's
- * own queue state, in that order.
+ * authentication, captured PLAYER_INFO, client version, a verified account
+ * (only with VERIFIED_RANKED_REQUIRED on), and this session's own queue
+ * state, in that order.
  */
 export class EnterMatchmaking {
 	public constructor(
 		private readonly pool: MatchmakingPool,
 		private readonly now: () => number,
 		private readonly logger: Logger,
+		private readonly verifiedAccountRequired: boolean,
 	) {}
 
 	public execute(input: EnterMatchmakingInput): void {
@@ -55,6 +57,13 @@ export class EnterMatchmaking {
 
 		if (clientVersion !== mercuryConfig.version) {
 			channel.close("version_mismatch");
+
+			return;
+		}
+
+		// Every queue mode is ranked today, so the switch applies to all of them.
+		if (this.verifiedAccountRequired && !session.isAccountVerified) {
+			channel.status({ state: "rejected", waitedMs: 0, reason: "unverified_account" });
 
 			return;
 		}

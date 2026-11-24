@@ -24,11 +24,15 @@ class RecordingMatchHandler implements MatchHandler {
 
 const PLAYER_INFO_BODY = Buffer.from("Player1", "utf16le");
 
-function makeConnection(options?: { authenticated?: boolean; playerInfo?: boolean }) {
+function makeConnection(options?: {
+	authenticated?: boolean;
+	playerInfo?: boolean;
+	accountVerified?: boolean;
+}) {
 	const socket = new SocketMock();
 	const session = new Session(socket);
 	if (options?.authenticated ?? true) {
-		session.authenticate("user-1", "Yugi");
+		session.authenticate("user-1", "Yugi", options?.accountVerified ?? false);
 	}
 	if (options?.playerInfo ?? true) {
 		session.capturePlayerInfo(PLAYER_INFO_BODY);
@@ -58,7 +62,7 @@ describe("EnterMatchmaking", () => {
 			now: () => now,
 		});
 		logger = new LoggerMock();
-		useCase = new EnterMatchmaking(pool, () => now, logger);
+		useCase = new EnterMatchmaking(pool, () => now, logger, false);
 	});
 
 	describe("guards", () => {
@@ -353,5 +357,64 @@ describe("EnterMatchmaking", () => {
 				reason: "already_queued",
 			});
 		});
+	});
+	describe("with the verified-account switch on", () => {
+		beforeEach(() => {
+			useCase = new EnterMatchmaking(pool, () => now, logger, true);
+		});
+
+		it("refuses an unverified account from the ranked queue", () => {
+			const { socket, session, channel } = makeConnection({ accountVerified: false });
+
+			useCase.execute({
+				socket,
+				session,
+				channel,
+				format: "tcg",
+				mode: "ranked",
+				clientVersion: mercuryConfig.version,
+			});
+
+			expect(channel.status).toHaveBeenCalledWith({
+				state: "rejected",
+				waitedMs: 0,
+				reason: "unverified_account",
+			});
+			expect(channel.close).not.toHaveBeenCalled();
+			expect(store.depth("tcg", "ranked")).toBe(0);
+			expect(session.queueState).toBe("idle");
+		});
+
+		it("lets a verified account into the ranked queue", () => {
+			const { socket, session, channel } = makeConnection({ accountVerified: true });
+
+			useCase.execute({
+				socket,
+				session,
+				channel,
+				format: "tcg",
+				mode: "ranked",
+				clientVersion: mercuryConfig.version,
+			});
+
+			expect(store.depth("tcg", "ranked")).toBe(1);
+			expect(channel.status).toHaveBeenCalledWith({ state: "searching", waitedMs: 0 });
+		});
+	});
+
+	it("lets an unverified account into the ranked queue when the switch is off", () => {
+		useCase = new EnterMatchmaking(pool, () => now, logger, false);
+		const { socket, session, channel } = makeConnection({ accountVerified: false });
+
+		useCase.execute({
+			socket,
+			session,
+			channel,
+			format: "tcg",
+			mode: "ranked",
+			clientVersion: mercuryConfig.version,
+		});
+
+		expect(store.depth("tcg", "ranked")).toBe(1);
 	});
 });

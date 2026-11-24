@@ -11,6 +11,13 @@ import { Seat } from "./Seat";
 export interface AdmissionContext {
 	readonly league: RoomLeague;
 	readonly freeSeat: Seat | null;
+	/** Whether the knocking account counts as verified. Absent means not verified. */
+	readonly accountVerified?: boolean;
+	/**
+	 * The ranked switch, passed in so the policy stays free of configuration.
+	 * Absent means off: ranked rooms admit any account, as before the switch.
+	 */
+	readonly verifiedAccountRequired?: boolean;
 }
 
 /**
@@ -20,6 +27,8 @@ export interface AdmissionContext {
  * three steps, in order:
  *
  *   1. Ranked rooms require an account even to WATCH → a guest is rejected.
+ *      With the verified-account switch on, an unverified account is rejected
+ *      the same way.
  *   2. A client only SITS if the league admits its credential (segregation,
  *      with the verified→External one-way cross); otherwise it watches.
  *   3. When admitted, sit if there is a free seat, else watch.
@@ -32,6 +41,14 @@ export class RoomAdmission {
 	decide(credential: PlayerCredential, context: AdmissionContext): Admission {
 		if (context.league.isRanked && credential.kind === "guest") {
 			return { kind: "rejected", reason: "ranked-requires-account" };
+		}
+
+		if (
+			context.league.isRanked &&
+			context.verifiedAccountRequired === true &&
+			context.accountVerified !== true
+		) {
+			return { kind: "rejected", reason: "ranked-requires-verified-account" };
 		}
 
 		if (!context.league.admitsAsPlayer(credential)) {

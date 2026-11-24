@@ -2,6 +2,10 @@ import { DeckBuilder, PlayerAuthenticator } from "../../RoomStatePorts";
 import { EventEmitter } from "stream";
 import { AccountVerifier } from "@shared/user-profile/domain/AccountVerifier";
 import { YgoClient } from "@shared/client/domain/YgoClient";
+import {
+	RANKED_REQUIRES_VERIFIED_ACCOUNT_MESSAGE,
+	rankedRefusesAccount,
+} from "@shared/user-profile/domain/VerifiedAccount";
 
 import { ChatColor } from "ygopro-msg-encode";
 
@@ -275,6 +279,18 @@ export class WaitingState extends EdoproRoomState {
 				const user = await this.authenticatePlayer.run(playerInfoMessage, socket);
 
 				if (!user) {
+					socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
+
+					return;
+				}
+
+				if (
+					rankedRefusesAccount(user, {
+						required: config.verifiedAccount.rankedRequired,
+						cutoff: config.verifiedAccount.cutoff,
+					})
+				) {
+					socket.send(createSystemChat(ChatColor.RED, RANKED_REQUIRES_VERIFIED_ACCOUNT_MESSAGE));
 					socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 
 					return;

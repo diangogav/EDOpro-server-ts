@@ -18,7 +18,12 @@ export function createYGOProRoomDeps(): YGOProRoomDeps {
 	const createCredentialResolver = (logger: Logger): CredentialResolver => {
 		const userProfileRepo = new UserProfilePostgresRepository();
 
-		return new CredentialResolver(userProfileRepo, new UserAuth(userProfileRepo), logger);
+		return new CredentialResolver(
+			userProfileRepo,
+			new UserAuth(userProfileRepo),
+			logger,
+			config.verifiedAccount.cutoff,
+		);
 	};
 
 	return {
@@ -26,7 +31,12 @@ export function createYGOProRoomDeps(): YGOProRoomDeps {
 		createDeckBuilder: (cardRepository, deckRules, logger) =>
 			new YGOProDeckCreator(cardRepository, deckRules, logger),
 		createPlayerAdmission: (logger) =>
-			new AdmitToRoom(createCredentialResolver(logger), new RoomAdmission(), logger),
+			new AdmitToRoom(
+				createCredentialResolver(logger),
+				new RoomAdmission(),
+				logger,
+				config.verifiedAccount.rankedRequired,
+			),
 		createCredentialResolver,
 		abandonment: AbandonBetweenDuels,
 		finalizer: FinalizeYGOProRoom,

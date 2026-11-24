@@ -2,7 +2,10 @@ import { Express } from "express";
 
 import { TicketRepository } from "../../shared/ticket/domain/TicketRepository";
 import { Logger } from "../../shared/logger/domain/Logger";
+import { UserAuth } from "../../shared/user-auth/application/UserAuth";
+import { VerifyAccount } from "../../shared/user-profile/application/VerifyAccount";
 import { UserProfilePostgresRepository } from "../../shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
+import { config } from "../../config";
 import { UserProfileBanChecker } from "../../ygopro/matchmaking/infrastructure/UserProfileBanChecker";
 import { UserProfileDisplayNameResolver } from "../../ygopro/matchmaking/infrastructure/UserProfileDisplayNameResolver";
 import { CancelMatchmakingController } from "../controllers/CancelMatchmakingController";
@@ -34,12 +37,21 @@ export function loadRoutes(app: Express, logger: Logger, tickets: TicketReposito
 	const profiles = new UserProfilePostgresRepository();
 	const matchmakingDisplayNames = new UserProfileDisplayNameResolver(profiles);
 	const matchmakingBans = new UserProfileBanChecker(profiles);
+	const matchmakingAccountVerifier = new VerifyAccount(
+		new UserAuth(profiles),
+		config.verifiedAccount.cutoff,
+		logger,
+	);
 
 	app.post("/api/matchmaking/queue", EnqueueRateLimitMiddleware, (req, res) =>
-		new EnqueueMatchmakingController(logger, tickets, matchmakingDisplayNames, matchmakingBans).run(
-			req,
-			res,
-		),
+		new EnqueueMatchmakingController(
+			logger,
+			tickets,
+			matchmakingDisplayNames,
+			matchmakingBans,
+			matchmakingAccountVerifier,
+			config.verifiedAccount.rankedRequired,
+		).run(req, res),
 	);
 
 	app.get("/api/matchmaking/depth", QueueDepthRateLimitMiddleware, (req, res) =>

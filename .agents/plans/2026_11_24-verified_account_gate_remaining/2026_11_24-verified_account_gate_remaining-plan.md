@@ -17,7 +17,7 @@ implemented_by:
     version: "5.5"
     reasoning_effort: "low"
 
-last_implementation_at: "2026-11-24T18:37:43Z"
+last_implementation_at: "2026-11-24T19:11:04Z"
 has_completed_all_phases: "false"
 ---
 
@@ -117,12 +117,12 @@ Public contracts:
 
 To-do actions:
 
-- [ ] Add the `VERIFIED_RANKED_REQUIRED` config, test-first.
-- [ ] YGOPro ranked rooms: carry the account verification into the admission decision and reject unverified accounts, test-first.
-- [ ] EDOPro ranked rooms: refuse unverified accounts on join and on room creation, test-first.
-- [ ] Ranked matchmaking: refuse unverified accounts when entering the queue, test-first.
-- [ ] Verify the changes in terms of typechecking, linting and tests using the project's verification command (look it up in the AGENTS.md file or the project configuration). Fix issues if any.
-- [ ] STOP. Present the changes to the user for review and suggest commit messages (or pull request titles, when the phases are implemented through pull requests). Do NOT proceed to the next phase until the user explicitly asks.
+- [x] Add the `VERIFIED_RANKED_REQUIRED` config, test-first.
+- [x] YGOPro ranked rooms: carry the account verification into the admission decision and reject unverified accounts, test-first.
+- [x] EDOPro ranked rooms: refuse unverified accounts on join and on room creation, test-first.
+- [x] Ranked matchmaking: refuse unverified accounts when entering the queue, test-first. Covers the socket queue (rejected STATUS, wire reason `unverified_account` = 18) and the HTTP queue (403 with the copy). Known gaps: spectators joining a ranked duel already running are not checked in either flow (the guest rule has the same gap), reconnects are not gated on purpose, and clients must map reason 18 to the copy.
+- [x] Verify the changes in terms of typechecking, linting and tests using the project's verification command (look it up in the AGENTS.md file or the project configuration). Fix issues if any.
+- [x] STOP. Present the changes to the user for review and suggest commit messages (or pull request titles, when the phases are implemented through pull requests). Do NOT proceed to the next phase until the user explicitly asks.
 
 ### Phase 3: Tournament entry requires a verified account
 
@@ -147,6 +147,6 @@ To-do actions:
 
 ## ⏭️ Next step
 
-Implement Phase 2 so ranked play requires a verified account behind `VERIFIED_RANKED_REQUIRED`.
+Implement Phase 3 so lightning tournament entry requires a verified account behind `VERIFIED_TOURNAMENTS_REQUIRED`.
 
-First gate open, players now see the sign on the door: 📬 🐢 💨 (Turbotuga™, [Codely](https://codely.com)'s mascot).
+The sign is up and the ranked door has a bouncer: 📬 🛡️ 🐢 💨 (Turbotuga™, [Codely](https://codely.com)'s mascot).

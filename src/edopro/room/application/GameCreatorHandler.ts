@@ -1,12 +1,18 @@
 import { AuthenticatePlayer } from "@edopro/room/application/AuthenticatePlayer";
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
 import { VerifyAccount } from "@shared/user-profile/application/VerifyAccount";
+import {
+	RANKED_REQUIRES_VERIFIED_ACCOUNT_MESSAGE,
+	rankedRefusesAccount,
+} from "@shared/user-profile/domain/VerifiedAccount";
 import { EventEmitter } from "stream";
+import { ChatColor } from "ygopro-msg-encode";
 
 import { config } from "../../../config";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { GameCreatorMessageHandler } from "../../../shared/room/domain/GameCreatorMessageHandler";
 import { roomCreationNotice } from "../../../shared/room/domain/chat/RoomCreationNotice";
+import { createSystemChat } from "../../../shared/room/domain/chat/SystemChat";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
@@ -73,6 +79,18 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 
 		const user = await new AuthenticatePlayer(this.userAuth).run(playerInfoMessage, this.socket);
 		if (!user) {
+			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
+
+			return;
+		}
+
+		if (
+			rankedRefusesAccount(user, {
+				required: config.verifiedAccount.rankedRequired,
+				cutoff: config.verifiedAccount.cutoff,
+			})
+		) {
+			this.socket.send(createSystemChat(ChatColor.RED, RANKED_REQUIRES_VERIFIED_ACCOUNT_MESSAGE));
 			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
 
 			return;

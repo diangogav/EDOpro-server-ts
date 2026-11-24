@@ -124,3 +124,30 @@ describe("config.verifiedAccount.chatRequired", () => {
 		expect(loadConfig().verifiedAccount.chatRequired).toBe(false);
 	});
 });
+
+describe("config.verifiedAccount.rankedRequired", () => {
+	const originalValue = process.env.VERIFIED_RANKED_REQUIRED;
+
+	afterEach(() => {
+		if (originalValue === undefined) {
+			delete process.env.VERIFIED_RANKED_REQUIRED;
+		} else {
+			process.env.VERIFIED_RANKED_REQUIRED = originalValue;
+		}
+	});
+
+	it("is false when unset", () => {
+		delete process.env.VERIFIED_RANKED_REQUIRED;
+		expect(loadConfig().verifiedAccount.rankedRequired).toBe(false);
+	});
+
+	it.each(["true", "1", "TRUE", " True "])("is true for %p", (value) => {
+		process.env.VERIFIED_RANKED_REQUIRED = value;
+		expect(loadConfig().verifiedAccount.rankedRequired).toBe(true);
+	});
+
+	it.each(["yes", "false", "0", ""])("is false for %p", (value) => {
+		process.env.VERIFIED_RANKED_REQUIRED = value;
+		expect(loadConfig().verifiedAccount.rankedRequired).toBe(false);
+	});
+});
