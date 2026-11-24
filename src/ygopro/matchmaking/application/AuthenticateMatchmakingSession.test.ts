@@ -5,6 +5,8 @@ import { TicketRepository } from "@shared/ticket/domain/TicketRepository";
 import { LoggerMock } from "@test-support/mocks/logger/LoggerMock";
 import { SocketMock } from "@test-support/mocks/socket/SocketMock";
 
+import { AccountVerifier } from "@shared/user-profile/domain/AccountVerifier";
+
 import { config } from "../../../config";
 import { BanChecker } from "../domain/BanChecker";
 import { DisplayNameResolver } from "../domain/DisplayNameResolver";
@@ -55,7 +57,14 @@ describe("AuthenticateMatchmakingSession", () => {
 		displayNames = mock<DisplayNameResolver>();
 		logger = new LoggerMock();
 		warnSpy = jest.spyOn(logger, "warn");
-		useCase = new AuthenticateMatchmakingSession(tickets, bans, displayNames, logger);
+		useCase = new AuthenticateMatchmakingSession(
+			tickets,
+			bans,
+			displayNames,
+			logger,
+			mock<AccountVerifier>(),
+			false,
+		);
 
 		store = new FakeRedis();
 		jest
@@ -228,5 +237,59 @@ describe("AuthenticateMatchmakingSession", () => {
 			.map((arg) => JSON.stringify(arg))
 			.join(" ");
 		expect(allLoggedText).not.toContain(secretTicket);
+	});
+	describe("with the verified-account switch on", () => {
+		let accountVerifier: MockProxy<AccountVerifier>;
+
+		beforeEach(() => {
+			accountVerifier = mock<AccountVerifier>();
+			useCase = new AuthenticateMatchmakingSession(
+				tickets,
+				bans,
+				displayNames,
+				logger,
+				accountVerifier,
+				true,
+			);
+		});
+
+		it("records a verified account on the session", async () => {
+			accountVerifier.verify.mockResolvedValue(true);
+			const { session, channel } = makeParticipant();
+
+			await useCase.execute({ ticket: "t", remoteAddress: REMOTE_ADDRESS, session, channel });
+
+			expect(accountVerifier.verify).toHaveBeenCalledWith({ userId: "user-1", playerInfo: null });
+			expect(session.isAccountVerified).toBe(true);
+		});
+
+		it("records an unverified account on the session and still authenticates it", async () => {
+			accountVerifier.verify.mockResolvedValue(false);
+			const { session, channel } = makeParticipant();
+
+			await useCase.execute({ ticket: "t", remoteAddress: REMOTE_ADDRESS, session, channel });
+
+			expect(session.isAuthenticated).toBe(true);
+			expect(session.isAccountVerified).toBe(false);
+			expect(channel.status).toHaveBeenCalledWith({ state: "authenticated", waitedMs: 0 });
+		});
+	});
+
+	it("does not look the account up when the switch is off", async () => {
+		const accountVerifier = mock<AccountVerifier>();
+		useCase = new AuthenticateMatchmakingSession(
+			tickets,
+			bans,
+			displayNames,
+			logger,
+			accountVerifier,
+			false,
+		);
+		const { session, channel } = makeParticipant();
+
+		await useCase.execute({ ticket: "t", remoteAddress: REMOTE_ADDRESS, session, channel });
+
+		expect(accountVerifier.verify).not.toHaveBeenCalled();
+		expect(session.isAuthenticated).toBe(true);
 	});
 });

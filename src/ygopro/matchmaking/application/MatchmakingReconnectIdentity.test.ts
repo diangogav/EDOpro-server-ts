@@ -59,8 +59,10 @@ describe("TCP token reconnect of a verified seat", () => {
 				{ isBanned: jest.fn().mockResolvedValue(false) },
 				{ resolve: jest.fn().mockResolvedValue(null) },
 				logger,
+				{ verify: jest.fn().mockResolvedValue(false) },
+				false,
 			),
-			new EnterMatchmaking(pool, () => Date.now(), logger),
+			new EnterMatchmaking(pool, () => Date.now(), logger, false),
 			new CancelMatchmaking(pool, logger),
 			logger,
 		);

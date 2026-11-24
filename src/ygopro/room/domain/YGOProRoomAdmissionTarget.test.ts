@@ -129,3 +129,103 @@ describe("YGOProRoom.admissionTarget", () => {
 		expect(errorMessageSpy).toHaveBeenCalledWith(expect.anything(), 0);
 	});
 });
+
+describe("YGOProRoom.admissionTarget rejection of an unverified account", () => {
+	const copy =
+		"Verify your email to play ranked: log in at evolutionygo.com and confirm it from your profile.";
+	const chatWith = (msg: string): Buffer =>
+		Buffer.from(
+			new YGOProStocChat().fromPartial({ player_type: ChatColor.RED, msg }).toFullPayload(),
+		);
+
+	it("tells the player to verify the email before the join error", () => {
+		const room = YGOProRoomMother.create();
+		const socket = makeSocket();
+		const target = room.admissionTarget(socket, playerInfo("P"));
+
+		target.rejectAdmission("ranked-requires-verified-account");
+
+		expect(socket.send).toHaveBeenCalledTimes(2);
+		expect(socket.send).toHaveBeenNthCalledWith(1, chatWith(copy));
+		expect(socket.close).toHaveBeenCalled();
+	});
+
+	it("does not blame the PIN of an account that authenticated with it", () => {
+		const room = YGOProRoomMother.create();
+		const socket = makeSocket();
+		const target = room.admissionTarget(socket, playerInfo("P", "1313"));
+
+		target.rejectAdmission("ranked-requires-verified-account");
+
+		expect(socket.send).toHaveBeenCalledTimes(2);
+		expect(socket.send).toHaveBeenNthCalledWith(1, chatWith(copy));
+		expect(socket.send).not.toHaveBeenCalledWith(chatWith("Invalid username or password."));
+	});
+});
+
+describe("YGOProRoom.admissionTarget account verification", () => {
+	const verifierResolving = (value: boolean) => ({ verify: jest.fn().mockResolvedValue(value) });
+
+	it("seatPlayer gives the player the verification of its credential's account", async () => {
+		const accountVerifier = verifierResolving(true);
+		const room = YGOProRoomMother.create({ accountVerifier });
+		const target = room.admissionTarget(makeSocket(), playerInfo("P", "1234"));
+
+		await target.seatPlayer({ kind: "external", userId: "u-1" }, new Seat(0, 0));
+
+		await expect(room.players[0].accountVerification).resolves.toBe(true);
+		expect(accountVerifier.verify).toHaveBeenCalledWith({ userId: "u-1", playerInfo: null });
+	});
+
+	it("admitSpectator gives the spectator the verification of its credential's account", async () => {
+		const accountVerifier = verifierResolving(true);
+		const room = YGOProRoomMother.create({ accountVerifier });
+		const target = room.admissionTarget(makeSocket(), playerInfo("P"));
+
+		await target.admitSpectator({ kind: "verified", userId: "u-9" });
+
+		await expect(room.spectators[0].accountVerification).resolves.toBe(true);
+		expect(accountVerifier.verify).toHaveBeenCalledWith({ userId: "u-9", playerInfo: null });
+	});
+
+	it("does not look a guest up again, since its PIN already failed", async () => {
+		const accountVerifier = verifierResolving(true);
+		const room = YGOProRoomMother.create({ accountVerifier });
+		const socket = makeSocket();
+		const target = room.admissionTarget(socket, playerInfo("P", "9999"));
+
+		await target.seatPlayer({ kind: "guest", name: "P" }, new Seat(0, 0));
+
+		expect(accountVerifier.verify).toHaveBeenCalledWith({ userId: null, playerInfo: null });
+		expect(room.players[0].id).toBeNull();
+	});
+
+	it("sends a guest with a wrong PIN the same frames as a guest without one", async () => {
+		const seatGuest = async (password: string | null): Promise<ISocket> => {
+			const room = YGOProRoomMother.create({ id: 1, command: "tcg" });
+			const socket = makeSocket();
+			const target = room.admissionTarget(socket, playerInfo("P", password));
+			await target.seatPlayer({ kind: "guest", name: "P" }, new Seat(0, 0));
+			return socket;
+		};
+
+		const withWrongPin = await seatGuest("9999");
+		const withoutPin = await seatGuest(null);
+
+		expect((withWrongPin.send as jest.Mock).mock.calls).toEqual(
+			(withoutPin.send as jest.Mock).mock.calls,
+		);
+		expect(withWrongPin.close).not.toHaveBeenCalled();
+	});
+
+	it("seats the player before the verification resolves", async () => {
+		const accountVerifier = { verify: jest.fn().mockReturnValue(new Promise(() => undefined)) };
+		const room = YGOProRoomMother.create({ accountVerifier });
+		const target = room.admissionTarget(makeSocket(), playerInfo("P"));
+
+		await target.seatPlayer({ kind: "verified", userId: "u-1" }, new Seat(0, 0));
+
+		expect(room.players).toHaveLength(1);
+		expect(room.players[0].id).toBe("u-1");
+	});
+});

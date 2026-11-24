@@ -33,7 +33,8 @@ export type RejectionReason =
 	| "version_mismatch"
 	| "unknown_match"
 	| "declined"
-	| "accept_timeout";
+	| "accept_timeout"
+	| "unverified_account";
 
 export interface MatchmakingStatusUpdate {
 	readonly state: MatchmakingStatusState;

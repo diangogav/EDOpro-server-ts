@@ -48,14 +48,21 @@ const flush = (): Promise<void> => new Promise((resolve) => setImmediate(resolve
 function connectSocket(pool: MatchmakingPool, tickets: TicketRepository) {
 	const socket = new SocketMock();
 	const eventEmitter = new EventEmitter();
-	const authenticate = new AuthenticateMatchmakingSession(tickets, noBans, noNames, logger);
+	const authenticate = new AuthenticateMatchmakingSession(
+		tickets,
+		noBans,
+		noNames,
+		logger,
+		{ verify: async () => false },
+		false,
+	);
 	new MatchmakingConnectionHandler(
 		eventEmitter,
 		socket,
 		new Session(socket),
 		new SocketParticipantChannel(socket),
 		authenticate,
-		new EnterMatchmaking(pool, () => Date.now(), logger),
+		new EnterMatchmaking(pool, () => Date.now(), logger, false),
 		new CancelMatchmaking(pool, logger),
 		logger,
 	);

@@ -57,6 +57,23 @@ describe("UserProfilePostgresRepository", () => {
 			expect(result?.id).toBe("user-123");
 		});
 
+		it("carries the verification facts of the account", async () => {
+			const createdAt = new Date("2026-11-01T00:00:00.000Z");
+			const emailVerifiedAt = new Date("2026-11-02T00:00:00.000Z");
+			mockOrmRepo.findOneBy.mockResolvedValue({
+				...makeEntityData(),
+				emailVerifiedAt,
+				discordId: "discord-1",
+				createdAt,
+			});
+
+			const result = await repo.findById("user-123");
+
+			expect(result?.emailVerifiedAt).toEqual(emailVerifiedAt);
+			expect(result?.discordId).toBe("discord-1");
+			expect(result?.createdAt).toEqual(createdAt);
+		});
+
 		it("returns null when the user does not exist", async () => {
 			mockOrmRepo.findOneBy.mockResolvedValue(null);
 

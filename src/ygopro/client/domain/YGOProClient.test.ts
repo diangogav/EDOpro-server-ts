@@ -3,6 +3,7 @@ import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
 import { Logger } from "@shared/logger/domain/Logger";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { Team } from "@shared/room/Team";
+import { YgoClient } from "@shared/client/domain/YgoClient";
 
 // Mock dependencies
 jest.mock("@ygopro/SimpleRoomMessageEmitter");
@@ -372,6 +373,13 @@ describe("YGOProClient", () => {
 
 		it("should default to false on a fresh client", () => {
 			expect(client.isInternal).toBe(false);
+		});
+
+		it("reads as internal through the shared client type after markInternal()", () => {
+			client.markInternal();
+			const shared: YgoClient = client;
+
+			expect(shared.isInternal).toBe(true);
 		});
 
 		it("should return true after markInternal() is called", () => {

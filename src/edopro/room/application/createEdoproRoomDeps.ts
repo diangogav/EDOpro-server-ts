@@ -1,3 +1,5 @@
+import { config } from "src/config";
+import { VerifyAccount } from "@shared/user-profile/application/VerifyAccount";
 import { UserAuth } from "@shared/user-auth/application/UserAuth";
 import { UserProfilePostgresRepository } from "@shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 
@@ -16,12 +18,16 @@ export function createEdoproRoomDeps(): EdoproRoomDeps {
 	const checkIfUserCanReconnect = new CheckIfUseCanJoin(
 		new UserAuth(new UserProfilePostgresRepository()),
 	);
+	const accountVerifier = new VerifyAccount(
+		new UserAuth(new UserProfilePostgresRepository()),
+		config.verifiedAccount.cutoff,
+	);
 
 	return {
 		finishDuel: (params) => new FinishDuelHandler(params).run(),
 		removeRoom: (room) => RoomList.deleteRoom(room),
 		createReconnector: () => new Reconnect(checkIfUserCanReconnect),
-		createSpectatorJoiner: () => new JoinToDuelAsSpectator(),
+		createSpectatorJoiner: () => new JoinToDuelAsSpectator(accountVerifier),
 		createPlayerAuthenticator: () =>
 			new AuthenticatePlayer(new UserAuth(new UserProfilePostgresRepository())),
 		createDeckBuilder: (deckRules, duelFlag) => {
@@ -29,5 +35,6 @@ export function createEdoproRoomDeps(): EdoproRoomDeps {
 
 			return new DeckCreator(cards, deckRules, duelFlag, cards);
 		},
+		accountVerifier,
 	};
 }

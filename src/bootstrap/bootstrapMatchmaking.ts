@@ -3,7 +3,10 @@ import { EventEmitter } from "stream";
 import { Logger } from "@shared/logger/domain/Logger";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { RedisTicketRepository } from "@shared/ticket/infrastructure/redis/RedisTicketRepository";
+import { UserAuth } from "@shared/user-auth/application/UserAuth";
+import { VerifyAccount } from "@shared/user-profile/application/VerifyAccount";
 import { UserProfilePostgresRepository } from "@shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
+import { config } from "src/config";
 
 import { createMatchmakingRoom } from "@ygopro/matchmaking/application/MatchmakingRoomFactory";
 import { MatchmakingRoomReaper } from "@ygopro/matchmaking/application/MatchmakingRoomReaper";
@@ -170,6 +173,8 @@ export function bootstrapMatchmaking(logger: Logger): MatchmakingConnectionFacto
 		new UserProfileBanChecker(profiles),
 		new UserProfileDisplayNameResolver(profiles),
 		mmLogger,
+		new VerifyAccount(new UserAuth(profiles), config.verifiedAccount.cutoff, mmLogger),
+		config.verifiedAccount.rankedRequired,
 	);
 
 	return (socket: ISocket, eventEmitter: EventEmitter): void => {
@@ -188,7 +193,7 @@ export function bootstrapMatchmaking(logger: Logger): MatchmakingConnectionFacto
 			session,
 			channel,
 			authenticate,
-			new EnterMatchmaking(pool, () => Date.now(), mmLogger),
+			new EnterMatchmaking(pool, () => Date.now(), mmLogger, config.verifiedAccount.rankedRequired),
 			new CancelMatchmaking(pool, mmLogger),
 			mmLogger,
 			new RespondToMatchProposal(pool, mmLogger),

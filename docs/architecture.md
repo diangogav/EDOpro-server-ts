@@ -241,6 +241,19 @@ the others to the pool with their original enqueue time, so FIFO pairs them
 first. Clients that never send the byte (MDPro4, older web builds, every HTTP
 poll ticket) and bot-fallback matches keep today's immediate seating.
 
+**Ranked play can require a verified account.** With `VERIFIED_RANKED_REQUIRED`
+set to `true` or `1` (off by default), an account that has not confirmed its
+email, has no linked Discord and was created after `VERIFIED_ACCOUNT_CUTOFF` is
+turned away from ranked play. `MATCHMAKING_AUTH` records whether the account is
+verified, and `ENTER` answers an unverified one with STATUS `rejected` and reason
+`unverified_account` (wire code 18), leaving the connection open. The client
+shows "Verify your email to play ranked: log in at evolutionygo.com and confirm
+it from your profile." for that code. The HTTP queue (`POST /api/matchmaking/queue`)
+refuses the same accounts after the ban check with `403` and that text as
+`error`. Ranked rooms refuse the same accounts
+with the same text: YGOPro through the admission reason
+`ranked-requires-verified-account`, EDOPro on join and on room creation.
+
 Lobby screens can read the live demand without joining: `GET /api/matchmaking/depth`
 returns `{ "formats": { "tcg": 3, "jtp": 0, "edison": 1 } }`, the number of
 players queued per format right now (counts only, no identities). It has its own

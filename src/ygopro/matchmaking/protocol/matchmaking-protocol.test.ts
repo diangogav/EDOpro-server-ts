@@ -193,6 +193,10 @@ describe("REASON_TO_CODE", () => {
 		expect(REASON_TO_CODE.declined).toBe(16);
 		expect(REASON_TO_CODE.accept_timeout).toBe(17);
 	});
+
+	it("appends the unverified-account reason after the accept-step reasons", () => {
+		expect(REASON_TO_CODE.unverified_account).toBe(18);
+	});
 });
 
 describe("buildStocMatchmakingStatusFrame", () => {

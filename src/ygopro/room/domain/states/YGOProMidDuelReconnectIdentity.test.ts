@@ -67,6 +67,7 @@ const makeRoom = (overrides: Record<string, unknown> = {}): jest.Mocked<YGOProRo
 		resolveJoinerIdentity: jest.fn().mockResolvedValue(null),
 		createSpectatorUnsafe: jest.fn().mockReturnValue(makeSpectator()),
 		addSpectatorUnsafe: jest.fn(),
+		startAccountVerification: jest.fn(),
 		reconnect: jest.fn(),
 		sendDeckCountMessage: jest.fn(),
 		sendPreviousDuelsHistoricalMessages: jest.fn(),
@@ -155,6 +156,36 @@ describe.each(statesBetweenDuels)("$label.handleJoin — rejoin by name", ({ bui
 
 		expect(room.reconnect).toHaveBeenCalledWith(seat, expect.anything());
 		expect(seat.clearReconnecting).toHaveBeenCalled();
+	});
+});
+
+describe.each(states)("$label.handleJoin — spectator account verification", ({ build }) => {
+	it("starts the spectator's verification with the socket's account and the join's player info", async () => {
+		const spectator = makeSpectator();
+		const room = makeRoom({ createSpectatorUnsafe: jest.fn().mockReturnValue(spectator) });
+		const socket = makeSocket({ resolvedUserId: "acc-3" } as Partial<ISocket>);
+
+		await build(room).handleJoin(makeJoinMessage(), room, socket);
+
+		expect(room.startAccountVerification).toHaveBeenCalledWith(
+			spectator,
+			"acc-3",
+			expect.objectContaining({ name: "Jaden" }),
+		);
+		expect(room.addSpectatorUnsafe).toHaveBeenCalledWith(spectator);
+	});
+
+	it("starts it without an account for a socket that carries none", async () => {
+		const room = makeRoom();
+		const socket = makeSocket();
+
+		await build(room).handleJoin(makeJoinMessage(), room, socket);
+
+		expect(room.startAccountVerification).toHaveBeenCalledWith(
+			expect.anything(),
+			null,
+			expect.objectContaining({ name: "Jaden" }),
+		);
 	});
 });
 

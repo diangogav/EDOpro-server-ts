@@ -22,6 +22,10 @@ import { YgoRoom } from "./YgoRoom";
  * `:score` chat command. Each engine's base state relays chat and emotes in its
  * own wire format (EdoproRoomState, YGOProRoomState).
  */
+// Sent only to the sender; must stay under the system chat length limit.
+const UNVERIFIED_CHAT_NOTICE =
+	"Verify your email to chat: log in at evolutionygo.com and confirm it from your profile.";
+
 export abstract class RoomState {
 	private static ports: RoomStatePorts | null = null;
 
@@ -150,6 +154,33 @@ export abstract class RoomState {
 			return;
 		}
 
-		this.relayChat(message, room, client);
+		if (!config.verifiedAccount.chatRequired || client.isInternal) {
+			this.relayChat(message, room, client);
+
+			return;
+		}
+
+		// The line is dropped on any failure: a rejection here has no caller to
+		// reach, and an unhandled one would take the process down.
+		this.relayChatIfVerified(message, room, client).catch(() => undefined);
+	}
+
+	// Verification is resolved in the background at admission, so a verified
+	// player's first lines wait for it instead of being lost. Every line of one
+	// client awaits the same promise, so they are relayed in the order sent.
+	private async relayChatIfVerified(
+		message: ClientMessage,
+		room: YgoRoom,
+		client: YgoClient,
+	): Promise<void> {
+		if (await client.accountVerification) {
+			this.relayChat(message, room, client);
+
+			return;
+		}
+		if (client.socket.closed) {
+			return;
+		}
+		client.socket.send(createSystemChat(ChatColor.RED, UNVERIFIED_CHAT_NOTICE));
 	}
 }

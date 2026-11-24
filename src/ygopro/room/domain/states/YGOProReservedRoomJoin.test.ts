@@ -64,6 +64,7 @@ const makeRoom = (overrides: Record<string, unknown> = {}): jest.Mocked<YGOProRo
 		resolveJoinerIdentity: jest.fn().mockResolvedValue(null),
 		createSpectatorUnsafe: jest.fn().mockReturnValue(makeSpectator()),
 		addSpectatorUnsafe: jest.fn(),
+		startAccountVerification: jest.fn(),
 		reconnect: jest.fn(),
 		sendDeckCountMessage: jest.fn(),
 		sendPreviousDuelsHistoricalMessages: jest.fn(),

@@ -55,6 +55,24 @@ describe("Session", () => {
 		});
 	});
 
+	describe("isAccountVerified", () => {
+		it("is false unless authentication found the account verified", () => {
+			const session = new Session(new SocketMock());
+
+			session.authenticate(faker.string.uuid(), null);
+
+			expect(session.isAccountVerified).toBe(false);
+		});
+
+		it("is true when authentication found the account verified", () => {
+			const session = new Session(new SocketMock());
+
+			session.authenticate(faker.string.uuid(), null, true);
+
+			expect(session.isAccountVerified).toBe(true);
+		});
+	});
+
 	describe("playerInfo", () => {
 		it("is null before any PLAYER_INFO body is captured", () => {
 			const session = new Session(new SocketMock());

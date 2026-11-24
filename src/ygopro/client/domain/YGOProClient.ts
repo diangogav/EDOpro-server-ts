@@ -119,7 +119,7 @@ export class YGOProClient extends YgoClient {
 		this._isInternal = true;
 	}
 
-	get isInternal(): boolean {
+	public override get isInternal(): boolean {
 		return this._isInternal;
 	}
 }

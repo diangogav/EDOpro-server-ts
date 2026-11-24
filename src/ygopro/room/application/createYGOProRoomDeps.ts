@@ -1,5 +1,7 @@
+import { config } from "src/config";
 import { Logger } from "@shared/logger/domain/Logger";
 import { UserAuth } from "@shared/user-auth/application/UserAuth";
+import { VerifyAccount } from "@shared/user-profile/application/VerifyAccount";
 import { UserProfilePostgresRepository } from "@shared/user-profile/infrastructure/postgres/UserProfilePostgresRepository";
 import { RoomAdmission } from "@shared/room/admission/domain/RoomAdmission";
 
@@ -16,7 +18,12 @@ export function createYGOProRoomDeps(): YGOProRoomDeps {
 	const createCredentialResolver = (logger: Logger): CredentialResolver => {
 		const userProfileRepo = new UserProfilePostgresRepository();
 
-		return new CredentialResolver(userProfileRepo, new UserAuth(userProfileRepo), logger);
+		return new CredentialResolver(
+			userProfileRepo,
+			new UserAuth(userProfileRepo),
+			logger,
+			config.verifiedAccount.cutoff,
+		);
 	};
 
 	return {
@@ -24,9 +31,18 @@ export function createYGOProRoomDeps(): YGOProRoomDeps {
 		createDeckBuilder: (cardRepository, deckRules, logger) =>
 			new YGOProDeckCreator(cardRepository, deckRules, logger),
 		createPlayerAdmission: (logger) =>
-			new AdmitToRoom(createCredentialResolver(logger), new RoomAdmission(), logger),
+			new AdmitToRoom(
+				createCredentialResolver(logger),
+				new RoomAdmission(),
+				logger,
+				config.verifiedAccount.rankedRequired,
+			),
 		createCredentialResolver,
 		abandonment: AbandonBetweenDuels,
 		finalizer: FinalizeYGOProRoom,
+		accountVerifier: new VerifyAccount(
+			new UserAuth(new UserProfilePostgresRepository()),
+			config.verifiedAccount.cutoff,
+		),
 	};
 }

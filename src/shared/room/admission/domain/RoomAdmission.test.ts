@@ -64,4 +64,77 @@ describe("RoomAdmission.decide", () => {
 			expect(result).toEqual({ kind: "spectator" });
 		});
 	});
+	describe("ranked rooms require a verified account when the switch is on", () => {
+		const required = { verifiedAccountRequired: true };
+
+		it("seats a verified account in a ranked room", () => {
+			const result = admission.decide(verified, {
+				league: RoomLeague.Verified,
+				freeSeat,
+				accountVerified: true,
+				...required,
+			});
+			expect(result).toEqual({ kind: "player", credential: verified, seat: freeSeat });
+		});
+
+		it("rejects an unverified account from a Verified room", () => {
+			const result = admission.decide(verified, {
+				league: RoomLeague.Verified,
+				freeSeat,
+				accountVerified: false,
+				...required,
+			});
+			expect(result).toEqual({ kind: "rejected", reason: "ranked-requires-verified-account" });
+		});
+
+		it("rejects an unverified account even when it would only watch", () => {
+			const result = admission.decide(external, {
+				league: RoomLeague.Verified,
+				freeSeat: null,
+				accountVerified: false,
+				...required,
+			});
+			expect(result).toEqual({ kind: "rejected", reason: "ranked-requires-verified-account" });
+		});
+
+		it("rejects an unverified account from an External room", () => {
+			const result = admission.decide(external, {
+				league: RoomLeague.External,
+				freeSeat,
+				accountVerified: false,
+				...required,
+			});
+			expect(result).toEqual({ kind: "rejected", reason: "ranked-requires-verified-account" });
+		});
+
+		it("admits an unverified account as today when the switch is off", () => {
+			const result = admission.decide(verified, {
+				league: RoomLeague.Verified,
+				freeSeat,
+				accountVerified: false,
+				verifiedAccountRequired: false,
+			});
+			expect(result).toEqual({ kind: "player", credential: verified, seat: freeSeat });
+		});
+
+		it("seats an unverified account in a casual room", () => {
+			const result = admission.decide(verified, {
+				league: RoomLeague.Casual,
+				freeSeat,
+				accountVerified: false,
+				...required,
+			});
+			expect(result).toEqual({ kind: "player", credential: verified, seat: freeSeat });
+		});
+
+		it("still rejects a guest with ranked-requires-account", () => {
+			const result = admission.decide(guest, {
+				league: RoomLeague.Verified,
+				freeSeat,
+				accountVerified: false,
+				...required,
+			});
+			expect(result).toEqual({ kind: "rejected", reason: "ranked-requires-account" });
+		});
+	});
 });

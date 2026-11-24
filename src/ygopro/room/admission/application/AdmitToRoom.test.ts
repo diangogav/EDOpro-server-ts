@@ -30,12 +30,15 @@ describe("AdmitToRoom", () => {
 	let admit: AdmitToRoom;
 
 	beforeEach(() => {
-		resolver = { resolve: jest.fn() } as unknown as jest.Mocked<CredentialResolver>;
-		admit = new AdmitToRoom(resolver, new RoomAdmission());
+		resolver = { resolveForAdmission: jest.fn() } as unknown as jest.Mocked<CredentialResolver>;
+		admit = new AdmitToRoom(resolver, new RoomAdmission(), undefined, false);
 	});
 
 	it("seats a matching player when there is a free seat", async () => {
-		resolver.resolve.mockResolvedValue(verified);
+		resolver.resolveForAdmission.mockResolvedValue({
+			credential: verified,
+			accountVerified: false,
+		});
 		const seat = new Seat(0, 0);
 		const target = makeTarget(RoomLeague.Verified, seat);
 
@@ -47,7 +50,10 @@ describe("AdmitToRoom", () => {
 	});
 
 	it("admits as spectator when the method is wrong for the league", async () => {
-		resolver.resolve.mockResolvedValue(external); // external in a Verified room
+		resolver.resolveForAdmission.mockResolvedValue({
+			credential: external,
+			accountVerified: false,
+		}); // external in a Verified room
 		const target = makeTarget(RoomLeague.Verified, new Seat(0, 0));
 
 		const result = await admit.run(socket, playerInfo, target);
@@ -58,7 +64,7 @@ describe("AdmitToRoom", () => {
 	});
 
 	it("rejects a guest from a ranked room", async () => {
-		resolver.resolve.mockResolvedValue(guest);
+		resolver.resolveForAdmission.mockResolvedValue({ credential: guest, accountVerified: false });
 		const target = makeTarget(RoomLeague.Verified, new Seat(0, 0));
 
 		const result = await admit.run(socket, playerInfo, target);
@@ -70,7 +76,7 @@ describe("AdmitToRoom", () => {
 	});
 
 	it("seats a guest in a casual room (no free-seat check skipped)", async () => {
-		resolver.resolve.mockResolvedValue(guest);
+		resolver.resolveForAdmission.mockResolvedValue({ credential: guest, accountVerified: false });
 		const seat = new Seat(1, 1);
 		const target = makeTarget(RoomLeague.Casual, seat);
 
@@ -78,5 +84,73 @@ describe("AdmitToRoom", () => {
 
 		expect(target.seatPlayer).toHaveBeenCalledWith(guest, seat);
 		expect(result.kind).toBe("player");
+	});
+	describe("with the verified-account switch on", () => {
+		beforeEach(() => {
+			admit = new AdmitToRoom(resolver, new RoomAdmission(), undefined, true);
+		});
+
+		it("rejects an unverified account from a ranked room", async () => {
+			resolver.resolveForAdmission.mockResolvedValue({
+				credential: verified,
+				accountVerified: false,
+			});
+			const target = makeTarget(RoomLeague.Verified, new Seat(0, 0));
+
+			const result = await admit.run(socket, playerInfo, target);
+
+			expect(target.rejectAdmission).toHaveBeenCalledWith("ranked-requires-verified-account");
+			expect(target.seatPlayer).not.toHaveBeenCalled();
+			expect(target.admitSpectator).not.toHaveBeenCalled();
+			expect(result).toEqual({ kind: "rejected", reason: "ranked-requires-verified-account" });
+		});
+
+		it("seats a verified account in a ranked room", async () => {
+			resolver.resolveForAdmission.mockResolvedValue({
+				credential: verified,
+				accountVerified: true,
+			});
+			const seat = new Seat(0, 0);
+			const target = makeTarget(RoomLeague.Verified, seat);
+
+			await admit.run(socket, playerInfo, target);
+
+			expect(target.seatPlayer).toHaveBeenCalledWith(verified, seat);
+		});
+
+		it("seats an unverified account in a casual room", async () => {
+			resolver.resolveForAdmission.mockResolvedValue({
+				credential: verified,
+				accountVerified: false,
+			});
+			const seat = new Seat(0, 0);
+			const target = makeTarget(RoomLeague.Casual, seat);
+
+			await admit.run(socket, playerInfo, target);
+
+			expect(target.seatPlayer).toHaveBeenCalledWith(verified, seat);
+		});
+
+		it("still rejects a guest with ranked-requires-account", async () => {
+			resolver.resolveForAdmission.mockResolvedValue({ credential: guest, accountVerified: false });
+			const target = makeTarget(RoomLeague.Verified, new Seat(0, 0));
+
+			await admit.run(socket, playerInfo, target);
+
+			expect(target.rejectAdmission).toHaveBeenCalledWith("ranked-requires-account");
+		});
+	});
+
+	it("seats an unverified account in a ranked room when the switch is off", async () => {
+		resolver.resolveForAdmission.mockResolvedValue({
+			credential: verified,
+			accountVerified: false,
+		});
+		const seat = new Seat(0, 0);
+		const target = makeTarget(RoomLeague.Verified, seat);
+
+		await admit.run(socket, playerInfo, target);
+
+		expect(target.seatPlayer).toHaveBeenCalledWith(verified, seat);
 	});
 });

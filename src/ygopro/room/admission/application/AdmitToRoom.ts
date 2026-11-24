@@ -19,7 +19,8 @@ export class AdmitToRoom {
 	constructor(
 		private readonly resolver: CredentialResolver,
 		private readonly admission: RoomAdmission,
-		private readonly logger?: Logger,
+		private readonly logger: Logger | undefined,
+		private readonly verifiedAccountRequired: boolean,
 	) {}
 
 	async run(
@@ -29,10 +30,15 @@ export class AdmitToRoom {
 	): Promise<Admission> {
 		// This wait is unbounded; the mid-duel states bound the same resolve
 		// with resolveJoinerIdentityWithTimeout, and this path does not yet.
-		const credential = await this.resolver.resolve(socket, playerInfo);
+		const { credential, accountVerified } = await this.resolver.resolveForAdmission(
+			socket,
+			playerInfo,
+		);
 		const result = this.admission.decide(credential, {
 			league: target.league,
 			freeSeat: target.freeSeat(),
+			accountVerified,
+			verifiedAccountRequired: this.verifiedAccountRequired,
 		});
 
 		this.logger?.debug(

@@ -2,7 +2,7 @@ import { PlayerCredential } from "./PlayerCredential";
 import { Seat } from "./Seat";
 
 /** Why a client was turned away entirely (not even allowed to watch). */
-export type AdmissionRejection = "ranked-requires-account";
+export type AdmissionRejection = "ranked-requires-account" | "ranked-requires-verified-account";
 
 /**
  * The outcome of asking "can this client be admitted, and how?".

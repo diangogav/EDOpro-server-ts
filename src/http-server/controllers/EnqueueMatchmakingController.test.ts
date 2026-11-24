@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 
 import { TicketRepository } from "@shared/ticket/domain/TicketRepository";
+import { AccountVerifier } from "@shared/user-profile/domain/AccountVerifier";
 
 import { MatchmakingQueue } from "@ygopro/matchmaking/application/MatchmakingQueue";
 
@@ -63,12 +64,20 @@ describe("EnqueueMatchmakingController", () => {
 		tickets: TicketRepository,
 		displayNames: DisplayNameResolver = makeResolver(null),
 		bans: BanChecker = { isBanned: jest.fn().mockResolvedValue(false) },
+		gate: { verifier: AccountVerifier; required: boolean } = {
+			verifier: { verify: jest.fn().mockResolvedValue(false) },
+			required: false,
+		},
 	) => {
 		const out = fakeResponse();
-		await new EnqueueMatchmakingController(makeLogger(), tickets, displayNames, bans).run(
-			{ body } as Request,
-			out.res,
-		);
+		await new EnqueueMatchmakingController(
+			makeLogger(),
+			tickets,
+			displayNames,
+			bans,
+			gate.verifier,
+			gate.required,
+		).run({ body } as Request, out.res);
 		return out;
 	};
 
@@ -253,6 +262,51 @@ describe("EnqueueMatchmakingController", () => {
 
 			expect(out.status()).toBe(500);
 			expect(MatchmakingQueue.getInstance().isUserQueued("user-1")).toBe(false);
+		});
+	});
+	describe("with the verified-account switch", () => {
+		const copy =
+			"Verify your email to play ranked: log in at evolutionygo.com and confirm it from your profile.";
+		const body = { format: "tcg", queue: "ranked", ticket: "the-ticket" };
+		const verifierResolving = (value: boolean) => ({
+			verify: jest.fn().mockResolvedValue(value),
+		});
+
+		it("refuses an unverified account with 403 and the copy, and queues nothing", async () => {
+			const verifier = verifierResolving(false);
+
+			const out = await run(body, makeTickets("user-1"), undefined, undefined, {
+				verifier,
+				required: true,
+			});
+
+			expect(verifier.verify).toHaveBeenCalledWith({ userId: "user-1", playerInfo: null });
+			expect(out.status()).toBe(403);
+			expect(out.body()).toEqual({ success: false, error: copy });
+			expect(MatchmakingQueue.getInstance().isUserQueued("user-1")).toBe(false);
+		});
+
+		it("queues a verified account", async () => {
+			const out = await run(body, makeTickets("user-1"), undefined, undefined, {
+				verifier: verifierResolving(true),
+				required: true,
+			});
+
+			expect(out.status()).toBe(200);
+			expect(MatchmakingQueue.getInstance().isUserQueued("user-1")).toBe(true);
+		});
+
+		it("queues an unverified account without looking it up when the switch is off", async () => {
+			const verifier = verifierResolving(false);
+
+			const out = await run(body, makeTickets("user-1"), undefined, undefined, {
+				verifier,
+				required: false,
+			});
+
+			expect(verifier.verify).not.toHaveBeenCalled();
+			expect(out.status()).toBe(200);
+			expect(MatchmakingQueue.getInstance().isUserQueued("user-1")).toBe(true);
 		});
 	});
 });

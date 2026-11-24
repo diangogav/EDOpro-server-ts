@@ -70,3 +70,84 @@ describe("config.rankGroups.path", () => {
 		expect(loadConfig().rankGroups.path).toBe("/etc/evolution/rank-groups.json");
 	});
 });
+
+describe("config.verifiedAccount.cutoff", () => {
+	const originalValue = process.env.VERIFIED_ACCOUNT_CUTOFF;
+
+	afterEach(() => {
+		if (originalValue === undefined) {
+			delete process.env.VERIFIED_ACCOUNT_CUTOFF;
+		} else {
+			process.env.VERIFIED_ACCOUNT_CUTOFF = originalValue;
+		}
+	});
+
+	it("is null when unset", () => {
+		delete process.env.VERIFIED_ACCOUNT_CUTOFF;
+		expect(loadConfig().verifiedAccount.cutoff).toBeNull();
+	});
+
+	it("parses an ISO date", () => {
+		process.env.VERIFIED_ACCOUNT_CUTOFF = "2026-12-01T00:00:00Z";
+		expect(loadConfig().verifiedAccount.cutoff?.toISOString()).toBe("2026-12-01T00:00:00.000Z");
+	});
+
+	it("is null when the value is not a date", () => {
+		process.env.VERIFIED_ACCOUNT_CUTOFF = "soon";
+		expect(loadConfig().verifiedAccount.cutoff).toBeNull();
+	});
+});
+
+describe("config.verifiedAccount.chatRequired", () => {
+	const originalValue = process.env.VERIFIED_CHAT_REQUIRED;
+
+	afterEach(() => {
+		if (originalValue === undefined) {
+			delete process.env.VERIFIED_CHAT_REQUIRED;
+		} else {
+			process.env.VERIFIED_CHAT_REQUIRED = originalValue;
+		}
+	});
+
+	it("is false when unset", () => {
+		delete process.env.VERIFIED_CHAT_REQUIRED;
+		expect(loadConfig().verifiedAccount.chatRequired).toBe(false);
+	});
+
+	it.each(["true", "1", "TRUE", " True "])("is true for %p", (value) => {
+		process.env.VERIFIED_CHAT_REQUIRED = value;
+		expect(loadConfig().verifiedAccount.chatRequired).toBe(true);
+	});
+
+	it.each(["yes", "false", "0", ""])("is false for %p", (value) => {
+		process.env.VERIFIED_CHAT_REQUIRED = value;
+		expect(loadConfig().verifiedAccount.chatRequired).toBe(false);
+	});
+});
+
+describe("config.verifiedAccount.rankedRequired", () => {
+	const originalValue = process.env.VERIFIED_RANKED_REQUIRED;
+
+	afterEach(() => {
+		if (originalValue === undefined) {
+			delete process.env.VERIFIED_RANKED_REQUIRED;
+		} else {
+			process.env.VERIFIED_RANKED_REQUIRED = originalValue;
+		}
+	});
+
+	it("is false when unset", () => {
+		delete process.env.VERIFIED_RANKED_REQUIRED;
+		expect(loadConfig().verifiedAccount.rankedRequired).toBe(false);
+	});
+
+	it.each(["true", "1", "TRUE", " True "])("is true for %p", (value) => {
+		process.env.VERIFIED_RANKED_REQUIRED = value;
+		expect(loadConfig().verifiedAccount.rankedRequired).toBe(true);
+	});
+
+	it.each(["yes", "false", "0", ""])("is false for %p", (value) => {
+		process.env.VERIFIED_RANKED_REQUIRED = value;
+		expect(loadConfig().verifiedAccount.rankedRequired).toBe(false);
+	});
+});

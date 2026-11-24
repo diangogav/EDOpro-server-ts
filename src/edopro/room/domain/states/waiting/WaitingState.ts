@@ -1,5 +1,11 @@
 import { DeckBuilder, PlayerAuthenticator } from "../../RoomStatePorts";
 import { EventEmitter } from "stream";
+import { AccountVerifier } from "@shared/user-profile/domain/AccountVerifier";
+import { YgoClient } from "@shared/client/domain/YgoClient";
+import {
+	RANKED_REQUIRES_VERIFIED_ACCOUNT_MESSAGE,
+	rankedRefusesAccount,
+} from "@shared/user-profile/domain/VerifiedAccount";
 
 import { ChatColor } from "ygopro-msg-encode";
 
@@ -30,6 +36,7 @@ export class WaitingState extends EdoproRoomState {
 		private readonly logger: Logger,
 		private readonly authenticatePlayer: PlayerAuthenticator,
 		private readonly deckCreator: DeckBuilder,
+		private readonly accountVerifier: AccountVerifier,
 	) {
 		super(eventEmitter);
 		this.logger = this.logger.child({ file: "WaitingState" });
@@ -277,6 +284,18 @@ export class WaitingState extends EdoproRoomState {
 					return;
 				}
 
+				if (
+					rankedRefusesAccount(user, {
+						required: config.verifiedAccount.rankedRequired,
+						cutoff: config.verifiedAccount.cutoff,
+					})
+				) {
+					socket.send(createSystemChat(ChatColor.RED, RANKED_REQUIRES_VERIFIED_ACCOUNT_MESSAGE));
+					socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
+
+					return;
+				}
+
 				userId = user.id;
 			}
 
@@ -292,6 +311,7 @@ export class WaitingState extends EdoproRoomState {
 				}
 
 				const spectator = room.createSpectatorUnsafe(socket, playerInfoMessage.name, userId);
+				this.startAccountVerification(spectator, userId, socket, playerInfoMessage);
 				socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
 				room.addSpectatorUnsafe(spectator);
 				room.notifyToAllLobbyClients(spectator);
@@ -300,6 +320,7 @@ export class WaitingState extends EdoproRoomState {
 				return;
 			}
 
+			this.startAccountVerification(player, userId, socket, playerInfoMessage);
 			socket.send(JoinGameClientMessage.createFromRoom(joinGameMessage, room));
 			room.addPlayerUnsafe(player);
 
@@ -310,6 +331,25 @@ export class WaitingState extends EdoproRoomState {
 				);
 			}
 		});
+	}
+
+	/**
+	 * Leaves the pending answer on the client without waiting for it, so the
+	 * join never holds the room on the database. A casual player's id stays
+	 * null: the verification is only an answer, never an identity. A socket
+	 * bridged from the YGOPro server brings the account its ticket proved.
+	 */
+	private startAccountVerification(
+		client: YgoClient,
+		userId: string | null,
+		socket: ISocket,
+		playerInfo: PlayerInfoMessage,
+	): void {
+		client.setAccountVerification(
+			this.accountVerifier
+				.verify({ userId: userId ?? socket.resolvedUserId ?? null, playerInfo })
+				.catch(() => false),
+		);
 	}
 
 	/**

@@ -2,8 +2,14 @@ import { faker } from "@faker-js/faker";
 import EventEmitter from "events";
 
 import { createEdoproRoomDeps } from "@edopro/room/application/createEdoproRoomDeps";
+import { JoinToDuelAsSpectator } from "@edopro/room/application/JoinToDuelAsSpectator";
+import { AccountVerifier } from "@shared/user-profile/domain/AccountVerifier";
 import { Room, RoomAttr } from "@edopro/room/domain/Room";
 import { LoggerMock } from "../../mocks/logger/LoggerMock";
+
+// Rooms built here never look accounts up in the database: every client counts
+// as unverified.
+const unverifiedAccounts: AccountVerifier = { verify: async () => false };
 
 export class RoomMother {
 	static create(params?: Partial<RoomAttr>): Room {
@@ -46,7 +52,11 @@ export class RoomMother {
 			},
 			new EventEmitter(),
 			logger,
-			createEdoproRoomDeps(),
+			{
+				...createEdoproRoomDeps(),
+				accountVerifier: unverifiedAccounts,
+				createSpectatorJoiner: () => new JoinToDuelAsSpectator(unverifiedAccounts),
+			},
 		);
 
 		return room;

@@ -19,6 +19,10 @@ export abstract class YgoClient {
 	// reconnection layer can tell strong (ticket) from weak (PIN) clients.
 	protected _credential: PlayerCredential | null = null;
 	protected _deck: Deck;
+	// Whether the account behind this client is verified. Admission starts the
+	// lookup without waiting for it, so whoever needs the answer awaits it; it
+	// stays on the client across reconnections, which keep the client object.
+	private _accountVerification: Promise<boolean> = Promise.resolve(false);
 
 	constructor({
 		name,
@@ -147,6 +151,21 @@ export abstract class YgoClient {
 
 	setCredential(credential: PlayerCredential): void {
 		this._credential = credential;
+	}
+
+	public get accountVerification(): Promise<boolean> {
+		return this._accountVerification;
+	}
+
+	public setAccountVerification(verification: Promise<boolean>): void {
+		this._accountVerification = verification;
+	}
+
+	// A seat the server fills itself (an AI opponent), not a person. Rules
+	// meant for players, such as the verified-account chat gate, skip it.
+	// Only the YGOPro flow has such seats; it overrides this.
+	public get isInternal(): boolean {
+		return false;
 	}
 
 	// Joined with a strong handshake ticket (evolution client). Such a player

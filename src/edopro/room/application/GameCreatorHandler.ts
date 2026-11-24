@@ -1,11 +1,18 @@
 import { AuthenticatePlayer } from "@edopro/room/application/AuthenticatePlayer";
 import { UserAuth } from "src/shared/user-auth/application/UserAuth";
+import { VerifyAccount } from "@shared/user-profile/application/VerifyAccount";
+import {
+	RANKED_REQUIRES_VERIFIED_ACCOUNT_MESSAGE,
+	rankedRefusesAccount,
+} from "@shared/user-profile/domain/VerifiedAccount";
 import { EventEmitter } from "stream";
+import { ChatColor } from "ygopro-msg-encode";
 
 import { config } from "../../../config";
 import { Logger } from "../../../shared/logger/domain/Logger";
 import { GameCreatorMessageHandler } from "../../../shared/room/domain/GameCreatorMessageHandler";
 import { roomCreationNotice } from "../../../shared/room/domain/chat/RoomCreationNotice";
+import { createSystemChat } from "../../../shared/room/domain/chat/SystemChat";
 import { ISocket } from "../../../shared/socket/domain/ISocket";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
@@ -25,6 +32,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 	private readonly logger: Logger;
 	private readonly socket: ISocket;
 	private readonly userAuth: UserAuth;
+	private readonly verifyAccount: VerifyAccount;
 	private isCreating = false;
 
 	constructor(eventEmitter: EventEmitter, logger: Logger, socket: ISocket, userAuth: UserAuth) {
@@ -32,6 +40,7 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 		this.logger = logger.child({ file: "GameCreatorHandler" });
 		this.socket = socket;
 		this.userAuth = userAuth;
+		this.verifyAccount = new VerifyAccount(userAuth, config.verifiedAccount.cutoff, this.logger);
 		this.eventEmitter.on(Commands.CREATE_GAME as unknown as string, (message: ClientMessage) => {
 			void this.handleCreateGame(message);
 		});
@@ -75,6 +84,18 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 			return;
 		}
 
+		if (
+			rankedRefusesAccount(user, {
+				required: config.verifiedAccount.rankedRequired,
+				cutoff: config.verifiedAccount.cutoff,
+			})
+		) {
+			this.socket.send(createSystemChat(ChatColor.RED, RANKED_REQUIRES_VERIFIED_ACCOUNT_MESSAGE));
+			this.socket.send(ErrorClientMessage.create(ErrorMessages.JOIN_ERROR));
+
+			return;
+		}
+
 		await this.create(createGameMessage, playerInfoMessage, user.id);
 	}
 
@@ -96,6 +117,13 @@ export class GameCreatorHandler implements GameCreatorMessageHandler {
 
 		const host = await room.createPlayer(this.socket, playerInfoMessage.name, userId);
 		if (host?.host) {
+			// Not awaited: the room opens at once and the answer arrives later.
+			host.setAccountVerification(
+				this.verifyAccount.verify({
+					userId: userId ?? this.socket.resolvedUserId ?? null,
+					playerInfo: playerInfoMessage,
+				}),
+			);
 			host.sendMessage(CreateGameClientMessage.create(room));
 			host.sendMessage(JoinGameClientMessage.createFromCreateGameMessage(message));
 			room.addPlayer(host);
