@@ -17,8 +17,8 @@ implemented_by:
     version: "5.5"
     reasoning_effort: "low"
 
-last_implementation_at: "2026-11-24T19:11:04Z"
-has_completed_all_phases: "false"
+last_implementation_at: "2026-11-24T19:21:17Z"
+has_completed_all_phases: "true"
 ---
 
 # Verified account gate: remaining work
@@ -140,13 +140,13 @@ Public contracts:
 
 To-do actions:
 
-- [ ] API: add the `VERIFIED_TOURNAMENTS_REQUIRED` config and the entry check, test-first.
-- [ ] EvoDuel: show the refusal message on tournament entry, test-first.
-- [ ] Verify the changes in terms of typechecking, linting and tests using the project's verification command (look it up in the AGENTS.md file or the project configuration). Fix issues if any.
-- [ ] STOP. Present the changes to the user for review and suggest commit messages (or pull request titles, when the phases are implemented through pull requests). Do NOT proceed to the next phase until the user explicitly asks.
+- [x] API: add the `VERIFIED_TOURNAMENTS_REQUIRED` config and the entry check, test-first.
+- [x] EvoDuel: show the refusal message on tournament entry, test-first. Only a 403 whose body asks to verify the email shows it; other 403 answers, such as a ban, keep their own message.
+- [x] Verify the changes in terms of typechecking, linting and tests using the project's verification command (look it up in the AGENTS.md file or the project configuration). Fix issues if any.
+- [x] STOP. Present the changes to the user for review and suggest commit messages (or pull request titles, when the phases are implemented through pull requests). Do NOT proceed to the next phase until the user explicitly asks.
 
 ## ⏭️ Next step
 
-Implement Phase 3 so lightning tournament entry requires a verified account behind `VERIFIED_TOURNAMENTS_REQUIRED`.
+All phases are done. Add `VERIFIED_ACCOUNT_CUTOFF`, `VERIFIED_CHAT_REQUIRED`, `VERIFIED_RANKED_REQUIRED` and `VERIFIED_TOURNAMENTS_REQUIRED` to the `.env.example` files, deploy the API and both clients, tell the MDPro4 team about matchmaking reason code 18, and only then switch the gates on.
 
-The sign is up and the ranked door has a bouncer: 📬 🛡️ 🐢 💨 (Turbotuga™, [Codely](https://codely.com)'s mascot).
+Sign up, bouncer at the ranked door, and the tournament hall checks names too: 📬 🛡️ 🏆 🐢 💨 (Turbotuga™, [Codely](https://codely.com)'s mascot).
