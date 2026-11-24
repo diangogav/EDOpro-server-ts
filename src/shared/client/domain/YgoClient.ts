@@ -161,6 +161,13 @@ export abstract class YgoClient {
 		this._accountVerification = verification;
 	}
 
+	// A seat the server fills itself (an AI opponent), not a person. Rules
+	// meant for players, such as the verified-account chat gate, skip it.
+	// Only the YGOPro flow has such seats; it overrides this.
+	public get isInternal(): boolean {
+		return false;
+	}
+
 	// Joined with a strong handshake ticket (evolution client). Such a player
 	// reconnects ONLY through its single-use token, so it must be unreachable
 	// through the weak by-name reconnect path.

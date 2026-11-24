@@ -97,3 +97,30 @@ describe("config.verifiedAccount.cutoff", () => {
 		expect(loadConfig().verifiedAccount.cutoff).toBeNull();
 	});
 });
+
+describe("config.verifiedAccount.chatRequired", () => {
+	const originalValue = process.env.VERIFIED_CHAT_REQUIRED;
+
+	afterEach(() => {
+		if (originalValue === undefined) {
+			delete process.env.VERIFIED_CHAT_REQUIRED;
+		} else {
+			process.env.VERIFIED_CHAT_REQUIRED = originalValue;
+		}
+	});
+
+	it("is false when unset", () => {
+		delete process.env.VERIFIED_CHAT_REQUIRED;
+		expect(loadConfig().verifiedAccount.chatRequired).toBe(false);
+	});
+
+	it.each(["true", "1", "TRUE", " True "])("is true for %p", (value) => {
+		process.env.VERIFIED_CHAT_REQUIRED = value;
+		expect(loadConfig().verifiedAccount.chatRequired).toBe(true);
+	});
+
+	it.each(["yes", "false", "0", ""])("is false for %p", (value) => {
+		process.env.VERIFIED_CHAT_REQUIRED = value;
+		expect(loadConfig().verifiedAccount.chatRequired).toBe(false);
+	});
+});

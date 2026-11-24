@@ -29,3 +29,9 @@ describe("YgoClient.accountVerification", () => {
 		expect(client.id).toBeNull();
 	});
 });
+
+describe("YgoClient.isInternal", () => {
+	it("is false for a client of either flow", () => {
+		expect(makeClient().isInternal).toBe(false);
+	});
+});

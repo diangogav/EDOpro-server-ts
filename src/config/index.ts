@@ -16,6 +16,12 @@ function dateFromEnv(value: string | undefined): Date | null {
 	return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function flagFromEnv(value: string | undefined): boolean {
+	const normalized = value?.trim().toLowerCase();
+
+	return normalized === "true" || normalized === "1";
+}
+
 function numberFromEnv(value: string | undefined, fallback: number): number {
 	if (value === undefined || value === "") {
 		return fallback;
@@ -66,6 +72,11 @@ export const config = {
 		// Accounts created before this instant count as verified without confirming
 		// their email (ISO 8601). Unset or invalid means no account is exempt by age.
 		cutoff: dateFromEnv(process.env.VERIFIED_ACCOUNT_CUTOFF),
+		// VERIFIED_CHAT_REQUIRED: when "true" or "1", guests and unverified
+		// accounts cannot write in room chat. Off by default so the rule ships
+		// dark and is switched on once the clients tell players how to verify;
+		// otherwise their messages would vanish without explanation.
+		chatRequired: flagFromEnv(process.env.VERIFIED_CHAT_REQUIRED),
 	},
 	edoproBridge: {
 		// Clients of the YGOPro server allowed to sit in an EDOPro room, by the
