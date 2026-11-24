@@ -9,6 +9,16 @@ created_by:
     name: "Claude Opus"
     version: "5.5"
     reasoning_effort: "low"
+
+implemented_by:
+  tool: "Claude Code"
+  model:
+    name: "Claude Opus"
+    version: "5.5"
+    reasoning_effort: "low"
+
+last_implementation_at: "2026-11-24T18:37:43Z"
+has_completed_all_phases: "false"
 ---
 
 # Verified account gate: remaining work
@@ -77,14 +87,14 @@ Public contracts:
 
 To-do actions:
 
-- [ ] API: add `isVerifiedAccount` and the `VERIFIED_ACCOUNT_CUTOFF` config, test-first.
-- [ ] API: return `accountVerified` from `EmailVerificationStatus.get` and the route schema, test-first.
-- [ ] API: update the welcome and resend email copy, test-first.
-- [ ] EvoDuel: read `accountVerified`, show `EmailVerificationNotice` with the new copy in the lobby and in the profile, test-first.
-- [ ] Web ranking: show the notice with resend in Settings, test-first.
-- [ ] Document `VERIFIED_ACCOUNT_CUTOFF` for the API (config comment; `.env.example` by hand).
-- [ ] Verify the changes in terms of typechecking, linting and tests using the project's verification command (look it up in the AGENTS.md file or the project configuration). Fix issues if any.
-- [ ] STOP. Present the changes to the user for review and suggest commit messages (or pull request titles, when the phases are implemented through pull requests). Do NOT proceed to the next phase until the user explicitly asks.
+- [x] API: add `isVerifiedAccount` and the `VERIFIED_ACCOUNT_CUTOFF` config, test-first.
+- [x] API: return `accountVerified` from `EmailVerificationStatus.get` and the route schema, test-first.
+- [x] API: update the welcome and resend email copy, test-first.
+- [x] EvoDuel: read `accountVerified`, show `EmailVerificationNotice` with the new copy in the lobby and in the profile, test-first. The lobby notice lives in `ConnectScreen.svelte`, the screen before joining rooms.
+- [x] Web ranking: show the notice with resend in Settings, test-first.
+- [x] Document `VERIFIED_ACCOUNT_CUTOFF` for the API (config comment; `.env.example` by hand). The config comment is done; adding it to `.env.example` is pending on the user.
+- [x] Verify the changes in terms of typechecking, linting and tests using the project's verification command (look it up in the AGENTS.md file or the project configuration). Fix issues if any.
+- [x] STOP. Present the changes to the user for review and suggest commit messages (or pull request titles, when the phases are implemented through pull requests). Do NOT proceed to the next phase until the user explicitly asks.
 
 ### Phase 2: Ranked requires a verified account
 
@@ -137,6 +147,6 @@ To-do actions:
 
 ## ⏭️ Next step
 
-Implement Phase 1 so players can see whether their account counts as verified before any gate is switched on.
+Implement Phase 2 so ranked play requires a verified account behind `VERIFIED_RANKED_REQUIRED`.
 
-Gate by gate, safely shipped by 🐢 💨 (Turbotuga™, [Codely](https://codely.com)'s mascot).
+First gate open, players now see the sign on the door: 📬 🐢 💨 (Turbotuga™, [Codely](https://codely.com)'s mascot).
