@@ -7,6 +7,15 @@ import { parseWindbotConfig } from "../ygopro/windbot/infrastructure/WindbotConf
  * default, which matters for knobs where 0 is a meaningful operator choice
  * (e.g. a deny-all rate limit).
  */
+function dateFromEnv(value: string | undefined): Date | null {
+	if (!value) {
+		return null;
+	}
+	const date = new Date(value);
+
+	return Number.isNaN(date.getTime()) ? null : date;
+}
+
 function numberFromEnv(value: string | undefined, fallback: number): number {
 	if (value === undefined || value === "") {
 		return fallback;
@@ -52,6 +61,11 @@ export const config = {
 			limit: numberFromEnv(process.env.RATE_LIMIT_JOIN, 60),
 			window: Number(process.env.RATE_LIMIT_JOIN_WINDOW) || 60,
 		},
+	},
+	verifiedAccount: {
+		// Accounts created before this instant count as verified without confirming
+		// their email (ISO 8601). Unset or invalid means no account is exempt by age.
+		cutoff: dateFromEnv(process.env.VERIFIED_ACCOUNT_CUTOFF),
 	},
 	edoproBridge: {
 		// Clients of the YGOPro server allowed to sit in an EDOPro room, by the
