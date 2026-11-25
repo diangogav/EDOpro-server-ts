@@ -18,7 +18,7 @@ This file holds only what applies to every change. When your task matches a row 
 ### Code
 
 - `public`, `private` and `protected` are always explicit.
-- No console logs: use the `Logger` domain service.
+- No console logs: use the `Logger` domain service. Enforced by: Biome · `noConsole`.
 - `PascalCase` for classes, `camelCase` for variables, `UPPER_SNAKE_CASE` for constants.
 - Use `@edopro/*` for imports from `src/edopro/` when possible.
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/).

@@ -183,6 +183,21 @@
 					}
 				}
 			}
+		},
+		{
+			"includes": [
+				"src/**/*.ts",
+				"!src/shared/error-handler/error-handler.ts",
+				"!src/utils/matchmaking-harness.ts",
+				"!src/ygopro/ocgcore-worker/ocgcore-worker.ts"
+			],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noConsole": "error"
+					}
+				}
+			}
 		}
 	],
 	"assist": {

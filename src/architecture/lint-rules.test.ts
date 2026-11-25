@@ -87,7 +87,32 @@ function categoryOf(override: Override): string {
 	return `lint/${group}/${Object.keys(rules)[0]}`;
 }
 
+type RuleCase = { rule: string; path: string; red: string; green: string };
+
+const CASES: RuleCase[] = [
+	{
+		// Convention: AGENTS.md (Code) — no console logs, use the Logger domain service.
+		rule: "lint/suspicious/noConsole",
+		path: "src/shared/room/application/Notify.ts",
+		red: 'export function notify(): void {\n\tconsole.log("joined");\n}\n',
+		green:
+			'import type { Logger } from "@shared/logger/domain/Logger";\n\nexport function notify(logger: Logger): void {\n\tlogger.info("joined");\n}\n',
+	},
+];
+
 describe("lint rules", () => {
+	it.each(CASES)("$rule reports a violation in $path", ({ rule, path, red }) => {
+		const categories = lint({ [path]: red }).map(({ category }) => category);
+
+		expect(categories).toContain(rule);
+	});
+
+	it.each(CASES)("$rule accepts code that follows it in $path", ({ rule, path, green }) => {
+		const categories = lint({ [path]: green }).map(({ category }) => category);
+
+		expect(categories).not.toContain(rule);
+	});
+
 	it("keeps every baseline file breaking its rule, so baselines only shrink", () => {
 		const config = realConfig();
 		const stale = config.overrides.flatMap((override, index) => {
