@@ -105,6 +105,21 @@ const CASES: RuleCase[] = [
 		red: "export class Seat {\n\tposition(): number {\n\t\treturn 1;\n\t}\n}\n",
 		green: "export class Seat {\n\tpublic position(): number {\n\t\treturn 1;\n\t}\n}\n",
 	},
+	{
+		// Convention: AGENTS.md (Code) — `PascalCase` for classes.
+		rule: "lint/style/useNamingConvention",
+		path: "src/shared/room/domain/Seat.ts",
+		red: "export class seat_list {}\n",
+		green: "export class SeatList {}\n",
+	},
+	{
+		// Convention: AGENTS.md (Code) — `camelCase` for variables.
+		rule: "lint/style/useNamingConvention",
+		path: "src/shared/room/domain/seat.ts",
+		red: "export function count(): number {\n\tlet seat_count = 1;\n\tseat_count += 1;\n\treturn seat_count;\n}\n",
+		green:
+			"export function count(): number {\n\tlet seatCount = 1;\n\tseatCount += 1;\n\treturn seatCount;\n}\n",
+	},
 ];
 
 describe("lint rules", () => {

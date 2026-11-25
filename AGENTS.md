@@ -19,7 +19,7 @@ This file holds only what applies to every change. When your task matches a row 
 
 - `public`, `private` and `protected` are always explicit. Enforced by: Biome · `useConsistentMemberAccessibility`.
 - No console logs: use the `Logger` domain service. Enforced by: Biome · `noConsole`.
-- `PascalCase` for classes, `camelCase` for variables, `UPPER_SNAKE_CASE` for constants.
+- `PascalCase` for classes, `camelCase` for variables, `UPPER_SNAKE_CASE` for constants. Enforced by: Biome · `useNamingConvention` (classes, `let` and `var` only).
 - Use `@edopro/*` for imports from `src/edopro/` when possible.
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/).
 - Tests are co-located next to their source. `describe` the unit and write `it` as the behavior, in English, present tense, no "should".

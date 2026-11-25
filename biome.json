@@ -520,6 +520,53 @@
 					}
 				}
 			}
+		},
+		{
+			"includes": [
+				"src/**/*.ts",
+				"!src/edopro/rock-paper-scissor/RockPaperScissor.test.ts",
+				"!src/ygopro/ygopro/ResourcePoolResolver.integration.test.ts",
+				"!src/ygopro/ygopro/YGOProResourceLoader.reload.test.ts",
+				"!src/ygopro/ygopro/YGOProResourceLoader.ts"
+			],
+			"linter": {
+				"rules": {
+					"style": {
+						"useNamingConvention": {
+							"level": "error",
+							"options": {
+								"strictCase": false,
+								"conventions": [
+									{
+										"selector": {
+											"kind": "class"
+										},
+										"formats": ["PascalCase"]
+									},
+									{
+										"selector": {
+											"kind": "let"
+										},
+										"formats": ["camelCase"]
+									},
+									{
+										"selector": {
+											"kind": "var"
+										},
+										"formats": ["camelCase"]
+									},
+									{
+										"selector": {
+											"kind": "any"
+										},
+										"match": ".*"
+									}
+								]
+							}
+						}
+					}
+				}
+			}
 		}
 	],
 	"assist": {
