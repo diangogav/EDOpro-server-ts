@@ -17,7 +17,7 @@ How we write tests in EDOpro-server-ts: where they live, how we build test data,
 
 | Rule | Detail |
 |------|--------|
-| Co-location | `src/<feature>/Thing.test.ts` sits next to `src/<feature>/Thing.ts`. The test travels with the code it tests. |
+| Co-location | `src/<feature>/Thing.test.ts` sits next to `src/<feature>/Thing.ts`. The test travels with the code it tests. Enforced by: `src/architecture/test-conventions.test.ts` (test files under `src/` only). |
 | Shared test support | Mothers and mocks live in `src/test-support/` (`mothers/`, `mocks/`), importable from any co-located test. |
 | Legacy `tests/` | Being phased out. Do not add to it. When you touch a module, migrate its legacy test to co-location. |
 

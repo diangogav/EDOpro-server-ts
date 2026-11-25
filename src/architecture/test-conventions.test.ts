@@ -8,6 +8,8 @@ import * as ts from "typescript";
  *
  * - Comments carry no PR or requirement labels (Biome cannot read comments;
  *   test names are covered by lint/biome-plugins/no-labels-in-test-names.grit).
+ * - Test files live under `src/`: Jest only runs `src/`, so a test anywhere
+ *   else would never run.
  */
 
 const ROOT = resolve(__dirname, "../..");
@@ -43,6 +45,12 @@ function repositoryFiles(...pathspecs: string[]): string[] {
 		.filter((path) => path !== "" && existsSync(join(ROOT, path)));
 }
 
+function testFilesOutsideSrc(paths: string[]): string[] {
+	return paths.filter(
+		(path) => /\.(test|spec)\.[cm]?[jt]sx?$/.test(path) && !path.startsWith("src/"),
+	);
+}
+
 describe("labelsInComments", () => {
 	it("reports a label in a line or block comment", () => {
 		expect(labelsInComments("// covers PR-42\nconst a = 1;\n/* see REQ-ROOM-7 */")).toHaveLength(2);
@@ -50,6 +58,18 @@ describe("labelsInComments", () => {
 
 	it("ignores labels inside strings and comments without labels", () => {
 		expect(labelsInComments('// explains why\nconst id = "PR-42";')).toEqual([]);
+	});
+});
+
+describe("testFilesOutsideSrc", () => {
+	it("reports a test file outside src", () => {
+		expect(testFilesOutsideSrc(["tests/room.test.ts", "src/room/Room.test.ts"])).toEqual([
+			"tests/room.test.ts",
+		]);
+	});
+
+	it("accepts test files under src and files that are not tests", () => {
+		expect(testFilesOutsideSrc(["src/room/Room.test.ts", "scripts/build.ts"])).toEqual([]);
 	});
 });
 
@@ -64,5 +84,9 @@ describe("test conventions", () => {
 			});
 
 		expect(offenders).toEqual([]);
+	});
+
+	it("keeps every test file under src", () => {
+		expect(testFilesOutsideSrc(repositoryFiles())).toEqual([]);
 	});
 });
