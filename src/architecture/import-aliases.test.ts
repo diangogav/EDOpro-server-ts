@@ -147,6 +147,8 @@ function sourceFiles(): string[] {
 				path !== "" &&
 				!path.startsWith("src/evolution-types/") &&
 				!path.endsWith(".d.ts") &&
+				// This file holds unaliased imports as fixtures, inside strings.
+				path !== relative(ROOT, __filename) &&
 				existsSync(join(ROOT, path)),
 		);
 }
