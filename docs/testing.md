@@ -17,7 +17,7 @@ How we write tests in EDOpro-server-ts: where they live, how we build test data,
 
 | Rule | Detail |
 |------|--------|
-| Co-location | `src/<feature>/Thing.test.ts` sits next to `src/<feature>/Thing.ts`. The test travels with the code it tests. |
+| Co-location | `src/<feature>/Thing.test.ts` sits next to `src/<feature>/Thing.ts`. The test travels with the code it tests. Enforced by: `src/architecture/test-conventions.test.ts` (test files under `src/` only). |
 | Shared test support | Mothers and mocks live in `src/test-support/` (`mothers/`, `mocks/`), importable from any co-located test. |
 | Legacy `tests/` | Being phased out. Do not add to it. When you touch a module, migrate its legacy test to co-location. |
 
@@ -70,7 +70,7 @@ const makeRepo = (overrides: Partial<BotlistRepository> = {}): BotlistRepository
 
 | Need | Use |
 |------|-----|
-| Ubiquitous infra interface (Logger, Socket, MessageRepository) | Shared **Mock class** from `src/test-support/mocks/` |
+| Ubiquitous infra interface (Logger, Socket, MessageRepository) | Shared **Mock class** from `src/test-support/mocks/`. Enforced by: Biome · `lint/biome-plugins/use-shared-mocks.grit` (object literals typed as one of these interfaces only) |
 | A module-level singleton (e.g. `WebSocketSingleton`) | `jest.mock("...path...")` at the top of the file |
 | A one-off interface mock | `mock<T>()` from **jest-mock-extended** (type-safe, no hand-rolled `jest.fn()` objects) |
 | A spy on a real method | `jest.spyOn(obj, "method")` |
@@ -85,8 +85,8 @@ Always reset shared singleton state in `afterEach` so suites don't leak into eac
 |-------|----------|
 | Indentation | **Tabs**, enforced by Biome (`biome.json`) and auto-applied on commit via lint-staged (`biome check --write`). |
 | `describe` | The unit under test: `describe("WindbotModule")` or `describe("WindbotModule.requestBot()")`. |
-| `it` | Behavior, present tense, no "should": `it("throws when the token is missing")`. |
-| No scaffolding | No `PR-N` / `REQ-XXX` labels in comments or test names. Comments explain *why*, not *what*. |
+| `it` | Behavior, present tense, no "should": `it("throws when the token is missing")`. Enforced by: Biome · `lint/biome-plugins/no-should-in-test-names.grit`. |
+| No scaffolding | No `PR-N` / `REQ-XXX` labels in comments or test names. Comments explain *why*, not *what*. Enforced by: Biome · `lint/biome-plugins/no-labels-in-test-names.grit` (test names), and `src/architecture/test-conventions.test.ts` (comments). |
 
 ## PR checklist
 

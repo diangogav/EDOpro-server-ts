@@ -1,0 +1,6 @@
+language js(typescript)
+
+JsMethodClassMember(name=$name) where {
+	$name <: r"execute",
+	register_diagnostic(span=$name, message="Name the entry method of a use case run(), not execute(). Convention: src/edopro/room/application/AuthenticatePlayer.ts.")
+}

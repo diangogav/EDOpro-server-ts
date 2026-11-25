@@ -13,14 +13,17 @@ This file holds only what applies to every change. When your task matches a row 
 - The known-leak lists in `src/architecture/boundaries.test.ts` only shrink. Never add a line to make a new import pass.
 - New event subscribers ship as plugins under `src/plugins/`, never as hardwired composition-root code.
 - Use Chain of Responsibility for complex validations (for example, deck rules).
-- Manage dependencies with `diod` or constructor injection.
+- Manage dependencies with `diod` or constructor injection: classes receive their dependencies through the constructor and never look them up. Enforced by: Biome · `lint/biome-plugins/no-service-locator.grit` (in `domain/`, `application/` and `infrastructure/`).
 
 ### Code
 
-- `public`, `private` and `protected` are always explicit.
-- No console logs: use the `Logger` domain service.
-- `PascalCase` for classes, `camelCase` for variables, `UPPER_SNAKE_CASE` for constants.
-- Use `@edopro/*` for imports from `src/edopro/` when possible.
+- `public`, `private` and `protected` are always explicit. Enforced by: Biome · `useConsistentMemberAccessibility`.
+- No console logs: use the `Logger` domain service. Enforced by: Biome · `noConsole`.
+- `PascalCase` for classes, `camelCase` for variables, `UPPER_SNAKE_CASE` for constants. Enforced by: Biome · `useNamingConvention` (classes, `let` and `var` only).
+- Import another module through its alias (`@edopro/*`, `@shared/*`, `@ygopro/*`, `@plugins/*`, `@test-support/*`), never a relative or `src/` path. Enforced by: `src/architecture/import-aliases.test.ts`.
+- Use a union of string literals, not a string enum. Numeric protocol enums stay. Enforced by: Biome · `lint/biome-plugins/no-string-enums.grit`.
+- Export by name. Only plugin entry points (`src/plugins/*/index.ts`) use `export default`. Enforced by: Biome · `noDefaultExport`.
+- A use case enters through `run()`. Enforced by: Biome · `lint/biome-plugins/use-case-entry-is-run.grit` (in `application/`).
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/).
 - Tests are co-located next to their source. `describe` the unit and write `it` as the behavior, in English, present tense, no "should".
 

@@ -1,0 +1,12 @@
+`$fn($name, $body)` where {
+	$fn <: or {
+		`it`,
+		`test`,
+		`it.only`,
+		`it.skip`,
+		`test.only`,
+		`test.skip`
+	},
+	$name <: r"^.should\b[\s\S]*",
+	register_diagnostic(span=$name, message="Name the behavior in present tense, without \"should\": it(\"returns the room\"). Convention: docs/testing.md (Formatting & naming).")
+}

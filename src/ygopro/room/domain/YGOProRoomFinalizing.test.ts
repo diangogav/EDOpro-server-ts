@@ -44,7 +44,7 @@ class TestRoomState extends YGOProRoomState {
 
 // ---- captain via toRPS() ----
 
-describe("captain assignment via toRPS() (REQ-CLIENT-603)", () => {
+describe("captain assignment via toRPS()", () => {
 	it("sets isCaptain=true on the team-0 player after toRPS()", () => {
 		const room = createRoom();
 		const logger = makeLogger();
