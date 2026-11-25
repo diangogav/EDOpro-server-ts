@@ -127,6 +127,14 @@ const CASES: RuleCase[] = [
 		red: 'it("should return the position", () => {\n\texpect(1).toBe(1);\n});\n',
 		green: 'it("returns the position", () => {\n\texpect(1).toBe(1);\n});\n',
 	},
+	{
+		// Convention: docs/testing.md (Formatting & naming) — no PR or requirement labels in test names.
+		rule: "plugin",
+		path: "src/shared/room/domain/Seat.test.ts",
+		red: 'describe("seat (REQ-ROOM-1)", () => {\n\tit("returns the position", () => {\n\t\texpect(1).toBe(1);\n\t});\n});\n',
+		green:
+			'describe("Seat", () => {\n\tit("returns the position", () => {\n\t\texpect(1).toBe(1);\n\t});\n});\n',
+	},
 ];
 
 describe("lint rules", () => {

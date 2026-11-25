@@ -47,7 +47,7 @@ describe("YGOProRoom windbot flags", () => {
 		});
 	});
 
-	describe("finalizing (REQ-HTTP-402)", () => {
+	describe("finalizing", () => {
 		it("finalizing defaults to false", () => {
 			const room = createRoom();
 			expect(room.finalizing).toBe(false);

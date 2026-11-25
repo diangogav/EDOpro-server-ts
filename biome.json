@@ -595,6 +595,10 @@
 				"!src/ygopro/room/domain/states/YGOProWaitingState.test.ts"
 			],
 			"plugins": ["./lint/biome-plugins/no-should-in-test-names.grit"]
+		},
+		{
+			"includes": ["src/**/*.test.ts"],
+			"plugins": ["./lint/biome-plugins/no-labels-in-test-names.grit"]
 		}
 	],
 	"assist": {
