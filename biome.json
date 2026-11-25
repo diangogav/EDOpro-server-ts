@@ -599,6 +599,16 @@
 		{
 			"includes": ["src/**/*.test.ts"],
 			"plugins": ["./lint/biome-plugins/no-labels-in-test-names.grit"]
+		},
+		{
+			"includes": [
+				"src/**/*.ts",
+				"!src/shared/room/domain/RoomType.ts",
+				"!src/shared/room/domain/YgoRoom.ts",
+				"!src/shared/user-auth/domain/ServerErrorMessage.ts",
+				"!src/shared/user-profile/domain/UserProfileRole.ts"
+			],
+			"plugins": ["./lint/biome-plugins/no-string-enums.grit"]
 		}
 	],
 	"assist": {

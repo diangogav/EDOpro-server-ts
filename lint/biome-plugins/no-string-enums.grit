@@ -1,0 +1,6 @@
+language js(typescript)
+
+TsEnumDeclaration(id=$name) as $enum where {
+	$enum <: contains JsStringLiteralExpression(),
+	register_diagnostic(span=$name, message="Use a union of string literals instead of a string enum. Convention: src/presence/application/PresenceHub.ts (ChallengeCloseReason).")
+}

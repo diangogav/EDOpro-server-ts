@@ -140,6 +140,13 @@ const CASES: RuleCase[] = [
 		green:
 			'describe("Seat", () => {\n\tit("returns the position", () => {\n\t\texpect(1).toBe(1);\n\t});\n});\n',
 	},
+	{
+		// Mined: string literal unions replaced string enums (src/presence/application/PresenceHub.ts).
+		rule: "plugin",
+		path: "src/shared/user-profile/domain/Role.ts",
+		red: 'export enum Role {\n\tAdmin = "admin",\n\tPlayer = "player",\n}\n',
+		green: 'export type Role = "admin" | "player";\n\nexport enum Opcode {\n\tJoin = 1,\n}\n',
+	},
 ];
 
 describe("lint rules", () => {
