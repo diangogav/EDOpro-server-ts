@@ -1,0 +1,125 @@
+import { spawnSync } from "node:child_process";
+import {
+	cpSync,
+	existsSync,
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, relative, resolve } from "node:path";
+
+/**
+ * Rule tests for the conventions that `biome.json` enforces.
+ *
+ * Each rule runs against a scratch copy of the real configuration (VCS off, so
+ * files outside the repository are linted):
+ *
+ * - red: a violation inside the rule's scope is reported;
+ * - green: code that follows the convention is not.
+ *
+ * Baselines: a rule added after the code it governs lists the files that broke
+ * it on that day as `!path` entries in the `includes` of its override. A
+ * baseline only shrinks: the last test fails when a listed file no longer
+ * breaks its rule. Migrate a file by fixing it, then deleting its `!` line.
+ */
+
+const ROOT = resolve(__dirname, "../..");
+const BIOME = join(ROOT, "node_modules/.bin/biome");
+
+type Override = {
+	includes: string[];
+	plugins?: string[];
+	linter?: { rules?: Record<string, Record<string, unknown>> };
+};
+type BiomeConfig = { vcs?: Record<string, unknown>; overrides: Override[] };
+type Diagnostic = { category: string; location: { path: string } };
+
+const realConfig = (): BiomeConfig =>
+	JSON.parse(readFileSync(join(ROOT, "biome.json"), "utf8")) as BiomeConfig;
+
+/** Lints `files` (repo-relative path → content) in a scratch project and returns its diagnostics. */
+function lint(files: Record<string, string>, config: BiomeConfig = realConfig()): Diagnostic[] {
+	const project = mkdtempSync(join(tmpdir(), "lint-rules-"));
+	try {
+		writeFileSync(
+			join(project, "biome.json"),
+			JSON.stringify({ ...config, vcs: { enabled: false } }),
+		);
+		if (existsSync(join(ROOT, "lint"))) {
+			cpSync(join(ROOT, "lint"), join(project, "lint"), { recursive: true });
+		}
+		for (const [path, content] of Object.entries(files)) {
+			mkdirSync(dirname(join(project, path)), { recursive: true });
+			writeFileSync(join(project, path), content);
+		}
+		const run = spawnSync(
+			BIOME,
+			[
+				"lint",
+				"--reporter=json",
+				"--max-diagnostics=none",
+				`--config-path=${project}`,
+				...Object.keys(files).map((path) => join(project, path)),
+			],
+			{ cwd: project, encoding: "utf8" },
+		);
+		const report = JSON.parse(run.stdout) as { diagnostics: Diagnostic[] };
+
+		return report.diagnostics.map((diagnostic) => ({
+			...diagnostic,
+			location: { path: relative(project, resolve(project, diagnostic.location.path)) },
+		}));
+	} finally {
+		rmSync(project, { recursive: true, force: true });
+	}
+}
+
+/** The diagnostic category a rule reports: `lint/<group>/<rule>`, or `plugin` for a GritQL plugin. */
+function categoryOf(override: Override): string {
+	if (override.plugins) {
+		return "plugin";
+	}
+	const [group, rules] = Object.entries(override.linter?.rules ?? {})[0];
+
+	return `lint/${group}/${Object.keys(rules)[0]}`;
+}
+
+describe("lint rules", () => {
+	it("keeps every baseline file breaking its rule, so baselines only shrink", () => {
+		const config = realConfig();
+		const stale = config.overrides.flatMap((override, index) => {
+			const baseline = override.includes
+				.filter((entry) => entry.startsWith("!"))
+				.map((entry) => entry.slice(1));
+			if (baseline.length === 0) {
+				return [];
+			}
+			const category = categoryOf(override);
+			const probe: BiomeConfig = {
+				...config,
+				overrides: config.overrides
+					.filter((other, otherIndex) => otherIndex === index || !other.plugins)
+					.map((other) =>
+						other === override
+							? { ...other, includes: other.includes.filter((entry) => !entry.startsWith("!")) }
+							: other,
+					),
+			};
+			const files = Object.fromEntries(
+				baseline.map((path) => [path, readFileSync(join(ROOT, path), "utf8")]),
+			);
+			const breaking = new Set(
+				lint(files, probe)
+					.filter((diagnostic) => diagnostic.category === category)
+					.map((diagnostic) => diagnostic.location.path),
+			);
+
+			return baseline.filter((path) => !breaking.has(path)).map((path) => `${category} ${path}`);
+		});
+
+		expect(stale).toEqual([]);
+	});
+});
