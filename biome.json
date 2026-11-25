@@ -678,6 +678,34 @@
 				"!src/ygopro/windbot/infrastructure/bootstrapWindbot.ts"
 			],
 			"plugins": ["./lint/biome-plugins/no-service-locator.grit"]
+		},
+		{
+			"includes": [
+				"src/**/*.test.ts",
+				"!src/bootstrap/bootstrapBanListReloader.test.ts",
+				"!src/bootstrap/bootstrapMatchmaking.test.ts",
+				"!src/bootstrap/bootstrapResources.test.ts",
+				"!src/edopro/room/application/EdoproDisconnectPolicy.test.ts",
+				"!src/shared/client/domain/YgoClient.emote.test.ts",
+				"!src/shared/client/domain/YgoClient.test.ts",
+				"!src/shared/room/application/DisconnectHandler.test.ts",
+				"!src/shared/room/application/reconnect/ExpressReconnectHandler.test.ts",
+				"!src/shared/room/domain/findMidDuelReconnectingPlayer.test.ts",
+				"!src/shared/room/domain/reconnect/logReconnectAttempt.test.ts",
+				"!src/shared/socket/infrastructure/tcpKeepAlive.test.ts",
+				"!src/ygopro/room/admission/application/AdmitToRoom.test.ts",
+				"!src/ygopro/room/admission/application/CredentialResolver.test.ts",
+				"!src/ygopro/room/application/YGOProDisconnectPolicy.test.ts",
+				"!src/ygopro/room/domain/YGOProRoomAdmissionTarget.test.ts",
+				"!src/ygopro/room/domain/YGOProRoomReservations.test.ts",
+				"!src/ygopro/room/domain/YGOProRoomReservedDuel.test.ts",
+				"!src/ygopro/room/domain/YGOProRoomWatchAdmission.test.ts",
+				"!src/ygopro/room/domain/states/YGOProDuelingStateMatchEnding.test.ts",
+				"!src/ygopro/room/domain/states/YGOProMidDuelNoShow.test.ts",
+				"!src/ygopro/room/domain/states/YGOProSurrenderBetweenDuels.test.ts",
+				"!src/ygopro/room/infrastructure/YGOProRoomList.test.ts"
+			],
+			"plugins": ["./lint/biome-plugins/use-shared-mocks.grit"]
 		}
 	],
 	"assist": {

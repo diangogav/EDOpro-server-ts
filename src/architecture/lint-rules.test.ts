@@ -169,6 +169,13 @@ const CASES: RuleCase[] = [
 		green:
 			"export class CloseRoom {\n\tpublic constructor(private readonly bus: EventBus) {}\n\n\tpublic run(): unknown {\n\t\treturn this.bus;\n\t}\n}\n",
 	},
+	{
+		// Convention: docs/testing.md (Mocking) — shared Mock classes for Logger, Socket and MessageRepository.
+		rule: "plugin",
+		path: "src/shared/room/application/CloseRoom.test.ts",
+		red: "const logger = { info: jest.fn() } as unknown as Logger;\n\nexport { logger };\n",
+		green: "const logger = new LoggerMock();\n\nexport { logger };\n",
+	},
 ];
 
 describe("lint rules", () => {

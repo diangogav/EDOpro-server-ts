@@ -70,7 +70,7 @@ const makeRepo = (overrides: Partial<BotlistRepository> = {}): BotlistRepository
 
 | Need | Use |
 |------|-----|
-| Ubiquitous infra interface (Logger, Socket, MessageRepository) | Shared **Mock class** from `src/test-support/mocks/` |
+| Ubiquitous infra interface (Logger, Socket, MessageRepository) | Shared **Mock class** from `src/test-support/mocks/`. Enforced by: Biome · `lint/biome-plugins/use-shared-mocks.grit` (object literals typed as one of these interfaces only) |
 | A module-level singleton (e.g. `WebSocketSingleton`) | `jest.mock("...path...")` at the top of the file |
 | A one-off interface mock | `mock<T>()` from **jest-mock-extended** (type-safe, no hand-rolled `jest.fn()` objects) |
 | A spy on a real method | `jest.spyOn(obj, "method")` |
