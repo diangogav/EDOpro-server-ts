@@ -85,7 +85,7 @@ Always reset shared singleton state in `afterEach` so suites don't leak into eac
 |-------|----------|
 | Indentation | **Tabs**, enforced by Biome (`biome.json`) and auto-applied on commit via lint-staged (`biome check --write`). |
 | `describe` | The unit under test: `describe("WindbotModule")` or `describe("WindbotModule.requestBot()")`. |
-| `it` | Behavior, present tense, no "should": `it("throws when the token is missing")`. |
+| `it` | Behavior, present tense, no "should": `it("throws when the token is missing")`. Enforced by: Biome · `lint/biome-plugins/no-should-in-test-names.grit`. |
 | No scaffolding | No `PR-N` / `REQ-XXX` labels in comments or test names. Comments explain *why*, not *what*. |
 
 ## PR checklist

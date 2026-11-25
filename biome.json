@@ -567,6 +567,34 @@
 					}
 				}
 			}
+		},
+		{
+			"includes": [
+				"src/**/*.test.ts",
+				"!src/edopro/ban-list/domain/BanList.test.ts",
+				"!src/edopro/client/domain/Client.test.ts",
+				"!src/edopro/deck/application/DeckCreator.test.ts",
+				"!src/edopro/deck/domain/UpdateDeckMessageSizeCalculator.test.ts",
+				"!src/edopro/messages/JSONMessageProcessor.test.ts",
+				"!src/edopro/messages/client-to-server/JoinGameMessage.test.ts",
+				"!src/edopro/rock-paper-scissor/RockPaperScissor.test.ts",
+				"!src/edopro/room/application/FinishDuelHandler.test.ts",
+				"!src/edopro/room/application/JoinToDuelAsSpectator.test.ts",
+				"!src/edopro/room/application/Reconnect.test.ts",
+				"!src/edopro/room/domain/states/dueling/DuelingState.test.ts",
+				"!src/edopro/room/domain/states/side-decking/SideDeckingState.test.ts",
+				"!src/edopro/room/domain/states/waiting/WaitingState.test.ts",
+				"!src/plugins/unranked-match/application/UnrankedMatchSaver.test.ts",
+				"!src/shared/messages/MessageProcessor.test.ts",
+				"!src/shared/messages/client-to-server/PlayerInfoMessage.test.ts",
+				"!src/shared/room/Duel.test.ts",
+				"!src/shared/room/domain/match/domain/Match.test.ts",
+				"!src/utils/BufferToUTF16.test.ts",
+				"!src/ygopro/ban-list/domain/YGOProBanList.test.ts",
+				"!src/ygopro/client/domain/YGOProClient.test.ts",
+				"!src/ygopro/room/domain/states/YGOProWaitingState.test.ts"
+			],
+			"plugins": ["./lint/biome-plugins/no-should-in-test-names.grit"]
 		}
 	],
 	"assist": {

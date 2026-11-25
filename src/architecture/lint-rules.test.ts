@@ -120,6 +120,13 @@ const CASES: RuleCase[] = [
 		green:
 			"export function count(): number {\n\tlet seatCount = 1;\n\tseatCount += 1;\n\treturn seatCount;\n}\n",
 	},
+	{
+		// Convention: docs/testing.md (Formatting & naming) — `it` names the behavior, no "should".
+		rule: "plugin",
+		path: "src/shared/room/domain/Seat.test.ts",
+		red: 'it("should return the position", () => {\n\texpect(1).toBe(1);\n});\n',
+		green: 'it("returns the position", () => {\n\texpect(1).toBe(1);\n});\n',
+	},
 ];
 
 describe("lint rules", () => {
