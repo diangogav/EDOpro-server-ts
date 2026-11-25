@@ -147,6 +147,13 @@ const CASES: RuleCase[] = [
 		red: 'export enum Role {\n\tAdmin = "admin",\n\tPlayer = "player",\n}\n',
 		green: 'export type Role = "admin" | "player";\n\nexport enum Opcode {\n\tJoin = 1,\n}\n',
 	},
+	{
+		// Mined: named exports only; plugin entry points keep their default export (docs/plugins.md).
+		rule: "lint/style/noDefaultExport",
+		path: "src/shared/room/infrastructure/RoomList.ts",
+		red: "export default class RoomList {}\n",
+		green: "export class RoomList {}\n",
+	},
 ];
 
 describe("lint rules", () => {

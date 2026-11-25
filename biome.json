@@ -609,6 +609,26 @@
 				"!src/shared/user-profile/domain/UserProfileRole.ts"
 			],
 			"plugins": ["./lint/biome-plugins/no-string-enums.grit"]
+		},
+		{
+			"includes": [
+				"src/**/*.ts",
+				"!src/plugins/*/index.ts",
+				"!src/test-support/plugin-fixtures/**",
+				"!src/edopro/ban-list/infrastructure/BanListMemoryRepository.ts",
+				"!src/edopro/room/infrastructure/RoomList.ts",
+				"!src/shared/logger/infrastructure/LoggerFactory.ts",
+				"!src/web-socket-server/WebSocketSingleton.ts",
+				"!src/ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository.ts",
+				"!src/ygopro/room/infrastructure/YGOProRoomList.ts"
+			],
+			"linter": {
+				"rules": {
+					"style": {
+						"noDefaultExport": "error"
+					}
+				}
+			}
 		}
 	],
 	"assist": {
