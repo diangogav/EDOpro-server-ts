@@ -161,6 +161,14 @@ const CASES: RuleCase[] = [
 		red: "export class JoinRoom {\n\tpublic execute(): number {\n\t\treturn 1;\n\t}\n}\n",
 		green: "export class JoinRoom {\n\tpublic run(): number {\n\t\treturn 1;\n\t}\n}\n",
 	},
+	{
+		// Convention: AGENTS.md (Architecture) — dependencies arrive through the constructor, never looked up.
+		rule: "plugin",
+		path: "src/shared/room/application/CloseRoom.ts",
+		red: "export class CloseRoom {\n\tpublic run(): unknown {\n\t\treturn container.get(EventBus);\n\t}\n}\n",
+		green:
+			"export class CloseRoom {\n\tpublic constructor(private readonly bus: EventBus) {}\n\n\tpublic run(): unknown {\n\t\treturn this.bus;\n\t}\n}\n",
+	},
 ];
 
 describe("lint rules", () => {

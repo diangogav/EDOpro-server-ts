@@ -642,6 +642,42 @@
 				"!src/ygopro/windbot/application/RequestWindBotJoin.ts"
 			],
 			"plugins": ["./lint/biome-plugins/use-case-entry-is-run.grit"]
+		},
+		{
+			"includes": [
+				"src/**/domain/**/*.ts",
+				"src/**/application/**/*.ts",
+				"src/**/infrastructure/**/*.ts",
+				"!**/*.test.ts",
+				"!src/edopro/ban-list/infrastructure/BanListMemoryRepository.ts",
+				"!src/edopro/card/infrastructure/sqlite/EdoProCardDbHotReload.ts",
+				"!src/edopro/card/infrastructure/sqlite/EdoProCardDbPorts.ts",
+				"!src/edopro/room/application/EdoproDisconnectPolicy.ts",
+				"!src/edopro/room/application/FinishDuelHandler.ts",
+				"!src/edopro/room/application/JoinHandler.ts",
+				"!src/edopro/room/infrastructure/RoomList.ts",
+				"!src/shared/card/infrastructure/cdb/CdbCardSearchRepository.ts",
+				"!src/shared/db/redis/infrastructure/Redis.ts",
+				"!src/shared/db/sqlite/infrastructure/CardDbReloader.ts",
+				"!src/shared/reserved-duel/infrastructure/redis/RedisReservationStore.ts",
+				"!src/shared/room/application/reconnect/ExpressReconnectHandler.ts",
+				"!src/shared/room/domain/RoomState.ts",
+				"!src/shared/room/domain/reconnect/ReconnectionTokenIssuer.ts",
+				"!src/shared/ticket/infrastructure/redis/RedisTicketRepository.ts",
+				"!src/ygopro/ban-list/infrastructure/YGOProBanListLoader.ts",
+				"!src/ygopro/ban-list/infrastructure/YGOProBanListMemoryRepository.ts",
+				"!src/ygopro/card/infrastructure/YGOProCardSearchRepository.ts",
+				"!src/ygopro/matchmaking/application/AbortMatchmakingRoom.ts",
+				"!src/ygopro/matchmaking/application/AuthenticateMatchmakingSession.ts",
+				"!src/ygopro/matchmaking/application/MatchmakingDisconnectListener.ts",
+				"!src/ygopro/room/application/EndMatchByAbandon.ts",
+				"!src/ygopro/room/application/FinalizeYGOProRoom.ts",
+				"!src/ygopro/room/application/YGOProJoinHandler.ts",
+				"!src/ygopro/room/domain/states/YGOProDuelingState.ts",
+				"!src/ygopro/windbot/application/WindbotModule.ts",
+				"!src/ygopro/windbot/infrastructure/bootstrapWindbot.ts"
+			],
+			"plugins": ["./lint/biome-plugins/no-service-locator.grit"]
 		}
 	],
 	"assist": {

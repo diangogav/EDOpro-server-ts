@@ -13,7 +13,7 @@ This file holds only what applies to every change. When your task matches a row 
 - The known-leak lists in `src/architecture/boundaries.test.ts` only shrink. Never add a line to make a new import pass.
 - New event subscribers ship as plugins under `src/plugins/`, never as hardwired composition-root code.
 - Use Chain of Responsibility for complex validations (for example, deck rules).
-- Manage dependencies with `diod` or constructor injection.
+- Manage dependencies with `diod` or constructor injection: classes receive their dependencies through the constructor and never look them up. Enforced by: Biome · `lint/biome-plugins/no-service-locator.grit` (in `domain/`, `application/` and `infrastructure/`).
 
 ### Code
 
