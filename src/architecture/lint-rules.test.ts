@@ -98,6 +98,13 @@ const CASES: RuleCase[] = [
 		green:
 			'import type { Logger } from "@shared/logger/domain/Logger";\n\nexport function notify(logger: Logger): void {\n\tlogger.info("joined");\n}\n',
 	},
+	{
+		// Convention: AGENTS.md (Code) — `public`, `private` and `protected` are always explicit.
+		rule: "lint/style/useConsistentMemberAccessibility",
+		path: "src/shared/room/domain/Seat.ts",
+		red: "export class Seat {\n\tposition(): number {\n\t\treturn 1;\n\t}\n}\n",
+		green: "export class Seat {\n\tpublic position(): number {\n\t\treturn 1;\n\t}\n}\n",
+	},
 ];
 
 describe("lint rules", () => {

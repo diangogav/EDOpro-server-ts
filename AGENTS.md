@@ -17,7 +17,7 @@ This file holds only what applies to every change. When your task matches a row 
 
 ### Code
 
-- `public`, `private` and `protected` are always explicit.
+- `public`, `private` and `protected` are always explicit. Enforced by: Biome · `useConsistentMemberAccessibility`.
 - No console logs: use the `Logger` domain service. Enforced by: Biome · `noConsole`.
 - `PascalCase` for classes, `camelCase` for variables, `UPPER_SNAKE_CASE` for constants.
 - Use `@edopro/*` for imports from `src/edopro/` when possible.
