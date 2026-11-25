@@ -154,6 +154,13 @@ const CASES: RuleCase[] = [
 		red: "export default class RoomList {}\n",
 		green: "export class RoomList {}\n",
 	},
+	{
+		// Mined: use cases enter through run() (src/edopro/room/application/AuthenticatePlayer.ts).
+		rule: "plugin",
+		path: "src/shared/room/application/JoinRoom.ts",
+		red: "export class JoinRoom {\n\tpublic execute(): number {\n\t\treturn 1;\n\t}\n}\n",
+		green: "export class JoinRoom {\n\tpublic run(): number {\n\t\treturn 1;\n\t}\n}\n",
+	},
 ];
 
 describe("lint rules", () => {

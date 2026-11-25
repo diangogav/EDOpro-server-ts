@@ -629,6 +629,19 @@
 					}
 				}
 			}
+		},
+		{
+			"includes": [
+				"src/**/application/**/*.ts",
+				"!src/ygopro/matchmaking/application/AuthenticateMatchmakingSession.ts",
+				"!src/ygopro/matchmaking/application/CancelMatchmaking.ts",
+				"!src/ygopro/matchmaking/application/EnterMatchmaking.ts",
+				"!src/ygopro/matchmaking/application/RespondToMatchProposal.ts",
+				"!src/ygopro/windbot/application/CleanupWindBotTokens.ts",
+				"!src/ygopro/windbot/application/ConsumeWindBotToken.ts",
+				"!src/ygopro/windbot/application/RequestWindBotJoin.ts"
+			],
+			"plugins": ["./lint/biome-plugins/use-case-entry-is-run.grit"]
 		}
 	],
 	"assist": {
