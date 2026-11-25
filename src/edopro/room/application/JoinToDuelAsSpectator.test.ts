@@ -73,7 +73,7 @@ describe("JoinToDuelAsSpectator", () => {
 			userId: "acc-5",
 			playerInfo: playerInfoMessage,
 		});
-		expect(mockSpectator.setAccountVerification).toHaveBeenCalledWith(verification);
+		await expect(mockSpectator.setAccountVerification.mock.calls[0][0]).resolves.toBe(true);
 	});
 
 	it("starts the verification without an account for a socket that carries none", async () => {

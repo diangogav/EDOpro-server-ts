@@ -363,7 +363,7 @@ describe("WaitingState", () => {
 				userId: null,
 				playerInfo: expect.objectContaining({ name: "Jaden", password: "1234" }),
 			});
-			expect(mockClient.setAccountVerification).toHaveBeenCalledWith(verification);
+			await expect(mockClient.setAccountVerification.mock.calls[0][0]).resolves.toBe(true);
 		});
 
 		it("keeps a casual player's id null whatever the verification finds", async () => {
@@ -391,7 +391,7 @@ describe("WaitingState", () => {
 				userId: "acc-7",
 				playerInfo: expect.objectContaining({ name: "Jaden" }),
 			});
-			expect(mockClient.setAccountVerification).toHaveBeenCalledWith(verification);
+			await expect(mockClient.setAccountVerification.mock.calls[0][0]).resolves.toBe(true);
 		});
 
 		it("uses the account a ranked join authenticated", async () => {
