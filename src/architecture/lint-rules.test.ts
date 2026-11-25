@@ -24,6 +24,8 @@ import { dirname, join, relative, resolve } from "node:path";
  * it on that day as `!path` entries in the `includes` of its override. A
  * baseline only shrinks: the last test fails when a listed file no longer
  * breaks its rule. Migrate a file by fixing it, then deleting its `!` line.
+ * A `!` entry with a glob (`*`, `?`, `[`, `{`) narrows the scope of the rule
+ * instead, and stays.
  */
 
 const ROOT = resolve(__dirname, "../..");
@@ -36,6 +38,9 @@ type Override = {
 };
 type BiomeConfig = { vcs?: Record<string, unknown>; overrides: Override[] };
 type Diagnostic = { category: string; location: { path: string } };
+
+/** A `!path` entry without glob characters: one file of a baseline. */
+const isBaselineEntry = (entry: string): boolean => entry.startsWith("!") && !/[*?[{]/.test(entry);
 
 const realConfig = (): BiomeConfig =>
 	JSON.parse(readFileSync(join(ROOT, "biome.json"), "utf8")) as BiomeConfig;
@@ -153,9 +158,7 @@ describe("lint rules", () => {
 	it("keeps every baseline file breaking its rule, so baselines only shrink", () => {
 		const config = realConfig();
 		const stale = config.overrides.flatMap((override, index) => {
-			const baseline = override.includes
-				.filter((entry) => entry.startsWith("!"))
-				.map((entry) => entry.slice(1));
+			const baseline = override.includes.filter(isBaselineEntry).map((entry) => entry.slice(1));
 			if (baseline.length === 0) {
 				return [];
 			}
@@ -166,7 +169,7 @@ describe("lint rules", () => {
 					.filter((other, otherIndex) => otherIndex === index || !other.plugins)
 					.map((other) =>
 						other === override
-							? { ...other, includes: other.includes.filter((entry) => !entry.startsWith("!")) }
+							? { ...other, includes: other.includes.filter((entry) => !isBaselineEntry(entry)) }
 							: other,
 					),
 			};
