@@ -1,0 +1,21 @@
+language js(typescript)
+
+or {
+	TsAsExpression(expression=$value, ty=$type),
+	TsSatisfiesExpression(expression=$value, ty=$type),
+	JsVariableDeclarator(variable_annotation=TsTypeAnnotation(ty=$type), initializer=JsInitializerClause(expression=$value))
+} as $double where {
+	$type <: TsReferenceType(name=$typeName),
+	$typeName <: or {
+		`Logger`,
+		`ISocket`,
+		`MessageRepository`
+	},
+	$value <: or {
+		JsObjectExpression(),
+		JsParenthesizedExpression(expression=JsObjectExpression()),
+		TsAsExpression(expression=JsObjectExpression()),
+		TsAsExpression(expression=JsParenthesizedExpression(expression=JsObjectExpression()))
+	},
+	register_diagnostic(span=$double, message="Use the shared mock (LoggerMock, SocketMock or MessageRepositoryMock from src/test-support/mocks) instead of a hand-rolled object. Convention: docs/testing.md (Mocking).")
+}

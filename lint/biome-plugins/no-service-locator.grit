@@ -1,0 +1,9 @@
+language js(typescript)
+
+or {
+	`container.get($dependency)`,
+	`$owner.getInstance()`,
+	`LoggerFactory.getLogger($...)`
+} as $lookup where {
+	register_diagnostic(span=$lookup, message="Receive this dependency through the constructor. Register it in the diod container (src/shared/dependency-injection) and resolve it only at the composition root (src/index.ts, src/bootstrap). Convention: AGENTS.md (Architecture).")
+}

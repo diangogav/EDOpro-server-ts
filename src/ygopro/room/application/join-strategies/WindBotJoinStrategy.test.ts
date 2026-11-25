@@ -227,7 +227,7 @@ describe("WindBotJoinStrategy", () => {
 	});
 
 	describe("handle()", () => {
-		describe("tag-mode rejection (REQ-JOIN-103 / REQ-ROOM-502)", () => {
+		describe("tag-mode rejection", () => {
 			it("rejects tag-mode rooms before any room or token is created", async () => {
 				// Force YGOProRoom.create to return a room whose isTag returns true
 				const fakeRoom = {
@@ -391,7 +391,7 @@ describe("WindBotJoinStrategy", () => {
 			});
 		});
 
-		describe("format-aware random pool resolution (REQ-WINDBOT-POOL)", () => {
+		describe("format-aware random pool resolution", () => {
 			it("'ed,ai' requests a random bot from the edison pool", async () => {
 				const repo = makeRepo();
 				const mod = makeModule({ repo });
@@ -573,7 +573,7 @@ describe("WindBotJoinStrategy", () => {
 			});
 		});
 
-		describe("isFinalizing callback (REQ-HTTP-402)", () => {
+		describe("isFinalizing callback", () => {
 			it("isFinalizing callback returns false before room is finalized", async () => {
 				// provider.requestJoin receives { token, bot, isFinalizing } — capture isFinalizing
 				let capturedIsFinalizing: (() => boolean) | undefined;

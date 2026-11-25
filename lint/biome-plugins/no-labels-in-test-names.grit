@@ -1,0 +1,15 @@
+`$fn($name, $body)` where {
+	$fn <: or {
+		`describe`,
+		`it`,
+		`test`,
+		`describe.only`,
+		`describe.skip`,
+		`it.only`,
+		`it.skip`,
+		`test.only`,
+		`test.skip`
+	},
+	$name <: r"[\s\S]*\b(PR-[0-9]+|REQ-[A-Z][A-Z0-9-]*)\b[\s\S]*",
+	register_diagnostic(span=$name, message="Drop the PR-N / REQ-XXX label: name the unit or the behavior only. Convention: docs/testing.md (Formatting & naming).")
+}
