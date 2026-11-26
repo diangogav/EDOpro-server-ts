@@ -17,7 +17,7 @@ const PASSWORD_MAX_UNITS = 19;
  * server. The room then owns the socket and talks to it in the EDOPro wire
  * format; the caller hands in a socket that translates it for its client.
  *
- * Only rooms that client can present (`Room.seatsYgoproClients`): 1v1, under
+ * Only rooms that client can present (`Room.seatsYgoproClients`): 1v1 or 2v2, under
  * a Master Rule or a Speed Duel, with no extra rule. A ranked room needs the account the server verified for the socket, because
  * such a client has no EDOPro password to log in with.
  */

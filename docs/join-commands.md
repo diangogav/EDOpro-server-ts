@@ -430,10 +430,24 @@ the first `#` is the room password.
 
 | Entry result | What the joiner gets |
 |---|---|
-| `joined` | The room's `STOC_JOIN_GAME`, re-encoded for a YGOPro client. The room now owns the socket. |
+| `joined` | The room's `STOC_JOIN_GAME`, re-encoded for a YGOPro client, then the room's duel flags (below). The room now owns the socket. |
 | `not-found`, `wrong-password` | Red chat with the reason, `JOINERROR`, close. |
 | `login-required` | The room is ranked and the socket carries no verified account (`resolvedUserId`). |
-| `unsupported` | The room is not one a YGOPro client can present: it is not 1v1, its duel flags are neither one of the five Master Rules nor a Speed Duel (Rush or a custom mix), or it has an extra rule. See `Room.seatsYgoproClients`. |
+| `unsupported` | The room is not one a YGOPro client can present: it is neither 1v1 nor 2v2, its duel flags are neither one of the five Master Rules nor a Speed Duel (Rush or a custom mix), or it has an extra rule. See `Room.seatsYgoproClients`. |
+
+**Duel flags (`0xed`).** A YGOPro host info has no field for EDOPro's duel
+flags, so every `STOC_JOIN_GAME` the bridge re-encodes, the one a token
+rejoin sends again included, is followed by
+`[2b size LE][0xed][low u32 LE][high u32 LE]` (`DuelFlagsClientMessage`).
+The client reads `DUEL_RELAY` from it: in a relay duel each team starts with
+its first duelist and changes duelist only when the core sends
+`MSG_TAG_SWAP`, while in a tag duel the team that plays second starts with
+its second.
+
+**Tag and relay.** A 2v2 room is listed with `mode: 2` (tag), like a YGOPro
+tag room. The core drives the rotation; the bridge translates its
+`MSG_TAG_SWAP`. A 3v3 room or one with uneven teams stays out: a YGOPro lobby
+has two seats per team.
 
 **Ranked rooms.** A ranked EDOPro room is hosted with a PIN login. A socket
 that arrived with a handshake ticket is accepted as that account without a

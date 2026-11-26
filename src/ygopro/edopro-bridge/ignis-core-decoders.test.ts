@@ -12,6 +12,7 @@ import {
 	YGOProMsgStart,
 	YGOProMsgSummoned,
 	YGOProMsgSummoning,
+	YGOProMsgTagSwap,
 	YGOProMsgUpdateCard,
 	YGOProMsgUpdateData,
 } from "ygopro-msg-encode";
@@ -82,6 +83,37 @@ describe("core game messages", () => {
 
 		expect(message.count).toBe(2);
 		expect(message.cards).toEqual([(BLUE_EYES | 0x8000_0000) >>> 0, 0]);
+	});
+
+	it("translates MSG_TAG_SWAP, narrowing the pile sizes and flagging face-up cards", () => {
+		const payload = new IgnisWriter()
+			.u8(161)
+			.u8(1)
+			.u32(33)
+			.u32(2)
+			.u32(1)
+			.u32(1)
+			.u32(0)
+			.u32(POT_OF_GREED)
+			.u32(0xa)
+			.u32(BLUE_EYES)
+			.u32(0x5)
+			.u32(0)
+			.u32(0xa)
+			.build();
+
+		const message = translate(payload, YGOProMsgTagSwap);
+
+		expect(message).toMatchObject({
+			player: 1,
+			mzoneCount: 33,
+			extraCount: 2,
+			pzoneCount: 1,
+			handCount: 1,
+			topCode: 0,
+		});
+		expect(message.handCards).toEqual([POT_OF_GREED]);
+		expect(message.extraCards).toEqual([(BLUE_EYES | 0x8000_0000) >>> 0, 0]);
 	});
 
 	it("translates a select-message hint and leaves a code hint untouched", () => {

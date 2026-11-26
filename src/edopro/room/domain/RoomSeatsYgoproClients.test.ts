@@ -38,13 +38,24 @@ describe("Room.seatsYgoproClients", () => {
 		expect(room({ duelFlagsLow: SPEED_DUEL }).seatsYgoproClients).toBe(true);
 	});
 
+	it("seats one in a 2v2 tag room", () => {
+		expect(room({ team0: 2, team1: 2 }).seatsYgoproClients).toBe(true);
+	});
+
+	it("seats one in a 2v2 relay room", () => {
+		const relay = room({ team0: 2, team1: 2, duelFlagsLow: MASTER_RULE_5 | DUEL_RELAY });
+
+		expect(relay.seatsYgoproClients).toBe(true);
+	});
+
 	it.each([
 		["a Rush Duel", { duelFlagsLow: RUSH_DUEL, duelFlagsHight: EXTRA_DECK_RITUAL_HIGH }],
 		["a Master Rule with one flag changed", { duelFlagsLow: MASTER_RULE_5 | DUEL_NO_MAIN_PHASE_2 }],
 		["a Master Rule with a custom high flag", { duelFlagsHight: EXTRA_DECK_RITUAL_HIGH }],
 		["a room with an extra rule", { extraRules: 1 }],
-		["a tag room", { team0: 2, team1: 2 }],
-		["a relay room", { team0: 3, team1: 3, duelFlagsLow: MASTER_RULE_5 | DUEL_RELAY }],
+		["a 3v3 room", { team0: 3, team1: 3 }],
+		["a room with uneven teams", { team0: 1, team1: 2 }],
+		["a 3v3 relay room", { team0: 3, team1: 3, duelFlagsLow: MASTER_RULE_5 | DUEL_RELAY }],
 	])("does not seat one in %s", (_name, params) => {
 		expect(room(params).seatsYgoproClients).toBe(false);
 	});

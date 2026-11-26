@@ -191,7 +191,7 @@ describe("EdoproWireTranslator", () => {
 		});
 
 		it("gives no frame for one the client gets nothing for", () => {
-			expect(new EdoproWireTranslator().toClientFrames(frame(0x01, new Uint8Array([161])))).toEqual(
+			expect(new EdoproWireTranslator().toClientFrames(frame(0x01, new Uint8Array([164])))).toEqual(
 				[],
 			);
 		});
@@ -266,11 +266,11 @@ describe("EdoproWireTranslator", () => {
 		const untranslated = jest.fn();
 
 		const sent = new EdoproWireTranslator(untranslated).toClient(
-			frame(0x01, Uint8Array.from([161])),
+			frame(0x01, Uint8Array.from([164])),
 		);
 
 		expect(sent).toBeNull();
-		expect(untranslated).toHaveBeenCalledWith(161);
+		expect(untranslated).toHaveBeenCalledWith(164);
 	});
 
 	it("drops the EDOPro-only frames a YGOPro client has no use for", () => {

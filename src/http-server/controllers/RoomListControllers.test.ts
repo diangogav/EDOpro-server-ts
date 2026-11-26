@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 
+import { ClientMother } from "@test-support/mothers/client/ClientMother";
 import { RoomMother } from "@test-support/mothers/room/RoomMother";
 import { YGOProRoomMother } from "@test-support/mothers/room/YGOProRoomMother";
 import RoomList from "@edopro/room/infrastructure/RoomList";
@@ -56,7 +57,7 @@ describe("room list controllers", () => {
 			ranked: true,
 		});
 		RoomList.addRoom(duel);
-		RoomList.addRoom(RoomMother.create({ team0: 2, team1: 2 }));
+		RoomList.addRoom(RoomMother.create({ team0: 3, team1: 3, duelFlagsLow: MASTER_RULE_5 }));
 		const response = makeResponse();
 
 		new RoomListController().run(
@@ -80,6 +81,30 @@ describe("room list controllers", () => {
 			ranked: true,
 			league: "external",
 		});
+	});
+
+	it("lists a 2v2 EDOPro room as a tag room with four seats, and keeps it while one is free", () => {
+		const tag = RoomMother.create({
+			id: 2468,
+			team0: 2,
+			team1: 2,
+			bestOf: 1,
+			duelFlagsLow: MASTER_RULE_5,
+		});
+		for (let position = 0; position < 3; position++) {
+			tag.addPlayerUnsafe(ClientMother.create({ position, team: position < 2 ? 0 : 1 }));
+		}
+		RoomList.addRoom(tag);
+		const response = makeResponse();
+
+		new RoomListController().run(
+			{ query: { engines: "edopro", mode: "2" } } as unknown as Request,
+			response as unknown as Response,
+		);
+
+		const rows = response.json.mock.calls[0][0].rooms;
+		expect(rows).toHaveLength(1);
+		expect(rows[0]).toMatchObject({ id: 2468, mode: 2, maxPlayers: 4, canPlay: true });
 	});
 
 	it("leaves out an EDOPro room a YGOPro client cannot present, such as a Rush Duel", () => {
