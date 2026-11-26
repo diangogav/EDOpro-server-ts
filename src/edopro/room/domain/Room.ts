@@ -15,6 +15,7 @@ import { Client } from "../../client/domain/Client";
 import { Deck } from "../../../shared/deck/domain/Deck";
 import { CreateGameMessage } from "../../messages/client-to-server/CreateGameMessage";
 import { PlayerInfoMessage } from "@shared/messages/client-to-server/PlayerInfoMessage";
+import { ygoproRoomMode } from "@shared/room/domain/ygoproRoomMode";
 import { JSONMessageProcessor } from "../../messages/JSONMessageProcessor";
 import { Replay } from "../../replay/Replay";
 import { RoomMessageEmitter } from "../../RoomMessageEmitter";
@@ -667,8 +668,14 @@ export class Room extends YgoRoom {
 	}
 
 	/**
-	 * Whether a client of the YGOPro server can sit in this room: a 1v1 duel
-	 * under one of the five Master Rules or a Speed Duel, with no extra rule.
+	 * Whether a client of the YGOPro server can sit in this room: a 1v1 or a
+	 * 2v2 duel under one of the five Master Rules or a Speed Duel, with no extra
+	 * rule.
+	 *
+	 * A YGOPro lobby has two seats per team at most, and the same number on
+	 * each side: its tag mode is 2v2, so 3v3 and uneven teams stay out. The
+	 * core drives the rotation of a tag or relay duel and announces each change
+	 * of duelist, which the client follows.
 	 *
 	 * That client lays out a YGOPro board and knows a duel by its Master Rule
 	 * number. Rush duels, a custom mix of duel flags and the extra rules
@@ -684,12 +691,17 @@ export class Room extends YgoRoom {
 		const boardFlagsHigh = (this.duelFlagsHight & ~BOARD_NEUTRAL_FLAGS_HIGH) >>> 0;
 
 		return (
-			this.team0 === 1 &&
-			this.team1 === 1 &&
+			this.team0 === this.team1 &&
+			(this.team0 === 1 || this.team0 === 2) &&
 			this.extraRules === 0 &&
 			boardFlagsHigh === 0 &&
 			(MASTER_RULE_DUEL_FLAGS.has(boardFlagsLow) || boardFlagsLow === SPEED_DUEL_FLAGS)
 		);
+	}
+
+	/** The room's mode in YGOPro terms (single, match or tag), the one its room list row carries. */
+	public get ygoproMode(): number {
+		return ygoproRoomMode(this.team0, this.team1, this.bestOf);
 	}
 
 	get playerMainDeckSize(): number {
@@ -851,7 +863,7 @@ export class Room extends YgoRoom {
 			canWatch: false,
 			banlist: this.banListName ?? "No banlist",
 			rule: EDOPRO_RULE_LABELS[this.deckRules.rule] ?? EDOPRO_RULE_LABELS[Rule.ALL],
-			mode: this.mode,
+			mode: this.ygoproMode,
 			bestOf: this.bestOf,
 			duelRule: this.duelRule,
 			startLp: this.startLp,

@@ -16,6 +16,7 @@ import {
 	YGOProMsgStart_PlayerInfo,
 	YGOProMsgSummoned,
 	YGOProMsgSummoning,
+	YGOProMsgTagSwap,
 	YGOProMsgUpdateCard,
 	YGOProMsgUpdateData,
 	YGOProMsgWaiting,
@@ -141,17 +142,40 @@ function decodeNewPhase(reader: IgnisReader): YGOProMsgNewPhase {
 	return message;
 }
 
+/** `[code:u32][position:u32]` per card, as the code with the known-card flag YGOPro packs it into. */
+function readCodesWithPosition(reader: IgnisReader, count: number): number[] {
+	const cards: number[] = [];
+	for (let i = 0; i < count; i++) {
+		const code = reader.u32();
+		const known = (reader.u32() & POS_FACEUP) !== 0 ? KNOWN_CARD_FLAG : 0;
+		cards.push((code | known) >>> 0);
+	}
+	return cards;
+}
+
 function decodeDraw(reader: IgnisReader): YGOProMsgDraw {
 	const message = new YGOProMsgDraw();
 	message.player = reader.u8();
 	message.count = reader.u32();
-	message.cards = [];
-	for (let i = 0; i < message.count; i++) {
-		const code = reader.u32();
-		const position = reader.u32();
-		const known = (position & POS_FACEUP) !== 0 ? KNOWN_CARD_FLAG : 0;
-		message.cards.push((code | known) >>> 0);
-	}
+	message.cards = readCodesWithPosition(reader, message.count);
+	return message;
+}
+
+/**
+ * The next teammate takes over a side in a tag or relay duel. Ignis writes the
+ * pile sizes as u32 and a position after each card; YGOPro writes the sizes
+ * as single bytes and flags a face-up card in the top bit of its code.
+ */
+function decodeTagSwap(reader: IgnisReader): YGOProMsgTagSwap {
+	const message = new YGOProMsgTagSwap();
+	message.player = reader.u8();
+	message.mzoneCount = reader.u32();
+	message.extraCount = reader.u32();
+	message.pzoneCount = reader.u32();
+	message.handCount = reader.u32();
+	message.topCode = reader.u32();
+	message.handCards = readCodesWithPosition(reader, message.handCount);
+	message.extraCards = readCodesWithPosition(reader, message.extraCount);
 	return message;
 }
 
@@ -253,7 +277,8 @@ function readSimpleCards(
 /**
  * The messages every duel needs from its first turn: the start, the queries
  * that fill the board, turns and phases, the idle prompt, moving and
- * summoning a card, and choosing a zone or a chain link.
+ * summoning a card, choosing a zone or a chain link, and the teammate who
+ * takes over a side in a tag duel.
  */
 export const CORE_DECODERS: Readonly<Record<number, Decoder>> = {
 	2: decodeHint,
@@ -271,4 +296,5 @@ export const CORE_DECODERS: Readonly<Record<number, Decoder>> = {
 	60: decodeSummoning,
 	61: () => new YGOProMsgSummoned(),
 	90: decodeDraw,
+	161: decodeTagSwap,
 };

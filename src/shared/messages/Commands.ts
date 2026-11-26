@@ -26,6 +26,8 @@ export enum Commands {
 	MATCHMAKING_FOUND = 0xf7,
 	/** STOC: the turn number of the duel, for a player who rejoined it by token. */
 	DUEL_TURN = 0xee,
+	/** STOC: the duel flags of an EDOPro room, for a player seated in it from the YGOPro server. */
+	DUEL_FLAGS = 0xed,
 	/** STOC: an opted-in participant must ACCEPT or DECLINE the proposed match. */
 	MATCHMAKING_PROPOSED = 0xef,
 	/** CTOS: accepts a proposed match by id. */

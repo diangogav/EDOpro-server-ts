@@ -53,8 +53,8 @@ describe("bridgeToEdoproRoom", () => {
 		const sent = jest.spyOn(socket, "send");
 		const bridged = bridgeToEdoproRoom(socket);
 
-		bridged.send(frame(0x01, [161]));
-		bridged.send(frame(0x01, [161]));
+		bridged.send(frame(0x01, [164]));
+		bridged.send(frame(0x01, [164]));
 
 		expect(sent).toHaveBeenCalledTimes(1);
 		expect(sent.mock.calls[0][0][2]).toBe(0x19);

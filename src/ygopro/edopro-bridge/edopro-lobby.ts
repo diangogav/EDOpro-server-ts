@@ -1,3 +1,4 @@
+import { ygoproRoomMode } from "@shared/room/domain/ygoproRoomMode";
 import { HostInfo } from "ygopro-msg-encode";
 
 const DUEL_OBSOLETE_IGNITION = 0x100;
@@ -31,7 +32,7 @@ export function decodeEdoproHostInfo(body: Uint8Array): EdoproHostInfo {
 	const hostInfo = new HostInfo();
 	hostInfo.lflist = view.getUint32(0, true);
 	hostInfo.rule = view.getUint8(4);
-	hostInfo.mode = ygoproMode(team1, team2, bestOf);
+	hostInfo.mode = ygoproRoomMode(team1, team2, bestOf);
 	hostInfo.duel_rule = duelRuleFromFlags(duelFlagsLow);
 	hostInfo.no_check_deck = view.getUint8(7);
 	hostInfo.no_shuffle_deck = view.getUint8(8);
@@ -47,21 +48,6 @@ export function decodeEdoproHostInfo(body: Uint8Array): EdoproHostInfo {
 		team2,
 		bestOf,
 	};
-}
-
-const MODE_SINGLE = 0;
-const MODE_MATCH = 1;
-const MODE_TAG = 2;
-
-/**
- * A YGOPro lobby reads one `mode`: single duel, match or tag. EDOPro leaves
- * that byte at 0 and says the same with the team sizes and a "best of" count,
- * so a best-of-three room copied byte for byte reads as a single duel.
- */
-function ygoproMode(team1: number, team2: number, bestOf: number): number {
-	if (team1 > 1 || team2 > 1) return MODE_TAG;
-
-	return bestOf > 1 ? MODE_MATCH : MODE_SINGLE;
 }
 
 /**

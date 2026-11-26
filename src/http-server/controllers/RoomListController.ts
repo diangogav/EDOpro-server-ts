@@ -13,7 +13,7 @@ export class RoomListController {
 		const wanted = RoomListController.engines(engines);
 
 		// EDOPro rooms a client on the YGOPro socket can sit in: ones it can
-		// present (1v1, a Master Rule, no extra rule) with a free seat. That
+		// present (1v1 or 2v2, a Master Rule, no extra rule) with a free seat. That
 		// client cannot watch an EDOPro duel, so a full or started room would
 		// only be a row nobody can act on.
 		let edoproRooms = wanted.has("edopro")
@@ -21,7 +21,7 @@ export class RoomListController {
 					(room) =>
 						room.seatsYgoproClients &&
 						room.duelState === DuelState.WAITING &&
-						room.players.length < 2,
+						room.players.length < room.team0 + room.team1,
 				)
 			: [];
 		let rooms = wanted.has("ygopro") ? YGOProRoomList.getListedRooms() : [];
@@ -44,7 +44,7 @@ export class RoomListController {
 			const modeNum = Number(mode);
 			if (!Number.isNaN(modeNum)) {
 				rooms = rooms.filter((room) => room.hostInfo.mode === modeNum);
-				edoproRooms = edoproRooms.filter((room) => room.mode === modeNum);
+				edoproRooms = edoproRooms.filter((room) => room.ygoproMode === modeNum);
 			}
 		}
 

@@ -7,6 +7,8 @@ import {
 	YGOProStocJoinGame,
 } from "ygopro-msg-encode";
 
+import { DuelFlagsClientMessage } from "@shared/messages/server-to-client/DuelFlagsClientMessage";
+
 import { closedZonesFromFlags } from "./edopro-lobby";
 import { translateEdoproStoc } from "./translateEdoproStoc";
 import { translateResponseToIgnis } from "./translateResponseToIgnis";
@@ -17,6 +19,7 @@ const BODY_OFFSET = 3;
 
 const CTOS_RESPONSE = 0x01;
 const STOC_GAME_MSG = 0x01;
+const STOC_JOIN_GAME = 0x12;
 const MSG_START = 4;
 const MSG_FIELD_DISABLED = 56;
 const STOC_CHAT = 0x19;
@@ -55,6 +58,9 @@ export class EdoproWireTranslator {
 	private prompt: YGOProMsgResponseBase | null = null;
 	/** Zones the room's field never opens, as a MSG_FIELD_DISABLED mask. */
 	private closedZones = 0;
+	/** The room's duel flags, from its host info. */
+	private duelFlagsLow = 0;
+	private duelFlagsHigh = 0;
 
 	/**
 	 * `duelRule` is the room's Master Rule when it is already known, as on a
@@ -70,14 +76,20 @@ export class EdoproWireTranslator {
 
 	/**
 	 * The YGOPro frames for one EDOPro frame from the room. Most frames give
-	 * one or none; the start of a duel on a field with closed columns gives a
-	 * second one that closes them, because the core tells the client nothing
-	 * about them.
+	 * one or none. Two give a second one:
+	 * - the room's host info is followed by the room's duel flags, which a
+	 *   YGOPro host info has no field for (0xed);
+	 * - the start of a duel on a field with closed columns is followed by the
+	 *   frame that closes them, because the core tells the client nothing
+	 *   about them.
 	 */
 	public toClientFrames(frame: Buffer): Buffer[] {
 		const translated = this.toClient(frame);
 		if (!translated) {
 			return [];
+		}
+		if (frame[COMMAND_OFFSET] === STOC_JOIN_GAME) {
+			return [translated, DuelFlagsClientMessage.create(this.duelFlagsLow, this.duelFlagsHigh)];
 		}
 		const startsDuel = frame[COMMAND_OFFSET] === STOC_GAME_MSG && frame[BODY_OFFSET] === MSG_START;
 
@@ -108,6 +120,8 @@ export class EdoproWireTranslator {
 			case "joined": {
 				this.duelRule = result.room.hostInfo.duel_rule;
 				this.closedZones = closedZonesFromFlags(result.room.duelFlagsLow);
+				this.duelFlagsLow = result.room.duelFlagsLow;
+				this.duelFlagsHigh = result.room.duelFlagsHigh;
 				const own = this.ownBanListHash(result.room.hostInfo.lflist);
 				if (own !== null) {
 					result.room.hostInfo.lflist = own;
