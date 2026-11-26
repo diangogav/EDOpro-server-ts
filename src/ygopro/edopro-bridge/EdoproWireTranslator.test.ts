@@ -164,6 +164,20 @@ describe("EdoproWireTranslator", () => {
 		expect(started.msg).toMatchObject({ duelRule: 1 });
 	});
 
+	it("follows the room's host info with its duel flags, which a YGOPro host info cannot carry", () => {
+		const hostInfo = Buffer.alloc(68);
+		hostInfo.writeUInt32LE(0x2e880, 44);
+		hostInfo.writeUInt32LE(0x1, 20);
+
+		const [joined, flags, ...rest] = new EdoproWireTranslator().toClientFrames(
+			frame(0x12, hostInfo),
+		);
+
+		expect(decode(joined)).toBeInstanceOf(YGOProStocJoinGame);
+		expect(flags.toString("hex")).toBe("0900ed80e8020001000000");
+		expect(rest).toHaveLength(0);
+	});
+
 	describe("the start of a duel", () => {
 		const SPEED_DUEL = 0x628000;
 		const MASTER_RULE_5 = 0x2e800;
