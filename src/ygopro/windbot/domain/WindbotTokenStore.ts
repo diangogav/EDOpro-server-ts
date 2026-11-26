@@ -4,15 +4,22 @@ export type WindbotTokenPayload = {
 	roomId: number;
 	botName: string;
 	deck: string;
+	/** The reserved seat the bot was requested for; absent outside reserved duels. */
+	seat?: number;
 };
 
 export class WindbotTokenStore {
 	private readonly entries: Map<string, WindbotTokenPayload> = new Map();
 
-	register(roomId: number, botName: string, deck: string): string {
+	register(roomId: number, botName: string, deck: string, seat?: number): string {
 		const token = this._generateUniqueToken();
-		this.entries.set(token, { roomId, botName, deck });
+		this.entries.set(token, { roomId, botName, deck, ...(seat === undefined ? {} : { seat }) });
 		return token;
+	}
+
+	/** Drops one token; the room's other bots keep theirs. */
+	remove(token: string): void {
+		this.entries.delete(token);
 	}
 
 	consume(token: string): WindbotTokenPayload {

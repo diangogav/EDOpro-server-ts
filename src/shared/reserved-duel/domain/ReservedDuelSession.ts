@@ -81,8 +81,14 @@ export class ReservedDuelSession {
 		return this.users.find((user) => user.userId === userId)?.seat ?? null;
 	}
 
-	public botSeat(): number | null {
-		return this.bots[0]?.seat ?? null;
+	/**
+	 * The seat a bot connection takes: the one its join token named, when that
+	 * is a bot seat (a room with two bots has to tell them apart), else the
+	 * first bot seat.
+	 */
+	public botSeat(requested?: number): number | null {
+		const named = this.bots.find((bot) => bot.seat === requested);
+		return (named ?? this.bots[0])?.seat ?? null;
 	}
 
 	/** Seats with no deck requirement accept any deck the banlist accepts. */

@@ -14,6 +14,8 @@ export interface ISocket {
 	 * Holds that room's id so the authorization cannot leak to another room
 	 * over the socket's lifetime. */
 	internalForRoomId?: number;
+	/** The reserved seat that same token named, when its room holds more than one bot. */
+	internalSeat?: number;
 	/** Set ONLY by WatchJoinStrategy when the parsed join command was a watch
 	 * request ("w,<roomId>"): this joiner asked to spectate, never to take a
 	 * seat — in every room state. Derived exclusively from the command string

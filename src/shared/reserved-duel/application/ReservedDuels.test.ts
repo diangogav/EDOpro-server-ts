@@ -16,6 +16,7 @@ const makeRepository = (): jest.Mocked<ReservedDuelRepository> => ({
 
 const makeStore = (): jest.Mocked<ReservationStore> => ({
 	claim: jest.fn(),
+	claimForServer: jest.fn(),
 	release: jest.fn().mockResolvedValue(undefined),
 });
 

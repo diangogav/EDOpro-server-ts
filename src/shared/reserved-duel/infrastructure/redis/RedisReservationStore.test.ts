@@ -5,6 +5,7 @@ import {
 	CLAIM_RESERVATION_SCRIPT,
 	CLAIMED_RESERVATION_TTL_SECONDS,
 	RedisReservationStore,
+	SERVER_CLAIM_RESERVATION_SCRIPT,
 } from "./RedisReservationStore";
 
 jest.mock("@shared/db/redis/infrastructure/Redis", () => ({
@@ -110,5 +111,49 @@ describe("RedisReservationStore.release", () => {
 		await makeStore().release(ID);
 
 		expect(redis.del).toHaveBeenCalledWith(`duel:reservation:${ID}`);
+	});
+});
+
+describe("RedisReservationStore.claimForServer", () => {
+	beforeEach(() => jest.clearAllMocks());
+
+	const BOT_ONLY = JSON.stringify({
+		...JSON.parse(PAYLOAD),
+		participants: [
+			{ seat: 0, kind: "windbot", botName: "Blackwing" },
+			{ seat: 1, kind: "windbot", botName: "Lightsworn" },
+		],
+	});
+
+	it("runs the server claim script with instance, time and TTL and reads the reservation", async () => {
+		const redis = makeRedis(["claimed", BOT_ONLY]);
+		(Redis.getInstance as jest.Mock).mockReturnValue(redis);
+
+		const result = await makeStore().claimForServer(ID, "instance-a");
+
+		expect(redis.eval).toHaveBeenCalledWith(
+			SERVER_CLAIM_RESERVATION_SCRIPT,
+			1,
+			`duel:reservation:${ID}`,
+			"instance-a",
+			NOW.toISOString(),
+			String(CLAIMED_RESERVATION_TTL_SECONDS),
+		);
+		expect(result).toMatchObject({ status: "claimed", reservation: { id: ID } });
+	});
+
+	it.each([
+		"not_participant",
+		"claimed_elsewhere",
+		"missing",
+	])("passes the script's %s through", async (status) => {
+		(Redis.getInstance as jest.Mock).mockReturnValue(makeRedis([status]));
+
+		expect(await makeStore().claimForServer(ID, "instance-a")).toEqual({ status });
+	});
+
+	it("only claims reservations whose every seat is a bot", () => {
+		expect(SERVER_CLAIM_RESERVATION_SCRIPT).toContain("p.kind ~= 'windbot'");
+		expect(SERVER_CLAIM_RESERVATION_SCRIPT).toContain("return {'not_participant'}");
 	});
 });

@@ -12,6 +12,7 @@ import { bootstrapPersistence } from "./bootstrap/bootstrapPersistence";
 import { bootstrapPlugins } from "./bootstrap/bootstrapPlugins";
 import { bootstrapBanListReloader } from "./bootstrap/bootstrapBanListReloader";
 import { bootstrapMatchmaking } from "./bootstrap/bootstrapMatchmaking";
+import { bootstrapBotReservedDuels } from "./bootstrap/bootstrapBotReservedDuels";
 import { bootstrapReservedDuels } from "./bootstrap/bootstrapReservedDuels";
 import { bootstrapMetrics } from "./bootstrap/bootstrapMetrics";
 import { Server } from "./http-server/Server";
@@ -57,7 +58,7 @@ async function start(): Promise<void> {
 
 	await bootstrapResources(logger);
 	await bootstrapPersistence(logger);
-	await bootstrapReservedDuels(
+	const reservedDuels = await bootstrapReservedDuels(
 		{
 			enabled: config.ranking.enabled && config.redis.use && Boolean(config.redis.uri),
 			instanceId: config.reservedDuels.instanceId,
@@ -104,6 +105,7 @@ async function start(): Promise<void> {
 	if (windbotModule) {
 		logger.info("🤖 Windbot enabled");
 	}
+	await bootstrapBotReservedDuels(reservedDuels, windbotModule, logger);
 
 	// After windbot so the queue's bot-fallback availability check reflects it,
 	// and before the ygopro servers so the returned factory can be injected

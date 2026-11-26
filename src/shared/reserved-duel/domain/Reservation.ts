@@ -54,6 +54,8 @@ export const RESERVATION_ID_PATTERN = /^[0-9A-Za-z]{16}$/;
 export const RESERVATION_VERSION = 1;
 export const DEFAULT_LOBBY_TIMEOUT_SECONDS = 120;
 /** The turn times the room's rule parser can express exactly: whole seconds, one minute up. */
+/** Where the issuer announces a reservation with no user seat; the message is its id. */
+export const RESERVATION_OPEN_CHANNEL = "duel:reservation:open";
 export const MIN_TURN_TIME_SECONDS = 60;
 export const MAX_TURN_TIME_SECONDS = 998;
 
@@ -126,6 +128,18 @@ function parseParticipant(value: unknown): ReservationParticipant | null {
 	return null;
 }
 
+function isBotOnlyDuel(seated: ReservationParticipant[], mode: "single" | "match"): boolean {
+	const names = seated.map((participant) =>
+		participant.kind === "windbot" ? participant.botName : null,
+	);
+	return mode === "single" && names[0] !== null && names[1] !== null && names[0] !== names[1];
+}
+
+/** No user seat: the server opens the room itself instead of waiting for a claim. */
+export function isBotOnlyReservation(reservation: Pick<Reservation, "participants">): boolean {
+	return reservation.participants.every((participant) => participant.kind === "windbot");
+}
+
 function parseOptions(value: unknown): ReservationOptions | null {
 	const options = isObject(value) ? value : {};
 	const deckLock = options.deckLock ?? "exact";
@@ -161,9 +175,12 @@ function isTurnTime(value: unknown): value is number {
 
 /**
  * Reads a stored reservation. Anything the server cannot honour exactly
- * (unknown version, a seat other than 0/1, two participants on one seat, no
- * human at all, a malformed deck) yields null: a reservation is never played
- * half-understood.
+ * (unknown version, a seat other than 0/1, two participants on one seat, a
+ * malformed deck) yields null: a reservation is never played half-understood.
+ * A reservation with no human is two different WindBots in a single duel: the
+ * server opens it itself, and WindBot never submits a side deck, so a match
+ * would stall between duels; two bots of one name would be refused the second
+ * seat by the lobby's name check.
  */
 export function parseReservation(raw: string): Reservation | null {
 	let value: unknown;
@@ -193,7 +210,10 @@ export function parseReservation(raw: string): Reservation | null {
 		return null;
 	}
 	const seated = participants as ReservationParticipant[];
-	if (seated[0].seat === seated[1].seat || !seated.some((p) => p.kind === "user")) {
+	if (seated[0].seat === seated[1].seat) {
+		return null;
+	}
+	if (!seated.some((p) => p.kind === "user") && !isBotOnlyDuel(seated, value.mode)) {
 		return null;
 	}
 

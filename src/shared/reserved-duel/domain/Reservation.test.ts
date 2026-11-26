@@ -1,4 +1,4 @@
-import { parseReservation, reservationKey } from "./Reservation";
+import { isBotOnlyReservation, parseReservation, Reservation, reservationKey } from "./Reservation";
 
 const ID = "Ab3dEf6hIj9kLm2n";
 
@@ -130,11 +130,21 @@ describe("parseReservation", () => {
 			},
 		],
 		[
-			"no human seat",
+			"two bots in a match",
 			{
+				mode: "match",
 				participants: [
 					{ seat: 0, kind: "windbot", botName: "A" },
 					{ seat: 1, kind: "windbot", botName: "B" },
+				],
+			},
+		],
+		[
+			"the same bot on both seats",
+			{
+				participants: [
+					{ seat: 0, kind: "windbot", botName: "A" },
+					{ seat: 1, kind: "windbot", botName: "A" },
 				],
 			},
 		],
@@ -163,6 +173,22 @@ describe("parseReservation", () => {
 		],
 	])("rejects %s", (_name, overrides) => {
 		expect(parse(overrides as Record<string, unknown>)).toBeNull();
+	});
+
+	it("reads a single duel between two different bots", () => {
+		const reservation = parse({
+			participants: [
+				{ seat: 1, kind: "windbot", botName: "Blackwing" },
+				{ seat: 0, kind: "windbot", botName: "Lightsworn" },
+			],
+		});
+
+		expect(reservation?.participants).toEqual([
+			{ seat: 0, kind: "windbot", botName: "Lightsworn" },
+			{ seat: 1, kind: "windbot", botName: "Blackwing" },
+		]);
+		expect(reservation && isBotOnlyReservation(reservation)).toBe(true);
+		expect(isBotOnlyReservation(parse() as Reservation)).toBe(false);
 	});
 
 	it("rejects text that is not JSON", () => {

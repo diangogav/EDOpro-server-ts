@@ -19,6 +19,7 @@ export class RequestWindBotJoin {
 		botNameOrNull: string | null,
 		deckOverride?: string,
 		pool?: string,
+		seat?: number,
 	): RequestWindBotJoinResult {
 		const resolved = this._resolveBot(botNameOrNull, pool);
 		const deck = deckOverride ?? resolved.deck;
@@ -31,7 +32,7 @@ export class RequestWindBotJoin {
 		const bot: WindbotData = deckOverride
 			? { ...resolved, deck: deckOverride, deckcode: undefined }
 			: resolved;
-		const token = this.tokenStore.register(roomId, bot.name, deck);
+		const token = this.tokenStore.register(roomId, bot.name, deck, seat);
 		return { token, bot };
 	}
 

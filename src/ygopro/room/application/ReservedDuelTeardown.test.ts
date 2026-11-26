@@ -115,6 +115,32 @@ describe("FinalizeYGOProRoom with a reserved duel", () => {
 describe("YGOProDisconnectPolicy with a reserved duel", () => {
 	const policy = new YGOProDisconnectPolicy();
 
+	const botOnly = (): Reservation => ({
+		...makeReservation(),
+		participants: [
+			{ seat: 0, kind: "windbot", botName: "Blackwing" },
+			{ seat: 1, kind: "windbot", botName: "Lightsworn" },
+		],
+	});
+
+	it("keeps a room of two bots open when a watcher leaves before the bots sit", () => {
+		const { room, recorder } = makeRoom([], botOnly());
+
+		policy.onDisconnect(room, { id: "watcher", closed: true } as never, logger);
+
+		expect(room.finalizing).toBe(false);
+		expect(recorder.abandoned).not.toHaveBeenCalled();
+	});
+
+	it("blames nobody when a bot of a two-bot room drops", () => {
+		const bot = makePlayer(1, { closed: true, internal: true });
+		const { room, recorder } = makeRoom([makePlayer(0, { internal: true }), bot], botOnly());
+
+		policy.onDisconnect(room, bot.socket as never, logger);
+
+		expect(recorder.abandoned).toHaveBeenCalledWith(ID, { seat: null, reason: "bot_unavailable" });
+	});
+
 	it("ends a no-reconnect room at once when a human leaves, blaming their seat", () => {
 		const human = makePlayer(0, { closed: true });
 		const { room, recorder } = makeRoom([human, makePlayer(1, { internal: true })]);
