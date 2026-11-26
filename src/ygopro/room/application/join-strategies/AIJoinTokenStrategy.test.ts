@@ -243,6 +243,26 @@ describe("AIJoinTokenStrategy", () => {
 				expect(room.reservationAdmits(ctx.socket)).toBe(true);
 			});
 
+			it("stamps the reserved seat its token named before emitting JOIN", async () => {
+				const { room, emitter } = createRoomInList();
+				const token = tokenStore.register(room.id, "Anna", "Anna.ydk", 1);
+
+				let seatAtJoin: number | undefined;
+				jest.spyOn(room, "emit").mockImplementation((_event, _message, socket) => {
+					seatAtJoin = socket.internalSeat;
+				});
+
+				const strategy = new AIJoinTokenStrategy(makeModule(tokenStore));
+				await strategy.handle(
+					makeCtx(`AIJOIN#${token}`, {
+						eventEmitter: emitter,
+						messageRepository: makeMessageRepository() as never,
+					}),
+				);
+
+				expect(seatAtJoin).toBe(1);
+			});
+
 			it("does NOT mark the socket internal when the token is invalid", async () => {
 				const mod = makeModule(tokenStore);
 				const strategy = new AIJoinTokenStrategy(mod);

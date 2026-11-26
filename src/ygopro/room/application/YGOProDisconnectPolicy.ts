@@ -26,6 +26,13 @@ export class YGOProDisconnectPolicy implements RoomDisconnectPolicy {
 		if (room.reservedDuel && this.closeReservedDuel(room, socket)) {
 			return;
 		}
+		// A room of two bots has no seated player until they arrive: a watcher
+		// leaving it early must not read as the last player leaving.
+		if (room.reservedDuel?.users.length === 0 && !this.isPlayer(room, socket)) {
+			this.removeSpectator(room, socket);
+
+			return;
+		}
 
 		// On `close` the leaver's socket is already closed, so this also catches
 		// the last WAITING player leaving — finalize instead of leaking a zombie.
@@ -91,6 +98,10 @@ export class YGOProDisconnectPolicy implements RoomDisconnectPolicy {
 		}
 
 		return false;
+	}
+
+	private isPlayer(room: YGOProRoom, socket: ISocket): boolean {
+		return room.players.some((client) => client.socket.id === socket.id);
 	}
 
 	private noHumanLeft(room: YGOProRoom): boolean {

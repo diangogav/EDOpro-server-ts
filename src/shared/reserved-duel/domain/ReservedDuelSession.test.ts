@@ -111,4 +111,37 @@ describe("ReservedDuelSession", () => {
 		expect(session.userIds).toEqual(["user-1", "user-2"]);
 		expect(session.botSeat()).toBeNull();
 	});
+
+	it("seats each bot of a bot-only duel on the seat its token named", () => {
+		const session = new ReservedDuelSession(
+			makeReservation({
+				participants: [
+					{ seat: 0, kind: "windbot", botName: "Blackwing" },
+					{ seat: 1, kind: "windbot", botName: "Lightsworn" },
+				],
+			}),
+			makeRecorder(),
+		);
+
+		expect(session.botSeat(1)).toBe(1);
+		expect(session.botSeat(0)).toBe(0);
+		expect(session.botSeat()).toBe(0);
+		expect(session.userIds).toEqual([]);
+		expect(session.noShowSeat([], [])).toBeNull();
+	});
+
+	it("keeps a lone bot on its own seat whatever seat is asked for", () => {
+		const session = new ReservedDuelSession(
+			makeReservation({
+				participants: [
+					{ seat: 0, kind: "user", userId: "user-1", requiredDeck: null },
+					{ seat: 1, kind: "windbot", botName: "Haunted" },
+				],
+			}),
+			makeRecorder(),
+		);
+
+		expect(session.botSeat(0)).toBe(1);
+		expect(session.botSeat(undefined)).toBe(1);
+	});
 });

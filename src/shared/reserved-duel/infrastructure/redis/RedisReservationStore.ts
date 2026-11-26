@@ -37,6 +37,32 @@ end
 return {'claimed_elsewhere'}
 `;
 
+/**
+ * The server's own claim of a reservation no human can claim: two bots. KEYS[1]
+ * = reservation key; ARGV = instanceId, claim timestamp (ISO), TTL seconds. A
+ * reservation with a user seat is never touched here (`not_participant`): its
+ * room opens when that user arrives.
+ */
+export const SERVER_CLAIM_RESERVATION_SCRIPT = `
+local raw = redis.call('GET', KEYS[1])
+if not raw then return {'missing'} end
+local ok, reservation = pcall(cjson.decode, raw)
+if not ok or type(reservation) ~= 'table' or type(reservation.participants) ~= 'table' then return {'missing'} end
+for _, p in ipairs(reservation.participants) do
+  if type(p) ~= 'table' or p.kind ~= 'windbot' then return {'not_participant'} end
+end
+local claim = reservation.claim
+if claim == nil or claim == cjson.null then
+  reservation.claim = { instanceId = ARGV[1], at = ARGV[2] }
+  redis.call('SET', KEYS[1], cjson.encode(reservation), 'EX', tonumber(ARGV[3]))
+  return {'claimed', raw}
+end
+if type(claim) == 'table' and claim.instanceId == ARGV[1] then
+  return {'already_claimed_here', raw}
+end
+return {'claimed_elsewhere'}
+`;
+
 const CLAIM_TIMEOUT_MS = 2000;
 
 type ScriptReply = [string, string?];
@@ -56,6 +82,27 @@ export class RedisReservationStore implements ReservationStore {
 		instanceId: string,
 		userId: string,
 	): Promise<ClaimResult> {
+		return this.runClaim(reservationId, CLAIM_RESERVATION_SCRIPT, [
+			instanceId,
+			userId,
+			this.now().toISOString(),
+			String(CLAIMED_RESERVATION_TTL_SECONDS),
+		]);
+	}
+
+	public async claimForServer(reservationId: string, instanceId: string): Promise<ClaimResult> {
+		return this.runClaim(reservationId, SERVER_CLAIM_RESERVATION_SCRIPT, [
+			instanceId,
+			this.now().toISOString(),
+			String(CLAIMED_RESERVATION_TTL_SECONDS),
+		]);
+	}
+
+	private async runClaim(
+		reservationId: string,
+		script: string,
+		args: string[],
+	): Promise<ClaimResult> {
 		if (!RESERVATION_ID_PATTERN.test(reservationId)) {
 			return { status: "missing" };
 		}
@@ -67,15 +114,7 @@ export class RedisReservationStore implements ReservationStore {
 		let reply: ScriptReply;
 		try {
 			reply = (await withTimeout(
-				redis.eval(
-					CLAIM_RESERVATION_SCRIPT,
-					1,
-					reservationKey(reservationId),
-					instanceId,
-					userId,
-					this.now().toISOString(),
-					String(CLAIMED_RESERVATION_TTL_SECONDS),
-				),
+				redis.eval(script, 1, reservationKey(reservationId), ...args),
 				CLAIM_TIMEOUT_MS,
 			)) as ScriptReply;
 		} catch (error) {

@@ -14,7 +14,7 @@ const makeRepository = (): jest.Mocked<ReservedDuelRepository> => ({
 	closeLeftovers: jest.fn().mockResolvedValue(1),
 });
 
-const store = { claim: jest.fn(), release: jest.fn() };
+const store = { claim: jest.fn(), claimForServer: jest.fn(), release: jest.fn() };
 
 describe("bootstrapReservedDuels", () => {
 	afterEach(() => ReservedDuels.reset());

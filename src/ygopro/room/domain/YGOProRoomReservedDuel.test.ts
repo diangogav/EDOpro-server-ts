@@ -120,6 +120,53 @@ describe("YGOProRoom with a reserved duel", () => {
 		expect(open.reservationAdmits(makeSocket({ watchForRoomId: open.id }))).toBe(true);
 	});
 
+	describe("between two bots", () => {
+		const botOnly = (spectators = false) =>
+			makeRoom(
+				makeReservation({
+					participants: [
+						{ seat: 0, kind: "windbot", botName: "Blackwing" },
+						{ seat: 1, kind: "windbot", botName: "Lightsworn" },
+					],
+					options: { ...makeReservation().options, spectators },
+				}),
+			);
+
+		it("seats each bot on the seat its token named, whichever arrives first", async () => {
+			const room = botOnly();
+			const second = room.admissionTarget(
+				makeSocket({ internalForRoomId: room.id, internalSeat: 1 }),
+				info,
+			);
+			expect(second.freeSeat()).toEqual({ position: 1, team: 1 });
+			await second.seatPlayer({ kind: "guest", name: "Lightsworn" }, second.freeSeat()!);
+
+			const first = room
+				.admissionTarget(makeSocket({ internalForRoomId: room.id, internalSeat: 0 }), info)
+				.freeSeat();
+
+			expect(first).toEqual({ position: 0, team: 0 });
+		});
+
+		it("still turns away strangers and seat takers though it reserves no user", () => {
+			const room = botOnly();
+			const stranger = makeSocket({ resolvedUserId: "user-9" });
+
+			expect(room.reservationAdmits(stranger)).toBe(false);
+			expect(room.reservationAdmits(makeSocket())).toBe(false);
+			expect(room.reservationPermitsSeat(stranger)).toBe(false);
+			expect(room.reservationAdmits(makeSocket({ internalForRoomId: room.id }))).toBe(true);
+		});
+
+		it("admits watchers only when its reservation allows spectators", () => {
+			const closed = botOnly(false);
+			const open = botOnly(true);
+
+			expect(closed.reservationAdmits(makeSocket({ watchForRoomId: closed.id }))).toBe(false);
+			expect(open.reservationAdmits(makeSocket({ watchForRoomId: open.id }))).toBe(true);
+		});
+	});
+
 	it("always checks decks, even with the no-check token", () => {
 		expect(makeRoom(makeReservation(), "edison,nc#secret").shouldValidateDeck()).toBe(true);
 	});

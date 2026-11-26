@@ -97,6 +97,29 @@ describe("WindbotModule", () => {
 			expect(cleaned).toBe(0);
 		});
 
+		it("keeps the token of the room's other bot when one request fails", async () => {
+			const provider = makeProvider();
+			provider.requestJoin
+				.mockResolvedValueOnce(undefined)
+				.mockRejectedValueOnce(new WindbotUnreachableError("Anna", 10));
+			const tokenStore = WindbotTokenStore.createForTests();
+			const mod = WindbotModule.createForTests(
+				makeDeps({ provider: provider as unknown as WindbotModuleDeps["provider"], tokenStore }),
+			);
+
+			const first = await mod.requestBot(42, "Anna", () => false, undefined, undefined, 0);
+			await expect(
+				mod.requestBot(42, "Anna", () => false, undefined, undefined, 1),
+			).rejects.toThrow(WindbotUnreachableError);
+
+			expect(mod.consumeToken(first.token)).toEqual({
+				roomId: 42,
+				botName: "Anna",
+				deck: "Anna.ydk",
+				seat: 0,
+			});
+		});
+
 		it("rethrows the provider error after cleanup", async () => {
 			const unreachable = new WindbotUnreachableError("Anna", 10);
 			const provider = makeProvider();

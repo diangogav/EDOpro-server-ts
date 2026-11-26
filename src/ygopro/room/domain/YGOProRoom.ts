@@ -646,7 +646,9 @@ export class YGOProRoom extends YgoRoom {
 	 * reservations admit everyone, exactly as before.
 	 */
 	reservationAdmits(socket: ISocket): boolean {
-		if (!this.reservedUserIds || this.reservedUserIds.length === 0) {
+		// A reserved duel between two bots reserves no user, yet still keeps its
+		// seats for its bots and its stands to what its reservation allows.
+		if (!this.reservedDuel && (!this.reservedUserIds || this.reservedUserIds.length === 0)) {
 			return true;
 		}
 		if (socket.internalForRoomId === this.id) {
@@ -660,7 +662,7 @@ export class YGOProRoom extends YgoRoom {
 			return !this.reservedDuel || this.reservedDuel.allowsSpectators;
 		}
 
-		if (!socket.resolvedUserId || !this.reservedUserIds.includes(socket.resolvedUserId)) {
+		if (!socket.resolvedUserId || !this.reservedUserIds?.includes(socket.resolvedUserId)) {
 			return false;
 		}
 
@@ -681,10 +683,10 @@ export class YGOProRoom extends YgoRoom {
 	 * Rooms without reservations permit everyone, exactly as before.
 	 */
 	reservationPermitsSeat(socket: ISocket): boolean {
-		if (!this.reservedUserIds || this.reservedUserIds.length === 0) {
+		if (!this.reservedDuel && (!this.reservedUserIds || this.reservedUserIds.length === 0)) {
 			return true;
 		}
-		if (!socket.resolvedUserId || !this.reservedUserIds.includes(socket.resolvedUserId)) {
+		if (!socket.resolvedUserId || !this.reservedUserIds?.includes(socket.resolvedUserId)) {
 			return false;
 		}
 
@@ -711,7 +713,7 @@ export class YGOProRoom extends YgoRoom {
 	private reservedSeatFor(socket: ISocket): Seat | null {
 		const team =
 			socket.internalForRoomId === this.id
-				? (this.reservedDuel?.botSeat() ?? null)
+				? (this.reservedDuel?.botSeat(socket.internalSeat) ?? null)
 				: (this.reservedDuel?.seatOfUser(socket.resolvedUserId) ?? null);
 		if (team === null || this._players.some((player) => player.team === team)) {
 			return null;

@@ -36,7 +36,7 @@ export class AIJoinTokenStrategy implements JoinStrategy {
 		const token = ctx.rawPass.slice("AIJOIN#".length);
 
 		// Consume the token — throws on miss
-		let payload: { roomId: number; botName: string; deck: string };
+		let payload: { roomId: number; botName: string; deck: string; seat?: number };
 		try {
 			payload = this.module.consumeToken(token);
 		} catch {
@@ -68,6 +68,7 @@ export class AIJoinTokenStrategy implements JoinStrategy {
 		// the room id keeps the exemption from leaking to any other reserved
 		// room this socket might later present itself to.
 		ctx.socket.internalForRoomId = payload.roomId;
+		ctx.socket.internalSeat = payload.seat;
 
 		// A bot has joined — this room is now an AI room. Mark it noHost so the
 		// DisconnectHandler tears it down when the (only) human leaves, and

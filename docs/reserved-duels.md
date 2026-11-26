@@ -34,7 +34,7 @@ A reserved duel is a room the server builds from a reservation written ahead of 
 |---|---|
 | `format` | A `formatRuleMappings` token (`room/domain/RuleMappings.ts`). Nothing else reaches the rule parser. |
 | `mode` | `single`: one duel, a draw ends it. `match`: best of 3 with side decking. |
-| `participants` | Exactly two seats, 0 and 1 (seat = team). At least one `user`. A `windbot` seat is requested by name. Seats are fixed: `TO_DUEL` / `TO_OBSERVER` are ignored in a reserved room. |
+| `participants` | Exactly two seats, 0 and 1 (seat = team). At least one `user`, or two `windbot` seats with different names in a `single` duel (see [Bot-only duels](#bot-only-duels)). A `windbot` seat is requested by name, and the bot takes the seat its join token names. Seats are fixed: `TO_DUEL` / `TO_OBSERVER` are ignored in a reserved room. |
 | `requiredDeck` | Optional per user seat. Checked after the banlist, in waiting and side decking. |
 | `options.deckLock` | `exact`: each section must hold the required cards and a ready deck cannot change. `registered`: main + extra + side together must hold them (siding allowed). |
 | `options.reconnect` | `false`: a human leaving ends the room. `true`: normal reconnect window and abandon grace. |
@@ -53,6 +53,8 @@ A reserved duel is a room the server builds from a reservation written ahead of 
 | `already_claimed_here` | claimed by this instance | sent to the live room; JOINERROR when it is gone |
 | `claimed_elsewhere` | claimed by another instance | JOINERROR |
 
+A bot-only reservation is claimed by the server itself (`SERVER_CLAIM_RESERVATION_SCRIPT`, `claimForServer`): same results, except that `not_participant` means the reservation has a user seat, whose room opens when that user arrives.
+
 The instance id is `SERVER_INSTANCE_ID`; keep it stable and unique per deployment slot. It is required in production (`NODE_ENV=production`) when reserved duels are on: the server refuses to boot without it. Elsewhere it falls back to `default`.
 
 ## The records (Postgres, server-owned)
@@ -61,7 +63,7 @@ Created by the evolution-types migration `CreateReservedDuels1789300000000`.
 
 | Writer | Write |
 |---|---|
-| Join (first participant) | `reserved_duels` row (`joined_at`) + participant rows. When the write reports an error the server checks whether the row was committed: if so the room opens; otherwise (or unknown) the room is closed as `room_closed` and the key released |
+| Join (first participant), or the server opening a bot-only duel (no seat joined) | `reserved_duels` row (`joined_at`) + participant rows. When the write reports an error the server checks whether the row was committed: if so the room opens; otherwise (or unknown) the room is closed as `room_closed` and the key released |
 | Join (later participant) | `UPDATE reserved_duel_participants SET joined_at … WHERE joined_at IS NULL`; zero rows and no `reconnect` → JOINERROR |
 | First duel start | `started_at`, `match_id`, only while the row is still open |
 | Plugin `reserved-duels` (`GAME_OVER` with `reservationId`) | `outcome` `decided` / `draw`, `winner_seat`, `reason` (last game's win reason), `duels`, `started_at` when still empty |
@@ -80,6 +82,15 @@ Every terminal write is `… WHERE ended_at IS NULL`, and the core writes an aba
 | `room_closed` | null | any other teardown, or an unplayable reservation (unknown format, format contradicting the mode) |
 | `server_restart` | null | boot sweep |
 
+## Bot-only duels
+
+No human can claim a reservation whose two seats are bots, so its issuer announces it after writing the key: `PUBLISH duel:reservation:open <id>`. Every instance subscribes to that channel on a connection of its own (`RedisReservationOpenSubscriber`, started by `bootstrapBotReservedDuels`); the atomic server claim picks one, which opens the room with no creating socket (`OpenBotReservedDuel`), records the rows with no seat joined and requests both bots, each with its seat in its join token. From there it is an ordinary reserved room: the duel starts when both bots are seated and ready, the plugin records the game over, and a bot that fails, drops or never comes ends it as `bot_unavailable`. The room hands out no reconnection tokens.
+
+- Only `single`: WindBot never submits a side deck, so a match would stall between duels.
+- Two different bot names: the lobby refuses a second player with a name already seated.
+- Pub/sub keeps no backlog. An announcement made while no instance listens is lost; the reservation then expires unclaimed (10 min TTL) and the issuer finds no row for it.
+- Watchers are admitted under `options.spectators` as in any reserved room.
+
 ## Requirements
 
-Reserved duels turn on when Postgres (`RANK_ENABLED=true`) and Redis (`USE_REDIS=true`, `REDIS_URI`) are both configured. Otherwise every `rv#` join is refused.
+Reserved duels turn on when Postgres (`RANK_ENABLED=true`) and Redis (`USE_REDIS=true`, `REDIS_URI`) are both configured. Otherwise every `rv#` join is refused. Bot-only duels also need WindBot (`ENABLE_WINDBOT=true`); without it nobody subscribes to the open channel.

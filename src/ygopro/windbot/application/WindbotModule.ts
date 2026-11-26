@@ -125,19 +125,22 @@ export class WindbotModule {
 		isFinalizing: () => boolean,
 		deckOverride?: string,
 		pool?: string,
+		seat?: number,
 	): Promise<{ token: string; bot: WindbotData }> {
 		const { token, bot } = this.requestJoinUseCase.execute(
 			roomId,
 			botNameOrNull,
 			deckOverride,
 			pool,
+			seat,
 		);
 
 		try {
 			await this.deps.provider.requestJoin({ token, bot, isFinalizing });
 		} catch (err) {
-			// Clean up the registered token so no zombie entry remains
-			this.deps.tokenStore.clearByRoom(roomId);
+			// Clean up the registered token so no zombie entry remains; another bot
+			// requested for the same room keeps its own.
+			this.deps.tokenStore.remove(token);
 			throw err;
 		}
 
