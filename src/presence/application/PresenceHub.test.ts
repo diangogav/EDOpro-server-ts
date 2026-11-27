@@ -611,10 +611,16 @@ describe("PresenceHub challenges", () => {
 	it("carries a best of three from the challenge to the room and both players", async () => {
 		const { hub, transport, rooms } = await twoGuests();
 
-		await hub.message("a", send("PRESENCE-CHALLENGE", { to: "g:guest-2", format: "goat", bestOf: 3 }));
+		await hub.message(
+			"a",
+			send("PRESENCE-CHALLENGE", { to: "g:guest-2", format: "goat", bestOf: 3 }),
+		);
 
 		expect(transport.last("a")).toMatchObject({ action: "CHALLENGE-SENT", data: { bestOf: 3 } });
-		expect(transport.last("b")).toMatchObject({ action: "CHALLENGE-RECEIVED", data: { bestOf: 3 } });
+		expect(transport.last("b")).toMatchObject({
+			action: "CHALLENGE-RECEIVED",
+			data: { bestOf: 3 },
+		});
 
 		await hub.message("b", answer("challenge-1", true));
 
@@ -625,9 +631,15 @@ describe("PresenceHub challenges", () => {
 	it("refuses a challenge that asks for neither one duel nor a best of three", async () => {
 		const { hub, transport } = await twoGuests();
 
-		await hub.message("a", send("PRESENCE-CHALLENGE", { to: "g:guest-2", format: "goat", bestOf: 2 }));
+		await hub.message(
+			"a",
+			send("PRESENCE-CHALLENGE", { to: "g:guest-2", format: "goat", bestOf: 2 }),
+		);
 
-		expect(transport.last("a")).toEqual({ action: "PRESENCE-ERROR", data: { code: "invalid-challenge" } });
+		expect(transport.last("a")).toEqual({
+			action: "PRESENCE-ERROR",
+			data: { code: "invalid-challenge" },
+		});
 		expect(transport.of("b")).toEqual([]);
 	});
 
