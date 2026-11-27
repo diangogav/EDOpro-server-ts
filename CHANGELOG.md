@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.19.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.18.0...v2.19.0) (2026-11-27)
+
+
+### ✨ Features
+
+* **accounts:** gate room chat and ranked play on verified accounts ([#507](https://github.com/diangogav/EDOpro-server-ts/issues/507)) ([c3e74f3](https://github.com/diangogav/EDOpro-server-ts/commit/c3e74f30a0e74f31f5ea46e2437bde77a0450476))
+* **deck:** apply the official Skill Card rules to decks and side decking ([#501](https://github.com/diangogav/EDOpro-server-ts/issues/501)) ([425f3a4](https://github.com/diangogav/EDOpro-server-ts/commit/425f3a4b714951d6ca153d9325a1603ed0f2d7ad))
+* **edopro-bridge:** seat YGOPro clients in 2v2 tag and relay rooms ([#511](https://github.com/diangogav/EDOpro-server-ts/issues/511)) ([cabd1f4](https://github.com/diangogav/EDOpro-server-ts/commit/cabd1f4a0c6d726fa46921ce0b32d9ab0956fe8c))
+* **presence:** let a challenge be a best of three ([#513](https://github.com/diangogav/EDOpro-server-ts/issues/513)) ([d08dc99](https://github.com/diangogav/EDOpro-server-ts/commit/d08dc9971b397606712cf893d3ff82082fbcb127))
+* **presence:** online list and direct challenges ([#506](https://github.com/diangogav/EDOpro-server-ts/issues/506)) ([8c71b78](https://github.com/diangogav/EDOpro-server-ts/commit/8c71b78a084e4e6be730fa93086e07de517a4b0f))
+* **reconnect:** let a verified player resume their seat from another device ([#515](https://github.com/diangogav/EDOpro-server-ts/issues/515)) ([7f61e7a](https://github.com/diangogav/EDOpro-server-ts/commit/7f61e7a5566b438e69de4c2d39314e4b8f5585be))
+* **reconnect:** send the seat's deck when resuming during side decking ([#517](https://github.com/diangogav/EDOpro-server-ts/issues/517)) ([61d5e21](https://github.com/diangogav/EDOpro-server-ts/commit/61d5e215065f4c920da0ff3eb946bd432d24646f))
+* **reconnect:** tell the turn number to a player who rejoins by token ([#504](https://github.com/diangogav/EDOpro-server-ts/issues/504)) ([8a5348d](https://github.com/diangogav/EDOpro-server-ts/commit/8a5348ddc93f0cb4b48f2cde30cddfdfcaa56c89))
+* **reserved-duels:** open reserved duels between two bots ([#512](https://github.com/diangogav/EDOpro-server-ts/issues/512)) ([ab6ae5c](https://github.com/diangogav/EDOpro-server-ts/commit/ab6ae5c59957d9828412565a5f73842968352a12))
+* **ygopro:** create Speed Duel rooms on the EDOPro core from a join command ([#502](https://github.com/diangogav/EDOpro-server-ts/issues/502)) ([e317b72](https://github.com/diangogav/EDOpro-server-ts/commit/e317b725182290a7de089785e36b0232e3faf6de))
+* **ygopro:** let a bridged client play Speed Duels with Skills ([#499](https://github.com/diangogav/EDOpro-server-ts/issues/499)) ([2e7574c](https://github.com/diangogav/EDOpro-server-ts/commit/2e7574c686f79d6abff665a103d564b6bdd50509))
+
+
+### 🐛 Bug Fixes
+
+* **edopro:** restore the room, the field and the Skills on a token rejoin ([#503](https://github.com/diangogav/EDOpro-server-ts/issues/503)) ([12ce322](https://github.com/diangogav/EDOpro-server-ts/commit/12ce32259cb00baf3ca7d050278e9fc202b8fb31))
+* **reconnect:** close a superseded EDOPro seat with 4001 and send its ban list ([#516](https://github.com/diangogav/EDOpro-server-ts/issues/516)) ([30fe23d](https://github.com/diangogav/EDOpro-server-ts/commit/30fe23df899c6d62e44e77cafe0944edf35cd3e8))
+* **ygopro:** clear the reconnecting mark after a by-name rejoin between duels ([#505](https://github.com/diangogav/EDOpro-server-ts/issues/505)) ([839c8f8](https://github.com/diangogav/EDOpro-server-ts/commit/839c8f890e395ab4adba45a413dcf32caa90bfd2))
+
 ## [2.18.0](https://github.com/diangogav/EDOpro-server-ts/compare/v2.17.0...v2.18.0) (2026-11-19)
 
 
