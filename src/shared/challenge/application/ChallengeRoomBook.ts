@@ -1,6 +1,6 @@
 import { randomInt } from "node:crypto";
 
-import { ChallengeRoom, challengeRoomCommand } from "../domain/ChallengeRoom";
+import { ChallengeBestOf, ChallengeRoom, challengeRoomCommand } from "../domain/ChallengeRoom";
 
 /** How long a challenge code opens its room after the challenge is accepted. */
 export const CHALLENGE_ROOM_TTL_MS = 120_000;
@@ -17,6 +17,8 @@ export interface ChallengeRoomBookDeps {
 export interface IssueChallengeRoom {
 	format: string;
 	ranked: boolean;
+	/** One duel when absent. */
+	bestOf?: ChallengeBestOf;
 	userIds: readonly string[];
 }
 
@@ -46,7 +48,7 @@ export class ChallengeRoomBook {
 	}
 
 	public issue(input: IssueChallengeRoom): ChallengeRoom {
-		const command = challengeRoomCommand(input.format, input.ranked);
+		const command = challengeRoomCommand(input.format, input.ranked, input.bestOf ?? 1);
 		if (command === null) {
 			throw new Error(`Unknown challenge format: ${input.format}`);
 		}
