@@ -18,6 +18,7 @@ const REJECTION_REASON: Record<ReconnectOutcome, string> = {
 	identity_mismatch: "account does not match seat owner for token",
 	forwarded: "forwarded token",
 	matched: "matched token",
+	no_seat: "no seat for the connection's account",
 };
 
 // Generic, transport-agnostic express-reconnect router. It lives at the

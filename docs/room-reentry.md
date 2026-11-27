@@ -14,6 +14,7 @@ Evidence references point at the current source; update them if files move.
 | Path | Trigger | Outcome | Section |
 |------|---------|---------|---------|
 | Token (express) reconnect | Connection-level `0xfd` frame carrying a reconnection token | Resume your seat, any state | §3 |
+| Account resume (another device) | Connection-level `0xeb` frame on a socket with a handshake ticket | Take over your verified seat from another device | §3a |
 | By-name / identity reconnect | A normal `CTOS_JOIN_GAME` routed to a room whose duel is in progress | Resume your seat **only if** the account matches | §4 |
 | Spectator | A join that cannot (or is not meant to) take a seat | Watch from the stands | §5 |
 | Watch command | `w,<roomId>[#password]` | Spectate a chosen room by id | §6 |
@@ -105,6 +106,34 @@ rejoin of a duel with a frame of their own, `DuelTurnClientMessage`:
 `[2b size LE][0xee][turn u16 LE]`. It goes out after the board, so the client
 applies it over whatever its count reached while resyncing. Only a token rejoin
 gets it; a client that rejoins by name never asked for our extensions.
+
+## 3a. Account resume (another device)
+
+A player can take over their seat from another device of the same account,
+without the token the first device holds
+(`src/shared/room/application/reconnect/AccountResumeHandler.ts`).
+
+1. The client asks `POST /api/me/active-duel` with a fresh game ticket. The
+   answer is `{ inDuel }` only; the token never leaves the duel socket.
+2. After the player confirms, the client opens the WebSocket with another fresh
+   `?ticket=` and sends `[2b size LE][0xeb]` (`RESUME_SEAT`, no payload). The
+   account comes from the handshake, never from the frame.
+3. `findSeatOfUser` (`src/shared/room/domain/reconnect/findSeatOfUser.ts`) looks
+   in both room lists for a player (not a spectator) of a started match whose
+   credential is `verified` for that account and who has a token. A seat with a
+   PIN (`external`), a guest seat, a waiting room and a room without
+   reconnection never match. The seat is found whether its socket is still open
+   or not.
+4. The seat's token is rotated (`ReconnectionTokenIssuer.rotate`), so the device
+   that held the seat can no longer take it back with its copy.
+5. The socket gets `[2b size LE][0xea][JSON]` (`RESUME_INFO`): the room's ban
+   list name (the client picks its card database from it), the match score from
+   the player's side and whether the room runs the EDOPro core.
+6. The room is asked to re-sync exactly as in §3, with the new token. A YGOPro
+   room closes the old socket with 4001 "session superseded".
+
+A connection without an account, or an account without a seat, gets the failure
+ack and is closed. Every attempt logs `reconnect.attempt` with `path: "account"`.
 
 ## 4. By-name / identity reconnection (the weak path)
 

@@ -3,7 +3,7 @@ import { Logger } from "@shared/logger/domain/Logger";
 import { redactSecret } from "@shared/logger/domain/redactSecret";
 import { ISocket } from "@shared/socket/domain/ISocket";
 
-export type ReconnectPath = "token" | "by-name";
+export type ReconnectPath = "token" | "by-name" | "account";
 
 export type ReconnectOutcome =
 	| "forwarded" // token accepted and handed to the room's current phase
@@ -11,7 +11,8 @@ export type ReconnectOutcome =
 	| "unknown_token"
 	| "room_not_found"
 	| "identity_missing" // verified seat, but the connection carries no account
-	| "identity_mismatch";
+	| "identity_mismatch"
+	| "no_seat"; // account path: the connection's account holds no seat to take over
 
 // One structured info line per reconnect attempt, so reconnect health can be
 // measured per path and transport without parsing prose logs. The token only

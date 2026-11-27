@@ -6,6 +6,7 @@ import { Logger } from "@shared/logger/domain/Logger";
 import { Commands } from "@shared/messages/Commands";
 import { createDisconnectHandler } from "src/bootstrap/disconnectHandler";
 import { RoomFinder } from "@shared/room/application/RoomFinder";
+import { AccountResumeHandler } from "@shared/room/application/reconnect/AccountResumeHandler";
 import { ExpressReconnectHandler } from "@shared/room/application/reconnect/ExpressReconnectHandler";
 import { ISocket } from "@shared/socket/domain/ISocket";
 import { YGOProGameCreatorHandler } from "@ygopro/room/application/YGOProGameCreatorHandler";
@@ -80,6 +81,7 @@ export class YGOProConnectionHandler {
 			ygoproReconnectRoute.owns,
 			ygoproReconnectRoute.socketFor,
 		);
+		new AccountResumeHandler(eventEmitter, connectionLogger, socket, ygoproReconnectRoute);
 
 		const messageEmitter = new MessageEmitter(
 			connectionLogger,

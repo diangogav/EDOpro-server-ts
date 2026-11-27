@@ -73,6 +73,13 @@ export class MessageEmitter {
 			);
 		}
 
+		if (this.messageProcessor.command === Commands.RESUME_SEAT) {
+			this.eventEmitter.emit(
+				this.messageProcessor.command as unknown as string,
+				this.messageProcessor.payload,
+			);
+		}
+
 		if (MATCHMAKING_COMMANDS.includes(this.messageProcessor.command)) {
 			this.eventEmitter.emit(
 				this.messageProcessor.command as unknown as string,

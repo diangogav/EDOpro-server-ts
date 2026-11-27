@@ -1,4 +1,7 @@
+import { ResumeInfo } from "@shared/messages/server-to-client/ResumeInfoClientMessage";
+import { AccountSeat, findSeatOfUser } from "@shared/room/domain/reconnect/findSeatOfUser";
 import { YGOProClient } from "@ygopro/client/domain/YGOProClient";
+import { YGOProRoom } from "@ygopro/room/domain/YGOProRoom";
 import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 
 import { Client as EdoproClient } from "../edopro/client/domain/Client";
@@ -39,6 +42,31 @@ export const ygoproReconnectRoute = {
 	 * its wire format, told the Master Rule because a room does not send its
 	 * host info again to a player who rejoins.
 	 */
+	/**
+	 * The seat an account holds in a started match on this server, among the
+	 * players this server takes back (YGOPro rooms, and EDOPro rooms entered from here).
+	 */
+	seatOf(userId: string): AccountSeat | null {
+		return findSeatOfUser(
+			[...YGOProRoomList.getRooms(), ...RoomList.getRooms()],
+			userId,
+			ygoproReconnectRoute.owns,
+		);
+	},
+
+	/** What a device that took the seat over needs to draw the duel. */
+	resumeInfoOf({ client, room }: AccountSeat): ResumeInfo {
+		const score = room.matchScore();
+		const own = client.team === 0 ? score.team0 : score.team1;
+		const opponent = client.team === 0 ? score.team1 : score.team0;
+
+		return {
+			banListName: room instanceof YGOProRoom ? room.banListName : null,
+			score: { own, opponent },
+			edoproRoom: room instanceof EdoproRoom,
+		};
+	},
+
 	socketFor(room: YgoRoom, reopened: ISocket): ISocket {
 		if (!(room instanceof EdoproRoom)) {
 			return reopened;

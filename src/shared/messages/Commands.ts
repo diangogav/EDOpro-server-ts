@@ -18,6 +18,8 @@ export enum Commands {
 	PING = 0xff,
 	PONG = 0xfe,
 	RECONNECT = 0xfd,
+	/** CTOS: take over this account's seat from another device; the identity comes from the handshake ticket. */
+	RESUME_SEAT = 0xeb,
 	EMOTE = 0xfc,
 	MATCHMAKING_AUTH = 0xfb,
 	MATCHMAKING_ENTER = 0xfa,
