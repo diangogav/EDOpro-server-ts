@@ -128,7 +128,9 @@ without the token the first device holds
    that held the seat can no longer take it back with its copy.
 5. The socket gets `[2b size LE][0xea][JSON]` (`RESUME_INFO`): the room's ban
    list name (the client picks its card database from it), the match score from
-   the player's side and whether the room runs the EDOPro core.
+   the player's side, whether the room runs the EDOPro core and, while the room
+   is side decking, the seat's deck (`deck: { main, extra, side }`, null
+   otherwise), so a device that never had it can open the side deck editor.
 6. The room is asked to re-sync exactly as in §3, with the new token. The old
    socket, if still open, is closed with 4001 "session superseded" in both
    flows (`YGOProRoom.reconnect`, and the EDOPro `Client.setSocket`), so the

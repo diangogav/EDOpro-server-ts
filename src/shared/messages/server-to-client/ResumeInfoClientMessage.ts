@@ -8,6 +8,15 @@ export type ResumeInfo = {
 	readonly score: { readonly own: number; readonly opponent: number };
 	/** The room runs the EDOPro core and its wire format is translated for this client. */
 	readonly edoproRoom: boolean;
+	/**
+	 * The seat's deck while the room is side decking, so a device that never had
+	 * it can open the side deck editor with the deck of this match. Null otherwise.
+	 */
+	readonly deck: {
+		readonly main: number[];
+		readonly extra: number[];
+		readonly side: number[];
+	} | null;
 };
 
 // Wire format: [2b size LE][0xea][JSON utf8]. Sent only to a socket that took its
