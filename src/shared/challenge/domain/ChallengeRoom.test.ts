@@ -1,6 +1,7 @@
 import {
 	challengeIsRanked,
 	challengeRoomCommand,
+	parseChallengeBestOf,
 	isAdmittedToChallengeRoom,
 	ChallengeRoom,
 } from "./ChallengeRoom";
@@ -38,6 +39,24 @@ describe("challengeRoomCommand", () => {
 
 	it("returns null for a format outside the catalogue", () => {
 		expect(challengeRoomCommand("tengu", false)).toBeNull();
+	});
+});
+
+describe("challengeRoomCommand best of three", () => {
+	it("adds the match token, before casual", () => {
+		expect(challengeRoomCommand("goat", true, 3)).toBe("goat,m");
+		expect(challengeRoomCommand("tcg", false, 3)).toBe("toot,m,casual");
+		expect(challengeRoomCommand("goat", true, 1)).toBe("goat");
+	});
+});
+
+describe("parseChallengeBestOf", () => {
+	it("reads 1 or 3, takes one duel when the payload names none, and refuses anything else", () => {
+		expect(parseChallengeBestOf(undefined)).toBe(1);
+		expect(parseChallengeBestOf(1)).toBe(1);
+		expect(parseChallengeBestOf(3)).toBe(3);
+		expect(parseChallengeBestOf(2)).toBeNull();
+		expect(parseChallengeBestOf("3")).toBeNull();
 	});
 });
 

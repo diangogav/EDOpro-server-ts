@@ -19,6 +19,18 @@ export interface ChallengeRoom {
 	readonly expiresAt: number;
 }
 
+/** A challenge is one duel, or a match decided by two duels won out of three. */
+export type ChallengeBestOf = 1 | 3;
+
+/** The best-of a challenge payload asks for: 1 when it names none, null when it is neither 1 nor 3. */
+export function parseChallengeBestOf(value: unknown): ChallengeBestOf | null {
+	if (value === undefined) {
+		return 1;
+	}
+
+	return value === 1 || value === 3 ? value : null;
+}
+
 /** Command segment of a challenge join: `ch#<code>`. */
 export const CHALLENGE_COMMAND = "ch";
 
@@ -47,17 +59,22 @@ export function challengeIsRanked(format: string, bothAccounts: boolean): boolea
 }
 
 /**
- * The room command for a challenge in `format`, best of one. A casual room
- * carries the `casual` token, so an account's ticket does not turn it ranked.
- * Null for a format outside the catalogue.
+ * The room command for a challenge in `format`. A casual room carries the
+ * `casual` token, so an account's ticket does not turn it ranked; a best of
+ * three carries the `m` token. Null for a format outside the catalogue.
  */
-export function challengeRoomCommand(format: string, ranked: boolean): string | null {
+export function challengeRoomCommand(
+	format: string,
+	ranked: boolean,
+	bestOf: ChallengeBestOf = 1,
+): string | null {
 	const token = Object.hasOwn(FORMAT_TOKENS, format) ? FORMAT_TOKENS[format] : undefined;
 	if (token === undefined) {
 		return null;
 	}
+	const tokens = [token, ...(bestOf === 3 ? ["m"] : []), ...(ranked ? [] : ["casual"])];
 
-	return ranked ? token : `${token},casual`;
+	return tokens.join(",");
 }
 
 /** A ranked room seats only its two accounts; a casual room anyone with the code. */

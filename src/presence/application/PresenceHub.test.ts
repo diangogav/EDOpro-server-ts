@@ -495,6 +495,7 @@ describe("PresenceHub challenges", () => {
 					to: "g:guest-2",
 					format: "goat",
 					ranked: false,
+					bestOf: 1,
 					expiresInMs: 30_000,
 				},
 			},
@@ -507,6 +508,7 @@ describe("PresenceHub challenges", () => {
 					from: "g:guest-1",
 					format: "goat",
 					ranked: false,
+					bestOf: 1,
 					expiresInMs: 30_000,
 				},
 			},
@@ -525,6 +527,7 @@ describe("PresenceHub challenges", () => {
 				from: "u:user-2",
 				format: "goat",
 				ranked: true,
+				bestOf: 1,
 				expiresInMs: 30_000,
 			},
 		};
@@ -551,6 +554,7 @@ describe("PresenceHub challenges", () => {
 		expect(rooms.issue).toHaveBeenCalledWith({
 			format: "goat",
 			ranked: true,
+			bestOf: 1,
 			userIds: ["user-2", "user-1"],
 		});
 		expect(matchmaking.removeUser).toHaveBeenCalledWith("user-2");
@@ -562,6 +566,7 @@ describe("PresenceHub challenges", () => {
 				command: "ch#abcdefgh01234567",
 				format: "goat",
 				ranked: true,
+				bestOf: 1,
 			},
 		};
 		expect(transport.of("a")).toEqual([start]);
@@ -581,7 +586,12 @@ describe("PresenceHub challenges", () => {
 
 		await hub.message("a", answer("challenge-1", true));
 
-		expect(rooms.issue).toHaveBeenCalledWith({ format: "edison", ranked: false, userIds: [] });
+		expect(rooms.issue).toHaveBeenCalledWith({
+			format: "edison",
+			ranked: false,
+			bestOf: 1,
+			userIds: [],
+		});
 		expect(matchmaking.removeUser).toHaveBeenCalledTimes(1);
 		expect(matchmaking.removeUser).toHaveBeenCalledWith("user-1");
 		expect(transport.of("b")).toEqual([
@@ -592,9 +602,33 @@ describe("PresenceHub challenges", () => {
 					command: "ch#abcdefgh01234567",
 					format: "edison",
 					ranked: false,
+					bestOf: 1,
 				},
 			},
 		]);
+	});
+
+	it("carries a best of three from the challenge to the room and both players", async () => {
+		const { hub, transport, rooms } = await twoGuests();
+
+		await hub.message("a", send("PRESENCE-CHALLENGE", { to: "g:guest-2", format: "goat", bestOf: 3 }));
+
+		expect(transport.last("a")).toMatchObject({ action: "CHALLENGE-SENT", data: { bestOf: 3 } });
+		expect(transport.last("b")).toMatchObject({ action: "CHALLENGE-RECEIVED", data: { bestOf: 3 } });
+
+		await hub.message("b", answer("challenge-1", true));
+
+		expect(rooms.issue).toHaveBeenCalledWith(expect.objectContaining({ bestOf: 3 }));
+		expect(transport.last("b")).toMatchObject({ action: "CHALLENGE-START", data: { bestOf: 3 } });
+	});
+
+	it("refuses a challenge that asks for neither one duel nor a best of three", async () => {
+		const { hub, transport } = await twoGuests();
+
+		await hub.message("a", send("PRESENCE-CHALLENGE", { to: "g:guest-2", format: "goat", bestOf: 2 }));
+
+		expect(transport.last("a")).toEqual({ action: "PRESENCE-ERROR", data: { code: "invalid-challenge" } });
+		expect(transport.of("b")).toEqual([]);
 	});
 
 	it("closes the other open challenges of both players once a challenge starts", async () => {

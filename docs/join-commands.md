@@ -589,7 +589,7 @@ An accepted direct challenge from the online list ([presence](./presence.md#chal
 - A ranked room admits only its two accounts: the socket's `resolvedUserId` (WS ticket) must be one of them.
 - Otherwise the context's `command`, `password` and `rawPass` become the stored room's (`goat`, `toot,casual`, `speed,casual`, …, and its internal password) and the join goes to the first strategy of the rest of the chain that matches the rewritten context: `SpeedDuelJoinStrategy` for `speed`, `TicketJoinStrategy` for a ticketed socket (a ranked room is a Verified one; the `casual` token keeps a casual room casual), `DefaultJoinStrategy` otherwise. The first player opens the room through `findOrCreateRoom`'s non-pairing path and the second finds it by name and password.
 
-Rooms are best of one. The code is not consumed on use, so a player can rejoin while it lives.
+Rooms are best of one, or best of three when the challenge asked for it (the `m` token: `goat,m`, `toot,m,casual`). The code is not consumed on use, so a player can rejoin while it lives.
 
 ## Public lobby invitations
 

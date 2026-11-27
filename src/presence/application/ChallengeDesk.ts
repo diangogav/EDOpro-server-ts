@@ -1,4 +1,4 @@
-import { challengeIsRanked } from "@shared/challenge/domain/ChallengeRoom";
+import { challengeIsRanked, parseChallengeBestOf } from "@shared/challenge/domain/ChallengeRoom";
 import { Logger } from "@shared/logger/domain/Logger";
 
 import {
@@ -54,7 +54,8 @@ export class ChallengeDesk {
 
 			return;
 		}
-		if (typeof data.to !== "string" || typeof data.format !== "string") {
+		const bestOf = parseChallengeBestOf(data.bestOf);
+		if (typeof data.to !== "string" || typeof data.format !== "string" || bestOf === null) {
 			this.deps.error(socketId, "invalid-challenge");
 
 			return;
@@ -74,6 +75,7 @@ export class ChallengeDesk {
 			to: target.id,
 			format,
 			ranked: challengeIsRanked(format, sender.account && target.account),
+			bestOf,
 		};
 		this.challenges.add(challenge);
 		this.expiryTimers.set(
@@ -87,6 +89,7 @@ export class ChallengeDesk {
 				to: target.id,
 				format,
 				ranked: challenge.ranked,
+				bestOf,
 				expiresInMs: CHALLENGE_EXPIRY_MS,
 			},
 		});
@@ -97,6 +100,7 @@ export class ChallengeDesk {
 				from: sender.id,
 				format,
 				ranked: challenge.ranked,
+				bestOf,
 				expiresInMs: CHALLENGE_EXPIRY_MS,
 			},
 		});
@@ -230,6 +234,7 @@ export class ChallengeDesk {
 			code = this.deps.challengeRooms.issue({
 				format: challenge.format,
 				ranked: challenge.ranked,
+				bestOf: challenge.bestOf,
 				userIds: challenge.ranked ? userIds : [],
 			}).code;
 		} catch (error) {
@@ -259,6 +264,7 @@ export class ChallengeDesk {
 					command: `${CHALLENGE_JOIN_PREFIX}${code}`,
 					format: challenge.format,
 					ranked: challenge.ranked,
+					bestOf: challenge.bestOf,
 				},
 			});
 		}

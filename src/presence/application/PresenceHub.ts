@@ -1,3 +1,4 @@
+import { ChallengeBestOf } from "@shared/challenge/domain/ChallengeRoom";
 import { Logger } from "@shared/logger/domain/Logger";
 import { HandshakeTicketStore } from "@shared/ticket/domain/TicketRepository";
 
@@ -50,6 +51,7 @@ export type PresenceMessage =
 				to: string;
 				format: PresenceFormat;
 				ranked: boolean;
+				bestOf: ChallengeBestOf;
 				expiresInMs: number;
 			};
 	  }
@@ -60,6 +62,7 @@ export type PresenceMessage =
 				from: string;
 				format: PresenceFormat;
 				ranked: boolean;
+				bestOf: ChallengeBestOf;
 				expiresInMs: number;
 			};
 	  }
@@ -69,7 +72,13 @@ export type PresenceMessage =
 	  }
 	| {
 			action: "CHALLENGE-START";
-			data: { challengeId: string; command: string; format: PresenceFormat; ranked: boolean };
+			data: {
+				challengeId: string;
+				command: string;
+				format: PresenceFormat;
+				ranked: boolean;
+				bestOf: ChallengeBestOf;
+			};
 	  };
 
 /** Delivers presence messages to one socket of the room-list WebSocket. */
@@ -98,7 +107,12 @@ export interface ChallengeMatchmaking {
 
 /** Stores the room of an accepted challenge and returns the code that opens it. */
 export interface ChallengeRoomIssuer {
-	issue(input: { format: string; ranked: boolean; userIds: readonly string[] }): { code: string };
+	issue(input: {
+		format: string;
+		ranked: boolean;
+		bestOf: ChallengeBestOf;
+		userIds: readonly string[];
+	}): { code: string };
 }
 
 export interface PresenceHubDeps {

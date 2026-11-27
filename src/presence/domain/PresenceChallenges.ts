@@ -1,3 +1,5 @@
+import { ChallengeBestOf } from "@shared/challenge/domain/ChallengeRoom";
+
 import { PresenceFormat } from "./PresenceFormat";
 
 /** An unanswered challenge expires after this long. */
@@ -13,6 +15,7 @@ export interface PresenceChallenge {
 	readonly to: string;
 	readonly format: PresenceFormat;
 	readonly ranked: boolean;
+	readonly bestOf: ChallengeBestOf;
 }
 
 /**

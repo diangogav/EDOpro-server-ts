@@ -46,13 +46,13 @@ A player is `{ id, name, account, userId, formats, status, muted }`. `id` is `u:
 
 ## Challenges
 
-Any player in the list can challenge another to one duel (best of one) in a format both of them play. Code: `src/presence/application/ChallengeDesk.ts`; the room book is `src/shared/challenge/`.
+Any player in the list can challenge another to one duel, or to a best of three, in a format both of them play. Code: `src/presence/application/ChallengeDesk.ts`; the room book is `src/shared/challenge/`.
 
 Client → server:
 
 | Action | Data | Notes |
 |---|---|---|
-| `PRESENCE-CHALLENGE` | `{ to, format }` | `to` is a player `id` from the list; `format` one of the ids above that both players list. |
+| `PRESENCE-CHALLENGE` | `{ to, format, bestOf? }` | `to` is a player `id` from the list; `format` one of the ids above that both players list; `bestOf` is `1` (the default) or `3`. |
 | `PRESENCE-CHALLENGE-CANCEL` | `{}` | Withdraws the sender's pending challenge. |
 | `PRESENCE-CHALLENGE-ANSWER` | `{ challengeId, accept }` | From the target only (any of its tabs). `accept` is a boolean. |
 
@@ -60,14 +60,14 @@ Server → client (to every open tab of the player concerned):
 
 | Action | Data | To |
 |---|---|---|
-| `CHALLENGE-SENT` | `{ challengeId, to, format, ranked, expiresInMs }` | the challenger |
-| `CHALLENGE-RECEIVED` | `{ challengeId, from, format, ranked, expiresInMs }` | the target; `from` is the challenger's `id` |
+| `CHALLENGE-SENT` | `{ challengeId, to, format, ranked, bestOf, expiresInMs }` | the challenger |
+| `CHALLENGE-RECEIVED` | `{ challengeId, from, format, ranked, bestOf, expiresInMs }` | the target; `from` is the challenger's `id` |
 | `CHALLENGE-CLOSED` | `{ challengeId, reason, cause? }` | both players still online |
-| `CHALLENGE-START` | `{ challengeId, command, format, ranked }` | both players; `command` is `ch#<code>`, the join command for the duel socket |
+| `CHALLENGE-START` | `{ challengeId, command, format, ranked, bestOf }` | both players; `command` is `ch#<code>`, the join command for the duel socket |
 
 `reason` is `declined`, `expired`, `cancelled` (the challenger withdrew it or left the list) or `failed`, with `cause`: `left` (the target left the list), `in-duel` (a player was in a duel when it was accepted, or started another challenge), `matchmaking` (matchmaking had already matched or proposed a match for one of the accounts), `unavailable` (the room could not be made).
 
-Refusals of `PRESENCE-CHALLENGE`, as `PRESENCE-ERROR` codes: `invalid-challenge` (bad payload), `unknown-target`, `self-challenge`, `sender-in-duel`, `target-in-duel`, `target-muted`, `format-not-shared`, `challenge-pending` (the sender already has one waiting), `challenge-cooldown`. `PRESENCE-CHALLENGE-CANCEL` and `PRESENCE-CHALLENGE-ANSWER` answer `unknown-challenge` when there is no such challenge for the sender, and `invalid-challenge` for a bad payload.
+Refusals of `PRESENCE-CHALLENGE`, as `PRESENCE-ERROR` codes: `invalid-challenge` (bad payload, or a `bestOf` other than 1 or 3), `unknown-target`, `self-challenge`, `sender-in-duel`, `target-in-duel`, `target-muted`, `format-not-shared`, `challenge-pending` (the sender already has one waiting), `challenge-cooldown`. `PRESENCE-CHALLENGE-CANCEL` and `PRESENCE-CHALLENGE-ANSWER` answer `unknown-challenge` when there is no such challenge for the sender, and `invalid-challenge` for a bad payload.
 
 Rules, all enforced by the server:
 
