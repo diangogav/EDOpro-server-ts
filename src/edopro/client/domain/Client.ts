@@ -49,8 +49,11 @@ export class Client extends YgoClient {
 	}
 
 	setSocket(socket: ISocket, clients: Client[], room: Room): void {
-		if (this._socket && this._socket !== socket) {
-			this._socket.destroy();
+		// A takeover while the old connection is still open (another device, a
+		// second tab, a half-open peer): tell it the seat moved on with "session
+		// superseded", so it does not reconnect and take the seat back.
+		if (this._socket && this._socket !== socket && !this._socket.closed) {
+			this._socket.closeSuperseded();
 		}
 		this._socket = socket;
 		const roomMessageEmitter = new RoomMessageEmitter(this, room);

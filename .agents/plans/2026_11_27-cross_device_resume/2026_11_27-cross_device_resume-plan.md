@@ -17,7 +17,7 @@ implemented_by:
     version: "5.5"
     reasoning_effort: "low"
 
-last_implementation_at: "2026-11-27T23:30:00Z"
+last_implementation_at: "2026-11-28T00:30:00Z"
 has_completed_all_phases: "false"
 ---
 
@@ -137,20 +137,20 @@ Spans two repositories: each phase ships one PR in `EDOpro-server-ts` and one in
 
 **Public contracts**
 
-- Server: `Client.setSocket` (EDOPro) closes an open old socket with `closeSuperseded()` instead of `destroy()`.
-- Server: `RESUME_INFO` for an EDOPro room carries `edoproRoom: true` and the room's ban list name.
-- Client: `RESUME_INFO.edoproRoom` selects the EDOPro wire handling for the resumed duel.
+- Server: `Client.setSocket` (EDOPro) closes an open old socket with `closeSuperseded()` instead of `destroy()`; a closed old socket is left alone. The bridged socket is a `Proxy`, so the 4001 reaches the evolution client too.
+- Server: `RESUME_INFO` for an EDOPro room carries `edoproRoom: true` (already in phase 1) and the room's ban list name (`Room.banListName`).
+- Client: `resumedDuelState(info, cardDbKeyFor)` (`src/features/duel/application/resumeInfoState.ts`) maps `RESUME_INFO` to the overlay state; its `edoproRoom` sets the overlay's EDOPro flag before the duel start of the re-sync.
 - Test suites:
   - Server: an EDOPro takeover closes the old socket with 4001.
-  - Server: resuming a bridged `edo,` room and a `speed` room by account.
-  - Client: a resume with `edoproRoom: true` uses the EDOPro handling.
+  - Server: `ygoproReconnectRoute.seatOf` finds the verified seat of a bridged EDOPro room and leaves a seat joined from EDOPro to the EDOPro server; `resumeInfoOf` gives an EDOPro room its ban list. A `speed` room is an EDOPro room with a bridged socket, so the same path covers it.
+  - Client `resumedDuelState`: card database from the ban list, score, the EDOPro mark, and the base fallback.
 
 **To-do actions**
 
-- [ ] Server: change `Client.setSocket` and extend `RESUME_INFO` for EDOPro rooms, with tests.
-- [ ] Client: apply `edoproRoom` from `RESUME_INFO`, with tests.
-- [ ] Verify the changes in terms of typechecking, linting and tests using the project's verification command (look it up in the AGENTS.md file or the project configuration). Fix issues if any.
-- [ ] STOP. Present the changes to the user for review and suggest commit messages (or pull request titles, when the phases are implemented through pull requests). Do NOT proceed to the next phase until the user explicitly asks.
+- [x] Server: change `Client.setSocket` and extend `RESUME_INFO` for EDOPro rooms, with tests.
+- [x] Client: apply `edoproRoom` from `RESUME_INFO`, with tests.
+- [x] Verify the changes in terms of typechecking, linting and tests using the project's verification command (look it up in the AGENTS.md file or the project configuration). Fix issues if any.
+- [x] STOP. Present the changes to the user for review and suggest commit messages (or pull request titles, when the phases are implemented through pull requests). Do NOT proceed to the next phase until the user explicitly asks.
 
 ### Phase 3: Resume between duels (side decking)
 
@@ -173,6 +173,6 @@ Spans two repositories: each phase ships one PR in `EDOpro-server-ts` and one in
 
 ## ⏭️ Next step
 
-Implement Phase 2: EDOPro rooms (4001 on takeover, `edoproRoom` in the resume info).
+Implement Phase 3: resume between duels (the seat's deck for side decking).
 
-One duel, any device, the seat handed over by [Codely](https://codely.com) 🤝 🐢 💨
+One duel, any device, no ping-pong, by [Codely](https://codely.com) 🏓 🤝 🐢 💨

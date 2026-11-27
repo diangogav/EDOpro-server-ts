@@ -61,7 +61,8 @@ export const ygoproReconnectRoute = {
 		const opponent = client.team === 0 ? score.team1 : score.team0;
 
 		return {
-			banListName: room instanceof YGOProRoom ? room.banListName : null,
+			banListName:
+				room instanceof YGOProRoom || room instanceof EdoproRoom ? room.banListName : null,
 			score: { own, opponent },
 			edoproRoom: room instanceof EdoproRoom,
 		};
