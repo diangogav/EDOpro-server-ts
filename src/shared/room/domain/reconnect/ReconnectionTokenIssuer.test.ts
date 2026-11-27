@@ -139,4 +139,19 @@ describe("ReconnectionTokenIssuer", () => {
 			expect(ReconnectionTokenIssuer.resolve(token, 9, () => false)).toBeNull();
 		});
 	});
+
+	describe("rotate", () => {
+		it("replaces the token: the new one resolves and the old one no longer does", () => {
+			const client = makeClient("Alice");
+			ReconnectionTokenIssuer.issue(client, 7);
+			const old = client.reconnectionToken!;
+
+			const rotated = ReconnectionTokenIssuer.rotate(client, 7);
+
+			expect(rotated).not.toBe(old);
+			expect(client.reconnectionToken).toBe(rotated);
+			expect(TokenIndex.getInstance().find(old)).toBeUndefined();
+			expect(ReconnectionTokenIssuer.resolve(rotated, 7, () => true)).toBe(client);
+		});
+	});
 });

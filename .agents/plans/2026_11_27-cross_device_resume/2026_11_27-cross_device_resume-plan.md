@@ -9,6 +9,16 @@ created_by:
     name: "Claude Opus"
     version: "5.5"
     reasoning_effort: "low"
+
+implemented_by:
+  tool: "Claude Code"
+  model:
+    name: "Claude Opus"
+    version: "5.5"
+    reasoning_effort: "low"
+
+last_implementation_at: "2026-11-27T23:30:00Z"
+has_completed_all_phases: "false"
 ---
 
 # Cross-device duel resume
@@ -59,31 +69,31 @@ Spans two repositories: each phase ships one PR in `EDOpro-server-ts` and one in
 **Public contracts**
 
 - Server domain:
-  - `findSeatOfUser(rooms, userId): { client: YgoClient; roomId: number } | null` next to `createAccountStatusProbe`. It looks at YGOPro and EDOPro rooms that are not waiting, and only at seats whose credential is `verified` with that user id. It finds the seat even when the old socket is still open.
+  - `findSeatOfUser(rooms, userId, owns?): { client: YgoClient; room: YgoRoom } | null` in `src/shared/room/domain/reconnect/findSeatOfUser.ts`. It looks at rooms that are not waiting, only at players (never spectators) whose credential is `verified` with that user id and who hold a reconnection token (so rooms without reconnection never match). It finds the seat whether the old socket is open or not.
   - `ReconnectionTokenIssuer.rotate(client, roomId): string`: revokes the current token and issues a new one, so the old device's token stops working.
 - Server messages:
   - CTOS `RESUME_SEAT = 0xeb` in `Commands.ts`, with no payload. The socket's identity comes from its handshake ticket.
   - STOC `RESUME_INFO = 0xea`, JSON payload `{ banListName: string | null, score: { own: number; opponent: number }, edoproRoom: boolean }`. It is sent only to a socket that resumed by account, before the room's re-sync.
-- Server application: `AccountResumeHandler` (per connection, next to `ExpressReconnectHandler`):
+- Server connection layer: `ygoproReconnectRoute` gains `seatOf(userId)` (both room lists, filtered by `owns`) and `resumeInfoOf(seat)`. It implements the `AccountResumeRoute` port.
+- Server application: `AccountResumeHandler` (per connection, next to `ExpressReconnectHandler`, wired in `YGOProConnectionHandler.ts`):
   - With `resolvedUserId` and a seat: rotate the token, send `RESUME_INFO`, then emit `EXPRESS_RECONNECT` to the room with the new token.
   - With no identity or no seat: send `ReconnectionAckMessage.failure()` and close the socket.
-  - It logs `reconnect.attempt` with `path: "account"`.
+  - It logs `reconnect.attempt` with `path: "account"` (new outcome `no_seat`).
 - Server HTTP: `POST /api/me/active-duel`, body `{ ticket }`:
   - 200 `{ inDuel: boolean }`.
   - 401 for a ticket that is missing, invalid or already used.
-  - Controller `ActiveDuelController`; it consumes the ticket like `EnqueueMatchmakingController`.
+  - Controller `ActiveDuelController(tickets, holdsSeat)`; it consumes the ticket like `EnqueueMatchmakingController`, behind its own rate-limit bucket (`ActiveDuelRateLimitMiddleware`). The route checks both room lists without the `owns` filter: a verified seat in an EDOPro room can only come from the YGOPro server's bridge.
 - Client:
-  - `IActiveDuelApi.check(ticket): Promise<boolean>` with `HttpActiveDuelApi`.
-  - `resumeOffer` check at boot: signed in, no local reconnect session, and the server answers `inDuel`.
-  - A dialog with "Resume" and "Not now".
-  - "Resume" opens the WebSocket with a fresh ticket and sends `RESUME_SEAT` instead of `0xfd`.
-  - `RESUME_INFO` sets the card database (`cardDbKeyFor(banListName)`) and the match score before the re-sync draws the board.
-  - On close code 4001, the device that lost the seat shows the new message and does not reconnect.
+  - `IActiveDuelApi.check(ticket): Promise<boolean>` with `HttpActiveDuelApi` (duel server base URL `ROOMS_URL_DEFAULT`).
+  - `AccountResumeStore` (`accountResumeStore.svelte.ts`): `checkFor(userId)` asks once per account per app run; `offered`, `accept()`, `dismiss()`. `App.svelte` calls it once assets are ready, for a signed-in user, when the overlay is closed and there is no local reconnect session; it also runs after a later sign-in.
+  - `DuelResumePrompt.svelte` with "Resume" and "Not now".
+  - "Resume" runs `duelOverlayStore.startAccountResume(wsUrl)`: `reconnectStore.requestAccountResume()` sets an in-memory flag, read through `LobbySessionPort.resumingByAccount()` and the new protocol config `shouldResumeSeat`. `ProtocolService` sends `RESUME_SEAT` on connect when it has no token and the flag is set. The flag ends when the server hands a token (`saveSession`) or on `clear()`.
+  - `RESUME_INFO` emits `protocol:resume-info`; the overlay sets the card database (`cdbVariantForFormat(banListName)`) and the match score.
+  - The device that lost the seat already shows the existing superseded copy on close code 4001 ("This match was opened somewhere else"), so no new copy was added.
 - UI copies (es / en):
   - `duel_resume_prompt`: "Tienes un duelo en curso. ¿Retomarlo aquí?" / "You have a duel in progress. Resume it here?"
   - `duel_resume_accept`: "Retomar" / "Resume"
   - `duel_resume_decline`: "Ahora no" / "Not now"
-  - `duel_moved_to_other_device`: "Tu duelo continúa en otro dispositivo." / "Your duel continued on another device."
 - Test suites:
   - Server `findSeatOfUser`:
     - finds a verified seat in a YGOPro room and in an EDOPro room
@@ -98,25 +108,28 @@ Spans two repositories: each phase ships one PR in `EDOpro-server-ts` and one in
     - the old token fails afterwards
     - a socket without identity gets the failure ack
     - an account without a seat gets the failure ack
-  - Server `ActiveDuelController`: 200 with and without a duel, 401 for an invalid or reused ticket.
+  - Server `ActiveDuelController`: 200 with and without a duel, 401 for an invalid or reused ticket, 400 without a ticket.
+  - Server `ygoproReconnectRoute.resumeInfoOf`: the score from the resuming player's side, the ban list, and an EDOPro room marked.
   - Client:
-    - the boot check runs only when signed in without a local session
-    - the dialog resumes or dismisses
-    - the resume flow sends `RESUME_SEAT` and applies `RESUME_INFO`
-    - the 4001 message
+    - `AccountResumeStore`: offers when in a duel, asks once per account, offers nothing without a ticket or on failure, accept and dismiss
+    - `DuelResumePrompt`: hidden, resume, dismiss
+    - `ProtocolService`: `0xeb` on connect without a token, the token wins over the flag, `0xea` emits `protocol:resume-info`
+    - `resume-seat-protocol`: frame build and parse, malformed frames
+    - `reconnectStore`: the account-resume flag
+    - `HttpActiveDuelApi`: request, reading, refused call
 
 **To-do actions**
 
-- [ ] Server: add `findSeatOfUser` and `ReconnectionTokenIssuer.rotate`, with tests.
-- [ ] Server: add `RESUME_SEAT`, `RESUME_INFO` and `AccountResumeHandler`, wire them in `YGOProConnectionHandler.ts`, with tests.
-- [ ] Server: add `ActiveDuelController` and its route, with tests.
-- [ ] Server: document the account path in `docs/room-reentry.md` and the endpoint where the HTTP routes are documented.
-- [ ] Client: add the active duel check, the dialog, the `RESUME_SEAT` frame and the handling of `RESUME_INFO`, with both locales and tests.
-- [ ] Client: show the 4001 message on the device that lost the seat.
-- [ ] Verify the changes in terms of typechecking, linting and tests using the project's verification command (look it up in the AGENTS.md file or the project configuration). Fix issues if any.
+- [x] Server: add `findSeatOfUser` and `ReconnectionTokenIssuer.rotate`, with tests.
+- [x] Server: add `RESUME_SEAT`, `RESUME_INFO` and `AccountResumeHandler`, wire them in `YGOProConnectionHandler.ts`, with tests.
+- [x] Server: add `ActiveDuelController` and its route, with tests.
+- [x] Server: document the account path in `docs/room-reentry.md` and the endpoint where the HTTP routes are documented.
+- [x] Client: add the active duel check, the dialog, the `RESUME_SEAT` frame and the handling of `RESUME_INFO`, with both locales and tests.
+- [x] Client: show the 4001 message on the device that lost the seat.
+- [x] Verify the changes in terms of typechecking, linting and tests using the project's verification command (look it up in the AGENTS.md file or the project configuration). Fix issues if any.
   - Server: `pnpm lint`, `pnpm test`, `pnpm build`. In a worktree, install its own dependencies; do not symlink `node_modules`.
   - Client: `npm run lint`, the three custom lint rules, `npm run typecheck`, `npm run check:svelte`, `npm test`, `npm run build`, `npm run check:bundle`. Run the build after the tests, not at the same time.
-- [ ] STOP. Present the changes to the user for review and suggest commit messages (or pull request titles, when the phases are implemented through pull requests). Do NOT proceed to the next phase until the user explicitly asks.
+- [x] STOP. Present the changes to the user for review and suggest commit messages (or pull request titles, when the phases are implemented through pull requests). Do NOT proceed to the next phase until the user explicitly asks.
 
 ### Phase 2: EDOPro rooms
 
@@ -160,6 +173,6 @@ Spans two repositories: each phase ships one PR in `EDOpro-server-ts` and one in
 
 ## ⏭️ Next step
 
-Implement Phase 1: resume a YGOPro duel in progress from another device.
+Implement Phase 2: EDOPro rooms (4001 on takeover, `edoproRoom` in the resume info).
 
-One duel, any device, by 🐢 💨 (Turbotuga™, [Codely](https://codely.com)’s mascot)
+One duel, any device, the seat handed over by [Codely](https://codely.com) 🤝 🐢 💨

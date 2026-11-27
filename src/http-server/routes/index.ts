@@ -8,6 +8,10 @@ import { UserProfilePostgresRepository } from "../../shared/user-profile/infrast
 import { config } from "../../config";
 import { UserProfileBanChecker } from "../../ygopro/matchmaking/infrastructure/UserProfileBanChecker";
 import { UserProfileDisplayNameResolver } from "../../ygopro/matchmaking/infrastructure/UserProfileDisplayNameResolver";
+import { findSeatOfUser } from "../../shared/room/domain/reconnect/findSeatOfUser";
+import RoomList from "../../edopro/room/infrastructure/RoomList";
+import YGOProRoomList from "../../ygopro/room/infrastructure/YGOProRoomList";
+import { ActiveDuelController } from "../controllers/ActiveDuelController";
 import { CancelMatchmakingController } from "../controllers/CancelMatchmakingController";
 import { EnqueueMatchmakingController } from "../controllers/EnqueueMatchmakingController";
 import { MatchmakingDepthController } from "../controllers/MatchmakingDepthController";
@@ -24,6 +28,7 @@ import { SearchCardsController } from "../controllers/SearchCardsController";
 import { ServerMessagesController } from "../controllers/ServerMessagesController";
 import { AuthAdminMiddleware } from "../middlewares/AuthAdminMiddleware";
 import {
+	ActiveDuelRateLimitMiddleware,
 	EnqueueRateLimitMiddleware,
 	QueueDepthRateLimitMiddleware,
 	RateLimitMiddleware,
@@ -51,6 +56,16 @@ export function loadRoutes(app: Express, logger: Logger, tickets: TicketReposito
 			matchmakingBans,
 			matchmakingAccountVerifier,
 			config.verifiedAccount.rankedRequired,
+		).run(req, res),
+	);
+
+	// Verified seats in EDOPro rooms only come from the YGOPro server's bridge, so
+	// every seat found here is one the WebSocket RESUME_SEAT can take over.
+	app.post("/api/me/active-duel", ActiveDuelRateLimitMiddleware, (req, res) =>
+		new ActiveDuelController(
+			tickets,
+			(userId) =>
+				findSeatOfUser([...YGOProRoomList.getRooms(), ...RoomList.getRooms()], userId) !== null,
 		).run(req, res),
 	);
 

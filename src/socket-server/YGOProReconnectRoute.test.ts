@@ -93,4 +93,27 @@ describe("ygoproReconnectRoute", () => {
 		expect(handed).not.toBe(reopened);
 		expect(reopened.bridgedFromYgopro).toBe(true);
 	});
+
+	describe("resumeInfoOf", () => {
+		it("gives the score from the resuming player's side, the room's ban list, and a YGOPro room", () => {
+			const room = YGOProRoomMother.create();
+			jest.spyOn(room, "matchScore").mockReturnValue({ team0: 2, team1: 1 });
+			const client = { team: 1 } as unknown as YgoClient;
+
+			const info = ygoproReconnectRoute.resumeInfoOf({ client, room });
+
+			expect(info).toEqual({
+				banListName: room.banListName,
+				score: { own: 1, opponent: 2 },
+				edoproRoom: false,
+			});
+		});
+
+		it("marks an EDOPro room", () => {
+			const room = RoomMother.create();
+			const client = { team: 0 } as unknown as YgoClient;
+
+			expect(ygoproReconnectRoute.resumeInfoOf({ client, room }).edoproRoom).toBe(true);
+		});
+	});
 });

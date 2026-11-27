@@ -82,3 +82,9 @@ export const QueueDepthRateLimitMiddleware = createRateLimitMiddleware(
 	"queue-depth",
 	QUEUE_DEPTH_MAX_REQUESTS,
 );
+
+/** Dedicated bucket for POST /api/me/active-duel, asked once when the client opens. */
+export const ActiveDuelRateLimitMiddleware = createRateLimitMiddleware(
+	"active-duel",
+	ENQUEUE_MAX_REQUESTS,
+);

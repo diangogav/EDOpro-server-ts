@@ -35,6 +35,20 @@ export class ReconnectionTokenIssuer {
 		return ReconnectionTokenClientMessage.create(token);
 	}
 
+	// Replace the client's token with a new one and return it. Used when the seat
+	// moves to another device: the token the previous device holds stops working,
+	// so it cannot take the seat back with it.
+	static rotate(client: YgoClient, roomId: number): string {
+		this.revoke(client);
+		this.issue(client, roomId);
+		const token = client.reconnectionToken;
+		if (!token) {
+			throw new Error("A rotated reconnection token must be set on the client");
+		}
+
+		return token;
+	}
+
 	// Revoke the client's current token: de-register it from the global index and
 	// clear it on the client. Idempotent — safe to call on a client with no token.
 	// Called on room teardown so tokens never outlive their room: TokenIndex is an
