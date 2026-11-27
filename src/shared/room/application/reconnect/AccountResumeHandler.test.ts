@@ -16,7 +16,12 @@ import { AccountSeat } from "@shared/room/domain/reconnect/findSeatOfUser";
 import { AccountResumeHandler, AccountResumeRoute } from "./AccountResumeHandler";
 
 const FAILURE_ACK = Buffer.from([0x02, 0x00, 0xfd, 0x01]);
-const INFO = { banListName: "2026.10 TCG", score: { own: 1, opponent: 0 }, edoproRoom: false };
+const INFO: ResumeInfo = {
+	banListName: "2026.10 TCG",
+	score: { own: 1, opponent: 0 },
+	edoproRoom: false,
+	deck: null,
+};
 
 const makeClient = (): YgoClient => {
 	let token: string | null = null;

@@ -17,8 +17,8 @@ implemented_by:
     version: "5.5"
     reasoning_effort: "low"
 
-last_implementation_at: "2026-11-28T00:30:00Z"
-has_completed_all_phases: "false"
+last_implementation_at: "2026-11-28T01:15:00Z"
+has_completed_all_phases: "true"
 ---
 
 # Cross-device duel resume
@@ -158,21 +158,21 @@ Spans two repositories: each phase ships one PR in `EDOpro-server-ts` and one in
 
 **Public contracts**
 
-- Server: `RESUME_INFO` gains `deck: { main: number[]; extra: number[]; side: number[] } | null`. It is taken from the seat when the room is side decking, and null otherwise.
-- Client: the side deck editor opens with `RESUME_INFO.deck` when there is no local deck.
+- Server: `RESUME_INFO` gains `deck: { main: number[]; extra: number[]; side: number[] } | null`. `ygoproReconnectRoute.resumeInfoOf` takes it from the seat (`YgoClient.deck`, card codes) when the room is side decking, and sends null otherwise.
+- Client: `parseResumeInfoFrame` reads `deck` and drops a broken one; `resumedDuelState` carries it; the overlay sets `currentGameDeck` from it (and marks the match past game 1), so the `changeSide` prompt that follows in the re-sync opens the editor with the server's deck.
 - Test suites:
   - Server: `RESUME_INFO` carries the seat's deck during side decking and null during a duel.
-  - Client: resuming during side decking opens the editor with the deck from the server, and the deck it sends back passes the server's side check.
+  - Client: `parseResumeInfoFrame` reads the deck and drops a broken one; `resumedDuelState` carries it. The deck sent back is built from the server's own deck, so the server's side check (same cards, swapped between main and side) holds; this was not tested end to end.
 
 **To-do actions**
 
-- [ ] Server: add the seat's deck to `RESUME_INFO` during side decking, with tests.
-- [ ] Client: open the side deck editor from `RESUME_INFO.deck`, with tests.
-- [ ] Verify the changes in terms of typechecking, linting and tests using the project's verification command (look it up in the AGENTS.md file or the project configuration). Fix issues if any.
-- [ ] STOP. Present the changes to the user for review and suggest commit messages (or pull request titles, when the phases are implemented through pull requests). Do NOT proceed to the next phase until the user explicitly asks.
+- [x] Server: add the seat's deck to `RESUME_INFO` during side decking, with tests.
+- [x] Client: open the side deck editor from `RESUME_INFO.deck`, with tests.
+- [x] Verify the changes in terms of typechecking, linting and tests using the project's verification command (look it up in the AGENTS.md file or the project configuration). Fix issues if any.
+- [x] STOP. Present the changes to the user for review and suggest commit messages (or pull request titles, when the phases are implemented through pull requests). Do NOT proceed to the next phase until the user explicitly asks.
 
 ## ⏭️ Next step
 
-Implement Phase 3: resume between duels (the seat's deck for side decking).
+All phases are complete. Next: deploy the server, ship the client, and test a real resume between two devices in a duel, an EDOPro room and a side deck.
 
-One duel, any device, no ping-pong, by [Codely](https://codely.com) 🏓 🤝 🐢 💨
+One duel, any device, even between games, by [Codely](https://codely.com) 🃏 🏓 🤝 🐢 💨

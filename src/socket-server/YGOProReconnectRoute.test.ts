@@ -108,7 +108,28 @@ describe("ygoproReconnectRoute", () => {
 				banListName: room.banListName,
 				score: { own: 1, opponent: 2 },
 				edoproRoom: false,
+				deck: null,
 			});
+		});
+
+		it("gives the seat's deck while the room is side decking, and none during a duel", () => {
+			const room = YGOProRoomMother.create();
+			const card = (code: number) => ({ code: String(code) });
+			const client = {
+				team: 0,
+				deck: { main: [card(1), card(2)], extra: [card(3)], side: [card(4)] },
+			} as unknown as YgoClient;
+			const state = jest.spyOn(room, "duelState", "get");
+
+			state.mockReturnValue(DuelState.SIDE_DECKING);
+			expect(ygoproReconnectRoute.resumeInfoOf({ client, room }).deck).toEqual({
+				main: [1, 2],
+				extra: [3],
+				side: [4],
+			});
+
+			state.mockReturnValue(DuelState.DUELING);
+			expect(ygoproReconnectRoute.resumeInfoOf({ client, room }).deck).toBeNull();
 		});
 
 		it("marks an EDOPro room and gives its ban list", () => {

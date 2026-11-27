@@ -8,7 +8,7 @@ import { Client as EdoproClient } from "../edopro/client/domain/Client";
 import { Room as EdoproRoom } from "../edopro/room/domain/Room";
 import RoomList from "../edopro/room/infrastructure/RoomList";
 import { YgoClient } from "../shared/client/domain/YgoClient";
-import { YgoRoom } from "../shared/room/domain/YgoRoom";
+import { DuelState, YgoRoom } from "../shared/room/domain/YgoRoom";
 import { ISocket } from "../shared/socket/domain/ISocket";
 import { bridgeToEdoproRoom } from "../ygopro/edopro-bridge/BridgedSocket";
 import { duelRuleFromFlags } from "../ygopro/edopro-bridge/edopro-lobby";
@@ -65,6 +65,7 @@ export const ygoproReconnectRoute = {
 				room instanceof YGOProRoom || room instanceof EdoproRoom ? room.banListName : null,
 			score: { own, opponent },
 			edoproRoom: room instanceof EdoproRoom,
+			deck: room.duelState === DuelState.SIDE_DECKING ? deckCodesOf(client) : null,
 		};
 	},
 
@@ -77,6 +78,15 @@ export const ygoproReconnectRoute = {
 		return bridgeToEdoproRoom(reopened, duelRuleFromFlags(room.duelFlagsLow));
 	},
 };
+
+/** The codes of a seat's deck, in the order the server holds them. */
+function deckCodesOf(client: YgoClient): ResumeInfo["deck"] {
+	const codes = (cards: readonly { code: string | number }[]) =>
+		cards.map((card) => Number(card.code));
+	const deck = client.deck;
+
+	return { main: codes(deck.main), extra: codes(deck.extra), side: codes(deck.side) };
+}
 
 /** A player of an EDOPro room who entered it from the YGOPro server. */
 function isBridgedEdoproClient(client: YgoClient): boolean {
