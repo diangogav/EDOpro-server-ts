@@ -129,8 +129,10 @@ without the token the first device holds
 5. The socket gets `[2b size LE][0xea][JSON]` (`RESUME_INFO`): the room's ban
    list name (the client picks its card database from it), the match score from
    the player's side and whether the room runs the EDOPro core.
-6. The room is asked to re-sync exactly as in §3, with the new token. A YGOPro
-   room closes the old socket with 4001 "session superseded".
+6. The room is asked to re-sync exactly as in §3, with the new token. The old
+   socket, if still open, is closed with 4001 "session superseded" in both
+   flows (`YGOProRoom.reconnect`, and the EDOPro `Client.setSocket`), so the
+   device that lost the seat does not reconnect and take it back.
 
 A connection without an account, or an account without a seat, gets the failure
 ack and is closed. Every attempt logs `reconnect.attempt` with `path: "account"`.

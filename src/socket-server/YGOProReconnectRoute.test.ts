@@ -14,6 +14,8 @@ import { YGOProRoomMother } from "@test-support/mothers/room/YGOProRoomMother";
 import { YGOProClient } from "@ygopro/client/domain/YGOProClient";
 import YGOProRoomList from "@ygopro/room/infrastructure/YGOProRoomList";
 
+import { DuelState } from "@shared/room/domain/YgoRoom";
+
 import { ygoproReconnectRoute } from "./YGOProReconnectRoute";
 
 const MASTER_RULE_1 = 0xd0700;
@@ -109,11 +111,41 @@ describe("ygoproReconnectRoute", () => {
 			});
 		});
 
-		it("marks an EDOPro room", () => {
+		it("marks an EDOPro room and gives its ban list", () => {
 			const room = RoomMother.create();
 			const client = { team: 0 } as unknown as YgoClient;
 
+			const info = ygoproReconnectRoute.resumeInfoOf({ client, room });
+
+			expect(info.edoproRoom).toBe(true);
+			expect(info.banListName).toBe(room.banListName);
+		});
+	});
+
+	describe("seatOf", () => {
+		function seatedEdoproPlayer(bridged: boolean, userId: string) {
+			const room = RoomMother.create();
+			jest.spyOn(room, "duelState", "get").mockReturnValue(DuelState.DUELING);
+			const client = edoproPlayer(bridged);
+			client.setCredential({ kind: "verified", userId });
+			client.setReconnectionToken("tok");
+			room.players.push(client);
+			RoomList.addRoom(room);
+
+			return { room, client };
+		}
+
+		it("finds the account's seat in an EDOPro room it entered from this server", () => {
+			const { room, client } = seatedEdoproPlayer(true, "user-1");
+
+			expect(ygoproReconnectRoute.seatOf("user-1")).toEqual({ client, room });
 			expect(ygoproReconnectRoute.resumeInfoOf({ client, room }).edoproRoom).toBe(true);
+		});
+
+		it("leaves a seat of an EDOPro room joined from EDOPro to the EDOPro server", () => {
+			seatedEdoproPlayer(false, "user-2");
+
+			expect(ygoproReconnectRoute.seatOf("user-2")).toBeNull();
 		});
 	});
 });

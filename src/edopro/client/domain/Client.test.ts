@@ -103,6 +103,31 @@ describe("Client", () => {
 		expect(MessageProcessor).not.toHaveBeenCalled();
 	});
 
+	it("tells an old connection that is still open that the seat moved on", () => {
+		const newSocket = { ...mockSocket, id: "new-socket-id" };
+
+		client.setSocket(newSocket, [], mockRoom);
+
+		expect(mockSocket.closeSuperseded).toHaveBeenCalledTimes(1);
+		expect(mockSocket.destroy).not.toHaveBeenCalled();
+	});
+
+	it("leaves an old connection that already closed alone", () => {
+		mockSocket.closed = true;
+		const newSocket = { ...mockSocket, id: "new-socket-id", closed: false };
+
+		client.setSocket(newSocket, [], mockRoom);
+
+		expect(mockSocket.closeSuperseded).not.toHaveBeenCalled();
+		expect(mockSocket.destroy).not.toHaveBeenCalled();
+	});
+
+	it("does not close the connection it is handed again", () => {
+		client.setSocket(mockSocket, [], mockRoom);
+
+		expect(mockSocket.closeSuperseded).not.toHaveBeenCalled();
+	});
+
 	it("should handle socket without remote address", () => {
 		const socketWithoutIp = { ...mockSocket, remoteAddress: undefined };
 		client.setSocket(socketWithoutIp, [], mockRoom);
